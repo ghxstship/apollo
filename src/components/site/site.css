@@ -175,6 +175,7 @@
 .ws-plans{margin-top:48px;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
 .ws-plans:before{content:"";display:block;border-top:1px solid var(--line-strong)}
 .ws-plans__row{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:24px;padding:20px 0;border-bottom:1px solid var(--line-faint);align-items:start}
+.ws-plans__cell--span{grid-column:2 / -1}
 .ws-plans__row--head{padding:16px 0 10px;border-bottom:1px solid var(--line-strong)}
 .ws-plans__th{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--brass-deep);text-transform:uppercase}
 .ws-plans__label b{font-family:var(--font-display);font-weight:400;font-size:22px;display:inline-block;margin-right:10px}

@@ -36,7 +36,7 @@ National / Global); class tier sets how far.* Two dials, both легible.
 
 | Membership | Events/mo | I · Voyage | II · Expedition | III · Odyssey | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Access | 0 | $0 | — | — | The funnel: waitlist + one salon-guest invitation. Keep; it feeds vetting. |
+| Access | à la carte | $0 | — | — | No tiers: a free platform account that books any open sailing at its listed per-event price, no membership dues. The funnel and the fallback. |
 | Regional | 1 | $199 | $299 | $549 | **Lower Tier III from $799** — a 1-event member paying $799 monthly prices out against Guest passes; $549 keeps the ladder honest. |
 | National | 3 | $349 | $749 | $1,099 | **Raise Tier I $299→$349**: at $299 the 1→3 event jump for $100 cannibalizes Regional II. |
 | Global | 7 | $799 | $1,199 | $1,499 | As proposed — anchors the ladder; includes 2 guest passes/event (already enforced in product). |

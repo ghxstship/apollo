@@ -18,7 +18,7 @@ type Plan = Tables<"membership_plans">;
 /* Row order and prose for the plan grid. Prices, allowances, and class
    ceilings render live from membership_plans — nothing hardcoded here. */
 const PLAN_TYPES: Array<{ type: Plan["plan_type"]; name: string; blurb: string }> = [
-  { type: "access", name: "Access", blurb: "The waitlist, made explicit" },
+  { type: "access", name: "Access", blurb: "The platform, no dues" },
   { type: "regional", name: "Regional", blurb: "Your home harbor" },
   { type: "national", name: "National", blurb: "All US harbors" },
   { type: "global", name: "Global", blurb: "Every harbor worldwide" },
@@ -83,7 +83,20 @@ export default async function MembershipPage() {
               {type === "global" ? <Badge tone="brass">Most aboard</Badge> : null}
               <span>{blurb}</span>
             </div>
-            {TIER_HEADS.map(([n, tierName], i) => {
+            {/* Access has no tiers — platform account, berths bought à la
+                carte at each event's listed price. One cell spans the row. */}
+            {type === "access" ? (
+              <div className="ws-plans__cell ws-plans__cell--span">
+                <span className="ws-plans__price">No charge</span>
+                <span className="ws-plans__ev">
+                  Berths à la carte — priced per event, no membership required
+                </span>
+                <span className="ws-plans__note">
+                  BOOK ANY OPEN SAILING AT ITS LISTED PRICE
+                </span>
+              </div>
+            ) : null}
+            {type !== "access" && TIER_HEADS.map(([n, tierName], i) => {
               const p = byCell.get(`${type}-${i + 1}`);
               return (
                 <div className="ws-plans__cell" key={n}>
