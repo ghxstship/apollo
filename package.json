@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/generate-route-manifest.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/generate-route-manifest.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "routes:manifest": "node scripts/generate-route-manifest.mjs",
+    "routes:audit": "node scripts/audit-routes.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",

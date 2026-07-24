@@ -1,0 +1,66 @@
+name: Route audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Daily at 13:00 UTC (06:00 Marina del Rey) — catches drift between the
+    # app, the database content, and the sitemap even with no commits.
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+
+env:
+  # Publishable client values (safe by design — they ship in the browser
+  # bundle). Repository secrets of the same name take precedence.
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://mpyvwpunwrioakmtmcdo.supabase.co' }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_bWxRdbnkFbEOmrHB2Ec8CQ_u4_xr9WT' }}
+  NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Route manifest is in sync
+        run: |
+          npm run routes:manifest
+          git diff --exit-code src/lib/route-manifest.json || {
+            echo "::error::src/lib/route-manifest.json is stale — run 'npm run routes:manifest' and commit."
+            exit 1
+          }
+
+      - name: Lint & typecheck
+        run: |
+          npx eslint src --max-warnings=0
+          npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Start server
+        run: |
+          npm run start -- --port 3000 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/ > /dev/null && break
+            sleep 1
+          done
+
+      - name: Audit all routes and surfaces
+        run: BASE_URL=http://localhost:3000 node scripts/audit-routes.mjs
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: route-audit-report
+          path: route-audit-report.json
