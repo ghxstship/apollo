@@ -1,0 +1,100 @@
+import type { Metadata } from "next";
+import { logDateTime, price } from "@/lib/format";
+import { getOperator } from "../../data";
+import {
+  OrdersClient,
+  type LedgerRow,
+  type MemberOption,
+  type ShopOrderRow,
+} from "./orders-client";
+
+export const metadata: Metadata = { title: "Orders" };
+
+function signedAmount(cents: number): string {
+  if (cents === 0) return price(0);
+  const abs = price(Math.abs(cents));
+  return cents < 0 ? `−${abs}` : `+${abs}`;
+}
+
+export default async function OrdersPage() {
+  const { supabase } = await getOperator();
+
+  const [ledgerRes, shopRes, membersRes] = await Promise.all([
+    supabase
+      .from("account_ledger")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(120),
+    supabase
+      .from("shop_orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(60),
+    supabase
+      .from("profiles")
+      .select("id, full_name, member_no")
+      .eq("status", "active")
+      .order("full_name", { ascending: true }),
+  ]);
+
+  const ledger = ledgerRes.data ?? [];
+  const shop = shopRes.data ?? [];
+  const memberRows = membersRes.data ?? [];
+  const byId = new Map(memberRows.map((m) => [m.id, m]));
+
+  /* Names for ledger/shop rows whose members are paused or departed. */
+  const missing = [
+    ...new Set(
+      [...ledger.map((l) => l.profile_id), ...shop.map((o) => o.profile_id)].filter(
+        (id) => !byId.has(id)
+      )
+    ),
+  ];
+  if (missing.length) {
+    const { data: extra } = await supabase
+      .from("profiles")
+      .select("id, full_name, member_no")
+      .in("id", missing);
+    for (const p of extra ?? []) byId.set(p.id, p);
+  }
+
+  const nameOf = (id: string) => byId.get(id)?.full_name ?? "Unknown member";
+  const noOf = (id: string) => byId.get(id)?.member_no ?? "—";
+
+  const entries: LedgerRow[] = ledger.map((l) => ({
+    id: l.id,
+    member: nameOf(l.profile_id),
+    memberNo: noOf(l.profile_id),
+    kind: l.kind,
+    memo: l.memo ?? "",
+    amount: signedAmount(l.delta_cents),
+    deltaCents: l.delta_cents,
+    created: logDateTime(l.created_at),
+  }));
+
+  const shopOrders: ShopOrderRow[] = shop.map((o) => ({
+    id: o.id,
+    shortId: `#${o.id.slice(0, 8).toUpperCase()}`,
+    member: nameOf(o.profile_id),
+    total: price(o.total_cents),
+    status: o.status,
+    created: logDateTime(o.created_at),
+  }));
+
+  const members: MemberOption[] = memberRows.map((m) => ({
+    value: m.id,
+    label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` · ${m.member_no}` : ""}`,
+  }));
+
+  return (
+    <div>
+      <span className="hm-eyebrow">Orders &amp; refunds</span>
+      <h1 className="hm-h1">The ship&apos;s record.</h1>
+      <p className="hm-lede">
+        Every charge, payment, and refund on the member accounts — newest first, logged with a
+        name.
+      </p>
+      <OrdersClient entries={entries} shopOrders={shopOrders} members={members} />
+    </div>
+  );
+}

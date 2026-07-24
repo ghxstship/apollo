@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { TIER_LABEL } from "@/lib/format";
 import { getMember, type Profile } from "../data";
 import { relTime } from "../relative";
-import { Composer, PostCard, type FeedPost } from "./feed";
+import { Composer, FeedList, type FeedPost, type VoyageOption } from "./feed";
+import { WardroomRealtime } from "./realtime";
 
 export const metadata: Metadata = { title: "The Wardroom" };
 
@@ -20,13 +21,26 @@ export default async function WardroomPage() {
     supabase.from("wardroom_posts").select("*").order("created_at", { ascending: false }),
     supabase.from("wardroom_hails").select("*"),
     supabase.from("wardroom_comments").select("*").order("created_at", { ascending: true }),
-    supabase.from("voyages").select("id,title"),
+    supabase.from("voyages").select("id,title,status,starts_at"),
   ]);
 
   const posts = postsRes.data ?? [];
   const hails = hailsRes.data ?? [];
   const comments = commentsRes.data ?? [];
-  const voyageTitles = new Map((voyagesRes.data ?? []).map((v) => [v.id, v.title]));
+  const voyages = voyagesRes.data ?? [];
+  const voyageTitles = new Map(voyages.map((v) => [v.id, v.title]));
+
+  /* Taggable voyages for the composer: live now, or still ahead. */
+  const nowIso = new Date().toISOString();
+  const taggable: VoyageOption[] = voyages
+    .filter(
+      (v) =>
+        v.status === "live" ||
+        ((v.status === "scheduled" || v.status === "weather_hold") &&
+          v.starts_at >= nowIso)
+    )
+    .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
+    .map((v) => ({ id: v.id, title: v.title }));
 
   /* Resolve author profiles in one pass. */
   const authorIds = Array.from(
@@ -58,6 +72,7 @@ export default async function WardroomPage() {
       tone: toneOf(author),
       meta,
       body: p.body,
+      voyageId: p.voyage_id,
       voyageTitle: p.voyage_id ? voyageTitles.get(p.voyage_id) ?? null : null,
       hails: postHails.length,
       myHail: postHails.some((h) => h.profile_id === user.id),
@@ -77,6 +92,7 @@ export default async function WardroomPage() {
 
   return (
     <div style={{ maxWidth: 720, marginInline: "auto" }}>
+      <WardroomRealtime />
       <span className="mbr-eyebrow">Members only · mind the code</span>
       <h1 className="mbr-h1" style={{ marginTop: 6, marginBottom: 24 }}>
         The Wardroom.
@@ -84,10 +100,9 @@ export default async function WardroomPage() {
       <Composer
         authorName={profile?.full_name ?? "You"}
         tone={toneOf(profile)}
+        voyages={taggable}
       />
-      {feed.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))}
+      <FeedList posts={feed} />
     </div>
   );
 }

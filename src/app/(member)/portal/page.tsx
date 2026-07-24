@@ -1,28 +1,11 @@
 import type { Metadata } from "next";
-import { Badge, Progress, Stat, StateBlock, Table } from "@/components/ds";
+import { Progress, Stat, StateBlock, Table } from "@/components/ds";
 import { fathoms, logDate } from "@/lib/format";
-import { firstName, getMember } from "../data";
+import { getMember } from "../data";
 import { CopyCode } from "./copy-code";
+import { MintInvite, RedeemButton } from "./portal-client";
 
 export const metadata: Metadata = { title: "Portal" };
-
-const REWARDS = [
-  {
-    name: "First call on scarce berths",
-    cost: 250,
-    desc: "Your RSVP window opens before the manifest does.",
-  },
-  {
-    name: "Guest berth, any salon",
-    cost: 400,
-    desc: "Bring one ashore, outside your tier allowance.",
-  },
-  {
-    name: "The crossing draw",
-    cost: 1000,
-    desc: "A name in the hat for the season's long crossing.",
-  },
-] as const;
 
 type LedgerRow = {
   id: string;
@@ -32,26 +15,63 @@ type LedgerRow = {
   [key: string]: unknown;
 };
 
-export default async function PortalPage() {
-  const { supabase, user, profile } = await getMember();
+type AccountRow = {
+  id: string;
+  created_at: string;
+  kind: string;
+  memo: string | null;
+  delta_cents: number;
+  [key: string]: unknown;
+};
 
-  const [balanceRes, ledgerRes] = await Promise.all([
-    supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
-    supabase
-      .from("fathoms_ledger")
-      .select("*")
-      .eq("profile_id", user.id)
-      .order("created_at", { ascending: false }),
-  ]);
+export default async function PortalPage() {
+  const { supabase, user } = await getMember();
+
+  const [balanceRes, ledgerRes, rewardsRes, redemptionsRes, inviteRes, accountRes, accountBalRes] =
+    await Promise.all([
+      supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+      supabase
+        .from("fathoms_ledger")
+        .select("*")
+        .eq("profile_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("rewards")
+        .select("*")
+        .eq("active", true)
+        .order("position", { ascending: true }),
+      supabase
+        .from("reward_redemptions")
+        .select("*")
+        .eq("profile_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("invites")
+        .select("*")
+        .eq("inviter_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("account_ledger")
+        .select("*")
+        .eq("profile_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+    ]);
 
   const balance = balanceRes.data?.balance ?? 0;
   const ledger: LedgerRow[] = (ledgerRes.data ?? []).map((r) => ({ ...r }));
+  const rewards = rewardsRes.data ?? [];
+  const rewardName = new Map(rewards.map((r) => [r.id, r.name]));
+  const redemptions = redemptionsRes.data ?? [];
+  const invite = inviteRes.data ?? null;
+  const account: AccountRow[] = (accountRes.data ?? []).map((r) => ({ ...r }));
+  const accountBalance = accountBalRes.data?.balance_cents ?? 0;
 
-  const nextReward = REWARDS.find((r) => r.cost > balance) ?? REWARDS[REWARDS.length - 1];
-  const progress = Math.min(100, (balance / nextReward.cost) * 100);
-
-  const digits = profile?.member_no?.split("-")[1] ?? "0000";
-  const inviteCode = `LYR-${digits}-${firstName(profile).toUpperCase()}`;
+  const nextReward =
+    rewards.find((r) => r.cost_fm > balance) ?? rewards[rewards.length - 1] ?? null;
+  const progress = nextReward ? Math.min(100, (balance / nextReward.cost_fm) * 100) : 100;
 
   return (
     <div>
@@ -65,8 +85,8 @@ export default async function PortalPage() {
           <Progress
             inverse
             thick
-            label={`Toward ${nextReward.name.toLowerCase()}`}
-            detail={`${balance} / ${nextReward.cost} FM`}
+            label={nextReward ? `Toward ${nextReward.name.toLowerCase()}` : "The horizon"}
+            detail={nextReward ? `${balance} / ${nextReward.cost_fm} FM` : `${balance} FM`}
             value={progress}
           />
           <p style={{ fontSize: 13, color: "var(--text-inverse-2)", marginTop: 14, maxWidth: "46ch" }}>
@@ -81,24 +101,57 @@ export default async function PortalPage() {
         <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
           Rewards
         </span>
-        <div className="ptl-rew">
-          {REWARDS.map((r) => (
-            <div key={r.name} className="ptl-panel" style={{ marginTop: 0 }}>
-              <div className="mbr-mono">{r.cost} FM</div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, marginTop: 8 }}>
-                {r.name}
+        {rewards.length === 0 ? (
+          <StateBlock
+            status="empty"
+            icon="Anchor"
+            bare
+            title="Nothing on offer."
+            detail="The rewards shelf is being restocked. Watch the Word."
+          />
+        ) : (
+          <div className="ptl-rew">
+            {rewards.map((r) => (
+              <div key={r.id} className="ptl-panel" style={{ marginTop: 0 }}>
+                <div className="mbr-mono">{r.cost_fm} FM</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, marginTop: 8 }}>
+                  {r.name}
+                </div>
+                {r.detail ? (
+                  <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 8 }}>{r.detail}</p>
+                ) : null}
+                <RedeemButton
+                  rewardId={r.id}
+                  rewardName={r.name}
+                  affordable={balance >= r.cost_fm}
+                  short={Math.max(0, r.cost_fm - balance)}
+                />
               </div>
-              <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 8 }}>{r.desc}</p>
-              <div style={{ marginTop: 14 }}>
-                {balance >= r.cost ? (
-                  <Badge tone="laurel">Earned</Badge>
-                ) : (
-                  <Badge tone="outline">{r.cost - balance} short</Badge>
-                )}
+            ))}
+          </div>
+        )}
+        {redemptions.length > 0 ? (
+          <div className="ptl-panel" style={{ padding: "16px 20px" }}>
+            <span className="mbr-mono" style={{ display: "block", marginBottom: 8 }}>
+              REDEEMED
+            </span>
+            {redemptions.map((rd) => (
+              <div
+                key={rd.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: "6px 0",
+                  fontSize: 13,
+                }}
+              >
+                <span>{rewardName.get(rd.reward_id) ?? "A reward"}</span>
+                <span className="mbr-mono">{logDate(rd.created_at)}</span>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="mbr-sec">
@@ -109,7 +162,16 @@ export default async function PortalPage() {
           <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 14 }}>
             Good for one salon as your guest. The rest is on them.
           </p>
-          <CopyCode code={inviteCode} />
+          {invite ? (
+            <>
+              <CopyCode code={invite.code} />
+              <p className="mbr-mono" style={{ marginTop: 10 }}>
+                {invite.uses} OF {invite.max_uses} SIGNATURES OUT
+              </p>
+            </>
+          ) : (
+            <MintInvite />
+          )}
         </div>
       </section>
 
@@ -152,6 +214,61 @@ export default async function PortalPage() {
               rows={ledger}
               rowKey={(r) => r.id}
             />
+          </div>
+        )}
+      </section>
+
+      <section className="mbr-sec">
+        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+          Account statement
+        </span>
+        {account.length === 0 ? (
+          <StateBlock
+            status="empty"
+            icon="Receipt"
+            bare
+            title="Nothing on the account."
+            detail="Berths, deposits, and add-ons post here as house charges."
+          />
+        ) : (
+          <div className="ptl-panel" style={{ padding: "8px 20px 16px" }}>
+            <Table<AccountRow>
+              columns={[
+                {
+                  key: "created_at",
+                  label: "Date",
+                  mono: true,
+                  width: 90,
+                  render: (r) => logDate(r.created_at),
+                },
+                {
+                  key: "memo",
+                  label: "Entry",
+                  render: (r) => r.memo ?? r.kind.toUpperCase(),
+                },
+                { key: "kind", label: "Kind", mono: true, width: 90, render: (r) => r.kind.toUpperCase() },
+                {
+                  key: "delta_cents",
+                  label: "Amount",
+                  mono: true,
+                  render: (r) => (
+                    <span style={{ color: r.delta_cents < 0 ? "var(--siren)" : "var(--laurel)" }}>
+                      {r.delta_cents < 0 ? "−" : "+"}${(Math.abs(r.delta_cents) / 100).toFixed(2)}
+                    </span>
+                  ),
+                },
+              ]}
+              rows={account}
+              rowKey={(r) => r.id}
+            />
+            <p className="mbr-mono" style={{ marginTop: 12 }}>
+              {accountBalance < 0
+                ? `BALANCE — $${(Math.abs(accountBalance) / 100).toFixed(2)} DUE`
+                : "BALANCE — SETTLED"}
+            </p>
+            <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>
+              Settled at the gangway or by invoice — the shore office posts payments.
+            </p>
           </div>
         )}
       </section>

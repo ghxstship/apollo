@@ -31,6 +31,16 @@ export async function sendMagicLink(
     `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost:3000"}`;
 
   const supabase = await createClient();
+
+  // Vetted club: only emails on the member roll (accepted application or
+  // redeemed invite) or existing members may board. Everyone else applies.
+  const { data: mayBoard } = await supabase.rpc("email_may_board", { p_email: email });
+  if (!mayBoard) {
+    return {
+      error: "No berth under that email. Apply for membership, or check the address on file.",
+    };
+  }
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {

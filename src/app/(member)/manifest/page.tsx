@@ -9,8 +9,9 @@ export const metadata: Metadata = { title: "Voyages" };
 export default async function VoyagesPage() {
   const { supabase, user, profile } = await getMember();
   const nowIso = new Date().toISOString();
+  const nowMs = new Date(nowIso).getTime();
 
-  const [voyagesRes, capacityRes, rsvpsRes] = await Promise.all([
+  const [voyagesRes, capacityRes, rsvpsRes, addonsRes] = await Promise.all([
     supabase
       .from("voyages")
       .select("*")
@@ -19,9 +20,15 @@ export default async function VoyagesPage() {
       .order("starts_at", { ascending: true }),
     supabase.from("voyage_capacity").select("*"),
     supabase.from("rsvps").select("*").eq("profile_id", user.id),
+    supabase.from("addons").select("*").eq("active", true).order("name", { ascending: true }),
   ]);
 
   const voyages: Voyage[] = voyagesRes.data ?? [];
+  const addons = (addonsRes.data ?? []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    price_cents: a.price_cents,
+  }));
   const capacity = new Map<string, VoyageCapacity>(
     (capacityRes.data ?? [])
       .filter((c): c is VoyageCapacity & { voyage_id: string } => !!c.voyage_id)
@@ -75,6 +82,11 @@ export default async function VoyagesPage() {
             const aboard = cap?.aboard ?? 0;
             const r = mine.get(v.id) ?? null;
             const locked = (TIER_RANK[v.min_tier] ?? 0) > myRank;
+            /* Display only — fathoms land by trigger on completion. */
+            const baseFm =
+              v.kind === "salon" ? 40 : v.distance_nm != null ? v.distance_nm * 10 : null;
+            const fathomsOnCompletion =
+              baseFm != null ? Math.round(baseFm * (v.fathoms_multiplier ?? 1)) : null;
             const meta = [
               logDate(v.starts_at),
               logTime(v.starts_at),
@@ -95,6 +107,7 @@ export default async function VoyagesPage() {
                   footer={
                     <RsvpControls
                       voyageId={v.id}
+                      voyageTitle={v.title}
                       myStatus={r?.status ?? null}
                       guests={r?.guests ?? 0}
                       berthsLeft={left}
@@ -102,6 +115,12 @@ export default async function VoyagesPage() {
                       locked={locked}
                       lockedNote={`${TIER_LABEL[v.min_tier]} berths open at ${TIER_LABEL[v.min_tier]} tier.`}
                       recommended={v.id === recommendedId}
+                      priceCents={v.price_cents}
+                      depositRequired={v.deposit_required}
+                      addons={v.price_cents > 0 || v.deposit_required ? addons : []}
+                      fathomsOnCompletion={fathomsOnCompletion}
+                      fullCredit={new Date(v.starts_at).getTime() - nowMs > 48 * 3600 * 1000}
+                      boardingCode={r?.status === "aboard" ? r.boarding_code : null}
                     />
                   }
                 >

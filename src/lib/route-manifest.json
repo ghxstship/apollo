@@ -8,7 +8,10 @@
     "/card",
     "/word",
     "/you",
-    "/now"
+    "/now",
+    "/chandlery",
+    "/stub",
+    "/harbormaster"
   ],
   "routes": [
     {
@@ -48,6 +51,13 @@
     {
       "path": "/card",
       "file": "src/app/(member)/card/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/chandlery",
+      "file": "src/app/(member)/chandlery/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -99,6 +109,62 @@
       "access": "member"
     },
     {
+      "path": "/harbormaster",
+      "file": "src/app/(staff)/harbormaster/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/harbormaster/crew",
+      "file": "src/app/(staff)/harbormaster/crew/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/harbormaster/galley",
+      "file": "src/app/(staff)/harbormaster/galley/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/harbormaster/manifests",
+      "file": "src/app/(staff)/harbormaster/manifests/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/harbormaster/moderation",
+      "file": "src/app/(staff)/harbormaster/moderation/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/harbormaster/orders",
+      "file": "src/app/(staff)/harbormaster/orders/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/harbormaster/reports",
+      "file": "src/app/(staff)/harbormaster/reports/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/harbormaster/voyages",
+      "file": "src/app/(staff)/harbormaster/voyages/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/legal",
       "file": "src/app/(site)/legal/page.tsx",
       "type": "page",
@@ -131,6 +197,13 @@
       "file": "src/app/(member)/portal/page.tsx",
       "type": "page",
       "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/stub/[code]",
+      "file": "src/app/(member)/stub/[code]/page.tsx",
+      "type": "page",
+      "dynamic": true,
       "access": "member"
     },
     {

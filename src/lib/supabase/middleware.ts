@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /* Paths under these prefixes require a signed-in member. */
-const PROTECTED = ["/harbor", "/manifest", "/wardroom", "/portal", "/card", "/word", "/you", "/now"];
+const PROTECTED = ["/harbor", "/manifest", "/wardroom", "/portal", "/card", "/word", "/you", "/now", "/chandlery", "/stub", "/harbormaster"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

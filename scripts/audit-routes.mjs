@@ -80,6 +80,14 @@ async function main() {
   for (const r of manifest.routes) {
     if (r.type === "handler") continue; // handled separately
     if (!r.dynamic) { pages.push({ path: r.path, access: r.access }); continue; }
+    if (r.access === "member") {
+      // Auth-gated dynamic routes can't be expanded signed-out; verify the
+      // prefix redirect with a probe slug instead.
+      const probe = await get(r.path.replace(/\[[^\]]+\]/, "__audit-probe__"));
+      const ok = probe.status >= 300 && probe.status < 400 && (probe.headers.get("location") || "").includes("/gangway");
+      note(r.path, "redirects signed-out to /gangway", ok, `status ${probe.status}`);
+      continue;
+    }
     if (!r.source) { note(r.path, "dynamic route has slug source", false, "add to DYNAMIC_SOURCES"); continue; }
     const slugs = await fetchSlugs(r.source);
     note(r.path, "slug source non-empty", slugs.length > 0, `${slugs.length} slugs`);

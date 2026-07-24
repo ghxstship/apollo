@@ -15,7 +15,9 @@ A membership club for experiential connection at sea and ashore — voyages, sal
 | Marketing site | `/` · `/voyages` · `/voyages/[slug]` · `/membership` · `/dispatch` · `/dispatch/[slug]` · `/gallery` · `/crew` · `/brand` · `/legal` · `/support` |
 | Gangway (auth) | `/gangway` · `/auth/confirm` · `/auth/signout` — passwordless magic links |
 | Member app | `/harbor` · `/now` · `/manifest` (RSVPs) · `/wardroom` (feed) · `/portal` (fathoms) · `/card` · `/word` (inbox) · `/you` |
-| Mobile | Same member routes; under 960px the shell becomes a 6-tab bottom bar. Installable PWA (`/manifest.webmanifest`, standalone, starts at `/harbor`) |
+| Mobile | Same member routes; under 960px the shell becomes a 6-tab bottom bar. Installable PWA (`/manifest.webmanifest`, standalone, starts at `/harbor`) with a service worker + offline page |
+| Commerce | `/chandlery` (shop) · `/stub/[code]` (boarding stub + QR) · house-account ledger (charges/credits/refunds settle to the member account; no card processor by design) |
+| Staff | `/harbormaster` (requires `profiles.is_staff`): applications review, manifests + gangway check-in, voyage lifecycle ops (holds/completion → notification + email fan-out, fathoms engine), orders & refunds, Wardroom moderation, season reports, galley POS, crew ATS |
 
 ## Setup
 

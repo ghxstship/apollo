@@ -22,9 +22,10 @@ export async function createPost(
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { error: "Say something first." };
   if (body.length > 2000) return { error: "Keep it under 2,000 characters." };
+  const voyageId = String(formData.get("voyage_id") ?? "").trim();
   const { error } = await supabase
     .from("wardroom_posts")
-    .insert({ author_id: userId, body });
+    .insert({ author_id: userId, body, voyage_id: voyageId || null });
   if (error) return { error: "That didn't land. Try again." };
   revalidatePath("/wardroom");
   return {};
@@ -58,6 +59,26 @@ export async function addComment(postId: string, body: string): Promise<Wardroom
     .insert({ post_id: postId, author_id: userId, body: text });
   if (error) return { error: "That didn't land. Try again." };
   revalidatePath("/wardroom");
+  return {};
+}
+
+const FLAG_REASONS = new Set(["resale", "heated", "conduct", "other"]);
+
+export async function flagPost(
+  postId: string,
+  reason: string,
+  note: string
+): Promise<WardroomResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  if (!FLAG_REASONS.has(reason)) return { error: "Pick a reason first." };
+  const trimmed = note.trim().slice(0, 500);
+  const { error } = await supabase.from("wardroom_flags").insert({
+    post_id: postId,
+    flagger_id: userId,
+    reason: trimmed ? `${reason} — ${trimmed}` : reason,
+  });
+  if (error) return { error: "That didn't land. Try again." };
   return {};
 }
 

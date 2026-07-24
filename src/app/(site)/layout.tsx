@@ -1,6 +1,7 @@
 import "@/components/site/site.css";
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
+import { PurserGate } from "@/components/purser/gate";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function SiteLayout({
@@ -17,6 +18,7 @@ export default async function SiteLayout({
       <SiteNav />
       <main>{children}</main>
       <SiteFooter harbors={harbors ?? []} />
+      <PurserGate />
     </>
   );
 }

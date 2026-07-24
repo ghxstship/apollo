@@ -1,8 +1,15 @@
 "use client";
 
 import React from "react";
-import { Button, Dialog, Input, Select, Toast } from "@/components/ds";
-import { updateProfile, type ProfileFormState } from "./actions";
+import { Button, Dialog, Input, Select, Switch, Toast } from "@/components/ds";
+import {
+  departClub,
+  pauseMembership,
+  resumeMembership,
+  saveNotificationPrefs,
+  updateProfile,
+  type ProfileFormState,
+} from "./actions";
 
 /* — Profile form — */
 export function ProfileForm({
@@ -72,9 +79,112 @@ export function ProfileForm({
   );
 }
 
-/* — Offboarding: pause or depart, demo only — */
-export function Offboarding() {
+/* — Notification preferences: three switches, persisted on the profile — */
+export function NotificationPrefsForm({
+  weather,
+  berths,
+  fathoms,
+}: {
+  weather: boolean;
+  berths: boolean;
+  fathoms: boolean;
+}) {
+  const [state, formAction, pending] = React.useActionState<ProfileFormState, FormData>(
+    saveNotificationPrefs,
+    {}
+  );
+  const [dismissedState, setDismissedState] = React.useState<ProfileFormState | null>(null);
+  const showToast = !!state.saved && dismissedState !== state;
+  React.useEffect(() => {
+    if (!showToast) return;
+    const t = setTimeout(() => setDismissedState(state), 4000);
+    return () => clearTimeout(t);
+  }, [showToast, state]);
+
+  return (
+    <form action={formAction}>
+      <div className="you-row">
+        <div>
+          <b>Weather holds</b>
+          <p>Called by 18:00 the night before.</p>
+        </div>
+        <Switch name="weather" defaultChecked={weather} label="" aria-label="Weather hold notices" />
+      </div>
+      <div className="you-row">
+        <div>
+          <b>Berth releases</b>
+          <p>Waitlist offers, in order.</p>
+        </div>
+        <Switch name="berths" defaultChecked={berths} label="" aria-label="Berth release notices" />
+      </div>
+      <div className="you-row">
+        <div>
+          <b>Fathoms</b>
+          <p>Every entry, as it lands in the ledger.</p>
+        </div>
+        <Switch name="fathoms" defaultChecked={fathoms} label="" aria-label="Fathoms notices" />
+      </div>
+      <div className="you-row">
+        <div>
+          <p>{state.error ? <span style={{ color: "var(--siren)" }}>{state.error}</span> : null}</p>
+        </div>
+        <Button type="submit" variant="outline" size="sm" disabled={pending}>
+          Log the word
+        </Button>
+      </div>
+      {showToast ? (
+        <Toast
+          fixed
+          message="Logged. The word reaches you your way."
+          tone="laurel"
+          onDismiss={() => setDismissedState(state)}
+        />
+      ) : null}
+    </form>
+  );
+}
+
+/* — Paused banner: resume with a word — */
+export function ResumeBanner() {
+  const [pending, startTransition] = React.useTransition();
+  const [error, setError] = React.useState<string | null>(null);
+
+  return (
+    <div
+      className="you-sec"
+      style={{ marginTop: 0, borderColor: "var(--brass-deep, #8a6d3b)" }}
+      role="status"
+    >
+      <div className="you-row">
+        <div>
+          <b>Membership on weather hold</b>
+          <p>Dues paused; fathoms and tier keep. The manifest waits for you.</p>
+          {error ? <p style={{ color: "var(--siren)" }}>{error}</p> : null}
+        </div>
+        <Button
+          variant="brass"
+          size="sm"
+          disabled={pending}
+          onClick={() => {
+            setError(null);
+            startTransition(async () => {
+              const res = await resumeMembership();
+              if (res.error) setError(res.error);
+            });
+          }}
+        >
+          Resume
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* — Offboarding: pause or depart, for real — */
+export function Offboarding({ status }: { status: string }) {
   const [mode, setMode] = React.useState<null | "pause" | "depart">(null);
+  const [pending, startTransition] = React.useTransition();
+  const [error, setError] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (!toast) return;
@@ -83,20 +193,31 @@ export function Offboarding() {
   }, [toast]);
 
   const confirm = () => {
-    setToast(
-      mode === "pause"
-        ? "Weather hold requested. The shore office will confirm within two tides."
-        : "Departure logged. The shore office will confirm within two tides."
-    );
-    setMode(null);
+    setError(null);
+    startTransition(async () => {
+      if (mode === "pause") {
+        const res = await pauseMembership();
+        if (res.error) setError(res.error);
+        else {
+          setToast("Weather hold on. Resume with a word — no games either way.");
+          setMode(null);
+        }
+      } else {
+        const res = await departClub();
+        /* On success departClub signs out and redirects home. */
+        if (res?.error) setError(res.error);
+      }
+    });
   };
 
   return (
     <>
       <div style={{ display: "flex", gap: 8 }}>
-        <Button variant="ghost" size="sm" onClick={() => setMode("pause")}>
-          Pause membership
-        </Button>
+        {status !== "paused" ? (
+          <Button variant="ghost" size="sm" onClick={() => setMode("pause")}>
+            Pause membership
+          </Button>
+        ) : null}
         <Button variant="ghost" size="sm" onClick={() => setMode("depart")}>
           Depart the club
         </Button>
@@ -112,13 +233,18 @@ export function Offboarding() {
             <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
               Stay aboard
             </Button>
-            <Button variant="outline" size="sm" onClick={confirm}>
+            <Button variant="outline" size="sm" disabled={pending} onClick={confirm}>
               Hold my berth
             </Button>
           </>
         }
       >
         Dues pause; fathoms and tier keep. Resume with a word — no games either way.
+        {error && mode === "pause" ? (
+          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
+            {error}
+          </p>
+        ) : null}
       </Dialog>
       <Dialog
         open={mode === "depart"}
@@ -131,7 +257,7 @@ export function Offboarding() {
             <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
               Stay aboard
             </Button>
-            <Button variant="outline" size="sm" onClick={confirm}>
+            <Button variant="outline" size="sm" disabled={pending} onClick={confirm}>
               Depart
             </Button>
           </>
@@ -139,6 +265,11 @@ export function Offboarding() {
       >
         Unused months credit back. No exit surveys, no retention calls. The
         manifest remembers you kindly.
+        {error && mode === "depart" ? (
+          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
+            {error}
+          </p>
+        ) : null}
       </Dialog>
       {toast ? <Toast fixed message={toast} onDismiss={() => setToast(null)} /> : null}
     </>

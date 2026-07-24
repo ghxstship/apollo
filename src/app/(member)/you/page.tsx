@@ -1,29 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Avatar, Badge, Button, Switch, ThemeToggle } from "@/components/ds";
+import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
 import { TIER_LABEL, roman } from "@/lib/format";
 import { getMember } from "../data";
-import { Offboarding, ProfileForm } from "./you-client";
+import { NotificationPrefsForm, Offboarding, ProfileForm, ResumeBanner } from "./you-client";
 
 export const metadata: Metadata = { title: "You" };
 
-const DUES: Record<string, string> = {
-  regional: "$95 / MO",
-  national: "$240 / MO",
-  global: "$520 / MO",
-};
-
 export default async function YouPage() {
-  const { supabase, profile } = await getMember();
-  const { data: harbors } = await supabase
-    .from("harbors")
-    .select("*")
-    .order("position", { ascending: true });
+  const { supabase, user, profile } = await getMember();
+  const [{ data: harbors }, { data: account }] = await Promise.all([
+    supabase.from("harbors").select("*").order("position", { ascending: true }),
+    supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+  ]);
 
   const tier = profile?.tier ?? "regional";
+  const status = profile?.status ?? "active";
+  const balanceCents = account?.balance_cents ?? 0;
   const joinedYear = profile?.joined_at
     ? new Date(profile.joined_at).getFullYear()
     : new Date().getFullYear();
+
+  const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
+  const prefOn = (key: string, fallback: boolean) =>
+    typeof prefs[key] === "boolean" ? (prefs[key] as boolean) : fallback;
 
   return (
     <div style={{ maxWidth: 720, marginInline: "auto", display: "flex", flexDirection: "column", gap: 28 }}>
@@ -33,6 +33,8 @@ export default async function YouPage() {
           The ship&apos;s papers.
         </h1>
       </div>
+
+      {status === "paused" ? <ResumeBanner /> : null}
 
       <div className="you-sec" style={{ marginTop: 0 }}>
         <div className="you-row">
@@ -47,6 +49,11 @@ export default async function YouPage() {
               <b style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: 20 }}>
                 {profile?.full_name ?? "A member"}
               </b>
+              {profile?.handle ? (
+                <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 2 }}>
+                  @{profile.handle}
+                </p>
+              ) : null}
               <p className="mbr-mono" style={{ marginTop: 4 }}>
                 {profile?.member_no ?? "LYR-0000"} · MEMBER SINCE {roman(joinedYear)}
               </p>
@@ -85,27 +92,11 @@ export default async function YouPage() {
       <div>
         <div className="you-h">The word</div>
         <div className="you-sec">
-          <div className="you-row">
-            <div>
-              <b>Weather holds</b>
-              <p>Called by 18:00 the night before.</p>
-            </div>
-            <Switch defaultChecked label="" aria-label="Weather hold notices" />
-          </div>
-          <div className="you-row">
-            <div>
-              <b>Berth releases</b>
-              <p>Waitlist offers, in order.</p>
-            </div>
-            <Switch defaultChecked label="" aria-label="Berth release notices" />
-          </div>
-          <div className="you-row">
-            <div>
-              <b>Fathoms</b>
-              <p>Every entry, as it lands in the ledger.</p>
-            </div>
-            <Switch label="" aria-label="Fathoms notices" />
-          </div>
+          <NotificationPrefsForm
+            weather={prefOn("weather", true)}
+            berths={prefOn("berths", true)}
+            fathoms={prefOn("fathoms", false)}
+          />
         </div>
       </div>
 
@@ -116,7 +107,14 @@ export default async function YouPage() {
             <div>
               <b>{TIER_LABEL[tier]} tier</b>
               <p className="mbr-mono" style={{ marginTop: 4 }}>
-                DUES · {DUES[tier]}
+                {status === "paused" ? "ON WEATHER HOLD · " : ""}
+                {balanceCents < 0 ? (
+                  <span style={{ color: "var(--siren)" }}>
+                    ACCOUNT — ${(Math.abs(balanceCents) / 100).toFixed(2)} DUE
+                  </span>
+                ) : (
+                  "ACCOUNT — SETTLED"
+                )}
               </p>
             </div>
             <Link href="/portal" className="ls-btn ls-btn--outline ls-btn--sm">
@@ -134,7 +132,7 @@ export default async function YouPage() {
               <b>Pause or depart</b>
               <p>No exit surveys, no retention calls, no games.</p>
             </div>
-            <Offboarding />
+            <Offboarding status={status} />
           </div>
           <div className="you-row">
             <div>

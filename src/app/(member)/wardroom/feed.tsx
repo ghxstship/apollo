@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Avatar, Button, Dialog, Icon, Tag, Textarea } from "@/components/ds";
-import { addComment, createPost, deletePost, toggleHail, type WardroomResult } from "./actions";
+import { Avatar, Button, Dialog, Icon, IconButton, Select, Tag, Textarea, Toast } from "@/components/ds";
+import { addComment, createPost, deletePost, flagPost, toggleHail, type WardroomResult } from "./actions";
 
 export type FeedComment = {
   id: string;
@@ -16,6 +16,7 @@ export type FeedPost = {
   tone: "ink" | "sea" | "brass" | "sand";
   meta: string;
   body: string;
+  voyageId: string | null;
   voyageTitle: string | null;
   hails: number;
   myHail: boolean;
@@ -23,8 +24,18 @@ export type FeedPost = {
   comments: FeedComment[];
 };
 
+export type VoyageOption = { id: string; title: string };
+
 /* — Composer — */
-export function Composer({ authorName, tone }: { authorName: string; tone: string }) {
+export function Composer({
+  authorName,
+  tone,
+  voyages,
+}: {
+  authorName: string;
+  tone: string;
+  voyages: VoyageOption[];
+}) {
   const formRef = React.useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = React.useActionState<WardroomResult, FormData>(
     async (prev, fd) => {
@@ -52,7 +63,27 @@ export function Composer({ authorName, tone }: { authorName: string; tone: strin
           placeholder="A sighting, a thanks, a berth to fill…"
           error={state.error}
         />
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: 12,
+            flexWrap: "wrap",
+            marginTop: 12,
+          }}
+        >
+          {voyages.length > 0 ? (
+            <Select
+              name="voyage_id"
+              aria-label="Tag a voyage"
+              placeholder="Tag a voyage — optional"
+              options={voyages.map((v) => ({ value: v.id, label: v.title }))}
+              style={{ minWidth: 220 }}
+            />
+          ) : (
+            <span />
+          )}
           <Button type="submit" variant="brass" size="sm" disabled={pending}>
             Post to the Wardroom
           </Button>
@@ -62,12 +93,71 @@ export function Composer({ authorName, tone }: { authorName: string; tone: strin
   );
 }
 
+/* — Crew-thread filter + feed — */
+export function FeedList({ posts }: { posts: FeedPost[] }) {
+  const [filter, setFilter] = React.useState<string | null>(null);
+
+  const threads = React.useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const p of posts) {
+      if (p.voyageId && p.voyageTitle && !seen.has(p.voyageId)) {
+        seen.set(p.voyageId, p.voyageTitle);
+      }
+    }
+    return Array.from(seen, ([id, title]) => ({ id, title }));
+  }, [posts]);
+
+  const shown = filter ? posts.filter((p) => p.voyageId === filter) : posts;
+
+  return (
+    <div>
+      {threads.length > 0 ? (
+        <div className="wd-filter" role="group" aria-label="Crew threads">
+          <Tag active={filter === null} onClick={() => setFilter(null)}>
+            All
+          </Tag>
+          {threads.map((t) => (
+            <Tag
+              key={t.id}
+              active={filter === t.id}
+              onClick={() => setFilter(filter === t.id ? null : t.id)}
+            >
+              {t.title}
+            </Tag>
+          ))}
+        </div>
+      ) : null}
+      {shown.map((post) => (
+        <PostCard key={post.id} post={post} />
+      ))}
+    </div>
+  );
+}
+
+const FLAG_REASONS = [
+  { value: "resale", label: "Resale" },
+  { value: "heated", label: "Heated" },
+  { value: "conduct", label: "Conduct" },
+  { value: "other", label: "Other" },
+];
+
 /* — Post card — */
 export function PostCard({ post }: { post: FeedPost }) {
   const [pending, startTransition] = React.useTransition();
   const [showComments, setShowComments] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [draft, setDraft] = React.useState("");
+  const [reporting, setReporting] = React.useState(false);
+  const [reason, setReason] = React.useState("");
+  const [note, setNote] = React.useState("");
+  const [flagError, setFlagError] = React.useState<string | null>(null);
+  const [flagged, setFlagged] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!flagged) return;
+    const t = setTimeout(() => setFlagged(false), 4000);
+    return () => clearTimeout(t);
+  }, [flagged]);
 
   const hail = () => startTransition(async () => void (await toggleHail(post.id, post.myHail)));
   const remove = () =>
@@ -79,6 +169,19 @@ export function PostCard({ post }: { post: FeedPost }) {
     startTransition(async () => {
       const res = await addComment(post.id, draft);
       if (!res.error) setDraft("");
+    });
+  const report = () =>
+    startTransition(async () => {
+      setFlagError(null);
+      const res = await flagPost(post.id, reason, note);
+      if (res.error) {
+        setFlagError(res.error);
+        return;
+      }
+      setReporting(false);
+      setReason("");
+      setNote("");
+      setFlagged(true);
     });
 
   return (
@@ -99,7 +202,16 @@ export function PostCard({ post }: { post: FeedPost }) {
           >
             ✕
           </button>
-        ) : null}
+        ) : (
+          <IconButton
+            label="Report this post"
+            variant="ghost"
+            size="sm"
+            onClick={() => setReporting(true)}
+          >
+            <Icon name="Flag" size={14} />
+          </IconButton>
+        )}
       </div>
       <p className="wd-post__body">{post.body}</p>
       <div className="wd-post__acts">
@@ -173,6 +285,54 @@ export function PostCard({ post }: { post: FeedPost }) {
       >
         Gone from the log for good. The crew keeps no copies.
       </Dialog>
+      <Dialog
+        open={reporting}
+        onClose={() => setReporting(false)}
+        width={420}
+        eyebrow="The Wardroom"
+        title="Flag for the harbormaster"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setReporting(false)}>
+              Stand down
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending || !reason}
+              onClick={report}
+            >
+              Send the flag
+            </Button>
+          </>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Select
+            label="Reason"
+            placeholder="Pick a reason"
+            options={FLAG_REASONS}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            error={flagError}
+          />
+          <Textarea
+            label="A note — optional"
+            rows={2}
+            maxLength={500}
+            placeholder="What the harbormaster should know."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+      </Dialog>
+      {flagged ? (
+        <Toast
+          fixed
+          message="Flagged for the harbormaster. Never silently."
+          onDismiss={() => setFlagged(false)}
+        />
+      ) : null}
     </article>
   );
 }

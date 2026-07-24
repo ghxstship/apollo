@@ -1,5 +1,22 @@
 # Gap register — end-to-end member journey & operator processes
 
+> **Status update (2026-07-24, same day):** all five phases of the build order
+> in §4 were implemented. Vetting funnel (applications → review → salon invite
+> → aboard, invited-only sign-in enforced at the DB), house-account commerce
+> (checkout with deposits/add-ons, ledger, refunds), waitlist auto-promotion,
+> weather/completion/fathoms fan-out with the 10 FM/NM engine, reward
+> redemption, real invite codes with referral credit, boarding stubs + QR,
+> Harbormaster console (applications/manifests/voyage ops/orders/moderation/
+> reports/galley POS/crew ATS), realtime Wardroom + Word badge, live Now with
+> galley self-order and offline queue, the Chandlery, real offboarding and
+> notification prefs, service worker, email outbox + deployed `send-outbox`
+> edge function (needs `RESEND_API_KEY` to actually send), and the
+> deterministic confirm-first Purser v1. Remaining known limits: card-payment
+> processing (house-account model by design; a processor can settle balances
+> later), LLM-backed Purser, wallet passes, and photography.
+
+
+
 Produced 2026-07-24 from (a) a line-by-line read of every file in `src/` and
 `supabase/migrations/`, diffed against (b) the design system's intended
 product map (`research/product-map.md`, ticketing/membership patterns, and

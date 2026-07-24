@@ -57,15 +57,6 @@ const FAQS: Record<string, Array<[string, string]>> = {
   ],
 };
 
-/* Placeholder crew for the manifest preview — real names ride with consent
-   in the member app. */
-const PREVIEW_CREW: Array<[string, "brass" | "sea" | "ink" | "sand"]> = [
-  ["Mara Voss", "brass"],
-  ["Juno Reyes", "sea"],
-  ["Theo Alexakis", "ink"],
-  ["Nia Kostas", "sand"],
-];
-
 export async function generateMetadata({
   params,
 }: {
@@ -98,11 +89,38 @@ export default async function VoyagePage({
     .maybeSingle();
   if (!voyage) notFound();
 
-  const { data: cap } = await supabase
-    .from("voyage_capacity")
-    .select("*")
-    .eq("voyage_id", voyage.id)
-    .maybeSingle();
+  const [{ data: cap }, { data: { user } }] = await Promise.all([
+    supabase.from("voyage_capacity").select("*").eq("voyage_id", voyage.id).maybeSingle(),
+    supabase.auth.getUser(),
+  ]);
+
+  /* Real names ride with consent, and only for signed-in members —
+     profiles aren't readable from the shore. */
+  let crew: Array<{ name: string; tone: "brass" | "sea" | "ink" | "sand" }> = [];
+  if (user) {
+    const { data: aboardRsvps } = await supabase
+      .from("rsvps")
+      .select("profile_id")
+      .eq("voyage_id", voyage.id)
+      .eq("status", "aboard")
+      .eq("show_on_manifest", true)
+      .limit(8);
+    const ids = (aboardRsvps ?? []).map((r) => r.profile_id);
+    if (ids.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_tone")
+        .in("id", ids);
+      crew = (profiles ?? [])
+        .filter((p) => p.full_name)
+        .map((p) => ({
+          name: p.full_name as string,
+          tone: (["brass", "sea", "ink", "sand"].includes(p.avatar_tone)
+            ? p.avatar_tone
+            : "ink") as "brass" | "sea" | "ink" | "sand",
+        }));
+    }
+  }
 
   const aboard = cap?.aboard ?? 0;
   const left = cap?.berths_left ?? null;
@@ -191,17 +209,21 @@ export default async function VoyagePage({
             ) : full ? (
               <>
                 <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
-                  Berths release in order — join the waitlist at the gangway and
+                  Berths release in order — join the waitlist{user ? " on the manifest" : " at the gangway"} and
                   you&rsquo;ll get the word first.
                 </p>
                 <LinkButton
-                  href={`/gangway?next=/voyages/${voyage.slug}`}
+                  href={user ? "/manifest" : `/gangway?next=/voyages/${voyage.slug}`}
                   variant="outline"
                   fullWidth
                 >
                   Join the waitlist
                 </LinkButton>
               </>
+            ) : user ? (
+              <LinkButton href="/manifest" variant="brass" fullWidth>
+                Confirm your berth
+              </LinkButton>
             ) : (
               <LinkButton
                 href={`/gangway?next=/voyages/${voyage.slug}`}
@@ -255,17 +277,21 @@ export default async function VoyagePage({
 
           <div className="ev-panel">
             <div className="ev-panel__label">Who&rsquo;s aboard</div>
-            {aboard > 0 ? (
+            {aboard > 0 && crew.length > 0 ? (
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <AvatarGroup>
-                  {PREVIEW_CREW.slice(0, Math.min(4, aboard)).map(([name, tone]) => (
-                    <Avatar key={name} name={name} size="sm" tone={tone} />
+                  {crew.slice(0, 4).map((c) => (
+                    <Avatar key={c.name} name={c.name} size="sm" tone={c.tone} />
                   ))}
                 </AvatarGroup>
                 <span className="ls-mono-data ws-upper" style={{ color: "var(--text-2)" }}>
                   {aboard} aboard
                 </span>
               </div>
+            ) : aboard > 0 ? (
+              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+                {aboard} aboard{user ? "" : " — sign in to see who"}.
+              </p>
             ) : (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
                 The manifest is open. First aboard sets the tone.
