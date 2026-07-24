@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button, Input, Select, Stat, StateBlock } from "@/components/ds";
 import { logTime } from "@/lib/format";
 import { gangwayCheckIn, gangwayFlush } from "./actions";
+import { CameraScanner } from "./camera-scanner";
 
 export type GangwayRow = {
   rsvpId: string;
@@ -172,9 +173,9 @@ export function GangwayConsole({
     return { kind: "aboard", ...base, time: at, queued: true };
   };
 
-  const submit = async () => {
+  const submit = async (value?: string) => {
     if (pending) return;
-    const raw = code.trim();
+    const raw = (value ?? code).trim();
     setCode("");
     if (!raw) return;
     setPending(true);
@@ -277,6 +278,7 @@ export function GangwayConsole({
             className="hm-gang__input"
           />
         </form>
+        <CameraScanner onScan={(scanned) => void submit(scanned)} />
 
         {scan ? (
           <div
