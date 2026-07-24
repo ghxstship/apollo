@@ -16,7 +16,7 @@ export type ProfileRow = {
   id: string; member_no: string | null; full_name: string | null; handle: string | null
   email: string | null; tier: MembershipTier; home_harbor: string | null; avatar_tone: string
   is_staff: boolean; joined_at: string; status: "active" | "paused" | "departed"
-  notification_prefs: Json; waiver_signed_at: string | null
+  notification_prefs: Json; waiver_signed_at: string | null; plan_id: string | null
 }
 export type HarborRow = {
   id: string; slug: string; name: string; status: string; coordinates: string | null
@@ -29,12 +29,23 @@ export type VoyageRow = {
   blurb: string | null; description: string | null; media: string; min_tier: MembershipTier
   created_at: string; deposit_required: boolean; muster: string | null; conditions: Json | null
   fathoms_multiplier: number
+  sub_class: "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland" | null
+  itinerary: Json
 }
 export type RsvpRow = {
   id: string; voyage_id: string; profile_id: string; status: RsvpStatus; guests: number
   created_at: string; checked_in_at: string | null; checked_in_by: string | null
-  boarding_code: string | null; show_on_manifest: boolean
+  boarding_code: string | null; show_on_manifest: boolean; vessel_id: string | null
 }
+export type MembershipPlanRow = {
+  id: string; plan_type: "access" | "regional" | "national" | "global" | "guest"
+  tier: number; label: string; price_cents: number; events_per_month: number
+  class_ceiling: "voyage" | "expedition" | "odyssey" | null; active: boolean
+}
+export type VesselRow = {
+  id: string; name: string; capacity: number; home_harbor: string | null; active: boolean
+}
+export type VoyageVesselRow = { voyage_id: string; vessel_id: string; position: number }
 export type FathomsRow = {
   id: string; profile_id: string; delta: number; reason: string; voyage_id: string | null; created_at: string
 }
@@ -139,6 +150,9 @@ export type Database = {
       rewards: Table<RewardRow, Ins<RewardRow, "name" | "cost_fm">>
       reward_redemptions: Table<RewardRedemptionRow, Ins<RewardRedemptionRow, "profile_id" | "reward_id">>
       email_outbox: Table<EmailOutboxRow, Ins<EmailOutboxRow, "to_email" | "template">>
+      membership_plans: Table<MembershipPlanRow, Ins<MembershipPlanRow, "plan_type" | "tier" | "label" | "price_cents">>
+      vessels: Table<VesselRow, Ins<VesselRow, "name">>
+      voyage_vessels: Table<VoyageVesselRow, Ins<VoyageVesselRow, "voyage_id" | "vessel_id">>
       galley_items: Table<GalleyItemRow, Ins<GalleyItemRow, "category" | "name" | "price_cents">>
       galley_orders: Table<GalleyOrderRow, Ins<GalleyOrderRow, "profile_id">>
       galley_order_items: Table<GalleyOrderItemRow, Ins<GalleyOrderItemRow, "order_id" | "item_id" | "price_cents">>
@@ -162,6 +176,10 @@ export type Database = {
       }
       account_balance: {
         Row: { profile_id: string | null; balance_cents: number | null }
+        Relationships: []
+      }
+      member_league: {
+        Row: { profile_id: string | null; league: number | null; league_name: string | null }
         Relationships: []
       }
     }

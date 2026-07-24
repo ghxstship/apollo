@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { SwRegister } from "@/components/sw-register";
 import "./globals.css";
 
@@ -28,8 +29,8 @@ export const viewport: Viewport = {
 };
 
 /* Applies the persisted theme before first paint — dark is the default;
-   only "light" sets an attribute. */
-const themeInit = `try{var m=localStorage.getItem("lyre-theme")||"dark";var l=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;if(l==="light")document.body.setAttribute("data-theme","light")}catch(e){}`;
+   only "light" sets an attribute. Runs from <head>, so it targets <html>. */
+const themeInit = `try{var m=localStorage.getItem("lyre-theme")||"dark";var l=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;if(l==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -39,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <Script id="lyre-theme-init" strategy="beforeInteractive">{themeInit}</Script>
         <SwRegister />
         {children}
       </body>

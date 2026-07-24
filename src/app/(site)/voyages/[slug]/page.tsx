@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Avatar, AvatarGroup, Badge } from "@/components/ds";
+import { Avatar, AvatarGroup, Badge, Tag } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
+import { CLASS_CODES, SUB_CLASSES } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -97,14 +98,16 @@ export default async function VoyagePage({
   /* Real names ride with consent, and only for signed-in members —
      profiles aren't readable from the shore. */
   let crew: Array<{ name: string; tone: "brass" | "sea" | "ink" | "sand" }> = [];
+  let guestCount = 0;
   if (user) {
     const { data: aboardRsvps } = await supabase
       .from("rsvps")
-      .select("profile_id")
+      .select("profile_id, guests")
       .eq("voyage_id", voyage.id)
       .eq("status", "aboard")
       .eq("show_on_manifest", true)
-      .limit(8);
+      .limit(12);
+    guestCount = (aboardRsvps ?? []).reduce((sum, r) => sum + (r.guests ?? 0), 0);
     const ids = (aboardRsvps ?? []).map((r) => r.profile_id);
     if (ids.length > 0) {
       const { data: profiles } = await supabase
@@ -132,6 +135,29 @@ export default async function VoyagePage({
   const seatsWord = voyage.kind === "salon" ? "seats" : "berths";
   const full = left === 0;
 
+  /* Class meta in the mono data register: "SEA · EXPEDITION · 4–8 HRS". */
+  const sub = voyage.sub_class ? SUB_CLASSES[voyage.sub_class] : null;
+  const classMeta = [
+    CLASS_CODES[voyage.class],
+    sub?.label.toUpperCase(),
+    sub?.note.toUpperCase().replace("HOURS", "HRS"),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  /* The plan — itinerary stops as offsets (minutes) from cast off. */
+  const stops = (Array.isArray(voyage.itinerary) ? voyage.itinerary : []).flatMap((raw) => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+    const s = raw as { [key: string]: unknown };
+    return typeof s.offset === "number" && typeof s.title === "string"
+      ? [{ offset: s.offset, title: s.title, note: typeof s.note === "string" ? s.note : null }]
+      : [];
+  });
+  const stopTime = (offset: number) =>
+    logTime(new Date(new Date(voyage.starts_at).getTime() + offset * 60 * 1000).toISOString());
+
+  const firstNames = crew.map((c) => c.name.split(" ")[0]);
+
   return (
     <div data-theme={voyage.class}>
       <header className="ev-hero">
@@ -142,6 +168,8 @@ export default async function VoyagePage({
           </span>
           <h1>{voyage.title}</h1>
           <div className="ev-hero__meta">
+            <span>{classMeta}</span>
+            <span>·</span>
             <span>{logDate(voyage.starts_at)}</span>
             <span>·</span>
             <span>{logTime(voyage.starts_at)}</span>
@@ -171,6 +199,20 @@ export default async function VoyagePage({
               <p key={i}>{p}</p>
             ))}
           </div>
+          {stops.length > 0 ? (
+            <div className="ev-plan">
+              <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The plan.</h3>
+              {stops.map((s) => (
+                <div className="ev-plan__row" key={`${s.offset}-${s.title}`}>
+                  <span className="ev-plan__t">{stopTime(s.offset)}</span>
+                  <div>
+                    <div className="ev-plan__title">{s.title}</div>
+                    {s.note ? <p className="ev-plan__note">{s.note}</p> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="ev-faq">
             <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Asked often.</h3>
             {faq.map(([q, a]) => (
@@ -198,12 +240,12 @@ export default async function VoyagePage({
             </div>
             {voyage.status === "weather_hold" ? (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
-                A hold is a postponement, not a cancellation. The new date arrives by
-                the Dispatch, and every reserved berth carries forward in full.
+                A hold is a postponement, not a cancellation. The new date arrives in
+                LORE, and every reserved berth carries forward in full.
               </p>
             ) : voyage.status === "live" ? (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
-                This one is on the water. Follow along in the Wardroom, or find the
+                This one is on the water. Follow along on the Open Deck, or find the
                 next sailing on the manifest.
               </p>
             ) : full ? (
@@ -239,6 +281,10 @@ export default async function VoyagePage({
           </div>
 
           <div className="ev-log">
+            <div>
+              <span>Class</span>
+              <span>{classMeta}</span>
+            </div>
             <div>
               <span>Date</span>
               <span>{logDate(voyage.starts_at)}</span>
@@ -277,20 +323,31 @@ export default async function VoyagePage({
 
           <div className="ev-panel">
             <div className="ev-panel__label">Who&rsquo;s aboard</div>
-            {aboard > 0 && crew.length > 0 ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <AvatarGroup>
-                  {crew.slice(0, 4).map((c) => (
-                    <Avatar key={c.name} name={c.name} size="sm" tone={c.tone} />
-                  ))}
-                </AvatarGroup>
-                <span className="ls-mono-data ws-upper" style={{ color: "var(--text-2)" }}>
-                  {aboard} aboard
-                </span>
-              </div>
+            {user && crew.length > 0 ? (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <AvatarGroup>
+                    {crew.slice(0, 4).map((c) => (
+                      <Avatar key={c.name} name={c.name} size="sm" tone={c.tone} />
+                    ))}
+                  </AvatarGroup>
+                  <span className="ls-mono-data ws-upper" style={{ color: "var(--text-2)" }}>
+                    {aboard} aboard
+                  </span>
+                </div>
+                <p className="ev-crew-names">
+                  {firstNames.join(", ")}
+                  {guestCount > 0 ? (
+                    <>
+                      {" "}
+                      <Tag>+{guestCount} {guestCount === 1 ? "guest" : "guests"}</Tag>
+                    </>
+                  ) : null}
+                </p>
+              </>
             ) : aboard > 0 ? (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
-                {aboard} aboard{user ? "" : " — sign in to see who"}.
+                {aboard} aboard{user ? "" : " — sign in to see who's aboard"}.
               </p>
             ) : (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>

@@ -37,8 +37,8 @@ function resolveTheme(mode: ThemeMode): "dark" | "light" {
 export function applyTheme(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   const actual = resolveTheme(mode);
-  if (actual === "light") document.body.setAttribute("data-theme", "light");
-  else document.body.removeAttribute("data-theme");
+  if (actual === "light") document.documentElement.setAttribute("data-theme", "light");
+  else document.documentElement.removeAttribute("data-theme");
 }
 
 /* The persisted mode lives in localStorage — read it as an external store so

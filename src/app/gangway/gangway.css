@@ -1,5 +1,5 @@
 /* Gangway — passwordless sign-in. Ported from the auth kit (au-*). */
-.gw{min-height:100vh;display:grid;grid-template-columns:1fr 460px;background:var(--surface-page)}
+.gw{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:1fr 460px;background:var(--surface-page)}
 .gw-side{background:var(--surface-abyss);position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:40px;overflow:hidden}
 .gw-side:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
 .gw-side__wm{position:relative}

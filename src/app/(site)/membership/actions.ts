@@ -41,7 +41,7 @@ export async function submitApplication(
   if (error) {
     return {
       ok: false,
-      errors: { form: "That didn't land. Try again; if it holds, hail the shore office." },
+      errors: { form: "That didn't land. Try again; if it holds, hail Shoreside." },
       values,
     };
   }

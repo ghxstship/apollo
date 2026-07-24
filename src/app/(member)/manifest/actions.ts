@@ -28,8 +28,8 @@ function isFullMessage(raw: string | null | undefined): boolean {
 
 function done(): RsvpResult {
   revalidatePath("/manifest");
-  revalidatePath("/harbor");
-  revalidatePath("/now");
+  revalidatePath("/home-port");
+  revalidatePath("/gateway");
   return {};
 }
 

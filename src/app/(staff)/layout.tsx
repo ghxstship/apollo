@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Wordmark } from "@/components/ds";
+import { SURFACES } from "@/lib/brand";
 import { getOperator } from "./data";
 import { HmClock, HmTabs } from "./nav";
-import "./harbormaster.css";
+import "./bridge.css";
 
 export const metadata: Metadata = {
-  title: { default: "Harbormaster", template: "%s · Harbormaster" },
+  title: { default: "The Bridge", template: "%s · The Bridge" },
   robots: { index: false, follow: false },
 };
 
@@ -20,7 +21,7 @@ export default async function StaffLayout({
     .select("name")
     .order("position", { ascending: true })
     .limit(1);
-  const harbor = profile.home_harbor ?? harbors?.[0]?.name ?? "Shore office";
+  const harbor = profile.home_harbor ?? harbors?.[0]?.name ?? SURFACES.shoreside;
 
   return (
     <div className="hm-shell">
@@ -28,7 +29,7 @@ export default async function StaffLayout({
         <div className="hm-top__in">
           <div>
             <Wordmark size="sm" />
-            <span className="hm-top__sub">Harbormaster — {harbor}</span>
+            <span className="hm-top__sub">{SURFACES.bridge} — {harbor}</span>
           </div>
           <HmClock />
           <div className="hm-top__op">
@@ -36,8 +37,8 @@ export default async function StaffLayout({
               {(profile.full_name ?? "Operator").toUpperCase()}
               {profile.member_no ? ` · ${profile.member_no}` : ""}
             </span>
-            <Link className="hm-top__back" href="/harbor">
-              Back to harbor
+            <Link className="hm-top__back" href="/home-port">
+              Back to Home Port
             </Link>
           </div>
         </div>

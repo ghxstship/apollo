@@ -30,7 +30,7 @@ export default function LegalPage() {
           included; recklessness is not. Impairment ends your sailing day, kindly
           and immediately.
         </p>
-        <h3>Ashore and in the Wardroom.</h3>
+        <h3>Ashore and on the Open Deck.</h3>
         <ul>
           <li>What happens aboard stays aboard — no posting people without their yes.</li>
           <li>Berths and seats are never resold for cash. Release them; the waitlist is the market.</li>
@@ -38,7 +38,7 @@ export default function LegalPage() {
           <li>Leave every port better than you found it.</li>
         </ul>
         <p className="lg-mono" style={{ marginTop: 24 }}>
-          Enforced by people · logged in the ship&rsquo;s record · appealable to the shore office
+          Enforced by people · logged in the ship&rsquo;s record · appealable to Shoreside
         </p>
       </section>
 
@@ -60,7 +60,7 @@ export default function LegalPage() {
         <h3>Guests and transfers.</h3>
         <p>
           Guests ride on Global passes, two per event, and sign the manifest at the
-          gangway. Memberships aren&rsquo;t transferable; fathoms may be gifted to a
+          gangway. Memberships aren&rsquo;t transferable; knots may be gifted to a
           named member or the crew fund on departure.
         </p>
       </section>
@@ -69,7 +69,7 @@ export default function LegalPage() {
         <h2>Privacy.</h2>
         <h3>What we keep.</h3>
         <p>
-          Your manifest — voyages, salons, fathoms — your seaworthiness declaration,
+          Your manifest — voyages, salons, knots — your seaworthiness declaration,
           and the contact details you gave us. Payment details live with the
           processor, not us.
         </p>
@@ -81,7 +81,7 @@ export default function LegalPage() {
         </ul>
         <h3>Your levers.</h3>
         <p>
-          Export everything — one email to the shore office, machine-readable,
+          Export everything — one email to Shoreside, machine-readable,
           within a week. Correct anything. Delete the account from the member app —
           no calls required.
         </p>

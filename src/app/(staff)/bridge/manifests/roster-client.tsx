@@ -1,0 +1,239 @@
+"use client";
+
+import React from "react";
+import { useRouter } from "next/navigation";
+import { Avatar, Badge, Button, Select, Table, Toast, type TableColumn } from "@/components/ds";
+import { avatarTone, useToast } from "../../ui";
+import { assignVesselsEvenly, checkInRsvp, setRsvpVessel } from "./actions";
+
+export function VoyagePicker({
+  options,
+  value,
+}: {
+  options: Array<{ value: string; label: string }>;
+  value: string;
+}) {
+  const router = useRouter();
+  return (
+    <Select
+      label="Voyage"
+      options={options}
+      value={value}
+      onChange={(e) => router.replace(`/bridge/manifests?voyage=${e.target.value}`)}
+      style={{ maxWidth: 380 }}
+    />
+  );
+}
+
+export type FleetVessel = {
+  id: string;
+  name: string;
+  capacity: number;
+  filled: number;
+};
+
+/* The flotilla at a glance — one card per yacht, berths filled over capacity,
+   plus whoever is still on the dock. */
+export function FleetStrip({
+  voyageId,
+  vessels,
+  unassigned,
+}: {
+  voyageId: string;
+  vessels: FleetVessel[];
+  unassigned: number;
+}) {
+  const [pending, startTransition] = React.useTransition();
+  const { toast, show, clear } = useToast();
+
+  if (vessels.length === 0) return null;
+
+  const distribute = () => {
+    startTransition(async () => {
+      const res = await assignVesselsEvenly(voyageId);
+      if (res.error) show({ msg: res.error, tone: "siren" });
+      else show({ msg: "Berths spread across the flotilla.", tone: "laurel" });
+    });
+  };
+
+  return (
+    <section className="hm-sec">
+      <div className="hm-head">
+        <h2>The flotilla.</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={pending || unassigned === 0}
+          onClick={distribute}
+        >
+          Assign evenly
+        </Button>
+      </div>
+      <div className="hm-fleet">
+        {vessels.map((v) => (
+          <div
+            key={v.id}
+            className={
+              v.filled < v.capacity ? "hm-fleet__card hm-fleet__card--open" : "hm-fleet__card"
+            }
+          >
+            <b>{v.name}</b>
+            <span>
+              {v.filled} / {v.capacity} BERTHS
+            </span>
+          </div>
+        ))}
+        <div className="hm-fleet__card">
+          <b>On the dock</b>
+          <span>{unassigned} UNASSIGNED</span>
+        </div>
+      </div>
+      {toast ? (
+        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+      ) : null}
+    </section>
+  );
+}
+
+export type RosterRow = {
+  rsvpId: string;
+  name: string;
+  tone: string;
+  memberNo: string;
+  guests: number;
+  boardingCode: string;
+  status: "aboard" | "waitlist";
+  checkedInAt: string | null;
+  waiverMissing: boolean;
+  vesselId: string | null;
+  [key: string]: unknown;
+};
+
+export function RosterTable({
+  rows,
+  muster,
+  vessels,
+}: {
+  rows: RosterRow[];
+  muster: string;
+  vessels: FleetVessel[];
+}) {
+  const [pending, startTransition] = React.useTransition();
+  const { toast, show, clear } = useToast();
+
+  const checkIn = (r: RosterRow) => {
+    startTransition(async () => {
+      const res = await checkInRsvp(r.rsvpId);
+      if (res.error) show({ msg: res.error, tone: "siren" });
+      else
+        show({
+          msg: `${r.name} aboard.`,
+          meta: `${r.boardingCode || "NO CODE"} · MUSTER ${muster}`,
+          tone: "laurel",
+        });
+    });
+  };
+
+  const moveTo = (r: RosterRow, vesselId: string | null) => {
+    startTransition(async () => {
+      const res = await setRsvpVessel(r.rsvpId, vesselId);
+      if (res.error) show({ msg: res.error, tone: "siren" });
+      else {
+        const name = vessels.find((v) => v.id === vesselId)?.name;
+        show({
+          msg: name ? `${r.name} on ${name}.` : `${r.name} back on the dock.`,
+          tone: "ink",
+        });
+      }
+    });
+  };
+
+  const vesselOptions = [
+    { value: "", label: "Unassigned" },
+    ...vessels.map((v) => ({ value: v.id, label: v.name })),
+  ];
+
+  const columns: TableColumn<RosterRow>[] = [
+    {
+      key: "name",
+      label: "Name",
+      render: (r: RosterRow) => (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          <Avatar name={r.name} size="sm" tone={avatarTone(r.tone)} />
+          <b style={{ fontWeight: 600 }}>{r.name}</b>
+        </span>
+      ),
+    },
+    { key: "memberNo", label: "No.", mono: true },
+    { key: "guests", label: "Guests", mono: true, width: 70 },
+    {
+      key: "boardingCode",
+      label: "Boarding",
+      mono: true,
+      render: (r: RosterRow) => r.boardingCode || "—",
+    },
+    ...(vessels.length > 0
+      ? ([
+          {
+            key: "vessel",
+            label: "Yacht",
+            width: 160,
+            render: (r: RosterRow) =>
+              r.status === "aboard" ? (
+                <Select
+                  options={vesselOptions}
+                  value={r.vesselId ?? ""}
+                  disabled={pending}
+                  onChange={(e) => moveTo(r, e.target.value || null)}
+                  aria-label={`Yacht for ${r.name}`}
+                />
+              ) : (
+                <span className="hm-mono">—</span>
+              ),
+          },
+        ] satisfies TableColumn<RosterRow>[])
+      : []),
+    {
+      key: "status",
+      label: "Status",
+      render: (r: RosterRow) => (
+        <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap" as const }}>
+          {r.checkedInAt ? (
+            <Badge tone="laurel">Checked in</Badge>
+          ) : r.status === "waitlist" ? (
+            <Badge tone="outline">Waitlist</Badge>
+          ) : (
+            <Badge tone="outline">Aboard</Badge>
+          )}
+          {r.waiverMissing ? <Badge tone="clay">Waiver missing</Badge> : null}
+        </span>
+      ),
+    },
+    {
+      key: "act",
+      label: "",
+      render: (r: RosterRow) =>
+        !r.checkedInAt && r.status === "aboard" ? (
+          <Button variant="outline" size="sm" disabled={pending} onClick={() => checkIn(r)}>
+            Check in
+          </Button>
+        ) : null,
+    },
+  ];
+
+  return (
+    <>
+      <div className="hm-panel">
+        <Table rowKey={(r: RosterRow) => r.rsvpId} columns={columns} rows={rows} />
+        {rows.length === 0 ? (
+          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+            No berths claimed yet. The roster fills as RSVPs land.
+          </p>
+        ) : null}
+      </div>
+      {toast ? (
+        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+      ) : null}
+    </>
+  );
+}

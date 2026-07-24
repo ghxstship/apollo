@@ -11,7 +11,7 @@ export function relTime(iso: string): string {
 }
 
 /* Icon per notification kind. "Waves" is missing from this Lucide set —
-   Droplets stands in for fathoms. */
+   Droplets stands in for knots (the "fathoms" kind is legacy plumbing). */
 export const KIND_ICON: Record<string, string> = {
   word: "Radio",
   manifest: "Ticket",

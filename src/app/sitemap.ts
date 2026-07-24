@@ -14,7 +14,7 @@ const PRIORITY: Record<string, number> = {
   "/": 1,
   "/voyages": 0.9,
   "/membership": 0.9,
-  "/dispatch": 0.7,
+  "/lore": 0.7,
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -43,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const dispatchEntries: MetadataRoute.Sitemap = (posts ?? []).map((p) => ({
-    url: `${SITE_URL}/dispatch/${p.slug}`,
+    url: `${SITE_URL}/lore/${p.slug}`,
     lastModified: new Date(p.published_at),
     changeFrequency: "monthly",
     priority: 0.6,

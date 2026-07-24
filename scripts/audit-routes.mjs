@@ -38,6 +38,19 @@ loadEnvLocal();
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+/* Brand lexicon guard — copied from BANNED_TERMS in src/lib/brand.ts (this
+   script is plain mjs and can't import TS). Case-sensitive on purpose:
+   lowercase "dispatch"/"purser"/"fathoms" are literal words and allowed;
+   the capitalized brand uses are not. */
+const BANNED = [
+  "The Purser",
+  "The Wardroom",
+  "Fathoms",
+  "The Dispatch",
+  "Harbormaster console",
+  "Shore office",
+];
+
 const results = [];
 const failures = [];
 const note = (route, check, ok, detail = "") => {
@@ -64,6 +77,8 @@ function checkHtml(route, html) {
   note(route, "no error boundary", !/Application error|Internal Server Error|__next_error__/i.test(html), "error text found");
   const badImgs = [...html.matchAll(/<img\b[^>]*>/gi)].filter((m) => !/\balt=/i.test(m[0]));
   note(route, "images carry alt", badImgs.length === 0, badImgs.length ? `${badImgs.length} <img> without alt` : "");
+  const offLexicon = BANNED.filter((term) => html.includes(term));
+  note(route, "on-lexicon", offLexicon.length === 0, offLexicon.length ? `banned terms: ${offLexicon.join(", ")}` : "");
 }
 
 function internalLinks(html) {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { SectionHeader } from "@/components/site/section-header";
+import { CITY_CODES } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 const STEPS: Array<[string, string]> = [
   ["Apply.", "A short application, read by a person. A salon invitation usually follows within the week."],
   ["Board.", "Claim a berth from the manifest. Solo is normal — crews form at muster, not before."],
-  ["Belong.", "Fathoms bank with every mile. The person across the cockpit becomes someone you'd sail with again."],
+  ["Belong.", "Knots bank with every mile. The person across the cockpit becomes someone you'd sail with again."],
 ];
 
 export default async function HomePage() {
@@ -152,6 +153,7 @@ export default async function HomePage() {
               <div className="ws-harbor-row" key={h.id}>
                 <h3>{h.name}</h3>
                 <span className="hm">
+                  {CITY_CODES[h.slug] ? `${CITY_CODES[h.slug]} · ` : ""}
                   {h.coordinates}
                   {h.launch_year ? ` · ${roman(h.launch_year)}` : ""}
                 </span>
@@ -173,10 +175,10 @@ export default async function HomePage() {
       <section className="ws-dispatch-teaser">
         <div className="ls-container">
           <SectionHeader
-            eyebrow="The Dispatch"
+            eyebrow="LORE"
             title="The ship's log, published."
             aside={
-              <LinkButton href="/dispatch" variant="ghost">
+              <LinkButton href="/lore" variant="ghost">
                 All entries <Icon name="ArrowUpRight" size={15} />
               </LinkButton>
             }
@@ -185,7 +187,7 @@ export default async function HomePage() {
             {(posts ?? []).map((p) => (
               <Link
                 key={p.id}
-                href={`/dispatch/${p.slug}`}
+                href={`/lore/${p.slug}`}
                 style={{ color: "inherit", textDecoration: "none", display: "block" }}
               >
                 <div className="ws-dp-row">

@@ -4,25 +4,26 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, IconButton, Wordmark } from "@/components/ds";
+import { SURFACES } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
-  ["/harbor", "Harbor"],
-  ["/now", "Now"],
+  ["/home-port", "Home Port"],
+  ["/gateway", SURFACES.gateway],
   ["/manifest", "Voyages"],
-  ["/wardroom", "Wardroom"],
+  ["/open-deck", SURFACES.openDeck],
   ["/chandlery", "Chandlery"],
   ["/portal", "Portal"],
-  ["/card", "Card"],
+  ["/passbook", SURFACES.passbook],
   ["/word", "Word"],
   ["/you", "You"],
 ] as const;
 
 const TABS = [
-  ["/harbor", "Anchor", "Harbor"],
-  ["/now", "Navigation", "Now"],
+  ["/home-port", "Anchor", "Home Port"],
+  ["/gateway", "Navigation", SURFACES.gateway],
   ["/manifest", "Sailboat", "Voyages"],
-  ["/card", "IdCard", "Card"],
+  ["/passbook", "IdCard", SURFACES.passbook],
   ["/word", "Bell", "Word"],
   ["/you", "User", "You"],
 ] as const;
@@ -100,7 +101,7 @@ export function MemberTopBar({
   return (
     <header className="mbr-top">
       <div className="mbr-top__in">
-        <Link href="/harbor" className="mbr-top__wm" aria-label="Harbor — home">
+        <Link href="/home-port" className="mbr-top__wm" aria-label="Home Port — home">
           <Wordmark size="sm" />
         </Link>
         <nav className="mbr-nav" aria-label="Member navigation">
@@ -116,10 +117,10 @@ export function MemberTopBar({
           ))}
           {isStaff ? (
             <Link
-              href="/harbormaster"
-              aria-current={isCurrent(pathname, "/harbormaster") ? "page" : undefined}
+              href="/bridge"
+              aria-current={isCurrent(pathname, "/bridge") ? "page" : undefined}
             >
-              Harbormaster
+              Bridge
             </Link>
           ) : null}
         </nav>

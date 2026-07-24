@@ -13,7 +13,7 @@
 .ws-nav__coords{margin-left:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3);white-space:nowrap}
 .ws-nav__end{display:flex;align-items:center;gap:14px}
 .ws-nav__burger{display:none}
-.ws-menu{position:fixed;inset:0;z-index:600;background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px}
+.ws-menu{position:fixed;inset:0;z-index:920;background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px}
 .ws-menu__top{display:flex;align-items:center;justify-content:space-between}
 .ws-menu__links{display:flex;flex-direction:column;gap:4px;margin-top:48px}
 .ws-menu__links a{font-family:var(--font-display);font-size:34px;color:var(--bone);padding:10px 0;border-bottom:1px solid var(--line-inverse-faint)}
@@ -24,6 +24,11 @@
   .ws-nav__links,.ws-nav__coords,.ws-nav__cta{display:none}
   .ws-nav__burger{display:inline-flex}
   .ws-nav__in{height:64px;gap:16px}
+  /* the lockup yields to the controls on narrow screens instead of forcing
+     a horizontal scroll — the svg keeps its aspect via the viewBox */
+  .ws-nav__end{margin-left:auto;gap:8px}
+  .ws-nav__logo{min-width:0;flex:0 1 auto}
+  .ws-nav__logo svg{width:100%;max-width:187px;height:auto}
 }
 
 /* ————— chrome: footer ————— */
@@ -38,8 +43,12 @@
 .ws-footer__harbor{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-size:13px}
 .ws-footer__harbor span{font-family:var(--font-mono);font-size:9.5px;letter-spacing:var(--track-data);color:var(--text-inverse-3);text-transform:uppercase}
 .ws-footer__base{border-top:1px solid var(--line-inverse-faint);padding:20px 0 28px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3);text-transform:uppercase}
+.ws-footer__in>*{min-width:0}
 @media (max-width:960px){.ws-footer__in{grid-template-columns:1fr 1fr;gap:32px 24px;padding:48px 0 40px}}
 @media (max-width:640px){.ws-footer__in{grid-template-columns:1fr}}
+/* the lg wordmark is ~314px at rest — on very narrow screens it scales with
+   the viewport (!important outranks the component's inline font-size) */
+@media (max-width:400px){.ws-footer__in .ls-wm,.ws-footer__in .ls-wm__t{font-size:clamp(22px,8.5vw,34px)!important}}
 
 /* ————— shared ————— */
 .ws-shead{display:flex;align-items:flex-end;gap:24px;margin-bottom:var(--space-7)}
@@ -51,6 +60,8 @@
 .ws-phead h1{font-size:var(--text-display-l)}
 .ws-phead .ls-eyebrow{color:var(--brass-deep);margin-bottom:16px;display:block}
 .ws-phead__sub{color:var(--text-2);margin-top:16px;max-width:52ch}
+/* the tagline is lockup-adjacent only — it is the view's single accent */
+.ws-phead__tag{font-family:var(--font-display);font-size:22px;margin-top:14px;background:var(--lava);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
 .ws-ledger-row{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:22px 0;border-top:1px solid var(--line-faint)}
 .ws-ledger-row:last-of-type{border-bottom:1px solid var(--line-faint)}
 .ws-ledger-row__t{font-family:var(--font-display);font-size:24px}
@@ -132,6 +143,13 @@
 .ev-faq details[open] summary:after{content:"−"}
 .ev-faq summary::-webkit-details-marker{display:none}
 .ev-faq p{font-size:13.5px;color:var(--text-2);padding:0 0 16px;max-width:60ch}
+.ev-plan{margin-top:48px}
+.ev-plan__row{display:grid;grid-template-columns:72px 1fr;gap:20px;padding:14px 0;border-top:1px solid var(--line-faint);align-items:baseline}
+.ev-plan__row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.ev-plan__t{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--brass-deep);text-transform:uppercase}
+.ev-plan__title{font-size:14.5px;font-weight:600}
+.ev-plan__note{font-size:13px;color:var(--text-2);margin-top:4px;max-width:56ch}
+.ev-crew-names{font-size:13px;color:var(--text-2);margin-top:12px}
 .ev-side{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column;gap:20px}
 .ev-panel{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);padding:24px}
 .ev-panel__label{font:600 10px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--text-3);margin-bottom:12px}
@@ -147,19 +165,42 @@
 .ws-mfeat li{padding:9px 0;border-top:1px solid var(--line-faint);font-size:13px;color:var(--text-2)}
 .ls-card--sea .ws-mfeat li{border-top-color:var(--line-inverse-faint);color:var(--text-inverse-2)}
 .ls-card--sea .ws-mprice{color:var(--text-inverse-3)}
-.ws-fathoms{margin:64px 0 0;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
-.ws-fathoms:before{content:"";display:block;border-top:1px solid var(--line-strong)}
-.ws-fathoms>div{display:grid;grid-template-columns:auto 1fr;gap:32px;padding-top:24px;align-items:baseline}
-.ws-fathoms__n{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--brass-deep);text-transform:uppercase;white-space:nowrap}
-.ws-fathoms p{font-size:13px;color:var(--text-2);max-width:64ch}
-@media (max-width:640px){.ws-fathoms>div{grid-template-columns:1fr;gap:8px}}
+.ws-knots{margin:64px 0 0;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
+.ws-knots:before{content:"";display:block;border-top:1px solid var(--line-strong)}
+.ws-knots>div{display:grid;grid-template-columns:auto 1fr;gap:32px;padding-top:24px;align-items:baseline}
+.ws-knots__n{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--brass-deep);text-transform:uppercase;white-space:nowrap}
+.ws-knots p{font-size:13px;color:var(--text-2);max-width:64ch}
+@media (max-width:640px){.ws-knots>div{grid-template-columns:1fr;gap:8px}}
+/* ————— membership: live plan grid ————— */
+.ws-plans{margin-top:48px;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
+.ws-plans:before{content:"";display:block;border-top:1px solid var(--line-strong)}
+.ws-plans__row{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:24px;padding:20px 0;border-bottom:1px solid var(--line-faint);align-items:start}
+.ws-plans__row--head{padding:16px 0 10px;border-bottom:1px solid var(--line-strong)}
+.ws-plans__th{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--brass-deep);text-transform:uppercase}
+.ws-plans__label b{font-family:var(--font-display);font-weight:400;font-size:22px;display:inline-block;margin-right:10px}
+.ws-plans__label span{display:block;font-size:12.5px;color:var(--text-3);margin-top:4px;max-width:22ch}
+.ws-plans__cell{display:flex;flex-direction:column;gap:5px}
+.ws-plans__tier{display:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--brass-deep);text-transform:uppercase}
+.ws-plans__price{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-1);text-transform:uppercase}
+.ws-plans__ev{font-size:12.5px;color:var(--text-2)}
+.ws-plans__note{font-family:var(--font-mono);font-size:9.5px;letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.ws-plans__dash{color:var(--text-3);font-family:var(--font-mono)}
+@media (max-width:800px){
+  .ws-plans__row{grid-template-columns:1fr;gap:14px}
+  .ws-plans__row--head{display:none}
+  .ws-plans__tier{display:block}
+  .ws-plans__cell{padding-left:16px;border-left:1px solid var(--line-faint)}
+}
 .ws-apply{margin:72px 0 96px;max-width:560px}
 .ws-apply h2{font-size:var(--text-display-m)}
 .ws-apply form{display:flex;flex-direction:column;gap:18px;margin-top:32px}
 .ws-apply__meta{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
 
-/* ————— dispatch ————— */
+/* ————— LORE ————— */
 .dp-head{padding:72px 0 40px;border-bottom:1px solid var(--line-strong);position:relative}
+/* the masthead — Marcellus, tracked wide; type-only, the magazine's one mark */
+.dp-mast{font-family:var(--font-display);font-size:var(--text-display-l);letter-spacing:.3em;margin-right:-.3em;text-transform:uppercase}
+.dp-mast__sub{font-size:var(--text-body-l);color:var(--text-2);margin-top:12px}
 .dp-head:after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid var(--line-strong)}
 .dp-head h1{font-size:var(--text-display-l)}
 .dp-list{padding-bottom:48px}

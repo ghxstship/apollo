@@ -14,8 +14,8 @@ export default async function GangwayPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const sp = await searchParams;
-  const rawNext = sp.next ?? "/harbor";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/harbor";
+  const rawNext = sp.next ?? "/home-port";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/home-port";
   const expired = sp.error === "expired";
 
   return (

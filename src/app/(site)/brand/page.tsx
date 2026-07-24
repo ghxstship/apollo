@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Badge, Icon, Tag } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
+import { CITY_CODES, CLASS_CODES, CURRENCY, LEAGUES, SUB_CLASSES, SURFACES, TAGLINE } from "@/lib/brand";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
 
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 const BOILER =
-  "LYRE SOCIAL is a membership club for experiential connection at sea and ashore. Founded MMXXIV in Marina del Rey, the club runs voyages — day sails, crossings, regattas, night passages — and salons on land for a crew that believes the long way home is the point. Membership is by invitation or application, in three tiers: Regional, National, and Global.";
+  "LYRE SOCIAL is a membership club for experiential connection at sea and ashore. Founded MMXXIV in Marina del Rey, the club runs voyages — day sails, crossings, regattas, night passages — and salons on land for a crew that believes the long way home is the point. Membership is by invitation or application — Access, Regional, National, and Global, with Guest passes alongside.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--sea-dawn)",
@@ -50,6 +51,20 @@ const TYPE_VOICES: Array<[string, string, string, string, string]> = [
   ["var(--font-mono)", "Space Mono", "The ship's log: coordinates, times, distances, wind. Data is decoration.", "https://fonts.google.com/specimen/Space+Mono", "FONTS.GOOGLE.COM/SPACE+MONO"],
 ];
 
+/* The rooms of the house — names from brand.ts, roles annotated here. */
+const ROOMS: Array<[keyof typeof SURFACES, string]> = [
+  ["bridge", "The ops console"],
+  ["gateway", "Live mode — the day underway"],
+  ["openDeck", "The members' feed"],
+  ["passbook", "The credential"],
+  ["shoreside", "The shore office"],
+  ["magazine", "The magazine — the ship's log, published"],
+  ["agent", "The agent — shared brain of the ATLVS ecosystem"],
+  ["gangway", "Arrivals — auth and vetting"],
+  ["chandlery", "The shop"],
+  ["galley", "Food and drink, aboard and ashore"],
+];
+
 const IMAGERY: Array<[string, string]> = [
   ["dawn", "Departures — first light, long shadows, rope and linen."],
   ["day", "Underway — water, sails, bodies in motion."],
@@ -60,8 +75,8 @@ const FACTS: Array<[string, string]> = [
   ["Founded", "MMXXIV · MARINA DEL REY, CALIFORNIA"],
   ["Home port", "33.9803° N — 118.4517° W"],
   ["What we run", "VOYAGES AT SEA · SALONS ASHORE"],
-  ["Membership", "REGIONAL · NATIONAL · GLOBAL — BY INVITATION OR APPLICATION"],
-  ["Cadence", "THE DISPATCH, SUNDAYS · SEASON II — THE WINE-DARK SEA"],
+  ["Membership", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY INVITATION OR APPLICATION"],
+  ["Cadence", "LORE, SUNDAYS · SEASON II — THE WINE-DARK SEA"],
 ];
 
 export default function BrandKitPage() {
@@ -182,15 +197,94 @@ export default function BrandKitPage() {
             </div>
           </div>
           <div className="bk-lex">
-            {["Voyages", "Salons", "The Manifest", "Berths", "Moorings", "The Dispatch", "Aboard", "Weather Hold", "Gangway"].map((w) => (
+            {["Voyages", "Salons", "The Manifest", "Berths", "Open Deck", "Knots", "Leagues", "Passbook", "Gateway", "the Bridge", "Shoreside", "LORE", "Aurora AI", "Aboard", "Weather Hold", "Gangway"].map((w) => (
               <Tag key={w}>{w}</Tag>
             ))}
           </div>
         </section>
 
+        <section className="bk-sec bk-rooms">
+          <SectionHeader eyebrow="05 — The rooms of the house" title="One house, many rooms." />
+          <p className="bk-note" style={{ marginTop: 0 }}>
+            Micro-brands never get their own logos, colors, or type — they are
+            rooms in one house, spoken with the definite article and lowercase
+            in prose. The only marks that exist: the lyre, the wordmark, and
+            LORE&rsquo;s masthead (type-only).
+          </p>
+          <div className="bk-swlbl">The rooms</div>
+          <div className="bk-facts">
+            {ROOMS.map(([key, role]) => (
+              <div className="row" key={key}>
+                <span className="k">{SURFACES[key]}</span>
+                <span className="bk-rooms__role">{role}</span>
+              </div>
+            ))}
+          </div>
+          <div className="bk-swlbl">The currency</div>
+          <div className="bk-facts">
+            <div className="row">
+              <span className="k">
+                {CURRENCY.name} · {CURRENCY.code}
+              </span>
+              <span className="bk-rooms__role">
+                Earned on the water, never bought. {CURRENCY.line}
+              </span>
+            </div>
+          </div>
+          <div className="bk-swlbl">The leagues</div>
+          <div className="bk-facts">
+            {LEAGUES.map((l) => (
+              <div className="row" key={l.league}>
+                <span className="k">{l.name}</span>
+                <span className="bk-rooms__role">
+                  {l.months === 0 ? "From day one" : `${l.months} months aboard`}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="bk-swlbl">Event classes</div>
+          <div className="bk-facts">
+            {Object.entries(SUB_CLASSES).map(([key, s]) => (
+              <div className="row" key={key}>
+                <span className="k">
+                  {s.classCode} · {s.label}
+                </span>
+                <span className="bk-rooms__role">{s.note}</span>
+              </div>
+            ))}
+            <div className="row">
+              <span className="k">{CLASS_CODES.sky} · Overnight</span>
+              <span className="bk-rooms__role">The night passage — no sub-classes</span>
+            </div>
+          </div>
+          <div className="bk-swlbl">City codes</div>
+          <p className="bk-rooms__cities">{Object.values(CITY_CODES).join(" · ")}</p>
+          <p className="bk-note">
+            Mono caps wherever coordinates and meta render; spelled-out names in
+            prose. LAX is the brand&rsquo;s airport-code register for Los
+            Angeles — cultural, not geographic.
+          </p>
+          <div className="bk-swlbl">The tagline</div>
+          <div className="bk-facts">
+            <div className="row">
+              <span className="k">{TAGLINE}</span>
+              <span className="bk-rooms__role">
+                Lockup-adjacent only — hero, OG images, card backs, email
+                footers. Never inline in body copy, never in UI chrome; a
+                tagline is an accent, and each view gets one.
+              </span>
+            </div>
+          </div>
+          <p className="bk-note">
+            &ldquo;dispatch&rdquo; and &ldquo;purser&rdquo; are literal words
+            now, never brand names — you file a dispatch to LORE; a purser is
+            nobody. Lowercase in prose, always.
+          </p>
+        </section>
+
         <section className="bk-sec">
           <SectionHeader
-            eyebrow="05 — Imagery"
+            eyebrow="06 — Imagery"
             title="Golden hour, film grain, salt."
             aside={<Badge tone="clay">Photography TK</Badge>}
           />
@@ -211,7 +305,7 @@ export default function BrandKitPage() {
         </section>
 
         <section className="bk-sec" style={{ paddingBottom: 0 }}>
-          <SectionHeader eyebrow="06 — The facts" title="For the record." />
+          <SectionHeader eyebrow="07 — The facts" title="For the record." />
           <div className="bk-facts">
             {FACTS.map(([k, v]) => (
               <div className="row" key={k}>

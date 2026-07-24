@@ -38,8 +38,8 @@ export async function updateProfile(
   if (error) return { error: "That didn't land. Try again." };
 
   revalidatePath("/you");
-  revalidatePath("/harbor");
-  revalidatePath("/card");
+  revalidatePath("/home-port");
+  revalidatePath("/passbook");
   return { saved: true };
 }
 
@@ -90,7 +90,7 @@ export async function pauseMembership(): Promise<StatusResult> {
   const res = await setStatus("paused");
   if (res.error) return res;
   revalidatePath("/you");
-  revalidatePath("/harbor");
+  revalidatePath("/home-port");
   return {};
 }
 
@@ -98,7 +98,7 @@ export async function resumeMembership(): Promise<StatusResult> {
   const res = await setStatus("active");
   if (res.error) return res;
   revalidatePath("/you");
-  revalidatePath("/harbor");
+  revalidatePath("/home-port");
   return {};
 }
 

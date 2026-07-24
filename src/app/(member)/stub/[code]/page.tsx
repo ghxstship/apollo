@@ -4,7 +4,7 @@ import { Badge, StateBlock } from "@/components/ds";
 import { TIER_LABEL, logDate, logTime } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { getMember } from "../../data";
-import { PrintButton } from "../../card/print-button";
+import { PrintButton } from "../../passbook/print-button";
 
 export const metadata: Metadata = { title: "Boarding stub" };
 

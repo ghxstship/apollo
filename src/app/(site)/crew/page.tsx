@@ -31,19 +31,19 @@ const ROLES: Array<{
   },
   {
     title: "Harbormaster ops",
-    dept: "Shore office",
+    dept: "Shoreside",
     type: "Full time",
     port: "Miami",
     blurb:
       "Run the manifest, the gangway, and the weather calls. The first voice a member hears and the last one off the dock.",
   },
   {
-    title: "Purser engineering",
+    title: "Aurora AI engineering",
     dept: "Engineering",
     type: "Full time",
     port: "Remote",
     blurb:
-      "Build the ledger, the manifest, and the agent that minds them. TypeScript on the surface, judgment underneath.",
+      "Build the ledger, the manifest, and Aurora AI — the agent that minds them. TypeScript on the surface, judgment underneath.",
   },
 ];
 

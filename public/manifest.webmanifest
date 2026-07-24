@@ -2,7 +2,7 @@
   "name": "LYRE SOCIAL",
   "short_name": "LYRE",
   "description": "Voyages and salons, at sea and ashore. Members only.",
-  "start_url": "/harbor",
+  "start_url": "/home-port",
   "display": "standalone",
   "background_color": "#0B0B0C",
   "theme_color": "#0B0B0C",

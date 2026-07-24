@@ -1,117 +1,138 @@
 import type { Metadata } from "next";
-import { Badge, Card } from "@/components/ds";
+import { Badge } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
+import { TAGLINE } from "@/lib/brand";
+import { price } from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
+import type { Tables } from "@/lib/supabase/types";
 import { ApplyForm } from "./apply-form";
 
 export const metadata: Metadata = {
   title: "Membership",
   description:
-    "Three ways aboard — Regional, National, Global. Membership is by invitation or application.",
+    "Five ways aboard — Access, Regional, National, Global, and Guest passes, each in three class tiers. Membership is by invitation or application.",
 };
 
-const TIERS: Array<{
-  id: string;
-  name: string;
-  blurb: string;
-  dues: string;
-  feats: string[];
-  featured?: boolean;
-}> = [
-  {
-    id: "regional",
-    name: "Regional",
-    blurb: "Your home harbor",
-    dues: "$1,800 / year",
-    feats: [
-      "Every event at your harbor — sea, port, overnight",
-      "The Dispatch, Sundays",
-      "The Wardroom and crew threads",
-      "Fathoms on every mile",
-    ],
-  },
-  {
-    id: "national",
-    name: "National",
-    blurb: "All US harbors",
-    dues: "$3,600 / year",
-    feats: [
-      "Everything in Regional",
-      "All domestic harbors — travel, then board",
-      "Reciprocal salon seats coast to coast",
-      "Waitlist priority in launching harbors",
-    ],
-  },
-  {
-    id: "global",
-    name: "Global",
-    blurb: "All-access international",
-    dues: "$7,200 / year",
-    feats: [
-      "Everything in National",
-      "Every harbor worldwide, international voyages included",
-      "Berth priority all season",
-      "Two guest passes per event",
-    ],
-    featured: true,
-  },
+type Plan = Tables<"membership_plans">;
+
+/* Row order and prose for the plan grid. Prices, allowances, and class
+   ceilings render live from membership_plans — nothing hardcoded here. */
+const PLAN_TYPES: Array<{ type: Plan["plan_type"]; name: string; blurb: string }> = [
+  { type: "access", name: "Access", blurb: "The waitlist, made explicit" },
+  { type: "regional", name: "Regional", blurb: "Your home harbor" },
+  { type: "national", name: "National", blurb: "All US harbors" },
+  { type: "global", name: "Global", blurb: "Every harbor worldwide" },
+  { type: "guest", name: "Guest", blurb: "One event, member-sponsored" },
 ];
 
-const FATHOMS: Array<[string, string]> = [
-  ["10 FM / NM", "Every nautical mile under sail banks ten fathoms to your ledger."],
-  ["40 FM / salon", "A night ashore counts. Long tables, records, the golden hour."],
-  ["250 FM / referral", "When someone you sent comes aboard, the ledger remembers."],
+const TIER_HEADS: Array<[string, string]> = [
+  ["I", "Voyage"],
+  ["II", "Expedition"],
+  ["III", "Odyssey"],
 ];
 
-export default function MembershipPage() {
+const CEILING_NOTE: Record<string, string> = {
+  voyage: "Through Voyage · under 4 hrs",
+  expedition: "Through Expedition · 4–8 hrs",
+  odyssey: "Through Odyssey · over 8 hrs",
+};
+
+const KNOTS: Array<[string, string]> = [
+  ["10 KN / NM", "Every nautical mile under sail banks ten knots to your ledger."],
+  ["40 KN / salon", "A night ashore counts. Long tables, records, the golden hour."],
+  ["250 KN / referral", "When someone you sent comes aboard, the ledger remembers."],
+];
+
+export default async function MembershipPage() {
+  const supabase = await createClient();
+  const { data: plans } = await supabase
+    .from("membership_plans")
+    .select("*")
+    .eq("active", true)
+    .order("tier", { ascending: true });
+
+  const byCell = new Map<string, Plan>();
+  for (const p of plans ?? []) byCell.set(`${p.plan_type}-${p.tier}`, p);
+
   return (
     <div className="ls-container">
       <div className="ws-phead">
         <span className="ls-eyebrow">The manifest</span>
-        <h1>Three ways aboard.</h1>
+        <h1>Five ways aboard.</h1>
+        <p className="ws-phead__tag">{TAGLINE}</p>
         <p className="ws-phead__sub">
-          Membership is by invitation or application. Dues keep berths few and
-          tables long — access follows geography, not status.
+          Membership is by invitation or application. Geography sets where you
+          sail; the class tier sets how far. Dues keep berths few and tables
+          long.
         </p>
       </div>
 
-      <div className="ls-grid-3" style={{ marginTop: 48 }}>
-        {TIERS.map((t) => (
-          <Card
-            key={t.id}
-            tone={t.featured ? "sea" : "shore"}
-            eyebrow={t.blurb}
-            title={t.name}
-          >
-            <div className="ws-mprice">{t.dues}</div>
-            {t.featured ? (
-              <div style={{ margin: "10px 0 2px" }}>
-                <Badge tone="brass">Most aboard</Badge>
-              </div>
-            ) : null}
-            <ul className="ws-mfeat">
-              {t.feats.map((f) => (
-                <li key={f}>{f}</li>
-              ))}
-            </ul>
-          </Card>
+      <div className="ws-plans">
+        <div className="ws-plans__row ws-plans__row--head">
+          <div></div>
+          {TIER_HEADS.map(([n, name]) => (
+            <div key={n} className="ws-plans__th">
+              {n} · {name}
+            </div>
+          ))}
+        </div>
+        {PLAN_TYPES.map(({ type, name, blurb }) => (
+          <div className="ws-plans__row" key={type}>
+            <div className="ws-plans__label">
+              <b>{name}</b>
+              {type === "global" ? <Badge tone="brass">Most aboard</Badge> : null}
+              <span>{blurb}</span>
+            </div>
+            {TIER_HEADS.map(([n, tierName], i) => {
+              const p = byCell.get(`${type}-${i + 1}`);
+              return (
+                <div className="ws-plans__cell" key={n}>
+                  <span className="ws-plans__tier">
+                    {n} · {tierName}
+                  </span>
+                  {p ? (
+                    <>
+                      <span className="ws-plans__price">
+                        {p.price_cents ? `${price(p.price_cents)} / mo` : "No charge"}
+                      </span>
+                      <span className="ws-plans__ev">
+                        {p.events_per_month === 0
+                          ? "Waitlist + one salon invitation"
+                          : `${p.events_per_month} ${p.events_per_month === 1 ? "event" : "events"} / mo`}
+                      </span>
+                      {p.class_ceiling ? (
+                        <span className="ws-plans__note">{CEILING_NOTE[p.class_ceiling]}</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="ws-plans__dash">—</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ))}
       </div>
 
-      <div className="ws-fathoms">
+      <div className="ws-knots">
         <div>
-          <span className="ws-fathoms__n">Fathoms</span>
+          <span className="ws-knots__n">Knots</span>
           <p>
-            The club&rsquo;s ledger runs in fathoms, not likes — earned on the water,
-            spent on rewards money can&rsquo;t buy here. They never expire while
-            you&rsquo;re aboard, and they gift forward if you ever depart.
+            The club&rsquo;s ledger runs in knots, not likes — more knots,
+            farther water. They never expire while you&rsquo;re aboard, and they
+            gift forward if you ever depart.
           </p>
         </div>
-        {FATHOMS.map(([n, body]) => (
+        {KNOTS.map(([n, body]) => (
           <div key={n}>
-            <span className="ws-fathoms__n">{n}</span>
+            <span className="ws-knots__n">{n}</span>
             <p>{body}</p>
           </div>
         ))}
+        <div>
+          <span className="ws-knots__n">Leagues</span>
+          <p>Depth comes with tenure — five leagues down.</p>
+        </div>
       </div>
 
       <div className="ws-apply" id="apply">

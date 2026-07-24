@@ -256,7 +256,7 @@
 
 /* — Progress — */
 .ls-progress{display:flex;flex-direction:column;gap:8px;font-family:var(--font-sans)}
-.ls-progress__head{display:flex;justify-content:space-between;align-items:baseline}
+.ls-progress__head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:2px 12px;min-width:0}
 .ls-progress__label{font-weight:600;font-stretch:var(--stretch-wide);font-size:var(--text-eyebrow-s);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--text-2)}
 .ls-progress__val{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3)}
 .ls-progress__track{height:6px;background:var(--surface-tint);border:1px solid var(--line-faint);border-radius:var(--radius-pill);overflow:hidden}

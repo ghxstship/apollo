@@ -82,10 +82,10 @@ export default async function VoyagesPage() {
             const aboard = cap?.aboard ?? 0;
             const r = mine.get(v.id) ?? null;
             const locked = (TIER_RANK[v.min_tier] ?? 0) > myRank;
-            /* Display only — fathoms land by trigger on completion. */
+            /* Display only — knots land by trigger on completion (legacy fathoms_* plumbing). */
             const baseFm =
               v.kind === "salon" ? 40 : v.distance_nm != null ? v.distance_nm * 10 : null;
-            const fathomsOnCompletion =
+            const knotsOnCompletion =
               baseFm != null ? Math.round(baseFm * (v.fathoms_multiplier ?? 1)) : null;
             const meta = [
               logDate(v.starts_at),
@@ -118,7 +118,7 @@ export default async function VoyagesPage() {
                       priceCents={v.price_cents}
                       depositRequired={v.deposit_required}
                       addons={v.price_cents > 0 || v.deposit_required ? addons : []}
-                      fathomsOnCompletion={fathomsOnCompletion}
+                      knotsOnCompletion={knotsOnCompletion}
                       fullCredit={new Date(v.starts_at).getTime() - nowMs > 48 * 3600 * 1000}
                       boardingCode={r?.status === "aboard" ? r.boarding_code : null}
                     />

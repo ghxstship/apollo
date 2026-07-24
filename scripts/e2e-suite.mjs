@@ -112,9 +112,10 @@ async function routeMatrix(personas) {
   for (const [name, s] of Object.entries(personas)) {
     for (const r of memberPages) {
       const res = await page(s, r.path);
-      const isStaffRoute = r.path.startsWith("/harbormaster");
+      const isStaffRoute = r.path.startsWith("/bridge");
       if (isStaffRoute && name !== "staff") {
-        const ok = res.status >= 300 && res.status < 400 && (res.headers.get("location") || "").includes("/harbor");
+        const loc = res.headers.get("location") || "";
+        const ok = res.status >= 300 && res.status < 400 && loc.includes("/home-port");
         note(name, `staff gate holds on ${r.path}`, ok, `got ${res.status} → ${res.headers.get("location")}`);
       } else {
         const ok = res.status === 200;
@@ -127,7 +128,7 @@ async function routeMatrix(personas) {
     }
   }
   // Anon: staff console is invisible (gangway, not a hint of /harbor)
-  const anonStaff = await page(null, "/harbormaster");
+  const anonStaff = await page(null, "/bridge");
   note("anon", "staff console redirects to gangway", anonStaff.status >= 300 && (anonStaff.headers.get("location") || "").includes("/gangway"), `got ${anonStaff.status}`);
 }
 

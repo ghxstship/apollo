@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "The shore office",
-  description: "Answers first, tickets second, a human always.",
+  title: "Shoreside",
+  description: "Shoreside — the shore office. Answers first, a human always.",
 };
 
 const FAQS: Array<[string, Array<[string, string]>]> = [
@@ -32,11 +32,11 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
       ],
       [
         "Can I pause my membership?",
-        "Weather-hold it from the member app — dues pause, fathoms and tier keep. Resume with a word.",
+        "Weather-hold it from the member app — dues pause, knots and league keep. Resume with a word.",
       ],
       [
-        "What are fathoms worth?",
-        "Ten per nautical mile, forty per salon, two hundred fifty per referral who joins. Spend them on rewards money can't buy here.",
+        "What are knots worth?",
+        "Ten per nautical mile, forty per salon, two hundred fifty per referral who joins. More knots, farther water — spend them on rewards money can't buy here.",
       ],
     ],
   ],
@@ -63,12 +63,12 @@ export default function SupportPage() {
   return (
     <div className="lg-wrap">
       <span className="ls-eyebrow" style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}>
-        The shore office
+        Shoreside — the shore office
       </span>
       <h1>Hail us.</h1>
       <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "54ch" }}>
-        Answers first, tickets second, a human always. Most of what the water asks
-        is already answered below.
+        Shoreside answers first, files second, a human always. Most of what the
+        water asks is already answered below.
       </p>
 
       <div className="sp-faq">
@@ -90,7 +90,7 @@ export default function SupportPage() {
           <div>
             <b>Write</b>
             <p>
-              <a href="mailto:shore@lyre.social">shore@lyre.social</a> — a person
+              <a href="mailto:shore@lyre.social">shore@lyre.social</a> — Shoreside
               answers, usually within the hour. Plain words beat long ones.
             </p>
             <p style={{ marginTop: 10 }}>

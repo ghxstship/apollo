@@ -10,7 +10,7 @@ import { LinkButton } from "./link-button";
 const LINKS: Array<[string, string]> = [
   ["/voyages", "Voyages"],
   ["/membership", "Membership"],
-  ["/dispatch", "The Dispatch"],
+  ["/lore", "LORE"],
   ["/gallery", "Gallery"],
   ["/crew", "Crew wanted"],
 ];

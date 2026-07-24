@@ -36,7 +36,7 @@ export function RsvpControls({
   priceCents,
   depositRequired,
   addons,
-  fathomsOnCompletion,
+  knotsOnCompletion,
   fullCredit,
   boardingCode,
 }: {
@@ -52,7 +52,7 @@ export function RsvpControls({
   priceCents: number;
   depositRequired: boolean;
   addons: AddonOption[];
-  fathomsOnCompletion: number | null;
+  knotsOnCompletion: number | null;
   /* Computed shoreside: more than 48h out at render time. */
   fullCredit: boolean;
   boardingCode: string | null;
@@ -280,11 +280,11 @@ export function RsvpControls({
               {money(total)}
             </span>
           </div>
-          {fathomsOnCompletion != null ? (
+          {knotsOnCompletion != null ? (
             <div style={rowStyle}>
               <span style={{ color: "var(--text-2)" }}>On completion</span>
               <span className="mbr-mono" style={{ fontSize: 12, color: "var(--laurel)" }}>
-                +{fathomsOnCompletion} FM
+                +{knotsOnCompletion} KN
               </span>
             </div>
           ) : null}

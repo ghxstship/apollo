@@ -119,10 +119,10 @@ export function NotificationPrefsForm({
       </div>
       <div className="you-row">
         <div>
-          <b>Fathoms</b>
+          <b>Knots</b>
           <p>Every entry, as it lands in the ledger.</p>
         </div>
-        <Switch name="fathoms" defaultChecked={fathoms} label="" aria-label="Fathoms notices" />
+        <Switch name="fathoms" defaultChecked={fathoms} label="" aria-label="Knots notices" />
       </div>
       <div className="you-row">
         <div>
@@ -158,7 +158,7 @@ export function ResumeBanner() {
       <div className="you-row">
         <div>
           <b>Membership on weather hold</b>
-          <p>Dues paused; fathoms and tier keep. The manifest waits for you.</p>
+          <p>Dues paused; knots and tier keep. The manifest waits for you.</p>
           {error ? <p style={{ color: "var(--siren)" }}>{error}</p> : null}
         </div>
         <Button
@@ -239,7 +239,7 @@ export function Offboarding({ status }: { status: string }) {
           </>
         }
       >
-        Dues pause; fathoms and tier keep. Resume with a word — no games either way.
+        Dues pause; knots and tier keep. Resume with a word — no games either way.
         {error && mode === "pause" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}

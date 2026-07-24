@@ -13,7 +13,7 @@ type OutboxRow = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const FROM = Deno.env.get("OUTBOX_FROM") ?? "LYRE SOCIAL <shore@lyre.social>";
+const FROM = Deno.env.get("OUTBOX_FROM") ?? "LYRE SOCIAL — Shoreside <shore@lyre.social>";
 
 const REST = `${SUPABASE_URL}/rest/v1/email_outbox`;
 const HEADERS = {
@@ -47,6 +47,7 @@ function when(v: unknown): string {
 }
 
 const SERIF = `'Marcellus', Georgia, 'Times New Roman', serif`;
+const MONO = `'Space Mono', 'Courier New', monospace`;
 
 function shell(bodyHtml: string, inverse = false): string {
   const ink = inverse ? "#F2F2F4" : "#0B0B0C";
@@ -60,6 +61,7 @@ function shell(bodyHtml: string, inverse = false): string {
 <tr><td style="padding:28px 8px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
 <tr><td style="padding:0 8px;border-top:1px solid ${rule};"></td></tr>
 <tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:${inverse ? "#9A9AA0" : "#6B6B70"};">You're getting this because you're aboard. Preferences live in the member app.</td></tr>
+<tr><td style="padding:14px 8px 0;font-family:${MONO};font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${inverse ? "#9A9AA0" : "#6B6B70"};">Strike a chord.</td></tr>
 </table>
 </td></tr></table>`;
 }
@@ -76,7 +78,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     subject: "Received. A person reads it next.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">Your application is in the shore office. A person reads it next — not a machine, not a scorecard.</p>
+        `<p style="margin:0 0 16px;">Your application is with Shoreside. A person reads it next — not a machine, not a scorecard.</p>
 <p style="margin:0;">We reply within the week. Until then, the water keeps.</p>`,
     ),
   }),
@@ -85,7 +87,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">We read your application and we would like to meet you. Join us for one salon evening, as our guest, before anything is decided.</p>
-<p style="margin:0;">Reply with a word and the shore office will hold you a chair.</p>`,
+<p style="margin:0;">Reply with a word and Shoreside will hold you a chair.</p>`,
     ),
   }),
   "welcome-aboard": (p) => ({
@@ -93,7 +95,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">Your berth in the club is set${p["tier"] ? ` at the ${esc(p["tier"])} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
-<p style="margin:0;">The first hundred fathoms are already in your ledger.</p>`,
+<p style="margin:0;">The first hundred knots are already in your ledger.</p>`,
       true,
     ),
   }),
@@ -131,7 +133,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">Your departure is logged and the ledger is squared. The club keeps your record, and the roll keeps your name.</p>
-<p style="margin:0;">Should you want your berth back, a word to the shore office is enough. Fair winds.</p>`,
+<p style="margin:0;">Should you want your berth back, a word to Shoreside is enough. Fair winds.</p>`,
       true,
     ),
   }),
@@ -143,15 +145,38 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:0;">It appears in your ledger now and settles with your statement.</p>`,
     ),
   }),
+  "lore-digest": (p) => {
+    const items = Array.isArray(p["items"]) ? (p["items"] as Array<Record<string, unknown>>) : [];
+    const list = items
+      .map(
+        (it) =>
+          `<p style="margin:0 0 14px;"><b style="font-weight:600;">${esc(it["title"])}</b>${it["dek"] ? `<br/><span style="color:#6B6B70;">${esc(it["dek"])}</span>` : ""}</p>`,
+      )
+      .join("");
+    return {
+      subject: "LORE, Sundays.",
+      html: shell(
+        greet(p) +
+          `<p style="margin:0 0 16px;letter-spacing:0.22em;font-size:13px;">LORE</p>` +
+          (list ||
+            `<p style="margin:0 0 16px;">This week's reading is up. LORE reads everything — the latest dispatches are in the member app.</p>`) +
+          `<p style="margin:0;">Sunday, as always. The manifest rides along.</p>`,
+      ),
+    };
+  },
 };
+
+// The Sunday digest was queued as "dispatch-digest" before the rebrand —
+// both keys render the LORE digest so queued rows still send.
+templates["dispatch-digest"] = templates["lore-digest"];
 
 function render(row: OutboxRow): Rendered {
   const p = row.payload ?? {};
   const fn = templates[row.template];
   if (fn) return fn(p);
   return {
-    subject: "A word from the shore office.",
-    html: shell(greet(p) + `<p style="margin:0;">The shore office has an update for you in the member app.</p>`),
+    subject: "A word from Shoreside.",
+    html: shell(greet(p) + `<p style="margin:0;">Shoreside has an update for you in the member app.</p>`),
   };
 }
 

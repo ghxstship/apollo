@@ -5,25 +5,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  ["/harbormaster", "Applications"],
-  ["/harbormaster/manifests", "Manifests"],
-  ["/harbormaster/voyages", "Voyages"],
-  ["/harbormaster/orders", "Orders"],
-  ["/harbormaster/moderation", "Moderation"],
-  ["/harbormaster/reports", "Reports"],
-  ["/harbormaster/galley", "Galley"],
-  ["/harbormaster/crew", "Crew"],
+  ["/bridge", "Applications"],
+  ["/bridge/manifests", "Manifests"],
+  ["/bridge/voyages", "Voyages"],
+  ["/bridge/orders", "Orders"],
+  ["/bridge/moderation", "Moderation"],
+  ["/bridge/reports", "Reports"],
+  ["/bridge/galley", "Galley"],
+  ["/bridge/crew", "Crew"],
 ] as const;
 
 function isCurrent(pathname: string, href: string) {
-  if (href === "/harbormaster") return pathname === href;
+  if (href === "/bridge") return pathname === href;
   return pathname === href || pathname.startsWith(href + "/");
 }
 
 export function HmTabs() {
   const pathname = usePathname();
   return (
-    <nav className="hm-tabs" aria-label="Harbormaster sections">
+    <nav className="hm-tabs" aria-label="Bridge sections">
       <div className="hm-tabs__in">
         {TABS.map(([href, label]) => (
           <Link

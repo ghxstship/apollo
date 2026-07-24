@@ -15,5 +15,5 @@ export async function markAllRead(): Promise<void> {
     .eq("profile_id", user.id)
     .eq("read", false);
   revalidatePath("/word");
-  revalidatePath("/harbor");
+  revalidatePath("/home-port");
 }

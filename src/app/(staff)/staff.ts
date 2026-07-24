@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { error?: string };
 
-export const ERR_STAFF = "Staff only. If that's wrong, hail the shore office.";
+export const ERR_STAFF = "Staff only. If that's wrong, hail Shoreside.";
 export const ERR_LAND = "That didn't land. Try again.";
 
 export async function staffContext() {

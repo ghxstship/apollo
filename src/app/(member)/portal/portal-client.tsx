@@ -4,7 +4,7 @@ import React from "react";
 import { Badge, Button, Toast } from "@/components/ds";
 import { mintInvite, redeemReward } from "./actions";
 
-/* — Redeem a reward against the fathoms balance — */
+/* — Redeem a reward against the knots balance — */
 export function RedeemButton({
   rewardId,
   rewardName,
@@ -47,7 +47,7 @@ export function RedeemButton({
         <Toast
           fixed
           tone="laurel"
-          message="Redeemed. The shore office will make it so."
+          message="Redeemed. Shoreside will make it so."
           meta={rewardName}
           onDismiss={() => setRedeemed(false)}
         />

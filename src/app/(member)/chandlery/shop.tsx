@@ -132,7 +132,7 @@ export function ChandleryShop({
   const refund = async (orderId: string) => {
     const res = await requestRefund(orderId);
     if (!res.error) {
-      setToast("Refund requested — the harbormaster reviews it.");
+      setToast("Refund requested — the Bridge reviews it.");
       router.refresh();
     }
   };

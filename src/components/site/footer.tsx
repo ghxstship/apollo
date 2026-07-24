@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/ds";
+import { CITY_CODES } from "@/lib/brand";
 import { roman } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -25,7 +26,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
             <b>The club</b>
             <Link href="/voyages">Voyages</Link>
             <Link href="/membership">Membership</Link>
-            <Link href="/dispatch">The Dispatch</Link>
+            <Link href="/lore">LORE</Link>
             <Link href="/gallery">Gallery</Link>
             <Link href="/crew">Crew wanted</Link>
           </div>
@@ -35,6 +36,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
               <div className="ws-footer__harbor" key={h.id}>
                 {h.name}
                 <span>
+                  {CITY_CODES[h.slug] ? CITY_CODES[h.slug] + " · " : ""}
                   {h.launch_year ? roman(h.launch_year) + " · " : ""}
                   {HARBOR_STATUS[h.status] || h.status}
                 </span>
@@ -47,7 +49,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
             <Link href="/legal#conduct">Code of conduct</Link>
             <Link href="/legal#terms">Terms of passage</Link>
             <Link href="/legal#privacy">Privacy</Link>
-            <Link href="/support">The shore office</Link>
+            <Link href="/support">Shoreside</Link>
           </div>
         </div>
         <div className="ws-footer__base">

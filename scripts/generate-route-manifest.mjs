@@ -31,7 +31,7 @@ function readProtectedPrefixes() {
 /* Dynamic segments and where their live values come from (Supabase). */
 const DYNAMIC_SOURCES = {
   "/voyages/[slug]": { table: "voyages", column: "slug" },
-  "/dispatch/[slug]": { table: "dispatch_posts", column: "slug" },
+  "/lore/[slug]": { table: "dispatch_posts", column: "slug" },
 };
 
 function walk(dir, segments = []) {

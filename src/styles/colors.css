@@ -2,7 +2,7 @@
    MASTER: greyscale brutalism, dark by default — carbon blacks, paper whites, hairline steel —
    with neon "lava" gradients (cyan→violet→magenta) as the only color, used like electricity:
    focus, progress, the live thing, the one action.
-   LIGHT THEME: data-theme="light" on <body> flips surfaces to paper; black panels stay black.
+   LIGHT THEME: data-theme="light" on <html> flips surfaces to paper; black panels stay black.
    Legacy event themes sea/shore/sky remain for event-level branding. */
 :root{
 /* — greys (the structure) — */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Progress, Stat, StateBlock, Table } from "@/components/ds";
-import { fathoms, logDate } from "@/lib/format";
+import { CURRENCY, knots, LEAGUES } from "@/lib/brand";
+import { logDate, roman } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { CopyCode } from "./copy-code";
@@ -31,10 +32,10 @@ export default async function PortalPage({
 }: {
   searchParams: Promise<{ settled?: string }>;
 }) {
-  const { supabase, user } = await getMember();
+  const { supabase, user, profile } = await getMember();
   const { settled } = await searchParams;
 
-  const [balanceRes, ledgerRes, rewardsRes, redemptionsRes, inviteRes, accountRes, accountBalRes] =
+  const [balanceRes, ledgerRes, rewardsRes, redemptionsRes, inviteRes, accountRes, accountBalRes, leagueRes] =
     await Promise.all([
       supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
       supabase
@@ -65,6 +66,7 @@ export default async function PortalPage({
         .eq("profile_id", user.id)
         .order("created_at", { ascending: false }),
       supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+      supabase.from("member_league").select("*").eq("profile_id", user.id).maybeSingle(),
     ]);
 
   const balance = balanceRes.data?.balance ?? 0;
@@ -75,6 +77,11 @@ export default async function PortalPage({
   const invite = inviteRes.data ?? null;
   const account: AccountRow[] = (accountRes.data ?? []).map((r) => ({ ...r }));
   const accountBalance = accountBalRes.data?.balance_cents ?? 0;
+  const leagueNo = leagueRes.data?.league ?? 1;
+  const leagueName = leagueRes.data?.league_name ?? LEAGUES[0].name;
+  const joinedYear = profile?.joined_at
+    ? new Date(profile.joined_at).getFullYear()
+    : new Date().getFullYear();
 
   const nextReward =
     rewards.find((r) => r.cost_fm > balance) ?? rewards[rewards.length - 1] ?? null;
@@ -84,7 +91,7 @@ export default async function PortalPage({
     <div>
       <span className="mbr-eyebrow">Member portal</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        The fathoms ledger.
+        The knots ledger.
       </h1>
 
       <div className="ptl-hero">
@@ -93,16 +100,65 @@ export default async function PortalPage({
             inverse
             thick
             label={nextReward ? `Toward ${nextReward.name.toLowerCase()}` : "The horizon"}
-            detail={nextReward ? `${balance} / ${nextReward.cost_fm} FM` : `${balance} FM`}
+            detail={
+              nextReward
+                ? `${balance} / ${nextReward.cost_fm} ${CURRENCY.code}`
+                : `${balance} ${CURRENCY.code}`
+            }
             value={progress}
           />
           <p style={{ fontSize: 13, color: "var(--text-inverse-2)", marginTop: 14, maxWidth: "46ch" }}>
-            Fathoms are earned under sail, ashore, and by bringing good people.
-            Miles, not likes.
+            Knots are earned under sail, ashore, and by bringing good people.
+            {" "}{CURRENCY.line}
           </p>
         </div>
-        <Stat inverse label="Fathoms balance" value={fathoms(balance)} sub="MILES, NOT LIKES" />
+        <Stat inverse label="Knots balance" value={knots(balance)} sub="MORE KNOTS, FARTHER WATER" />
       </div>
+
+      <section className="mbr-sec">
+        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+          Leagues
+        </span>
+        <div className="ptl-panel">
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 20 }}>{leagueName}</div>
+          <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 8, maxWidth: "46ch" }}>
+            Knots are earned and spent; leagues only deepen. The longer aboard,
+            the deeper you ride.
+          </p>
+          <p className="mbr-mono" style={{ marginTop: 10 }}>
+            MEMBER SINCE {roman(joinedYear)} — {leagueName.toUpperCase()}
+          </p>
+          <div style={{ marginTop: 16 }}>
+            {LEAGUES.map((l) => {
+              const here = l.league === leagueNo;
+              return (
+                <div
+                  key={l.league}
+                  aria-current={here ? "true" : undefined}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "7px 0",
+                    borderTop: "1px solid var(--line-faint)",
+                    fontSize: 13,
+                    color: here ? "var(--text-1)" : "var(--text-3)",
+                    fontWeight: here ? 600 : 400,
+                  }}
+                >
+                  <span>
+                    {l.name}
+                    {here ? " — your depth" : ""}
+                  </span>
+                  <span className="mbr-mono">
+                    {l.months === 0 ? "FROM BOARDING" : `${l.months} MO ABOARD`}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       <section className="mbr-sec">
         <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
@@ -120,7 +176,7 @@ export default async function PortalPage({
           <div className="ptl-rew">
             {rewards.map((r) => (
               <div key={r.id} className="ptl-panel" style={{ marginTop: 0 }}>
-                <div className="mbr-mono">{r.cost_fm} FM</div>
+                <div className="mbr-mono">{knots(r.cost_fm)}</div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 20, marginTop: 8 }}>
                   {r.name}
                 </div>
@@ -208,12 +264,12 @@ export default async function PortalPage({
                 { key: "reason", label: "Entry" },
                 {
                   key: "delta",
-                  label: "Fathoms",
+                  label: "Knots",
                   mono: true,
                   render: (r) => (
                     <span style={{ color: r.delta < 0 ? "var(--siren)" : "var(--laurel)" }}>
                       {r.delta > 0 ? "+" : ""}
-                      {fathoms(r.delta)}
+                      {knots(r.delta)}
                     </span>
                   ),
                 },
@@ -281,7 +337,7 @@ export default async function PortalPage({
               </div>
             ) : (
               <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>
-                Settled at the gangway or by invoice — the shore office posts payments.
+                Settled at the gangway or by invoice — Shoreside posts payments.
               </p>
             )}
           </div>

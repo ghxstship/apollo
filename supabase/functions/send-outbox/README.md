@@ -8,13 +8,13 @@ Row lifecycle: `pending` → `sent` (with `sent_at`) | `failed` | `skipped`. Upd
 
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — injected automatically by the platform.
 - `RESEND_API_KEY` — optional. When absent, rows are skipped (logged once per run).
-- `OUTBOX_FROM` — optional sender, defaults to `LYRE SOCIAL <shore@lyre.social>`.
+- `OUTBOX_FROM` — optional sender, defaults to `LYRE SOCIAL — Shoreside <shore@lyre.social>`.
 
 Set secrets with the CLI:
 
 ```sh
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx --project-ref mpyvwpunwrioakmtmcdo
-supabase secrets set OUTBOX_FROM="LYRE SOCIAL <shore@lyre.social>" --project-ref mpyvwpunwrioakmtmcdo
+supabase secrets set OUTBOX_FROM="LYRE SOCIAL — Shoreside <shore@lyre.social>" --project-ref mpyvwpunwrioakmtmcdo
 ```
 
 Or in the Dashboard: Project Settings → Edge Functions → Secrets.
@@ -63,5 +63,6 @@ curl -X POST "https://mpyvwpunwrioakmtmcdo.supabase.co/functions/v1/send-outbox"
 | `waitlist-release` | A berth released to you. |
 | `farewell` | Fair winds. |
 | `refund-posted` | Refund posted. |
+| `lore-digest` | LORE, Sundays. (renders `items[]` of `{title, dek}`; the legacy `dispatch-digest` key renders the same template so queued rows still send) |
 
-Unknown templates fall back to a neutral "A word from the shore office." note. All payload fields are HTML-escaped before interpolation.
+Every template carries the "Strike a chord." tagline in the footer. Unknown templates fall back to a neutral "A word from Shoreside." note. All payload fields are HTML-escaped before interpolation.
