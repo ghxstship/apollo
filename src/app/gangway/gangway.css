@@ -7,7 +7,11 @@
 .gw-side__log{position:relative;display:flex;gap:20px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-inverse-3)}
 .gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite;position:relative}
 .gw-main{padding:48px;display:flex;flex-direction:column;box-sizing:border-box}
-.gw-corner{display:flex;justify-content:flex-end}
+.gw-theme{display:flex;justify-content:flex-end;transform:scale(.82);transform-origin:bottom right;opacity:.55;transition:opacity var(--dur-1) var(--ease-swell)}
+.gw-theme:hover,.gw-theme:focus-within{opacity:1}
+.gw-theme .ls-themetog{border-color:transparent;background:transparent}
+.gw-theme .ls-themetog:hover,.gw-theme .ls-themetog:focus-within{border-color:var(--line);background:var(--surface-card)}
+.gw-theme .ls-themetog button.on{background:var(--wash-ink-2);color:var(--text-1)}
 .gw-panel{max-width:400px;width:100%;margin:auto}
 .gw-h{font-family:var(--font-display);font-size:var(--text-display-s)}
 .gw-sub{font-size:13.5px;color:var(--text-2);margin-top:8px}

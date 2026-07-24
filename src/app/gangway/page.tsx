@@ -37,11 +37,12 @@ export default async function GangwayPage({
         </div>
       </aside>
       <main className="gw-main">
-        <div className="gw-corner">
-          <ThemeToggle />
-        </div>
         <div className="gw-panel">
           <GangwayPanel next={next} expired={expired} />
+        </div>
+        {/* Ambient, not a feature — quiet corner, inside the content margin. */}
+        <div className="gw-theme">
+          <ThemeToggle />
         </div>
       </main>
     </div>
