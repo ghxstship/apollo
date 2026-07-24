@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Progress, Stat, StateBlock, Table } from "@/components/ds";
 import { fathoms, logDate } from "@/lib/format";
+import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { CopyCode } from "./copy-code";
 import { MintInvite, RedeemButton } from "./portal-client";
+import { SettleCardButton, SettledNotice } from "./settle-card";
 
 export const metadata: Metadata = { title: "Portal" };
 
@@ -24,8 +26,13 @@ type AccountRow = {
   [key: string]: unknown;
 };
 
-export default async function PortalPage() {
+export default async function PortalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ settled?: string }>;
+}) {
   const { supabase, user } = await getMember();
+  const { settled } = await searchParams;
 
   const [balanceRes, ledgerRes, rewardsRes, redemptionsRes, inviteRes, accountRes, accountBalRes] =
     await Promise.all([
@@ -266,11 +273,20 @@ export default async function PortalPage() {
                 ? `BALANCE — $${(Math.abs(accountBalance) / 100).toFixed(2)} DUE`
                 : "BALANCE — SETTLED"}
             </p>
-            <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>
-              Settled at the gangway or by invoice — the shore office posts payments.
-            </p>
+            {accountBalance < 0 && stripeEnabled() ? (
+              <div style={{ marginTop: 12 }}>
+                <SettleCardButton
+                  amountLabel={`$${(Math.abs(accountBalance) / 100).toFixed(2)}`}
+                />
+              </div>
+            ) : (
+              <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>
+                Settled at the gangway or by invoice — the shore office posts payments.
+              </p>
+            )}
           </div>
         )}
+        {settled === "1" ? <SettledNotice /> : null}
       </section>
     </div>
   );

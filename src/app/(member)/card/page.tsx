@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Badge, Button, Tooltip, Wordmark } from "@/components/ds";
+import { Badge, Wordmark } from "@/components/ds";
 import { TIER_LABEL, roman } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { getMember } from "../data";
+import { PrintButton } from "./print-button";
 
 export const metadata: Metadata = { title: "Member card" };
 
@@ -70,12 +71,28 @@ export default async function CardPage() {
         Turn the brightness up at the gangway. The skipper knows the rest.
       </p>
       <div className="crd-acts">
-        <Tooltip label="Soon.">
-          <Button variant="outline" disabled>
-            Add to wallet
-          </Button>
-        </Tooltip>
+        <PrintButton label="Print or save" />
       </div>
+      {/* Print: the card alone, edge to edge, colors exact. */}
+      <style>{`
+        @media print {
+          @page { margin: 12mm; }
+          body { background: #fff !important; }
+          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts { display: none !important; }
+          .mbr-shell, .mbr-main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+          .crd { padding: 0 !important; }
+          .ls-fade { animation: none !important; opacity: 1 !important; }
+          .crd-card {
+            width: 100% !important;
+            max-width: 480px !important;
+            margin-inline: auto !important;
+            border-color: #060607 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .crd-seam { animation: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

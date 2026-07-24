@@ -81,6 +81,19 @@ export async function purserReleaseBerth(voyageId: string): Promise<{ error?: st
   return {};
 }
 
+/* Release by slug — the LLM brain speaks in slugs; resolve, then release. */
+export async function purserReleaseBerthBySlug(slug: string): Promise<{ error?: string }> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { data: voyage } = await supabase
+    .from("voyages")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!voyage) return { error: "No such sailing on the manifest." };
+  return purserReleaseBerth(voyage.id);
+}
+
 /* Fathoms + member account, straight off the ledgers. */
 export async function purserBalance(): Promise<{
   error?: string;

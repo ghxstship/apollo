@@ -4,6 +4,7 @@ import { Badge, StateBlock } from "@/components/ds";
 import { TIER_LABEL, logDate, logTime } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { getMember } from "../../data";
+import { PrintButton } from "../../card/print-button";
 
 export const metadata: Metadata = { title: "Boarding stub" };
 
@@ -178,6 +179,29 @@ export default async function StubPage({
         </div>
       </div>
       <p className="crd-note">Present at the gangway.</p>
+      <div className="crd-acts">
+        <PrintButton label="Print the stub" />
+      </div>
+      {/* Print: the stub alone, edge to edge, colors exact. */}
+      <style>{`
+        @media print {
+          @page { margin: 12mm; }
+          body { background: #fff !important; }
+          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts { display: none !important; }
+          .mbr-shell, .mbr-main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+          .crd { padding: 0 !important; }
+          .ls-fade { animation: none !important; opacity: 1 !important; }
+          .crd-card {
+            width: 100% !important;
+            max-width: 480px !important;
+            margin-inline: auto !important;
+            border-color: #060607 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .crd-seam { animation: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

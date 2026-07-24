@@ -58,9 +58,22 @@ jobs:
       - name: Audit all routes and surfaces
         run: BASE_URL=http://localhost:3000 node scripts/audit-routes.mjs
 
-      - name: Upload report
+      - name: E2E suite — roles, tiers, personas
+        env:
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+        run: |
+          if [ -z "$E2E_PASSWORD" ]; then
+            echo "E2E_PASSWORD secret not set — skipping persona e2e (route audit still enforced)."
+          else
+            BASE_URL=http://localhost:3000 node scripts/e2e-suite.mjs
+          fi
+
+      - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: route-audit-report
-          path: route-audit-report.json
+          path: |
+            route-audit-report.json
+            e2e-report.json
+          if-no-files-found: ignore

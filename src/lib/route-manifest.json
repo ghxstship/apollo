@@ -22,6 +22,36 @@
       "access": "public"
     },
     {
+      "path": "/api/purser",
+      "file": "src/app/api/purser/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/stripe/checkout",
+      "file": "src/app/api/stripe/checkout/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/stripe/webhook",
+      "file": "src/app/api/stripe/webhook/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
       "path": "/auth/confirm",
       "file": "src/app/auth/confirm/route.ts",
       "type": "handler",

@@ -8,12 +8,14 @@ import {
   purserBalance,
   purserNextBerth,
   purserReleaseBerth,
+  purserReleaseBerthBySlug,
   purserSailings,
   purserWeather,
 } from "./actions";
 
 type CardAction =
   | { type: "release"; voyageId: string }
+  | { type: "releaseSlug"; slug: string }
   | { type: "link"; href: string };
 
 type Msg =
@@ -33,6 +35,14 @@ const QUICK = [
 ] as const;
 
 type Intent = (typeof QUICK)[number][0] | null;
+
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+type PurserApiResponse = {
+  fallback?: boolean;
+  reply?: string;
+  action?: { kind: "reserve" | "release"; voyage_slug: string; title: string; summary: string };
+};
 
 function intentOf(text: string): Intent {
   const s = text.toLowerCase();
@@ -82,8 +92,69 @@ export function PurserPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  /* LLM brain plumbing — transcript of free-text exchanges only. */
+  const apiMessages = React.useRef<ChatMessage[]>([]);
+  const fallbackMode = React.useRef(false);
+  const fallbackNoticed = React.useRef(false);
+
+  const enterFallback = () => {
+    fallbackMode.current = true;
+    if (!fallbackNoticed.current && process.env.NODE_ENV === "development") {
+      fallbackNoticed.current = true;
+      push({
+        kind: "sys",
+        text: "The Purser is running dead reckoning — set ANTHROPIC_API_KEY for full charts.",
+      });
+    }
+  };
+
+  const cardFor = (action: NonNullable<PurserApiResponse["action"]>): Msg => ({
+    kind: "card",
+    title: action.title,
+    meta: action.summary,
+    confirm: action.kind === "release" ? "Release it" : "Reserve",
+    action:
+      action.kind === "release"
+        ? { type: "releaseSlug", slug: action.voyage_slug }
+        : { type: "link", href: "/manifest" },
+  });
+
+  const askPurser = async (text: string) => {
+    push({ kind: "user", text });
+    const transcript = [...apiMessages.current, { role: "user" as const, content: text }];
+    setTyping(true);
+    try {
+      const res = await fetch("/api/purser", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: transcript }),
+      });
+      if (!res.ok) throw new Error("purser api");
+      const data = (await res.json()) as PurserApiResponse;
+      if (data.fallback || typeof data.reply !== "string") {
+        setTyping(false);
+        enterFallback();
+        answer(intentOf(text));
+        return;
+      }
+      apiMessages.current = [...transcript, { role: "assistant", content: data.reply }];
+      const out: Msg[] = [{ kind: "bot", text: data.reply }];
+      if (data.action) out.push(cardFor(data.action));
+      push(...out);
+      setTyping(false);
+    } catch {
+      setTyping(false);
+      enterFallback();
+      answer(intentOf(text));
+    }
+  };
+
   const handle = (intent: Intent, label: string) => {
     push({ kind: "user", text: label });
+    answer(intent);
+  };
+
+  const answer = (intent: Intent) => {
     if (intent === "berth") {
       void run(async () => {
         const res = await purserNextBerth();
@@ -174,11 +245,14 @@ export function PurserPanel({ onClose }: { onClose: () => void }) {
   };
 
   const confirmCard = (card: Extract<Msg, { kind: "card" }>) => {
-    if (card.action.type !== "release") return;
-    const voyageId = card.action.voyageId;
+    if (card.action.type !== "release" && card.action.type !== "releaseSlug") return;
+    const action = card.action;
     push({ kind: "user", text: card.confirm });
     void run(async () => {
-      const res = await purserReleaseBerth(voyageId);
+      const res =
+        action.type === "release"
+          ? await purserReleaseBerth(action.voyageId)
+          : await purserReleaseBerthBySlug(action.slug);
       if (res.error) return [{ kind: "bot", text: res.error }];
       return [
         { kind: "sys", text: "CONFIRMED · EXECUTED · LOGGED" },
@@ -193,7 +267,11 @@ export function PurserPanel({ onClose }: { onClose: () => void }) {
     const t = input.trim();
     if (!t) return;
     setInput("");
-    handle(intentOf(t), t);
+    if (fallbackMode.current) {
+      handle(intentOf(t), t);
+    } else {
+      void askPurser(t);
+    }
   };
 
   return (

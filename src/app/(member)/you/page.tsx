@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
 import { TIER_LABEL, roman } from "@/lib/format";
+import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
+import { SettleCardButton } from "../portal/settle-card";
 import { NotificationPrefsForm, Offboarding, ProfileForm, ResumeBanner } from "./you-client";
 
 export const metadata: Metadata = { title: "You" };
@@ -121,6 +123,17 @@ export default async function YouPage() {
               Manage membership
             </Link>
           </div>
+          {balanceCents < 0 && stripeEnabled() ? (
+            <div className="you-row">
+              <div>
+                <b>Settle the account</b>
+                <p>Card payments post to the ledger when the processor confirms.</p>
+              </div>
+              <SettleCardButton
+                amountLabel={`$${(Math.abs(balanceCents) / 100).toFixed(2)}`}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 

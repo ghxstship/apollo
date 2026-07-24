@@ -28,6 +28,18 @@ A membership club for experiential connection at sea and ashore — voyages, sal
 
 Magic-link emails use Supabase's built-in SMTP (rate-limited); set a custom SMTP provider for production. The `voyage_capacity` view is intentionally `SECURITY DEFINER` — it exposes only aggregate berth counts to anonymous visitors.
 
+### Card settlement (Stripe)
+
+Members with a negative house-account balance can settle by card through Stripe Checkout. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` (see `.env.example`); for local webhooks run `stripe listen --forward-to localhost:3000/api/stripe/webhook`. The webhook posts a `payment` row to `account_ledger` (idempotent per Checkout session) and drops a Word. With any key unset the feature disappears cleanly — the portal shows the shore-office note and the API returns 503.
+
+### The Purser
+
+The member assistant has an optional LLM brain (`/api/purser`, Claude via `@anthropic-ai/sdk`). Set `ANTHROPIC_API_KEY` to enable it; all reads run through the member's own Supabase server client (RLS-scoped), and any write is confirm-first — the model only proposes an action card, and the member's confirmation executes through the existing server actions. With the key unset (or on any API error) the panel falls back silently to the deterministic v1 intent matching; a dead-reckoning notice appears in dev only.
+
+### Wallet passes
+
+Apple/Google wallet passes require platform signing credentials the project doesn't hold. Until then, `/card` and `/stub/[code]` ship a working "Print or save" flow — `window.print()` with print CSS that strips the chrome and keeps the card's exact colors, which also covers save-as-PDF.
+
 ## Site map & route audit
 
 - `src/lib/route-manifest.json` is generated from the `src/app` filesystem by `scripts/generate-route-manifest.mjs`, which runs automatically before `dev` and `build` — it cannot drift. It also parses the auth proxy's protected-prefix list so route classification and access control share one source of truth.
