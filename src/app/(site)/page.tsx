@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES } from "@/lib/brand";
+import { CITY_CODES, TAGLINE } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,8 +45,8 @@ export default async function HomePage() {
     <>
       <header className="ws-hero">
         <div className="ls-container ws-hero__in">
-          <div className="ls-eyebrow">A membership club — at sea and ashore</div>
-          <h1>The long way home.</h1>
+          <div className="ls-eyebrow">The social club for sea and shore</div>
+          <h1>{TAGLINE}</h1>
           <p className="ws-hero__sub">
             Voyages at sea. Salons ashore. A crew worth the crossing — Miami, Los
             Angeles, and the waters beyond.
