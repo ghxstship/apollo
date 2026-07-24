@@ -52,7 +52,8 @@ export async function placeShopOrder(lines: CrateLine[]): Promise<ChandleryResul
     .from("shop_orders")
     .insert({
       profile_id: user.id,
-      total_cents: subtotal - discount,
+      // Gross total; the ledger trigger charges total minus discount.
+      total_cents: subtotal,
       discount_cents: discount,
     })
     .select("id")
