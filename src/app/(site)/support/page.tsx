@@ -11,11 +11,11 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
     [
       [
         "I applied. Now what?",
-        "A person reads it, a salon invite follows within the week, two members sign, and you're aboard. No black box.",
+        "A person reads it, a Port Day invite follows within the week, two members sign, and you're aboard. No black box.",
       ],
       [
         "Can I visit before joining?",
-        "Yes — that's the point. Redeem a member's invite code for one salon as their guest.",
+        "Yes — that's the point. Redeem a member's invite code for one Port Day as their guest.",
       ],
       [
         "I've never sailed.",
@@ -24,11 +24,11 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
     ],
   ],
   [
-    "Dues and berths",
+    "Dues and passes",
     [
       [
         "How do refunds work?",
-        "Release a berth 48 hours out or more for full credit. No-shows forfeit the deposit to the galley fund. Weather holds roll everything forward untouched.",
+        "Release a pass 48 hours out or more for full credit. No-shows forfeit the deposit to the galley fund. Weather holds roll everything forward untouched.",
       ],
       [
         "Can I pause my membership?",
@@ -36,7 +36,7 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
       ],
       [
         "What are knots worth?",
-        "Ten per nautical mile, forty per salon, two hundred fifty per referral who joins. More knots, farther water — spend them on rewards money can't buy here.",
+        "Ten per nautical mile, forty per Port Day, two hundred fifty per referral who joins. More knots, farther water — spend them on rewards money can't buy here.",
       ],
     ],
   ],
@@ -49,7 +49,7 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
       ],
       [
         "What if weather turns?",
-        "Holds are called by 18:00 the night before — a word, not an apology. Your berth carries over.",
+        "Holds are called by 18:00 the night before — a word, not an apology. Your pass carries over.",
       ],
       [
         "Can I bring a guest?",

@@ -28,7 +28,7 @@ export type VoyageRow = {
   distance_nm: number | null; berths_total: number; price_cents: number; status: VoyageStatus
   blurb: string | null; description: string | null; media: string; min_tier: MembershipTier
   created_at: string; deposit_required: boolean; muster: string | null; conditions: Json | null
-  fathoms_multiplier: number
+  fathoms_multiplier: number; held_passes: number
   sub_class: "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland" | null
   itinerary: Json
 }
@@ -36,11 +36,12 @@ export type RsvpRow = {
   id: string; voyage_id: string; profile_id: string; status: RsvpStatus; guests: number
   created_at: string; checked_in_at: string | null; checked_in_by: string | null
   boarding_code: string | null; show_on_manifest: boolean; vessel_id: string | null
+  comp: boolean; guest_names: string[]
 }
 export type MembershipPlanRow = {
   id: string; plan_type: "access" | "regional" | "national" | "global" | "guest"
   tier: number; label: string; price_cents: number; events_per_month: number
-  class_ceiling: "voyage" | "expedition" | "odyssey" | null; active: boolean
+  class_ceiling: "voyage" | "expedition" | "odyssey" | null; active: boolean; early_days: number
 }
 export type VesselRow = {
   id: string; name: string; capacity: number; home_harbor: string | null; active: boolean
@@ -180,6 +181,10 @@ export type Database = {
       }
       member_league: {
         Row: { profile_id: string | null; league: number | null; league_name: string | null }
+        Relationships: []
+      }
+      member_pass_usage: {
+        Row: { profile_id: string | null; month: string | null; passes_used: number | null }
         Relationships: []
       }
     }

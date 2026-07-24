@@ -33,7 +33,7 @@ export default function LegalPage() {
         <h3>Ashore and on the Open Deck.</h3>
         <ul>
           <li>What happens aboard stays aboard — no posting people without their yes.</li>
-          <li>Berths and seats are never resold for cash. Release them; the waitlist is the market.</li>
+          <li>Passes are never resold for cash. Release them; the waitlist is the market.</li>
           <li>One warning for conduct; none for harassment. Departed members keep their credits either way.</li>
           <li>Leave every port better than you found it.</li>
         </ul>
@@ -44,15 +44,15 @@ export default function LegalPage() {
 
       <section className="lg-sec" id="terms">
         <h2>Terms of passage.</h2>
-        <h3>Dues and berths.</h3>
+        <h3>Dues and passes.</h3>
         <p>
           Dues bill annually; installments carry no interest. Cancel anytime —
-          unused months credit forward. Berths release up to 48 hours out for full
+          unused months credit forward. Passes release up to 48 hours out for full
           credit; no-shows forfeit the deposit to the galley fund.
         </p>
         <h3>Weather and safety.</h3>
         <p>
-          Holds are called by 18:00 the night before and roll your berth forward
+          Holds are called by 18:00 the night before and roll your pass forward
           untouched. The skipper&rsquo;s word is final on the water. You sail having
           signed the seaworthiness declaration once — swim 200 meters, follow
           instruction.
@@ -69,7 +69,7 @@ export default function LegalPage() {
         <h2>Privacy.</h2>
         <h3>What we keep.</h3>
         <p>
-          Your manifest — voyages, salons, knots — your seaworthiness declaration,
+          Your manifest — Sea Days, Port Days, knots — your seaworthiness declaration,
           and the contact details you gave us. Payment details live with the
           processor, not us.
         </p>

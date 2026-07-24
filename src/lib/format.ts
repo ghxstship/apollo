@@ -24,7 +24,7 @@ export function logMeta(iso: string, distanceNm?: number | null): string[] {
 }
 
 export function price(cents: number): string {
-  if (!cents) return "NO CHARGE";
+  if (!cents) return "COMPLIMENTARY";
   return `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 }
 
@@ -43,10 +43,11 @@ export function roman(n: number): string {
   return out;
 }
 
+/* Two families only — the sky key survives for legacy rows, styled as Port Day. */
 export const EVENT_CLASS_LABEL: Record<string, string> = {
   sea: "Sea Day",
   shore: "Port Day",
-  sky: "Overnight",
+  sky: "Port Day",
 };
 
 export const TIER_LABEL: Record<string, string> = {

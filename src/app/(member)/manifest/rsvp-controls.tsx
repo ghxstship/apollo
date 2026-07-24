@@ -2,13 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import { Badge, Button, Checkbox, Dialog, Stepper } from "@/components/ds";
-import { confirmBerth, releaseBerth, setGuests, setRsvpStatus } from "./actions";
+import { Badge, Button, Checkbox, Dialog, Input, Stepper } from "@/components/ds";
+import { confirmBerth, improvePass, releaseBerth, setGuests, setRsvpStatus } from "./actions";
 
 export type AddonOption = { id: string; name: string; price_cents: number };
 
 const POLICY =
-  "Weather holds are called by 18:00 the night before. Release your berth up to 48h out for full credit — it goes to the waitlist in order.";
+  "Weather holds are called by 18:00 the night before. Release your pass up to 48h out for full credit — it goes to the waitlist in order.";
 
 const rowStyle: React.CSSProperties = {
   display: "flex",
@@ -23,19 +23,55 @@ function money(cents: number): string {
   return `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 }
 
+/* One name slot per guest, sized to the count. */
+function sizeNames(count: number, base: string[]): string[] {
+  return Array.from({ length: count }, (_, i) => base[i] ?? "");
+}
+
+function GuestNameInputs({
+  names,
+  onChange,
+}: {
+  names: string[];
+  onChange: (index: number, value: string) => void;
+}) {
+  return (
+    <>
+      {names.map((name, i) => (
+        <Input
+          key={i}
+          label={
+            names.length > 1
+              ? `Guest ${i + 1} — as the manifest reads it`
+              : "Guest name — as the manifest reads it"
+          }
+          required
+          value={name}
+          onChange={(e) => onChange(i, e.target.value)}
+          style={{ marginTop: 10 }}
+        />
+      ))}
+    </>
+  );
+}
+
 export function RsvpControls({
   voyageId,
   voyageTitle,
   myStatus,
   guests,
-  berthsLeft,
+  guestNames,
+  passesLeft,
   weatherHold,
   locked,
   lockedNote,
+  windowNote,
   recommended,
   priceCents,
   depositRequired,
   addons,
+  attachedAddonIds,
+  addonWindowOpen,
   knotsOnCompletion,
   fullCredit,
   boardingCode,
@@ -44,14 +80,20 @@ export function RsvpControls({
   voyageTitle: string;
   myStatus: "aboard" | "waitlist" | "not_going" | null;
   guests: number;
-  berthsLeft: number;
+  guestNames: string[];
+  passesLeft: number;
   weatherHold: boolean;
   locked: boolean;
   lockedNote: string;
+  /* Set when the plan's booking window hasn't opened yet — replaces the CTA. */
+  windowNote: string | null;
   recommended: boolean;
   priceCents: number;
   depositRequired: boolean;
   addons: AddonOption[];
+  attachedAddonIds: string[];
+  /* Add-ons may be added until 18:00 the night before departure. */
+  addonWindowOpen: boolean;
   knotsOnCompletion: number | null;
   /* Computed shoreside: more than 48h out at render time. */
   fullCredit: boolean;
@@ -62,7 +104,16 @@ export function RsvpControls({
   const [offerWaitlist, setOfferWaitlist] = React.useState(false);
   const [checkout, setCheckout] = React.useState(false);
   const [releasing, setReleasing] = React.useState(false);
+  const [improving, setImproving] = React.useState(false);
   const [chosen, setChosen] = React.useState<Set<string>>(new Set());
+  const [improveChosen, setImproveChosen] = React.useState<Set<string>>(new Set());
+  /* Checkout guest party — local until the pass is confirmed. */
+  const [coGuests, setCoGuests] = React.useState(0);
+  const [coNames, setCoNames] = React.useState<string[]>([]);
+  /* Aboard-row guest edit: growing the party prompts for the new names. */
+  const [guestEdit, setGuestEdit] = React.useState<{ count: number; names: string[] } | null>(
+    null
+  );
 
   const run = (fn: () => Promise<{ error?: string; full?: boolean }>, after?: () => void) => {
     setError(null);
@@ -79,20 +130,69 @@ export function RsvpControls({
   };
 
   const needsReview = priceCents > 0 || depositRequired;
-  const qty = 1 + guests;
+  const checkoutNames = sizeNames(coGuests, coNames);
+  const namesMissing = checkoutNames.some((n) => !n.trim());
+  const qty = 1 + coGuests;
   const addonTotal = addons
     .filter((a) => chosen.has(a.id))
     .reduce((sum, a) => sum + a.price_cents * qty, 0);
   const total = priceCents + (depositRequired ? 5000 : 0) + addonTotal;
 
-  const toggleAddon = (id: string) => {
-    setChosen((prev) => {
+  const unattached = addons.filter((a) => !attachedAddonIds.includes(a.id));
+  const aboardQty = 1 + guests;
+  const improveTotal = unattached
+    .filter((a) => improveChosen.has(a.id))
+    .reduce((sum, a) => sum + a.price_cents * aboardQty, 0);
+
+  const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>) => (id: string) => {
+    set((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
   };
+  const toggleAddon = toggle(setChosen);
+  const toggleImprove = toggle(setImproveChosen);
+
+  const openCheckout = () => {
+    setError(null);
+    setOfferWaitlist(false);
+    setCoGuests(guests);
+    setCoNames(guestNames);
+    setCheckout(true);
+  };
+
+  const onGuestStep = (n: number) => {
+    if (n <= guests) {
+      /* Shrinking the party — truncate the names to match. */
+      run(() => setGuests(voyageId, n, guestNames.slice(0, n)));
+    } else {
+      /* Growing it — ask for the new names before writing. */
+      setError(null);
+      setGuestEdit({ count: n, names: sizeNames(n, guestNames) });
+    }
+  };
+
+  const errorBlock = (onWaitlist?: () => void) =>
+    error ? (
+      <p className="voy-hold" role="alert" style={{ marginTop: 10 }}>
+        {error}
+        {offerWaitlist ? (
+          <>
+            {" "}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => run(() => setRsvpStatus(voyageId, "waitlist"), onWaitlist)}
+            >
+              Join the waitlist
+            </Button>
+          </>
+        ) : null}
+      </p>
+    ) : null;
 
   if (locked) {
     return (
@@ -117,26 +217,34 @@ export function RsvpControls({
         <>
           <Badge tone="laurel">Aboard</Badge>
           <span className="mbr-mono">GUESTS</span>
-          <Stepper
-            size="sm"
-            min={0}
-            max={2}
-            value={guests}
-            onChange={(n) => run(() => setGuests(voyageId, n))}
-          />
+          <Stepper size="sm" min={0} max={2} value={guests} onChange={onGuestStep} />
           {boardingCode ? (
             <Link href={`/stub/${boardingCode}`} className="ls-btn ls-btn--outline ls-btn--sm">
               Boarding stub
             </Link>
           ) : null}
           <span className="voy-foot__spacer"></span>
+          {addonWindowOpen && unattached.length > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              onClick={() => {
+                setError(null);
+                setImproveChosen(new Set());
+                setImproving(true);
+              }}
+            >
+              Improve your pass
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
             disabled={pending}
             onClick={() => setReleasing(true)}
           >
-            Release berth
+            Release pass
           </Button>
         </>
       ) : myStatus === "waitlist" ? (
@@ -152,7 +260,9 @@ export function RsvpControls({
             Leave the list
           </Button>
         </>
-      ) : berthsLeft <= 0 ? (
+      ) : windowNote ? (
+        <span className="mbr-mono">{windowNote}</span>
+      ) : passesLeft <= 0 ? (
         <>
           <Badge tone="outline">Full</Badge>
           <span className="voy-foot__spacer"></span>
@@ -184,17 +294,15 @@ export function RsvpControls({
             size="sm"
             disabled={pending}
             onClick={() =>
-              needsReview
-                ? (setError(null), setOfferWaitlist(false), setCheckout(true))
-                : run(() => setRsvpStatus(voyageId, "aboard"))
+              needsReview ? openCheckout() : run(() => setRsvpStatus(voyageId, "aboard"))
             }
           >
-            Confirm RSVP
+            Confirm your pass
           </Button>
         </>
       )}
 
-      {error && !checkout ? (
+      {error && !checkout && !improving && !guestEdit ? (
         <span className="voy-hold" role="alert" style={{ width: "100%" }}>
           {error}
           {offerWaitlist ? (
@@ -228,22 +336,22 @@ export function RsvpControls({
             <Button
               variant="brass"
               size="sm"
-              disabled={pending}
+              disabled={pending || namesMissing}
               onClick={() =>
                 run(
-                  () => confirmBerth(voyageId, Array.from(chosen)),
+                  () => confirmBerth(voyageId, Array.from(chosen), coGuests, checkoutNames),
                   () => setCheckout(false)
                 )
               }
             >
-              Confirm the berth
+              Confirm your pass
             </Button>
           </>
         }
       >
         <div style={{ fontSize: 13 }}>
           <div style={{ ...rowStyle, borderTop: "none" }}>
-            <span>Berth</span>
+            <span>Pass</span>
             <span className="mbr-mono" style={{ fontSize: 12 }}>
               {money(priceCents)}
             </span>
@@ -261,11 +369,32 @@ export function RsvpControls({
               </span>
             </div>
           ) : null}
+          <div style={rowStyle}>
+            <span className="mbr-mono">GUESTS</span>
+            <Stepper
+              size="sm"
+              min={0}
+              max={2}
+              value={coGuests}
+              onChange={(n) => {
+                setCoGuests(n);
+                setCoNames((prev) => sizeNames(n, prev));
+              }}
+            />
+          </div>
+          {coGuests > 0 ? (
+            <GuestNameInputs
+              names={checkoutNames}
+              onChange={(i, v) =>
+                setCoNames((prev) => sizeNames(coGuests, prev).map((x, j) => (j === i ? v : x)))
+              }
+            />
+          ) : null}
           {addons.map((a) => (
             <div key={a.id} style={rowStyle}>
               <Checkbox
                 label={a.name}
-                description={qty > 1 ? `${money(a.price_cents)} × ${qty} (you and ${guests} guest${guests > 1 ? "s" : ""})` : undefined}
+                description={qty > 1 ? `${money(a.price_cents)} × ${qty} (you and ${coGuests} guest${coGuests > 1 ? "s" : ""})` : undefined}
                 checked={chosen.has(a.id)}
                 onChange={() => toggleAddon(a.id)}
               />
@@ -289,29 +418,106 @@ export function RsvpControls({
             </div>
           ) : null}
           <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>{POLICY}</p>
-          {error ? (
-            <p className="voy-hold" role="alert" style={{ marginTop: 10 }}>
-              {error}
-              {offerWaitlist ? (
-                <>
-                  {" "}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={pending}
-                    onClick={() =>
-                      run(
-                        () => setRsvpStatus(voyageId, "waitlist"),
-                        () => setCheckout(false)
-                      )
-                    }
-                  >
-                    Join the waitlist
-                  </Button>
-                </>
-              ) : null}
-            </p>
+          {errorBlock(() => setCheckout(false))}
+        </div>
+      </Dialog>
+
+      {/* — Guest names, prompted when the party grows on an aboard row — */}
+      <Dialog
+        open={!!guestEdit}
+        onClose={() => setGuestEdit(null)}
+        width={380}
+        eyebrow="Guest passes"
+        title="Who's coming aboard?"
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setGuestEdit(null)}>
+              Not yet
+            </Button>
+            <Button
+              variant="brass"
+              size="sm"
+              disabled={pending || !guestEdit || guestEdit.names.some((n) => !n.trim())}
+              onClick={() =>
+                guestEdit &&
+                run(
+                  () => setGuests(voyageId, guestEdit.count, guestEdit.names),
+                  () => setGuestEdit(null)
+                )
+              }
+            >
+              Save guest names
+            </Button>
+          </>
+        }
+      >
+        <div style={{ fontSize: 13 }}>
+          {guestEdit ? (
+            <GuestNameInputs
+              names={guestEdit.names}
+              onChange={(i, v) =>
+                setGuestEdit((prev) =>
+                  prev ? { ...prev, names: prev.names.map((x, j) => (j === i ? v : x)) } : prev
+                )
+              }
+            />
           ) : null}
+          {errorBlock()}
+        </div>
+      </Dialog>
+
+      {/* — Improve your pass: add-ons after the fact, until 18:00 the night before — */}
+      <Dialog
+        open={improving}
+        onClose={() => setImproving(false)}
+        width={420}
+        eyebrow="Improve your pass"
+        title={voyageTitle}
+        footer={
+          <>
+            <Button variant="ghost" size="sm" onClick={() => setImproving(false)}>
+              Not yet
+            </Button>
+            <Button
+              variant="brass"
+              size="sm"
+              disabled={pending || improveChosen.size === 0}
+              onClick={() =>
+                run(
+                  () => improvePass(voyageId, Array.from(improveChosen)),
+                  () => setImproving(false)
+                )
+              }
+            >
+              Add to your pass
+            </Button>
+          </>
+        }
+      >
+        <div style={{ fontSize: 13 }}>
+          {unattached.map((a, i) => (
+            <div key={a.id} style={i === 0 ? { ...rowStyle, borderTop: "none" } : rowStyle}>
+              <Checkbox
+                label={a.name}
+                description={aboardQty > 1 ? `${money(a.price_cents)} × ${aboardQty} (you and ${guests} guest${guests > 1 ? "s" : ""})` : undefined}
+                checked={improveChosen.has(a.id)}
+                onChange={() => toggleImprove(a.id)}
+              />
+              <span className="mbr-mono" style={{ fontSize: 12 }}>
+                {money(a.price_cents * aboardQty)}
+              </span>
+            </div>
+          ))}
+          <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
+            <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
+            <span className="mbr-mono" style={{ fontSize: 13, color: "var(--text-1)" }}>
+              {money(improveTotal)}
+            </span>
+          </div>
+          <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>
+            Add-ons stay open until 18:00 the night before departure.
+          </p>
+          {errorBlock()}
         </div>
       </Dialog>
 
@@ -321,7 +527,7 @@ export function RsvpControls({
         onClose={() => setReleasing(false)}
         width={380}
         eyebrow="The manifest"
-        title="Release this berth?"
+        title="Release this pass?"
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => setReleasing(false)}>
@@ -338,14 +544,14 @@ export function RsvpControls({
                 )
               }
             >
-              Release the berth
+              Release the pass
             </Button>
           </>
         }
       >
         {fullCredit
-          ? "More than 48 hours out — every charge credits back in full, and the berth goes to the waitlist in order."
-          : "Inside 48 hours the berth releases without credit. It still goes to the waitlist in order."}
+          ? "More than 48 hours out — every charge credits back in full, and the pass goes to the waitlist in order."
+          : "Inside 48 hours the pass releases without credit. It still goes to the waitlist in order."}
       </Dialog>
     </div>
   );

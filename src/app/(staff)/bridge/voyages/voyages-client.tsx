@@ -19,6 +19,7 @@ import {
   createVoyage,
   saveVoyageOps,
   setBerthsTotal,
+  setHeldPasses,
   setVoyageStatus,
   type ItineraryLeg,
   type SubClass,
@@ -35,6 +36,7 @@ export type VoyageOpsRow = {
   vessels: number;
   aboard: number;
   berths: number;
+  held: number;
   price: string;
   status: VoyageStatus;
   muster: string;
@@ -105,7 +107,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     to: "weather_hold",
     label: "Call weather hold",
     title: "Call the weather hold?",
-    body: "Every berth gets the word by email and the Word tab. We call it by 18:00 the night before.",
+    body: "Every pass gets the word by email and the Word tab. We call it by 18:00 the night before.",
     confirm: "Call the hold",
     tone: "clay",
   };
@@ -113,7 +115,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     to: "scheduled",
     label: "Lift hold",
     title: "Lift the hold?",
-    body: "Status returns to scheduled and the manifest reopens. Berths keep their order.",
+    body: "Status returns to scheduled and the manifest reopens. Passes keep their order.",
     confirm: "Lift the hold",
     tone: "ink",
   };
@@ -121,7 +123,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     to: "completed",
     label: "Mark completed",
     title: "Mark completed?",
-    body: "Completion banks knots — 10 per NM, 40 per salon. The ledger writes once.",
+    body: "Completion banks knots — 10 per NM, 40 per Port Day. The ledger writes once.",
     confirm: "Mark completed",
     tone: "laurel",
   };
@@ -129,7 +131,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     to: "cancelled",
     label: "Cancel",
     title: "Cancel the voyage?",
-    body: "Every berth gets the word. There's no undo from this desk.",
+    body: "Cancelling credits every account in full and sends the word — the trigger does it, no forms.",
     confirm: "Cancel the voyage",
     tone: "clay",
   };
@@ -170,7 +172,8 @@ export function VoyagesClient({
     <>
       <div className="hm-head" style={{ marginTop: 20 }}>
         <p className="hm-note" style={{ marginTop: 0 }}>
-          Holds, completions, and cancellations fan out to every berth — each one asks first.
+          Holds, completions, and cancellations fan out to every pass — each one asks first. Held
+          passes are off sale — capacity for sale = total − holds.
         </p>
         <Button variant="brass" size="sm" onClick={() => setCreating(true)}>
           New voyage
@@ -194,10 +197,14 @@ export function VoyagesClient({
               </>
             ) : null}
             <span>·</span>
-            <span>{v.kind.toUpperCase()}</span>
+            <span>{v.kind.replaceAll("_", " ").toUpperCase()}</span>
             <span>·</span>
             <span>
-              {v.aboard} ABOARD / {v.berths} BERTHS
+              {v.aboard} ABOARD / {v.berths} PASSES
+            </span>
+            <span>·</span>
+            <span>
+              {v.held} HELD · {Math.max(0, v.berths - v.held)} FOR SALE
             </span>
             <span>·</span>
             <span>{v.price}</span>
@@ -211,7 +218,7 @@ export function VoyagesClient({
           <FlotillaMeter row={v} />
           <div className="hm-voy__ctl">
             <span className="hm-voy__cap">
-              <span className="hm-mono">BERTHS</span>
+              <span className="hm-mono">CAPACITY</span>
               <Stepper
                 size="sm"
                 min={Math.max(0, v.aboard)}
@@ -220,7 +227,26 @@ export function VoyagesClient({
                 onChange={(n) =>
                   run(
                     () => setBerthsTotal(v.id, n),
-                    () => show({ msg: "Capacity set.", meta: `${v.title.toUpperCase()} · ${n} BERTHS` })
+                    () => show({ msg: "Capacity set.", meta: `${v.title.toUpperCase()} · ${n} PASSES` })
+                  )
+                }
+              />
+              <span className="hm-mono" title="Held passes are off sale — capacity for sale = total − holds">
+                HOLDS
+              </span>
+              <Stepper
+                size="sm"
+                min={0}
+                max={v.berths}
+                value={v.held}
+                onChange={(n) =>
+                  run(
+                    () => setHeldPasses(v.id, n),
+                    () =>
+                      show({
+                        msg: "Holds set.",
+                        meta: `${v.title.toUpperCase()} · ${n} HELD · ${Math.max(0, v.berths - n)} FOR SALE`,
+                      })
                   )
                 }
               />
@@ -272,7 +298,7 @@ export function VoyagesClient({
                     () =>
                       show({
                         msg: `${STATUS_LABEL[m.to]} — ${row.title}.`,
-                        meta: m.to === "weather_hold" || m.to === "cancelled" ? "EVERY BERTH GETS THE WORD" : "LOGGED",
+                        meta: m.to === "weather_hold" || m.to === "cancelled" ? "EVERY PASS GETS THE WORD" : "LOGGED",
                         tone: m.tone,
                       })
                   );
@@ -412,7 +438,7 @@ const BLANK: NewVoyageForm = {
   slug: "",
   cls: "sea",
   subClass: "voyage",
-  kind: "sail",
+  kind: "sea_day",
   harborId: "",
   startsAt: "",
   distance: "",
@@ -424,14 +450,13 @@ const BLANK: NewVoyageForm = {
   itinerary: [],
 };
 
-/* Sub-class ladder per class — sea sails the SEA rungs, port walks the PRT
-   rungs, overnights carry no sub-class. */
-function subClassOptions(cls: EventClass): Array<{ value: string; label: string }> {
-  const code = cls === "sea" ? "SEA" : cls === "shore" ? "PRT" : null;
-  if (!code) return [];
-  return Object.entries(SUB_CLASSES)
-    .filter(([, s]) => s.classCode === code)
-    .map(([value, s]) => ({ value, label: `${s.label} — ${s.note}` }));
+/* One duration ladder for every family — sea days and port days both climb
+   voyage, expedition, odyssey. */
+function subClassOptions(): Array<{ value: string; label: string }> {
+  return Object.entries(SUB_CLASSES).map(([value, s]) => ({
+    value,
+    label: `${s.label} — ${s.note}`,
+  }));
 }
 
 function NewVoyageDialog({
@@ -453,7 +478,7 @@ function NewVoyageDialog({
 
   /* Class picks the sub-class ladder — keep the two in step. */
   const setClass = (cls: EventClass) =>
-    setF((prev) => ({ ...prev, cls, subClass: subClassOptions(cls)[0]?.value ?? "" }));
+    setF((prev) => ({ ...prev, cls, subClass: prev.subClass || (subClassOptions()[0]?.value ?? "") }));
 
   const setLeg = (i: number, patch: Partial<ItineraryDraft>) =>
     setF((prev) => ({
@@ -495,7 +520,7 @@ function NewVoyageDialog({
     setF(BLANK);
   };
 
-  const subOptions = subClassOptions(f.cls);
+  const subOptions = subClassOptions();
 
   return (
     <Dialog
@@ -524,23 +549,22 @@ function NewVoyageDialog({
           <Select
             label="Class"
             options={[
-              { value: "sea", label: "Sea day" },
-              { value: "shore", label: "Port day" },
-              { value: "sky", label: "Overnight" },
+              { value: "sea", label: "Sea Day" },
+              { value: "shore", label: "Port Day" },
             ]}
             value={f.cls}
             onChange={(e) => setClass(e.target.value as EventClass)}
           />
           <Select
             label="Sub-class"
-            options={subOptions.length ? subOptions : [{ value: "", label: "None — overnight" }]}
+            options={subOptions.length ? subOptions : [{ value: "", label: "None" }]}
             value={f.subClass}
             disabled={subOptions.length === 0}
             onChange={(e) => set("subClass", e.target.value)}
           />
         </div>
         <div className="hm-form__row">
-          <Input label="Kind" placeholder="sail · salon · regatta" value={f.kind} onChange={(e) => set("kind", e.target.value)} />
+          <Input label="Kind" placeholder="sea_day · port_day" value={f.kind} onChange={(e) => set("kind", e.target.value)} />
         </div>
         <div className="hm-form__row">
           <Select
@@ -553,7 +577,7 @@ function NewVoyageDialog({
         </div>
         <div className="hm-form__row">
           <Input label="Distance (NM)" type="number" min={0} placeholder="26" value={f.distance} onChange={(e) => set("distance", e.target.value)} />
-          <Input label="Price ($)" type="number" min={0} step="0.01" placeholder="0 = no charge" value={f.price} onChange={(e) => set("price", e.target.value)} />
+          <Input label="Price ($)" type="number" min={0} step="0.01" placeholder="0 = complimentary" value={f.price} onChange={(e) => set("price", e.target.value)} />
         </div>
         <div className="hm-form__row">
           <Select
@@ -579,7 +603,7 @@ function NewVoyageDialog({
         </div>
         <div className="hm-form__row" style={{ alignItems: "center" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-            <span className="hm-mono">BERTHS</span>
+            <span className="hm-mono">CAPACITY</span>
             <Stepper size="sm" min={1} max={96} value={f.berths} onChange={(n) => set("berths", n)} />
           </span>
           <Checkbox

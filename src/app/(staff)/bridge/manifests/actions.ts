@@ -8,7 +8,7 @@ function done(): ActionResult {
   return {};
 }
 
-/* Stamp the gangway — check a berth in with the operator's name on it. */
+/* Stamp the gangway — check a pass in with the operator's name on it. */
 export async function checkInRsvp(rsvpId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
@@ -20,7 +20,43 @@ export async function checkInRsvp(rsvpId: string): Promise<ActionResult> {
   return done();
 }
 
-/* Put a berth on a yacht — or take it back off (vesselId null). */
+/* Walk a member onto the manifest from the box office — comp set on the
+   insert means the trigger skips the house charge; the DB guard already
+   exempts staff from booking limits. */
+export async function addToManifest(
+  voyageId: string,
+  profileId: string,
+  comp: boolean,
+  guestNames: string[]
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const names = guestNames.map((n) => n.trim()).filter(Boolean).slice(0, 2);
+
+  const { data: existing } = await supabase
+    .from("rsvps")
+    .select("id, status")
+    .eq("voyage_id", voyageId)
+    .eq("profile_id", profileId)
+    .neq("status", "not_going")
+    .maybeSingle();
+  if (existing) return { error: "Already on this manifest." };
+
+  const { error } = await supabase.from("rsvps").insert({
+    voyage_id: voyageId,
+    profile_id: profileId,
+    status: "aboard",
+    comp,
+    guests: names.length,
+    guest_names: names,
+  });
+  if (error) return { error: ERR_LAND };
+  revalidatePath("/bridge/gangway");
+  return done();
+}
+
+/* Put a pass on a yacht — or take it back off (vesselId null). */
 export async function setRsvpVessel(
   rsvpId: string,
   vesselId: string | null
@@ -35,7 +71,7 @@ export async function setRsvpVessel(
   return done();
 }
 
-/* Spread the unassigned aboard across the flotilla — each berth goes to the
+/* Spread the unassigned aboard across the flotilla — each pass goes to the
    least-loaded yacht in turn, so the boats level out. */
 export async function assignVesselsEvenly(voyageId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();

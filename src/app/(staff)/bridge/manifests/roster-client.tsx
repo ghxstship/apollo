@@ -2,9 +2,21 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Avatar, Badge, Button, Select, Table, Toast, type TableColumn } from "@/components/ds";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Checkbox,
+  Dialog,
+  Input,
+  Select,
+  Stepper,
+  Table,
+  Toast,
+  type TableColumn,
+} from "@/components/ds";
 import { avatarTone, useToast } from "../../ui";
-import { assignVesselsEvenly, checkInRsvp, setRsvpVessel } from "./actions";
+import { addToManifest, assignVesselsEvenly, checkInRsvp, setRsvpVessel } from "./actions";
 
 export function VoyagePicker({
   options,
@@ -52,7 +64,7 @@ export function FleetStrip({
     startTransition(async () => {
       const res = await assignVesselsEvenly(voyageId);
       if (res.error) show({ msg: res.error, tone: "siren" });
-      else show({ msg: "Berths spread across the flotilla.", tone: "laurel" });
+      else show({ msg: "Passes spread across the flotilla.", tone: "laurel" });
     });
   };
 
@@ -79,7 +91,7 @@ export function FleetStrip({
           >
             <b>{v.name}</b>
             <span>
-              {v.filled} / {v.capacity} BERTHS
+              {v.filled} / {v.capacity} ABOARD
             </span>
           </div>
         ))}
@@ -95,12 +107,120 @@ export function FleetStrip({
   );
 }
 
+/* Box office — walk a member onto the manifest with guests, comped or not. */
+export function AddToManifest({
+  voyageId,
+  voyageTitle,
+  members,
+}: {
+  voyageId: string;
+  voyageTitle: string;
+  members: Array<{ value: string; label: string }>;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [pending, startTransition] = React.useTransition();
+  const { toast, show, clear } = useToast();
+  const [profileId, setProfileId] = React.useState("");
+  const [comp, setComp] = React.useState(false);
+  const [guests, setGuests] = React.useState(0);
+  const [guestNames, setGuestNames] = React.useState<string[]>(["", ""]);
+
+  const reset = () => {
+    setProfileId("");
+    setComp(false);
+    setGuests(0);
+    setGuestNames(["", ""]);
+  };
+
+  const submit = () => {
+    startTransition(async () => {
+      const res = await addToManifest(voyageId, profileId, comp, guestNames.slice(0, guests));
+      if (res.error) show({ msg: res.error, tone: "siren" });
+      else {
+        setOpen(false);
+        reset();
+        const name = members.find((m) => m.value === profileId)?.label ?? "Member";
+        show({
+          msg: `${name} on the manifest.`,
+          meta: comp ? "COMP · COMPLIMENTARY" : voyageTitle.toUpperCase(),
+          tone: "laurel",
+        });
+      }
+    });
+  };
+
+  return (
+    <section className="hm-sec">
+      <div className="hm-head">
+        <h2>The roster.</h2>
+        <Button variant="brass" size="sm" onClick={() => setOpen(true)}>
+          Add to manifest
+        </Button>
+      </div>
+
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        width={460}
+        eyebrow={voyageTitle}
+        title="Add to the manifest."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Not yet
+            </Button>
+            <Button variant="brass" disabled={pending || !profileId} onClick={submit}>
+              Put them aboard
+            </Button>
+          </>
+        }
+      >
+        <div className="hm-form">
+          <Select
+            label="Member"
+            placeholder="Pick a member"
+            options={members}
+            value={profileId}
+            onChange={(e) => setProfileId(e.target.value)}
+          />
+          <Checkbox
+            label="Complimentary — logged as comp"
+            checked={comp}
+            onChange={(e) => setComp(e.target.checked)}
+          />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+            <span className="hm-mono">GUESTS</span>
+            <Stepper size="sm" min={0} max={2} value={guests} onChange={setGuests} />
+          </span>
+          {Array.from({ length: guests }, (_, i) => (
+            <Input
+              key={i}
+              label={`Guest ${i + 1}`}
+              placeholder="Full name"
+              value={guestNames[i] ?? ""}
+              onChange={(e) =>
+                setGuestNames((prev) => prev.map((n, j) => (j === i ? e.target.value : n)))
+              }
+            />
+          ))}
+        </div>
+      </Dialog>
+
+      {toast ? (
+        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+      ) : null}
+    </section>
+  );
+}
+
 export type RosterRow = {
   rsvpId: string;
   name: string;
   tone: string;
   memberNo: string;
   guests: number;
+  guestNames: string[];
+  comp: boolean;
   boardingCode: string;
   status: "aboard" | "waitlist";
   checkedInAt: string | null;
@@ -165,7 +285,21 @@ export function RosterTable({
       ),
     },
     { key: "memberNo", label: "No.", mono: true },
-    { key: "guests", label: "Guests", mono: true, width: 70 },
+    {
+      key: "guests",
+      label: "Guests",
+      width: 140,
+      render: (r: RosterRow) => (
+        <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span className="hm-mono" style={{ color: "var(--text-2)" }}>
+            {r.guests}
+          </span>
+          {r.guestNames.length ? (
+            <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{r.guestNames.join(", ")}</span>
+          ) : null}
+        </span>
+      ),
+    },
     {
       key: "boardingCode",
       label: "Boarding",
@@ -205,6 +339,14 @@ export function RosterTable({
           ) : (
             <Badge tone="outline">Aboard</Badge>
           )}
+          {r.comp ? (
+            <Badge
+              tone="outline"
+              style={{ color: "var(--neon-violet)", borderColor: "var(--neon-violet)" }}
+            >
+              Comp
+            </Badge>
+          ) : null}
           {r.waiverMissing ? <Badge tone="clay">Waiver missing</Badge> : null}
         </span>
       ),
@@ -227,7 +369,7 @@ export function RosterTable({
         <Table rowKey={(r: RosterRow) => r.rsvpId} columns={columns} rows={rows} />
         {rows.length === 0 ? (
           <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
-            No berths claimed yet. The roster fills as RSVPs land.
+            No passes claimed yet. The roster fills as RSVPs land.
           </p>
         ) : null}
       </div>

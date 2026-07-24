@@ -1,6 +1,6 @@
 # LYRE SOCIAL
 
-A membership club for experiential connection at sea and ashore — voyages, salons, and the people worth crossing water for. Full-stack build of the Lyre Social design system: marketing website, member web app, and installable mobile PWA in one Next.js codebase, backed by Supabase.
+A membership club for experiential connection at sea and ashore — Sea Days aboard, Port Days ashore, and the people worth crossing water for. Full-stack build of the Lyre Social design system: marketing website, member web app, and installable mobile PWA in one Next.js codebase, backed by Supabase.
 
 ## Stack
 
@@ -26,7 +26,7 @@ A membership club for experiential connection at sea and ashore — voyages, sal
 2. Copy `.env.example` to `.env.local` and fill in the project URL and publishable key.
 3. `npm install && npm run dev`
 
-Magic-link emails use Supabase's built-in SMTP (rate-limited); set a custom SMTP provider for production. The `voyage_capacity` view is intentionally `SECURITY DEFINER` — it exposes only aggregate berth counts to anonymous visitors.
+Magic-link emails use Supabase's built-in SMTP (rate-limited); set a custom SMTP provider for production. The `voyage_capacity` view is intentionally `SECURITY DEFINER` — it exposes only aggregate pass counts to anonymous visitors.
 
 ### Card settlement (Stripe)
 

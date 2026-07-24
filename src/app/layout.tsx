@@ -5,11 +5,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "LYRE SOCIAL — Voyages and salons, at sea and ashore.",
+    default: "LYRE SOCIAL — Sea Days and Port Days, aboard and ashore.",
     template: "%s · LYRE SOCIAL",
   },
   description:
-    "A membership club for experiential connection at sea and ashore. Voyages, salons, and the people worth crossing water for. Home port: Marina del Rey.",
+    "A membership club for experiential connection at sea and ashore. Sea Days, Port Days, and the people worth crossing water for. Home port: Marina del Rey.",
   manifest: "/manifest.webmanifest",
   icons: {
     apple: "/apple-icon.png",

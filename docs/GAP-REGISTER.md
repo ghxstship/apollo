@@ -1,5 +1,16 @@
 # Gap register — end-to-end member journey & operator processes
 
+> **Status update (2026-07-24, evening):** taxonomy and vocabulary finalized.
+> Admission is a **pass** ("berth" retired from all rendered copy; DB
+> identifiers like `berths_total` stay). Two event families only — **Sea Day**
+> (aboard) and **Port Day** (ashore), both on the Voyage/Expedition/Odyssey
+> ladder; "salon" and "Overnight" are retired (`voyages.kind` is now
+> `sea_day`/`port_day`). $0 renders **COMPLIMENTARY**. The funnel's guest
+> visit is a Port Day invite (`port-invite` email template; legacy
+> `salon-invite` rows still send), and a `voyage-cancelled` template covers
+> cancellation fan-out with full credit. Mentions of "salon"/"berth" below
+> this note are historical.
+
 > **Status update (2026-07-24, same day):** all five phases of the build order
 > in §4 were implemented. Vetting funnel (applications → review → salon invite
 > → aboard, invited-only sign-in enforced at the DB), house-account commerce

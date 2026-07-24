@@ -82,11 +82,11 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:0;">We reply within the week. Until then, the water keeps.</p>`,
     ),
   }),
-  "salon-invite": (p) => ({
+  "port-invite": (p) => ({
     subject: "Come ashore once, as our guest.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">We read your application and we would like to meet you. Join us for one salon evening, as our guest, before anything is decided.</p>
+        `<p style="margin:0 0 16px;">We read your application and we would like to meet you. Join us for one Port Day, as our guest, before anything is decided.</p>
 <p style="margin:0;">Reply with a word and Shoreside will hold you a chair.</p>`,
     ),
   }),
@@ -94,16 +94,16 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     subject: "Welcome aboard.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">Your berth in the club is set${p["tier"] ? ` at the ${esc(p["tier"])} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
+        `<p style="margin:0 0 16px;">Your place in the club is set${p["tier"] ? ` at the ${esc(p["tier"])} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
 <p style="margin:0;">The first hundred knots are already in your ledger.</p>`,
       true,
     ),
   }),
   "boarding-pass": (p) => ({
-    subject: "Your berth is held.",
+    subject: "Your pass is held.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 20px;">Your berth on ${esc(p["voyage"])} is held. Present the code at the gangway.</p>
+        `<p style="margin:0 0 20px;">Your pass for ${esc(p["voyage"])} is held. Present the code at the gangway.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${SERIF};font-size:15px;line-height:1.7;">
 <tr><td style="padding:2px 0;color:#6B6B70;width:120px;">Code</td><td style="letter-spacing:0.12em;">${esc(p["code"])}</td></tr>
 <tr><td style="padding:2px 0;color:#6B6B70;">Muster</td><td>${esc(p["muster"])}</td></tr>
@@ -116,16 +116,24 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     subject: `Weather hold: ${String(p["voyage"] ?? "your sailing")}`,
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">${esc(p["voyage"])} is held for weather. Your berth is safe and nothing is charged until we sail.</p>
+        `<p style="margin:0 0 16px;">${esc(p["voyage"])} is held for weather. Your pass is safe and nothing is charged until we sail.</p>
 <p style="margin:0;">We call it by 18:00 the night before${p["starts_at"] ? ` — departure was set for ${esc(when(p["starts_at"]))}` : ""}.</p>`,
     ),
   }),
   "waitlist-release": (p) => ({
-    subject: "A berth released to you.",
+    subject: "A pass released to you.",
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">You were first in order on the waitlist for ${esc(p["voyage"])}${p["starts_at"] ? `, departing ${esc(when(p["starts_at"]))}` : ""}. You're aboard.</p>
-<p style="margin:0;">If the tide has turned, release the berth within 48 hours so the next name can take it.</p>`,
+<p style="margin:0;">If the tide has turned, release the pass within 48 hours so the next name can take it.</p>`,
+    ),
+  }),
+  "voyage-cancelled": (p) => ({
+    subject: `Cancelled: ${String(p["voyage"] ?? "your sailing")}`,
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">The club called it. ${esc(p["voyage"] ?? "Your sailing")} will not sail${p["starts_at"] ? ` — it was set for ${esc(when(p["starts_at"]))}` : ""}.</p>
+<p style="margin:0;">Your account is credited in full. The manifest holds the next open water.</p>`,
     ),
   }),
   "farewell": (p) => ({
@@ -133,7 +141,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">Your departure is logged and the ledger is squared. The club keeps your record, and the roll keeps your name.</p>
-<p style="margin:0;">Should you want your berth back, a word to Shoreside is enough. Fair winds.</p>`,
+<p style="margin:0;">Should you want your place back, a word to Shoreside is enough. Fair winds.</p>`,
       true,
     ),
   }),
@@ -169,6 +177,10 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 // The Sunday digest was queued as "dispatch-digest" before the rebrand —
 // both keys render the LORE digest so queued rows still send.
 templates["dispatch-digest"] = templates["lore-digest"];
+
+// "salon" is retired from the brand; rows queued under the old key still send
+// as the Port Day invite.
+templates["salon-invite"] = templates["port-invite"];
 
 function render(row: OutboxRow): Rendered {
   const p = row.payload ?? {};

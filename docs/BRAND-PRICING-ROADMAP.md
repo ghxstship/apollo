@@ -1,9 +1,10 @@
 # LYRE Social — pricing architecture & brand unification roadmap
 
 Incorporates the 2026-07-24 planning sheet: memberships (Access / Regional /
-National / Global / Guest, three price tiers each), event taxonomy (Sea Day —
-Voyage <4h · Expedition 4–8h · Odyssey >8h; Port Day — Trek · Excursion ·
-Overland; Overnight), per-yacht manning list (1 Ambassador · 1 DJ/Host ·
+National / Global / Guest, three price tiers each), event taxonomy (two
+families — Sea Day aboard · Port Day ashore — both running the Voyage <4h ·
+Expedition 4–8h · Odyssey >8h ladder; "Overnight" and the separate shore
+ladder are retired), per-yacht manning list (1 Ambassador · 1 DJ/Host ·
 1 Chef/Bartender · 10 guests), city set MIA · LAX · CHI · NYC, LORE Magazine,
 and the tagline "Strike a chord."
 
@@ -16,9 +17,9 @@ Days. Sea Days run as a flotilla of 3–4 yachts, **profitable at 3**.
 
 **Per-yacht day model** (charter + fuel ≈ $3,000; 3 crew ≈ $900; F&B for 10
 ≈ $400; ops/insurance amortization ≈ $300): **≈ $4,600/yacht-day**, i.e.
-**≈ $460 per berth** fully loaded at 10 guests/yacht. A 3-yacht flotilla day
+**≈ $460 per pass** fully loaded at 10 guests/yacht. A 3-yacht flotilla day
 costs ≈ $13,800 and seats 30; the 4th yacht is ~pure margin capacity
-(marginal cost $4,600 against 10 berths that are already demanded).
+(marginal cost $4,600 against 10 passes that are already demanded).
 Port Days land far lower (venue + staff, no charter): ≈ $3,500–4,500/day for
 40–60 heads → ≈ $80–110/head.
 
@@ -40,20 +41,20 @@ National / Global); class tier sets how far.* Two dials, both легible.
 | Regional | 1 | $199 | $299 | $549 | **Lower Tier III from $799** — a 1-event member paying $799 monthly prices out against Guest passes; $549 keeps the ladder honest. |
 | National | 3 | $349 | $749 | $1,099 | **Raise Tier I $299→$349**: at $299 the 1→3 event jump for $100 cannibalizes Regional II. |
 | Global | 7 | $799 | $1,199 | $1,499 | As proposed — anchors the ladder; includes 2 guest passes/event (already enforced in product). |
-| Guest | 1 | $149 | $249 | $349 | **Raise floor $99→$149**: a Voyage berth carries ≈$460 loaded cost; guests must ride yachts that members already filled past the 3rd-yacht threshold. Cap guest berths to the 4th yacht. |
+| Guest | 1 | $149 | $249 | $349 | **Raise floor $99→$149**: a Voyage pass carries ≈$460 loaded cost; guests must ride yachts that members already filled past the 3rd-yacht threshold. Cap guest passes to the 4th yacht. |
 
 Structural recommendations:
 1. **Odyssey (>8h) as class-gated, not just priced** — utilization risk is
    highest there; sell it as scarce (it is), fill by tier priority windows
    (already spec'd) and require the $50 deposit (already implemented).
 2. **The 3rd-yacht rule as product logic**: minimum viable manifest = 30
-   berths by T-72h. Below it, auto-drop to 2 yachts only if ≥20 berths;
+   passes by T-72h. Below it, auto-drop to 2 yachts only if ≥20 passes;
    otherwise weather-hold/convert. Surface "Flotilla forms at 30" in the UI —
    scarcity honesty is on-brand.
 3. **Annual = 10× monthly** (two months free), payable to the member account;
    payment plans already exist in the house-ledger model.
 4. **Unused event allowances convert to fathoms** (e.g. 100 FM per unused
-   berth-right, capped) — keeps "miles, not likes" true and softens
+   pass-right, capped) — keeps "miles, not likes" true and softens
    breakage resentment without refunds.
 5. **Sanity check**: 120 members/harbor at a plausible mix (65 Regional avg
    $260, 40 National avg $650, 15 Global avg $1,150) ≈ **$60k/mo** + guest
@@ -150,7 +151,7 @@ dollar figures. Stripe products map 1:1 to plans when keys land.
 
 **Phase 4 — Flotilla ops (~1 sprint)**
 `vessels` + `voyage_vessels` (capacity 10, manning list per the sheet);
-manifest assigns berths to yachts; Harbormaster gets flotilla view (3-yacht
+manifest assigns passes to yachts; Harbormaster gets flotilla view (3-yacht
 viability meter, T-72h check); Now tab shows your yacht + ambassador.
 Reports gain per-yacht fill and the profitable-at-3 flag.
 

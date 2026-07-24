@@ -65,7 +65,7 @@ export default async function WordPage() {
             status="empty"
             icon="Radio"
             title="Quiet water."
-            detail="Weather, berths, hails, and knots land here."
+            detail="Weather, passes, hails, and knots land here."
           />
         </div>
       ) : (

@@ -56,11 +56,12 @@ curl -X POST "https://mpyvwpunwrioakmtmcdo.supabase.co/functions/v1/send-outbox"
 | template | subject |
 | --- | --- |
 | `application-received` | Received. A person reads it next. |
-| `salon-invite` | Come ashore once, as our guest. |
+| `port-invite` | Come ashore once, as our guest. (the legacy `salon-invite` key renders the same template so queued rows still send) |
 | `welcome-aboard` | Welcome aboard. |
-| `boarding-pass` | Your berth is held. (renders `code`, `muster`, `starts_at` from payload) |
+| `boarding-pass` | Your pass is held. (renders `code`, `muster`, `starts_at` from payload) |
 | `weather-hold` | Weather hold: {voyage} |
-| `waitlist-release` | A berth released to you. |
+| `waitlist-release` | A pass released to you. |
+| `voyage-cancelled` | Cancelled: {voyage} ("The club called it. Your account is credited in full.") |
 | `farewell` | Fair winds. |
 | `refund-posted` | Refund posted. |
 | `lore-digest` | LORE, Sundays. (renders `items[]` of `{title, dek}`; the legacy `dispatch-digest` key renders the same template so queued rows still send) |

@@ -60,7 +60,7 @@ export function Composer({
           name="body"
           rows={3}
           maxLength={2000}
-          placeholder="A sighting, a thanks, a berth to fill…"
+          placeholder="A sighting, a thanks, a pass to claim…"
           error={state.error}
         />
         <div

@@ -19,15 +19,15 @@ const TILES: Array<{
   wide?: boolean;
 }> = [
   { media: "dawn", cap: "First light, Catalina bound", meta: "Sea Day · Jul 26", wide: true },
-  { media: "dusk", cap: "Sirens' salon, Venice", meta: "Overnight · Jul 10" },
+  { media: "dusk", cap: "Sirens' night, Venice", meta: "Port Day · Jul 10" },
   { media: "day", cap: "Rail down off Point Dume", meta: "Sea Day · Jul 04", tall: true },
   { media: "day", cap: "Start line, boat two", meta: "Sea Day · Jun 28" },
   { media: "day", cap: "The long table at Two Harbors", meta: "Port Day · Jun 21", wide: true },
   { media: "dawn", cap: "Coffee below deck", meta: "Sea Day · Jun 14" },
-  { media: "dusk", cap: "Records on, wind down", meta: "Overnight · May 31", tall: true },
+  { media: "dusk", cap: "Records on, wind down", meta: "Port Day · May 31", tall: true },
   { media: "day", cap: "Swim call at anchor", meta: "Sea Day · May 17" },
   { media: "dawn", cap: "Watch change, 05:40", meta: "Sea Day · May 24" },
-  { media: "dusk", cap: "The season's toast", meta: "Overnight · May 10" },
+  { media: "dusk", cap: "The season's toast", meta: "Port Day · May 10" },
   { media: "dawn", cap: "Fleet leaving the marina", meta: "Sea Day · May 03", wide: true },
   { media: "day", cap: "The committee boat disagrees", meta: "Sea Day · Jun 07" },
 ];

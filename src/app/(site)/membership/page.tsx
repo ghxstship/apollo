@@ -39,7 +39,7 @@ const CEILING_NOTE: Record<string, string> = {
 
 const KNOTS: Array<[string, string]> = [
   ["10 KN / NM", "Every nautical mile under sail banks ten knots to your ledger."],
-  ["40 KN / salon", "A night ashore counts. Long tables, records, the golden hour."],
+  ["40 KN / Port Day", "A day ashore counts. Long tables, records, the golden hour."],
   ["250 KN / referral", "When someone you sent comes aboard, the ledger remembers."],
 ];
 
@@ -62,7 +62,7 @@ export default async function MembershipPage() {
         <p className="ws-phead__tag">{TAGLINE}</p>
         <p className="ws-phead__sub">
           Membership is by invitation or application. Geography sets where you
-          sail; the class tier sets how far. Dues keep berths few and tables
+          sail; the class tier sets how far. Dues keep passes few and tables
           long.
         </p>
       </div>
@@ -83,13 +83,13 @@ export default async function MembershipPage() {
               {type === "global" ? <Badge tone="brass">Most aboard</Badge> : null}
               <span>{blurb}</span>
             </div>
-            {/* Access has no tiers — platform account, berths bought à la
+            {/* Access has no tiers — platform account, passes bought à la
                 carte at each event's listed price. One cell spans the row. */}
             {type === "access" ? (
               <div className="ws-plans__cell ws-plans__cell--span">
-                <span className="ws-plans__price">No charge</span>
+                <span className="ws-plans__price">Complimentary</span>
                 <span className="ws-plans__ev">
-                  Berths à la carte — priced per event, no membership required
+                  Passes à la carte — priced per event, no membership required
                 </span>
                 <span className="ws-plans__note">
                   BOOK ANY OPEN SAILING AT ITS LISTED PRICE
@@ -106,11 +106,11 @@ export default async function MembershipPage() {
                   {p ? (
                     <>
                       <span className="ws-plans__price">
-                        {p.price_cents ? `${price(p.price_cents)} / mo` : "No charge"}
+                        {p.price_cents ? `${price(p.price_cents)} / mo` : "Complimentary"}
                       </span>
                       <span className="ws-plans__ev">
                         {p.events_per_month === 0
-                          ? "Waitlist + one salon invitation"
+                          ? "Waitlist + one Port Day invitation"
                           : `${p.events_per_month} ${p.events_per_month === 1 ? "event" : "events"} / mo`}
                       </span>
                       {p.class_ceiling ? (
@@ -152,7 +152,7 @@ export default async function MembershipPage() {
         <SectionHeader eyebrow="Crew wanted, member first" title="Request invitation." />
         <p style={{ color: "var(--text-2)", maxWidth: "52ch", marginTop: -24 }}>
           A person reads every application. Two member signatures shorten the wait;
-          one salon as a guest usually settles it.
+          one Port Day as a guest usually settles it.
         </p>
         <ApplyForm />
       </div>

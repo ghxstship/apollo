@@ -12,7 +12,7 @@ export default async function HarborPage() {
   const { supabase, user, profile } = await getMember();
   const nowIso = new Date().toISOString();
 
-  const [harborRes, voyagesRes, rsvpsRes, liveRes, balanceRes, wordRes] =
+  const [harborRes, voyagesRes, rsvpsRes, liveRes, balanceRes, wordRes, planRes, usageRes] =
     await Promise.all([
       profile?.home_harbor
         ? supabase.from("harbors").select("*").eq("id", profile.home_harbor).maybeSingle()
@@ -32,6 +32,10 @@ export default async function HarborPage() {
         .eq("profile_id", user.id)
         .order("created_at", { ascending: false })
         .limit(2),
+      profile?.plan_id
+        ? supabase.from("membership_plans").select("*").eq("id", profile.plan_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      supabase.from("member_pass_usage").select("*").eq("profile_id", user.id),
     ]);
 
   const harbor = harborRes.data;
@@ -46,6 +50,22 @@ export default async function HarborPage() {
   const daysOut = nextBerth
     ? Math.max(0, Math.ceil((Date.parse(nextBerth.starts_at) - nowMs) / 86400000))
     : 0;
+
+  /* Pass meter — this calendar month's usage against the plan allowance. */
+  const now = new Date(nowIso);
+  const allowance = planRes.data?.events_per_month ?? 0;
+  const passesUsed =
+    (usageRes.data ?? []).find((u) => {
+      if (!u.month) return false;
+      const m = new Date(u.month);
+      return m.getUTCFullYear() === now.getUTCFullYear() && m.getUTCMonth() === now.getUTCMonth();
+    })?.passes_used ?? 0;
+  const passLine =
+    allowance > 0
+      ? `${passesUsed} OF ${allowance} PASSES USED · ${now
+          .toLocaleString("en-US", { month: "long" })
+          .toUpperCase()}`
+      : null;
 
   return (
     <div>
@@ -65,9 +85,12 @@ export default async function HarborPage() {
           <Card
             tone="sea"
             media={nextBerth.media}
-            eyebrow={`Your next berth · T-${daysOut} ${daysOut === 1 ? "day" : "days"}`}
+            eyebrow={`Your next pass · T-${daysOut} ${daysOut === 1 ? "day" : "days"}`}
             title={nextBerth.title}
-            meta={logMeta(nextBerth.starts_at, nextBerth.distance_nm)}
+            meta={[
+              ...logMeta(nextBerth.starts_at, nextBerth.distance_nm),
+              ...(passLine ? [passLine] : []),
+            ]}
             footer={
               <>
                 <Badge tone="laurel">Aboard</Badge>
@@ -86,8 +109,8 @@ export default async function HarborPage() {
           <StateBlock
             status="empty"
             icon="Sailboat"
-            title="No berths held."
-            detail="The manifest is open. Berths are few by design."
+            title="No passes held."
+            detail="The manifest is open. Passes are few by design."
             action={
               <Link href="/manifest" className="ls-btn ls-btn--outline ls-btn--sm">
                 View voyages
@@ -155,7 +178,7 @@ export default async function HarborPage() {
             icon="Radio"
             bare
             title="Quiet water."
-            detail="Weather, berths, and knots land here."
+            detail="Weather, passes, and knots land here."
           />
         ) : (
           <div className="hbr-word">

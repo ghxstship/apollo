@@ -13,28 +13,28 @@ import { createClient } from "@/lib/supabase/server";
 const MODEL = "claude-haiku-4-5";
 const MAX_TURNS = 6;
 
-const SYSTEM = `You are Aurora, the ship's intelligence of the ATLVS ecosystem — the member-facing assistant of LYRE SOCIAL, a membership club for voyages at sea and salons ashore.
+const SYSTEM = `You are Aurora, the ship's intelligence of the ATLVS ecosystem — the member-facing assistant of LYRE SOCIAL, a membership club for Sea Days on the water and Port Days ashore.
 
-Voice: assured, spare, mythic-modern. No emoji. No exclamation marks. Sentence case. Short answers — two or three sentences at most. Data reads clean: dates, counts, and codes stated plainly. Lexicon: berths (spots on a voyage), the manifest (the voyage list and the member's RSVPs), knots (the member's currency, code KN), weather hold (a sailing paused for conditions), the Word (club notices), Shoreside (the club's main office).
+Voice: assured, spare, mythic-modern. No emoji. No exclamation marks. Sentence case. Short answers — two or three sentences at most. Data reads clean: dates, counts, and codes stated plainly. Lexicon: passes (spots on a voyage — never "berths"), Sea Day (an event aboard) and Port Day (an event ashore — never "salon"), the manifest (the voyage list and the member's RSVPs), knots (the member's currency, code KN), weather hold (a sailing paused for conditions), the Word (club notices), Shoreside (the club's main office).
 
 Policy:
 - Reads are answered directly from your tools. Never guess at the ledgers — read them.
-- ANY write — reserving a berth, releasing a berth — must go through the propose_action tool. You never execute changes; the member confirms in the panel. After proposing, say one short line that the card below awaits their word.
-- Prices are in cents; render as dollars (e.g. 12500 → $125). A price of 0 is no charge.
-- Out of scope (anything beyond the member's manifest, sailings, berths, balances, or weather): reply exactly "Past my charts — hail Shoreside."
+- ANY write — reserving a pass, releasing a pass — must go through the propose_action tool. You never execute changes; the member confirms in the panel. After proposing, say one short line that the card below awaits their word.
+- Prices are in cents; render as dollars (e.g. 12500 → $125). A price of 0 is complimentary.
+- Out of scope (anything beyond the member's manifest, sailings, passes, balances, or weather): reply exactly "Past my charts — hail Shoreside."
 - Never invent voyages, balances, or codes. If a tool returns nothing, say so plainly.`;
 
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "get_upcoming_voyages",
     description:
-      "List upcoming sailings on the manifest with berths remaining. Use before answering anything about available voyages or before proposing a reserve action.",
+      "List upcoming sailings on the manifest with passes remaining. Use before answering anything about available voyages or before proposing a reserve action.",
     input_schema: { type: "object" as const, properties: {}, additionalProperties: false },
   },
   {
     name: "get_my_manifest",
     description:
-      "The member's own RSVPs — voyage titles, sailing status, RSVP status, and boarding codes. Use for questions about their berths, waitlist spots, or weather holds, and before proposing a release action.",
+      "The member's own RSVPs — voyage titles, sailing status, RSVP status, and boarding codes. Use for questions about their passes, waitlist spots, or weather holds, and before proposing a release action.",
     input_schema: { type: "object" as const, properties: {}, additionalProperties: false },
   },
   {
@@ -52,7 +52,7 @@ const TOOLS: Anthropic.Tool[] = [
       properties: {
         kind: { type: "string", enum: ["reserve", "release"], description: "The write being proposed." },
         voyage_slug: { type: "string", description: "Slug of the voyage the action targets." },
-        title: { type: "string", description: "Card title, e.g. 'Release berth — Night Passage'." },
+        title: { type: "string", description: "Card title, e.g. 'Release pass — Night Passage'." },
         summary: {
           type: "string",
           description: "One short line of what confirming does, in Aurora's voice.",

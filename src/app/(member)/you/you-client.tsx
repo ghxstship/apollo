@@ -112,10 +112,10 @@ export function NotificationPrefsForm({
       </div>
       <div className="you-row">
         <div>
-          <b>Berth releases</b>
+          <b>Pass releases</b>
           <p>Waitlist offers, in order.</p>
         </div>
-        <Switch name="berths" defaultChecked={berths} label="" aria-label="Berth release notices" />
+        <Switch name="berths" defaultChecked={berths} label="" aria-label="Pass release notices" />
       </div>
       <div className="you-row">
         <div>
@@ -234,7 +234,7 @@ export function Offboarding({ status }: { status: string }) {
               Stay aboard
             </Button>
             <Button variant="outline" size="sm" disabled={pending} onClick={confirm}>
-              Hold my berth
+              Hold my pass
             </Button>
           </>
         }

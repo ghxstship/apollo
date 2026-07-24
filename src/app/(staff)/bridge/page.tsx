@@ -66,7 +66,7 @@ export default async function ApplicationsPage() {
       <h1 className="hm-h1">The application queue.</h1>
       <p className="hm-lede">
         {openCount
-          ? `${openCount} waiting on a decision. Move them to review, set the salon invite, then call it.`
+          ? `${openCount} waiting on a decision. Move them to review, set the Port Day invite, then call it.`
           : "Nothing waiting on a decision. The queue below is the record."}
       </p>
 

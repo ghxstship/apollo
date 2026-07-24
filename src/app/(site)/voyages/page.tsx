@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SUB_CLASSES } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { VoyageManifest, type ManifestItem } from "./manifest";
@@ -6,7 +7,7 @@ import { VoyageManifest, type ManifestItem } from "./manifest";
 export const metadata: Metadata = {
   title: "Voyages",
   description:
-    "Every sailing and salon on the season's manifest. Berths are few by design.",
+    "Every Sea Day and Port Day on the season's manifest. Passes are few by design.",
 };
 
 export default async function VoyagesPage() {
@@ -32,15 +33,15 @@ export default async function VoyagesPage() {
       title: v.title,
       cls: v.class,
       clsLabel: EVENT_CLASS_LABEL[v.class],
-      kindLabel: v.kind === "salon" ? "Salon" : "Voyage",
+      kindLabel: (v.sub_class && SUB_CLASSES[v.sub_class]?.label) || "",
       status: v.status,
       date: logDate(v.starts_at),
       time: logTime(v.starts_at),
       coordinates: v.coordinates,
       distance: v.distance_nm != null ? `${v.distance_nm} NM` : null,
       price: price(v.price_cents),
-      berthsLeft: cap?.berths_left ?? null,
-      seatsWord: v.kind === "salon" ? "seats" : "berths",
+      passesLeft: cap?.berths_left ?? null,
+      seatsWord: "passes",
       blurb: v.blurb,
     };
   });
@@ -51,7 +52,7 @@ export default async function VoyagesPage() {
         <span className="ls-eyebrow">The manifest</span>
         <h1>Voyages.</h1>
         <p className="ws-phead__sub">
-          Every sailing and salon on the season&rsquo;s manifest. Berths are few by
+          Every Sea Day and Port Day on the season&rsquo;s manifest. Passes are few by
           design — reserve early, arrive rested.
         </p>
       </div>

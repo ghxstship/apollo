@@ -28,9 +28,9 @@ type Msg =
 const SHORE = "shore@lyresocial.com";
 
 const QUICK = [
-  ["berth", "Next berth"],
+  ["berth", "Next pass"],
   ["sailings", "Find a sailing"],
-  ["release", "Release my berth"],
+  ["release", "Release my pass"],
   ["balance", "My balance"],
   ["weather", "Weather"],
 ] as const;
@@ -48,7 +48,7 @@ type AuroraApiResponse = {
 function intentOf(text: string): Intent {
   const s = text.toLowerCase();
   if (/release|cancel|drop|give (up|back)/.test(s)) return "release";
-  if (/next|my berth|aboard|when/.test(s)) return "berth";
+  if (/next|my berth|my pass|aboard|when/.test(s)) return "berth";
   if (/find|sail|voyage|book|reserve|manifest/.test(s)) return "sailings";
   if (/balance|knot|fathom|ledger|account|owe/.test(s)) return "balance";
   if (/weather|hold|wind|storm/.test(s)) return "weather";
@@ -56,7 +56,7 @@ function intentOf(text: string): Intent {
 }
 
 function accountLine(cents: number): string {
-  const abs = price(Math.abs(cents)) === "NO CHARGE" ? "$0" : price(Math.abs(cents));
+  const abs = price(Math.abs(cents)) === "COMPLIMENTARY" ? "$0" : price(Math.abs(cents));
   if (cents === 0) return "Your member account is square.";
   return cents < 0
     ? `Your member account carries ${abs} in charges.`
@@ -68,7 +68,7 @@ export function AuroraPanel({ onClose }: { onClose: () => void }) {
     { kind: "sys", text: "READS YOUR MANIFEST · NEVER POSTS OR PAYS WITHOUT ASKING" },
     {
       kind: "bot",
-      text: "Aurora here. I can read your manifest, find sailings, release berths, and read your ledgers. Anything that changes the record stops for your confirmation.",
+      text: "Aurora here. I can read your manifest, find sailings, release passes, and read your ledgers. Anything that changes the record stops for your confirmation.",
     },
   ]);
   const [typing, setTyping] = React.useState(false);
@@ -167,7 +167,7 @@ export function AuroraPanel({ onClose }: { onClose: () => void }) {
                 text: `You're aboard ${res.berth.title} — ${logDateTime(res.berth.startsAt)}. Your Passbook holds your details.`,
               },
             ]
-          : [{ kind: "bot", text: "No berth held. The manifest has open water when you're ready." }];
+          : [{ kind: "bot", text: "No pass held. The manifest has open water when you're ready." }];
       });
     } else if (intent === "sailings") {
       void run(async () => {
@@ -179,12 +179,12 @@ export function AuroraPanel({ onClose }: { onClose: () => void }) {
         const cards: Msg[] = res.sailings.map((s) => ({
           kind: "card",
           title: s.title,
-          meta: `${logDateTime(s.startsAt).toUpperCase()} · ${Math.max(0, s.berthsLeft)} BERTHS LEFT`,
+          meta: `${logDateTime(s.startsAt).toUpperCase()} · ${Math.max(0, s.berthsLeft)} PASSES LEFT`,
           confirm: "Reserve",
           action: { type: "link", href: "/manifest" },
         }));
         return [
-          { kind: "bot", text: "The next sailings with open berths. Reserving happens on the manifest — I'll walk you there." },
+          { kind: "bot", text: "The next sailings with open passes. Reserving happens on the manifest — I'll walk you there." },
           ...cards,
         ];
       });
@@ -192,16 +192,16 @@ export function AuroraPanel({ onClose }: { onClose: () => void }) {
       void run(async () => {
         const res = await auroraNextBerth();
         if (res.error) return [{ kind: "bot", text: res.error }];
-        if (!res.berth) return [{ kind: "bot", text: "No berth held — nothing to release." }];
+        if (!res.berth) return [{ kind: "bot", text: "No pass held — nothing to release." }];
         return [
           {
             kind: "bot",
-            text: `You're aboard ${res.berth.title}. Releasing hands the berth to the waitlist — releases go out in order. Your call.`,
+            text: `You're aboard ${res.berth.title}. Releasing hands the pass to the waitlist — releases go out in order. Your call.`,
           },
           {
             kind: "card",
-            title: `Release berth — ${res.berth.title}`,
-            meta: `${logDateTime(res.berth.startsAt).toUpperCase()} · RELEASES 1 BERTH TO THE WAITLIST`,
+            title: `Release pass — ${res.berth.title}`,
+            meta: `${logDateTime(res.berth.startsAt).toUpperCase()} · RELEASES 1 PASS TO THE WAITLIST`,
             confirm: "Release it",
             action: { type: "release", voyageId: res.berth.voyageId },
           },

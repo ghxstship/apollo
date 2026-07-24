@@ -49,15 +49,15 @@ export const CITY_CODES: Record<string, string> = {
   "new-york": "NYC",
 };
 
-/* Event taxonomy: class code (mono register) + sub-class ladder (human). */
-export const CLASS_CODES: Record<string, string> = { sea: "SEA", shore: "PRT", sky: "OVN" };
-export const SUB_CLASSES: Record<string, { label: string; classCode: string; note: string }> = {
-  voyage: { label: "Voyage", classCode: "SEA", note: "Under 4 hours" },
-  expedition: { label: "Expedition", classCode: "SEA", note: "4–8 hours" },
-  odyssey: { label: "Odyssey", classCode: "SEA", note: "Over 8 hours" },
-  trek: { label: "Trek", classCode: "PRT", note: "On foot" },
-  excursion: { label: "Excursion", classCode: "PRT", note: "The day ashore" },
-  overland: { label: "Overland", classCode: "PRT", note: "The long way there" },
+/* Event taxonomy — two families only: Sea Day (aboard) / Port Day (ashore).
+   Both run the same class ladder by duration. "Salon" and "Overnight" are
+   retired from the brand; the sky visual theme survives as styling only. */
+export const CLASS_CODES: Record<string, string> = { sea: "SEA", shore: "PRT", sky: "PRT" };
+export const FAMILY_LABEL: Record<string, string> = { sea: "Sea Day", shore: "Port Day", sky: "Port Day" };
+export const SUB_CLASSES: Record<string, { label: string; note: string }> = {
+  voyage: { label: "Voyage", note: "Under 4 hours" },
+  expedition: { label: "Expedition", note: "4–8 hours" },
+  odyssey: { label: "Odyssey", note: "Over 8 hours" },
 };
 
 export function knots(n: number): string {
@@ -79,4 +79,10 @@ export const BANNED_TERMS = [
   "ticket",
   "points",
   "ahoy",
+  // Admission is a pass; berths are for boats. Salon triggers the wrong SEO.
+  "berth",
+  "Berth",
+  "salon",
+  "Salon",
+  "Overnight",
 ];

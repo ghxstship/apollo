@@ -21,7 +21,7 @@ const FAQS: Record<string, Array<[string, string]>> = {
     ],
     [
       "What if the weather turns?",
-      "Holds are called by 18:00 the night before — a word, not an apology. Your berth carries forward in full.",
+      "Holds are called by 18:00 the night before — a word, not an apology. Your pass carries forward in full.",
     ],
     [
       "Can I bring a guest?",
@@ -45,11 +45,11 @@ const FAQS: Record<string, Array<[string, string]>> = {
   sky: [
     [
       "What should I bring?",
-      "Come as you are; leave the tie ashore. Overnight passages carry bedding and wool — the salon carries the records.",
+      "Come as you are; leave the tie ashore. Night passages carry bedding and wool — the club carries the records.",
     ],
     [
       "What if the weather turns?",
-      "Salons sail on regardless. Night passages hold by 18:00 the night before, and your berth carries forward.",
+      "Port Days carry on regardless. Night passages hold by 18:00 the night before, and your pass carries forward.",
     ],
     [
       "Can I bring a guest?",
@@ -132,7 +132,7 @@ export default async function VoyagePage({
     .split(/\n\n+/)
     .filter(Boolean);
   const faq = FAQS[voyage.class] ?? FAQS.sea;
-  const seatsWord = voyage.kind === "salon" ? "seats" : "berths";
+  const seatsWord = "passes";
   const full = left === 0;
 
   /* Class meta in the mono data register: "SEA · EXPEDITION · 4–8 HRS". */
@@ -164,7 +164,8 @@ export default async function VoyagePage({
         <div className="ev-hero__bg" style={{ background: SEAS[voyage.media] ?? SEAS.dusk }}></div>
         <div className="ls-container ev-hero__in">
           <span className="ls-eyebrow">
-            {EVENT_CLASS_LABEL[voyage.class]} · {voyage.kind === "salon" ? "Salon" : "Voyage"}
+            {EVENT_CLASS_LABEL[voyage.class]}
+            {sub ? <> · {sub.label}</> : null}
           </span>
           <h1>{voyage.title}</h1>
           <div className="ev-hero__meta">
@@ -235,13 +236,13 @@ export default async function VoyagePage({
               ) : full ? (
                 <Badge tone="clay">Sailing full</Badge>
               ) : (
-                <Badge tone="outline">Berths open</Badge>
+                <Badge tone="outline">Passes open</Badge>
               )}
             </div>
             {voyage.status === "weather_hold" ? (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
                 A hold is a postponement, not a cancellation. The new date arrives in
-                LORE, and every reserved berth carries forward in full.
+                LORE, and every reserved pass carries forward in full.
               </p>
             ) : voyage.status === "live" ? (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
@@ -251,7 +252,7 @@ export default async function VoyagePage({
             ) : full ? (
               <>
                 <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
-                  Berths release in order — join the waitlist{user ? " on the manifest" : " at the gangway"} and
+                  Passes release in order — join the waitlist{user ? " on the manifest" : " at the gangway"} and
                   you&rsquo;ll get the word first.
                 </p>
                 <LinkButton
@@ -264,7 +265,7 @@ export default async function VoyagePage({
               </>
             ) : user ? (
               <LinkButton href="/manifest" variant="brass" fullWidth>
-                Confirm your berth
+                Confirm your pass
               </LinkButton>
             ) : (
               <LinkButton
@@ -272,7 +273,7 @@ export default async function VoyagePage({
                 variant="brass"
                 fullWidth
               >
-                Reserve a berth
+                Reserve a pass
               </LinkButton>
             )}
             <p className="ev-mono-note">

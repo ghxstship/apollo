@@ -57,7 +57,7 @@ export default async function ChandleryPage() {
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
         Kit worth its salt. Charged to your member account; collect at the
-        harbor or the next salon.
+        harbor or the next Port Day.
       </p>
       <div className="mbr-sec">
         <ChandleryShop

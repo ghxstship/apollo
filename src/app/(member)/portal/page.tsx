@@ -223,7 +223,7 @@ export default async function PortalPage({
         </span>
         <div className="ptl-panel">
           <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 14 }}>
-            Good for one salon as your guest. The rest is on them.
+            Good for one Port Day as your guest. The rest is on them.
           </p>
           {invite ? (
             <>
@@ -291,7 +291,7 @@ export default async function PortalPage({
             icon="Receipt"
             bare
             title="Nothing on the account."
-            detail="Berths, deposits, and add-ons post here as house charges."
+            detail="Passes, deposits, and add-ons post here as house charges."
           />
         ) : (
           <div className="ptl-panel" style={{ padding: "8px 20px 16px" }}>

@@ -38,6 +38,7 @@ export default async function VoyagesOpsPage() {
       vessels: vesselCount.get(v.id) ?? 0,
       aboard: capacity.get(v.id)?.aboard ?? 0,
       berths: v.berths_total,
+      held: v.held_passes,
       price: price(v.price_cents),
       status: v.status,
       muster: v.muster ?? "",

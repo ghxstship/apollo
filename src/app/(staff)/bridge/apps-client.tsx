@@ -34,7 +34,7 @@ const STATUS_TONE: Record<AppRow["status"], "brass" | "ink" | "laurel" | "clay" 
 const STATUS_LABEL: Record<AppRow["status"], string> = {
   received: "Received",
   review: "In review",
-  invited: "Salon invite",
+  invited: "Port Day invite",
   aboard: "Aboard",
   declined: "Declined",
 };
@@ -118,11 +118,11 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
               onClick={() =>
                 run(
                   () => salonInvite(a.id),
-                  () => show({ msg: "Salon invite set.", meta: a.email.toUpperCase() })
+                  () => show({ msg: "Port Day invite set.", meta: a.email.toUpperCase() })
                 )
               }
             >
-              Salon invite
+              Port Day invite
             </Button>
           ) : null}
           {a.status === "invited" ? (
@@ -195,7 +195,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
         }
       >
         {confirm
-          ? `Accepting ${confirm.app.name} writes them into the member roll and queues the welcome email. Their berth opens the moment they sign in.`
+          ? `Accepting ${confirm.app.name} writes them into the member roll and queues the welcome email. Their pass is ready the moment they sign in.`
           : ""}
       </Dialog>
 

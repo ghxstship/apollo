@@ -39,6 +39,26 @@ export async function setBerthsTotal(voyageId: string, berths: number): Promise<
   return done();
 }
 
+/* Operator holds — held passes come off sale, so capacity for sale is
+   berths_total − held_passes. Clamped to what the voyage actually carries. */
+export async function setHeldPasses(voyageId: string, held: number): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const { data: voyage } = await supabase
+    .from("voyages")
+    .select("berths_total")
+    .eq("id", voyageId)
+    .maybeSingle();
+  if (!voyage) return { error: ERR_LAND };
+  const clamped = Math.max(0, Math.min(voyage.berths_total, Math.round(held)));
+  const { error } = await supabase
+    .from("voyages")
+    .update({ held_passes: clamped })
+    .eq("id", voyageId);
+  if (error) return { error: ERR_LAND };
+  return done();
+}
+
 export async function saveVoyageOps(
   voyageId: string,
   conditions: { wind: string; swell: string; heading: string; speed: string },
@@ -105,7 +125,7 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
     class: input.cls,
     sub_class: input.subClass,
     itinerary,
-    kind: input.kind.trim() || "sail",
+    kind: input.kind.trim() || (input.cls === "shore" ? "port_day" : "sea_day"),
     harbor_id: input.harborId,
     starts_at: startsAt.toISOString(),
     distance_nm: input.distanceNm,

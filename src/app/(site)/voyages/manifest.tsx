@@ -17,7 +17,7 @@ export interface ManifestItem {
   coordinates: string | null;
   distance: string | null;
   price: string;
-  berthsLeft: number | null;
+  passesLeft: number | null;
   seatsWord: string;
   blurb: string | null;
 }
@@ -26,12 +26,14 @@ const FILTERS: Array<{ id: string; label: string }> = [
   { id: "all", label: "All" },
   { id: "sea", label: "Sea Day" },
   { id: "shore", label: "Port Day" },
-  { id: "sky", label: "Overnight" },
 ];
 
 export function VoyageManifest({ items }: { items: ManifestItem[] }) {
   const [cls, setCls] = React.useState("all");
-  const list = items.filter((v) => cls === "all" || v.cls === cls);
+  /* Legacy sky-class rows read as Port Day. */
+  const list = items.filter(
+    (v) => cls === "all" || v.cls === cls || (cls === "shore" && v.cls === "sky")
+  );
 
   return (
     <>
@@ -56,19 +58,20 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
               </div>
               <div>
                 <span className="ls-eyebrow ws-vrow__eyebrow">
-                  {v.clsLabel} · {v.kindLabel}
+                  {v.clsLabel}
+                  {v.kindLabel ? ` · ${v.kindLabel}` : ""}
                 </span>
                 <div className="ws-vrow__title">
                   {v.title}
                   {v.status === "weather_hold" ? <Badge tone="clay">Weather hold</Badge> : null}
-                  {v.berthsLeft === 0 ? <Badge tone="clay">Full</Badge> : null}
+                  {v.passesLeft === 0 ? <Badge tone="clay">Full</Badge> : null}
                 </div>
                 <div className="ws-vrow__meta">
                   {v.coordinates ? <span>{v.coordinates}</span> : null}
                   {v.distance ? <span>· {v.distance}</span> : null}
-                  {v.berthsLeft != null && v.berthsLeft > 0 ? (
+                  {v.passesLeft != null && v.passesLeft > 0 ? (
                     <span>
-                      · {v.berthsLeft} {v.seatsWord} left
+                      · {v.passesLeft} {v.seatsWord} left
                     </span>
                   ) : null}
                 </div>

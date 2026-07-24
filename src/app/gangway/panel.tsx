@@ -59,7 +59,7 @@ export function GangwayPanel({ next, expired }: { next: string; expired: boolean
         </div>
       )}
       <div className="gw-alt">
-        No berth under your email, or holding an invitation?{" "}
+        No pass under your email, or holding an invitation?{" "}
         <a href="/membership#apply">Apply for membership</a>
       </div>
     </div>

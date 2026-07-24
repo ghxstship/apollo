@@ -58,7 +58,7 @@ export default async function StubPage({
           status="empty"
           icon="Ticket"
           title="No stub under that code."
-          detail="Confirm a berth on the manifest and the stub is cut for you."
+          detail="Confirm a pass on the manifest and the stub is cut for you."
         />
       </div>
     );
@@ -77,7 +77,7 @@ export default async function StubPage({
           status="empty"
           icon="Ticket"
           title="No stub under that code."
-          detail="Confirm a berth on the manifest and the stub is cut for you."
+          detail="Confirm a pass on the manifest and the stub is cut for you."
         />
       </div>
     );

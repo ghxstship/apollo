@@ -233,7 +233,7 @@ export function OrdersClient({
           />
           <Input
             label="Memo"
-            placeholder={posting === "refund" ? "Berth released in time" : "Squared at Shoreside"}
+            placeholder={posting === "refund" ? "Pass released in time" : "Squared at Shoreside"}
             value={form.memo}
             onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))}
           />

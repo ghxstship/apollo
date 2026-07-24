@@ -12,8 +12,17 @@ type FillRow = {
   perYacht: string;
   nm: string;
   knots: string;
+  revenue: string;
   [key: string]: unknown;
 };
+
+/* Net house dollars — charges land negative in the ledger, credits positive,
+   so revenue is the negated sum. Shown as positive net dollars. */
+function netDollars(cents: number): string {
+  const net = -cents;
+  const abs = Math.abs(net);
+  return `${net < 0 ? "−" : ""}$${(abs / 100).toFixed(abs % 100 ? 2 : 0)}`;
+}
 
 export default async function ReportsPage() {
   const { supabase } = await getOperator();
@@ -33,6 +42,7 @@ export default async function ReportsPage() {
     flotillaRes,
     vesselsRes,
     berthRes,
+    voyageLedgerRes,
   ] = await Promise.all([
     supabase.from("profiles").select("status, joined_at"),
     supabase.from("voyages").select("id, title, distance_nm, kind, status, starts_at"),
@@ -56,6 +66,10 @@ export default async function ReportsPage() {
       .select("voyage_id, vessel_id")
       .eq("status", "aboard")
       .not("vessel_id", "is", null),
+    supabase
+      .from("account_ledger")
+      .select("voyage_id, delta_cents")
+      .not("voyage_id", "is", null),
   ]);
 
   /* Members */
@@ -119,6 +133,14 @@ export default async function ReportsPage() {
       .join(" · ");
   };
 
+  /* Net revenue per voyage — pass and deposit charges, add-ons, credits,
+     and refunds all carry the voyage_id; the sum is the net. */
+  const revenueByVoyage = new Map<string, number>();
+  for (const l of voyageLedgerRes.data ?? []) {
+    if (!l.voyage_id) continue;
+    revenueByVoyage.set(l.voyage_id, (revenueByVoyage.get(l.voyage_id) ?? 0) + l.delta_cents);
+  }
+
   /* Holds */
   const holdsLive = voyages.filter((v) => v.status === "weather_hold").length;
   const weatherNotices = weatherRes.count ?? 0;
@@ -139,6 +161,7 @@ export default async function ReportsPage() {
         perYacht: perYachtLine(v.id),
         nm: v.distance_nm != null ? String(v.distance_nm) : "—",
         knots: (knotsByVoyage.get(v.id) ?? 0).toLocaleString("en-US"),
+        revenue: netDollars(revenueByVoyage.get(v.id) ?? 0),
       };
     });
 
@@ -154,12 +177,12 @@ export default async function ReportsPage() {
           sub={`+${newThisSeason} THIS SEASON`}
         />
         <Stat
-          label="Berth fill"
+          label="Pass fill"
           value={`${fillPct}%`}
           sub={`${sailed.length} VOYAGES SAILED OR LIVE`}
         />
         <Stat
-          label="House account"
+          label="House revenue"
           value={houseCents ? price(houseCents) : "$0"}
           sub="CHARGES THIS SEASON"
         />
@@ -196,6 +219,7 @@ export default async function ReportsPage() {
               { key: "perYacht", label: "Per yacht", mono: true, width: 140 },
               { key: "nm", label: "NM", mono: true, width: 70 },
               { key: "knots", label: "Knots paid", mono: true, width: 110 },
+              { key: "revenue", label: "Revenue", mono: true, width: 100 },
             ]}
             rows={fillRows}
           />

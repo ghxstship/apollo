@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import { Stat, StateBlock } from "@/components/ds";
 import { logDate, logTime } from "@/lib/format";
 import { conditionsLine, getOperator, readConditions } from "../../data";
-import { FleetStrip, RosterTable, VoyagePicker, type FleetVessel, type RosterRow } from "./roster-client";
+import {
+  AddToManifest,
+  FleetStrip,
+  RosterTable,
+  VoyagePicker,
+  type FleetVessel,
+  type RosterRow,
+} from "./roster-client";
 
 export const metadata: Metadata = { title: "Manifests" };
 
@@ -60,6 +67,17 @@ export default async function ManifestsPage({
     : { data: [] };
   const profiles = new Map((profilesData ?? []).map((p) => [p.id, p]));
 
+  /* Active members for the box-office picker — anyone can be walked on. */
+  const { data: membersData } = await supabase
+    .from("profiles")
+    .select("id, full_name, member_no")
+    .eq("status", "active")
+    .order("full_name", { ascending: true });
+  const memberOptions = (membersData ?? []).map((m) => ({
+    value: m.id,
+    label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` — ${m.member_no}` : ""}`,
+  }));
+
   /* The flotilla for this voyage — yachts in position order, fill from
      rsvps.vessel_id (aboard berths only). */
   const { data: voyageVessels } = await supabase
@@ -98,6 +116,8 @@ export default async function ManifestsPage({
       tone: p?.avatar_tone ?? "sand",
       memberNo: p?.member_no ?? "GUEST",
       guests: r.guests,
+      guestNames: r.guest_names ?? [],
+      comp: r.comp,
       boardingCode: r.boarding_code ?? "",
       status: r.status as "aboard" | "waitlist",
       checkedInAt: r.checked_in_at,
@@ -154,6 +174,8 @@ export default async function ManifestsPage({
       </div>
 
       <FleetStrip voyageId={voyage.id} vessels={fleet} unassigned={unassigned} />
+
+      <AddToManifest voyageId={voyage.id} voyageTitle={voyage.title} members={memberOptions} />
 
       <RosterTable rows={rows} muster={muster} vessels={fleet} />
     </div>

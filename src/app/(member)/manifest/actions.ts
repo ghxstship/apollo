@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export type RsvpResult = { error?: string; full?: boolean };
 
+type Supa = Awaited<ReturnType<typeof createClient>>;
+
 async function member() {
   const supabase = await createClient();
   const {
@@ -33,6 +35,54 @@ function done(): RsvpResult {
   return {};
 }
 
+function clampGuests(guests: number): number {
+  return Math.max(0, Math.min(2, Math.round(guests)));
+}
+
+/* Names as the manifest reads them — trimmed, sized to the guest count. */
+function cleanNames(names: string[], count: number): string[] {
+  return names
+    .slice(0, count)
+    .map((n) => n.trim())
+    .filter(Boolean);
+}
+
+/* Attach add-ons to an rsvp: one rsvp_addons row plus one account_ledger
+   'addon' charge each (the triggers do not cover these). Already-attached
+   add-ons are skipped. Returns a raw error message, or null on success. */
+async function attachAddons(
+  supabase: Supa,
+  userId: string,
+  voyageId: string,
+  rsvpId: string,
+  addonIds: string[],
+  qty: number
+): Promise<string | null> {
+  const [{ data: addons }, { data: already }] = await Promise.all([
+    supabase.from("addons").select("*").in("id", addonIds).eq("active", true),
+    supabase.from("rsvp_addons").select("addon_id").eq("rsvp_id", rsvpId),
+  ]);
+  const attached = new Set((already ?? []).map((a) => a.addon_id));
+
+  for (const addon of addons ?? []) {
+    if (attached.has(addon.id)) continue;
+    const { error: rowError } = await supabase
+      .from("rsvp_addons")
+      .insert({ rsvp_id: rsvpId, addon_id: addon.id, qty });
+    if (rowError) return rowError.message;
+    const { error: chargeError } = await supabase.from("account_ledger").insert({
+      profile_id: userId,
+      delta_cents: -(addon.price_cents * qty),
+      kind: "addon",
+      memo: addon.name,
+      voyage_id: voyageId,
+      rsvp_id: rsvpId,
+    });
+    if (chargeError) return chargeError.message;
+  }
+  return null;
+}
+
 export async function setRsvpStatus(
   voyageId: string,
   status: "aboard" | "waitlist" | "not_going"
@@ -49,20 +99,28 @@ export async function setRsvpStatus(
   return done();
 }
 
-/* Review & confirm on a priced voyage: berth (house charge posts by trigger),
-   then any chosen add-ons — rsvp_addons rows plus one account_ledger charge
-   per add-on, which the triggers do not cover. */
+/* Review & confirm on a priced voyage: the pass (house charge posts by
+   trigger) with guest names on the rsvp, then any chosen add-ons. */
 export async function confirmBerth(
   voyageId: string,
-  addonIds: string[]
+  addonIds: string[],
+  guests: number,
+  guestNames: string[]
 ): Promise<RsvpResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
 
+  const clamped = clampGuests(guests);
   const { error } = await supabase
     .from("rsvps")
     .upsert(
-      { voyage_id: voyageId, profile_id: userId, status: "aboard" },
+      {
+        voyage_id: voyageId,
+        profile_id: userId,
+        status: "aboard",
+        guests: clamped,
+        guest_names: cleanNames(guestNames, clamped),
+      },
       { onConflict: "voyage_id,profile_id" }
     );
   if (error) return { error: guardMessage(error.message), full: isFullMessage(error.message) };
@@ -76,29 +134,15 @@ export async function confirmBerth(
       .maybeSingle();
 
     if (rsvp) {
-      const qty = 1 + (rsvp.guests ?? 0);
-      const [{ data: addons }, { data: already }] = await Promise.all([
-        supabase.from("addons").select("*").in("id", addonIds).eq("active", true),
-        supabase.from("rsvp_addons").select("addon_id").eq("rsvp_id", rsvp.id),
-      ]);
-      const attached = new Set((already ?? []).map((a) => a.addon_id));
-
-      for (const addon of addons ?? []) {
-        if (attached.has(addon.id)) continue;
-        const { error: rowError } = await supabase
-          .from("rsvp_addons")
-          .insert({ rsvp_id: rsvp.id, addon_id: addon.id, qty });
-        if (rowError) return { error: guardMessage(rowError.message) };
-        const { error: chargeError } = await supabase.from("account_ledger").insert({
-          profile_id: userId,
-          delta_cents: -(addon.price_cents * qty),
-          kind: "addon",
-          memo: addon.name,
-          voyage_id: voyageId,
-          rsvp_id: rsvp.id,
-        });
-        if (chargeError) return { error: guardMessage(chargeError.message) };
-      }
+      const failed = await attachAddons(
+        supabase,
+        userId,
+        voyageId,
+        rsvp.id,
+        addonIds,
+        1 + (rsvp.guests ?? 0)
+      );
+      if (failed) return { error: guardMessage(failed) };
     }
   }
 
@@ -106,13 +150,65 @@ export async function confirmBerth(
   return done();
 }
 
-export async function setGuests(voyageId: string, guests: number): Promise<RsvpResult> {
+/* Post-purchase add-on upsell — open until 18:00 the night before departure. */
+export async function improvePass(voyageId: string, addonIds: string[]): Promise<RsvpResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  const clamped = Math.max(0, Math.min(2, Math.round(guests)));
+  if (addonIds.length === 0) return {};
+
+  const { data: voyage } = await supabase
+    .from("voyages")
+    .select("starts_at")
+    .eq("id", voyageId)
+    .maybeSingle();
+  if (!voyage) return { error: "That voyage is off the manifest." };
+  const starts = new Date(voyage.starts_at);
+  const cutoff = new Date(
+    starts.getFullYear(),
+    starts.getMonth(),
+    starts.getDate() - 1,
+    18,
+    0,
+    0,
+    0
+  );
+  if (Date.now() >= cutoff.getTime()) {
+    return { error: "The add-on window closed at 18:00 the night before." };
+  }
+
+  const { data: rsvp } = await supabase
+    .from("rsvps")
+    .select("id, guests, status")
+    .eq("voyage_id", voyageId)
+    .eq("profile_id", userId)
+    .maybeSingle();
+  if (!rsvp || rsvp.status !== "aboard") return { error: "Confirm your pass first." };
+
+  const failed = await attachAddons(
+    supabase,
+    userId,
+    voyageId,
+    rsvp.id,
+    addonIds,
+    1 + (rsvp.guests ?? 0)
+  );
+  if (failed) return { error: guardMessage(failed) };
+
+  revalidatePath("/portal");
+  return done();
+}
+
+export async function setGuests(
+  voyageId: string,
+  guests: number,
+  guestNames: string[]
+): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const clamped = clampGuests(guests);
   const { error } = await supabase
     .from("rsvps")
-    .update({ guests: clamped })
+    .update({ guests: clamped, guest_names: cleanNames(guestNames, clamped) })
     .eq("voyage_id", voyageId)
     .eq("profile_id", userId);
   if (error) return { error: guardMessage(error.message) };

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Badge, Icon, Tag } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES, CLASS_CODES, CURRENCY, LEAGUES, SUB_CLASSES, SURFACES, TAGLINE } from "@/lib/brand";
+import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, SUB_CLASSES, SURFACES, TAGLINE } from "@/lib/brand";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
 
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 const BOILER =
-  "LYRE SOCIAL is a membership club for experiential connection at sea and ashore. Founded MMXXIV in Marina del Rey, the club runs voyages — day sails, crossings, regattas, night passages — and salons on land for a crew that believes the long way home is the point. Membership is by invitation or application — Access, Regional, National, and Global, with Guest passes alongside.";
+  "LYRE SOCIAL is a membership club for experiential connection at sea and ashore. Founded MMXXIV in Marina del Rey, the club runs Sea Days aboard — day sails, crossings, regattas, night passages — and Port Days ashore for a crew that believes the long way home is the point. Membership is by invitation or application — Access, Regional, National, and Global, with Guest passes alongside.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--sea-dawn)",
@@ -74,7 +74,7 @@ const IMAGERY: Array<[string, string]> = [
 const FACTS: Array<[string, string]> = [
   ["Founded", "MMXXIV · MARINA DEL REY, CALIFORNIA"],
   ["Home port", "33.9803° N — 118.4517° W"],
-  ["What we run", "VOYAGES AT SEA · SALONS ASHORE"],
+  ["What we run", "SEA DAYS ABOARD · PORT DAYS ASHORE"],
   ["Membership", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY INVITATION OR APPLICATION"],
   ["Cadence", "LORE, SUNDAYS · SEASON II — THE WINE-DARK SEA"],
 ];
@@ -185,7 +185,7 @@ export default function BrandKitPage() {
           <div className="bk-voice">
             <div>
               <div className="h">Say</div>
-              <div className="ex">Berths are few by design.</div>
+              <div className="ex">Passes are few by design.</div>
               <div className="ex">Come aboard. We&apos;ll handle the wind.</div>
               <div className="ex">Ashore at golden hour. Dress for salt.</div>
             </div>
@@ -197,7 +197,7 @@ export default function BrandKitPage() {
             </div>
           </div>
           <div className="bk-lex">
-            {["Voyages", "Salons", "The Manifest", "Berths", "Open Deck", "Knots", "Leagues", "Passbook", "Gateway", "the Bridge", "Shoreside", "LORE", "Aurora AI", "Aboard", "Weather Hold", "Gangway"].map((w) => (
+            {["Sea Days", "Port Days", "The Manifest", "Passes", "Open Deck", "Knots", "Leagues", "Passbook", "Gateway", "the Bridge", "Shoreside", "LORE", "Aurora AI", "Aboard", "Weather Hold", "Gangway"].map((w) => (
               <Tag key={w}>{w}</Tag>
             ))}
           </div>
@@ -242,20 +242,27 @@ export default function BrandKitPage() {
               </div>
             ))}
           </div>
-          <div className="bk-swlbl">Event classes</div>
+          <div className="bk-swlbl">Event families</div>
+          <div className="bk-facts">
+            {(["sea", "shore"] as const).map((fam) => (
+              <div className="row" key={fam}>
+                <span className="k">
+                  {CLASS_CODES[fam]} · {FAMILY_LABEL[fam]}
+                </span>
+                <span className="bk-rooms__role">
+                  {fam === "sea" ? "Aboard — the day on the water" : "Ashore — the day on land"}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="bk-swlbl">The class ladder — both families</div>
           <div className="bk-facts">
             {Object.entries(SUB_CLASSES).map(([key, s]) => (
               <div className="row" key={key}>
-                <span className="k">
-                  {s.classCode} · {s.label}
-                </span>
+                <span className="k">{s.label}</span>
                 <span className="bk-rooms__role">{s.note}</span>
               </div>
             ))}
-            <div className="row">
-              <span className="k">{CLASS_CODES.sky} · Overnight</span>
-              <span className="bk-rooms__role">The night passage — no sub-classes</span>
-            </div>
           </div>
           <div className="bk-swlbl">City codes</div>
           <p className="bk-rooms__cities">{Object.values(CITY_CODES).join(" · ")}</p>

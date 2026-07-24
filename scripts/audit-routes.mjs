@@ -43,12 +43,23 @@ const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
    lowercase "dispatch"/"purser"/"fathoms" are literal words and allowed;
    the capitalized brand uses are not. */
 const BANNED = [
+  "Harbormaster console",
   "The Purser",
   "The Wardroom",
   "Fathoms",
+  " FM ",
   "The Dispatch",
-  "Harbormaster console",
   "Shore office",
+  "Member card",
+  "ticket",
+  "points",
+  "ahoy",
+  // Admission is a pass; berths are for boats. Salon triggers the wrong SEO.
+  "berth",
+  "Berth",
+  "salon",
+  "Salon",
+  "Overnight",
 ];
 
 const results = [];

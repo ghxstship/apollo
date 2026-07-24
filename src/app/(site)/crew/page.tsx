@@ -22,7 +22,7 @@ const ROLES: Array<{
       "Rig, teach, tell the truth about the weather. ASA cert or equivalent scar tissue.",
   },
   {
-    title: "Salon lead",
+    title: "Port Day lead",
     dept: "Ashore",
     type: "Full time",
     port: "Los Angeles",
@@ -59,7 +59,7 @@ export default function CrewPage() {
         </p>
       </div>
       <div style={{ padding: "64px 0 96px" }}>
-        <SectionHeader eyebrow="Open roles" title="Four berths on the crew side." />
+        <SectionHeader eyebrow="Open roles" title="Four seats on the crew side." />
         {ROLES.map((r) => (
           <div className="ws-ledger-row" key={r.title}>
             <div>
@@ -84,7 +84,7 @@ export default function CrewPage() {
         <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
           Nothing that fits? Write to{" "}
           <a href="mailto:crew@lyre.social">crew@lyre.social</a> anyway — good hands
-          find berths.
+          find a place aboard.
         </p>
       </div>
     </div>

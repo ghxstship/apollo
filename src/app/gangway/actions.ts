@@ -37,7 +37,7 @@ export async function sendMagicLink(
   const { data: mayBoard } = await supabase.rpc("email_may_board", { p_email: email });
   if (!mayBoard) {
     return {
-      error: "No berth under that email. Apply for membership, or check the address on file.",
+      error: "No pass under that email. Apply for membership, or check the address on file.",
     };
   }
 

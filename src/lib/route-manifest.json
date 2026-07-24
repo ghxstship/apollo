@@ -100,6 +100,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/gangway",
+      "file": "src/app/(staff)/bridge/gangway/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/manifests",
       "file": "src/app/(staff)/bridge/manifests/page.tsx",
       "type": "page",

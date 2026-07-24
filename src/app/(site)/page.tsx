@@ -3,17 +3,17 @@ import Link from "next/link";
 import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES, TAGLINE } from "@/lib/brand";
+import { CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "LYRE SOCIAL — Voyages and salons, at sea and ashore.",
+  title: "LYRE SOCIAL — Sea Days and Port Days, aboard and ashore.",
 };
 
 const STEPS: Array<[string, string]> = [
-  ["Apply.", "A short application, read by a person. A salon invitation usually follows within the week."],
-  ["Board.", "Claim a berth from the manifest. Solo is normal — crews form at muster, not before."],
+  ["Apply.", "A short application, read by a person. A Port Day invitation usually follows within the week."],
+  ["Board.", "Claim a pass from the manifest. Solo is normal — crews form at muster, not before."],
   ["Belong.", "Knots bank with every mile. The person across the cockpit becomes someone you'd sail with again."],
 ];
 
@@ -48,8 +48,8 @@ export default async function HomePage() {
           <div className="ls-eyebrow">The social club for sea and shore</div>
           <h1>{TAGLINE}</h1>
           <p className="ws-hero__sub">
-            Voyages at sea. Salons ashore. A crew worth the crossing — Miami, Los
-            Angeles, and the waters beyond.
+            Sea Days on the water. Port Days ashore. A crew worth the crossing —
+            Miami, Los Angeles, and the waters beyond.
           </p>
           <div className="ws-hero__cta">
             <LinkButton href="/membership#apply" variant="brass" size="lg">
@@ -93,7 +93,8 @@ export default async function HomePage() {
             {nextUp.map((v, i) => {
               const cap = capacityById.get(v.id);
               const left = cap?.berths_left ?? null;
-              const seats = v.kind === "salon" ? "seats" : "berths";
+              const seats = "passes";
+              const sub = v.sub_class ? SUB_CLASSES[v.sub_class] : null;
               return (
                 <Link
                   key={v.id}
@@ -103,7 +104,7 @@ export default async function HomePage() {
                 >
                   <Card
                     media={v.media}
-                    eyebrow={`${EVENT_CLASS_LABEL[v.class]} · ${v.kind === "salon" ? "Salon" : "Voyage"}`}
+                    eyebrow={`${EVENT_CLASS_LABEL[v.class]}${sub ? ` · ${sub.label}` : ""}`}
                     title={v.title}
                     meta={logMeta(v.starts_at, v.distance_nm)}
                     footer={
@@ -116,7 +117,7 @@ export default async function HomePage() {
                         {v.status === "weather_hold" ? (
                           <Badge tone="clay">Weather hold</Badge>
                         ) : left != null && left <= 5 ? (
-                          <Badge tone="clay">Last berths</Badge>
+                          <Badge tone="clay">Last passes</Badge>
                         ) : null}
                       </>
                     }
@@ -166,7 +167,7 @@ export default async function HomePage() {
             ))}
           </div>
           <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
-            Founding berths in new harbors go to the waitlist first —{" "}
+            Founding passes in new harbors go to the waitlist first —{" "}
             <Link href="/membership#apply">join the manifest</Link>.
           </p>
         </div>
@@ -208,7 +209,7 @@ export default async function HomePage() {
 
       <section className="ws-band">
         <div className="ls-container">
-          <h2>Berths are few by design.</h2>
+          <h2>Passes are few by design.</h2>
           <p>
             Membership is by invitation or application. Apply once, sail a season —
             the water does the rest.
