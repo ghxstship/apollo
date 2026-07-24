@@ -1,0 +1,24 @@
+/* Gangway — passwordless sign-in. Ported from the auth kit (au-*). */
+.gw{min-height:100vh;display:grid;grid-template-columns:1fr 460px;background:var(--surface-page)}
+.gw-side{background:var(--surface-abyss);position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:40px;overflow:hidden}
+.gw-side:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
+.gw-side__wm{position:relative}
+.gw-side__big{font-family:var(--font-display);font-size:clamp(40px,4.5vw,64px);line-height:1.02;color:var(--paper);max-width:14ch;position:relative}
+.gw-side__log{position:relative;display:flex;gap:20px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-inverse-3)}
+.gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite;position:relative}
+.gw-main{padding:48px;display:flex;flex-direction:column;box-sizing:border-box}
+.gw-corner{display:flex;justify-content:flex-end}
+.gw-panel{max-width:400px;width:100%;margin:auto}
+.gw-h{font-family:var(--font-display);font-size:var(--text-display-s)}
+.gw-sub{font-size:13.5px;color:var(--text-2);margin-top:8px}
+.gw-stack{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+.gw-sent{border:1px solid var(--line-faint);background:var(--surface-card);padding:22px;margin-top:28px}
+.gw-sent p{font-size:14px;margin-top:12px}
+.gw-mono{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3)}
+.gw-mono button,.gw-mono a{all:unset;cursor:pointer;color:var(--text-link)}
+.gw-mono button:hover,.gw-mono a:hover{text-decoration:underline}
+.gw-alt{margin-top:24px;padding-top:18px;border-top:1px solid var(--line-faint);font-size:12.5px;color:var(--text-2)}
+.gw-alt a{color:var(--text-link);text-decoration:none}
+.gw-alt a:hover{text-decoration:underline}
+.gw-stale{border:1px solid var(--line-faint);border-inline-start:2px solid var(--terracotta);background:var(--surface-card);padding:12px 16px;margin-top:20px;font-size:13px}
+@media (max-width:960px){.gw{grid-template-columns:1fr}.gw-side{min-height:220px}.gw-main{padding:32px 20px}}

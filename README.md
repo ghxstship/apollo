@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LYRE SOCIAL
 
-## Getting Started
+A membership club for experiential connection at sea and ashore — voyages, salons, and the people worth crossing water for. Full-stack build of the Lyre Social design system: marketing website, member web app, and installable mobile PWA in one Next.js codebase, backed by Supabase.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Next.js 16** (App Router, TypeScript, `src/` dir) — note: middleware lives in `src/proxy.ts` per the Next 16 convention
+- **Supabase** — Postgres, magic-link auth, RLS everywhere; migrations in `supabase/migrations/`
+- **Design system** — Neon Brutalist v4 tokens in `src/styles/`, 25 React primitives in `src/components/ds/`; Marcellus / Archivo / Space Mono via Google Fonts, Lucide icons via `lucide-react`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Surfaces
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Surface | Routes |
+| --- | --- |
+| Marketing site | `/` · `/voyages` · `/voyages/[slug]` · `/membership` · `/dispatch` · `/dispatch/[slug]` · `/gallery` · `/crew` · `/brand` · `/legal` · `/support` |
+| Gangway (auth) | `/gangway` · `/auth/confirm` · `/auth/signout` — passwordless magic links |
+| Member app | `/harbor` · `/now` · `/manifest` (RSVPs) · `/wardroom` (feed) · `/portal` (fathoms) · `/card` · `/word` (inbox) · `/you` |
+| Mobile | Same member routes; under 960px the shell becomes a 6-tab bottom bar. Installable PWA (`/manifest.webmanifest`, standalone, starts at `/harbor`) |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+1. Create a Supabase project and apply the migrations in order:
+   `supabase/migrations/*.sql` (via `supabase db push` or the SQL editor). They create the schema, triggers (welcome fathoms, RSVP rewards), RLS policies, and demo seed content.
+2. Copy `.env.example` to `.env.local` and fill in the project URL and publishable key.
+3. `npm install && npm run dev`
 
-To learn more about Next.js, take a look at the following resources:
+Magic-link emails use Supabase's built-in SMTP (rate-limited); set a custom SMTP provider for production. The `voyage_capacity` view is intentionally `SECURITY DEFINER` — it exposes only aggregate berth counts to anonymous visitors.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data model
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`profiles` (1:1 with `auth.users`, auto-created by trigger) · `harbors` · `voyages` · `rsvps` · `fathoms_ledger` (+`fathoms_balance` view) · `wardroom_posts`/`wardroom_hails`/`wardroom_comments` · `dispatch_posts` · `applications` · `notifications`.
 
-## Deploy on Vercel
+## Brand
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Dark by default; paper light theme via `data-theme="light"`. Sea / Shore / Sky event themes retint the lava gradients per event class (`data-theme` on the event page wrapper). One neon accent per view. No emoji, no exclamation marks, no pirate kitsch. The full kit — tokens, logo SVGs, voice — is published at `/brand`.

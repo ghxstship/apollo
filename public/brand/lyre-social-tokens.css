@@ -1,0 +1,287 @@
+/* LYRE SOCIAL webfonts — loaded from Google Fonts CDN.
+   Marcellus (display serif, inscriptional), Archivo (variable sans, wdth 62..125 for expanded eyebrows), Space Mono (nautical data).
+   If licensed brand font binaries are provided later, replace this @import with local @font-face rules. */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Marcellus&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+/* LYRE SOCIAL color tokens — v4 "NEON BRUTALIST".
+   MASTER: greyscale brutalism, dark by default — carbon blacks, paper whites, hairline steel —
+   with neon "lava" gradients (cyan→violet→magenta) as the only color, used like electricity:
+   focus, progress, the live thing, the one action.
+   LIGHT THEME: data-theme="light" on <body> flips surfaces to paper; black panels stay black.
+   Legacy event themes sea/shore/sky remain for event-level branding. */
+:root{
+/* — greys (the structure) — */
+--void-black:#060607;
+--carbon:#0B0B0C;
+--panel:#141416;
+--graphite:#1E1E21;
+--steel:#2A2A2E;
+--smoke:#8A8A93;
+--silver:#C9C9CF;
+--paper:#F2F2F4;
+--white:#FFFFFF;
+/* — neon (the electricity) — */
+--neon-cyan:#00E8FF;
+--neon-violet:#8B5CFF;
+--neon-magenta:#FF2EC4;
+--neon-amber:#FF9E3D;
+--neon-green:#3EE08F;
+--neon-red:#FF3B5C;
+/* — lava gradients — */
+--lava:linear-gradient(90deg,#00E8FF,#8B5CFF,#FF2EC4); /* @kind color */
+--lava-hot:linear-gradient(90deg,#FF2EC4,#FF9E3D,#00E8FF); /* @kind color */
+--lava-vert:linear-gradient(180deg,#00E8FF,#8B5CFF,#FF2EC4); /* @kind color */
+/* — legacy dark aliases — */
+--kiln:var(--void-black);
+--pelike:var(--carbon);
+--umber:var(--graphite);
+--abyss:var(--void-black);
+--ink:var(--carbon);
+--sea:var(--steel);
+--lapis:var(--neon-cyan);
+--aegean:var(--neon-cyan);
+/* — legacy light aliases — */
+--parian:var(--white);
+--sail:var(--white);
+--marble:var(--paper);
+--bone:var(--paper);
+--frond:var(--paper);
+--fresco:var(--silver);
+--sand:var(--silver);
+--palm:var(--silver);
+--relief:var(--smoke);
+--driftwood:var(--smoke);
+--canopy:var(--smoke);
+/* — legacy accent aliases (brass/gilt = the electric channel now) — */
+--gilt:var(--neon-violet);
+--brass:var(--neon-violet);
+--gilt-bright:var(--neon-cyan);
+--brass-bright:var(--neon-cyan);
+--bronze:#00B5C9;
+--brass-deep:#00B5C9;
+--terracotta:var(--neon-magenta);
+--starlight:var(--neon-cyan);
+--nebula:var(--neon-violet);
+--orchid:var(--neon-magenta);
+--void:var(--neon-violet);
+/* — signals — */
+--laurel:var(--neon-green);
+--siren:var(--neon-red);
+/* — lines — */
+--line-faint:rgba(242,242,244,.12);
+--line:rgba(242,242,244,.22);
+--line-strong:rgba(242,242,244,.55);
+--line-inverse-faint:rgba(242,242,244,.12);
+--line-inverse:rgba(242,242,244,.22);
+--line-inverse-strong:rgba(242,242,244,.55);
+/* — text — */
+--text-1:#F2F2F4;
+--text-2:rgba(242,242,244,.66);
+--text-3:rgba(242,242,244,.45);
+--text-inverse-1:#F2F2F4;
+--text-inverse-2:rgba(242,242,244,.66);
+--text-inverse-3:rgba(242,242,244,.45);
+--text-link:var(--neon-cyan);
+--text-on-media:rgba(242,242,244,.8);
+--veil:rgba(6,6,7,.6); /* modal/drawer scrims */
+--glow-cyan:0 0 8px rgba(0,232,255,.7); /* @kind shadow */
+/* — semantic surfaces — */
+--surface-page:var(--carbon);
+--surface-card:var(--panel);
+--surface-tint:var(--graphite);
+--surface-deep:var(--panel);
+--surface-deep-2:var(--graphite);
+--surface-abyss:var(--void-black);
+/* — semantic actions & states — */
+--action-primary:var(--paper);
+--action-primary-hover:var(--white);
+--action-on-primary:var(--carbon);
+--action-accent:var(--lava); /* @kind color */
+--action-accent-hover:var(--lava-hot); /* @kind color */
+--action-on-accent:var(--carbon);
+--focus:var(--neon-cyan);
+--ok:var(--neon-green);
+--warn:var(--neon-amber);
+--danger:var(--neon-red);
+--urgent:var(--neon-magenta);
+/* — washes — */
+--wash-ink:rgba(242,242,244,.07);
+--wash-ink-2:rgba(242,242,244,.12);
+--wash-bone:rgba(0,232,255,.08);
+--wash-bone-2:rgba(0,232,255,.13);
+--wash-brass:rgba(139,92,255,.16);
+/* — placeholder media (event themes override) — */
+--sea-day:linear-gradient(165deg,#2A2A2E 0%,#141416 60%,#060607 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#FF2EC4 0%,#3A1440 45%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#00E8FF 0%,#8B5CFF 45%,#141416 100%); /* @kind color */
+}
+/* — LIGHT THEME: paper surfaces, black panels stay black — */
+[data-theme="light"]{
+--surface-page:#F2F2F4;
+--surface-card:#FFFFFF;
+--surface-tint:#E7E7EA;
+--surface-deep:#0B0B0C;
+--surface-deep-2:#1E1E21;
+--surface-abyss:#060607;
+--text-1:#0B0B0C;
+--text-2:rgba(11,11,12,.66);
+--text-3:rgba(11,11,12,.46);
+--line-faint:rgba(11,11,12,.12);
+--line:rgba(11,11,12,.24);
+--line-strong:rgba(11,11,12,.6);
+--action-primary:#0B0B0C;
+--action-primary-hover:#060607;
+--action-on-primary:#F2F2F4;
+--text-link:#6E3FE0;
+--focus:#6E3FE0;
+--brass-deep:#0089A1;
+--bronze:#0089A1;
+--gilt:#6E3FE0;
+--brass:#6E3FE0;
+--wash-ink:rgba(11,11,12,.06);
+--wash-ink-2:rgba(11,11,12,.10);
+--text-on-media:rgba(242,242,244,.8);
+--sea-day:linear-gradient(165deg,#C9C9CF 0%,#8A8A93 60%,#2A2A2E 100%); /* @kind color */
+}
+/* — EVENT THEME: Sea — day to night on the water (sunlit aqua → cobalt → midnight) — */
+[data-theme="sea"]{
+--lava:linear-gradient(90deg,#7DF3FF,#2E6FFF,#0B1E4A); /* @kind color */
+--lava-hot:linear-gradient(90deg,#0B1E4A,#2E6FFF,#7DF3FF); /* @kind color */
+--action-accent:linear-gradient(90deg,#7DF3FF,#2E6FFF,#0B1E4A); /* @kind color */
+--action-accent-hover:linear-gradient(90deg,#0B1E4A,#2E6FFF,#7DF3FF); /* @kind color */
+--action-on-accent:#060607;
+--focus:#00E8FF;
+--text-link:#00E8FF;
+--urgent:#2E6FFF;
+--sea-day:linear-gradient(165deg,#7DF3FF 0%,#2E6FFF 50%,#0B1E4A 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#2E6FFF 0%,#0B1E4A 55%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#7DF3FF 0%,#2E6FFF 60%,#141416 100%); /* @kind color */
+}
+/* — EVENT THEME: Shore — day to night in the jungle (noon lime → green → night forest) — */
+[data-theme="shore"]{
+--lava:linear-gradient(90deg,#C6FF4A,#17B877,#063B2A); /* @kind color */
+--lava-hot:linear-gradient(90deg,#063B2A,#17B877,#C6FF4A); /* @kind color */
+--action-accent:linear-gradient(90deg,#C6FF4A,#17B877,#063B2A); /* @kind color */
+--action-accent-hover:linear-gradient(90deg,#063B2A,#17B877,#C6FF4A); /* @kind color */
+--action-on-accent:#060607;
+--focus:#3EE08F;
+--text-link:#3EE08F;
+--ok:#C6FF4A;
+--sea-day:linear-gradient(165deg,#C6FF4A 0%,#17B877 50%,#063B2A 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#17B877 0%,#063B2A 55%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#C6FF4A 0%,#17B877 60%,#141416 100%); /* @kind color */
+}
+/* — EVENT THEME: Sky — sunset to nightfall (amber dusk → magenta afterglow → ultraviolet night) — */
+[data-theme="sky"]{
+--lava:linear-gradient(90deg,#FFD24A,#FF2EC4,#2E1A66); /* @kind color */
+--lava-hot:linear-gradient(90deg,#2E1A66,#FF2EC4,#FFD24A); /* @kind color */
+--action-accent:linear-gradient(90deg,#FFD24A,#FF2EC4,#2E1A66); /* @kind color */
+--action-accent-hover:linear-gradient(90deg,#2E1A66,#FF2EC4,#FFD24A); /* @kind color */
+--action-on-accent:#060607;
+--focus:#8B5CFF;
+--text-link:#B79BFF;
+--urgent:#FF2EC4;
+--sea-day:linear-gradient(165deg,#FFD24A 0%,#FF2EC4 45%,#2E1A66 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#FFD24A 0%,#FF2EC4 35%,#2E1A66 70%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#FFD24A 0%,#FF9E3D 50%,#141416 100%); /* @kind color */
+}
+/* — light-theme anchor pairs for event themes (AA on paper) — */
+[data-theme="light"][data-event="sea"]{--focus:#0047AB;--text-link:#0047AB}
+[data-theme="light"][data-event="shore"]{--focus:#0B7A4B;--text-link:#0B7A4B}
+[data-theme="light"][data-event="sky"]{--focus:#6E3FE0;--text-link:#6E3FE0}
+/* LYRE SOCIAL type tokens — inscriptional serif over a modern grotesque, mono for the ship's log. */
+:root{
+--font-display:'Marcellus','Times New Roman',serif;
+--font-sans:'Archivo','Helvetica Neue',Helvetica,sans-serif;
+--font-mono:'Space Mono','Courier New',monospace;
+/* display scale (Marcellus, single weight 400) */
+--text-display-xl:clamp(46px,5.5vw,76px);
+--text-display-l:clamp(36px,4vw,56px);
+--text-display-m:clamp(30px,2.9vw,40px);
+--text-display-s:clamp(24px,2vw,28px);
+--text-display-xs:22px;
+--leading-display:1.06;
+--track-display:.01em;
+/* body scale (Archivo) */
+--text-body-l:17px;
+--text-body:15px;
+--text-body-s:13px;
+--leading-body:1.6;
+/* labels — expanded caps, the "club jacket" voice */
+--text-eyebrow:11px;
+--text-eyebrow-s:10px;
+--track-eyebrow:.22em;
+--track-button:.14em;
+--stretch-wide:125%;
+--stretch-normal:100%;
+/* data — ship's log */
+--text-data:12px;
+--text-data-s:10.5px;
+--track-data:.04em;
+}
+/* LYRE SOCIAL spacing — 4px base, generous at the top end. */
+:root{
+--space-1:4px;
+--space-2:8px;
+--space-3:12px;
+--space-4:16px;
+--space-5:24px;
+--space-6:32px;
+--space-7:48px;
+--space-8:64px;
+--space-9:96px;
+--space-10:144px;
+--gutter:24px;
+--measure:62ch;
+--container:1200px;
+/* breakpoints (write literally in @media): sm 640px · md 960px · lg 1280px */
+}
+/* LYRE SOCIAL effects — near-sharp corners or full pills, hairlines over shadows, swell easing. */
+:root{
+--radius-sharp:0px;
+--radius-pill:999px;
+--shadow-overlay:0 24px 64px rgba(0,0,0,.55);
+--shadow-float:0 8px 24px rgba(0,0,0,.45);
+--ease-swell:cubic-bezier(.22,.61,.36,1); /* @kind other */
+--ease-out:cubic-bezier(.16,1,.3,1); /* @kind other */
+--dur-1:160ms; /* @kind other */
+--dur-2:280ms; /* @kind other */
+--dur-3:480ms; /* @kind other */
+--blur-veil:12px;
+/* distressed subtlety — grain system, three sanctioned intensities:
+   hero fields/full-bleed media  ::after background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply
+   dark cards/panels             opacity:var(--grain-card)
+   text-bearing light surfaces   NONE — never under running text */
+--grain-hero:.5; /* @kind other */
+--grain-card:.25; /* @kind other */
+--grain:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0"/></filter><rect width="140" height="140" filter="url(%23n)"/></svg>'); /* @kind other */
+--scrim:linear-gradient(180deg,rgba(6,6,7,0) 0%,rgba(6,6,7,.78) 100%); /* @kind color */
+--scrim-top:linear-gradient(180deg,rgba(6,6,7,.6) 0%,rgba(6,6,7,0) 100%); /* @kind color */
+/* NOTE: placeholder --sea-day/dusk/dawn gradients are owned by tokens/colors.css (SSOT) — do not redeclare here; effects.css loads after colors.css and would override them. */
+}
+/* Minimal base — element defaults so consumers start on-brand. */
+body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var(--font-sans);font-size:var(--text-body);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0}
+p{margin:0;text-wrap:pretty}
+a{color:var(--text-link);text-decoration:none;transition:color var(--dur-1) var(--ease-swell)}
+a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+img{max-width:100%;height:auto}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+::selection{background:var(--neon-cyan);color:var(--carbon)}
+@keyframes ls-lava{from{background-position:0% 0}to{background-position:200% 0}}
+.ls-lava-flow{background-size:200% 100%!important;animation:ls-lava 6s linear infinite}
+/* — microinteraction utilities — */
+@keyframes ls-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes ls-fade{from{opacity:0}to{opacity:1}}
+@keyframes ls-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.ls-rise{animation:ls-rise var(--dur-2) var(--ease-out) both}
+.ls-rise-1{animation:ls-rise var(--dur-2) var(--ease-out) .06s both}
+.ls-rise-2{animation:ls-rise var(--dur-2) var(--ease-out) .12s both}
+.ls-rise-3{animation:ls-rise var(--dur-2) var(--ease-out) .18s both}
+.ls-fade{animation:ls-fade var(--dur-2) var(--ease-swell) both}
+.ls-live{display:inline-flex;align-items:center;gap:7px}
+.ls-eyebrow{font:600 11px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase}
+.ls-mono-data{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data)}
+.ls-live:before{content:"";width:7px;height:7px;border-radius:999px;background:var(--neon-cyan);box-shadow:var(--glow-cyan);animation:ls-pulse 1.6s var(--ease-swell) infinite}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+code,pre,kbd{font-family:var(--font-mono)}

@@ -1,0 +1,4 @@
+/* LYRE SOCIAL webfonts — loaded from Google Fonts CDN.
+   Marcellus (display serif, inscriptional), Archivo (variable sans, wdth 62..125 for expanded eyebrows), Space Mono (nautical data).
+   If licensed brand font binaries are provided later, replace this @import with local @font-face rules. */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&family=Marcellus&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap");

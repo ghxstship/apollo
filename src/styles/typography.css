@@ -1,0 +1,30 @@
+/* LYRE SOCIAL type tokens — inscriptional serif over a modern grotesque, mono for the ship's log. */
+:root{
+--font-display:'Marcellus','Times New Roman',serif;
+--font-sans:'Archivo','Helvetica Neue',Helvetica,sans-serif;
+--font-mono:'Space Mono','Courier New',monospace;
+/* display scale (Marcellus, single weight 400) */
+--text-display-xl:clamp(46px,5.5vw,76px);
+--text-display-l:clamp(36px,4vw,56px);
+--text-display-m:clamp(30px,2.9vw,40px);
+--text-display-s:clamp(24px,2vw,28px);
+--text-display-xs:22px;
+--leading-display:1.06;
+--track-display:.01em;
+/* body scale (Archivo) */
+--text-body-l:17px;
+--text-body:15px;
+--text-body-s:13px;
+--leading-body:1.6;
+/* labels — expanded caps, the "club jacket" voice */
+--text-eyebrow:11px;
+--text-eyebrow-s:10px;
+--track-eyebrow:.22em;
+--track-button:.14em;
+--stretch-wide:125%;
+--stretch-normal:100%;
+/* data — ship's log */
+--text-data:12px;
+--text-data-s:10.5px;
+--track-data:.04em;
+}

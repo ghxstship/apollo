@@ -1,0 +1,186 @@
+/* LYRE SOCIAL color tokens — v4 "NEON BRUTALIST".
+   MASTER: greyscale brutalism, dark by default — carbon blacks, paper whites, hairline steel —
+   with neon "lava" gradients (cyan→violet→magenta) as the only color, used like electricity:
+   focus, progress, the live thing, the one action.
+   LIGHT THEME: data-theme="light" on <body> flips surfaces to paper; black panels stay black.
+   Legacy event themes sea/shore/sky remain for event-level branding. */
+:root{
+/* — greys (the structure) — */
+--void-black:#060607;
+--carbon:#0B0B0C;
+--panel:#141416;
+--graphite:#1E1E21;
+--steel:#2A2A2E;
+--smoke:#8A8A93;
+--silver:#C9C9CF;
+--paper:#F2F2F4;
+--white:#FFFFFF;
+/* — neon (the electricity) — */
+--neon-cyan:#00E8FF;
+--neon-violet:#8B5CFF;
+--neon-magenta:#FF2EC4;
+--neon-amber:#FF9E3D;
+--neon-green:#3EE08F;
+--neon-red:#FF3B5C;
+/* — lava gradients — */
+--lava:linear-gradient(90deg,#00E8FF,#8B5CFF,#FF2EC4); /* @kind color */
+--lava-hot:linear-gradient(90deg,#FF2EC4,#FF9E3D,#00E8FF); /* @kind color */
+--lava-vert:linear-gradient(180deg,#00E8FF,#8B5CFF,#FF2EC4); /* @kind color */
+/* — legacy dark aliases — */
+--kiln:var(--void-black);
+--pelike:var(--carbon);
+--umber:var(--graphite);
+--abyss:var(--void-black);
+--ink:var(--carbon);
+--sea:var(--steel);
+--lapis:var(--neon-cyan);
+--aegean:var(--neon-cyan);
+/* — legacy light aliases — */
+--parian:var(--white);
+--sail:var(--white);
+--marble:var(--paper);
+--bone:var(--paper);
+--frond:var(--paper);
+--fresco:var(--silver);
+--sand:var(--silver);
+--palm:var(--silver);
+--relief:var(--smoke);
+--driftwood:var(--smoke);
+--canopy:var(--smoke);
+/* — legacy accent aliases (brass/gilt = the electric channel now) — */
+--gilt:var(--neon-violet);
+--brass:var(--neon-violet);
+--gilt-bright:var(--neon-cyan);
+--brass-bright:var(--neon-cyan);
+--bronze:#00B5C9;
+--brass-deep:#00B5C9;
+--terracotta:var(--neon-magenta);
+--starlight:var(--neon-cyan);
+--nebula:var(--neon-violet);
+--orchid:var(--neon-magenta);
+--void:var(--neon-violet);
+/* — signals — */
+--laurel:var(--neon-green);
+--siren:var(--neon-red);
+/* — lines — */
+--line-faint:rgba(242,242,244,.12);
+--line:rgba(242,242,244,.22);
+--line-strong:rgba(242,242,244,.55);
+--line-inverse-faint:rgba(242,242,244,.12);
+--line-inverse:rgba(242,242,244,.22);
+--line-inverse-strong:rgba(242,242,244,.55);
+/* — text — */
+--text-1:#F2F2F4;
+--text-2:rgba(242,242,244,.66);
+--text-3:rgba(242,242,244,.45);
+--text-inverse-1:#F2F2F4;
+--text-inverse-2:rgba(242,242,244,.66);
+--text-inverse-3:rgba(242,242,244,.45);
+--text-link:var(--neon-cyan);
+--text-on-media:rgba(242,242,244,.8);
+--veil:rgba(6,6,7,.6); /* modal/drawer scrims */
+--glow-cyan:0 0 8px rgba(0,232,255,.7); /* @kind shadow */
+/* — semantic surfaces — */
+--surface-page:var(--carbon);
+--surface-card:var(--panel);
+--surface-tint:var(--graphite);
+--surface-deep:var(--panel);
+--surface-deep-2:var(--graphite);
+--surface-abyss:var(--void-black);
+/* — semantic actions & states — */
+--action-primary:var(--paper);
+--action-primary-hover:var(--white);
+--action-on-primary:var(--carbon);
+--action-accent:var(--lava); /* @kind color */
+--action-accent-hover:var(--lava-hot); /* @kind color */
+--action-on-accent:var(--carbon);
+--focus:var(--neon-cyan);
+--ok:var(--neon-green);
+--warn:var(--neon-amber);
+--danger:var(--neon-red);
+--urgent:var(--neon-magenta);
+/* — washes — */
+--wash-ink:rgba(242,242,244,.07);
+--wash-ink-2:rgba(242,242,244,.12);
+--wash-bone:rgba(0,232,255,.08);
+--wash-bone-2:rgba(0,232,255,.13);
+--wash-brass:rgba(139,92,255,.16);
+/* — placeholder media (event themes override) — */
+--sea-day:linear-gradient(165deg,#2A2A2E 0%,#141416 60%,#060607 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#FF2EC4 0%,#3A1440 45%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#00E8FF 0%,#8B5CFF 45%,#141416 100%); /* @kind color */
+}
+/* — LIGHT THEME: paper surfaces, black panels stay black — */
+[data-theme="light"]{
+--surface-page:#F2F2F4;
+--surface-card:#FFFFFF;
+--surface-tint:#E7E7EA;
+--surface-deep:#0B0B0C;
+--surface-deep-2:#1E1E21;
+--surface-abyss:#060607;
+--text-1:#0B0B0C;
+--text-2:rgba(11,11,12,.66);
+--text-3:rgba(11,11,12,.46);
+--line-faint:rgba(11,11,12,.12);
+--line:rgba(11,11,12,.24);
+--line-strong:rgba(11,11,12,.6);
+--action-primary:#0B0B0C;
+--action-primary-hover:#060607;
+--action-on-primary:#F2F2F4;
+--text-link:#6E3FE0;
+--focus:#6E3FE0;
+--brass-deep:#0089A1;
+--bronze:#0089A1;
+--gilt:#6E3FE0;
+--brass:#6E3FE0;
+--wash-ink:rgba(11,11,12,.06);
+--wash-ink-2:rgba(11,11,12,.10);
+--text-on-media:rgba(242,242,244,.8);
+--sea-day:linear-gradient(165deg,#C9C9CF 0%,#8A8A93 60%,#2A2A2E 100%); /* @kind color */
+}
+/* — EVENT THEME: Sea — day to night on the water (sunlit aqua → cobalt → midnight) — */
+[data-theme="sea"]{
+--lava:linear-gradient(90deg,#7DF3FF,#2E6FFF,#0B1E4A); /* @kind color */
+--lava-hot:linear-gradient(90deg,#0B1E4A,#2E6FFF,#7DF3FF); /* @kind color */
+--action-accent:linear-gradient(90deg,#7DF3FF,#2E6FFF,#0B1E4A); /* @kind color */
+--action-accent-hover:linear-gradient(90deg,#0B1E4A,#2E6FFF,#7DF3FF); /* @kind color */
+--action-on-accent:#060607;
+--focus:#00E8FF;
+--text-link:#00E8FF;
+--urgent:#2E6FFF;
+--sea-day:linear-gradient(165deg,#7DF3FF 0%,#2E6FFF 50%,#0B1E4A 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#2E6FFF 0%,#0B1E4A 55%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#7DF3FF 0%,#2E6FFF 60%,#141416 100%); /* @kind color */
+}
+/* — EVENT THEME: Shore — day to night in the jungle (noon lime → green → night forest) — */
+[data-theme="shore"]{
+--lava:linear-gradient(90deg,#C6FF4A,#17B877,#063B2A); /* @kind color */
+--lava-hot:linear-gradient(90deg,#063B2A,#17B877,#C6FF4A); /* @kind color */
+--action-accent:linear-gradient(90deg,#C6FF4A,#17B877,#063B2A); /* @kind color */
+--action-accent-hover:linear-gradient(90deg,#063B2A,#17B877,#C6FF4A); /* @kind color */
+--action-on-accent:#060607;
+--focus:#3EE08F;
+--text-link:#3EE08F;
+--ok:#C6FF4A;
+--sea-day:linear-gradient(165deg,#C6FF4A 0%,#17B877 50%,#063B2A 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#17B877 0%,#063B2A 55%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#C6FF4A 0%,#17B877 60%,#141416 100%); /* @kind color */
+}
+/* — EVENT THEME: Sky — sunset to nightfall (amber dusk → magenta afterglow → ultraviolet night) — */
+[data-theme="sky"]{
+--lava:linear-gradient(90deg,#FFD24A,#FF2EC4,#2E1A66); /* @kind color */
+--lava-hot:linear-gradient(90deg,#2E1A66,#FF2EC4,#FFD24A); /* @kind color */
+--action-accent:linear-gradient(90deg,#FFD24A,#FF2EC4,#2E1A66); /* @kind color */
+--action-accent-hover:linear-gradient(90deg,#2E1A66,#FF2EC4,#FFD24A); /* @kind color */
+--action-on-accent:#060607;
+--focus:#8B5CFF;
+--text-link:#B79BFF;
+--urgent:#FF2EC4;
+--sea-day:linear-gradient(165deg,#FFD24A 0%,#FF2EC4 45%,#2E1A66 100%); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#FFD24A 0%,#FF2EC4 35%,#2E1A66 70%,#0B0B0C 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#FFD24A 0%,#FF9E3D 50%,#141416 100%); /* @kind color */
+}
+/* — light-theme anchor pairs for event themes (AA on paper) — */
+[data-theme="light"][data-event="sea"]{--focus:#0047AB;--text-link:#0047AB}
+[data-theme="light"][data-event="shore"]{--focus:#0B7A4B;--text-link:#0B7A4B}
+[data-theme="light"][data-event="sky"]{--focus:#6E3FE0;--text-link:#6E3FE0}
