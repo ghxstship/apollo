@@ -81,8 +81,14 @@
 .ls-badge{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 12px;border-radius:var(--radius-pill);border:1px solid transparent;font-family:var(--font-sans);font-weight:600;font-stretch:var(--stretch-wide);font-size:var(--text-eyebrow-s);letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
 .ls-badge--brass{background:var(--lava);color:var(--action-on-accent)}
 .ls-badge--ink{background:var(--action-primary);color:var(--action-on-primary)}
-.ls-badge--laurel{background:var(--laurel);color:var(--carbon)}
-.ls-badge--clay{background:var(--terracotta);color:var(--carbon)}
+/* Status tones read as state, not surface: colored text + hairline + faint
+   wash. Solid neon fills halate on carbon and outshine the view's one
+   accent — only brass keeps a fill. */
+.ls-badge--laurel{background:color-mix(in srgb, var(--laurel) 12%, transparent);border-color:color-mix(in srgb, var(--laurel) 55%, transparent);color:var(--laurel)}
+.ls-badge--clay{background:color-mix(in srgb, var(--terracotta) 12%, transparent);border-color:color-mix(in srgb, var(--terracotta) 55%, transparent);color:var(--terracotta)}
+/* Paper theme: deepened anchors keep AA at badge sizes. */
+[data-theme="light"] .ls-badge--laurel{--laurel:#0B7A4B}
+[data-theme="light"] .ls-badge--clay{--terracotta:#A6116F}
 .ls-badge--outline{border-color:var(--line-strong);color:var(--text-1)}
 .ls-badge--outline.ls-badge--inverse{border-color:var(--line-inverse-strong);color:var(--text-inverse-1)}
 
