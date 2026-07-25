@@ -12,8 +12,32 @@ type OutboxRow = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const FROM = Deno.env.get("OUTBOX_FROM") ?? "LYRE SOCIAL — Shoreside <shore@lyre.social>";
+/* Secrets: env first, then Supabase Vault via the service-role-only RPC
+   public.get_app_secret — so delivery configures without CLI secret access.
+   Resolved once per invocation in the handler. */
+let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
+const DEFAULT_FROM = "LYRE SOCIAL — Shoreside <shore@lyre.social>";
+
+async function vaultSecret(name: string): Promise<string> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
+    method: "POST",
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ p_name: name }),
+  });
+  if (!res.ok) return "";
+  const val = await res.json();
+  return typeof val === "string" ? val : "";
+}
+
+async function resolveSecrets(): Promise<void> {
+  if (!RESEND_API_KEY) RESEND_API_KEY = await vaultSecret("RESEND_API_KEY");
+  if (!FROM) FROM = (await vaultSecret("OUTBOX_FROM")) || DEFAULT_FROM;
+}
 
 const REST = `${SUPABASE_URL}/rest/v1/email_outbox`;
 const HEADERS = {
@@ -229,6 +253,7 @@ async function sendViaResend(row: OutboxRow): Promise<boolean> {
 
 Deno.serve(async (_req: Request) => {
   try {
+    await resolveSecrets();
     const rows = await fetchPending();
     let sent = 0, skipped = 0, failed = 0;
 
