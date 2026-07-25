@@ -61,12 +61,14 @@ function csvCell(v: string): string {
 export function GangwayConsole({
   voyageId,
   voyageTitle,
+  family,
   departs,
   options,
   rows: serverRows,
 }: {
   voyageId: string;
   voyageTitle: string;
+  family: string;
   departs: string;
   options: Array<{ value: string; label: string }>;
   rows: GangwayRow[];
@@ -98,7 +100,7 @@ export function GangwayConsole({
     return () => cancelAnimationFrame(raf);
   }, [serverRows]);
 
-  /* Cache the roster so the door keeps working past the breakwater. */
+  /* Cache the roster so the gangway keeps working past the breakwater. */
   React.useEffect(() => {
     try {
       localStorage.setItem(ROSTER_KEY + voyageId, JSON.stringify(serverRows));
@@ -237,7 +239,7 @@ export function GangwayConsole({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `door-list-${voyageTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}.csv`;
+    a.download = `gangway-list-${voyageTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -249,6 +251,10 @@ export function GangwayConsole({
 
   return (
     <>
+      {/* Event state in the data register — family first, count ticks live. */}
+      <div className="ls-mono-data hm-gang__meta">
+        {family.toUpperCase()} · {voyageTitle.replace(/\.+$/, "").toUpperCase()} · {departs} · {checked}/{rows.length} ABOARD
+      </div>
       <div className="hm-sec" style={{ marginTop: 20 }}>
         <Select
           label="Voyage"
@@ -319,7 +325,7 @@ export function GangwayConsole({
           <StateBlock
             bare
             status="offline"
-            title="Stamps queued at the door."
+            title="Stamps queued at the gangway."
             detail={`${queued} check-in${queued === 1 ? "" : "s"} waiting to sync. They flush on their own when the signal returns.`}
           />
         ) : null}
@@ -331,10 +337,10 @@ export function GangwayConsole({
 
       <section className="hm-sec">
         <div className="hm-head">
-          <h2>The door list.</h2>
+          <h2>The gangway list.</h2>
           <span className="hm-acts">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
-              Print the door list
+              Print the gangway list
             </Button>
             <Button variant="ghost" size="sm" onClick={downloadCsv}>
               Download CSV

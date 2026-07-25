@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { StateBlock } from "@/components/ds";
-import { logDate, logTime } from "@/lib/format";
+import { EVENT_CLASS_LABEL, logDate, logTime } from "@/lib/format";
 import { getOperator } from "../../data";
 import { GangwayConsole, type GangwayRow } from "./gangway-client";
 
@@ -28,13 +28,13 @@ export default async function GangwayPage({
     return (
       <div>
         <span className="hm-eyebrow">Gangway</span>
-        <h1 className="hm-h1">The door.</h1>
+        <h1 className="hm-h1">Boarding.</h1>
         <div className="hm-sec">
           <StateBlock
             status="empty"
             icon="Sailboat"
             title="Nothing on the water."
-            detail="No upcoming voyages to work the door for. Set one on the Voyages tab."
+            detail="No upcoming voyages to board. Set one on the Voyages tab."
           />
         </div>
       </div>
@@ -84,16 +84,15 @@ export default async function GangwayPage({
   return (
     <div>
       <span className="hm-eyebrow">Gangway</span>
-      <h1 className="hm-h1">
-        {logDate(voyage.starts_at)}&apos;s door — {voyage.title.replace(/\.+$/, "")}.
-      </h1>
-      <p className="hm-lede">
-        Scan a pass or type its code. The stamp lands the moment it reads.
-      </p>
+      {/* Stable statement; event state lives in the mono line below (client,
+          so the aboard count ticks live). */}
+      <h1 className="hm-h1">Boarding.</h1>
+      <p className="hm-lede">Scan a pass or type its code.</p>
 
       <GangwayConsole
         voyageId={voyage.id}
         voyageTitle={voyage.title}
+        family={EVENT_CLASS_LABEL[voyage.class] ?? "Sea Day"}
         departs={`${logDate(voyage.starts_at)} · ${logTime(voyage.starts_at)}`}
         options={voyages.map((v) => ({
           value: v.id,
