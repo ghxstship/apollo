@@ -99,12 +99,406 @@ function rest(session) {
   return {
     get: (p) => call("GET", p),
     post: (p, b) => call("POST", p, b),
+    /* An insert that does not read itself back. supabase-js sends this whenever
+       the caller does not chain .select(), and it is what the public funnels
+       rely on — an applicant may lodge a form without being able to read the
+       applications table. */
+    postMinimal: (p, b) => call("POST", p, b, { prefer: "return=minimal" }),
     patch: (p, b) => call("PATCH", p, b),
     del: (p) => call("DELETE", p),
     rpc: (fn, args) => call("POST", `rpc/${fn}`, args),
   };
 }
 const uid = (s) => s.user.id;
+
+/* ---------- housekeeping ----------
+   The suite writes real rows against a real database, so it sweeps its own
+   leavings — before as well as after, because a run that dies halfway would
+   otherwise poison the next one. Everything the suite creates is namespaced
+   e2e-* / E2E* so the sweep can be exact rather than broad. */
+async function sweep(p) {
+  const stf = rest(p.staff);
+  await stf.del("applications?email=like.e2e-anon-*");
+  await stf.del("crew_candidates?email=like.e2e-anon-*");
+  await stf.del("api_keys?label=like.E2E*");
+  await stf.del("webhooks?url=like.*example.com/e2e*");
+  await stf.del("wardroom_flags?reason=eq.E2E");
+  await stf.del("wardroom_posts?body=like.E2E*");
+  await stf.del("contests?slug=like.e2e-*");
+  await stf.del("voyages?slug=like.e2e-*");
+  /* Orders are cleaned by id in the test, but a run that died before its
+     cleanup leaves one behind; the personas place no other orders. */
+  for (const who of ["regional", "national", "global", "paused"]) {
+    const id = uid(p[who]);
+    const mine = await stf.get(`shop_orders?profile_id=eq.${id}&select=id`);
+    for (const row of mine.data || []) {
+      await stf.del(`shop_order_items?order_id=eq.${row.id}`);
+      await stf.del(`shop_orders?id=eq.${row.id}`);
+    }
+  }
+  /* Only staff may clear a billing account — the guard trigger sees to that,
+     which is the point of the test that puts one there. */
+  await stf.patch("profiles?stripe_customer_id=like.cus_e2e_*", { stripe_customer_id: null });
+  await stf.patch("profiles?stripe_customer_id=like.cus_probe_*", { stripe_customer_id: null });
+}
+
+/* ---------- E. schema invariants ----------
+   security_report() walks the catalog for the rules that are easy to break by
+   accident: RLS off, a policy-less table, a definer function with a loose
+   search_path, a view that sees past RLS, a write grant left on anon, a policy
+   scoped to PUBLIC on a members' table, or a policy anon can reach that calls a
+   function anon cannot execute. Any failing row fails the build, so a new table
+   is held to the same line as the ones that already exist. */
+async function schemaInvariants(p) {
+  const stf = rest(p.staff), reg = rest(p.regional);
+
+  const report = await stf.rpc("security_report");
+  note("staff", "security report runs", report.status < 400, `got ${report.status}`);
+  const rows = Array.isArray(report.data) ? report.data : [];
+  note("staff", "security report covers the schema", rows.length > 200, `${rows.length} checks`);
+
+  const failing = rows.filter((r) => !r.ok);
+  const byCheck = {};
+  for (const r of rows) (byCheck[r.check_name] ||= []).push(r);
+  for (const [name, group] of Object.entries(byCheck)) {
+    const bad = group.filter((r) => !r.ok);
+    note("staff", `invariant: ${name}`, bad.length === 0,
+      bad.length ? bad.slice(0, 6).map((r) => `${r.subject} (${r.detail})`).join("; ") : `${group.length} ok`);
+  }
+  note("staff", "no schema invariant fails", failing.length === 0, `${failing.length} failing`);
+
+  // The report is a map of the attack surface, so it is staff-only.
+  const asMember = await reg.rpc("security_report");
+  note("regional", "security report is staff-only", asMember.status >= 400, `got ${asMember.status}`);
+}
+
+/* ---------- F. the anonymous surface ----------
+   What a signed-out visitor may read is a product decision; what they may write
+   is none. Both are asserted table by table rather than assumed, and reads are
+   checked for a clean empty result rather than an error — an error means the
+   protection is coming from a missing grant somewhere instead of from policy. */
+const ANON_READABLE = [
+  "voyages", "harbors", "vessels", "voyage_vessels", "dispatch_posts",
+  "addons", "membership_plans", "crew_roles", "voyage_capacity",
+];
+const ANON_SEALED = [
+  "profiles", "rsvps", "rsvp_guests", "rsvp_addons", "pass_transfers",
+  "fathoms_ledger", "account_ledger", "notifications", "invites", "member_roll",
+  "threads", "thread_members", "messages", "wardroom_posts", "wardroom_comments",
+  "wardroom_hails", "wardroom_flags", "applications", "crew_candidates",
+  "crew_requests", "promo_codes", "email_outbox", "sms_outbox", "push_outbox",
+  "push_subscriptions", "subscriptions", "invoices", "payment_methods",
+  "installment_plans", "shop_orders", "shop_order_items", "galley_orders",
+  "galley_order_items", "galley_items", "products", "rewards",
+  "reward_redemptions", "saved_segments", "api_keys", "webhooks",
+  "webhook_deliveries", "automations", "marks", "member_marks",
+  "contests", "contest_entries", "contest_results", "voyage_media",
+  "member_engagement", "member_affinity", "fathoms_balance", "account_balance",
+  "waitlist_position", "member_league", "member_pass_usage",
+];
+
+async function anonSurface() {
+  const anon = rest(null);
+
+  for (const t of ANON_READABLE) {
+    const res = await anon.get(`${t}?select=*&limit=1`);
+    note("anon", `may read ${t}`, res.status === 200 && Array.isArray(res.data),
+      `got ${res.status} ${JSON.stringify(res.data).slice(0, 80)}`);
+  }
+
+  for (const t of ANON_SEALED) {
+    const res = await anon.get(`${t}?select=*&limit=1`);
+    /* Empty, not an error. A 42501 here means anon is being stopped by a
+       missing EXECUTE grant rather than by the policy — which is how the
+       public gallery ended up unable to read its own approved frames. */
+    const clean = res.status === 200 && Array.isArray(res.data) && res.data.length === 0;
+    note("anon", `${t} is sealed and fails closed`, clean,
+      `got ${res.status} ${JSON.stringify(res.data).slice(0, 80)}`);
+  }
+
+  // Writes: the two public funnels take an INSERT, nothing else takes anything.
+  const stamp = Date.now().toString(36);
+  const apply = await anon.postMinimal("applications", {
+    email: `e2e-anon-${stamp}@example.com`, full_name: "E2E Anon Applicant",
+  });
+  note("anon", "the application funnel is open", apply.status < 400, `got ${apply.status}`);
+
+  const roleRow = await anon.get("crew_roles?select=id&limit=1");
+  const roleId = roleRow.data?.[0]?.id;
+  const crew = await anon.postMinimal("crew_candidates", {
+    role_id: roleId, email: `e2e-anon-${stamp}@example.com`, full_name: "E2E Anon Crew",
+  });
+  note("anon", "the crew funnel is open", crew.status < 400, `got ${crew.status}`);
+
+  /* Lodging a form must not become a way to read the roll. An insert that asks
+     to read itself back is refused, which is why the funnels send minimal. */
+  const readback = await anon.post("applications", {
+    email: `e2e-anon-rb-${stamp}@example.com`, full_name: "E2E Anon Readback",
+  });
+  note("anon", "an application cannot read itself back", readback.status >= 400, `got ${readback.status}`);
+
+  const revise = await anon.patch(`applications?email=eq.e2e-anon-${stamp}@example.com`, { status: "aboard" });
+  note("anon", "cannot revise a lodged application", revise.status >= 400 || (revise.data || []).length === 0, `got ${revise.status}`);
+
+  for (const [t, body] of [
+    ["voyages", { slug: `e2e-anon-${stamp}`, title: "x", class: "sea", starts_at: "2027-01-01" }],
+    ["profiles", { full_name: "x" }],
+    ["rsvps", { voyage_id: "00000000-0000-0000-0000-000000000000", profile_id: "00000000-0000-0000-0000-000000000000" }],
+    ["wardroom_posts", { body: "x" }],
+    ["contest_entries", { contest_id: "00000000-0000-0000-0000-000000000000", profile_id: "00000000-0000-0000-0000-000000000000" }],
+    ["member_marks", { profile_id: "00000000-0000-0000-0000-000000000000", mark_code: "first-watch" }],
+    ["fathoms_ledger", { profile_id: "00000000-0000-0000-0000-000000000000", delta: 10000, reason: "x" }],
+    ["promo_codes", { code: `E2E${stamp}`, kind: "comp" }],
+  ]) {
+    const res = await anon.post(t, body);
+    note("anon", `cannot write ${t}`, res.status >= 400, `got ${res.status}`);
+  }
+
+  // Staff-only RPCs must not answer an anonymous caller.
+  for (const fn of ["security_report", "settle_contest", "passage_log", "season_card", "contest_standing", "redeem_reward", "open_direct_thread"]) {
+    const res = await anon.rpc(fn, {});
+    note("anon", `${fn} refuses an anonymous caller`, res.status >= 400, `got ${res.status}`);
+  }
+}
+
+/* ---------- G. member isolation ----------
+   Every table that carries a profile_id is a place one member could read or
+   rewrite another. Asserted table by table rather than trusted to the pattern,
+   because the pattern is exactly what a new table forgets. */
+const OWNED_TABLES = [
+  "fathoms_ledger", "account_ledger", "notifications", "rsvps", "subscriptions",
+  "invoices", "payment_methods", "installment_plans", "shop_orders",
+  "galley_orders", "reward_redemptions", "push_subscriptions", "member_marks",
+  "invites", "crew_requests",
+];
+const OWNED_VIEWS = [
+  "fathoms_balance", "account_balance", "member_engagement", "member_league",
+  "member_pass_usage",
+];
+
+async function isolationRules(p) {
+  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff);
+  const other = uid(p.global);
+
+  for (const t of OWNED_TABLES) {
+    const res = await reg.get(`${t}?select=profile_id&profile_id=eq.${other}&limit=5`);
+    const leaked = Array.isArray(res.data) && res.data.length > 0;
+    /* member_marks is deliberately visible for a member who joined the
+       directory — the mark is the point. Everything else is private. */
+    const allowed = t === "member_marks";
+    note("regional", `${t} does not leak another member`, allowed ? true : !leaked,
+      `got ${res.status} ${JSON.stringify(res.data).slice(0, 70)}`);
+  }
+
+  /* These views are security_invoker, so RLS on the underlying tables empties
+     them out. A row may still appear for another member — the id is already
+     public in the directory — but every figure in it must be zero. Asserting
+     the row is absent would be asserting the wrong thing. */
+  for (const v of OWNED_VIEWS) {
+    const res = await reg.get(`${v}?select=*&profile_id=eq.${other}&limit=5`);
+    const rows = Array.isArray(res.data) ? res.data : [];
+    const bare = rows.every((row) =>
+      Object.entries(row).every(([k, val]) =>
+        k === "profile_id" || val === 0 || val === null || k === "league" || k === "league_name" || k === "month"));
+    note("regional", `view ${v} carries no figures for another member`, bare,
+      `got ${res.status} ${JSON.stringify(rows).slice(0, 100)}`);
+  }
+
+  // Rewriting someone else's row, and rewriting your own privileges.
+  const grab = await reg.patch(`profiles?id=eq.${other}`, { full_name: "E2E Overwritten" });
+  note("regional", "cannot rename another member", grab.status >= 400 || (grab.data || []).length === 0, `got ${grab.status}`);
+
+  /* Privileged columns are guarded by a BEFORE UPDATE trigger, so a refusal is
+     an error rather than an empty result. Assert on the refusal: an assertion
+     that reads the value back is an assertion that has already done the damage
+     if the guard is missing — which is exactly how this suite escalated its own
+     persona to staff the first time it ran. */
+  for (const [label, patch] of [
+    ["make yourself staff", { is_staff: true }],
+    ["raise your own tier", { tier: "global" }],
+    ["put yourself on hold", { status: "paused" }],
+    ["issue yourself a member number", { member_no: "LYR-0001" }],
+    ["set your own billing account", { stripe_customer_id: "cus_e2e_takeover" }],
+  ]) {
+    const res = await reg.patch(`profiles?id=eq.${uid(p.regional)}`, patch);
+    note("regional", `cannot ${label}`, res.status >= 400, `got ${res.status} ${JSON.stringify(res.data).slice(0, 90)}`);
+  }
+
+  /* Billing takeover: the portal opens whatever customer sits on the profile,
+     so claiming an id another member already holds must be refused. */
+  const stamp0 = Date.now().toString(36);
+  const customer = `cus_e2e_${stamp0}`;
+  // Start from a known-clear state; only staff can clear it, by design.
+  await stf.patch(`profiles?id=in.(${uid(p.regional)},${uid(p.global)})`, { stripe_customer_id: null });
+
+  const claimOwn = await reg.rpc("claim_stripe_customer", { p_customer_id: customer });
+  note("regional", "may claim an unheld billing account", claimOwn.status < 400, `got ${claimOwn.status} ${JSON.stringify(claimOwn.data).slice(0, 80)}`);
+
+  const steal = await glo.rpc("claim_stripe_customer", { p_customer_id: customer });
+  note("global", "cannot claim another member's billing account", steal.status >= 400, `got ${steal.status}`);
+
+  const second = await reg.rpc("claim_stripe_customer", { p_customer_id: `cus_e2e_other_${stamp0}` });
+  note("regional", "cannot swap the billing account on file", second.status >= 400, `got ${second.status}`);
+
+  await stf.patch(`profiles?id=in.(${uid(p.regional)},${uid(p.global)})`, { stripe_customer_id: null });
+
+  const mint = await reg.post("fathoms_ledger", { profile_id: uid(p.regional), delta: 99999, reason: "E2E mint" });
+  note("regional", "cannot mint knots", mint.status >= 400, `got ${mint.status}`);
+
+  const credit = await reg.post("account_ledger", { profile_id: uid(p.regional), delta_cents: -50000, kind: "credit" });
+  note("regional", "cannot credit your own house account", credit.status >= 400, `got ${credit.status}`);
+
+  // The staff view is the whole roll; that is the difference.
+  const staffSees = await stf.get("profiles?select=id&limit=50");
+  note("staff", "staff read the whole roll", (staffSees.data || []).length > 5, `${(staffSees.data || []).length} rows`);
+
+  /* Staff may correct a record — the Bridge could read every member and change
+     none of them until this policy existed. The guard trigger is what makes it
+     safe: it exempts staff and no one else. */
+  const before = await stf.get(`profiles?id=eq.${uid(p.regional)}&select=bio`);
+  const correct = await stf.patch(`profiles?id=eq.${uid(p.regional)}`, { bio: "E2E corrected by the Bridge." });
+  note("staff", "staff correct a member record", (correct.data || []).length === 1, `got ${correct.status}`);
+  const hold = await stf.patch(`profiles?id=eq.${uid(p.regional)}`, { status: "paused" });
+  note("staff", "staff place a member on hold", (hold.data || []).length === 1, `got ${hold.status}`);
+  await stf.patch(`profiles?id=eq.${uid(p.regional)}`, { status: "active", bio: before.data?.[0]?.bio ?? null });
+}
+
+/* ---------- H. commerce ----------
+   Money moves through the Chandlery, the Galley and the house account. The
+   ledger is the record, so the tests are about who may write it. */
+async function commerceRules(p) {
+  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff);
+
+  const prod = await reg.get("products?select=id,price_cents&active=eq.true&limit=1");
+  note("regional", "the Chandlery shelf is readable", (prod.data || []).length > 0, JSON.stringify(prod.status));
+
+  // An order belongs to whoever placed it, and its total is not theirs to set.
+  const order = await reg.post("shop_orders", { profile_id: uid(p.regional), total_cents: 22000 });
+  const oid = order.data?.[0]?.id;
+  note("regional", "may place an order", order.status < 400, `got ${order.status}`);
+
+  if (oid) {
+    const forOther = await reg.post("shop_orders", { profile_id: uid(p.global), total_cents: 22000 });
+    note("regional", "cannot order on another member's account", forOther.status >= 400, `got ${forOther.status}`);
+
+    const theirs = await glo.get(`shop_orders?id=eq.${oid}&select=id`);
+    note("global", "cannot read another member's order", (theirs.data || []).length === 0, JSON.stringify(theirs.data));
+
+    const refund = await reg.patch(`shop_orders?id=eq.${oid}`, { status: "refunded" });
+    note("regional", "cannot mark your own order refunded", refund.status >= 400, `got ${refund.status}`);
+
+    const restate = await reg.patch(`shop_orders?id=eq.${oid}`, { total_cents: 1 });
+    note("regional", "cannot restate what an order cost", restate.status >= 400, `got ${restate.status}`);
+
+    const ask = await reg.patch(`shop_orders?id=eq.${oid}`, { status: "refund_requested" });
+    note("regional", "may ask for a refund", ask.status < 400, `got ${ask.status}`);
+
+    await stf.del(`shop_order_items?order_id=eq.${oid}`);
+    await stf.del(`shop_orders?id=eq.${oid}`);
+  }
+
+  // The Galley: the till is staff-side, the tab is yours.
+  const items = await reg.get("galley_items?select=id,price_cents&active=eq.true&limit=1");
+  note("regional", "the Galley list is readable", (items.data || []).length > 0, `got ${items.status}`);
+
+  /* A denied UPDATE under RLS returns 200 with no rows, so the assertion is on
+     rows touched. Reading the price back afterwards would mean the test corrupts
+     the catalogue on the day the policy is wrong — which it did, once. */
+  for (const [label, path, patch] of [
+    ["reprice the Galley", "galley_items?active=eq.true", { price_cents: 1 }],
+    ["reprice the Chandlery", "products?active=eq.true", { price_cents: 1 }],
+    ["discount a reward", "rewards?active=eq.true", { cost_fm: 1 }],
+    ["retire a reward", "rewards?active=eq.true", { active: false }],
+  ]) {
+    const res = await reg.patch(path, patch);
+    const touched = Array.isArray(res.data) ? res.data.length : 1;
+    note("regional", `cannot ${label}`, res.status >= 400 || touched === 0, `got ${res.status}, ${touched} rows`);
+  }
+}
+
+/* ---------- I. the instruments ----------
+   Keys, webhooks, segments and automations are staff tooling. A member should
+   not see that they exist, let alone mint one. */
+async function opsRules(p) {
+  const reg = rest(p.regional), stf = rest(p.staff);
+
+  for (const t of ["api_keys", "webhooks", "webhook_deliveries", "saved_segments", "automations", "promo_codes", "member_roll", "email_outbox", "sms_outbox"]) {
+    const read = await reg.get(`${t}?select=*&limit=1`);
+    note("regional", `${t} is invisible to a member`, (read.data || []).length === 0, `got ${read.status} ${JSON.stringify(read.data).slice(0, 60)}`);
+    const write = await reg.post(t, { });
+    note("regional", `cannot write ${t}`, write.status >= 400, `got ${write.status}`);
+  }
+
+  const key = await reg.post("api_keys", { label: "E2E", key_hash: "x", prefix: "e2e" });
+  note("regional", "cannot mint an API key", key.status >= 400, `got ${key.status}`);
+
+  const hook = await reg.post("webhooks", { url: "https://example.com/e2e", secret: "x" });
+  note("regional", "cannot register a webhook", hook.status >= 400, `got ${hook.status}`);
+
+  // Staff can, which is what makes the above meaningful.
+  const stamp = Date.now().toString(36);
+  const staffKey = await stf.post("api_keys", { label: `E2E ${stamp}`, key_hash: `h${stamp}`, prefix: `e2e${stamp}`.slice(0, 8) });
+  note("staff", "staff mint an API key", staffKey.status < 400, `got ${staffKey.status}`);
+  if (staffKey.data?.[0]?.id) await stf.del(`api_keys?id=eq.${staffKey.data[0].id}`);
+
+  // Crew hiring is staff-side; the funnel is the only public part.
+  const cands = await reg.get("crew_candidates?select=email&limit=1");
+  note("regional", "the crew pipeline is invisible to members", (cands.data || []).length === 0, `got ${cands.status}`);
+  const stage = await reg.patch("crew_candidates?stage=eq.applied", { stage: "offer" });
+  note("regional", "cannot advance a crew candidate", stage.status >= 400 || (stage.data || []).length === 0, `got ${stage.status}`);
+  const staffCands = await stf.get("crew_candidates?select=email&limit=5");
+  note("staff", "staff read the crew pipeline", Array.isArray(staffCands.data), `got ${staffCands.status}`);
+
+  /* Both funnels are open to anyone on the internet, so staff must be able to
+     clear what arrives. Without a DELETE policy the queue only ever grew. */
+  const junk = `e2e-anon-junk-${Date.now().toString(36)}@example.com`;
+  await rest(null).postMinimal("applications", { email: junk, full_name: "E2E Junk" });
+  const cleared = await stf.del(`applications?email=eq.${junk}`);
+  note("staff", "staff clear a spam application", cleared.status < 400, `got ${cleared.status}`);
+  const gone = await stf.get(`applications?email=eq.${junk}&select=email`);
+  note("staff", "the cleared application is gone", (gone.data || []).length === 0, JSON.stringify(gone.data));
+}
+
+/* ---------- J. moderation ----------
+   The Open Deck is the one place members write in public. */
+async function moderationRules(p) {
+  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff);
+
+  const post = await glo.post("wardroom_posts", { author_id: uid(p.global), body: "E2E — moderation fixture." });
+  const pid = post.data?.[0]?.id;
+  note("global", "posts to the Open Deck", Boolean(pid), `got ${post.status}`);
+  if (!pid) return;
+
+  const hail = await reg.post("wardroom_hails", { post_id: pid, profile_id: uid(p.regional) });
+  note("regional", "may hail a post", hail.status < 400, `got ${hail.status}`);
+
+  const forgeHail = await reg.post("wardroom_hails", { post_id: pid, profile_id: uid(p.global) });
+  note("regional", "cannot hail as someone else", forgeHail.status >= 400, `got ${forgeHail.status}`);
+
+  const comment = await reg.post("wardroom_comments", { post_id: pid, author_id: uid(p.regional), body: "E2E comment." });
+  const cid = comment.data?.[0]?.id;
+  note("regional", "may comment", comment.status < 400, `got ${comment.status}`);
+
+  const forgeComment = await reg.post("wardroom_comments", { post_id: pid, author_id: uid(p.global), body: "E2E forged." });
+  note("regional", "cannot comment under another name", forgeComment.status >= 400, `got ${forgeComment.status}`);
+
+  if (cid) {
+    const steal = await glo.patch(`wardroom_comments?id=eq.${cid}`, { body: "E2E rewritten." });
+    const now = await reg.get(`wardroom_comments?id=eq.${cid}&select=body`);
+    note("global", "cannot rewrite another member's comment", now.data?.[0]?.body !== "E2E rewritten.", `got ${steal.status}`);
+  }
+
+  const flag = await reg.post("wardroom_flags", { post_id: pid, flagger_id: uid(p.regional), reason: "E2E" });
+  note("regional", "may flag a post", flag.status < 400, `got ${flag.status}`);
+
+  const readFlags = await reg.get("wardroom_flags?select=status&limit=5");
+  note("regional", "flag queue is not a member's to read", (readFlags.data || []).length <= 1, `got ${readFlags.status} ${(readFlags.data || []).length} rows`);
+
+  await stf.del(`wardroom_flags?post_id=eq.${pid}`);
+  await stf.del(`wardroom_comments?post_id=eq.${pid}`);
+  await stf.del(`wardroom_hails?post_id=eq.${pid}`);
+  await stf.del(`wardroom_posts?id=eq.${pid}`);
+}
 
 /* ---------- A. route × role matrix ---------- */
 async function routeMatrix(personas) {
@@ -432,10 +826,18 @@ async function main() {
   ]) {
     personas[name] = await login(email);
   }
+  await sweep(personas);
   await routeMatrix(personas);
   await businessRules(personas);
   await parityRules(personas);
   await logbookRules(personas);
+  await schemaInvariants(personas);
+  await anonSurface();
+  await isolationRules(personas);
+  await commerceRules(personas);
+  await opsRules(personas);
+  await moderationRules(personas);
+  await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;
   writeFileSync(join(root, "e2e-report.json"), JSON.stringify({ base: BASE, checkedAt: new Date().toISOString(), passed, failed: failures.length, results }, null, 2));

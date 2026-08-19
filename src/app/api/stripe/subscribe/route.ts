@@ -67,10 +67,19 @@ export async function POST(request: NextRequest) {
         metadata: { profile_id: user.id },
       });
       customerId = customer.id;
-      await supabase
-        .from("profiles")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", user.id);
+      /* Claimed through an RPC rather than written straight to the column: the
+         portal opens whatever customer sits on the profile, so the claim has to
+         refuse an id another member already holds. The column itself is closed
+         to members by a guard trigger. */
+      const { error: claimError } = await supabase.rpc("claim_stripe_customer", {
+        p_customer_id: customerId,
+      });
+      if (claimError) {
+        return NextResponse.json(
+          { error: "That billing account could not be opened." },
+          { status: 400 }
+        );
+      }
     }
 
     const meta = { profile_id: user.id, plan_id: plan.id, interval };

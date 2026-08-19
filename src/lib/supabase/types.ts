@@ -344,6 +344,7 @@ export type Database = {
       accept_pass_transfer: { Args: { p_id: string }; Returns: undefined }
       check_promo: { Args: { p_code: string; p_voyage: string }; Returns: Json }
       redeem_reward: { Args: { p_reward: string }; Returns: undefined }
+      claim_stripe_customer: { Args: { p_customer_id: string }; Returns: undefined }
       passage_log: {
         Args: { p_profile_id: string }
         Returns: Array<{
