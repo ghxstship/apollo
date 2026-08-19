@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SectionHeader } from "@/components/site/section-header";
+import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "Crew wanted",
@@ -75,7 +76,7 @@ export default function CrewPage() {
             </div>
             <a
               className="ls-btn ls-btn--outline ls-btn--sm"
-              href={`mailto:crew@lyre.social?subject=${encodeURIComponent(`Crew wanted — ${r.title}, ${r.port}`)}`}
+              href={`mailto:${MAILBOX.crew}?subject=${encodeURIComponent(`Crew wanted — ${r.title}, ${r.port}`)}`}
             >
               Apply
             </a>
@@ -83,7 +84,7 @@ export default function CrewPage() {
         ))}
         <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
           Nothing that fits? Write to{" "}
-          <a href="mailto:crew@lyre.social">crew@lyre.social</a> anyway — good hands
+          <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a> anyway — good hands
           find a place aboard.
         </p>
       </div>

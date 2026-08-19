@@ -1,3 +1,4 @@
+import { SITE_DOMAIN } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildCalendar,
@@ -13,7 +14,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://lyre.social";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`;
 
 export async function GET(
   _request: Request,
@@ -41,7 +42,7 @@ export async function GET(
 
   const body = buildCalendar(voyage.title, [
     {
-      uid: `voyage-${voyage.id}@lyre.social`,
+      uid: `voyage-${voyage.id}@${SITE_DOMAIN}`,
       start,
       end,
       summary: voyageSummary(voyage),

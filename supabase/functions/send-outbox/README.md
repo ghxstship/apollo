@@ -8,13 +8,16 @@ Row lifecycle: `pending` → `sent` (with `sent_at`) | `failed` | `skipped`. Upd
 
 - `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — injected automatically by the platform.
 - `RESEND_API_KEY` — optional. When absent, rows are skipped (logged once per run).
-- `OUTBOX_FROM` — optional sender, defaults to `LYRE SOCIAL — Shoreside <shore@lyre.social>`.
+- `OUTBOX_FROM` — sender. Read from Supabase Vault; currently
+  `LYRE SOCIAL — Shoreside <shore@atlvs.pro>`, because Resend verifies one
+  domain per plan and `lyre.social` is not registered. When it is, update the
+  single Vault row — no redeploy, no code change.
 
 Set secrets with the CLI:
 
 ```sh
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx --project-ref mpyvwpunwrioakmtmcdo
-supabase secrets set OUTBOX_FROM="LYRE SOCIAL — Shoreside <shore@lyre.social>" --project-ref mpyvwpunwrioakmtmcdo
+supabase secrets set OUTBOX_FROM="LYRE SOCIAL — Shoreside <shore@atlvs.pro>" --project-ref mpyvwpunwrioakmtmcdo
 ```
 
 Or in the Dashboard: Project Settings → Edge Functions → Secrets.

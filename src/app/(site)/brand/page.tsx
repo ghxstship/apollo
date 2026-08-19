@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Badge, Icon, Tag } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, SUB_CLASSES, SURFACES, TAGLINE } from "@/lib/brand";
+import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, MAILBOX, SUB_CLASSES, SURFACES, TAGLINE } from "@/lib/brand";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
 
@@ -336,9 +336,9 @@ export default function BrandKitPage() {
               anything the kit doesn&apos;t answer, write us.
             </p>
             <div className="bk-dl__contact">
-              PRESS — <a href="mailto:press@lyre.social">PRESS@LYRE.SOCIAL</a>
+              PRESS — <a href={`mailto:${MAILBOX.press}`}>{MAILBOX.press.toUpperCase()}</a>
               <br />
-              PARTNERSHIPS — <a href="mailto:partners@lyre.social">PARTNERS@LYRE.SOCIAL</a>
+              PARTNERSHIPS — <a href={`mailto:${MAILBOX.partners}`}>{MAILBOX.partners.toUpperCase()}</a>
             </div>
           </div>
           <div className="bk-dl__list">

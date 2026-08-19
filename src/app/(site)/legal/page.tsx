@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "The fine print",
@@ -14,7 +15,7 @@ export default function LegalPage() {
       <h1>Short, honest, binding.</h1>
       <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "56ch" }}>
         Written to be read. If anything here surprises you, that&rsquo;s a bug —
-        write to <a href="mailto:shore@lyre.social">shore@lyre.social</a>.
+        write to <a href={`mailto:${MAILBOX.shore}`}>{MAILBOX.shore}</a>.
       </p>
       <nav className="lg-anchors" aria-label="Sections">
         <a href="#conduct">Code of conduct</a>
@@ -86,7 +87,7 @@ export default function LegalPage() {
           no calls required.
         </p>
         <p className="lg-mono" style={{ marginTop: 24 }}>
-          GDPR and CCPA honored for everyone, not just where required · questions: shore@lyre.social
+          GDPR and CCPA honored for everyone, not just where required · questions: {MAILBOX.shore}
         </p>
       </section>
     </div>

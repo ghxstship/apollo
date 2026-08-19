@@ -17,7 +17,10 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
    Resolved once per invocation in the handler. */
 let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
-const DEFAULT_FROM = "LYRE SOCIAL — Shoreside <shore@lyre.social>";
+/* Fallback only — the real sender is the OUTBOX_FROM row in Supabase Vault.
+   Sending sits on atlvs.pro because Resend verifies one domain per plan and
+   lyre.social is not registered yet. Moving it is one Vault update. */
+const DEFAULT_FROM = "LYRE SOCIAL — Shoreside <shore@atlvs.pro>";
 
 async function vaultSecret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {

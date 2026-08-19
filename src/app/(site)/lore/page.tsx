@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ds";
 import { logDate, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "LORE Magazine",
@@ -47,7 +48,7 @@ export default async function LorePage() {
         <p style={{ padding: "40px 0 48px", fontSize: 12.5, color: "var(--text-3)", maxWidth: "58ch" }}>
           LORE is written by members and crew, not a content team. Sailed
           something, cooked something, learned something? File a dispatch —{" "}
-          <a href="mailto:dispatch@lyre.social">dispatch@lyre.social</a>. Bylines always.
+          <a href={`mailto:${MAILBOX.dispatch}`}>{MAILBOX.dispatch}</a>. Bylines always.
         </p>
       </div>
     </div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { CopyLink } from "@/components/copy-link";
 import { Badge, Wordmark } from "@/components/ds";
-import { SURFACES } from "@/lib/brand";
+import { SITE_DOMAIN, SURFACES } from "@/lib/brand";
 import { TIER_LABEL, roman } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { getMember } from "../data";
@@ -30,7 +30,7 @@ export default async function PassbookPage() {
 
   /* Season feed — public by secret, so the address is the whole key. */
   const head = await headers();
-  const host = head.get("x-forwarded-host") ?? head.get("host") ?? "lyre.social";
+  const host = head.get("x-forwarded-host") ?? head.get("host") ?? SITE_DOMAIN;
   const proto = head.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const feedPath = profile?.calendar_token ? `/api/calendar/${profile.calendar_token}` : null;
   const feedUrl = feedPath ? `${proto}://${host}${feedPath}` : null;

@@ -50,7 +50,7 @@ Deno.serve(async () => {
       for (const r of rows) await mark(r.id, "skipped");
       return Response.json({ fetched: rows.length, skipped: rows.length });
     }
-    webpush.setVapidDetails(subj || "mailto:shore@lyre.social", pub, priv);
+    webpush.setVapidDetails(subj || "mailto:shore@atlvs.pro", pub, priv);
 
     let sent = 0, failed = 0, skipped = 0;
     for (const row of rows) {

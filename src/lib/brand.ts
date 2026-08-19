@@ -27,6 +27,24 @@ export const SURFACES = {
   galley: "The Galley",
 } as const;
 
+/* Mail and web domain, in one place. The club's addresses read at
+   MAIL_DOMAIN; the Resend sender lives in Supabase Vault (OUTBOX_FROM) and is
+   on atlvs.pro until lyre.social is registered and verified. If the wordmark
+   moves, these two constants and that one Vault row are the whole migration. */
+export const MAIL_DOMAIN = "lyre.social";
+export const SITE_DOMAIN = "lyre.social";
+
+export const MAILBOX = {
+  shore: `shore@${MAIL_DOMAIN}`,
+  crew: `crew@${MAIL_DOMAIN}`,
+  press: `press@${MAIL_DOMAIN}`,
+  partners: `partners@${MAIL_DOMAIN}`,
+  signal: `signal@${MAIL_DOMAIN}`,
+  /* Editorial submissions. "dispatch" here is the literal word for
+     sending something in, not the retired brand name. */
+  dispatch: `dispatch@${MAIL_DOMAIN}`,
+} as const;
+
 export const CURRENCY = {
   name: "Knots",
   singular: "knot",

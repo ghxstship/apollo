@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: "Shoreside",
@@ -91,12 +92,12 @@ export default function SupportPage() {
           <div>
             <b>Write</b>
             <p>
-              <a href="mailto:shore@lyre.social">shore@lyre.social</a> — Shoreside
+              <a href={`mailto:${MAILBOX.shore}`}>{MAILBOX.shore}</a> — Shoreside
               answers, usually within the hour. Plain words beat long ones.
             </p>
             <p style={{ marginTop: 10 }}>
               Press and partnerships:{" "}
-              <a href="mailto:signal@lyre.social">signal@lyre.social</a>
+              <a href={`mailto:${MAILBOX.signal}`}>{MAILBOX.signal}</a>
             </p>
           </div>
           <div>
