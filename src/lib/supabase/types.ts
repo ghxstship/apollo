@@ -94,7 +94,8 @@ export type AccountLedgerRow = {
 export type AddonRow = { id: string; slug: string; name: string; price_cents: number; active: boolean }
 export type RsvpAddonRow = { rsvp_id: string; addon_id: string; qty: number }
 export type RewardRow = {
-  id: string; name: string; detail: string | null; cost_fm: number; active: boolean; position: number
+  id: string; name: string; detail: string | null; cost_fm: number
+  active: boolean; position: number; stock: number | null
 }
 export type RewardRedemptionRow = { id: string; profile_id: string; reward_id: string; created_at: string }
 export type EmailOutboxRow = {
@@ -207,6 +208,28 @@ export type AutomationRow = {
   active: boolean; last_run_at: string | null; created_at: string
 }
 
+
+/* ===== The logbook: marks, the Knots sink, and contests ===================== */
+
+export type MarkRow = {
+  code: string; name: string; blurb: string
+  kind: "first" | "collection" | "tally"; position: number; active: boolean
+}
+export type MemberMarkRow = { profile_id: string; mark_code: string; conferred_at: string }
+export type ContestShape = "regatta" | "challenge"
+export type ContestMetric = "nm" | "sailings" | "harbors" | "vessels" | "crew_met" | "frames"
+export type ContestRow = {
+  id: string; slug: string; shape: ContestShape; scope: "member" | "crew"
+  title: string; blurb: string | null; metric: ContestMetric; target: number | null
+  prize: string | null; knots_award: number
+  starts_at: string; ends_at: string; status: "draft" | "open" | "settled"
+  voyage_id: string | null; settled_at: string | null; created_at: string
+}
+export type ContestEntryRow = { contest_id: string; profile_id: string; joined_at: string }
+export type ContestResultRow = {
+  contest_id: string; profile_id: string; place: number | null; score: number; met: boolean
+}
+
 type Table<R, I = Ins<R>> = { Row: Row<R>; Insert: I; Update: Partial<R>; Relationships: [] }
 
 export type Database = {
@@ -264,6 +287,11 @@ export type Database = {
       automations: Table<AutomationRow, Ins<AutomationRow, "name" | "trigger_event">>
       crew_roles: Table<CrewRoleRow, Ins<CrewRoleRow, "title" | "port">>
       crew_candidates: Table<CrewCandidateRow, Ins<CrewCandidateRow, "role_id" | "full_name" | "email">>
+      marks: Table<MarkRow, Ins<MarkRow, "code" | "name" | "blurb" | "kind">>
+      member_marks: Table<MemberMarkRow, Ins<MemberMarkRow, "profile_id" | "mark_code">>
+      contests: Table<ContestRow, Ins<ContestRow, "slug" | "shape" | "title" | "metric" | "starts_at" | "ends_at">>
+      contest_entries: Table<ContestEntryRow, Ins<ContestEntryRow, "contest_id" | "profile_id">>
+      contest_results: Table<ContestResultRow, Ins<ContestResultRow, "contest_id" | "profile_id" | "score">>
     }
     Views: {
       voyage_capacity: {
@@ -316,6 +344,30 @@ export type Database = {
       accept_pass_transfer: { Args: { p_id: string }; Returns: undefined }
       check_promo: { Args: { p_code: string; p_voyage: string }; Returns: Json }
       redeem_reward: { Args: { p_reward: string }; Returns: undefined }
+      passage_log: {
+        Args: { p_profile_id: string }
+        Returns: Array<{
+          sailings: number; nm_logged: number; hours_at_sea: number
+          harbors_made: number; vessels_sailed: number; crew_met: number
+          first_sail_at: string | null; marks_held: number
+        }>
+      }
+      contest_standing: {
+        Args: { p_contest_id: string }
+        Returns: Array<{
+          profile_id: string; full_name: string | null; handle: string | null
+          score: number; place: number | null; met: boolean
+        }>
+      }
+      settle_contest: { Args: { p_contest_id: string }; Returns: number }
+      season_card: {
+        Args: { p_profile_id: string; p_from: string; p_to: string }
+        Returns: Array<{
+          sailings: number; nm_logged: number; harbors: number; crew_met: number
+          knots_earned: number; marks_won: string[]; longest_nm: number | null
+          longest_title: string | null
+        }>
+      }
       calendar_feed: {
         Args: { p_token: string }
         Returns: Array<{

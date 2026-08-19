@@ -133,6 +133,77 @@ async function routeMatrix(personas) {
 }
 
 /* ---------- C. parity features: messaging, transfers, codes, billing ---------- */
+/* D. The logbook: marks, the Knots sink, and contests.
+   Everything here is derived or definer-written, so the checks are mostly about
+   what a member CANNOT do — confer their own marks, read a draft contest, enter
+   on someone else's behalf, or see a standing that has not been published. */
+async function logbookRules(p) {
+  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff);
+
+  // Marks are conferred by trigger only — no member may award themselves one.
+  const selfMark = await reg.post("member_marks", {
+    profile_id: uid(p.regional), mark_code: "the-hundred",
+  });
+  note("regional", "cannot confer a mark on yourself", selfMark.status >= 400, `got ${selfMark.status}`);
+
+  // The catalogue is public; who holds what is scoped by the directory flag.
+  const cat = await reg.get("marks?select=code&active=eq.true");
+  note("regional", "mark catalogue is readable", (cat.data || []).length >= 9, JSON.stringify(cat.data?.length));
+
+  // passage_log refuses to report on a member who is not listed.
+  const hidden = await reg.rpc("passage_log", { p_profile_id: uid(p.paused) });
+  const ownLog = await reg.rpc("passage_log", { p_profile_id: uid(p.regional) });
+  note("regional", "passage log hides an unlisted member", hidden.status >= 400, `got ${hidden.status}`);
+  note("regional", "passage log reads your own", ownLog.status < 400 && Array.isArray(ownLog.data), `got ${ownLog.status}`);
+
+  // A draft contest is invisible to members and its standing is refused.
+  const dslug = "e2e-draft-" + Date.now().toString(36);
+  const draft = await stf.post("contests", {
+    slug: dslug, shape: "regatta", title: "E2E draft contest.", metric: "nm",
+    starts_at: new Date(Date.now() - 864e5).toISOString(),
+    ends_at: new Date(Date.now() + 864e5).toISOString(), status: "draft",
+  });
+  const did = draft.data?.[0]?.id;
+  const seeDraft = await reg.get(`contests?id=eq.${did}&select=id`);
+  note("regional", "a draft contest is not visible", (seeDraft.data || []).length === 0, JSON.stringify(seeDraft.data));
+  const draftStand = await reg.rpc("contest_standing", { p_contest_id: did });
+  note("regional", "a draft standing is refused", draftStand.status >= 400, `got ${draftStand.status}`);
+  const enterDraft = await reg.post("contest_entries", { contest_id: did, profile_id: uid(p.regional) });
+  note("regional", "cannot enter a draft contest", enterDraft.status >= 400, `got ${enterDraft.status}`);
+
+  // Opened: entry works, but only for yourself.
+  await stf.patch(`contests?id=eq.${did}`, { status: "open" });
+  const enterSelf = await reg.post("contest_entries", { contest_id: did, profile_id: uid(p.regional) });
+  note("regional", "may enter an open contest", enterSelf.status < 400, `got ${enterSelf.status}`);
+  const enterOther = await reg.post("contest_entries", { contest_id: did, profile_id: uid(p.global) });
+  note("regional", "cannot enter on another member's behalf", enterOther.status >= 400, `got ${enterOther.status}`);
+
+  // Results stay sealed until the contest is settled.
+  const sealed = await reg.get(`contest_results?contest_id=eq.${did}&select=place`);
+  note("regional", "results are sealed before settling", (sealed.data || []).length === 0, JSON.stringify(sealed.data));
+
+  // Only staff may settle, and only once.
+  const memberSettle = await reg.rpc("settle_contest", { p_contest_id: did });
+  note("regional", "a member cannot settle a contest", memberSettle.status >= 400, `got ${memberSettle.status}`);
+  const settle = await stf.rpc("settle_contest", { p_contest_id: did });
+  note("staff", "staff settles the contest", settle.status < 400, `got ${settle.status}`);
+  const twice = await stf.rpc("settle_contest", { p_contest_id: did });
+  note("staff", "settling twice is refused", twice.status >= 400, `got ${twice.status}`);
+  const published = await reg.get(`contest_results?contest_id=eq.${did}&select=place,score`);
+  note("regional", "results publish once settled", (published.data || []).length >= 1, JSON.stringify(published.data));
+
+  // The Knots sink: a redemption must be affordable, and spends through the RPC.
+  const dear = await reg.get("rewards?select=id,cost_fm&order=cost_fm.desc&limit=1");
+  const cannot = await reg.rpc("redeem_reward", { p_reward: dear.data?.[0]?.id });
+  note("regional", "cannot redeem beyond your balance", cannot.status >= 400, `got ${cannot.status}`);
+  const forge = await reg.post("reward_redemptions", {
+    profile_id: uid(p.regional), reward_id: dear.data?.[0]?.id,
+  });
+  note("regional", "cannot write a redemption directly", forge.status >= 400, `got ${forge.status}`);
+
+  await stf.del(`contests?id=eq.${did}`);
+}
+
 async function parityRules(p) {
   const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), stf = rest(p.staff);
 
@@ -305,10 +376,11 @@ async function businessRules(p) {
   const banked = (gloFm.data || []).find((x) => /Miles banked/.test(x.reason));
   note("global", "completion banks 10 FM/NM", banked?.delta === 100, JSON.stringify(gloFm.data));
 
-  // Rewards: regional (135 FM) cannot afford the 250 FM reward
+  // Rewards: regional cannot afford the cheapest reward. The guard speaks in
+  // Knots — "fathoms" is retired everywhere a member can read it.
   const rw = await reg.get("rewards?select=id,cost_fm&order=cost_fm.asc&limit=1");
   const redeem = await reg.rpc("redeem_reward", { p_reward: rw.data?.[0]?.id });
-  note("regional", "redemption guard: not enough fathoms", redeem.status >= 400 && /fathoms/i.test(JSON.stringify(redeem.data)), `got ${redeem.status}`);
+  note("regional", "redemption guard: not enough knots", redeem.status >= 400 && /not enough knots/i.test(JSON.stringify(redeem.data)), `got ${redeem.status} ${JSON.stringify(redeem.data)}`);
 
   // Moderation rights: regional cannot delete another's post; staff can
   const post = await glo.post("wardroom_posts", { author_id: uid(p.global), body: "E2E — the fixture speaks." });
@@ -363,6 +435,7 @@ async function main() {
   await routeMatrix(personas);
   await businessRules(personas);
   await parityRules(personas);
+  await logbookRules(personas);
 
   const passed = results.filter((r) => r.ok).length;
   writeFileSync(join(root, "e2e-report.json"), JSON.stringify({ base: BASE, checkedAt: new Date().toISOString(), passed, failed: failures.length, results }, null, 2));

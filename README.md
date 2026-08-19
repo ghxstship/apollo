@@ -14,10 +14,10 @@ A membership club for experiential connection at sea and ashore — Sea Days abo
 | --- | --- |
 | Marketing site | `/` · `/voyages` · `/voyages/[slug]` · `/membership` · `/lore` · `/lore/[slug]` · `/gallery` · `/crew` · `/brand` · `/legal` · `/support` · `/apply-status` |
 | Gangway (auth) | `/gangway` · `/auth/confirm` · `/auth/signout` — passwordless magic links, invited-only (enforced by a DB trigger on `auth.users`) |
-| Member app | `/home-port` · `/gateway` (live) · `/manifest` (passes) · `/open-deck` (feed) · `/directory` · `/threads` · `/portal` (knots + leagues) · `/account` (dues) · `/passbook` · `/word` · `/you` |
+| Member app | `/home-port` · `/gateway` (live) · `/manifest` (passes) · `/open-deck` (feed) · `/directory` · `/regattas` (contests) · `/threads` · `/portal` (knots + leagues) · `/account` (dues) · `/passbook` (+ the Passage Log and Marks) · `/word` · `/you` |
 | Mobile | Same member routes; under 960px the shell becomes a 6-tab bottom bar. Installable PWA (`/manifest.webmanifest`, standalone, starts at `/home-port`) with a service worker, offline shell, and web push |
 | Commerce | `/chandlery` (shop) · `/stub/[code]` (pass and guest stubs + QR) · house-account ledger; Stripe settles balances and runs recurring dues |
-| Staff | `/bridge` (requires `profiles.is_staff`): applications, gangway check-in, manifests + flotilla, voyage ops, orders & refunds, members CRM, codes, media, moderation, reports, galley POS, crew ATS, automations, keys, Shoreside |
+| Staff | `/bridge` (requires `profiles.is_staff`): applications, gangway check-in, manifests + flotilla, voyage ops, orders & refunds, members CRM, codes, media, moderation, regattas, reports, galley POS, crew ATS, automations, keys, Shoreside |
 
 ## Setup
 

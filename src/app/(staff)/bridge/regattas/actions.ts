@@ -1,0 +1,108 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+
+export type ContestShape = "regatta" | "challenge";
+export type ContestMetric = "nm" | "sailings" | "harbors" | "vessels" | "crew_met" | "frames";
+
+export type NewContest = {
+  title: string;
+  slug: string;
+  blurb: string;
+  shape: ContestShape;
+  metric: ContestMetric;
+  target: number;
+  prize: string;
+  knotsAward: number;
+  startsAt: string;
+  endsAt: string;
+};
+
+function done(): ActionResult {
+  revalidatePath("/bridge/regattas");
+  revalidatePath("/regattas");
+  return {};
+}
+
+function slugify(v: string): string {
+  return v
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+export async function createContest(input: NewContest): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const title = input.title.trim();
+  if (!title) return { error: "A contest needs a name." };
+
+  const slug = slugify(input.slug || title);
+  if (!slug) return { error: "That name leaves no address behind it." };
+
+  const starts = new Date(input.startsAt);
+  const ends = new Date(input.endsAt);
+  if (Number.isNaN(starts.getTime()) || Number.isNaN(ends.getTime()))
+    return { error: "Both dates are needed." };
+  if (ends <= starts) return { error: "It has to close after it opens." };
+
+  /* A challenge without a target has nothing to measure against; the database
+     enforces this too, but the message here is the readable one. */
+  if (input.shape === "challenge" && (!input.target || input.target < 1))
+    return { error: "A challenge needs a number to reach." };
+
+  const { error } = await supabase.from("contests").insert({
+    slug,
+    title,
+    blurb: input.blurb.trim() || null,
+    shape: input.shape,
+    scope: "member",
+    metric: input.metric,
+    target: input.shape === "challenge" ? Math.round(input.target) : null,
+    prize: input.prize.trim() || null,
+    knots_award: Math.max(0, Math.round(input.knotsAward)),
+    starts_at: starts.toISOString(),
+    ends_at: ends.toISOString(),
+    status: "draft",
+  });
+  if (error) {
+    return {
+      error: /duplicate|unique/i.test(error.message)
+        ? "That address is taken by another contest."
+        : ERR_LAND,
+    };
+  }
+  return done();
+}
+
+/* Draft to open: the moment members can see it and enter. */
+export async function openContest(id: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const { error } = await supabase
+    .from("contests")
+    .update({ status: "open" })
+    .eq("id", id)
+    .eq("status", "draft");
+  if (error) return { error: ERR_LAND };
+  return done();
+}
+
+/* Settle freezes the standing into contest_results, pays the award, notifies
+   everyone who entered, and closes the book. The RPC is staff-gated and refuses
+   to run twice. */
+export async function settleContest(id: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const { error } = await supabase.rpc("settle_contest", { p_contest_id: id });
+  if (error) {
+    if (/already settled/i.test(error.message)) return { error: "That one is already settled." };
+    if (/not open/i.test(error.message)) return { error: "Open it before settling it." };
+    return { error: ERR_LAND };
+  }
+  return done();
+}

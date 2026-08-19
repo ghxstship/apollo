@@ -14,6 +14,7 @@
     "/gateway",
     "/chandlery",
     "/stub",
+    "/regattas",
     "/bridge"
   ],
   "routes": [
@@ -227,6 +228,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/regattas",
+      "file": "src/app/(staff)/bridge/regattas/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/reports",
       "file": "src/app/(staff)/bridge/reports/page.tsx",
       "type": "page",
@@ -362,6 +370,24 @@
       "type": "page",
       "dynamic": false,
       "access": "member"
+    },
+    {
+      "path": "/regattas",
+      "file": "src/app/(member)/regattas/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/regattas/[slug]",
+      "file": "src/app/(member)/regattas/[slug]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "member",
+      "source": {
+        "table": "contests",
+        "column": "slug"
+      }
     },
     {
       "path": "/stub/[code]",

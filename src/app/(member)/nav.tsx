@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, IconButton, Wordmark } from "@/components/ds";
-import { SURFACES } from "@/lib/brand";
+import { LOGBOOK, SURFACES } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
@@ -13,6 +13,7 @@ const LINKS = [
   ["/manifest", "Voyages"],
   ["/open-deck", SURFACES.openDeck],
   ["/directory", "Directory"],
+  ["/regattas", LOGBOOK.regattas],
   ["/threads", "Threads"],
   ["/chandlery", "Chandlery"],
   ["/portal", "Portal"],

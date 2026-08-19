@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Avatar, Icon, Stat, Tag } from "@/components/ds";
 import { CITY_CODES, CURRENCY, FAMILY_LABEL, knots } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
+import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
 import { sendAWord } from "../actions";
 
@@ -45,6 +46,8 @@ export default async function MemberPage({
   /* Unlisted members are visible to themselves and to staff, nobody else. */
   if (!member.in_directory && !own && !staff) notFound();
   if (member.status !== "active" && !own && !staff) notFound();
+
+  const { log, marks } = await readPassageLog(supabase, member.id);
 
   const [harborRes, leagueRes, engagementRes, affinityRes, rsvpsRes, balanceRes] =
     await Promise.all([
@@ -184,6 +187,8 @@ export default async function MemberPage({
           )
         ) : null}
       </section>
+
+      <PassageLog log={log} marks={marks} own={own} />
 
       {own ? (
         <section className="mbr-sec">

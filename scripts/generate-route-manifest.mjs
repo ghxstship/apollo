@@ -32,6 +32,7 @@ function readProtectedPrefixes() {
 const DYNAMIC_SOURCES = {
   "/voyages/[slug]": { table: "voyages", column: "slug" },
   "/lore/[slug]": { table: "dispatch_posts", column: "slug" },
+  "/regattas/[slug]": { table: "contests", column: "slug" },
 };
 
 function walk(dir, segments = []) {

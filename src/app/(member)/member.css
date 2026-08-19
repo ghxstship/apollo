@@ -286,3 +286,46 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .you-fs>legend{padding:0}
 .you-checks{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:10px}
 @media (max-width:640px){.you-checks{grid-template-columns:1fr}}
+
+/* — the Passage Log — figures in mono, marks as hairline rows. No colour, no
+   progress bars, nothing that reads as a score. — */
+.plog{margin-top:32px;border-top:1px solid var(--line-faint);padding-top:20px}
+.plog-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.plog-since{color:var(--text-3)}
+.plog-empty{margin-top:10px;font-size:13px;color:var(--text-3);max-width:52ch}
+/* auto-fit, not a viewport media query: this block sits inside a column
+   narrower than the page on the Passbook, so it has to answer to its
+   container rather than to the window. */
+.plog-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:1px;margin:16px 0 0;background:var(--line-faint);border:1px solid var(--line-faint)}
+.plog-figs>div{background:var(--surface-card);padding:14px 12px}
+.plog-figs dt{font:600 9px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--text-3)}
+.plog-figs dd{margin:6px 0 0;font-family:var(--font-mono);font-size:20px;letter-spacing:.02em;color:var(--text-1)}
+.plog-marks{margin-top:24px}
+.plog-sub{display:block;color:var(--text-3);margin-bottom:10px}
+.plog-marks ul{list-style:none;margin:0;padding:0}
+.plog-marks li{display:grid;grid-template-columns:minmax(140px,1fr) 2fr auto;gap:14px;align-items:baseline;padding:11px 0;border-top:1px solid var(--line-faint)}
+.plog-mark-name{font-family:var(--font-display);font-size:15px;color:var(--text-1)}
+.plog-mark-blurb{font-size:12.5px;color:var(--text-2)}
+.plog-mark-when{color:var(--text-3);white-space:nowrap}
+.plog-marks--open .plog-mark-name,.plog-marks--open .plog-mark-blurb{color:var(--text-3)}
+
+@media (max-width:719px){
+  .plog-marks li{grid-template-columns:1fr;gap:3px}
+  .plog-mark-when{white-space:normal}
+}
+
+/* — regattas and challenges — bounded contests, never a standing table that
+   outlives its window. — */
+.rgt-list{display:flex;flex-direction:column;gap:1px;background:var(--line-faint);border:1px solid var(--line-faint)}
+.rgt-row{background:var(--surface-card);padding:18px 20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;text-decoration:none;color:inherit}
+.rgt-row:hover{background:var(--wash-ink)}
+.rgt-row h3{font-family:var(--font-display);font-weight:400;font-size:19px;margin:0}
+.rgt-row p{margin:6px 0 0;font-size:13px;color:var(--text-2);max-width:56ch}
+.rgt-meta{margin-top:9px;display:flex;flex-wrap:wrap;gap:8px}
+.rgt-aside{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.rgt-stand{margin-top:20px;width:100%;border-collapse:collapse}
+.rgt-stand th{text-align:left;font:600 9px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--text-3);padding:0 12px 9px 0;border-bottom:1px solid var(--line-faint)}
+.rgt-stand td{padding:12px 12px 12px 0;border-bottom:1px solid var(--line-faint);font-size:13.5px}
+.rgt-stand td.rgt-num{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);color:var(--text-2);white-space:nowrap}
+.rgt-stand tr[data-me="1"] td{background:var(--wash-ink)}
+.rgt-you{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--track-data);color:var(--brass-deep);margin-inline-start:8px}

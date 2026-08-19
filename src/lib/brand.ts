@@ -45,6 +45,39 @@ export const MAILBOX = {
   dispatch: `dispatch@${MAIL_DOMAIN}`,
 } as const;
 
+/* The logbook. Gamification in the club's register: a member accumulates a
+   record, not a rank. Marks are permanent and personal; regattas and challenges
+   are bounded and then become history. There is deliberately no all-time table.
+
+   "Marks" rather than "Orders" because the Bridge already books Chandlery
+   purchase orders, and one word cannot carry both. In navigation a mark is a
+   fixed point you round on the way somewhere — which is what these are. */
+export const LOGBOOK = {
+  log: "The Passage Log",
+  logLine: "What you have actually done, and nothing you have not.",
+  marks: "Marks",
+  markVerb: "rounded",
+  regattas: "Regattas",
+  regattaLine: "A regatta finishes. The standing is then history.",
+  challenges: "Challenges",
+  offers: "What Knots buy",
+} as const;
+
+export const MARK_KIND: Record<string, string> = {
+  first: "A first",
+  tally: "A tally",
+  collection: "A collection",
+};
+
+export const CONTEST_METRIC: Record<string, string> = {
+  nm: "nautical miles",
+  sailings: "sailings",
+  harbors: "harbors",
+  vessels: "hulls",
+  crew_met: "crew met",
+  frames: "frames posted",
+};
+
 export const CURRENCY = {
   name: "Knots",
   singular: "knot",
@@ -103,4 +136,8 @@ export const BANNED_TERMS = [
   "salon",
   "Salon",
   "Overnight",
+  /* The club keeps a logbook, not a scoreboard. A persistent public ranking
+     tells the bottom of the roll they are losing at belonging. */
+  "leaderboard",
+  "Leaderboard",
 ];

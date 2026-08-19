@@ -180,6 +180,37 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:0;">It appears in your ledger now and settles with your statement.</p>`,
     ),
   }),
+  /* The season's card — what a member actually did between two dates. Figures
+     in mono so it reads as a log entry, not a scorecard. Nothing comparative. */
+  "season-card": (p) => {
+    const marks = Array.isArray(p["marks"]) ? (p["marks"] as unknown[]) : [];
+    const row = (label: string, value: unknown) =>
+      `<tr><td style="padding:5px 0;color:#6B6B70;width:180px;">${esc(label)}</td>` +
+      `<td style="font-family:ui-monospace,Menlo,monospace;letter-spacing:0.06em;">${esc(value)}</td></tr>`;
+    return {
+      subject: `Your season — ${String(p["season"] ?? "the log")}`,
+      html: shell(
+        greet(p) +
+          `<p style="margin:0 0 20px;">The season is closed. This is what the log holds.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${SERIF};font-size:15px;line-height:1.7;">
+${row("Nautical miles", p["nm_logged"])}
+${row("Sailings", p["sailings"])}
+${row("Harbors", p["harbors"])}
+${row("Crew met", p["crew_met"])}
+${row("Knots banked", p["knots_earned"])}
+</table>` +
+          (p["longest_title"]
+            ? `<p style="margin:20px 0 0;">The longest of them was ${esc(p["longest_title"])}${
+                p["longest_nm"] ? ` — ${esc(p["longest_nm"])} NM` : ""
+              }.</p>`
+            : "") +
+          (marks.length
+            ? `<p style="margin:20px 0 0;">Marks rounded: ${marks.map((m) => esc(m)).join(", ")}.</p>`
+            : "") +
+          `<p style="margin:20px 0 0;">The log carries. Next season opens shortly.</p>`,
+      ),
+    };
+  },
   "lore-digest": (p) => {
     const items = Array.isArray(p["items"]) ? (p["items"] as Array<Record<string, unknown>>) : [];
     const list = items

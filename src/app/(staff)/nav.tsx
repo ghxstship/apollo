@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/* Sixteen sections is too many for one undifferentiated row, so the nav is
+/* Seventeen sections is too many for one undifferentiated row, so the nav is
    grouped: the sailing itself, the people, the money, then the instruments.
    Hairlines mark the seams; labels stay one word wherever they can. */
 const GROUPS = [
@@ -20,6 +20,7 @@ const GROUPS = [
     ["/bridge/moderation", "Moderation"],
     ["/bridge/media", "Media"],
     ["/bridge/crew", "Crew"],
+    ["/bridge/regattas", "Regattas"],
   ],
   [
     ["/bridge/orders", "Orders"],

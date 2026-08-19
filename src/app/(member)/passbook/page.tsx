@@ -5,6 +5,7 @@ import { Badge, Wordmark } from "@/components/ds";
 import { SITE_DOMAIN, SURFACES } from "@/lib/brand";
 import { TIER_LABEL, roman } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
+import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../data";
 import { PrintButton } from "./print-button";
 
@@ -12,6 +13,8 @@ export const metadata: Metadata = { title: SURFACES.passbook };
 
 export default async function PassbookPage() {
   const { supabase, user, profile } = await getMember();
+
+  const { log, marks } = await readPassageLog(supabase, user.id);
 
   const { data: account } = await supabase
     .from("account_balance")
@@ -140,12 +143,16 @@ export default async function PassbookPage() {
           </p>
         </section>
       ) : null}
+      <div style={{ width: "min(680px, 100%)" }}>
+        <PassageLog log={log} marks={marks} own />
+      </div>
+
       {/* Print: the card alone, edge to edge, colors exact. */}
       <style>{`
         @media print {
           @page { margin: 12mm; }
           body { background: #fff !important; }
-          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts, .crd-feed { display: none !important; }
+          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts, .crd-feed, .plog { display: none !important; }
           .mbr-shell, .mbr-main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
           .crd { padding: 0 !important; }
           .ls-fade { animation: none !important; opacity: 1 !important; }
