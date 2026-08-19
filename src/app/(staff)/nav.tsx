@@ -4,16 +4,34 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TABS = [
-  ["/bridge", "Applications"],
-  ["/bridge/gangway", "Gangway"],
-  ["/bridge/manifests", "Manifests"],
-  ["/bridge/voyages", "Voyages"],
-  ["/bridge/orders", "Orders"],
-  ["/bridge/moderation", "Moderation"],
-  ["/bridge/reports", "Reports"],
-  ["/bridge/galley", "Galley"],
-  ["/bridge/crew", "Crew"],
+/* Sixteen sections is too many for one undifferentiated row, so the nav is
+   grouped: the sailing itself, the people, the money, then the instruments.
+   Hairlines mark the seams; labels stay one word wherever they can. */
+const GROUPS = [
+  [
+    ["/bridge", "Applications"],
+    ["/bridge/gangway", "Gangway"],
+    ["/bridge/manifests", "Manifests"],
+    ["/bridge/voyages", "Voyages"],
+  ],
+  [
+    ["/bridge/members", "Members"],
+    ["/bridge/shoreside", "Shoreside"],
+    ["/bridge/moderation", "Moderation"],
+    ["/bridge/media", "Media"],
+    ["/bridge/crew", "Crew"],
+  ],
+  [
+    ["/bridge/orders", "Orders"],
+    ["/bridge/galley", "Galley"],
+    ["/bridge/codes", "Codes"],
+  ],
+  [
+    ["/bridge/reports", "Reports"],
+    ["/bridge/referrals", "Referrals"],
+    ["/bridge/automations", "Automations"],
+    ["/bridge/keys", "Keys"],
+  ],
 ] as const;
 
 function isCurrent(pathname: string, href: string) {
@@ -26,14 +44,19 @@ export function HmTabs() {
   return (
     <nav className="hm-tabs" aria-label="Bridge sections">
       <div className="hm-tabs__in">
-        {TABS.map(([href, label]) => (
-          <Link
-            key={href}
-            href={href}
-            aria-current={isCurrent(pathname, href) ? "page" : undefined}
-          >
-            {label}
-          </Link>
+        {GROUPS.map((group, gi) => (
+          <React.Fragment key={gi}>
+            {gi > 0 ? <span className="hm-tabs__sep" aria-hidden="true" /> : null}
+            {group.map(([href, label]) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={isCurrent(pathname, href) ? "page" : undefined}
+              >
+                {label}
+              </Link>
+            ))}
+          </React.Fragment>
         ))}
       </div>
     </nav>

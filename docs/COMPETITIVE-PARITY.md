@@ -1,5 +1,21 @@
 # Competitive parity audit — LYRE SOCIAL
 
+> **Built 2026-08.** Every tier below is implemented except where noted.
+> Shipped: recurring dues + installments + `/account`; member directory with
+> shared-voyage affinity; crew threads and direct messages; web push; calendar
+> feeds (.ics per member and per sailing); the applicant tracker; waitlist
+> auto-claim with visible position; member-to-member pass transfer; per-guest
+> credentials; day-of SMS; pass-level promo codes; voyage galleries; referral
+> attribution; the members CRM with saved segments and CSV; automations,
+> API keys and webhooks; the Shoreside inbox; event-card enrichment, browse
+> filters and OG images.
+> **Still gated on external credentials:** Stripe (dues and settlement hide
+> until keys are set), Twilio (SMS queues and drains as `skipped`),
+> photography (galleries fall back to placeholders), and Apple/Google wallet
+> passes (printable credentials ship instead). **Deliberately not built:** the
+> automation *dispatcher* (rules save; triggers wire next) and everything in
+> the rejections table.
+
 Produced 2026-08 against verified current feature sets of **TIXR**, **Circle.so**,
 **Posh.vip**, **Shotgun**, **DICE**, **Dorsia**, **Luma**, plus Eventbrite/Patreon/
 Mighty/Skool as baselines. Sources listed at the end.

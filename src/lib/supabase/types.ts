@@ -17,6 +17,8 @@ export type ProfileRow = {
   email: string | null; tier: MembershipTier; home_harbor: string | null; avatar_tone: string
   is_staff: boolean; joined_at: string; status: "active" | "paused" | "departed"
   notification_prefs: Json; waiver_signed_at: string | null; plan_id: string | null
+  stripe_customer_id: string | null; bio: string | null; in_directory: boolean
+  interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }
 export type HarborRow = {
   id: string; slug: string; name: string; status: string; coordinates: string | null
@@ -36,15 +38,17 @@ export type RsvpRow = {
   id: string; voyage_id: string; profile_id: string; status: RsvpStatus; guests: number
   created_at: string; checked_in_at: string | null; checked_in_by: string | null
   boarding_code: string | null; show_on_manifest: boolean; vessel_id: string | null
-  comp: boolean; guest_names: string[]
+  comp: boolean; guest_names: string[]; promo_code: string | null; auto_claim: boolean
 }
 export type MembershipPlanRow = {
   id: string; plan_type: "access" | "regional" | "national" | "global" | "guest"
   tier: number; label: string; price_cents: number; events_per_month: number
   class_ceiling: "voyage" | "expedition" | "odyssey" | null; active: boolean; early_days: number
+  stripe_price_id: string | null; stripe_price_id_annual: string | null; annual_price_cents: number | null
 }
 export type VesselRow = {
   id: string; name: string; capacity: number; home_harbor: string | null; active: boolean
+  length_ft: number | null; year: number | null; cabins: number | null
 }
 export type VoyageVesselRow = { voyage_id: string; vessel_id: string; position: number }
 export type FathomsRow = {
@@ -125,6 +129,84 @@ export type CrewCandidateRow = {
   stage: "applied" | "interview" | "sea_trial" | "offer" | "passed"; created_at: string
 }
 
+export type SubscriptionStatus = "incomplete" | "trialing" | "active" | "past_due" | "paused" | "canceled"
+export type SubscriptionRow = {
+  id: string; profile_id: string; plan_id: string | null; stripe_subscription_id: string | null
+  status: SubscriptionStatus; interval: "month" | "year"; current_period_end: string | null
+  cancel_at_period_end: boolean; created_at: string; updated_at: string
+}
+export type InvoiceRow = {
+  id: string; profile_id: string; stripe_invoice_id: string | null; number: string | null
+  amount_cents: number; status: string; hosted_url: string | null; pdf_url: string | null
+  period_start: string | null; period_end: string | null; created_at: string
+}
+export type PaymentMethodRow = {
+  id: string; profile_id: string; stripe_payment_method_id: string | null; brand: string | null
+  last4: string | null; exp_month: number | null; exp_year: number | null; is_default: boolean; created_at: string
+}
+export type InstallmentPlanRow = {
+  id: string; profile_id: string; rsvp_id: string | null; total_cents: number
+  down_payment_cents: number; installments: number; paid_count: number
+  next_charge_at: string | null; status: "active" | "complete" | "defaulted" | "cancelled"; created_at: string
+}
+export type ThreadRow = {
+  id: string; kind: "crew" | "direct" | "shoreside"; voyage_id: string | null
+  title: string | null; closed_at: string | null; created_at: string
+}
+export type ThreadMemberRow = { thread_id: string; profile_id: string; last_read_at: string | null; joined_at: string }
+export type MessageRow = {
+  id: string; thread_id: string; author_id: string | null; body: string; created_at: string
+}
+export type VoyageMediaRow = {
+  id: string; voyage_id: string; storage_path: string; caption: string | null
+  uploaded_by: string | null; approved: boolean; created_at: string
+}
+export type CrewRequestRow = {
+  id: string; voyage_id: string; profile_id: string; note: string | null; open: boolean; created_at: string
+}
+export type RsvpGuestRow = {
+  id: string; rsvp_id: string; name: string; boarding_code: string | null
+  checked_in_at: string | null; checked_in_by: string | null; created_at: string
+}
+export type PassTransferRow = {
+  id: string; rsvp_id: string; from_profile: string; to_profile: string
+  status: "offered" | "accepted" | "declined" | "cancelled"; created_at: string; responded_at: string | null
+}
+export type PromoCodeRow = {
+  code: string; kind: "percent" | "amount" | "comp"; value: number; voyage_id: string | null
+  max_uses: number; uses: number; expires_at: string | null; active: boolean
+  note: string | null; created_by: string | null; created_at: string
+}
+export type PushSubscriptionRow = {
+  id: string; profile_id: string; endpoint: string; p256dh: string; auth: string; created_at: string
+}
+export type SmsOutboxRow = {
+  id: string; to_phone: string; template: string; payload: Json
+  status: "pending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+}
+export type PushOutboxRow = {
+  id: string; profile_id: string; title: string; body: string | null; url: string | null
+  status: "pending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+}
+export type SavedSegmentRow = {
+  id: string; name: string; filters: Json; created_by: string | null; created_at: string
+}
+export type ApiKeyRow = {
+  id: string; label: string; key_hash: string; prefix: string; scopes: string[]
+  revoked: boolean; last_used_at: string | null; created_by: string | null; created_at: string
+}
+export type WebhookRow = {
+  id: string; url: string; events: string[]; secret: string; active: boolean; created_at: string
+}
+export type WebhookDeliveryRow = {
+  id: string; webhook_id: string; event: string; payload: Json; status: number | null
+  error: string | null; created_at: string
+}
+export type AutomationRow = {
+  id: string; name: string; trigger_event: string; conditions: Json; action: Json
+  active: boolean; last_run_at: string | null; created_at: string
+}
+
 type Table<R, I = Ins<R>> = { Row: Row<R>; Insert: I; Update: Partial<R>; Relationships: [] }
 
 export type Database = {
@@ -160,6 +242,26 @@ export type Database = {
       products: Table<ProductRow, Ins<ProductRow, "slug" | "name" | "category" | "price_cents">>
       shop_orders: Table<ShopOrderRow, Ins<ShopOrderRow, "profile_id">>
       shop_order_items: Table<ShopOrderItemRow, Ins<ShopOrderItemRow, "order_id" | "product_id" | "price_cents">>
+      subscriptions: Table<SubscriptionRow, Ins<SubscriptionRow, "profile_id">>
+      invoices: Table<InvoiceRow, Ins<InvoiceRow, "profile_id">>
+      payment_methods: Table<PaymentMethodRow, Ins<PaymentMethodRow, "profile_id">>
+      installment_plans: Table<InstallmentPlanRow, Ins<InstallmentPlanRow, "profile_id" | "total_cents" | "installments">>
+      threads: Table<ThreadRow, Ins<ThreadRow, "kind">>
+      thread_members: Table<ThreadMemberRow, Ins<ThreadMemberRow, "thread_id" | "profile_id">>
+      messages: Table<MessageRow, Ins<MessageRow, "thread_id" | "body">>
+      voyage_media: Table<VoyageMediaRow, Ins<VoyageMediaRow, "voyage_id" | "storage_path">>
+      crew_requests: Table<CrewRequestRow, Ins<CrewRequestRow, "voyage_id" | "profile_id">>
+      rsvp_guests: Table<RsvpGuestRow, Ins<RsvpGuestRow, "rsvp_id" | "name">>
+      pass_transfers: Table<PassTransferRow, Ins<PassTransferRow, "rsvp_id" | "from_profile" | "to_profile">>
+      promo_codes: Table<PromoCodeRow, Ins<PromoCodeRow, "code" | "kind">>
+      push_subscriptions: Table<PushSubscriptionRow, Ins<PushSubscriptionRow, "profile_id" | "endpoint" | "p256dh" | "auth">>
+      sms_outbox: Table<SmsOutboxRow, Ins<SmsOutboxRow, "to_phone" | "template">>
+      push_outbox: Table<PushOutboxRow, Ins<PushOutboxRow, "profile_id" | "title">>
+      saved_segments: Table<SavedSegmentRow, Ins<SavedSegmentRow, "name">>
+      api_keys: Table<ApiKeyRow, Ins<ApiKeyRow, "label" | "key_hash" | "prefix">>
+      webhooks: Table<WebhookRow, Ins<WebhookRow, "url" | "secret">>
+      webhook_deliveries: Table<WebhookDeliveryRow, Ins<WebhookDeliveryRow, "webhook_id" | "event" | "payload">>
+      automations: Table<AutomationRow, Ins<AutomationRow, "name" | "trigger_event">>
       crew_roles: Table<CrewRoleRow, Ins<CrewRoleRow, "title" | "port">>
       crew_candidates: Table<CrewCandidateRow, Ins<CrewCandidateRow, "role_id" | "full_name" | "email">>
     }
@@ -183,6 +285,21 @@ export type Database = {
         Row: { profile_id: string | null; league: number | null; league_name: string | null }
         Relationships: []
       }
+      member_affinity: {
+        Row: { profile_id: string | null; other_id: string | null; shared: number | null }
+        Relationships: []
+      }
+      waitlist_position: {
+        Row: { rsvp_id: string | null; voyage_id: string | null; profile_id: string | null; position: number | null }
+        Relationships: []
+      }
+      member_engagement: {
+        Row: {
+          profile_id: string | null; passes: number | null; attended: number | null
+          posts: number | null; knots: number | null; last_booked_at: string | null
+        }
+        Relationships: []
+      }
       member_pass_usage: {
         Row: { profile_id: string | null; month: string | null; passes_used: number | null }
         Relationships: []
@@ -195,7 +312,18 @@ export type Database = {
       application_status_for: { Args: { p_email: string }; Returns: ApplicationStatus | null }
       set_application_status: { Args: { p_id: string; p_status: ApplicationStatus }; Returns: undefined }
       accept_application: { Args: { p_id: string }; Returns: undefined }
+      open_direct_thread: { Args: { p_other: string }; Returns: string }
+      accept_pass_transfer: { Args: { p_id: string }; Returns: undefined }
+      check_promo: { Args: { p_code: string; p_voyage: string }; Returns: Json }
       redeem_reward: { Args: { p_reward: string }; Returns: undefined }
+      calendar_feed: {
+        Args: { p_token: string }
+        Returns: Array<{
+          rsvp_id: string; boarding_code: string | null; guests: number
+          slug: string; title: string; class: EventClass; blurb: string | null
+          starts_at: string; ends_at: string | null; coordinates: string | null; muster: string | null
+        }>
+      }
     }
     Enums: {
       application_status: ApplicationStatus

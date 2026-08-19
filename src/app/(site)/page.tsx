@@ -6,6 +6,13 @@ import { SectionHeader } from "@/components/site/section-header";
 import { CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import {
+  DEPOSIT_CHIP,
+  durationChip,
+  fleetChip,
+  weekChip,
+} from "@/components/site/voyage-chips";
+import { fleetByVoyage } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
   title: "LYRE SOCIAL — Sea Days and Port Days, aboard and ashore.",
@@ -40,6 +47,7 @@ export default async function HomePage() {
   );
   const live = (voyages ?? []).filter((v) => v.status === "live");
   const nextUp = (voyages ?? []).filter((v) => v.status !== "live").slice(0, 3);
+  const fleets = await fleetByVoyage(nextUp.map((v) => v.id));
 
   return (
     <>
@@ -95,6 +103,15 @@ export default async function HomePage() {
               const left = cap?.berths_left ?? null;
               const seats = "passes";
               const sub = v.sub_class ? SUB_CLASSES[v.sub_class] : null;
+              /* Ship's-log chips: how long, which week, how many hulls, what
+                 holds a pass. Nothing that scores or hurries the reader. */
+              const meta = [
+                ...logMeta(v.starts_at, v.distance_nm),
+                durationChip(v.starts_at, v.ends_at),
+                weekChip(v.starts_at),
+                v.class === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
+                v.deposit_required ? DEPOSIT_CHIP : null,
+              ].filter((m): m is string => Boolean(m));
               return (
                 <Link
                   key={v.id}
@@ -106,7 +123,7 @@ export default async function HomePage() {
                     media={v.media}
                     eyebrow={`${EVENT_CLASS_LABEL[v.class]}${sub ? ` · ${sub.label}` : ""}`}
                     title={v.title}
-                    meta={logMeta(v.starts_at, v.distance_nm)}
+                    meta={meta}
                     footer={
                       <>
                         {left != null ? (

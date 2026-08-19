@@ -43,6 +43,13 @@ export default async function ReportsPage() {
     vesselsRes,
     berthRes,
     voyageLedgerRes,
+    subsRes,
+    plansRes,
+    installmentsRes,
+    pushRes,
+    smsRes,
+    transfersRes,
+    compsRes,
   ] = await Promise.all([
     supabase.from("profiles").select("status, joined_at"),
     supabase.from("voyages").select("id, title, distance_nm, kind, status, starts_at"),
@@ -70,6 +77,15 @@ export default async function ReportsPage() {
       .from("account_ledger")
       .select("voyage_id, delta_cents")
       .not("voyage_id", "is", null),
+    supabase.from("subscriptions").select("status, interval, plan_id, updated_at"),
+    supabase.from("membership_plans").select("id, price_cents, annual_price_cents"),
+    supabase
+      .from("installment_plans")
+      .select("total_cents, down_payment_cents, installments, paid_count, status"),
+    supabase.from("push_outbox").select("status"),
+    supabase.from("sms_outbox").select("status"),
+    supabase.from("pass_transfers").select("status"),
+    supabase.from("rsvps").select("id", { count: "exact", head: true }).eq("comp", true),
   ]);
 
   /* Members */
@@ -149,6 +165,54 @@ export default async function ReportsPage() {
   const outbox = outboxRes.data ?? [];
   const outboxCount = (s: string) => outbox.filter((e) => e.status === s).length;
 
+  /* Dues that recur — a year's plan carries one twelfth of itself each month,
+     so the two intervals can sit in the same number. */
+  const planPrice = new Map(
+    (plansRes.data ?? []).map((p) => [p.id, p])
+  );
+  const subs = subsRes.data ?? [];
+  const mrrCents = subs
+    .filter((sub) => sub.status === "active")
+    .reduce((total, sub) => {
+      const plan = sub.plan_id ? planPrice.get(sub.plan_id) : undefined;
+      if (!plan) return total;
+      if (sub.interval === "year") {
+        const annual = plan.annual_price_cents ?? plan.price_cents * 12;
+        return total + Math.round(annual / 12);
+      }
+      return total + plan.price_cents;
+    }, 0);
+  const duesPaying = subs.filter((sub) => sub.status === "active").length;
+  const churned = subs.filter(
+    (sub) => sub.status === "canceled" && sub.updated_at >= seasonStart
+  ).length;
+  const duesAtRisk = subs.filter((sub) => sub.status === "past_due").length;
+
+  /* What is still to be drawn on the plans people are paying down. */
+  const installments = (installmentsRes.data ?? []).filter((p) => p.status === "active");
+  const exposureCents = installments.reduce((total, p) => {
+    const per =
+      p.installments > 0
+        ? Math.round((p.total_cents - p.down_payment_cents) / p.installments)
+        : 0;
+    const drawn = p.down_payment_cents + per * p.paid_count;
+    return total + Math.max(0, p.total_cents - drawn);
+  }, 0);
+
+  /* Delivery health — the three channels the cron drains. */
+  const push = pushRes.data ?? [];
+  const sms = smsRes.data ?? [];
+  const countBy = (rows: Array<{ status: string }>, status: string) =>
+    rows.filter((r) => r.status === status).length;
+  const healthLine = (rows: Array<{ status: string }>) =>
+    `${countBy(rows, "sent")} SENT · ${countBy(rows, "skipped")} SKIPPED · ${countBy(rows, "failed")} FAILED`;
+
+  /* Passes that moved hands, and passes that cost nothing. */
+  const transfers = transfersRes.data ?? [];
+  const transfersAccepted = transfers.filter((t) => t.status === "accepted").length;
+  const transfersOffered = transfers.filter((t) => t.status === "offered").length;
+  const compedPasses = compsRes.count ?? 0;
+
   const fillRows: FillRow[] = voyages
     .filter((v) => v.status !== "cancelled")
     .sort((a, b) => (a.starts_at < b.starts_at ? 1 : -1))
@@ -202,11 +266,60 @@ export default async function ReportsPage() {
         />
         <Stat
           size="sm"
-          label="Outbox"
-          value={outboxCount("pending")}
-          sub={`PENDING · ${outboxCount("sent")} SENT · ${outboxCount("skipped")} SKIPPED · ${outboxCount("failed")} FAILED`}
+          label="Passes moved"
+          value={transfersAccepted}
+          sub={`${transfersOffered} OFFERED AND WAITING`}
         />
+        <Stat size="sm" label="Complimentary passes" value={compedPasses} sub="COMPED, ALL SEASONS" />
       </div>
+
+      <section className="hm-sec">
+        <h2>Dues, and what is still owed.</h2>
+        <p className="hm-note">
+          Annual plans count as a twelfth a month, so both intervals sit in one number.
+        </p>
+        <div className="hm-row">
+          <Stat
+            label="Dues each month"
+            value={mrrCents ? price(mrrCents) : "$0"}
+            sub={`${duesPaying} PAYING · ${duesAtRisk} PAST DUE`}
+          />
+          <Stat label="Left this season" value={churned} sub="DUES ENDED SINCE JANUARY" />
+          <Stat
+            label="Still to draw"
+            value={exposureCents ? price(exposureCents) : "$0"}
+            sub={`${installments.length} PLANS RUNNING`}
+          />
+        </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>What got through.</h2>
+        <p className="hm-note">
+          Three channels, all drained on a schedule. Pending is the queue; failed is the one to
+          read.
+        </p>
+        <div className="hm-row">
+          <Stat
+            size="sm"
+            label="Email"
+            value={outboxCount("pending")}
+            sub={`PENDING · ${outboxCount("sent")} SENT · ${outboxCount("skipped")} SKIPPED · ${outboxCount("failed")} FAILED`}
+          />
+          <Stat
+            size="sm"
+            label="Push"
+            value={countBy(push, "pending")}
+            sub={`PENDING · ${healthLine(push)}`}
+          />
+          <Stat
+            size="sm"
+            label="SMS"
+            value={countBy(sms, "pending")}
+            sub={`PENDING · ${healthLine(sms)}`}
+          />
+        </div>
+      </section>
 
       <section className="hm-sec">
         <h2>Voyage by voyage.</h2>

@@ -5,6 +5,8 @@ import { LinkButton } from "@/components/site/link-button";
 import { CLASS_CODES, SUB_CLASSES } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { vesselSpec } from "@/components/site/voyage-chips";
+import { fleetFor, framesFor } from "@/components/site/voyage-data";
 
 const SEAS: Record<string, string> = {
   day: "var(--sea-day)",
@@ -158,6 +160,10 @@ export default async function VoyagePage({
 
   const firstNames = crew.map((c) => c.name.split(" ")[0]);
 
+  /* Flotilla and frames sit behind members-only RLS — read server-side, and
+     absent rather than invented when there is nothing to show. */
+  const [fleet, frames] = await Promise.all([fleetFor(voyage.id), framesFor(voyage.id)]);
+
   return (
     <div data-theme={voyage.class}>
       <header className="ev-hero">
@@ -214,6 +220,40 @@ export default async function VoyagePage({
               ))}
             </div>
           ) : null}
+          {fleet.length > 0 ? (
+            <div className="ev-fleet">
+              <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The fleet.</h3>
+              {fleet.map((v) => (
+                <div className="ev-fleet__row" key={v.id}>
+                  <span className="ev-fleet__name">{v.name}</span>
+                  <span className="ev-fleet__spec">{vesselSpec(v)}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div className="ev-frames">
+            <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Frames.</h3>
+            {frames.length > 0 ? (
+              <div className="ev-frames__strip">
+                {frames.map((f) => (
+                  // eslint-disable-next-line @next/next/no-img-element -- member frames are Supabase storage URLs; the image loader has no remote pattern for them
+                  <img
+                    key={f.id}
+                    className="ev-frames__img"
+                    src={f.url}
+                    alt={f.caption ?? `${voyage.title} — a frame from the sail`}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div
+                className="ev-frames__tk"
+                style={{ background: SEAS[voyage.media] ?? SEAS.dusk }}
+              >
+                <span>Imagery TK — frames post after the sail, credited by name.</span>
+              </div>
+            )}
+          </div>
           <div className="ev-faq">
             <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Asked often.</h3>
             {faq.map(([q, a]) => (
@@ -319,6 +359,17 @@ export default async function VoyagePage({
             <div>
               <span>Tier</span>
               <span>{TIER_LABEL[voyage.min_tier]}+</span>
+            </div>
+            <div>
+              <span>Calendar</span>
+              <span>
+                <a
+                  href={`/api/calendar/voyage/${voyage.slug}`}
+                  style={{ color: "inherit", textDecoration: "underline" }}
+                >
+                  Add to calendar
+                </a>
+              </span>
             </div>
           </div>
 

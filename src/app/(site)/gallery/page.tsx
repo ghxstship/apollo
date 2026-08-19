@@ -1,4 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { FAMILY_LABEL } from "@/lib/brand";
+import { logDate, roman } from "@/lib/format";
+import { frameGroups } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
   title: "Gallery",
@@ -11,6 +15,9 @@ const SEAS: Record<string, string> = {
   dawn: "var(--sea-dawn)",
 };
 
+/* Placeholder seas — the sanctioned stand-in until film comes back. They hold
+   the page only while no approved frame exists; a single real frame retires
+   the whole grid. */
 const TILES: Array<{
   media: "day" | "dusk" | "dawn";
   cap: string;
@@ -32,7 +39,9 @@ const TILES: Array<{
   { media: "day", cap: "The committee boat disagrees", meta: "Sea Day · Jun 07" },
 ];
 
-export default function GalleryPage() {
+export default async function GalleryPage() {
+  const groups = await frameGroups();
+
   return (
     <div className="ls-container">
       <div className="ws-phead">
@@ -40,25 +49,71 @@ export default function GalleryPage() {
         <h1>Proof it happened.</h1>
         <p className="ws-phead__sub">
           The season in frames — shot by members, credited by name, never staged.
-          Placeholder seas hold each frame until the film comes back.
+          {groups.length === 0
+            ? " Placeholder seas hold each frame until the film comes back."
+            : " One entry per sailing, most recent first."}
         </p>
       </div>
-      <div className="gl-grid">
-        {TILES.map((t) => (
-          <div
-            key={t.cap}
-            className={
-              "gl-tile" + (t.tall ? " gl-tile--tall" : "") + (t.wide ? " gl-tile--wide" : "")
-            }
-          >
-            <span className="gl-tile__bg" style={{ background: SEAS[t.media] }}></span>
-            <span className="gl-tile__cap">
-              <b>{t.cap}</b>
-              <span>{t.meta} · Imagery TK</span>
-            </span>
-          </div>
-        ))}
-      </div>
+
+      {groups.length > 0 ? (
+        groups.map((g) => (
+          <section className="gl-group" key={g.voyageId}>
+            <div className="gl-group__head">
+              <h2>
+                <Link href={`/voyages/${g.slug}`}>{g.title}</Link>
+              </h2>
+              <span className="gl-group__meta">
+                {[
+                  FAMILY_LABEL[g.cls],
+                  logDate(g.startsAt),
+                  roman(new Date(g.startsAt).getFullYear()),
+                  g.harborCode,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            </div>
+            <div className="gl-grid gl-grid--group">
+              {g.frames.map((f) => (
+                <div className="gl-tile gl-tile--frame" key={f.id}>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- member frames are Supabase storage URLs; the image loader has no remote pattern for them */}
+                  <img
+                    className="gl-tile__img"
+                    src={f.url}
+                    alt={f.caption ?? `${g.title} — a frame from the sail`}
+                  />
+                  {f.caption ? (
+                    <span className="gl-tile__cap">
+                      <b>{f.caption}</b>
+                      <span>
+                        {FAMILY_LABEL[g.cls]} · {logDate(g.startsAt)}
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </section>
+        ))
+      ) : (
+        <div className="gl-grid">
+          {TILES.map((t) => (
+            <div
+              key={t.cap}
+              className={
+                "gl-tile" + (t.tall ? " gl-tile--tall" : "") + (t.wide ? " gl-tile--wide" : "")
+              }
+            >
+              <span className="gl-tile__bg" style={{ background: SEAS[t.media] }}></span>
+              <span className="gl-tile__cap">
+                <b>{t.cap}</b>
+                <span>{t.meta} · Imagery TK</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="gl-caption">
         <p>
           Art direction, when the film comes back: warm, sun-washed water at golden

@@ -2,8 +2,21 @@
 
 import React from "react";
 import Link from "next/link";
-import { Badge, Button, Checkbox, Dialog, Input, Stepper } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, Stepper, Tag } from "@/components/ds";
+import { price } from "@/lib/format";
 import { confirmBerth, improvePass, releaseBerth, setGuests, setRsvpStatus } from "./actions";
+import {
+  CrewCall,
+  GuestStubs,
+  HandOff,
+  PromoField,
+  WaitlistClaim,
+  type AppliedPromo,
+  type CrewSeeker,
+  type GuestStub,
+  type MemberOption,
+  type StandingOffer,
+} from "./pass-extras";
 
 export type AddonOption = { id: string; name: string; price_cents: number };
 
@@ -75,6 +88,15 @@ export function RsvpControls({
   knotsOnCompletion,
   fullCredit,
   boardingCode,
+  rsvpId,
+  waitlistPosition,
+  autoClaim,
+  members,
+  standingOffer,
+  guestStubs,
+  crewMine,
+  crewSeekers,
+  splitOffered,
 }: {
   voyageId: string;
   voyageTitle: string;
@@ -98,6 +120,23 @@ export function RsvpControls({
   /* Computed shoreside: more than 48h out at render time. */
   fullCredit: boolean;
   boardingCode: string | null;
+  /* — ticketing polish — */
+  rsvpId: string | null;
+  /* Place in the waitlist for this sailing, 1 = next. */
+  waitlistPosition: number | null;
+  autoClaim: boolean;
+  /* Active members other than you, for a hand-off. */
+  members: MemberOption[];
+  /* A hand-off you have already offered on this pass. */
+  standingOffer: StandingOffer | null;
+  /* Guest stubs cut by the manifest once names are saved. */
+  guestStubs: GuestStub[];
+  /* Your own open crew request on this sailing. */
+  crewMine: CrewSeeker | null;
+  /* Other members looking for crew — shown once you are aboard. */
+  crewSeekers: CrewSeeker[];
+  /* Set shoreside when the club can carry split draws on this pass. */
+  splitOffered: boolean;
 }) {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -114,6 +153,10 @@ export function RsvpControls({
   const [guestEdit, setGuestEdit] = React.useState<{ count: number; names: string[] } | null>(
     null
   );
+  /* A code checked against the Bridge's list — re-checked on confirm. */
+  const [promo, setPromo] = React.useState<AppliedPromo | null>(null);
+  /* Draws chosen at review — null is the whole thing, today. */
+  const [split, setSplit] = React.useState<number | null>(null);
 
   const run = (fn: () => Promise<{ error?: string; full?: boolean }>, after?: () => void) => {
     setError(null);
@@ -136,7 +179,16 @@ export function RsvpControls({
   const addonTotal = addons
     .filter((a) => chosen.has(a.id))
     .reduce((sum, a) => sum + a.price_cents * qty, 0);
-  const total = priceCents + (depositRequired ? 5000 : 0) + addonTotal;
+  /* A code trims the pass alone — the deposit and add-ons stand. */
+  const passDue = promo ? promo.passCents : priceCents;
+  const total = passDue + (depositRequired ? 5000 : 0) + addonTotal;
+
+  /* Split it — anything over $200 may be drawn in 2, 3, or 4 goes. The first
+     draw is today; the rest come monthly, at no interest. */
+  const splitEligible = splitOffered && total > 20000;
+  const splitDraws = splitEligible && split ? split : null;
+  const perDraw = splitDraws ? Math.floor(total / splitDraws) : 0;
+  const dueToday = splitDraws ? total - perDraw * (splitDraws - 1) : total;
 
   const unattached = addons.filter((a) => !attachedAddonIds.includes(a.id));
   const aboardQty = 1 + guests;
@@ -160,6 +212,8 @@ export function RsvpControls({
     setOfferWaitlist(false);
     setCoGuests(guests);
     setCoNames(guestNames);
+    setPromo(null);
+    setSplit(null);
     setCheckout(true);
   };
 
@@ -224,6 +278,12 @@ export function RsvpControls({
             </Link>
           ) : null}
           <span className="voy-foot__spacer"></span>
+          <HandOff
+            rsvpId={rsvpId}
+            voyageTitle={voyageTitle}
+            members={members}
+            offer={standingOffer}
+          />
           {addonWindowOpen && unattached.length > 0 ? (
             <Button
               variant="ghost"
@@ -246,6 +306,15 @@ export function RsvpControls({
           >
             Release pass
           </Button>
+          <GuestStubs guests={guestStubs} />
+          {crewSeekers.length > 0 || crewMine ? (
+            <CrewCall
+              voyageId={voyageId}
+              mine={crewMine}
+              seekers={crewSeekers}
+              canPost={false}
+            />
+          ) : null}
         </>
       ) : myStatus === "waitlist" ? (
         <>
@@ -259,6 +328,12 @@ export function RsvpControls({
           >
             Leave the list
           </Button>
+          <WaitlistClaim
+            voyageId={voyageId}
+            position={waitlistPosition}
+            autoClaim={autoClaim}
+          />
+          <CrewCall voyageId={voyageId} mine={crewMine} seekers={[]} />
         </>
       ) : windowNote ? (
         <span className="mbr-mono">{windowNote}</span>
@@ -299,6 +374,7 @@ export function RsvpControls({
           >
             Confirm your pass
           </Button>
+          <CrewCall voyageId={voyageId} mine={crewMine} seekers={[]} />
         </>
       )}
 
@@ -339,7 +415,15 @@ export function RsvpControls({
               disabled={pending || namesMissing}
               onClick={() =>
                 run(
-                  () => confirmBerth(voyageId, Array.from(chosen), coGuests, checkoutNames),
+                  () =>
+                    confirmBerth(
+                      voyageId,
+                      Array.from(chosen),
+                      coGuests,
+                      checkoutNames,
+                      promo?.code ?? null,
+                      splitDraws
+                    ),
                   () => setCheckout(false)
                 )
               }
@@ -353,7 +437,7 @@ export function RsvpControls({
           <div style={{ ...rowStyle, borderTop: "none" }}>
             <span>Pass</span>
             <span className="mbr-mono" style={{ fontSize: 12 }}>
-              {money(priceCents)}
+              {price(passDue)}
             </span>
           </div>
           {depositRequired ? (
@@ -403,12 +487,49 @@ export function RsvpControls({
               </span>
             </div>
           ))}
+          <PromoField
+            voyageId={voyageId}
+            applied={promo}
+            onApplied={setPromo}
+            onCleared={() => setPromo(null)}
+          />
+          {splitEligible ? (
+            <div style={{ ...rowStyle, alignItems: "center" }}>
+              <span>
+                <b style={{ fontWeight: 600 }}>Split it</b>
+                <span style={{ display: "block", color: "var(--text-3)", fontSize: 12 }}>
+                  No interest. The rest is drawn monthly.
+                </span>
+              </span>
+              <span style={{ display: "flex", gap: 6 }}>
+                {[2, 3, 4].map((n) => (
+                  <Tag
+                    key={n}
+                    active={split === n}
+                    onClick={() => setSplit(split === n ? null : n)}
+                  >
+                    {n} draws
+                  </Tag>
+                ))}
+              </span>
+            </div>
+          ) : null}
           <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
-            <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
+            <span className="mbr-mono">
+              {splitDraws ? "DUE TODAY" : "DUE TO MEMBER ACCOUNT"}
+            </span>
             <span className="mbr-mono" style={{ fontSize: 13, color: "var(--text-1)" }}>
-              {money(total)}
+              {price(dueToday)}
             </span>
           </div>
+          {splitDraws ? (
+            <div style={rowStyle}>
+              <span style={{ color: "var(--text-2)" }}>Then</span>
+              <span className="mbr-mono" style={{ fontSize: 12 }}>
+                {splitDraws - 1} × {money(perDraw)}
+              </span>
+            </div>
+          ) : null}
           {knotsOnCompletion != null ? (
             <div style={rowStyle}>
               <span style={{ color: "var(--text-2)" }}>On completion</span>

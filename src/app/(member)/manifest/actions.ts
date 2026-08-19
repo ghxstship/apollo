@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type RsvpResult = { error?: string; full?: boolean };
@@ -100,15 +101,100 @@ export async function setRsvpStatus(
 }
 
 /* Review & confirm on a priced voyage: the pass (house charge posts by
-   trigger) with guest names on the rsvp, then any chosen add-ons. */
+   trigger) with guest names on the rsvp, then any chosen add-ons. A code,
+   if one was applied, is re-checked here — never trusted from the client. */
+/* Passes over this line may be drawn in goes rather than in one. */
+const SPLIT_FLOOR_CENTS = 20000;
+
+/* Split it: the trigger has already posted the full charge, so the remainder
+   comes straight back as a credit and rides on an installment_plans row until
+   it is drawn. Both writes are shoreside — RLS keeps members off those tables
+   — so the option only appears when the service-role key is set. Returns a
+   raw error message, or null when there is nothing to do. */
+async function splitIntoDraws(
+  supabase: Supa,
+  userId: string,
+  voyageId: string,
+  rsvpId: string,
+  draws: number
+): Promise<string | null> {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return "Split draws open when the processor is live.";
+  }
+  const n = Math.max(2, Math.min(4, Math.round(draws)));
+
+  /* Already split — a second confirm must not draw it twice. */
+  const { data: standing } = await supabase
+    .from("installment_plans")
+    .select("id")
+    .eq("rsvp_id", rsvpId)
+    .limit(1)
+    .maybeSingle();
+  if (standing) return null;
+
+  const { data: charges } = await supabase
+    .from("account_ledger")
+    .select("delta_cents")
+    .eq("rsvp_id", rsvpId)
+    .lt("delta_cents", 0);
+  const total = -(charges ?? []).reduce((sum, r) => sum + r.delta_cents, 0);
+  if (total <= SPLIT_FLOOR_CENTS) return null;
+
+  const perDraw = Math.floor(total / n);
+  const down = total - perDraw * (n - 1);
+  const admin = createAdminClient();
+
+  const { error: creditError } = await admin.from("account_ledger").insert({
+    profile_id: userId,
+    delta_cents: total - down,
+    kind: "credit",
+    memo: `Split into ${n} draws — ${n - 1} × $${(perDraw / 100).toFixed(2)} to come`,
+    voyage_id: voyageId,
+    rsvp_id: rsvpId,
+  });
+  if (creditError) return creditError.message;
+
+  const next = new Date();
+  next.setMonth(next.getMonth() + 1);
+  const { error: planError } = await admin.from("installment_plans").insert({
+    profile_id: userId,
+    rsvp_id: rsvpId,
+    total_cents: total,
+    down_payment_cents: down,
+    installments: n,
+    paid_count: 1,
+    next_charge_at: next.toISOString(),
+    status: "active",
+  });
+  if (planError) return planError.message;
+  return null;
+}
+
 export async function confirmBerth(
   voyageId: string,
   addonIds: string[],
   guests: number,
-  guestNames: string[]
+  guestNames: string[],
+  promoCode?: string | null,
+  split?: number | null
 ): Promise<RsvpResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+
+  let promo: PromoOk | null = null;
+  let priced: PricedVoyage | null = null;
+  if (promoCode && promoCode.trim()) {
+    const checked = await validatePromo(supabase, promoCode, voyageId);
+    if ("reason" in checked) return { error: checked.reason };
+    const { data: voyage } = await supabase
+      .from("voyages")
+      .select("id, title, price_cents, deposit_required")
+      .eq("id", voyageId)
+      .maybeSingle();
+    if (!voyage) return { error: "That sailing is off the manifest." };
+    promo = checked;
+    priced = voyage;
+  }
 
   const clamped = clampGuests(guests);
   const { error } = await supabase
@@ -120,12 +206,13 @@ export async function confirmBerth(
         status: "aboard",
         guests: clamped,
         guest_names: cleanNames(guestNames, clamped),
+        ...(promo ? { promo_code: promo.code, comp: true } : {}),
       },
       { onConflict: "voyage_id,profile_id" }
     );
   if (error) return { error: guardMessage(error.message), full: isFullMessage(error.message) };
 
-  if (addonIds.length > 0) {
+  if (promo || addonIds.length > 0 || split) {
     const { data: rsvp } = await supabase
       .from("rsvps")
       .select("id, guests")
@@ -133,7 +220,11 @@ export async function confirmBerth(
       .eq("profile_id", userId)
       .maybeSingle();
 
-    if (rsvp) {
+    if (rsvp && promo && priced) {
+      const failed = await postDiscountedCharges(supabase, userId, priced, rsvp.id, promo);
+      if (failed) return { error: guardMessage(failed) };
+    }
+    if (rsvp && addonIds.length > 0) {
       const failed = await attachAddons(
         supabase,
         userId,
@@ -144,8 +235,14 @@ export async function confirmBerth(
       );
       if (failed) return { error: guardMessage(failed) };
     }
+    /* Last, so the split is drawn against every charge on the pass. */
+    if (rsvp && split) {
+      const failed = await splitIntoDraws(supabase, userId, voyageId, rsvp.id, split);
+      if (failed) return { error: guardMessage(failed) };
+    }
   }
 
+  revalidatePath("/account");
   revalidatePath("/portal");
   return done();
 }
@@ -225,5 +322,233 @@ export async function releaseBerth(voyageId: string): Promise<RsvpResult> {
     .eq("profile_id", userId);
   if (error) return { error: guardMessage(error.message) };
   revalidatePath("/portal");
+  return done();
+}
+
+/* ————————————————————————————————————————————————————————————————
+   Ticketing polish — waitlist auto-claim, pass hand-offs, codes, crew.
+   ———————————————————————————————————————————————————————————————— */
+
+/* — Waitlist auto-claim — */
+
+export async function setAutoClaim(voyageId: string, on: boolean): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase
+    .from("rsvps")
+    .update({ auto_claim: on })
+    .eq("voyage_id", voyageId)
+    .eq("profile_id", userId);
+  if (error) return { error: guardMessage(error.message) };
+  return done();
+}
+
+/* — Pass transfer, member to member. Never for cash. — */
+
+export async function offerPass(rsvpId: string, toProfile: string): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  if (!toProfile) return { error: "Choose the member taking it." };
+  if (toProfile === userId) return { error: "A pass cannot be handed to yourself." };
+
+  /* One live offer per pass — a standing offer is replaced, not stacked. */
+  const { data: standing } = await supabase
+    .from("pass_transfers")
+    .select("id")
+    .eq("rsvp_id", rsvpId)
+    .eq("from_profile", userId)
+    .eq("status", "offered");
+  if ((standing ?? []).length > 0) {
+    return { error: "That pass is already offered. Withdraw it first." };
+  }
+
+  const { error } = await supabase
+    .from("pass_transfers")
+    .insert({ rsvp_id: rsvpId, from_profile: userId, to_profile: toProfile, status: "offered" });
+  if (error) return { error: guardMessage(error.message) };
+  return done();
+}
+
+export async function withdrawOffer(transferId: string): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase
+    .from("pass_transfers")
+    .update({ status: "cancelled", responded_at: new Date().toISOString() })
+    .eq("id", transferId)
+    .eq("from_profile", userId)
+    .eq("status", "offered");
+  if (error) return { error: guardMessage(error.message) };
+  return done();
+}
+
+/* The RPC reassigns the pass, clears the code, squares both accounts and
+   posts the Word. Nothing to notify from here. */
+export async function acceptOffer(transferId: string): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase.rpc("accept_pass_transfer", { p_id: transferId });
+  if (error) return { error: guardMessage(error.message) };
+  revalidatePath("/portal");
+  return done();
+}
+
+export async function declineOffer(transferId: string): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase
+    .from("pass_transfers")
+    .update({ status: "declined", responded_at: new Date().toISOString() })
+    .eq("id", transferId)
+    .eq("to_profile", userId)
+    .eq("status", "offered");
+  if (error) return { error: guardMessage(error.message) };
+  return done();
+}
+
+/* — Codes at checkout — */
+
+export type PromoKind = "percent" | "amount" | "comp";
+export type PromoResult =
+  | { ok: true; code: string; kind: PromoKind; value: number; passCents: number }
+  | { ok: false; reason: string };
+
+type PromoOk = { code: string; kind: PromoKind; value: number };
+
+/* What the pass costs once the code bites. Percent trims the pass price;
+   amount takes cents off it; comp takes it to nothing. */
+function discountedPass(priceCents: number, kind: PromoKind, value: number): number {
+  if (kind === "comp") return 0;
+  if (kind === "percent") {
+    return Math.max(0, priceCents - Math.round((priceCents * value) / 100));
+  }
+  return Math.max(0, priceCents - Math.max(0, Math.round(value)));
+}
+
+/* Members cannot read promo_codes — only the RPC, which answers on-voice. */
+async function validatePromo(
+  supabase: Supa,
+  rawCode: string,
+  voyageId: string
+): Promise<PromoOk | { reason: string }> {
+  const code = rawCode.trim().toUpperCase();
+  if (!code) return { reason: "No such code." };
+  const { data, error } = await supabase.rpc("check_promo", {
+    p_code: code,
+    p_voyage: voyageId,
+  });
+  if (error) return { reason: guardMessage(error.message) };
+  const answer = (data ?? {}) as { ok?: boolean; kind?: string; value?: number; reason?: string };
+  if (!answer.ok) return { reason: answer.reason ?? "No such code." };
+  const kind: PromoKind =
+    answer.kind === "percent" || answer.kind === "comp" ? answer.kind : "amount";
+  return { code, kind, value: Number(answer.value ?? 0) };
+}
+
+export async function applyPromo(rawCode: string, voyageId: string): Promise<PromoResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { ok: false, reason: "Sign in first." };
+  const checked = await validatePromo(supabase, rawCode, voyageId);
+  if ("reason" in checked) return { ok: false, reason: checked.reason };
+
+  const { data: voyage } = await supabase
+    .from("voyages")
+    .select("price_cents")
+    .eq("id", voyageId)
+    .maybeSingle();
+  if (!voyage) return { ok: false, reason: "That sailing is off the manifest." };
+
+  return {
+    ok: true,
+    code: checked.code,
+    kind: checked.kind,
+    value: checked.value,
+    passCents: discountedPass(voyage.price_cents, checked.kind, checked.value),
+  };
+}
+
+type PricedVoyage = {
+  id: string;
+  title: string;
+  price_cents: number;
+  deposit_required: boolean;
+};
+
+/* With a code on the pass we set rsvps.comp so the aboard trigger prices
+   nothing, then post the discounted charge ourselves. Members may insert
+   negative 'berth'/'deposit' rows but not the positive 'credit' row a
+   compensating posting would need — this keeps the folio exact either way. */
+async function postDiscountedCharges(
+  supabase: Supa,
+  userId: string,
+  voyage: PricedVoyage,
+  rsvpId: string,
+  promo: PromoOk
+): Promise<string | null> {
+  const { data: already } = await supabase
+    .from("account_ledger")
+    .select("id")
+    .eq("rsvp_id", rsvpId)
+    .in("kind", ["berth", "deposit"]);
+  if ((already ?? []).length > 0) return null;
+
+  const net = discountedPass(voyage.price_cents, promo.kind, promo.value);
+  const rows: Array<{
+    profile_id: string;
+    delta_cents: number;
+    kind: string;
+    memo: string;
+    voyage_id: string;
+    rsvp_id: string;
+  }> = [];
+  if (net > 0) {
+    rows.push({
+      profile_id: userId,
+      delta_cents: -net,
+      kind: "berth",
+      memo: `${voyage.title} — code ${promo.code}`,
+      voyage_id: voyage.id,
+      rsvp_id: rsvpId,
+    });
+  }
+  if (voyage.deposit_required) {
+    rows.push({
+      profile_id: userId,
+      delta_cents: -5000,
+      kind: "deposit",
+      memo: "Pass deposit — credited to the galley aboard",
+      voyage_id: voyage.id,
+      rsvp_id: rsvpId,
+    });
+  }
+  if (rows.length === 0) return null;
+  const { error } = await supabase.from("account_ledger").insert(rows);
+  return error?.message ?? null;
+}
+
+/* — Crew forming — */
+
+export async function postCrewRequest(voyageId: string, note: string): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase
+    .from("crew_requests")
+    .upsert(
+      { voyage_id: voyageId, profile_id: userId, note: note.trim() || null, open: true },
+      { onConflict: "voyage_id,profile_id" }
+    );
+  if (error) return { error: guardMessage(error.message) };
+  return done();
+}
+
+export async function withdrawCrewRequest(voyageId: string): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase
+    .from("crew_requests")
+    .delete()
+    .eq("voyage_id", voyageId)
+    .eq("profile_id", userId);
+  if (error) return { error: guardMessage(error.message) };
   return done();
 }

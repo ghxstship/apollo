@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { BIO_MAX, INTERESTS } from "./interests";
 
 export type ProfileFormState = { saved?: boolean; error?: string };
 
@@ -22,8 +23,16 @@ export async function updateProfile(
   const handle = String(formData.get("handle") ?? "").trim();
   const homeHarbor = String(formData.get("home_harbor") ?? "");
   const avatarTone = String(formData.get("avatar_tone") ?? "ink");
+  const bio = String(formData.get("bio") ?? "").trim();
+  const allowed = new Set<string>(INTERESTS);
+  const interests = formData
+    .getAll("interests")
+    .map(String)
+    .filter((i) => allowed.has(i));
+  const inDirectory = formData.get("in_directory") === "on";
 
   if (!fullName) return { error: "A name for the manifest, at least." };
+  if (bio.length > BIO_MAX) return { error: `Keep it under ${BIO_MAX} characters.` };
 
   const { error } = await supabase
     .from("profiles")
@@ -32,6 +41,9 @@ export async function updateProfile(
       handle: handle || null,
       home_harbor: homeHarbor || null,
       avatar_tone: TONES.has(avatarTone) ? avatarTone : "ink",
+      bio: bio || null,
+      interests,
+      in_directory: inDirectory,
     })
     .eq("id", user.id);
 
@@ -40,6 +52,7 @@ export async function updateProfile(
   revalidatePath("/you");
   revalidatePath("/home-port");
   revalidatePath("/passbook");
+  revalidatePath("/directory");
   return { saved: true };
 }
 

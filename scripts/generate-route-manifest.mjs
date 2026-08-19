@@ -70,7 +70,10 @@ const routes = walk(appDir)
   })
   .sort((a, b) => a.path.localeCompare(b.path));
 
-const unsourced = routes.filter((r) => r.dynamic && !r.source);
+/* Only pages need a slug source — they are what the sitemap and the audit
+   expand. Dynamic route handlers (.ics feeds, stubs) are addressed by
+   secret or by code and are never enumerated. */
+const unsourced = routes.filter((r) => r.dynamic && !r.source && r.type === "page");
 if (unsourced.length) {
   console.warn(
     "route-manifest: dynamic routes without a slug source (add to DYNAMIC_SOURCES to include them in sitemap/audit):\n" +

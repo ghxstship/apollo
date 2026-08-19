@@ -3,6 +3,8 @@ import { Card, StateBlock } from "@/components/ds";
 import { EVENT_CLASS_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
 import { TIER_RANK, getMember, type Rsvp, type Voyage, type VoyageCapacity } from "../data";
 import { RsvpControls } from "./rsvp-controls";
+import type { CrewSeeker, GuestStub, MemberOption, StandingOffer } from "./pass-extras";
+import { TransferInbox, type IncomingOffer } from "./transfer-inbox";
 
 export const metadata: Metadata = { title: "Voyages" };
 
@@ -12,7 +14,18 @@ export default async function VoyagesPage() {
   const nowIso = now.toISOString();
   const nowMs = now.getTime();
 
-  const [voyagesRes, capacityRes, rsvpsRes, addonsRes, planRes, usageRes] = await Promise.all([
+  const [
+    voyagesRes,
+    capacityRes,
+    rsvpsRes,
+    addonsRes,
+    planRes,
+    usageRes,
+    positionRes,
+    transferRes,
+    crewRes,
+    rollRes,
+  ] = await Promise.all([
     supabase
       .from("voyages")
       .select("*")
@@ -26,6 +39,19 @@ export default async function VoyagesPage() {
       ? supabase.from("membership_plans").select("*").eq("id", profile.plan_id).maybeSingle()
       : Promise.resolve({ data: null }),
     supabase.from("member_pass_usage").select("*").eq("profile_id", user.id),
+    /* Where you stand on every list you're holding. */
+    supabase.from("waitlist_position").select("*").eq("profile_id", user.id),
+    /* Hand-offs in both directions, still standing. */
+    supabase.from("pass_transfers").select("*").eq("status", "offered"),
+    /* Everyone forming crew on the sailings ahead. */
+    supabase.from("crew_requests").select("*").eq("open", true),
+    /* The roll a pass may be handed to. */
+    supabase
+      .from("profiles")
+      .select("id, full_name, member_no, handle")
+      .eq("status", "active")
+      .neq("id", user.id)
+      .order("full_name", { ascending: true }),
   ]);
 
   const voyages: Voyage[] = voyagesRes.data ?? [];
@@ -47,14 +73,92 @@ export default async function VoyagesPage() {
   const aboardRsvpIds = (rsvpsRes.data ?? [])
     .filter((r) => r.status === "aboard")
     .map((r) => r.id);
-  const attachedRows =
+  const [attachedRes, guestRes] =
     aboardRsvpIds.length > 0
-      ? (await supabase.from("rsvp_addons").select("rsvp_id, addon_id").in("rsvp_id", aboardRsvpIds))
-          .data ?? []
-      : [];
+      ? await Promise.all([
+          supabase.from("rsvp_addons").select("rsvp_id, addon_id").in("rsvp_id", aboardRsvpIds),
+          supabase.from("rsvp_guests").select("*").in("rsvp_id", aboardRsvpIds),
+        ])
+      : [{ data: [] }, { data: [] }];
+  const attachedRows = attachedRes.data ?? [];
   const attachedByRsvp = new Map<string, string[]>();
   for (const row of attachedRows) {
     attachedByRsvp.set(row.rsvp_id, [...(attachedByRsvp.get(row.rsvp_id) ?? []), row.addon_id]);
+  }
+
+  /* Per-guest stubs — the manifest cuts these from guest_names by trigger. */
+  const guestsByRsvp = new Map<string, GuestStub[]>();
+  for (const g of guestRes.data ?? []) {
+    guestsByRsvp.set(g.rsvp_id, [
+      ...(guestsByRsvp.get(g.rsvp_id) ?? []),
+      { name: g.name, code: g.boarding_code },
+    ]);
+  }
+
+  /* Waitlist order, one line per list you're holding. */
+  const positionByVoyage = new Map<string, number>();
+  for (const p of positionRes.data ?? []) {
+    if (p.voyage_id && p.position != null) positionByVoyage.set(p.voyage_id, p.position);
+  }
+
+  /* The roll, for a hand-off and for putting names to crew requests. */
+  const roll = rollRes.data ?? [];
+  const nameOf = new Map<string, string>(
+    roll.map((p) => [p.id, p.full_name ?? "A member"] as const)
+  );
+  const handleOf = new Map<string, string | null>(roll.map((p) => [p.id, p.handle] as const));
+  const members: MemberOption[] = roll.map((p) => ({
+    id: p.id,
+    label: `${p.full_name ?? "A member"} · ${p.member_no ?? "LYR-0000"}`,
+  }));
+
+  /* Hand-offs: what you've offered, and what's been offered to you. */
+  const transfers = transferRes.data ?? [];
+  const offeredByRsvp = new Map<string, StandingOffer>();
+  for (const t of transfers) {
+    if (t.from_profile === user.id) {
+      offeredByRsvp.set(t.rsvp_id, { id: t.id, name: nameOf.get(t.to_profile) ?? "A member" });
+    }
+  }
+  const inboundRows = transfers.filter((t) => t.to_profile === user.id);
+  let inbound: IncomingOffer[] = [];
+  if (inboundRows.length > 0) {
+    const { data: theirRsvps } = await supabase
+      .from("rsvps")
+      .select("id, voyage_id")
+      .in("id", inboundRows.map((t) => t.rsvp_id));
+    const voyageOfRsvp = new Map((theirRsvps ?? []).map((r) => [r.id, r.voyage_id] as const));
+    const wantedVoyages = Array.from(new Set((theirRsvps ?? []).map((r) => r.voyage_id)));
+    const { data: theirVoyages } = wantedVoyages.length
+      ? await supabase.from("voyages").select("id, title, starts_at").in("id", wantedVoyages)
+      : { data: [] as Array<{ id: string; title: string; starts_at: string }> };
+    const voyageById = new Map((theirVoyages ?? []).map((v) => [v.id, v] as const));
+    inbound = inboundRows.flatMap((t) => {
+      const voyage = voyageById.get(voyageOfRsvp.get(t.rsvp_id) ?? "");
+      if (!voyage) return [];
+      return [
+        {
+          id: t.id,
+          fromName: nameOf.get(t.from_profile) ?? "A member",
+          voyageTitle: voyage.title,
+          meta: `${logDate(voyage.starts_at)} · ${logTime(voyage.starts_at)}`,
+        },
+      ];
+    });
+  }
+
+  /* Crew forming — yours on one side, everyone else's on the other. */
+  const crewMineByVoyage = new Map<string, CrewSeeker>();
+  const crewOthersByVoyage = new Map<string, CrewSeeker[]>();
+  for (const c of crewRes.data ?? []) {
+    const seeker: CrewSeeker = {
+      id: c.id,
+      name: c.profile_id === user.id ? "You" : nameOf.get(c.profile_id) ?? "A member",
+      handle: c.profile_id === user.id ? null : handleOf.get(c.profile_id) ?? null,
+      note: c.note,
+    };
+    if (c.profile_id === user.id) crewMineByVoyage.set(c.voyage_id, seeker);
+    else crewOthersByVoyage.set(c.voyage_id, [...(crewOthersByVoyage.get(c.voyage_id) ?? []), seeker]);
   }
 
   /* Pass meter — this calendar month's usage against the plan allowance. */
@@ -74,6 +178,9 @@ export default async function VoyagesPage() {
   const earlyDays = plan?.early_days ?? 0;
 
   const myRank = TIER_RANK[profile?.tier ?? "regional"] ?? 0;
+
+  /* Split draws are written shoreside — offered only when the club can. */
+  const splitOffered = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   /* The single recommended pass: soonest open, unclaimed, within tier and window. */
   const recommendedId =
@@ -105,6 +212,8 @@ export default async function VoyagesPage() {
           {passMeter}
         </div>
       ) : null}
+
+      <TransferInbox offers={inbound} />
 
       {voyages.length === 0 ? (
         <div className="mbr-sec">
@@ -183,6 +292,15 @@ export default async function VoyagesPage() {
                       knotsOnCompletion={knotsOnCompletion}
                       fullCredit={start.getTime() - nowMs > 48 * 3600 * 1000}
                       boardingCode={r?.status === "aboard" ? r.boarding_code : null}
+                      rsvpId={r?.id ?? null}
+                      waitlistPosition={positionByVoyage.get(v.id) ?? null}
+                      autoClaim={r?.auto_claim ?? false}
+                      members={members}
+                      standingOffer={r ? offeredByRsvp.get(r.id) ?? null : null}
+                      guestStubs={r ? guestsByRsvp.get(r.id) ?? [] : []}
+                      crewMine={crewMineByVoyage.get(v.id) ?? null}
+                      crewSeekers={crewOthersByVoyage.get(v.id) ?? []}
+                      splitOffered={splitOffered}
                     />
                   }
                 >

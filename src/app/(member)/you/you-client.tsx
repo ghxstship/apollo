@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Button, Dialog, Input, Select, Switch, Toast } from "@/components/ds";
+import { Button, Checkbox, Dialog, Input, Select, Switch, Textarea, Toast } from "@/components/ds";
+import { BIO_MAX, INTERESTS } from "./interests";
 import {
   departClub,
   pauseMembership,
@@ -18,12 +19,18 @@ export function ProfileForm({
   homeHarbor,
   avatarTone,
   harbors,
+  bio,
+  interests,
+  inDirectory,
 }: {
   fullName: string;
   handle: string;
   homeHarbor: string;
   avatarTone: string;
   harbors: Array<{ value: string; label: string }>;
+  bio: string;
+  interests: string[];
+  inDirectory: boolean;
 }) {
   const [state, formAction, pending] = React.useActionState<ProfileFormState, FormData>(
     updateProfile,
@@ -60,6 +67,43 @@ export function ProfileForm({
             { value: "brass", label: "Brass" },
             { value: "sand", label: "Sand" },
           ]}
+        />
+      </div>
+      <div style={{ marginTop: 16 }}>
+        <Textarea
+          label="A few words"
+          name="bio"
+          rows={3}
+          maxLength={BIO_MAX}
+          defaultValue={bio}
+          placeholder="What you turn up for, and what you would rather be doing on the water."
+          hint={`Up to ${BIO_MAX} characters. Shown on your directory page.`}
+        />
+      </div>
+      <fieldset className="you-fs">
+        <legend className="you-h">Turns up for</legend>
+        <div className="you-checks">
+          {INTERESTS.map((i) => (
+            <Checkbox
+              key={i}
+              name="interests"
+              value={i}
+              label={i}
+              defaultChecked={interests.includes(i)}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <div className="you-row" style={{ paddingInline: 0 }}>
+        <div>
+          <b>List me in the directory</b>
+          <p>Off, and only you and the crew ashore can see your page.</p>
+        </div>
+        <Switch
+          name="in_directory"
+          defaultChecked={inDirectory}
+          label=""
+          aria-label="List me in the directory"
         />
       </div>
       <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>

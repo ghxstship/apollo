@@ -152,6 +152,13 @@ export default async function HarborPage() {
                 <span>MEMBERS ONLY · MIND THE CODE</span>
               </div>
             </Link>
+            <Link href="/directory" className="hbr-link">
+              <Icon name="Users" size={18} style={{ color: "var(--text-2)" }} />
+              <div>
+                <b>Directory</b>
+                <span>THE ROSTER · BY HARBOR AND LEAGUE</span>
+              </div>
+            </Link>
             <Link href="/portal" className="hbr-link">
               <Icon name="Compass" size={18} style={{ color: "var(--text-2)" }} />
               <div>

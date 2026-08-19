@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
 import { TIER_LABEL, roman } from "@/lib/format";
+import { PushControls } from "@/components/push-controls";
+import { PhoneField } from "@/components/phone-field";
 import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
@@ -74,6 +76,9 @@ export default async function YouPage() {
             homeHarbor={profile?.home_harbor ?? ""}
             avatarTone={profile?.avatar_tone ?? "ink"}
             harbors={(harbors ?? []).map((h) => ({ value: h.id, label: h.name }))}
+            bio={profile?.bio ?? ""}
+            interests={profile?.interests ?? []}
+            inDirectory={profile?.in_directory ?? true}
           />
         </div>
       </div>
@@ -99,6 +104,9 @@ export default async function YouPage() {
             berths={prefOn("berths", true)}
             fathoms={prefOn("fathoms", false)}
           />
+          <PushControls />
+          {/* Weather holds are the one message that must not wait in an inbox. */}
+          <PhoneField defaultValue={profile?.phone ?? null} verified={profile?.phone_verified ?? false} />
         </div>
       </div>
 

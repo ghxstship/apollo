@@ -132,6 +132,115 @@ async function routeMatrix(personas) {
   note("anon", "staff console redirects to gangway", anonStaff.status >= 300 && (anonStaff.headers.get("location") || "").includes("/gangway"), `got ${anonStaff.status}`);
 }
 
+/* ---------- C. parity features: messaging, transfers, codes, billing ---------- */
+async function parityRules(p) {
+  const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), stf = rest(p.staff);
+
+  /* One fixture exercises the whole confirm chain: a pass goes aboard, the
+     crew thread opens by trigger, the Word posts, and the push queue grows.
+     Members only ever see threads they belong to, so we need our own. */
+  const sslug = "e2e-signal-" + Date.now().toString(36);
+  const mkS = await stf.post("voyages", {
+    slug: sslug, title: "E2E signal sailing.", class: "sea", kind: "sea_day",
+    starts_at: new Date(Date.now() + 45 * 864e5).toISOString(),
+    berths_total: 4, price_cents: 0, min_tier: "regional", distance_nm: 5,
+  });
+  const svid = mkS.data?.[0]?.id;
+  note("staff", "creates the signal fixture", mkS.status === 201, `got ${mkS.status}`);
+
+  const pushBefore = ((await stf.get("push_outbox?select=id&limit=1000")).data || []).length;
+  const board = await glo.post("rsvps", { voyage_id: svid, profile_id: uid(p.global), status: "aboard" });
+  note("global", "boards the fixture", board.status === 201, `got ${board.status}`);
+  await new Promise((r) => setTimeout(r, 600));
+
+  const crew = await glo.get(`threads?voyage_id=eq.${svid}&kind=eq.crew&select=id`);
+  const tid = crew.data?.[0]?.id;
+  note("global", "a confirmed pass opens a crew thread", !!tid, JSON.stringify(crew.data).slice(0, 80));
+
+  // Fan-out is a trigger, not app code: the Word queued a push on its own.
+  const pushAfter = ((await stf.get("push_outbox?select=id&limit=1000")).data || []).length;
+  note("staff", "notifications fan out to push", pushAfter > pushBefore, `${pushBefore} → ${pushAfter}`);
+
+  if (tid) {
+    const said = await glo.post("messages", { thread_id: tid, author_id: uid(p.global), body: "Who has the midnight watch?" });
+    note("global", "writes into their own crew thread", said.status === 201, `got ${said.status}`);
+    // Whoever is not on that manifest sees nothing, even knowing the id.
+    const peek = await reg.get(`messages?thread_id=eq.${tid}&select=id`);
+    note("regional", "outsider cannot read a crew thread", (peek.data || []).length === 0, JSON.stringify(peek.data).slice(0, 60));
+    const forge = await reg.post("messages", { thread_id: tid, author_id: uid(p.regional), body: "Let me in." });
+    note("regional", "outsider cannot post into a crew thread", forge.status >= 400, `got ${forge.status}`);
+  }
+
+  // --- Direct threads: idempotent, and private to the two of them ---
+  const open1 = await glo.rpc("open_direct_thread", { p_other: uid(p.national) });
+  const open2 = await glo.rpc("open_direct_thread", { p_other: uid(p.national) });
+  note("global", "opens a direct thread", open1.status === 200 && !!open1.data, `got ${open1.status}`);
+  note("global", "direct thread is idempotent", open1.data === open2.data, `${open1.data} vs ${open2.data}`);
+  if (open1.data) {
+    const said = await glo.post("messages", { thread_id: open1.data, author_id: uid(p.global), body: "Midnight watch is mine." });
+    note("global", "writes into own direct thread", said.status === 201, `got ${said.status}`);
+    const peek = await reg.get(`messages?thread_id=eq.${open1.data}&select=id`);
+    note("regional", "third party cannot read a direct thread", (peek.data || []).length === 0, JSON.stringify(peek.data).slice(0, 60));
+  }
+  const self = await glo.rpc("open_direct_thread", { p_other: uid(p.global) });
+  note("global", "cannot open a thread with themselves", self.status >= 400, `got ${self.status}`);
+
+  // --- Promo codes: validated by RPC, never readable ---
+  const readCodes = await glo.get("promo_codes?select=code&limit=1");
+  note("global", "promo codes are not member-readable", (readCodes.data || []).length === 0, JSON.stringify(readCodes.data).slice(0, 60));
+  const anyVoyage = await glo.get("voyages?select=id&limit=1");
+  const vid = anyVoyage.data?.[0]?.id;
+  const bad = await glo.rpc("check_promo", { p_code: "NOPE-NOT-A-CODE", p_voyage: vid });
+  note("global", "unknown code is refused", bad.data?.ok === false, JSON.stringify(bad.data));
+  const good = await glo.rpc("check_promo", { p_code: "FOUNDING", p_voyage: vid });
+  note("global", "a live code validates", good.data?.ok === true && good.data?.kind === "percent", JSON.stringify(good.data));
+  const anonCode = await rest(null).rpc("check_promo", { p_code: "FOUNDING", p_voyage: vid });
+  note("anon", "code checking is closed to anon", anonCode.status >= 400, `got ${anonCode.status}`);
+
+  // --- Per-guest credentials are generated, not hand-written ---
+  const guests = await glo.get("rsvp_guests?select=name,boarding_code&limit=3");
+  const coded = (guests.data || []).every((g) => /^LS-/.test(g.boarding_code || ""));
+  note("global", "guests carry their own codes", (guests.data || []).length > 0 && coded, JSON.stringify(guests.data).slice(0, 120));
+
+  // --- Waitlist position is visible and ordered ---
+  const wl = await glo.get("waitlist_position?select=position&limit=1");
+  note("global", "waitlist position view reads", wl.status === 200, `got ${wl.status}`);
+
+  // --- Billing: members read their own, write nothing ---
+  const subsRead = await glo.get("subscriptions?select=id&limit=1");
+  note("global", "reads own subscriptions", subsRead.status === 200, `got ${subsRead.status}`);
+  const subsWrite = await glo.post("subscriptions", { profile_id: uid(p.global), status: "active" });
+  note("global", "cannot grant themselves a membership", subsWrite.status >= 400, `got ${subsWrite.status}`);
+  const invOther = await reg.get(`invoices?profile_id=eq.${uid(p.global)}&select=id`);
+  note("regional", "cannot read another member's invoices", (invOther.data || []).length === 0, JSON.stringify(invOther.data).slice(0, 60));
+
+  // --- Staff-only ops surfaces stay staff-only ---
+  for (const [table, label] of [["saved_segments", "segments"], ["api_keys", "API keys"], ["webhooks", "webhooks"], ["automations", "automations"]]) {
+    const r = await glo.get(`${table}?select=id&limit=1`);
+    note("global", `cannot read ${label}`, (r.data || []).length === 0, `got ${r.status}`);
+  }
+  const stfSeg = await stf.get("saved_segments?select=id&limit=1");
+  note("staff", "staff read segments", stfSeg.status === 200 && Array.isArray(stfSeg.data), `got ${stfSeg.status}`);
+
+  // --- Push subscriptions are per-device and per-member ---
+  const pushMine = await glo.post("push_subscriptions", {
+    profile_id: uid(p.global), endpoint: `https://example.invalid/e2e-${Date.now()}`, p256dh: "x", auth: "y",
+  });
+  note("global", "registers a push endpoint", pushMine.status === 201, `got ${pushMine.status}`);
+  const pushTheirs = await reg.post("push_subscriptions", {
+    profile_id: uid(p.global), endpoint: `https://example.invalid/e2e-forge-${Date.now()}`, p256dh: "x", auth: "y",
+  });
+  note("regional", "cannot register a push endpoint for someone else", pushTheirs.status >= 400, `got ${pushTheirs.status}`);
+  if (pushMine.status === 201) {
+    await glo.del(`push_subscriptions?id=eq.${pushMine.data?.[0]?.id}`);
+  }
+
+  // Strike the fixture; the cascade takes the rsvp, thread and messages with it.
+  const rmS = await stf.del(`voyages?id=eq.${svid}`);
+  note("staff", "removes the signal fixture", rmS.status === 200 || rmS.status === 204, `got ${rmS.status}`);
+
+}
+
 /* ---------- B. business rules ---------- */
 async function businessRules(p) {
   const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global),
@@ -253,6 +362,7 @@ async function main() {
   }
   await routeMatrix(personas);
   await businessRules(personas);
+  await parityRules(personas);
 
   const passed = results.filter((r) => r.ok).length;
   writeFileSync(join(root, "e2e-report.json"), JSON.stringify({ base: BASE, checkedAt: new Date().toISOString(), passed, failed: failures.length, results }, null, 2));

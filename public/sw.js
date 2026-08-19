@@ -71,3 +71,62 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+/* — The word, pushed —
+   send-push delivers {title, body, url}; the outbox is filled by a trigger on
+   notifications. Anything unreadable still surfaces as a plain word. */
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  if (event.data) {
+    try {
+      payload = event.data.json() || {};
+    } catch {
+      payload = { body: event.data.text() };
+    }
+  }
+
+  const title = payload.title || "LYRE SOCIAL";
+  const url = payload.url || "/word";
+
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: payload.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      tag: payload.tag || url,
+      renotify: Boolean(payload.tag),
+      data: { url },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL(
+    (event.notification.data && event.notification.data.url) || "/word",
+    self.location.origin
+  );
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of clients) {
+        if (new URL(client.url).origin !== target.origin) continue;
+        await client.focus();
+        if ("navigate" in client && client.url !== target.href) {
+          try {
+            await client.navigate(target.href);
+          } catch {
+            /* Some browsers refuse navigate() — the focused window is enough. */
+          }
+        }
+        return;
+      }
+      await self.clients.openWindow(target.href);
+    })()
+  );
+});

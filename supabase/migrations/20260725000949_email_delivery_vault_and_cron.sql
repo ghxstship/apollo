@@ -53,6 +53,3 @@ select cron.schedule(
   'lore-digest-sundays', '0 16 * * 0',
   $$ select public.build_lore_digest() $$
 );
-
--- NOTE: the actual secret values (RESEND_API_KEY, OUTBOX_FROM) are inserted
--- into Vault operationally via vault.create_secret(), never in migrations.

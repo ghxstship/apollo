@@ -12,8 +12,11 @@ const LINKS = [
   ["/gateway", SURFACES.gateway],
   ["/manifest", "Voyages"],
   ["/open-deck", SURFACES.openDeck],
+  ["/directory", "Directory"],
+  ["/threads", "Threads"],
   ["/chandlery", "Chandlery"],
   ["/portal", "Portal"],
+  ["/account", "Account"],
   ["/passbook", SURFACES.passbook],
   ["/word", "Word"],
   ["/you", "You"],
@@ -76,6 +79,64 @@ function useUnreadWord(userId: string, initial: number): number {
   return count;
 }
 
+/* Live unread-thread count — threads holding a message newer than the
+   member's read line. Recounts on any message change. */
+function useUnreadThreads(userId: string): number {
+  const [count, setCount] = React.useState(0);
+  const topic = React.useId();
+  React.useEffect(() => {
+    const supabase = createClient();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let alive = true;
+    const recount = async () => {
+      const { data: mine } = await supabase
+        .from("thread_members")
+        .select("thread_id,last_read_at")
+        .eq("profile_id", userId);
+      if (!alive) return;
+      if (!mine || mine.length === 0) {
+        setCount(0);
+        return;
+      }
+      const { data: msgs } = await supabase
+        .from("messages")
+        .select("thread_id,created_at")
+        .in(
+          "thread_id",
+          mine.map((m) => m.thread_id)
+        );
+      if (!alive) return;
+      const latest = new Map<string, number>();
+      for (const m of msgs ?? []) {
+        const at = Date.parse(m.created_at);
+        if (at > (latest.get(m.thread_id) ?? 0)) latest.set(m.thread_id, at);
+      }
+      let n = 0;
+      for (const t of mine) {
+        const at = latest.get(t.thread_id);
+        if (at == null) continue;
+        if (!t.last_read_at || at > Date.parse(t.last_read_at)) n += 1;
+      }
+      setCount(n);
+    };
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => void recount(), 500);
+    };
+    void recount();
+    const channel = supabase
+      .channel(`threads-unread-${topic}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, schedule)
+      .subscribe();
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [userId, topic]);
+  return count;
+}
+
 function WordDot({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
@@ -98,6 +159,7 @@ export function MemberTopBar({
 }) {
   const pathname = usePathname();
   const unread = useUnreadWord(userId, unreadWord);
+  const unreadThreads = useUnreadThreads(userId);
   return (
     <header className="mbr-top">
       <div className="mbr-top__in">
@@ -113,6 +175,7 @@ export function MemberTopBar({
             >
               {label}
               {href === "/word" ? <WordDot count={unread} /> : null}
+              {href === "/threads" ? <WordDot count={unreadThreads} /> : null}
             </Link>
           ))}
           {isStaff ? (

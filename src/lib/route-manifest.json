@@ -4,7 +4,10 @@
     "/home-port",
     "/manifest",
     "/open-deck",
+    "/directory",
+    "/threads",
     "/portal",
+    "/account",
     "/passbook",
     "/word",
     "/you",
@@ -22,6 +25,13 @@
       "access": "public"
     },
     {
+      "path": "/account",
+      "file": "src/app/(member)/account/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/api/aurora",
       "file": "src/app/api/aurora/route.ts",
       "type": "handler",
@@ -32,8 +42,48 @@
       "access": "public"
     },
     {
+      "path": "/api/calendar/[token]",
+      "file": "src/app/api/calendar/[token]/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": true,
+      "access": "public"
+    },
+    {
+      "path": "/api/calendar/voyage/[slug]",
+      "file": "src/app/api/calendar/voyage/[slug]/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": true,
+      "access": "public"
+    },
+    {
       "path": "/api/stripe/checkout",
       "file": "src/app/api/stripe/checkout/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/stripe/portal",
+      "file": "src/app/api/stripe/portal/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/stripe/subscribe",
+      "file": "src/app/api/stripe/subscribe/route.ts",
       "type": "handler",
       "methods": [
         "POST"
@@ -48,6 +98,13 @@
       "methods": [
         "POST"
       ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/apply-status",
+      "file": "src/app/(site)/apply-status/page.tsx",
+      "type": "page",
       "dynamic": false,
       "access": "public"
     },
@@ -86,6 +143,20 @@
       "access": "member"
     },
     {
+      "path": "/bridge/automations",
+      "file": "src/app/(staff)/bridge/automations/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/codes",
+      "file": "src/app/(staff)/bridge/codes/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/crew",
       "file": "src/app/(staff)/bridge/crew/page.tsx",
       "type": "page",
@@ -107,8 +178,29 @@
       "access": "member"
     },
     {
+      "path": "/bridge/keys",
+      "file": "src/app/(staff)/bridge/keys/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/manifests",
       "file": "src/app/(staff)/bridge/manifests/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/media",
+      "file": "src/app/(staff)/bridge/media/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/members",
+      "file": "src/app/(staff)/bridge/members/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -128,8 +220,22 @@
       "access": "member"
     },
     {
+      "path": "/bridge/referrals",
+      "file": "src/app/(staff)/bridge/referrals/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/reports",
       "file": "src/app/(staff)/bridge/reports/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/shoreside",
+      "file": "src/app/(staff)/bridge/shoreside/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -154,6 +260,20 @@
       "type": "page",
       "dynamic": false,
       "access": "public"
+    },
+    {
+      "path": "/directory",
+      "file": "src/app/(member)/directory/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/directory/[handle]",
+      "file": "src/app/(member)/directory/[handle]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "member"
     },
     {
       "path": "/gallery",
@@ -256,6 +376,20 @@
       "type": "page",
       "dynamic": false,
       "access": "public"
+    },
+    {
+      "path": "/threads",
+      "file": "src/app/(member)/threads/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/threads/[id]",
+      "file": "src/app/(member)/threads/[id]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "member"
     },
     {
       "path": "/voyages",

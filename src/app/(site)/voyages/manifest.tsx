@@ -20,6 +20,14 @@ export interface ManifestItem {
   passesLeft: number | null;
   seatsWord: string;
   blurb: string | null;
+  duration: string | null;
+  week: string;
+  fleet: string | null;
+  deposit: string | null;
+  harborId: string | null;
+  harborLabel: string | null;
+  monthKey: string;
+  startsMs: number;
 }
 
 const FILTERS: Array<{ id: string; label: string }> = [
@@ -28,64 +36,155 @@ const FILTERS: Array<{ id: string; label: string }> = [
   { id: "shore", label: "Port Day" },
 ];
 
+const MONTHS = [
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+  "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
+];
+
+function monthLabel(key: string, showYear: boolean): string {
+  const [year, month] = key.split("-");
+  const name = MONTHS[Number(month) - 1] ?? key;
+  return showYear ? `${name} ${year.slice(2)}` : name;
+}
+
 export function VoyageManifest({ items }: { items: ManifestItem[] }) {
   const [cls, setCls] = React.useState("all");
+  const [harbor, setHarbor] = React.useState("all");
+  const [month, setMonth] = React.useState("all");
+  const [sort, setSort] = React.useState<"soonest" | "furthest">("soonest");
+
+  /* Controls read the calendar rather than a hardcoded list — a harbor or a
+     month appears only once something is actually sailing from it. */
+  const harborOptions = React.useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const v of items) {
+      if (v.harborId && v.harborLabel && !seen.has(v.harborId)) {
+        seen.set(v.harborId, v.harborLabel);
+      }
+    }
+    return Array.from(seen, ([id, label]) => ({ id, label }));
+  }, [items]);
+
+  const monthOptions = React.useMemo(() => {
+    const keys = Array.from(new Set(items.map((v) => v.monthKey))).sort();
+    const spansYears = new Set(keys.map((k) => k.slice(0, 4))).size > 1;
+    return keys.map((key) => ({ id: key, label: monthLabel(key, spansYears) }));
+  }, [items]);
+
   /* Legacy sky-class rows read as Port Day. */
-  const list = items.filter(
-    (v) => cls === "all" || v.cls === cls || (cls === "shore" && v.cls === "sky")
-  );
+  const list = React.useMemo(() => {
+    const filtered = items.filter(
+      (v) =>
+        (cls === "all" || v.cls === cls || (cls === "shore" && v.cls === "sky")) &&
+        (harbor === "all" || v.harborId === harbor) &&
+        (month === "all" || v.monthKey === month)
+    );
+    return filtered.sort((a, b) =>
+      sort === "soonest" ? a.startsMs - b.startsMs : b.startsMs - a.startsMs
+    );
+  }, [items, cls, harbor, month, sort]);
 
   return (
     <>
-      <div className="ws-vfilters">
-        {FILTERS.map((f) => (
-          <Tag key={f.id} active={cls === f.id} onClick={() => setCls(f.id)}>
-            {f.label}
+      <div className="ws-vcontrols">
+        <div className="ws-vfilters">
+          <span className="ws-vfilters__label">Class</span>
+          {FILTERS.map((f) => (
+            <Tag key={f.id} active={cls === f.id} onClick={() => setCls(f.id)}>
+              {f.label}
+            </Tag>
+          ))}
+        </div>
+        {harborOptions.length > 1 ? (
+          <div className="ws-vfilters">
+            <span className="ws-vfilters__label">Harbor</span>
+            <Tag active={harbor === "all"} onClick={() => setHarbor("all")}>
+              All
+            </Tag>
+            {harborOptions.map((h) => (
+              <Tag key={h.id} active={harbor === h.id} onClick={() => setHarbor(h.id)}>
+                {h.label}
+              </Tag>
+            ))}
+          </div>
+        ) : null}
+        {monthOptions.length > 1 ? (
+          <div className="ws-vfilters">
+            <span className="ws-vfilters__label">Month</span>
+            <Tag active={month === "all"} onClick={() => setMonth("all")}>
+              All
+            </Tag>
+            {monthOptions.map((m) => (
+              <Tag key={m.id} active={month === m.id} onClick={() => setMonth(m.id)}>
+                {m.label}
+              </Tag>
+            ))}
+          </div>
+        ) : null}
+        <div className="ws-vfilters">
+          <span className="ws-vfilters__label">Sort</span>
+          <Tag active={sort === "soonest"} onClick={() => setSort("soonest")}>
+            Soonest
           </Tag>
-        ))}
+          <Tag active={sort === "furthest"} onClick={() => setSort("furthest")}>
+            Furthest out
+          </Tag>
+        </div>
       </div>
       <div style={{ padding: "32px 0 96px" }}>
-        {list.map((v) => (
-          <Link
-            key={v.id}
-            href={`/voyages/${v.slug}`}
-            style={{ color: "inherit", textDecoration: "none", display: "block" }}
-          >
-            <div className="ws-vrow">
-              <div className="ws-vrow__date">
-                <b>{v.date}</b>
-                {v.time}
-              </div>
-              <div>
-                <span className="ls-eyebrow ws-vrow__eyebrow">
-                  {v.clsLabel}
-                  {v.kindLabel ? ` · ${v.kindLabel}` : ""}
-                </span>
-                <div className="ws-vrow__title">
-                  {v.title}
-                  {v.status === "weather_hold" ? <Badge tone="clay">Weather hold</Badge> : null}
-                  {v.passesLeft === 0 ? <Badge tone="clay">Full</Badge> : null}
+        {list.map((v) => {
+          const meta = [
+            v.coordinates,
+            v.distance,
+            v.duration,
+            v.week,
+            v.fleet,
+            v.passesLeft != null && v.passesLeft > 0
+              ? `${v.passesLeft} ${v.seatsWord} left`
+              : null,
+            v.deposit,
+          ].filter((m): m is string => Boolean(m));
+          return (
+            <Link
+              key={v.id}
+              href={`/voyages/${v.slug}`}
+              style={{ color: "inherit", textDecoration: "none", display: "block" }}
+            >
+              <div className="ws-vrow">
+                <div className="ws-vrow__date">
+                  <b>{v.date}</b>
+                  {v.time}
                 </div>
-                <div className="ws-vrow__meta">
-                  {v.coordinates ? <span>{v.coordinates}</span> : null}
-                  {v.distance ? <span>· {v.distance}</span> : null}
-                  {v.passesLeft != null && v.passesLeft > 0 ? (
-                    <span>
-                      · {v.passesLeft} {v.seatsWord} left
-                    </span>
-                  ) : null}
+                <div>
+                  <span className="ls-eyebrow ws-vrow__eyebrow">
+                    {v.clsLabel}
+                    {v.kindLabel ? ` · ${v.kindLabel}` : ""}
+                  </span>
+                  <div className="ws-vrow__title">
+                    {v.title}
+                    {v.status === "weather_hold" ? <Badge tone="clay">Weather hold</Badge> : null}
+                    {v.passesLeft === 0 ? <Badge tone="clay">Full</Badge> : null}
+                  </div>
+                  <div className="ws-vrow__meta">
+                    {meta.map((m, i) => (
+                      <span key={`${i}-${m}`}>
+                        {i > 0 ? "· " : ""}
+                        {m}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="ws-vrow__act">
+                  {v.status === "live" ? (
+                    <span className="ls-live ws-live-label">Underway</span>
+                  ) : (
+                    <span className="ws-vrow__price">{v.price}</span>
+                  )}
                 </div>
               </div>
-              <div className="ws-vrow__act">
-                {v.status === "live" ? (
-                  <span className="ls-live ws-live-label">Underway</span>
-                ) : (
-                  <span className="ws-vrow__price">{v.price}</span>
-                )}
-              </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
         {list.length === 0 ? (
           <p style={{ padding: "48px 0", color: "var(--text-3)" }}>
             Nothing under that flag this season. Loosen the filters.

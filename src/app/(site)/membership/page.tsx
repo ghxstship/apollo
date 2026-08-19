@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Badge } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
 import { TAGLINE } from "@/lib/brand";
 import { price } from "@/lib/format";
+import { stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/lib/supabase/types";
 import { ApplyForm } from "./apply-form";
+import { JoinControl } from "./join-control";
 
 export const metadata: Metadata = {
   title: "Membership",
@@ -45,11 +48,23 @@ const KNOTS: Array<[string, string]> = [
 
 export default async function MembershipPage() {
   const supabase = await createClient();
-  const { data: plans } = await supabase
-    .from("membership_plans")
-    .select("*")
-    .eq("active", true)
-    .order("tier", { ascending: true });
+  const [{ data: plans }, { data: auth }] = await Promise.all([
+    supabase
+      .from("membership_plans")
+      .select("*")
+      .eq("active", true)
+      .order("tier", { ascending: true }),
+    supabase.auth.getUser(),
+  ]);
+
+  /* Signed-in members can take a standing from the grid itself; everyone else
+     keeps the application flow below it. */
+  const user = auth?.user ?? null;
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("plan_id").eq("id", user.id).maybeSingle()
+    : { data: null };
+  const duesOpen = Boolean(user) && stripeEnabled();
+  const heldPlanId = profile?.plan_id ?? null;
 
   const byCell = new Map<string, Plan>();
   for (const p of plans ?? []) byCell.set(`${p.plan_type}-${p.tier}`, p);
@@ -116,6 +131,14 @@ export default async function MembershipPage() {
                       {p.class_ceiling ? (
                         <span className="ws-plans__note">{CEILING_NOTE[p.class_ceiling]}</span>
                       ) : null}
+                      {duesOpen && p.price_cents > 0 ? (
+                        <JoinControl
+                          planId={p.id}
+                          action={
+                            p.id === heldPlanId ? "current" : heldPlanId ? "switch" : "join"
+                          }
+                        />
+                      ) : null}
                     </>
                   ) : (
                     <span className="ws-plans__dash">—</span>
@@ -155,6 +178,10 @@ export default async function MembershipPage() {
           one Port Day as a guest usually settles it.
         </p>
         <ApplyForm />
+        <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 20 }}>
+          Applied already? <Link href="/apply-status">Read where you stand</Link> — four
+          stages, no silence.
+        </p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Shoreside",
@@ -11,7 +12,7 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
     [
       [
         "I applied. Now what?",
-        "A person reads it, a Port Day invite follows within the week, two members sign, and you're aboard. No black box.",
+        "A person reads it, a Port Day invite follows within the week, two members sign, and you're aboard. No black box — read where you stand at any hour on the application status page.",
       ],
       [
         "Can I visit before joining?",
@@ -96,6 +97,13 @@ export default function SupportPage() {
             <p style={{ marginTop: 10 }}>
               Press and partnerships:{" "}
               <a href="mailto:signal@lyre.social">signal@lyre.social</a>
+            </p>
+          </div>
+          <div>
+            <b>Applicants</b>
+            <p>
+              <Link href="/apply-status">Where your application stands</Link> — four
+              stages, read it any hour. Shoreside answers the rest.
             </p>
           </div>
           <div>

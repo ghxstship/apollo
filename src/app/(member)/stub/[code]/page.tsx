@@ -44,14 +44,19 @@ export default async function StubPage({
   const { code } = await params;
   const { supabase, user, profile } = await getMember();
 
-  const { data: rsvp } = await supabase
-    .from("rsvps")
-    .select("*")
-    .eq("boarding_code", code)
-    .maybeSingle();
+  /* A code is either a member's own pass or one of their guests'. */
+  const [memberPassRes, guestRes] = await Promise.all([
+    supabase.from("rsvps").select("*").eq("boarding_code", code).maybeSingle(),
+    supabase.from("rsvp_guests").select("*").eq("boarding_code", code).maybeSingle(),
+  ]);
+  const guest = memberPassRes.data ? null : guestRes.data;
+  const { data: rsvp } = guest
+    ? await supabase.from("rsvps").select("*").eq("id", guest.rsvp_id).maybeSingle()
+    : memberPassRes;
 
-  /* Members read the whole manifest; the stub is yours alone. */
-  if (!rsvp || rsvp.profile_id !== user.id) {
+  /* Members read the whole manifest; a stub belongs to its host alone. */
+  const isStaff = profile?.is_staff ?? false;
+  if (!rsvp || (rsvp.profile_id !== user.id && !isStaff)) {
     return (
       <div className="mbr-sec">
         <StateBlock
@@ -63,6 +68,16 @@ export default async function StubPage({
       </div>
     );
   }
+
+  /* Staff read any stub; the host's own details head it either way. */
+  const { data: host } =
+    rsvp.profile_id === user.id
+      ? { data: profile }
+      : await supabase
+          .from("profiles")
+          .select("full_name, member_no, tier")
+          .eq("id", rsvp.profile_id)
+          .maybeSingle();
 
   const [voyageRes, capRes, addonRowsRes] = await Promise.all([
     supabase.from("voyages").select("*").eq("id", rsvp.voyage_id).maybeSingle(),
@@ -96,9 +111,9 @@ export default async function StubPage({
   const aboard = capRes.data?.aboard ?? 0;
   const berthsTotal = capRes.data?.berths_total ?? voyage.berths_total;
   const qr = await qrDataUrl(code);
-  const name = profile?.full_name ?? "A member";
-  const memberNo = profile?.member_no ?? "LYR-0000";
-  const tier = TIER_LABEL[profile?.tier ?? "regional"] ?? "Regional";
+  const name = host?.full_name ?? "A member";
+  const memberNo = host?.member_no ?? "LYR-0000";
+  const tier = TIER_LABEL[host?.tier ?? "regional"] ?? "Regional";
 
   return (
     <div className="crd ls-fade">
@@ -117,7 +132,7 @@ export default async function StubPage({
               className="mbr-mono"
               style={{ color: "var(--text-inverse-2)", letterSpacing: ".18em" }}
             >
-              BOARDING STUB
+              {guest ? "GUEST STUB" : "BOARDING STUB"}
             </span>
             <Badge tone="brass" inverse>
               {tier}
@@ -139,7 +154,14 @@ export default async function StubPage({
             <Row label="DEPARTS" value={`${logDate(voyage.starts_at)} · ${logTime(voyage.starts_at)}`} />
             <Row label="MUSTER" value={voyage.muster ?? "GANGWAY B-12"} />
             <Row label="MANIFEST" value={`${aboard}/${berthsTotal} ABOARD`} />
-            <Row label="MEMBER" value={`${name.toUpperCase()} · ${memberNo}`} />
+            {guest ? (
+              <>
+                <Row label="GUEST" value={guest.name.toUpperCase()} />
+                <Row label="GUEST OF" value={`${name.toUpperCase()} · ${memberNo}`} />
+              </>
+            ) : (
+              <Row label="MEMBER" value={`${name.toUpperCase()} · ${memberNo}`} />
+            )}
             <Row label="CODE" value={code} />
             {purchased.length > 0 ? (
               <Row

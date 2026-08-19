@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { CopyLink } from "@/components/copy-link";
 import { Badge, Wordmark } from "@/components/ds";
 import { SURFACES } from "@/lib/brand";
 import { TIER_LABEL, roman } from "@/lib/format";
@@ -25,6 +27,14 @@ export default async function PassbookPage() {
     ? new Date(profile.joined_at).getFullYear()
     : new Date().getFullYear();
   const qr = await qrDataUrl(memberNo);
+
+  /* Season feed — public by secret, so the address is the whole key. */
+  const head = await headers();
+  const host = head.get("x-forwarded-host") ?? head.get("host") ?? "lyre.social";
+  const proto = head.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const feedPath = profile?.calendar_token ? `/api/calendar/${profile.calendar_token}` : null;
+  const feedUrl = feedPath ? `${proto}://${host}${feedPath}` : null;
+  const webcalUrl = feedPath ? `webcal://${host}${feedPath}` : null;
 
   return (
     <div className="crd ls-fade">
@@ -74,12 +84,68 @@ export default async function PassbookPage() {
       <div className="crd-acts">
         <PrintButton label="Print or save" />
       </div>
+
+      {feedUrl && webcalUrl ? (
+        <section
+          className="crd-feed"
+          style={{
+            marginTop: 34,
+            width: "min(480px, 100%)",
+            background: "var(--surface-card)",
+            border: "1px solid var(--line-faint)",
+            padding: "18px 20px",
+          }}
+        >
+          <span className="mbr-eyebrow" style={{ display: "block", color: "var(--text-3)" }}>
+            Subscribe to your season
+          </span>
+          <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 8, maxWidth: "44ch" }}>
+            Every sailing you are confirmed on, in your own calendar, kept current as the
+            season moves. Subscribe once — new passes arrive on their own.
+          </p>
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              border: "1px solid var(--line-faint)",
+              padding: "8px 8px 8px 12px",
+            }}
+          >
+            <span
+              className="mbr-mono"
+              style={{
+                flex: 1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                textTransform: "none",
+              }}
+            >
+              {webcalUrl}
+            </span>
+            <CopyLink value={webcalUrl} label="Copy" toast="Season feed address copied." />
+          </div>
+          <div style={{ marginTop: 12, display: "flex", gap: 16, alignItems: "center" }}>
+            <a href={webcalUrl} className="mbr-mono" style={{ textTransform: "none" }}>
+              Add to calendar
+            </a>
+            <a href={feedUrl} className="mbr-mono" style={{ textTransform: "none" }}>
+              Download the file
+            </a>
+          </div>
+          <p className="mbr-mono" style={{ marginTop: 12 }}>
+            THIS ADDRESS IS YOURS ALONE — ANYONE HOLDING IT READS YOUR SEASON
+          </p>
+        </section>
+      ) : null}
       {/* Print: the card alone, edge to edge, colors exact. */}
       <style>{`
         @media print {
           @page { margin: 12mm; }
           body { background: #fff !important; }
-          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts { display: none !important; }
+          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts, .crd-feed { display: none !important; }
           .mbr-shell, .mbr-main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
           .crd { padding: 0 !important; }
           .ls-fade { animation: none !important; opacity: 1 !important; }
