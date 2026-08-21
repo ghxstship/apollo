@@ -1,0 +1,8 @@
+/* The gangway kiosk — one thing on screen at a time, 48px+ targets, noir. */
+.kio{min-height:100vh;min-height:100dvh;background:var(--surface-page);color:var(--text-1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:48px 24px;text-align:center}
+.kio h1{font-family:var(--font-display);font-weight:400;font-size:clamp(30px,5vw,52px);max-width:16ch}
+.kio p{font-size:18px;line-height:1.6;color:var(--text-2);max-width:38ch}
+.kio-mono{font-family:var(--font-mono);font-size:11px;letter-spacing:.16em;color:var(--text-3);text-transform:uppercase}
+.kio-cam{width:min(440px,90vw);border:1px solid var(--border-gold);border-radius:var(--radius-md);overflow:hidden}
+.kio .ls-btn{min-height:48px;min-width:220px}
+.kio[data-refused="1"] h1{color:var(--danger)}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { chooseCabin } from "./actions";
 import { Badge, Button, Checkbox, Dialog, Input, Stepper, Tag } from "@/components/ds";
 import { price } from "@/lib/format";
 import { confirmBerth, improvePass, releaseBerth, setGuests, setRsvpStatus } from "./actions";
@@ -94,6 +95,8 @@ export function RsvpControls({
   members,
   standingOffer,
   guestStubs,
+  cabins,
+  cabinId,
   crewMine,
   crewSeekers,
   splitOffered,
@@ -131,6 +134,8 @@ export function RsvpControls({
   standingOffer: StandingOffer | null;
   /* Guest stubs cut by the manifest once names are saved. */
   guestStubs: GuestStub[];
+  cabins: Array<{ id: string; name: string; premiumCents: number; left: number }>;
+  cabinId: string | null;
   /* Your own open crew request on this sailing. */
   crewMine: CrewSeeker | null;
   /* Other members looking for crew — shown once you are aboard. */
@@ -307,6 +312,34 @@ export function RsvpControls({
             Release pass
           </Button>
           <GuestStubs guests={guestStubs} />
+          {cabins.length > 0 ? (
+            <div style={{ marginTop: 14 }}>
+              <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
+                YOUR CABIN
+              </span>
+              <select
+                aria-label="Choose a cabin"
+                className="ls-input"
+                defaultValue={cabinId ?? ""}
+                style={{ minHeight: 44, width: "100%" }}
+                onChange={(e) => {
+                  const v = e.target.value || null;
+                  void chooseCabin(voyageId, v).then((r) => {
+                    if (r.error) alert(r.error);
+                  });
+                }}
+              >
+                <option value="">Assigned at the dock</option>
+                {cabins.map((c) => (
+                  <option key={c.id} value={c.id} disabled={c.left <= 0 && c.id !== cabinId}>
+                    {c.name}
+                    {c.premiumCents > 0 ? ` — +$${(c.premiumCents / 100).toFixed(0)}` : ""}
+                    {c.left <= 0 && c.id !== cabinId ? " — taken" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           {crewSeekers.length > 0 || crewMine ? (
             <CrewCall
               voyageId={voyageId}

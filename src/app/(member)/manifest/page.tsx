@@ -95,6 +95,18 @@ export default async function VoyagesPage() {
     : { data: [] };
   const signedGuests = new Set((guestSigs ?? []).map((s) => s.guest_id));
 
+  /* Cabin plans for my assigned hulls, with live remaining-berth counts. */
+  const myVesselIds = [...new Set(
+    (rsvpsRes.data ?? []).filter((r) => r.status === "aboard" && r.vessel_id).map((r) => r.vessel_id as string)
+  )];
+  const { data: cabinRows } = myVesselIds.length
+    ? await supabase.from("cabins").select("*").in("vessel_id", myVesselIds).eq("active", true).order("position")
+    : { data: [] };
+  const cabinIds = (cabinRows ?? []).map((c) => c.id);
+  const { data: cabinClaims } = cabinIds.length
+    ? await supabase.from("rsvps").select("cabin_id, voyage_id").in("cabin_id", cabinIds).eq("status", "aboard")
+    : { data: [] };
+
   const guestsByRsvp = new Map<string, GuestStub[]>();
   for (const g of guestRes.data ?? []) {
     guestsByRsvp.set(g.rsvp_id, [
@@ -314,6 +326,23 @@ export default async function VoyagesPage() {
                       crewMine={crewMineByVoyage.get(v.id) ?? null}
                       crewSeekers={crewOthersByVoyage.get(v.id) ?? []}
                       splitOffered={splitOffered}
+                      cabins={
+                        r?.status === "aboard" && r.vessel_id
+                          ? (cabinRows ?? [])
+                              .filter((c) => c.vessel_id === r.vessel_id)
+                              .map((c) => ({
+                                id: c.id,
+                                name: c.name,
+                                premiumCents: c.premium_cents,
+                                left:
+                                  c.berths -
+                                  (cabinClaims ?? []).filter(
+                                    (cl) => cl.cabin_id === c.id && cl.voyage_id === v.id
+                                  ).length,
+                              }))
+                          : []
+                      }
+                      cabinId={r?.cabin_id ?? null}
                     />
                   }
                 >

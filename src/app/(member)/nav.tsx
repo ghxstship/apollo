@@ -13,6 +13,8 @@ const LINKS = [
   ["/manifest", "Voyages"],
   ["/booth", SURFACES.openDeck],
   ["/directory", "Directory"],
+  ["/tables", "Tonight"],
+  ["/matches", "Matches"],
   ["/regattas", LOGBOOK.regattas],
   ["/threads", "Threads"],
   ["/slop-chest", "Slop Chest"],

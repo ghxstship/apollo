@@ -62,7 +62,7 @@ export default async function ManifestsPage({
   const { data: profilesData } = profileIds.length
     ? await supabase
         .from("profiles")
-        .select("id, full_name, member_no, avatar_tone")
+        .select("id, full_name, member_no, avatar_tone, on_camera")
         .in("id", profileIds)
     : { data: [] };
   const profiles = new Map((profilesData ?? []).map((p) => [p.id, p]));
@@ -133,6 +133,7 @@ export default async function ManifestsPage({
       status: r.status as "aboard" | "waitlist",
       checkedInAt: r.checked_in_at,
       waiverMissing: !(waiverCurrent.get(r.profile_id) ?? false),
+      offCamera: p ? p.on_camera === false : false,
       vesselId: r.vessel_id,
     };
   });

@@ -26,7 +26,7 @@ const STEPS: Array<[string, string]> = [
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const [{ data: voyages }, { data: capacity }, { data: harbors }, { data: posts }] =
+  const [{ data: voyages }, { data: capacity }, { data: harbors }, { data: posts }, { data: episodes }] =
     await Promise.all([
       supabase
         .from("voyages")
@@ -40,6 +40,12 @@ export default async function HomePage() {
         .select("*")
         .order("published_at", { ascending: false })
         .limit(2),
+      supabase
+        .from("episodes")
+        .select("*")
+        .eq("state", "published")
+        .order("number", { ascending: true })
+        .limit(3),
     ]);
 
   const capacityById = new Map(
@@ -193,7 +199,7 @@ export default async function HomePage() {
       <section className="ws-dispatch-teaser">
         <div className="ls-container">
           <SectionHeader
-            eyebrow="Episodes"
+            eyebrow="The show"
             title="What the cameras kept."
             aside={
               <LinkButton href="/episodes" variant="ghost">
@@ -201,6 +207,21 @@ export default async function HomePage() {
               </LinkButton>
             }
           />
+          {(episodes ?? []).length > 0 ? (
+            <div className="ls-grid-3" style={{ marginBottom: 28 }}>
+              {(episodes ?? []).map((ep, i) => (
+                <Card
+                  key={ep.id}
+                  media={(["day", "dusk", "dawn"] as const)[i % 3]}
+                  eyebrow={`EPISODE ${String(ep.number).padStart(2, "0")}`}
+                  title={ep.title}
+                  meta={ep.aired_at ? [logMeta(ep.aired_at)[0]] : []}
+                >
+                  {ep.dek}
+                </Card>
+              ))}
+            </div>
+          ) : null}
           <div>
             {(posts ?? []).map((p) => (
               <Link

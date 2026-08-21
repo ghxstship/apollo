@@ -15,7 +15,10 @@
     "/slop-chest",
     "/stub",
     "/regattas",
+    "/tables",
+    "/matches",
     "/agreements",
+    "/kiosk",
     "/bridge"
   ],
   "routes": [
@@ -381,6 +384,13 @@
       "access": "member"
     },
     {
+      "path": "/kiosk",
+      "file": "src/app/kiosk/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/legal",
       "file": "src/app/(site)/legal/page.tsx",
       "type": "page",
@@ -397,6 +407,13 @@
     {
       "path": "/manifest",
       "file": "src/app/(member)/manifest/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/matches",
+      "file": "src/app/(member)/matches/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -461,6 +478,13 @@
       "type": "page",
       "dynamic": false,
       "access": "public"
+    },
+    {
+      "path": "/tables",
+      "file": "src/app/(member)/tables/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
     },
     {
       "path": "/threads",

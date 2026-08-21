@@ -225,6 +225,7 @@ export type RosterRow = {
   status: "aboard" | "waitlist";
   checkedInAt: string | null;
   waiverMissing: boolean;
+  offCamera: boolean;
   vesselId: string | null;
   [key: string]: unknown;
 };
@@ -348,6 +349,7 @@ export function RosterTable({
             </Badge>
           ) : null}
           {r.waiverMissing ? <Badge tone="caution">Waiver missing</Badge> : null}
+          {r.offCamera ? <Badge tone="outline">Off camera</Badge> : null}
         </span>
       ),
     },

@@ -1,4 +1,5 @@
 // send-outbox — drains public.email_outbox and delivers via Resend.
+// Syrius email system: ivory canvas, gold rule, producer voice.
 // No dependencies beyond fetch; talks to PostgREST directly with the service role key.
 
 type OutboxRow = {
@@ -20,7 +21,7 @@ let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
 /* Fallback only — the real sender is the OUTBOX_FROM row in Supabase Vault.
    Sending sits on atlvs.pro because Resend verifies one domain per plan and
    lyre.social is not registered yet. Moving it is one Vault update. */
-const DEFAULT_FROM = "LYRE SOCIAL — Shoreside <shore@atlvs.pro>";
+const DEFAULT_FROM = "SYRIUS SOCIAL — Shoreside <shore@atlvs.pro>";
 
 async function vaultSecret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
@@ -77,18 +78,22 @@ const SERIF = `'Marcellus', Georgia, 'Times New Roman', serif`;
 const MONO = `'Space Mono', 'Courier New', monospace`;
 
 function shell(bodyHtml: string, inverse = false): string {
-  const ink = inverse ? "#F2F2F4" : "#0B0B0C";
-  const paper = inverse ? "#0B0B0C" : "#F2F2F4";
-  const rule = inverse ? "#2A2A2E" : "#D8D8DC";
+  /* Kit email system: ivory canvas #E9E2D2, warm noir ink, a gold rule, mono
+     strap footer. Email-safe stack — Georgia serif, Courier mono. */
+  const ink = inverse ? "#F4EFE6" : "#161B21";
+  const paper = inverse ? "#101418" : "#E9E2D2";
+  const card = inverse ? "#161B21" : "#F4EFE6";
+  const rule = inverse ? "#3C2F1A" : "#B98A2F";
+  const muted = inverse ? "#9AA3AD" : "#6B6B70";
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper};padding:32px 0;">
 <tr><td align="center">
-<table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:${paper};color:${ink};font-family:${SERIF};">
-<tr><td style="padding:0 8px 24px;letter-spacing:0.28em;font-size:13px;color:${ink};">LYRE SOCIAL</td></tr>
-<tr><td style="padding:0 8px;border-top:1px solid ${rule};"></td></tr>
-<tr><td style="padding:28px 8px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
-<tr><td style="padding:0 8px;border-top:1px solid ${rule};"></td></tr>
-<tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:${inverse ? "#9A9AA0" : "#6B6B70"};">You're getting this because you're aboard. Preferences live in the member app.</td></tr>
-<tr><td style="padding:14px 8px 0;font-family:${MONO};font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${inverse ? "#9A9AA0" : "#6B6B70"};">Strike a chord.</td></tr>
+<table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:${card};color:${ink};font-family:${SERIF};">
+<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">SYRIUS SOCIAL</td></tr>
+<tr><td style="padding:0 24px;"><div style="border-top:2px solid ${rule};"></div></td></tr>
+<tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
+<tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>
+<tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:${muted};">You're getting this because you're on the cast. Preferences live in the member app.</td></tr>
+<tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${muted};">The unscripted social experiment.</td></tr>
 </table>
 </td></tr></table>`;
 }
@@ -113,7 +118,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     subject: "Come ashore once, as our guest.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">We read your application and we would like to meet you. Join us for one Port Day, as our guest, before anything is decided.</p>
+        `<p style="margin:0 0 16px;">We read your application and we would like to meet you. Join us for one Table, as our guest, before anything is decided.</p>
 <p style="margin:0;">Reply with a word and Shoreside will hold you a chair.</p>`,
     ),
   }),
@@ -121,7 +126,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     subject: "Welcome aboard.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">Your place in the club is set${p["tier"] ? ` at the ${esc(p["tier"])} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
+        `<p style="margin:0 0 16px;">Your place in the show is set${p["tier"] ? ` at the ${esc(p["tier"])} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
 <p style="margin:0;">The first hundred knots are already in your ledger.</p>`,
       true,
     ),
@@ -140,7 +145,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     ),
   }),
   "weather-hold": (p) => ({
-    subject: `Weather hold: ${String(p["voyage"] ?? "your sailing")}`,
+    subject: `Weather hold: ${String(p["voyage"] ?? "your charter")}`,
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">${esc(p["voyage"])} is held for weather. Your pass is safe and nothing is charged until we sail.</p>
@@ -156,10 +161,10 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     ),
   }),
   "voyage-cancelled": (p) => ({
-    subject: `Cancelled: ${String(p["voyage"] ?? "your sailing")}`,
+    subject: `Cancelled: ${String(p["voyage"] ?? "your charter")}`,
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">The club called it. ${esc(p["voyage"] ?? "Your sailing")} will not sail${p["starts_at"] ? ` — it was set for ${esc(when(p["starts_at"]))}` : ""}.</p>
+        `<p style="margin:0 0 16px;">The club called it. ${esc(p["voyage"] ?? "Your charter")} will not sail${p["starts_at"] ? ` — it was set for ${esc(when(p["starts_at"]))}` : ""}.</p>
 <p style="margin:0;">Your account is credited in full. The manifest holds the next open water.</p>`,
     ),
   }),
@@ -194,7 +199,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
           `<p style="margin:0 0 20px;">The season is closed. This is what the log holds.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${SERIF};font-size:15px;line-height:1.7;">
 ${row("Nautical miles", p["nm_logged"])}
-${row("Sailings", p["sailings"])}
+${row("Sailings", p["charters"])}
 ${row("Harbors", p["harbors"])}
 ${row("Crew met", p["crew_met"])}
 ${row("Knots banked", p["knots_earned"])}
@@ -220,12 +225,12 @@ ${row("Knots banked", p["knots_earned"])}
       )
       .join("");
     return {
-      subject: "LORE, Sundays.",
+      subject: "Episodes, Sundays.",
       html: shell(
         greet(p) +
-          `<p style="margin:0 0 16px;letter-spacing:0.22em;font-size:13px;">LORE</p>` +
+          `<p style="margin:0 0 16px;letter-spacing:0.22em;font-size:13px;">EPISODES</p>` +
           (list ||
-            `<p style="margin:0 0 16px;">This week's reading is up. LORE reads everything — the latest dispatches are in the member app.</p>`) +
+            `<p style="margin:0 0 16px;">This week's reading is up. Episodes keep what the cameras kept — the latest are in the member app.</p>`) +
           `<p style="margin:0;">Sunday, as always. The manifest rides along.</p>`,
       ),
     };
@@ -233,11 +238,12 @@ ${row("Knots banked", p["knots_earned"])}
 };
 
 // The Sunday digest was queued as "dispatch-digest" before the rebrand —
-// both keys render the LORE digest so queued rows still send.
+// legacy keys still render the Episodes digest so queued rows send.
 templates["dispatch-digest"] = templates["lore-digest"];
+templates["episode-digest"] = templates["lore-digest"];
 
 // "salon" is retired from the brand; rows queued under the old key still send
-// as the Port Day invite.
+// as the Table invite.
 templates["salon-invite"] = templates["port-invite"];
 
 function render(row: OutboxRow): Rendered {

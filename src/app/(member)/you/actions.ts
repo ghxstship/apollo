@@ -122,3 +122,25 @@ export async function departClub(): Promise<StatusResult> {
   await supabase.auth.signOut();
   redirect("/");
 }
+
+/* Standing filming consent. Withdrawal is a fact with a timestamp — the crew
+   sees it on the manifest, and production keeps you out of frame from the next
+   port. Turning it back on clears the withdrawal. */
+export async function setOnCamera(on: boolean): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      on_camera: on,
+      camera_withdrawn_at: on ? null : new Date().toISOString(),
+    })
+    .eq("id", user.id);
+  if (error) return { error: "That didn't land. Try again." };
+  revalidatePath("/you");
+  return {};
+}

@@ -147,6 +147,9 @@ async function sweep(p) {
   await stf.del("automations?name=like.E2E*");
   await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
   await stf.del("notifications?title=like.E2E*");
+  await stf.del("notifications?title=eq.A match, from your table");
+  await stf.del("dating_tables?number=eq.99");
+  await stf.del("voyages?slug=like.e2e-table-night-*");
 }
 
 /* ---------- E. schema invariants ----------
@@ -937,13 +940,110 @@ async function enforcementRules(p) {
   await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
 }
 
+/* ---------- M. Syrius: cabins, consent, tables, matches ----------
+   The rebrand's new objects. Dating privacy is the sharp edge: a pick is
+   private even from seatmates, and only mutuality surfaces anything. */
+async function syriusRules(p) {
+  const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), stf = rest(p.staff), anon = rest(null);
+
+  /* --- filming consent --- */
+  const offCam = await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { on_camera: false, camera_withdrawn_at: new Date().toISOString() });
+  note("regional", "may withdraw filming consent", (offCam.data || []).length === 1, `got ${offCam.status}`);
+  const backOn = await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { on_camera: true, camera_withdrawn_at: null });
+  note("regional", "may return to camera", (backOn.data || []).length === 1, `got ${backOn.status}`);
+  const otherCam = await reg.patch(`profiles?id=eq.${uid(p.global)}`, { on_camera: false });
+  note("regional", "cannot withdraw consent for another member", (otherCam.data || []).length === 0, `got ${otherCam.status}`);
+
+  /* Waiver v2 carries the cameras: the current published member waiver renders
+     the filming clause, and v1 signatures read as not current. */
+  const ver = await reg.rpc("published_version", { p_document_code: "member-waiver" });
+  const body = await reg.rpc("render_document", { p_document_version_id: ver.data, p_context: {} });
+  note("regional", "waiver v2 carries the filming release", /cameras run from boarding to docking/.test(body.data || ""), "clause present");
+
+  /* --- cabins --- */
+  const cabins = await anon.get("cabins?select=id,name&limit=3");
+  note("anon", "the cabin plan is public", (cabins.data || []).length > 0, `got ${cabins.status}`);
+  const priceMove = await reg.patch("cabins?active=eq.true", { premium_cents: 1 });
+  note("regional", "cannot reprice a cabin", priceMove.status >= 400 || (priceMove.data || []).length === 0, `got ${priceMove.status}`);
+
+  /* --- kiosk gate --- */
+  const kioskAnon = await page(null, "/kiosk");
+  note("anon", "the kiosk needs a signed-in device", kioskAnon.status >= 300, `got ${kioskAnon.status}`);
+  const kioskMember = await page(p.regional, "/kiosk");
+  note("regional", "the kiosk is crew-only", kioskMember.status >= 300 && (kioskMember.headers.get("location") || "").includes("/home"), `got ${kioskMember.status}`);
+  const kioskStaff = await page(p.staff, "/kiosk");
+  note("staff", "crew reach the kiosk", kioskStaff.status === 200, `got ${kioskStaff.status}`);
+
+  /* --- tables: hold, race, blindness --- */
+  const stamp = Date.now().toString(36);
+  const night = await stf.post("voyages", {
+    slug: `e2e-table-night-${stamp}`, title: "E2E table night.", class: "shore", kind: "port_day",
+    starts_at: new Date(Date.now() + 3 * 864e5).toISOString(),
+    berths_total: 24, price_cents: 0, min_tier: "regional",
+  });
+  const nightId = night.data?.[0]?.id;
+  const tbl = await stf.post("dating_tables", { voyage_id: nightId, number: 99, seats: 2 });
+  const tblId = tbl.data?.[0]?.id;
+  note("staff", "crew set a table", Boolean(tblId), `got ${tbl.status}`);
+
+  if (tblId) {
+    const seat1 = await reg.rpc("claim_table_seat", { p_table: tblId });
+    note("regional", "a seat holds for fifteen minutes", seat1.status < 400 && seat1.data, `got ${seat1.status}`);
+    const c1 = await reg.rpc("confirm_table_seat", { p_table: tblId });
+    note("regional", "the hold confirms", c1.status < 400, `got ${c1.status}`);
+
+    await nat.rpc("claim_table_seat", { p_table: tblId });
+    await nat.rpc("confirm_table_seat", { p_table: tblId });
+
+    const third = await glo.rpc("claim_table_seat", { p_table: tblId });
+    note("global", "a full table refuses the third chair", third.status >= 400, `got ${third.status}`);
+
+    /* Blindness: someone not at the table cannot read who is. */
+    const peek = await glo.get(`table_seats?table_id=eq.${tblId}&select=profile_id`);
+    note("global", "a blind table is blind from outside", (peek.data || []).length === 0, JSON.stringify(peek.data));
+
+    /* Picks refuse before the night starts. */
+    const early = await reg.post("table_picks", { table_id: tblId, picker: uid(p.regional), picked: uid(p.national) });
+    note("regional", "picks wait for the night to start", early.status >= 400, `got ${early.status}`);
+
+    await stf.patch(`voyages?id=eq.${nightId}`, { starts_at: new Date(Date.now() - 3600e3).toISOString() });
+
+    const pick1 = await reg.post("table_picks", { table_id: tblId, picker: uid(p.regional), picked: uid(p.national) });
+    note("regional", "a pick lands from a confirmed chair", pick1.status < 400, `got ${pick1.status}`);
+
+    /* Private until mutual — the picked party sees nothing yet. */
+    const unseen = await nat.get(`table_picks?table_id=eq.${tblId}&select=picker`);
+    note("national", "a pick is private until mutual", (unseen.data || []).length === 0, JSON.stringify(unseen.data));
+    const noMatchYet = await nat.get(`matches?table_id=eq.${tblId}&select=id`);
+    note("national", "no match before mutuality", (noMatchYet.data || []).length === 0, JSON.stringify(noMatchYet.data));
+
+    const pick2 = await nat.post("table_picks", { table_id: tblId, picker: uid(p.national), picked: uid(p.regional) });
+    note("national", "the return pick lands", pick2.status < 400, `got ${pick2.status}`);
+
+    const match = await reg.get(`matches?table_id=eq.${tblId}&select=id,profile_a,profile_b`);
+    note("regional", "mutuality makes the match", (match.data || []).length === 1, JSON.stringify(match.data));
+    const outsider = await glo.get(`matches?table_id=eq.${tblId}&select=id`);
+    note("global", "a match is only its two people's", (outsider.data || []).length === 0, JSON.stringify(outsider.data));
+
+    const stranger = await glo.post("table_picks", { table_id: tblId, picker: uid(p.global), picked: uid(p.regional) });
+    note("global", "no picking without a chair at the table", stranger.status >= 400, `got ${stranger.status}`);
+
+    await stf.del(`matches?table_id=eq.${tblId}`);
+    await stf.del(`table_picks?table_id=eq.${tblId}`);
+    await stf.del(`table_seats?table_id=eq.${tblId}`);
+    await stf.del(`dating_tables?id=eq.${tblId}`);
+  }
+  if (nightId) await stf.del(`rsvps?voyage_id=eq.${nightId}`);
+  if (nightId) await stf.del(`voyages?id=eq.${nightId}`);
+}
+
 /* ---------- A. route × role matrix ---------- */
 async function routeMatrix(personas) {
   const memberPages = manifest.routes.filter((r) => r.type === "page" && !r.dynamic && r.access === "member");
   for (const [name, s] of Object.entries(personas)) {
     for (const r of memberPages) {
       const res = await page(s, r.path);
-      const isStaffRoute = r.path.startsWith("/bridge");
+      const isStaffRoute = r.path.startsWith("/bridge") || r.path === "/kiosk";
       if (isStaffRoute && name !== "staff") {
         const loc = res.headers.get("location") || "";
         const ok = res.status >= 300 && res.status < 400 && loc.includes("/home");
@@ -1283,6 +1383,7 @@ async function main() {
   await moderationRules(personas);
   await documentRules(personas);
   await enforcementRules(personas);
+  await syriusRules(personas);
   await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;

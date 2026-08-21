@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CameraConsent } from "./camera-consent";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
 import { TIER_LABEL, roman } from "@/lib/format";
@@ -80,6 +81,13 @@ export default async function YouPage() {
             interests={profile?.interests ?? []}
             inDirectory={profile?.in_directory ?? true}
           />
+        </div>
+      </div>
+
+      <div>
+        <div className="you-h">The cameras</div>
+        <div className="you-sec">
+          <CameraConsent onCamera={profile?.on_camera ?? true} />
         </div>
       </div>
 

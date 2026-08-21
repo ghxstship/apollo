@@ -71,7 +71,7 @@
 .ws-upper{text-transform:uppercase}
 
 /* ————— home ————— */
-.ws-hero{background:var(--sea-dusk);color:var(--text-inverse-1);position:relative}
+.ws-hero{background:var(--scene-night);color:var(--text-inverse-1);position:relative}
 .ws-hero:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
 .ws-hero:after{content:"";position:absolute;inset:0;background:var(--scrim);pointer-events:none}
 .ws-hero__in{position:relative;z-index:1;min-height:600px;display:flex;flex-direction:column;justify-content:center;padding-top:64px;padding-bottom:48px}

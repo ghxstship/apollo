@@ -17,6 +17,7 @@ export type ProfileRow = {
   email: string | null; tier: MembershipTier; home_harbor: string | null; avatar_tone: string
   is_staff: boolean; joined_at: string; status: "active" | "paused" | "departed"
   notification_prefs: Json; plan_id: string | null
+  on_camera: boolean; camera_withdrawn_at: string | null
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }
@@ -34,11 +35,31 @@ export type VoyageRow = {
   sub_class: "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland" | null
   itinerary: Json
 }
+export type DatingTableRow = {
+  id: string; voyage_id: string; number: number; seats: number
+}
+export type TableSeatRow = {
+  table_id: string; profile_id: string; state: "held" | "confirmed"
+  held_until: string; created_at: string
+}
+export type TablePickRow = { table_id: string; picker: string; picked: string; created_at: string }
+export type MatchRow = {
+  id: string; table_id: string; profile_a: string; profile_b: string; created_at: string
+}
+export type CabinRow = {
+  id: string; vessel_id: string; name: string; berths: number
+  premium_cents: number; position: number; active: boolean
+}
+export type EpisodeRow = {
+  id: string; voyage_id: string | null; number: number; slug: string
+  title: string; dek: string | null; state: "draft" | "published"; aired_at: string | null
+}
 export type RsvpRow = {
   id: string; voyage_id: string; profile_id: string; status: RsvpStatus; guests: number
   created_at: string; checked_in_at: string | null; checked_in_by: string | null
   boarding_code: string | null; show_on_manifest: boolean; vessel_id: string | null
   comp: boolean; guest_names: string[]; promo_code: string | null; auto_claim: boolean
+  cabin_id: string | null
 }
 export type MembershipPlanRow = {
   id: string; plan_type: "access" | "regional" | "national" | "global" | "guest"
@@ -168,7 +189,7 @@ export type CrewRequestRow = {
 export type RsvpGuestRow = {
   id: string; rsvp_id: string; name: string; boarding_code: string | null
   checked_in_at: string | null; checked_in_by: string | null; created_at: string
-  sign_token: string
+  sign_token: string; on_camera: boolean
 }
 export type PassTransferRow = {
   id: string; rsvp_id: string; from_profile: string; to_profile: string
@@ -292,6 +313,12 @@ export type Database = {
       harbors: Table<HarborRow, Ins<HarborRow, "slug" | "name">>
       voyages: Table<VoyageRow, Ins<VoyageRow, "slug" | "title" | "class" | "starts_at">>
       rsvps: Table<RsvpRow, Ins<RsvpRow, "voyage_id" | "profile_id">>
+      cabins: Table<CabinRow, Ins<CabinRow, "vessel_id" | "name">>
+      episodes: Table<EpisodeRow, Ins<EpisodeRow, "number" | "slug" | "title">>
+      dating_tables: Table<DatingTableRow, Ins<DatingTableRow, "voyage_id" | "number">>
+      table_seats: Table<TableSeatRow, Ins<TableSeatRow, "table_id" | "profile_id">>
+      table_picks: Table<TablePickRow, Ins<TablePickRow, "table_id" | "picker" | "picked">>
+      matches: Table<MatchRow, Ins<MatchRow, "table_id" | "profile_a" | "profile_b">>
       fathoms_ledger: Table<FathomsRow, Ins<FathomsRow, "profile_id" | "delta" | "reason">>
       wardroom_posts: Table<WardroomPostRow, Ins<WardroomPostRow, "body">>
       wardroom_hails: Table<WardroomHailRow, Ins<WardroomHailRow, "post_id" | "profile_id">>
@@ -422,6 +449,8 @@ export type Database = {
       check_promo: { Args: { p_code: string; p_voyage: string }; Returns: Json }
       redeem_reward: { Args: { p_reward: string }; Returns: undefined }
       claim_stripe_customer: { Args: { p_customer_id: string }; Returns: undefined }
+      claim_table_seat: { Args: { p_table: string }; Returns: string }
+      confirm_table_seat: { Args: { p_table: string }; Returns: undefined }
       passage_log: {
         Args: { p_profile_id: string }
         Returns: Array<{

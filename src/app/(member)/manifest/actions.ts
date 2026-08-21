@@ -552,3 +552,27 @@ export async function withdrawCrewRequest(voyageId: string): Promise<RsvpResult>
   if (error) return { error: guardMessage(error.message) };
   return done();
 }
+
+/* Choice of cabin — a named space on your hull, claimed until the flotilla is
+   set. The capacity guard at the database refuses a full cabin, so two members
+   picking the owner's cabin at once resolves honestly. */
+export async function chooseCabin(voyageId: string, cabinId: string | null): Promise<RsvpResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  const { error } = await supabase
+    .from("rsvps")
+    .update({ cabin_id: cabinId })
+    .eq("voyage_id", voyageId)
+    .eq("profile_id", user.id)
+    .eq("status", "aboard");
+  if (error) {
+    if (/spoken for/i.test(error.message)) return { error: "That cabin just went. Pick another." };
+    return { error: "That didn't land. Try again." };
+  }
+  revalidatePath("/manifest");
+  return {};
+}
