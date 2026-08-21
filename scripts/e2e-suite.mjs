@@ -144,6 +144,9 @@ async function sweep(p) {
      It signs as the regional persona against the standing version, which is
      idempotent — one row, no matter how many times the suite runs. */
   await stf.del("document_versions?status=eq.draft&version=gte.900");
+  await stf.del("automations?name=like.E2E*");
+  await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
+  await stf.del("notifications?title=like.E2E*");
 }
 
 /* ---------- E. schema invariants ----------
@@ -727,6 +730,203 @@ async function documentRules(p) {
 
 }
 
+/* ---------- L. enforcement, counter-signature, automations ----------
+   The last of the deferred work: a waiver that stops somebody, a contract that
+   binds both sides, and rules that actually fire. */
+async function enforcementRules(p) {
+  const reg = rest(p.regional), stf = rest(p.staff), anon = rest(null);
+  const stamp = Date.now().toString(36);
+
+  /* --- the gangway gate --- */
+  const vres = await stf.get("voyages?select=id,class&status=eq.scheduled&class=eq.shore&limit=1");
+  const vid = vres.data?.[0]?.id;
+  const heldSeat = vid
+    ? await stf.get(`rsvps?select=id&voyage_id=eq.${vid}&profile_id=eq.${uid(p.staff)}&limit=1`)
+    : { data: [] };
+  const seat = heldSeat.data?.[0]
+    ? { data: heldSeat.data }
+    : vid
+      ? await stf.post("rsvps", { voyage_id: vid, profile_id: uid(p.staff), status: "aboard" })
+      : { data: null };
+  const seatId = seat.data?.[0]?.id;
+
+  if (seatId) {
+    /* The refusal is exercised on a guest rather than a member: a signature is
+       permanent, so once the staff persona signs it can never be unsigned again
+       and the member-side refusal is a one-time assertion. An UNSIGNED guest can
+       be created and removed freely, so it is the fixture that stays honest run
+       after run. The member and guest gates are the same rule on sibling
+       triggers. */
+    const fresh = await stf.post("rsvp_guests", { rsvp_id: seatId, name: `E2E Unsigned ${stamp}` });
+    const freshId = fresh.data?.[0]?.id;
+    if (freshId) {
+      const refused = await stf.patch(`rsvp_guests?id=eq.${freshId}`, { checked_in_at: new Date().toISOString() });
+      note("staff", "an unsigned guest cannot be checked in", refused.status >= 400, `got ${refused.status}`);
+      note("staff", "the refusal names the document",
+        /outstanding/i.test(JSON.stringify(refused.data)), JSON.stringify(refused.data).slice(0, 90));
+      const removed = await stf.del(`rsvp_guests?id=eq.${freshId}`);
+      note("staff", "an unsigned guest can still be removed", removed.status < 400, `got ${removed.status}`);
+    }
+
+    await stf.rpc("sign_document", {
+      p_document_code: "member-waiver", p_context: { class: "shore" }, p_consent: true,
+      p_signature_kind: "typed", p_signature_data: "E2e Staff", p_signer_name: "E2e Staff",
+    });
+    const signedIn = await stf.patch(`rsvps?id=eq.${seatId}`, { checked_in_at: new Date().toISOString() });
+    note("staff", "a signed member boards", signedIn.status < 400, `got ${signedIn.status}`);
+
+    /* A guest on the same pass, unsigned, is refused too. */
+    /* A guest who has signed cannot be deleted — the club is holding their
+       signature. So the gate fixture is one stable guest, reused: signing is
+       idempotent per (version, guest), so the suite leaves exactly one row
+       however many times it runs. */
+    const existing = await stf.get(`rsvp_guests?select=id,sign_token&name=eq.E2E Gate Guest&limit=1`);
+    const g = existing.data?.[0]
+      ? { data: existing.data }
+      : await stf.post("rsvp_guests", { rsvp_id: seatId, name: "E2E Gate Guest" });
+    const gId = g.data?.[0]?.id;
+    const gTok = g.data?.[0]?.sign_token;
+    if (gId) {
+      await anon.rpc("sign_document_as_guest", {
+        p_token: gTok, p_document_code: "guest-waiver", p_consent: true,
+        p_signature_kind: "typed", p_signature_data: "E2E Gate Guest",
+      });
+      const gSigned = await stf.patch(`rsvp_guests?id=eq.${gId}`, { checked_in_at: new Date().toISOString() });
+      note("staff", "a signed guest boards", gSigned.status < 400, `got ${gSigned.status}`);
+
+      const removeSigned = await stf.del(`rsvp_guests?id=eq.${gId}`);
+      note("staff", "a guest who has signed cannot be removed", removeSigned.status >= 400, `got ${removeSigned.status}`);
+      /* Reset for the next run; the guest and their signature both stay. */
+      await stf.patch(`rsvp_guests?id=eq.${gId}`, { checked_in_at: null });
+    }
+    /* The seat carries the fixture guest, so it stays too — reset instead. */
+    await stf.patch(`rsvps?id=eq.${seatId}`, { checked_in_at: null });
+  }
+
+  /* --- counter-signature --- */
+  const contract = await reg.rpc("sign_document", {
+    p_document_code: "membership-agreement", p_consent: true,
+    p_signature_kind: "typed", p_signature_data: "E2e Regional", p_signer_name: "E2e Regional",
+  });
+  note("regional", "may sign the membership agreement", contract.status < 400, `got ${contract.status}`);
+  const csid = typeof contract.data === "string" ? contract.data : null;
+
+  if (csid) {
+    /* A counter-signature is permanent, and the member's contract signature is
+       idempotent — so after the first run this one is already in force. Assert
+       the end state and the rules around it rather than the first transition,
+       which only ever happens once in the life of the database. */
+    const already = (await reg.get(`agreement_standing?select=in_force&signature_id=eq.${csid}`))
+      .data?.[0]?.in_force === true;
+
+    const byMember = await reg.rpc("counter_sign", { p_signature_id: csid });
+    note("regional", "a member cannot counter-sign", byMember.status >= 400, `got ${byMember.status}`);
+
+    const cs = await stf.rpc("counter_sign", { p_signature_id: csid, p_title: "For the club" });
+    note("staff", "staff counter-sign a contract",
+      already ? cs.status >= 400 : cs.status < 400,
+      `${already ? "already in force; " : ""}got ${cs.status}`);
+
+    const inForce = await reg.get(`agreement_standing?select=in_force,counter_signed_by&signature_id=eq.${csid}`);
+    note("regional", "a counter-signed contract is in force", inForce.data?.[0]?.in_force === true, JSON.stringify(inForce.data));
+    note("regional", "the counter-signature names the club's signer",
+      Boolean(inForce.data?.[0]?.counter_signed_by), JSON.stringify(inForce.data));
+
+    const twice = await stf.rpc("counter_sign", { p_signature_id: csid });
+    note("staff", "counter-signing twice is refused", twice.status >= 400, `got ${twice.status}`);
+
+    const forge = await reg.post("counter_signatures", {
+      signature_id: csid, signed_by: uid(p.regional), signer_name: "E2e Regional",
+    });
+    note("regional", "cannot forge a counter-signature", forge.status >= 400, `got ${forge.status}`);
+  }
+
+  /* A waiver is one-way — it has no club side to sign. */
+  const waiverSig = await reg.get(`signatures?select=id&profile_id=eq.${uid(p.regional)}&limit=10`);
+  const waiverIds = (waiverSig.data || []).map((r) => r.id).filter((id) => id !== csid);
+  if (waiverIds.length) {
+    const oneWay = await stf.rpc("counter_sign", { p_signature_id: waiverIds[0] });
+    note("staff", "a waiver cannot be counter-signed", oneWay.status >= 400, `got ${oneWay.status}`);
+  }
+
+  /* --- automations actually fire --- */
+  const rule = await stf.post("automations", {
+    name: `E2E rule ${stamp}`, trigger_event: "member_joined", conditions: {},
+    action: { kind: "notify", title: `E2E fired ${stamp}`, body: "{member} joined." },
+  });
+  note("staff", "staff write an automation", rule.status < 400, `got ${rule.status}`);
+  const ruleId = rule.data?.[0]?.id;
+
+  /* member_joined fires on profile insert, which only auth can do. Use the
+     voyage path instead: it fans out to everyone aboard. */
+  const scoped = await stf.post("automations", {
+    name: `E2E voyage rule ${stamp}`, trigger_event: "pass_confirmed",
+    conditions: { harbor: "nowhere-at-all" },
+    action: { kind: "notify", title: `E2E never ${stamp}`, body: "x" },
+  });
+  const scopedId = scoped.data?.[0]?.id;
+
+  const fireRule = await stf.post("automations", {
+    name: `E2E fire ${stamp}`, trigger_event: "pass_confirmed", conditions: {},
+    action: { kind: "notify", title: `E2E pass ${stamp}`, body: "{member} — {voyage}." },
+  });
+  const fireId = fireRule.data?.[0]?.id;
+
+  /* Notifications are readable only by the member they are addressed to, so the
+     rule is fired at the staff persona — otherwise the test would be asserting
+     against rows it cannot see and would read as a rule that never fired. */
+  /* pass_confirmed fires on the transition into aboard, so the fixture seat is
+     moved out and back rather than recreated — the seat carries a signed guest
+     and cannot be deleted. */
+  if (seatId) {
+    await stf.patch(`rsvps?id=eq.${seatId}`, { status: "not_going" });
+    await stf.patch(`rsvps?id=eq.${seatId}`, { status: "aboard" });
+    await new Promise((r) => setTimeout(r, 400));
+
+    const fired = await stf.get(`notifications?select=title,body&title=eq.E2E pass ${stamp}`);
+    const never = await stf.get(`notifications?select=title&title=eq.E2E never ${stamp}`);
+    note("staff", "an automation fires on its event", (fired.data || []).length > 0, `${(fired.data || []).length} sent`);
+    note("staff", "an automation substitutes the member and the sailing",
+      (fired.data || []).every((n) => !/\{member\}|\{voyage\}/.test(n.body || "")),
+      JSON.stringify(fired.data?.[0] || {}).slice(0, 90));
+    note("staff", "a condition that does not match keeps the rule silent", (never.data || []).length === 0, `${(never.data || []).length} sent`);
+
+    const stamped = await stf.get(`automations?select=last_run_at&id=eq.${fireId}`);
+    note("staff", "a fired rule records when it ran", Boolean(stamped.data?.[0]?.last_run_at), JSON.stringify(stamped.data));
+
+    await stf.del(`notifications?title=like.E2E*${stamp}`);
+  }
+
+  const memberRule = await reg.post("automations", {
+    name: "E2E member rule", trigger_event: "member_joined", conditions: {}, action: {},
+  });
+  note("regional", "a member cannot write an automation", memberRule.status >= 400, `got ${memberRule.status}`);
+
+  for (const id of [ruleId, scopedId, fireId].filter(Boolean)) {
+    await stf.del(`automations?id=eq.${id}`);
+  }
+
+  /* --- season cards --- */
+  const cardsByMember = await reg.rpc("send_season_cards", {
+    p_from: "2026-02-01T00:00:00Z", p_to: "2026-07-01T00:00:00Z", p_season: "E2E",
+  });
+  note("regional", "a member cannot send the season's cards", cardsByMember.status >= 400, `got ${cardsByMember.status}`);
+
+  const backwards = await stf.rpc("send_season_cards", {
+    p_from: "2026-07-01T00:00:00Z", p_to: "2026-02-01T00:00:00Z",
+  });
+  note("staff", "a season must run forwards", backwards.status >= 400, `got ${backwards.status}`);
+
+  const cards = await stf.rpc("send_season_cards", {
+    p_from: "2026-02-01T00:00:00Z", p_to: "2026-07-01T00:00:00Z", p_season: `E2E ${stamp}`,
+  });
+  note("staff", "the season's cards queue", cards.status < 400 && Number(cards.data) > 0, `${cards.data} queued`);
+  const queued = await stf.get(`email_outbox?select=payload&template=eq.season-card&limit=5`);
+  note("staff", "a card carries the member's figures",
+    (queued.data || []).some((e) => Number(e.payload?.nm_logged) > 0), JSON.stringify(queued.data?.[0]?.payload || {}).slice(0, 90));
+  await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
+}
+
 /* ---------- A. route × role matrix ---------- */
 async function routeMatrix(personas) {
   const memberPages = manifest.routes.filter((r) => r.type === "page" && !r.dynamic && r.access === "member");
@@ -1065,6 +1265,7 @@ async function main() {
   await opsRules(personas);
   await moderationRules(personas);
   await documentRules(personas);
+  await enforcementRules(personas);
   await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;

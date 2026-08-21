@@ -146,14 +146,49 @@ reword into a new version, see version counts), the documents (draft the next
 version from the standing one, compose by ticking clauses and setting when each
 applies, publish), and the register (every signature with its hash, redactable).
 
+## Enforcement
+
+The gate sits at **check-in, not booking** — which is where the waiver industry
+puts it and where it belongs. A pass is a reservation and nothing about reserving
+one is dangerous; boarding is where the risk attaches. It also means a member can
+claim a pass in January and sign in June, and that somebody arriving unsigned is
+handed a link rather than turned away.
+
+`require_signature_at_check_in()` refuses an unsigned member; its sibling refuses
+an unsigned guest. Both name the outstanding document, and the gangway passes
+that through as guidance rather than a generic failure.
+
+## Counter-signature
+
+A waiver is one-way. A contract binds the club too, and a contract only the other
+side has signed is an offer. `counter_sign()` is staff-only, refuses a waiver,
+refuses twice, and notifies the other party. `agreement_standing` reports
+`in_force` — always true for a waiver, true for a contract only once the club has
+signed.
+
+Counter-signatures live in their own table rather than as nullable columns on
+`signatures`: a counter-signature is a distinct act by a distinct person at a
+distinct time, and 90% of rows are waivers that would carry the columns empty.
+
+## Two rules that contradicted each other
+
+Worth recording, because both were found by running the suite rather than by
+reading the schema.
+
+`signatures.guest_id` was `ON DELETE SET NULL`. Deleting a guest therefore
+stranded their signature — and since the uniqueness key is
+`(version, profile, guest)` with `NULLS NOT DISTINCT`, a second stranded
+signature collided with the first, so deleting one guest could make deleting the
+next impossible. It is now `RESTRICT`: a guest who has signed is retained as long
+as the signature is.
+
+That change then broke `sync_guest_rows()`, which sweeps guests dropped from
+`guest_names` — with RESTRICT the sweep failed, and because it runs in a trigger
+the member's whole edit failed with it. It now sweeps only guests who never
+signed. Taking a name off a pass does not unmake the waiver that person signed.
+
 ## Open
 
-- Contracts are modelled and seeded (`membership-agreement`, `crew-agreement`)
-  but **counter-signature is not built** — `signatures` records one party. A
-  two-party contract wants a `signature_parties` table.
-- Requirements are recorded (`document_requirements`) and shown, but **not yet
-  enforced at booking**. The gangway shows the badge; `rsvp_guard` does not
-  refuse an unsigned member.
 - **The clause wording is placeholder.** The platform proves what was shown and
   agreed; it cannot make the language sound. Enforceability also turns on
   state-specific public-policy and gross-negligence limits. The words want a

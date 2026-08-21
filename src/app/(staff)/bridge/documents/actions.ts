@@ -199,3 +199,44 @@ export async function redactSignature(id: string): Promise<ActionResult> {
   revalidatePath("/bridge/documents");
   return {};
 }
+
+/* A waiver is one-way; a contract binds the club too. Until the club signs its
+   side, a contract is an offer. */
+export async function counterSign(signatureId: string, title: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const { error } = await supabase.rpc("counter_sign", {
+    p_signature_id: signatureId,
+    p_title: title.trim() || null,
+  });
+  if (error) {
+    if (/already counter-signed/i.test(error.message)) return { error: "That one is already counter-signed." };
+    if (/one-way/i.test(error.message)) return { error: "A waiver is one-way — only a contract is counter-signed." };
+    return { error: ERR_LAND };
+  }
+  revalidatePath("/bridge/documents");
+  return {};
+}
+
+/* Queued at season close, by hand, because a season ends when the club says it
+   does — not when a timer says so. Members who did not sail get nothing. */
+export async function sendSeasonCards(
+  from: string,
+  to: string,
+  label: string
+): Promise<ActionResult & { queued?: number }> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!from || !to) return { error: "A season needs both dates." };
+  if (new Date(to) <= new Date(from)) return { error: "A season runs forwards." };
+
+  const { data, error } = await supabase.rpc("send_season_cards", {
+    p_from: new Date(from).toISOString(),
+    p_to: new Date(to).toISOString(),
+    p_season: label.trim() || null,
+  });
+  if (error) return { error: ERR_LAND };
+  revalidatePath("/bridge/documents");
+  return { queued: typeof data === "number" ? data : 0 };
+}

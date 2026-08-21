@@ -102,7 +102,15 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     .from("rsvps")
     .update({ checked_in_at: checkedInAt, checked_in_by: staffId })
     .eq("id", rsvp.id);
-  if (error) return { error: ERR_LAND };
+  /* The waiver gate refuses at the database. Hand the skipper the reason and
+     what to do about it rather than a generic failure — the fix is thirty
+     seconds on the member's own phone. */
+  if (error) {
+    if (/boards unsigned/i.test(error.message)) {
+      return { error: `${error.message.replace(/^.*— /, "")} — send them the link to sign, then scan again.` };
+    }
+    return { error: ERR_LAND };
+  }
 
   revalidatePath("/bridge/gangway");
   revalidatePath("/bridge/manifests");
@@ -121,7 +129,14 @@ export async function gangwayFlush(rsvpId: string, atIso: string): Promise<{ err
     .update({ checked_in_at: stamp, checked_in_by: staffId })
     .eq("id", rsvpId)
     .is("checked_in_at", null);
-  if (error) return { error: ERR_LAND };
+  if (error) {
+    /* A queued offline check-in can land against an unsigned member; the queue
+       keeps it rather than silently dropping the stamp. */
+    if (/boards unsigned/i.test(error.message)) {
+      return { error: error.message.replace(/^.*— /, "") };
+    }
+    return { error: ERR_LAND };
+  }
   revalidatePath("/bridge/gangway");
   revalidatePath("/bridge/manifests");
   return {};

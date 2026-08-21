@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Documents" };
 export default async function DocumentsPage() {
   const { supabase } = await getOperator();
 
-  const [clausesRes, versionsRes, docsRes, docVersionsRes, docClausesRes, sigsRes, reqRes] =
+  const [clausesRes, versionsRes, docsRes, docVersionsRes, docClausesRes, sigsRes, reqRes, counterRes] =
     await Promise.all([
       supabase.from("clauses").select("*").order("position", { ascending: true }),
       supabase.from("clause_versions").select("*").order("version", { ascending: false }),
@@ -20,6 +20,7 @@ export default async function DocumentsPage() {
         .order("signed_at", { ascending: false })
         .limit(200),
       supabase.from("document_requirements").select("*"),
+      supabase.from("counter_signatures").select("*"),
     ]);
 
   const versions = versionsRes.data ?? [];
@@ -84,6 +85,15 @@ export default async function DocumentsPage() {
   const versionLabel = new Map(
     docVersions.map((v) => [v.id, `${v.document_code} v${v.version}`] as const)
   );
+  const kindByVersion = new Map(
+    docVersions.map((v) => [
+      v.id,
+      (docsRes.data ?? []).find((d) => d.code === v.document_code)?.kind ?? "waiver",
+    ] as const)
+  );
+  const counterBySig = new Map(
+    (counterRes.data ?? []).map((c) => [c.signature_id, c] as const)
+  );
 
   const register: SignatureRow[] = signatures.map((s) => ({
     id: s.id,
@@ -94,6 +104,8 @@ export default async function DocumentsPage() {
     signedAt: s.signed_at,
     isGuest: Boolean(s.guest_id),
     redacted: Boolean(s.redacted_at),
+    isContract: kindByVersion.get(s.document_version_id) === "contract",
+    counterSignedBy: counterBySig.get(s.id)?.signer_name ?? null,
   }));
 
   return (

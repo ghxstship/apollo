@@ -121,10 +121,13 @@ one is skipped.
 
 ## Still open
 
-- **The season's card is not scheduled.** `season_card()` and the email template
-  both exist; nothing calls them yet. It wants a cron at season close.
-- **Crew-scoped contests are modelled but unused.** `contests.scope = 'crew'` with
-  a `voyage_id` is enforced by constraint; no surface creates one yet.
+- ~~The season's card is not scheduled.~~ `send_season_cards(from, to, label)`
+  queues one card per member who actually sailed in the window, from the Bridge's
+  register tab. Deliberately not a cron: a season ends when the club says it does.
+  Members who did not sail get nothing — a card reading nought miles is a
+  reproach, not a keepsake.
+- ~~Crew-scoped contests are modelled but unused.~~ The entry policy now enforces
+  the scope: a crew contest is enterable only by members aboard its voyage.
 - **`ships-company` needs a bigger roll.** At 25 distinct members it is
   unreachable in demo data, correctly.
 - **Hull assignment drives `whole-fleet`.** It counts `rsvps.vessel_id`, which the

@@ -262,6 +262,11 @@ export type DocumentClauseRow = {
 export type DocumentGate =
   | "join_club" | "board_sea" | "board_shore" | "guest_board" | "crew_engage"
 export type DocumentRequirementRow = { document_code: string; gate: DocumentGate }
+export type CounterSignatureRow = {
+  signature_id: string; signed_by: string; signer_name: string
+  signer_title: string | null; signed_at: string
+  signed_ip: string | null; user_agent: string | null
+}
 export type SignatureRow = {
   id: string; document_version_id: string
   profile_id: string | null; guest_id: string | null
@@ -342,6 +347,7 @@ export type Database = {
       document_clauses: Table<DocumentClauseRow, Ins<DocumentClauseRow, "document_version_id" | "clause_version_id" | "position">>
       document_requirements: Table<DocumentRequirementRow, Ins<DocumentRequirementRow, "document_code" | "gate">>
       signatures: Table<SignatureRow, Ins<SignatureRow, "document_version_id" | "rendered_hash" | "consent_esign" | "signature_kind">>
+      counter_signatures: Table<CounterSignatureRow, Ins<CounterSignatureRow, "signature_id" | "signed_by" | "signer_name">>
     }
     Views: {
       voyage_capacity: {
@@ -375,6 +381,15 @@ export type Database = {
         Row: {
           profile_id: string | null; passes: number | null; attended: number | null
           posts: number | null; knots: number | null; last_booked_at: string | null
+        }
+        Relationships: []
+      }
+      agreement_standing: {
+        Row: {
+          signature_id: string | null; profile_id: string | null
+          document_code: string | null; title: string | null; kind: DocumentKind | null
+          signed_at: string | null; counter_signed_at: string | null
+          counter_signed_by: string | null; in_force: boolean | null
         }
         Relationships: []
       }
@@ -430,6 +445,9 @@ export type Database = {
       published_version: { Args: { p_document_code: string }; Returns: string | null }
       publish_document_version: { Args: { p_id: string }; Returns: undefined }
       redact_signature: { Args: { p_id: string; p_reason?: string }; Returns: undefined }
+      purge_expired_signatures: { Args: { p_years?: number }; Returns: number }
+      counter_sign: { Args: { p_signature_id: string; p_title?: string | null; p_user_agent?: string | null }; Returns: string }
+      send_season_cards: { Args: { p_from: string; p_to: string; p_season?: string | null }; Returns: number }
       sign_document: {
         Args: {
           p_document_code: string; p_context?: Json; p_consent?: boolean

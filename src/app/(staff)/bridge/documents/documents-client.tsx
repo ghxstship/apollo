@@ -6,8 +6,10 @@ import type { ClauseCategory } from "@/lib/supabase/types";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
+  counterSign,
   createClause,
   draftNextVersion,
+  sendSeasonCards,
   publishVersion,
   redactSignature,
   reviseClause,
@@ -57,6 +59,8 @@ export type SignatureRow = {
   signedAt: string;
   isGuest: boolean;
   redacted: boolean;
+  isContract: boolean;
+  counterSignedBy: string | null;
   [key: string]: unknown;
 };
 
@@ -84,6 +88,12 @@ export function DocumentsClient({
   const [revising, setRevising] = React.useState<ClauseRow | null>(null);
   const [composing, setComposing] = React.useState<DocRow | null>(null);
   const [confirmRedact, setConfirmRedact] = React.useState<SignatureRow | null>(null);
+  const [countering, setCountering] = React.useState<SignatureRow | null>(null);
+  const [cardsOpen, setCardsOpen] = React.useState(false);
+  const [signerTitle, setSignerTitle] = React.useState("For the club");
+  const [seasonFrom, setSeasonFrom] = React.useState("");
+  const [seasonTo, setSeasonTo] = React.useState("");
+  const [seasonLabel, setSeasonLabel] = React.useState("");
 
   const [code, setCode] = React.useState("");
   const [title, setTitle] = React.useState("");
@@ -251,14 +261,34 @@ export function DocumentsClient({
       render: (s: SignatureRow) => logDate(s.signedAt),
     },
     {
+      key: "force",
+      label: "In force",
+      width: 150,
+      render: (s: SignatureRow) =>
+        !s.isContract ? (
+          <span style={{ color: "var(--text-3)" }}>Waiver</span>
+        ) : s.counterSignedBy ? (
+          <Badge tone="laurel">Counter-signed</Badge>
+        ) : (
+          <Badge tone="clay">Awaiting the club</Badge>
+        ),
+    },
+    {
       key: "act",
       label: "",
-      width: 100,
+      width: 160,
       render: (s: SignatureRow) =>
         s.redacted ? null : (
-          <Button size="sm" variant="ghost" onClick={() => setConfirmRedact(s)}>
-            Redact
-          </Button>
+          <span style={{ display: "flex", gap: 8 }}>
+            {s.isContract && !s.counterSignedBy ? (
+              <Button size="sm" variant="ghost" onClick={() => setCountering(s)}>
+                Counter-sign
+              </Button>
+            ) : null}
+            <Button size="sm" variant="ghost" onClick={() => setConfirmRedact(s)}>
+              Redact
+            </Button>
+          </span>
         ),
     },
   ];
@@ -304,6 +334,11 @@ export function DocumentsClient({
 
       {tab === "register" ? (
         <div style={{ marginTop: 18 }}>
+          <div style={{ marginBottom: 14 }}>
+            <Button variant="ghost" onClick={() => setCardsOpen(true)}>
+              Send the season&rsquo;s cards
+            </Button>
+          </div>
           {register.length === 0 ? (
             <StateBlock title="Nothing signed yet." detail="Signatures land here with their hash and the exact wording agreed." />
           ) : (
@@ -505,6 +540,88 @@ export function DocumentsClient({
           and the hash that proves it are kept — erasure does not reach a record
           needed to answer a legal claim, and this is that record.
         </p>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(countering)}
+        onClose={() => setCountering(null)}
+        title="Sign the club's side?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setCountering(null)}>Not yet</Button>
+            <Button
+              variant="brass"
+              disabled={pending}
+              onClick={() => {
+                const target = countering;
+                if (!target) return;
+                startTransition(async () => {
+                  const res = await counterSign(target.id, signerTitle);
+                  setCountering(null);
+                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  else show({ msg: "Counter-signed.", meta: "IN FORCE · BOTH SIDES" });
+                });
+              }}
+            >
+              Counter-sign
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+          Until the club signs, this is an offer rather than an agreement. Signing
+          puts it in force and tells the other party. Like every signature here it
+          is a record — it cannot be edited or withdrawn afterwards.
+        </p>
+        <Input
+          label="Signing as"
+          hint="Shown on the agreement beside your name."
+          value={signerTitle}
+          onChange={(e) => setSignerTitle(e.target.value)}
+        />
+      </Dialog>
+
+      <Dialog
+        open={cardsOpen}
+        onClose={() => setCardsOpen(false)}
+        title="Send the season's cards"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setCardsOpen(false)}>Cancel</Button>
+            <Button
+              variant="brass"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  const res = await sendSeasonCards(seasonFrom, seasonTo, seasonLabel);
+                  if (res.error) {
+                    show({ msg: res.error, tone: "siren" });
+                    return;
+                  }
+                  setCardsOpen(false);
+                  show({
+                    msg: `${res.queued ?? 0} card${res.queued === 1 ? "" : "s"} queued.`,
+                    meta: "MEMBERS WHO SAILED",
+                  });
+                })
+              }
+            >
+              Queue them
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+          One card per member who actually sailed inside the window — miles,
+          sailings, harbors, crew met, and any Marks rounded. Members who did not
+          sail get nothing; a card reading nought miles is a reproach, not a
+          keepsake.
+        </p>
+        <div style={{ display: "grid", gap: 14 }}>
+          <Input label="Season opens" type="date" value={seasonFrom} onChange={(e) => setSeasonFrom(e.target.value)} />
+          <Input label="Season closes" type="date" value={seasonTo} onChange={(e) => setSeasonTo(e.target.value)} />
+          <Input label="What to call it" hint="Reads in the subject line." value={seasonLabel} onChange={(e) => setSeasonLabel(e.target.value)} />
+        </div>
       </Dialog>
 
       {toast ? (
