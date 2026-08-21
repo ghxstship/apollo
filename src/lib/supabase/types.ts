@@ -182,6 +182,10 @@ export type PromoCodeRow = {
 export type PushSubscriptionRow = {
   id: string; profile_id: string; endpoint: string; p256dh: string; auth: string; created_at: string
 }
+export type SmsTemplateRow = {
+  code: string; provider_template_id: string | null; channels: string[]
+  parameter_map: Json; active: boolean; note: string | null; created_at: string
+}
 export type SmsOutboxRow = {
   id: string; to_phone: string; template: string; payload: Json
   status: "pending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
@@ -327,6 +331,7 @@ export type Database = {
       promo_codes: Table<PromoCodeRow, Ins<PromoCodeRow, "code" | "kind">>
       push_subscriptions: Table<PushSubscriptionRow, Ins<PushSubscriptionRow, "profile_id" | "endpoint" | "p256dh" | "auth">>
       sms_outbox: Table<SmsOutboxRow, Ins<SmsOutboxRow, "to_phone" | "template">>
+      sms_templates: Table<SmsTemplateRow, Ins<SmsTemplateRow, "code">>
       push_outbox: Table<PushOutboxRow, Ins<PushOutboxRow, "profile_id" | "title">>
       saved_segments: Table<SavedSegmentRow, Ins<SavedSegmentRow, "name">>
       api_keys: Table<ApiKeyRow, Ins<ApiKeyRow, "label" | "key_hash" | "prefix">>

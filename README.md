@@ -43,7 +43,7 @@ The member assistant has an optional LLM brain (`/api/aurora`, Claude via `@anth
 
 ### Word, push, and SMS
 
-Every `notifications` row fans out by trigger: into `push_outbox` always, and into `sms_outbox` for weather holds when the member has a verified phone. Three edge functions drain the queues on a five-minute `pg_cron` schedule — `send-outbox` (Resend), `send-push` (VAPID/web-push), `send-sms` (Twilio). Each degrades to marking rows `skipped` when its keys are absent, so nothing backs up. Secrets live in Supabase Vault, read through the service-role-only `get_app_secret` RPC — never in the repo or CI.
+Every `notifications` row fans out by trigger: into `push_outbox` always, and into `sms_outbox` for weather holds when the member has a verified phone. Three edge functions drain the queues on a five-minute `pg_cron` schedule — `send-outbox` (Resend), `send-push` (VAPID/web-push), `send-sms` (sent.dm). Each degrades to marking rows `skipped` when its keys are absent, so nothing backs up. sent.dm is template-based rather than free-text: `sms_templates` maps the club's template codes to sent.dm template ids, and a code with no registered id is skipped rather than failed. Secrets live in Supabase Vault, read through the service-role-only `get_app_secret` RPC — never in the repo or CI.
 
 ### Wallet passes
 

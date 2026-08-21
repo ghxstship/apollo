@@ -10,7 +10,7 @@
 > API keys and webhooks; the Shoreside inbox; event-card enrichment, browse
 > filters and OG images.
 > **Still gated on external credentials:** Stripe (dues and settlement hide
-> until keys are set), Twilio (SMS queues and drains as `skipped`),
+> until keys are set), sent.dm (SMS queues and drains as `skipped` until templates are registered and approved),
 > photography (galleries fall back to placeholders), and Apple/Google wallet
 > passes (printable credentials ship instead). **Deliberately not built:** the
 > automation *dispatcher* (rules save; triggers wire next) and everything in

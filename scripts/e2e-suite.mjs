@@ -197,7 +197,7 @@ const ANON_SEALED = [
   "push_subscriptions", "subscriptions", "invoices", "payment_methods",
   "installment_plans", "shop_orders", "shop_order_items", "galley_orders",
   "galley_order_items", "galley_items", "products", "rewards",
-  "reward_redemptions", "saved_segments", "api_keys", "webhooks",
+  "reward_redemptions", "saved_segments", "api_keys", "webhooks", "sms_templates",
   "webhook_deliveries", "automations", "marks", "member_marks",
   "contests", "contest_entries", "contest_results", "voyage_media",
   "member_engagement", "member_affinity", "fathoms_balance", "account_balance",
@@ -429,12 +429,22 @@ async function commerceRules(p) {
 async function opsRules(p) {
   const reg = rest(p.regional), stf = rest(p.staff);
 
-  for (const t of ["api_keys", "webhooks", "webhook_deliveries", "saved_segments", "automations", "promo_codes", "member_roll", "email_outbox", "sms_outbox"]) {
+  for (const t of ["api_keys", "webhooks", "webhook_deliveries", "saved_segments", "automations", "promo_codes", "member_roll", "email_outbox", "sms_outbox", "sms_templates"]) {
     const read = await reg.get(`${t}?select=*&limit=1`);
     note("regional", `${t} is invisible to a member`, (read.data || []).length === 0, `got ${read.status} ${JSON.stringify(read.data).slice(0, 60)}`);
     const write = await reg.post(t, { });
     note("regional", `cannot write ${t}`, write.status >= 400, `got ${write.status}`);
   }
+
+  /* The sent.dm template registry is delivery plumbing: a member has no business
+     reading which provider template a message is sent against, and certainly not
+     repointing one. */
+  const repoint = await reg.patch("sms_templates?code=eq.weather-hold", {
+    provider_template_id: "00000000-0000-0000-0000-000000000000",
+  });
+  note("regional", "cannot repoint an SMS template", repoint.status >= 400 || (repoint.data || []).length === 0, `got ${repoint.status}`);
+  const staffTemplates = await stf.get("sms_templates?select=code,provider_template_id");
+  note("staff", "staff read the SMS template registry", (staffTemplates.data || []).length >= 2, `${(staffTemplates.data || []).length} codes`);
 
   const key = await reg.post("api_keys", { label: "E2E", key_hash: "x", prefix: "e2e" });
   note("regional", "cannot mint an API key", key.status >= 400, `got ${key.status}`);
