@@ -25,21 +25,25 @@ a filmed product this reads naturally as *your season on camera*.
 Voice direction for the kit: episode framing ("Your season, on the record"),
 scarcity flat, no exclamation marks.
 
-## 2. The Booth (social feed — was Open Deck)
+## 2. Open Deck (the social feed)
 
-Confession-booth framing: the member-only feed where the cast talks.
+The member-only feed where the cast talks. **Request it under the name Open
+Deck** — that is the name the kit should design for and the product will adopt
+once coverage lands.
 
 | Component | What it is today | States / notes for the kit |
 | --- | --- | --- |
 | **Post card** | Author (first name + avatar tone), body, optional sailing tag, timestamp in mono | With/without media slot (IMAGERY TK) |
 | **Hail** | The single reaction (no like-counts arms race) | Count + hailed state |
 | **Comment thread** | Flat comments under a post, first-name authors | Empty state |
-| **Composer** | Plain textarea + post action; optional sailing attach | Producer-voice placeholder ("Say it to the booth.") |
+| **Composer** | Plain textarea + post action; optional sailing attach | Producer-voice placeholder; confession-booth motif welcome here |
 | **Flag → moderation** | Member flags a post; Bridge queue with remove / leave-up resolution | Operator-side queue table + resolution dialog |
 
 ## Interim treatment (already in hand)
 
 Until kit coverage lands, both areas ship re-skinned with the Syrius tokens and
-re-voiced (Regattas keep their name — charter-native; Open Deck becomes **the
-Booth**), using existing DS primitives only. No new visual language is invented
-in the interim — that is what this request is for.
+re-voiced, using existing DS primitives only. Regattas keep their name
+(charter-native). The feed runs under the interim name **the Booth** and moves
+back to **Open Deck** when the kit's components arrive — the confession-booth
+framing survives as a composer/voice motif, not as the surface's name. No new
+visual language is invented in the interim — that is what this request is for.
