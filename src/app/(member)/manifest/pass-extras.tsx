@@ -6,6 +6,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { CopyLink } from "@/components/copy-link";
 import { Button, Input, Select, Switch, Textarea, Dialog } from "@/components/ds";
 import {
   applyPromo,
@@ -18,7 +19,7 @@ import {
 } from "./actions";
 
 export type MemberOption = { id: string; label: string };
-export type GuestStub = { name: string; code: string | null };
+export type GuestStub = { name: string; code: string | null; signToken: string; signed: boolean };
 export type StandingOffer = { id: string; name: string };
 export type CrewSeeker = { id: string; name: string; handle: string | null; note: string | null };
 export type AppliedPromo = { code: string; kind: PromoKind; value: number; passCents: number };
@@ -207,21 +208,43 @@ export function HandOff({
 export function GuestStubs({ guests }: { guests: GuestStub[] }) {
   const cut = guests.filter((g) => g.code);
   if (cut.length === 0) return null;
+  const unsigned = cut.filter((g) => !g.signed);
   return (
     <div style={blockStyle}>
       <span className="mbr-mono" style={monoLine}>
         GUEST STUBS
       </span>
       {cut.map((g) => (
-        <Link
-          key={g.code}
-          href={`/stub/${g.code}`}
-          className="mbr-mono"
-          style={{ ...monoLine, color: "var(--text-link)", textDecoration: "none" }}
-        >
-          {g.name.toUpperCase()} — {g.code}
-        </Link>
+        <span key={g.code} style={monoLine}>
+          <Link
+            href={`/stub/${g.code}`}
+            className="mbr-mono"
+            style={{ color: "var(--text-link)", textDecoration: "none" }}
+          >
+            {g.name.toUpperCase()} — {g.code}
+          </Link>
+          <span className="mbr-mono" style={{ marginInlineStart: 10 }}>
+            {g.signed ? "WAIVER SIGNED" : "WAIVER OUTSTANDING"}
+          </span>
+        </span>
       ))}
+      {/* A guest cannot board unsigned, and only the member who invited them can
+          pass on the link — so it lives here, next to their stub. */}
+      {unsigned.length > 0 ? (
+        <span style={{ ...monoLine, marginTop: 10 }}>
+          <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
+            SEND THEM THIS TO SIGN
+          </span>
+          {unsigned.map((g) => (
+            <CopyLink
+              key={g.signToken}
+              value={`${typeof window === "undefined" ? "" : window.location.origin}/sign/${g.signToken}`}
+              label={`Copy ${g.name}'s link`}
+              toast={`${g.name}'s signing link copied.`}
+            />
+          ))}
+        </span>
+      ) : null}
     </div>
   );
 }

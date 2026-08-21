@@ -114,6 +114,13 @@ async function main() {
       note(r.path, "redirects signed-out to /gangway", ok, `status ${probe.status}`);
       continue;
     }
+    if (r.credential) {
+      /* Addressed by a bearer secret. The audit confirms it refuses a made-up
+         one rather than enumerating real ones. */
+      const res = await fetch(`${BASE}${r.path.replace(/\[\w+\]/, "00000000-0000-0000-0000-000000000000")}`, { redirect: "manual" });
+      note(r.path, "a made-up credential is refused", res.status === 404, `got ${res.status}`);
+      continue;
+    }
     if (!r.source) { note(r.path, "dynamic route has slug source", false, "add to DYNAMIC_SOURCES"); continue; }
     const slugs = await fetchSlugs(r.source);
     note(r.path, "slug source non-empty", slugs.length > 0, `${slugs.length} slugs`);

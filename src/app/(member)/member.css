@@ -329,3 +329,14 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .rgt-stand td.rgt-num{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);color:var(--text-2);white-space:nowrap}
 .rgt-stand tr[data-me="1"] td{background:var(--wash-ink)}
 .rgt-you{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--track-data);color:var(--brass-deep);margin-inline-start:8px}
+
+/* — the standing list on the Passbook — */
+.agr{margin-top:28px;border-top:1px solid var(--line-faint);padding-top:20px}
+.agr-list{list-style:none;margin:12px 0 0;padding:0}
+.agr-row{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:13px 0;border-top:1px solid var(--line-faint)}
+.agr-row b{font-family:var(--font-display);font-weight:400;font-size:15px}
+.agr-row span.agr-when{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3);white-space:nowrap}
+@media (max-width:719px){
+  .agr-row{grid-template-columns:1fr auto;gap:8px}
+  .agr-row span.agr-when{grid-column:1/-1}
+}

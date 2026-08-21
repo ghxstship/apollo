@@ -15,6 +15,7 @@
     "/chandlery",
     "/stub",
     "/regattas",
+    "/agreements",
     "/bridge"
   ],
   "routes": [
@@ -31,6 +32,24 @@
       "type": "page",
       "dynamic": false,
       "access": "member"
+    },
+    {
+      "path": "/agreements",
+      "file": "src/app/(member)/agreements/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/agreements/[code]",
+      "file": "src/app/(member)/agreements/[code]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "member",
+      "source": {
+        "table": "documents",
+        "column": "code"
+      }
     },
     {
       "path": "/api/aurora",
@@ -160,6 +179,13 @@
     {
       "path": "/bridge/crew",
       "file": "src/app/(staff)/bridge/crew/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/documents",
+      "file": "src/app/(staff)/bridge/documents/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -388,6 +414,14 @@
         "table": "contests",
         "column": "slug"
       }
+    },
+    {
+      "path": "/sign/[token]",
+      "file": "src/app/sign/[token]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "public",
+      "credential": true
     },
     {
       "path": "/stub/[code]",

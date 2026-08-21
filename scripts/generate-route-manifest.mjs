@@ -29,10 +29,17 @@ function readProtectedPrefixes() {
 }
 
 /* Dynamic segments and where their live values come from (Supabase). */
+/* Some dynamic pages are addressed by a bearer secret rather than by a slug.
+   Enumerating them would mean pulling live credentials into an audit and
+   walking them — the opposite of what the secret is for. They are marked
+   credential-bearing instead, and the audit leaves them alone. */
+const CREDENTIAL_ROUTES = new Set(["/sign/[token]"]);
+
 const DYNAMIC_SOURCES = {
   "/voyages/[slug]": { table: "voyages", column: "slug" },
   "/lore/[slug]": { table: "dispatch_posts", column: "slug" },
   "/regattas/[slug]": { table: "contests", column: "slug" },
+  "/agreements/[code]": { table: "documents", column: "code" },
 };
 
 function walk(dir, segments = []) {
@@ -67,6 +74,7 @@ const routes = walk(appDir)
       dynamic,
       access: isProtected(r.path) ? "member" : r.path.startsWith("/auth") || r.path === "/gangway" ? "auth" : "public",
       ...(dynamic && DYNAMIC_SOURCES[r.path] ? { source: DYNAMIC_SOURCES[r.path] } : {}),
+      ...(CREDENTIAL_ROUTES.has(r.path) ? { credential: true } : {}),
     };
   })
   .sort((a, b) => a.path.localeCompare(b.path));
@@ -74,7 +82,10 @@ const routes = walk(appDir)
 /* Only pages need a slug source — they are what the sitemap and the audit
    expand. Dynamic route handlers (.ics feeds, stubs) are addressed by
    secret or by code and are never enumerated. */
-const unsourced = routes.filter((r) => r.dynamic && !r.source && r.type === "page");
+
+const unsourced = routes.filter(
+  (r) => r.dynamic && !r.source && r.type === "page" && !CREDENTIAL_ROUTES.has(r.path)
+);
 if (unsourced.length) {
   console.warn(
     "route-manifest: dynamic routes without a slug source (add to DYNAMIC_SOURCES to include them in sitemap/audit):\n" +

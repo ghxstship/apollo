@@ -16,7 +16,7 @@ export type ProfileRow = {
   id: string; member_no: string | null; full_name: string | null; handle: string | null
   email: string | null; tier: MembershipTier; home_harbor: string | null; avatar_tone: string
   is_staff: boolean; joined_at: string; status: "active" | "paused" | "departed"
-  notification_prefs: Json; waiver_signed_at: string | null; plan_id: string | null
+  notification_prefs: Json; plan_id: string | null
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }
@@ -168,6 +168,7 @@ export type CrewRequestRow = {
 export type RsvpGuestRow = {
   id: string; rsvp_id: string; name: string; boarding_code: string | null
   checked_in_at: string | null; checked_in_by: string | null; created_at: string
+  sign_token: string
 }
 export type PassTransferRow = {
   id: string; rsvp_id: string; from_profile: string; to_profile: string
@@ -228,6 +229,48 @@ export type ContestRow = {
 export type ContestEntryRow = { contest_id: string; profile_id: string; joined_at: string }
 export type ContestResultRow = {
   contest_id: string; profile_id: string; place: number | null; score: number; met: boolean
+}
+
+
+/* ===== Clause library, documents, signatures =============================== */
+
+export type ClauseCategory =
+  | "liability" | "conduct" | "media" | "privacy" | "payment" | "crew" | "general"
+export type ClauseRow = {
+  code: string; title: string; category: ClauseCategory
+  position: number; active: boolean; created_at: string
+}
+export type ClauseVersionRow = {
+  id: string; clause_code: string; version: number; body: string
+  note: string | null; published_at: string; published_by: string | null
+}
+export type DocumentKind = "waiver" | "contract" | "policy"
+export type DocumentAudience = "member" | "guest" | "crew" | "partner"
+export type DocumentRow = {
+  code: string; title: string; kind: DocumentKind; audience: DocumentAudience
+  validity_months: number | null; active: boolean; created_at: string
+}
+export type DocumentVersionRow = {
+  id: string; document_code: string; version: number
+  status: "draft" | "published" | "retired"
+  effective_from: string | null; published_at: string | null
+  published_by: string | null; created_at: string
+}
+export type DocumentClauseRow = {
+  document_version_id: string; clause_version_id: string; position: number; condition: Json
+}
+export type DocumentGate =
+  | "join_club" | "board_sea" | "board_shore" | "guest_board" | "crew_engage"
+export type DocumentRequirementRow = { document_code: string; gate: DocumentGate }
+export type SignatureRow = {
+  id: string; document_version_id: string
+  profile_id: string | null; guest_id: string | null
+  signer_name: string | null; signer_email: string | null; guardian_name: string | null
+  rendered_body: string | null; rendered_hash: string
+  consent_esign: boolean; consent_text: string | null
+  signature_kind: "typed" | "drawn"; signature_data: string | null
+  signed_at: string; signed_ip: string | null; user_agent: string | null
+  redacted_at: string | null; redacted_by: string | null
 }
 
 type Table<R, I = Ins<R>> = { Row: Row<R>; Insert: I; Update: Partial<R>; Relationships: [] }
@@ -292,6 +335,13 @@ export type Database = {
       contests: Table<ContestRow, Ins<ContestRow, "slug" | "shape" | "title" | "metric" | "starts_at" | "ends_at">>
       contest_entries: Table<ContestEntryRow, Ins<ContestEntryRow, "contest_id" | "profile_id">>
       contest_results: Table<ContestResultRow, Ins<ContestResultRow, "contest_id" | "profile_id" | "score">>
+      clauses: Table<ClauseRow, Ins<ClauseRow, "code" | "title" | "category">>
+      clause_versions: Table<ClauseVersionRow, Ins<ClauseVersionRow, "clause_code" | "version" | "body">>
+      documents: Table<DocumentRow, Ins<DocumentRow, "code" | "title" | "kind" | "audience">>
+      document_versions: Table<DocumentVersionRow, Ins<DocumentVersionRow, "document_code" | "version">>
+      document_clauses: Table<DocumentClauseRow, Ins<DocumentClauseRow, "document_version_id" | "clause_version_id" | "position">>
+      document_requirements: Table<DocumentRequirementRow, Ins<DocumentRequirementRow, "document_code" | "gate">>
+      signatures: Table<SignatureRow, Ins<SignatureRow, "document_version_id" | "rendered_hash" | "consent_esign" | "signature_kind">>
     }
     Views: {
       voyage_capacity: {
@@ -325,6 +375,13 @@ export type Database = {
         Row: {
           profile_id: string | null; passes: number | null; attended: number | null
           posts: number | null; knots: number | null; last_booked_at: string | null
+        }
+        Relationships: []
+      }
+      member_waiver_standing: {
+        Row: {
+          profile_id: string | null; signed_at: string | null
+          expires_at: string | null; current: boolean | null
         }
         Relationships: []
       }
@@ -367,6 +424,43 @@ export type Database = {
           sailings: number; nm_logged: number; harbors: number; crew_met: number
           knots_earned: number; marks_won: string[]; longest_nm: number | null
           longest_title: string | null
+        }>
+      }
+      render_document: { Args: { p_document_version_id: string; p_context?: Json }; Returns: string | null }
+      published_version: { Args: { p_document_code: string }; Returns: string | null }
+      publish_document_version: { Args: { p_id: string }; Returns: undefined }
+      redact_signature: { Args: { p_id: string; p_reason?: string }; Returns: undefined }
+      sign_document: {
+        Args: {
+          p_document_code: string; p_context?: Json; p_consent?: boolean
+          p_consent_text?: string | null; p_signature_kind?: string
+          p_signature_data?: string | null; p_signer_name?: string | null
+          p_user_agent?: string | null
+        }
+        Returns: string
+      }
+      sign_document_as_guest: {
+        Args: {
+          p_token: string; p_document_code: string; p_consent?: boolean
+          p_consent_text?: string | null; p_signature_kind?: string
+          p_signature_data?: string | null; p_signer_name?: string | null
+          p_guardian_name?: string | null; p_user_agent?: string | null
+        }
+        Returns: string
+      }
+      guest_document: {
+        Args: { p_token: string; p_document_code: string }
+        Returns: Array<{
+          guest_name: string; voyage_title: string; voyage_starts: string
+          document_title: string; body: string; already_signed: boolean
+        }>
+      }
+      signature_standing: {
+        Args: { p_profile_id: string }
+        Returns: Array<{
+          document_code: string; title: string; kind: DocumentKind
+          gates: DocumentGate[]; state: "missing" | "lapsed" | "signed"
+          signed_at: string | null; expires_at: string | null
         }>
       }
       calendar_feed: {

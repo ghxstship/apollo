@@ -26,6 +26,7 @@ const GROUPS = [
     ["/bridge/orders", "Orders"],
     ["/bridge/galley", "Galley"],
     ["/bridge/codes", "Codes"],
+    ["/bridge/documents", "Documents"],
   ],
   [
     ["/bridge/reports", "Reports"],

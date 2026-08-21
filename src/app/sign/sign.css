@@ -1,0 +1,6 @@
+/* The guest signing page stands alone — no member shell, no navigation to
+   anywhere else. A guest arrived here from a link and leaves when they're done. */
+.gsn{min-height:100vh;min-height:100dvh;background:var(--surface-page);padding:32px 24px 64px;max-width:760px;margin-inline:auto}
+.gsn-head{padding-bottom:24px;border-bottom:1px solid var(--line-faint);margin-bottom:28px}
+.gsn-lede{margin:18px 0 0;font-size:15px;line-height:1.7;color:var(--text-2);max-width:56ch}
+.gsn-lede b{font-weight:600;color:var(--text-1)}

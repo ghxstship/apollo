@@ -55,10 +55,22 @@ export default async function GangwayPage({
   const { data: profilesData } = profileIds.length
     ? await supabase
         .from("profiles")
-        .select("id, full_name, member_no, waiver_signed_at")
+        .select("id, full_name, member_no")
         .in("id", profileIds)
     : { data: [] };
   const profiles = new Map((profilesData ?? []).map((p) => [p.id, p]));
+
+  /* Waiver standing is derived from the signature record, never from a flag on
+     the profile — one question, one answer. */
+  const { data: waiverData } = profileIds.length
+    ? await supabase
+        .from("member_waiver_standing")
+        .select("profile_id, current")
+        .in("profile_id", profileIds)
+    : { data: [] };
+  const waiverCurrent = new Map(
+    (waiverData ?? []).map((w) => [w.profile_id, Boolean(w.current)])
+  );
 
   const vesselIds = [...new Set(rsvps.map((r) => r.vessel_id).filter((id): id is string => !!id))];
   const { data: vesselsData } = vesselIds.length
@@ -76,7 +88,7 @@ export default async function GangwayPage({
       vessel: r.vessel_id ? (vesselById.get(r.vessel_id) ?? "") : "",
       guestNames: r.guest_names ?? [],
       guests: r.guests,
-      waiverSigned: !!p?.waiver_signed_at,
+      waiverSigned: waiverCurrent.get(r.profile_id) ?? false,
       checkedInAt: r.checked_in_at,
     };
   });

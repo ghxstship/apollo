@@ -62,10 +62,21 @@ export default async function ManifestsPage({
   const { data: profilesData } = profileIds.length
     ? await supabase
         .from("profiles")
-        .select("id, full_name, member_no, avatar_tone, waiver_signed_at")
+        .select("id, full_name, member_no, avatar_tone")
         .in("id", profileIds)
     : { data: [] };
   const profiles = new Map((profilesData ?? []).map((p) => [p.id, p]));
+
+  /* Derived from the signature record; the profile carries no waiver flag. */
+  const { data: waiverData } = profileIds.length
+    ? await supabase
+        .from("member_waiver_standing")
+        .select("profile_id, current")
+        .in("profile_id", profileIds)
+    : { data: [] };
+  const waiverCurrent = new Map(
+    (waiverData ?? []).map((w) => [w.profile_id, Boolean(w.current)])
+  );
 
   /* Active members for the box-office picker — anyone can be walked on. */
   const { data: membersData } = await supabase
@@ -121,7 +132,7 @@ export default async function ManifestsPage({
       boardingCode: r.boarding_code ?? "",
       status: r.status as "aboard" | "waitlist",
       checkedInAt: r.checked_in_at,
-      waiverMissing: !p?.waiver_signed_at,
+      waiverMissing: !(waiverCurrent.get(r.profile_id) ?? false),
       vesselId: r.vessel_id,
     };
   });

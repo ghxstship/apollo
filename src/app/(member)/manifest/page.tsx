@@ -86,12 +86,25 @@ export default async function VoyagesPage() {
     attachedByRsvp.set(row.rsvp_id, [...(attachedByRsvp.get(row.rsvp_id) ?? []), row.addon_id]);
   }
 
-  /* Per-guest stubs — the manifest cuts these from guest_names by trigger. */
+  /* Per-guest stubs — the manifest cuts these from guest_names by trigger.
+     Whether each guest has signed comes from the signature record; the member
+     can see the standing of their own guests, and pass on the link. */
+  const guestIds = (guestRes.data ?? []).map((g) => g.id);
+  const { data: guestSigs } = guestIds.length
+    ? await supabase.from("signatures").select("guest_id").in("guest_id", guestIds)
+    : { data: [] };
+  const signedGuests = new Set((guestSigs ?? []).map((s) => s.guest_id));
+
   const guestsByRsvp = new Map<string, GuestStub[]>();
   for (const g of guestRes.data ?? []) {
     guestsByRsvp.set(g.rsvp_id, [
       ...(guestsByRsvp.get(g.rsvp_id) ?? []),
-      { name: g.name, code: g.boarding_code },
+      {
+        name: g.name,
+        code: g.boarding_code,
+        signToken: g.sign_token,
+        signed: signedGuests.has(g.id),
+      },
     ]);
   }
 

@@ -140,6 +140,10 @@ async function sweep(p) {
      which is the point of the test that puts one there. */
   await stf.patch("profiles?stripe_customer_id=like.cus_e2e_*", { stripe_customer_id: null });
   await stf.patch("profiles?stripe_customer_id=like.cus_probe_*", { stripe_customer_id: null });
+  /* Signatures are deliberately undeletable, so the suite cannot sweep them.
+     It signs as the regional persona against the standing version, which is
+     idempotent — one row, no matter how many times the suite runs. */
+  await stf.del("document_versions?status=eq.draft&version=gte.900");
 }
 
 /* ---------- E. schema invariants ----------
@@ -500,6 +504,229 @@ async function moderationRules(p) {
   await stf.del(`wardroom_posts?id=eq.${pid}`);
 }
 
+/* ---------- K. waivers and contracts ----------
+   The whole value of a waiver is being able to say what a person agreed to, so
+   the checks are mostly about what cannot be changed after the fact: a clause
+   version, a published composition, a signature, or the hash that binds them. */
+async function documentRules(p) {
+  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff), anon = rest(null);
+  /* RLS grants no UPDATE or DELETE policy on the record tables, so it refuses
+     first and returns no rows rather than an error. "Nothing happened" is the
+     assertion; an append-only trigger stands behind RLS as the second layer. */
+  const untouched = (res) =>
+    res.status >= 400 || (Array.isArray(res.data) && res.data.length === 0);
+
+  // The library is staff tooling; a member reads rendered documents, not clauses.
+  const rawClauses = await reg.get("clause_versions?select=body&limit=1");
+  note("regional", "clause wording is not a member's to browse", (rawClauses.data || []).length === 0, `got ${rawClauses.status}`);
+  const staffClauses = await stf.get("clause_versions?select=body&limit=5");
+  note("staff", "staff read the clause library", (staffClauses.data || []).length > 0, `got ${staffClauses.status}`);
+
+  // Conditional assembly: a Sea Day carries clauses a Port Day does not.
+  const ver = await reg.rpc("published_version", { p_document_code: "member-waiver" });
+  const vid = typeof ver.data === "string" ? ver.data : null;
+  note("regional", "the member waiver is published", Boolean(vid), `got ${ver.status}`);
+  if (vid) {
+    const sea = await reg.rpc("render_document", { p_document_version_id: vid, p_context: { class: "sea" } });
+    const shore = await reg.rpc("render_document", { p_document_version_id: vid, p_context: { class: "shore" } });
+    const seaLen = (sea.data || "").length, shoreLen = (shore.data || "").length;
+    note("regional", "a Sea Day renders more than a Port Day", seaLen > shoreLen && shoreLen > 0, `${seaLen} vs ${shoreLen}`);
+    note("regional", "the sea clauses stay off the shore rendering",
+      /swim/i.test(sea.data || "") && !/swim/i.test(shore.data || ""), "swim-competency placement");
+  }
+
+  // Signing is idempotent, and the hash is the server's word, not the client's.
+  const signed = await reg.rpc("sign_document", {
+    p_document_code: "member-waiver", p_context: { class: "sea" }, p_consent: true,
+    p_consent_text: "E2E consent", p_signature_kind: "typed", p_signature_data: "E2e Regional",
+    p_signer_name: "E2e Regional", p_user_agent: "lyre-e2e",
+  });
+  note("regional", "may sign the member waiver", signed.status < 400, `got ${signed.status}`);
+  const again = await reg.rpc("sign_document", {
+    p_document_code: "member-waiver", p_context: { class: "sea" }, p_consent: true,
+    p_signature_kind: "typed", p_signature_data: "E2e Regional",
+  });
+  note("regional", "signing twice is idempotent", again.status < 400 && again.data === signed.data, `${signed.data} vs ${again.data}`);
+
+  const noConsent = await reg.rpc("sign_document", {
+    p_document_code: "member-waiver", p_consent: false,
+    p_signature_kind: "typed", p_signature_data: "E2e Regional",
+  });
+  note("regional", "cannot sign without consenting", noConsent.status >= 400, `got ${noConsent.status}`);
+
+  const noMark = await reg.rpc("sign_document", {
+    p_document_code: "member-waiver", p_consent: true, p_signature_kind: "typed", p_signature_data: "",
+  });
+  note("regional", "cannot sign without a signature", noMark.status >= 400, `got ${noMark.status}`);
+
+  const mine = await reg.get("signatures?select=rendered_hash,signature_kind&limit=5");
+  const hash = mine.data?.[0]?.rendered_hash ?? "";
+  note("regional", "the signature carries a sha-256", /^[0-9a-f]{64}$/.test(hash), hash.slice(0, 20));
+
+  // A signature is a record. It cannot be forged, rewritten, or deleted.
+  const forge = await reg.post("signatures", {
+    document_version_id: vid, profile_id: uid(p.regional),
+    rendered_hash: "a".repeat(64), consent_esign: true, signature_kind: "typed",
+  });
+  note("regional", "cannot forge a signature row", forge.status >= 400, `got ${forge.status}`);
+
+  const sigId = mine.data?.[0]?.id ?? null;
+  const owned = await reg.get(`signatures?select=id&profile_id=eq.${uid(p.regional)}&limit=1`);
+  const targetId = owned.data?.[0]?.id;
+  if (targetId) {
+    const rewrite = await reg.patch(`signatures?id=eq.${targetId}`, { rendered_hash: "b".repeat(64) });
+    note("regional", "cannot restate what was signed", untouched(rewrite), `got ${rewrite.status} ${JSON.stringify(rewrite.data).slice(0, 60)}`);
+    const erase = await reg.del(`signatures?id=eq.${targetId}`);
+    note("regional", "cannot delete a signature", untouched(erase), `got ${erase.status}`);
+    const staffErase = await stf.del(`signatures?id=eq.${targetId}`);
+    note("staff", "not even staff may delete a signature", untouched(staffErase), `got ${staffErase.status}`);
+  }
+  void sigId;
+
+  // Another member's signature is not readable.
+  const peek = await glo.get(`signatures?select=id&profile_id=eq.${uid(p.regional)}`);
+  note("global", "cannot read another member's signature", (peek.data || []).length === 0, JSON.stringify(peek.data));
+
+  // The clause library is append-only.
+  const cv = await stf.get("clause_versions?select=id,clause_code,version&limit=1");
+  const cvId = cv.data?.[0]?.id;
+  if (cvId) {
+    const reword = await stf.patch(`clause_versions?id=eq.${cvId}`, { body: "E2E tampered wording that is plenty long." });
+    note("staff", "a clause version cannot be reworded in place", untouched(reword), `got ${reword.status}`);
+    const drop = await stf.del(`clause_versions?id=eq.${cvId}`);
+    note("staff", "a clause version cannot be deleted", untouched(drop), `got ${drop.status}`);
+  }
+
+  // A published composition is frozen.
+  if (vid) {
+    const anyClause = await stf.get("clause_versions?select=id&limit=1");
+    const add = await stf.post("document_clauses", {
+      document_version_id: vid, clause_version_id: anyClause.data?.[0]?.id, position: 99,
+    });
+    note("staff", "a published composition is frozen", add.status >= 400, `got ${add.status}`);
+  }
+
+  // Drafts are not readable before they are published.
+  const draft = await stf.post("document_versions", {
+    document_code: "member-waiver", version: 900 + (Date.now() % 90), status: "draft",
+  });
+  const draftId = draft.data?.[0]?.id;
+  if (draftId) {
+    const seen = await reg.get(`document_versions?id=eq.${draftId}&select=id`);
+    note("regional", "a draft version is invisible", (seen.data || []).length === 0, JSON.stringify(seen.data));
+    const peeked = await reg.rpc("render_document", { p_document_version_id: draftId });
+    note("regional", "an unpublished draft will not render", peeked.status >= 400, `got ${peeked.status}`);
+    const empty = await stf.rpc("publish_document_version", { p_id: draftId });
+    note("staff", "an empty document will not publish", empty.status >= 400, `got ${empty.status}`);
+    await stf.del(`document_versions?id=eq.${draftId}`);
+  }
+
+  // Guests: token is the whole credential, and it is scoped to guest documents.
+  const guests = await stf.get("rsvp_guests?select=id,sign_token,name&limit=1");
+  const token = guests.data?.[0]?.sign_token;
+  if (token) {
+    const doc = await anon.rpc("guest_document", { p_token: token, p_document_code: "guest-waiver" });
+    note("anon", "a guest reads their waiver by token", (doc.data || []).length === 1, `got ${doc.status}`);
+
+    const wrongDoc = await anon.rpc("sign_document_as_guest", {
+      p_token: token, p_document_code: "member-waiver", p_consent: true,
+      p_signature_kind: "typed", p_signature_data: "E2E",
+    });
+    note("anon", "a guest token cannot reach a member document", wrongDoc.status >= 400, `got ${wrongDoc.status}`);
+
+    const badToken = await anon.rpc("guest_document", {
+      p_token: "00000000-0000-0000-0000-000000000000", p_document_code: "guest-waiver",
+    });
+    note("anon", "an unknown token yields nothing", (badToken.data || []).length === 0, `got ${badToken.status}`);
+
+    const noConsentGuest = await anon.rpc("sign_document_as_guest", {
+      p_token: token, p_document_code: "guest-waiver", p_consent: false,
+      p_signature_kind: "typed", p_signature_data: "E2E",
+    });
+    note("anon", "a guest cannot sign without consenting", noConsentGuest.status >= 400, `got ${noConsentGuest.status}`);
+  }
+
+  // anon reaches none of it directly.
+  for (const t of ["clauses", "clause_versions", "documents", "document_versions", "document_clauses", "signatures"]) {
+    const r = await anon.get(`${t}?select=*&limit=1`);
+    note("anon", `${t} is sealed from anon`, r.status === 200 && (r.data || []).length === 0, `got ${r.status}`);
+  }
+
+  // Standing is derived, and private.
+  const standing = await reg.rpc("signature_standing", { p_profile_id: uid(p.regional) });
+  note("regional", "standing reads for yourself", standing.status < 400 && Array.isArray(standing.data), `got ${standing.status}`);
+  const theirs = await reg.rpc("signature_standing", { p_profile_id: uid(p.global) });
+  note("regional", "standing is not readable for another member", theirs.status >= 400, `got ${theirs.status}`);
+
+  // The waiver badge the gangway reads is derived, not stored.
+  const view = await stf.get(`member_waiver_standing?select=profile_id,current&profile_id=eq.${uid(p.regional)}`);
+  note("staff", "waiver standing derives from the record", view.data?.[0]?.current === true, JSON.stringify(view.data));
+
+  /* Redaction answers erasure without destroying the proof. It is permanent and
+     a signature cannot be deleted, so the test signs a throwaway guest rather
+     than the persona's standing waiver — otherwise the second run finds the
+     first run's work already done. */
+  const gv = await stf.get("voyages?select=id&class=eq.sea&limit=1");
+  const gr = await stf.post("rsvps", {
+    voyage_id: gv.data?.[0]?.id, profile_id: uid(p.staff), status: "aboard",
+  });
+  const grId = gr.data?.[0]?.id;
+  const gg = grId
+    ? await stf.post("rsvp_guests", { rsvp_id: grId, name: "E2E Redaction Guest" })
+    : { data: null };
+  const gTok = gg.data?.[0]?.sign_token;
+  const gId = gg.data?.[0]?.id;
+
+  if (gTok) {
+    await anon.rpc("sign_document_as_guest", {
+      p_token: gTok, p_document_code: "guest-waiver", p_consent: true,
+      p_consent_text: "E2E consent", p_signature_kind: "typed",
+      p_signature_data: "E2E Redaction Guest", p_user_agent: "lyre-e2e",
+    });
+    const fresh = await stf.get(`signatures?select=id,rendered_hash&guest_id=eq.${gId}`);
+    const rid = fresh.data?.[0]?.id;
+    const keptHash = fresh.data?.[0]?.rendered_hash;
+    note("anon", "a guest signature lands", Boolean(rid), JSON.stringify(fresh.data).slice(0, 60));
+
+    if (rid) {
+      const asMember = await reg.rpc("redact_signature", { p_id: rid });
+      note("regional", "a member cannot redact", asMember.status >= 400, `got ${asMember.status}`);
+
+      const red = await stf.rpc("redact_signature", { p_id: rid });
+      note("staff", "staff redact a signature", red.status < 400, `got ${red.status}`);
+
+      const after = await stf.get(
+        `signatures?select=signer_name,signed_ip,rendered_body,rendered_hash,signed_at&id=eq.${rid}`
+      );
+      const row = after.data?.[0] || {};
+      note("staff", "redaction removes the person",
+        row.signer_name === null && row.signed_ip === null && row.rendered_body === null,
+        JSON.stringify(row).slice(0, 90));
+      note("staff", "redaction keeps the proof",
+        row.rendered_hash === keptHash && Boolean(row.signed_at),
+        String(row.rendered_hash).slice(0, 12));
+
+      const twice = await stf.rpc("redact_signature", { p_id: rid });
+      note("staff", "redacting twice is refused", twice.status >= 400, `got ${twice.status}`);
+    }
+  }
+
+  /* Retention: a signature inside the window survives the sweep. The purge is
+     what removes it once even the proof has expired. */
+  const purgeAsMember = await reg.rpc("purge_expired_signatures", { p_years: 6 });
+  note("regional", "a member cannot run the retention sweep", purgeAsMember.status >= 400, `got ${purgeAsMember.status}`);
+  const before = (await stf.get("signatures?select=id&limit=1000")).data || [];
+  const purge = await stf.rpc("purge_expired_signatures", { p_years: 6 });
+  const afterCount = ((await stf.get("signatures?select=id&limit=1000")).data || []).length;
+  note("staff", "the retention sweep runs", purge.status < 400, `got ${purge.status}`);
+  note("staff", "the sweep spares signatures inside the window", afterCount === before.length,
+    `${before.length} before, ${afterCount} after`);
+
+  if (gId) await stf.del(`rsvp_guests?id=eq.${gId}`);
+  if (grId) await stf.del(`rsvps?id=eq.${grId}`);
+
+}
+
 /* ---------- A. route × role matrix ---------- */
 async function routeMatrix(personas) {
   const memberPages = manifest.routes.filter((r) => r.type === "page" && !r.dynamic && r.access === "member");
@@ -837,6 +1064,7 @@ async function main() {
   await commerceRules(personas);
   await opsRules(personas);
   await moderationRules(personas);
+  await documentRules(personas);
   await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;

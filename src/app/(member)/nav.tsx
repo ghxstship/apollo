@@ -19,6 +19,7 @@ const LINKS = [
   ["/portal", "Portal"],
   ["/account", "Account"],
   ["/passbook", SURFACES.passbook],
+  ["/agreements", "Agreements"],
   ["/word", "Word"],
   ["/you", "You"],
 ] as const;
