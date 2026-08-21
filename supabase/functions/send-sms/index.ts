@@ -43,10 +43,20 @@ type Row = {
 type Mapping = {
   code: string;
   provider_template_id: string | null;
+  provider_template_name: string | null;
   channels: string[];
   parameter_map: Record<string, string>;
   active: boolean;
 };
+
+/* sent.dm resolves a template by name or by id. Name is preferred: the club
+   creates `lyre_weather_hold` in the dashboard and this finds it, with no UUID
+   to transcribe. The id pins an exact template when one is known. */
+function templateRef(m: Mapping): { name?: string; id?: string } | null {
+  if (m.provider_template_name) return { name: m.provider_template_name };
+  if (m.provider_template_id) return { id: m.provider_template_id };
+  return null;
+}
 
 /* sent.dm requires E.164. Anything else is the club's data problem, not a
    send-time guess — a number we cannot state confidently is not dialled. */
@@ -109,7 +119,7 @@ Deno.serve(async (req) => {
         { headers: H },
       ).then((r) => r.json()),
       fetch(
-        `${SUPABASE_URL}/rest/v1/sms_templates?select=code,provider_template_id,channels,parameter_map,active`,
+        `${SUPABASE_URL}/rest/v1/sms_templates?select=code,provider_template_id,provider_template_name,channels,parameter_map,active`,
         { headers: H },
       ).then((r) => r.json()),
     ]);
@@ -124,7 +134,7 @@ Deno.serve(async (req) => {
     if (sandbox) {
       /* A synthetic message against the first registered template. Nothing is
          read from or written to the queue. */
-      const registered = mappings.find((m) => m.active && m.provider_template_id);
+      const registered = mappings.find((m) => m.active && templateRef(m));
       if (!registered) {
         return Response.json({
           sandbox: true, ok: false,
@@ -137,7 +147,7 @@ Deno.serve(async (req) => {
         headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           to: ["+15005550006"],
-          template: { id: registered.provider_template_id, parameters: {} },
+          template: { ...templateRef(registered), parameters: {} },
           channel: registered.channels?.length ? registered.channels : ["sms"],
           sandbox: true,
         }),
@@ -157,7 +167,8 @@ Deno.serve(async (req) => {
 
       // No registered, approved template — nothing is wrong, there is just
       // nothing to send against yet.
-      if (!map || !map.active || !map.provider_template_id) {
+      const ref = map ? templateRef(map) : null;
+      if (!map || !map.active || !ref) {
         await mark(row.id, "skipped");
         skipped++;
         continue;
@@ -176,10 +187,7 @@ Deno.serve(async (req) => {
         headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           to: [to],
-          template: {
-            id: map.provider_template_id,
-            parameters: parameters(row, map.parameter_map),
-          },
+          template: { ...ref, parameters: parameters(row, map.parameter_map) },
           channel: map.channels?.length ? map.channels : ["sms"],
         }),
       });
