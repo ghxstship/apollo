@@ -20,8 +20,10 @@ let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
 /* Fallback only — the real sender is the OUTBOX_FROM row in Supabase Vault.
    Sending sits on atlvs.pro because Resend verifies one domain per plan and
-   lyre.social is not registered yet. Moving it is one Vault update. */
+   syrius.social is not registered yet. Moving it is one Vault update. */
 const DEFAULT_FROM = "SYRIUS SOCIAL — Shoreside <shore@atlvs.pro>";
+/* Member-app origin for email deep links; overridable the same way as FROM. */
+const APP_URL = Deno.env.get("APP_URL") || "https://syrius.social";
 
 async function vaultSecret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
@@ -185,34 +187,46 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:0;">It appears in your ledger now and settles with your statement.</p>`,
     ),
   }),
-  /* The season's card — what a member actually did between two dates. Figures
-     in mono so it reads as a log entry, not a scorecard. Nothing comparative. */
+  /* The season's card — the kit's own email: an eyebrow, a figure grid in
+     mono, marks won in serif, and one gold pill into the logbook. Figures
+     read as a log entry, not a scorecard. Nothing comparative. */
   "season-card": (p) => {
     const marks = Array.isArray(p["marks"]) ? (p["marks"] as unknown[]) : [];
-    const row = (label: string, value: unknown) =>
-      `<tr><td style="padding:5px 0;color:#6B6B70;width:180px;">${esc(label)}</td>` +
-      `<td style="font-family:ui-monospace,Menlo,monospace;letter-spacing:0.06em;">${esc(value)}</td></tr>`;
+    const fig = (value: unknown, label: string) =>
+      `<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);padding:14px 0;">` +
+      `<div style="font-family:${MONO};font-size:22px;color:#101418;font-weight:700;">${esc(value ?? 0)}</div>` +
+      `<div style="font-family:${MONO};font-size:9px;letter-spacing:2px;color:#7E8894;padding-top:5px;">${esc(label)}</div></td>`;
+    const strap = (label: string) =>
+      `<div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:#7E8894;border-top:1px solid rgba(16,20,24,.2);padding-top:16px;margin-top:6px;">${esc(label)}</div>`;
     return {
       subject: `Your season — ${String(p["season"] ?? "the log")}`,
       html: shell(
-        greet(p) +
-          `<p style="margin:0 0 20px;">The season is closed. This is what the log holds.</p>
-<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${SERIF};font-size:15px;line-height:1.7;">
-${row("Nautical miles", p["nm_logged"])}
-${row("Sailings", p["charters"])}
-${row("Harbors", p["harbors"])}
-${row("Crew met", p["crew_met"])}
-${row("Knots banked", p["knots_earned"])}
+        `<div style="font-family:${MONO};font-size:11px;letter-spacing:2px;color:#966E22;text-transform:uppercase;">${esc(p["season"] ?? "The season")} · THE RECORD</div>
+<div style="font-family:${SERIF};font-size:30px;line-height:1.2;color:#101418;padding:14px 0 6px;">Your season, on the record.</div>
+<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A5560;">The season is closed. This is what the log holds. No scripts. No second takes.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+<tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["charters"], "SAILINGS")}${fig(p["harbors"], "HARBORS")}</tr>
+<tr>${fig(p["crew_met"], "CREW MET")}${fig(p["knots_earned"], "KNOTS BANKED")}<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);"></td></tr>
 </table>` +
-          (p["longest_title"]
-            ? `<p style="margin:20px 0 0;">The longest of them was ${esc(p["longest_title"])}${
-                p["longest_nm"] ? ` — ${esc(p["longest_nm"])} NM` : ""
-              }.</p>`
-            : "") +
           (marks.length
-            ? `<p style="margin:20px 0 0;">Marks rounded: ${marks.map((m) => esc(m)).join(", ")}.</p>`
+            ? strap("MARKS WON") +
+              marks
+                .map(
+                  (m) =>
+                    `<div style="font-family:${SERIF};font-size:17px;color:#101418;padding:8px 0 2px;">${esc(m)}</div>`,
+                )
+                .join("")
             : "") +
-          `<p style="margin:20px 0 0;">The log carries. Next season opens shortly.</p>`,
+          (p["longest_title"]
+            ? strap("LONGEST SAILING") +
+              `<div style="font-family:${SERIF};font-size:17px;color:#101418;padding:8px 0 2px;">${esc(p["longest_title"])}${
+                p["longest_nm"] ? ` — ${esc(p["longest_nm"])} NM` : ""
+              }</div>`
+            : "") +
+          `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px;"><tr>
+<td style="border-radius:999px;background:#966E22;"><a href="${APP_URL}/card" style="display:inline-block;padding:13px 30px;font-size:14px;color:#F4EFE6;text-decoration:none;border-radius:999px;font-family:${SERIF};">Open your logbook</a></td>
+</tr></table>
+<p style="margin:14px 0 0;font-size:14px;color:#4A5560;">The log carries. Next season opens shortly.</p>`,
       ),
     };
   },

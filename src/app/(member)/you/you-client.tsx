@@ -196,7 +196,7 @@ export function ResumeBanner() {
   return (
     <div
       className="you-sec"
-      style={{ marginTop: 0, borderColor: "var(--brass-deep, #8a6d3b)" }}
+      style={{ marginTop: 0, borderColor: "var(--brass-deep, #966E22)" }}
       role="status"
     >
       <div className="you-row">

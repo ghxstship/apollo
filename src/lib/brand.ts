@@ -6,7 +6,8 @@
    Naming decisions (2026-08, Syrius rebrand):
    - Umbrella = Syrius Social · sub-brands = Syrius Dating, Syrius Yacht Club.
      Sub-brands swap the accent only (rose / riviera) — never type or surfaces.
-   - Ops console = the Bridge · live mode = Live · feed = the Booth
+   - Ops console = the Bridge · live mode = Live · feed = Open Deck
+     (the confession-booth motif lives in the composer voice, per the kit)
    - Credential = Member Card · shop = the Slop Chest · editorial = Episodes
    - Agent = the Producer (confirm-first; money always asks). The engine is
      Aurora, the shared ATLVS intelligence — the Producer is its Syrius face;
@@ -33,7 +34,7 @@ export const SURFACES = {
   homePort: "Home",
   bridge: "The Bridge",
   gateway: "Live",
-  openDeck: "The Booth",
+  openDeck: "Open Deck",
   passbook: "Member Card",
   shoreside: "Shoreside",
   magazine: "Episodes",
@@ -136,10 +137,12 @@ export const BANNED_TERMS = [
   "Lyre",
   "LYRE",
   "lyre.social",
+  "LYR-",
   "Strike a chord",
   "Chandlery",
   "Passbook",
-  "Open Deck",
+  "The Booth",
+  "the Booth",
   "Home Port",
   "Gateway",
   "LORE",

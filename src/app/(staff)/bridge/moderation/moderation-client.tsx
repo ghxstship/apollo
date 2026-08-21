@@ -1,9 +1,14 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, StateBlock, Toast } from "@/components/ds";
+import { Button, Dialog, Input, Toast } from "@/components/ds";
+import { FlagQueue, type FlagItem } from "@/components/ds/feed";
 import { relTime, useToast } from "../../ui";
 import { leaveUp, removeAndNotify } from "./actions";
+
+/* The Bridge's flag queue — the kit's FlagQueue table drives resolution.
+   "Leave it up" resolves in one motion; "Remove the post" opens the reason
+   dialog, because the author is always told why — never silently. */
 
 export type FlagCard = {
   flagId: string;
@@ -29,68 +34,41 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
     });
   };
 
-  if (flags.length === 0) {
-    return (
-      <div style={{ marginTop: 24 }}>
-        <StateBlock
-          status="empty"
-          title="Queue's clear."
-          detail="Nothing flagged. The Booth is behaving."
-        />
-      </div>
-    );
-  }
+  const items: FlagItem[] = flags.map((f) => ({
+    id: f.flagId,
+    author: f.authorName,
+    excerpt: f.body.length > 90 ? f.body.slice(0, 90) + "…" : f.body,
+    flaggedBy: f.reason.toUpperCase(),
+    when: relTime(f.flaggedAt),
+  }));
 
   return (
     <>
-      {flags.map((f) => (
-        <div className="hm-mod" key={f.flagId}>
-          <div className="hm-mod__meta">
-            <span>{f.authorName.toUpperCase()}</span>
-            <span>·</span>
-            <span>{relTime(f.flaggedAt)}</span>
-            <Badge tone="caution">{f.reason}</Badge>
-          </div>
-          <p>&quot;{f.body}&quot;</p>
-          <div className="hm-mod__acts">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={() => {
-                setReason(f.reason);
-                setRemoving(f);
-              }}
-            >
-              Remove + notify
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pending}
-              onClick={() =>
-                run(
-                  () => leaveUp(f.flagId),
-                  () =>
-                    show({
-                      msg: "Left up. Eyes stay on the thread.",
-                      meta: "LOGGED · NO ACTION",
-                    })
-                )
-              }
-            >
-              Leave up
-            </Button>
-          </div>
-        </div>
-      ))}
+      <div style={{ marginTop: 24 }}>
+        <FlagQueue
+          items={items}
+          onResolve={(item, action) => {
+            const f = flags.find((x) => x.flagId === item.id);
+            if (!f) return;
+            if (action === "leave") {
+              run(
+                () => leaveUp(f.flagId),
+                () => show({ msg: "Left up. Eyes stay on the thread.", meta: "LOGGED · NO ACTION" })
+              );
+            } else {
+              setReason(f.reason);
+              setRemoving(f);
+            }
+          }}
+        />
+      </div>
 
       <Dialog
         open={!!removing}
         onClose={() => setRemoving(null)}
         width={420}
         eyebrow={removing ? removing.authorName : ""}
-        title="Remove from the Booth?"
+        title="Remove from the Open Deck?"
         footer={
           removing ? (
             <>
@@ -123,8 +101,8 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
       >
         <div className="hm-form">
           <p style={{ fontSize: 13 }}>
-            The post comes down and the author gets the word with your reason on it — never
-            silently.
+            The post comes down and the author gets the word with your reason on
+            it — never silently.
           </p>
           <Input
             label="Reason"

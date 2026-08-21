@@ -327,7 +327,7 @@ async function isolationRules(p) {
     ["make yourself staff", { is_staff: true }],
     ["raise your own tier", { tier: "global" }],
     ["put yourself on hold", { status: "paused" }],
-    ["issue yourself a member number", { member_no: "LYR-0001" }],
+    ["issue yourself a member number", { member_no: "SYR-0001" }],
     ["set your own billing account", { stripe_customer_id: "cus_e2e_takeover" }],
   ]) {
     const res = await reg.patch(`profiles?id=eq.${uid(p.regional)}`, patch);
@@ -1056,7 +1056,7 @@ async function routeMatrix(personas) {
           note(name, `${r.path} free of error text`, !/Application error|__next_error__/i.test(html));
           /* The lexicon holds behind the gangway too — the audit only sees
              public pages, so the member surface is checked here. */
-          const banned = ["Lyre", "LYRE", "lyre.social", "Chandlery", "Passbook", "Open Deck", "Home Port", "Gateway", "LORE", "Aurora"].filter((t) => html.includes(t));
+          const banned = ["Lyre", "LYRE", "lyre.social", "LYR-", "Chandlery", "Passbook", "The Booth", "the Booth", "Home Port", "Gateway", "LORE", "Aurora"].filter((t) => html.includes(t));
           note(name, `${r.path} on-lexicon`, banned.length === 0, banned.join(", "));
           const visible = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<![^>]*>/g, "").replace(/<[^>]+>/g, " ");
           const shouts = (visible.match(/!/g) || []).length;
@@ -1076,7 +1076,7 @@ async function routeMatrix(personas) {
    what a member CANNOT do — confer their own marks, read a draft contest, enter
    on someone else's behalf, or see a standing that has not been published. */
 async function logbookRules(p) {
-  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff);
+  const reg = rest(p.regional), stf = rest(p.staff);
 
   // Marks are conferred by trigger only — no member may award themselves one.
   const selfMark = await reg.post("member_marks", {
@@ -1100,6 +1100,7 @@ async function logbookRules(p) {
     slug: dslug, shape: "regatta", title: "E2E draft contest.", metric: "nm",
     starts_at: new Date(Date.now() - 864e5).toISOString(),
     ends_at: new Date(Date.now() + 864e5).toISOString(), status: "draft",
+    knots_award: 500,
   });
   const did = draft.data?.[0]?.id;
   const seeDraft = await reg.get(`contests?id=eq.${did}&select=id`);
@@ -1130,6 +1131,21 @@ async function logbookRules(p) {
   const published = await reg.get(`contest_results?contest_id=eq.${did}&select=place,score`);
   note("regional", "results publish once settled", (published.data || []).length >= 1, JSON.stringify(published.data));
 
+  // The podium split: a regatta's award pays 50/30/20 across I/II/III, the
+  // rounding remainder to I. One entrant here, so I takes 250 of 500 and the
+  // unclaimed places pay no one.
+  const paid = await reg.get(
+    `fathoms_ledger?profile_id=eq.${uid(p.regional)}&reason=eq.${encodeURIComponent("Won — E2E draft contest.")}&order=created_at.desc&limit=1`
+  );
+  note("regional", "regatta award splits the podium — I takes 250 of 500", paid.data?.[0]?.delta === 250, JSON.stringify(paid.data));
+  // Sweep the award so reruns keep every balance-guard assertion honest. The
+  // ledger is RPC-write-only, so the sweep goes through Shoreside's correction
+  // — and a member must not be able to reach it.
+  const memberSweep = await reg.rpc("adjust_knots", { p_profile: uid(p.regional), p_delta: 1, p_reason: "E2E forgery" });
+  note("regional", "a member cannot adjust the ledger", memberSweep.status >= 400, `got ${memberSweep.status}`);
+  const sweep = await stf.rpc("adjust_knots", { p_profile: uid(p.regional), p_delta: -250, p_reason: "E2E award swept." });
+  note("staff", "the award sweep posts", sweep.status < 400, `got ${sweep.status}`);
+
   // The Knots sink: a redemption must be affordable, and spends through the RPC.
   const dear = await reg.get("rewards?select=id,cost_fm&order=cost_fm.desc&limit=1");
   const cannot = await reg.rpc("redeem_reward", { p_reward: dear.data?.[0]?.id });
@@ -1143,7 +1159,7 @@ async function logbookRules(p) {
 }
 
 async function parityRules(p) {
-  const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), stf = rest(p.staff);
+  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff);
 
   /* One fixture exercises the whole confirm chain: a pass goes aboard, the
      crew thread opens by trigger, the Word posts, and the push queue grows.

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, Button, Icon } from "@/components/ds";
+import { Badge, Button, Icon, StandingsTable, type StandingRow } from "@/components/ds";
 import { CONTEST_METRIC, knots, LOGBOOK } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { getMember } from "../../data";
@@ -62,6 +62,26 @@ export default async function ContestPage({
   const closed = new Date(contest.ends_at).getTime() <= new Date().getTime();
   const isRegatta = contest.shape === "regatta";
 
+  /* Kit StandingsTable rows. Ties share a place; the kit renders " =" on them.
+     "You" is matched by display name, so make yours unambiguous. */
+  const nameOf = (row: (typeof standing)[number]): string =>
+    row.full_name ?? (row.handle ? `@${row.handle}` : "A member");
+  const placeCounts = new Map<number, number>();
+  for (const row of standing) {
+    if (row.place != null)
+      placeCounts.set(row.place, (placeCounts.get(row.place) ?? 0) + 1);
+  }
+  const youName = standing.find((r) => r.profile_id === user.id)
+    ? nameOf(standing.find((r) => r.profile_id === user.id)!)
+    : null;
+  const rows: StandingRow[] = standing.map((row) => ({
+    name: nameOf(row),
+    score: score(contest.metric, Number(row.score ?? 0)),
+    place: row.place,
+    tie: row.place != null && (placeCounts.get(row.place) ?? 0) > 1,
+    reached: Boolean(row.met),
+  }));
+
   return (
     <div className="ls-fade">
       <Link href="/regattas" className="mbr-mono mbr-plain">
@@ -89,7 +109,11 @@ export default async function ContestPage({
           {logDate(contest.starts_at)} — {logDate(contest.ends_at)} · {roman(new Date(contest.ends_at).getFullYear())}
         </Badge>
         {contest.knots_award > 0 ? (
-          <Badge tone="outline">{knots(contest.knots_award)} to the winner</Badge>
+          <Badge tone="outline">
+            {isRegatta
+              ? `${knots(contest.knots_award)} — split I / II / III`
+              : `${knots(contest.knots_award)} on reaching it`}
+          </Badge>
         ) : null}
       </div>
 
@@ -123,41 +147,13 @@ export default async function ContestPage({
             No one has entered yet.
           </p>
         ) : (
-          <table className="rgt-stand">
-            <thead>
-              <tr>
-                {isRegatta ? <th style={{ width: 48 }}>—</th> : null}
-                <th>Member</th>
-                <th style={{ width: 140 }}>
-                  {CONTEST_METRIC[contest.metric] ?? contest.metric}
-                </th>
-                {!isRegatta ? <th style={{ width: 100 }}>Reached</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {standing.map((row) => (
-                <tr key={row.profile_id} data-me={row.profile_id === user.id ? "1" : "0"}>
-                  {isRegatta ? (
-                    <td className="rgt-num">{row.place != null ? roman(row.place) : "—"}</td>
-                  ) : null}
-                  <td>
-                    {row.handle ? (
-                      <Link href={`/directory/${row.handle}`} className="mbr-plain">
-                        {row.full_name ?? `@${row.handle}`}
-                      </Link>
-                    ) : (
-                      (row.full_name ?? "A member")
-                    )}
-                    {row.profile_id === user.id ? <span className="rgt-you">YOU</span> : null}
-                  </td>
-                  <td className="rgt-num">{score(contest.metric, Number(row.score ?? 0))}</td>
-                  {!isRegatta ? (
-                    <td className="rgt-num">{row.met ? "Yes" : "Not yet"}</td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <StandingsTable
+            shape={isRegatta ? "regatta" : "challenge"}
+            frozen={contest.status === "settled"}
+            youName={youName}
+            rows={rows}
+            style={{ marginTop: 12 }}
+          />
         )}
         {contest.status !== "settled" ? (
           <p style={{ marginTop: 12, fontSize: 12, color: "var(--text-3)" }}>

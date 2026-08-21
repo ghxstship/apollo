@@ -3,7 +3,7 @@
   "protectedPrefixes": [
     "/home",
     "/manifest",
-    "/booth",
+    "/open-deck",
     "/directory",
     "/threads",
     "/portal",
@@ -150,13 +150,6 @@
       ],
       "dynamic": false,
       "access": "auth"
-    },
-    {
-      "path": "/booth",
-      "file": "src/app/(member)/booth/page.tsx",
-      "type": "page",
-      "dynamic": false,
-      "access": "member"
     },
     {
       "path": "/brand",
@@ -424,6 +417,13 @@
       "type": "page",
       "dynamic": false,
       "access": "public"
+    },
+    {
+      "path": "/open-deck",
+      "file": "src/app/(member)/open-deck/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
     },
     {
       "path": "/portal",

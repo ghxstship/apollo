@@ -45,10 +45,12 @@ const BANNED = [
   "Lyre",
   "LYRE",
   "lyre.social",
+  "LYR-",
   "Strike a chord",
   "Chandlery",
   "Passbook",
-  "Open Deck",
+  "The Booth",
+  "the Booth",
   "Home Port",
   "Gateway",
   "LORE",
@@ -112,7 +114,7 @@ function checkHtml(route, html) {
     .replace(/<[^>]+>/g, " ");
   const shouts = (visible.match(/!/g) || []).length;
   note(route, "the producer never shouts", shouts === 0, shouts ? `${shouts} exclamation mark(s) in visible text` : "");
-  const emoji = visible.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/u);
+  const emoji = visible.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{268F}\u{2692}-\u{27BF}\u{FE0F}]/u /* U+2690/1 ⚐⚑ are the kit's Hail glyphs, not emoji */);
   note(route, "no emoji", !emoji, emoji ? `found ${emoji[0]}` : "");
 }
 

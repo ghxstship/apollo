@@ -1,16 +1,16 @@
 import React from "react";
 
 /* Shared card for the social previews — carbon ground, paper type, the
-   wordmark tracked wide, one lava rule as the view's only accent. Rendered by
+   wordmark tracked wide, one gold rule as the view's only accent. Rendered by
    next/og (satori), so every box declares display and no font is fetched. */
 
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = "image/png";
 
-const CARBON = "#0B0B0C";
-const PAPER = "#F2F2F4";
-const MUTED = "#8E8E96";
-const LAVA = "linear-gradient(90deg,#00E8FF,#8B5CFF,#FF2EC4)";
+const CARBON = "#101418";
+const PAPER = "#F4EFE6";
+const MUTED = "#7E8894";
+const GOLD_RULE = "linear-gradient(90deg,#966E22,#D3B15E,#966E22)";
 
 export function OgFrame({
   eyebrow,
@@ -35,7 +35,7 @@ export function OgFrame({
         color: PAPER,
       }}
     >
-      <div style={{ display: "flex", width: "100%", height: 8, backgroundImage: LAVA }} />
+      <div style={{ display: "flex", width: "100%", height: 8, backgroundImage: GOLD_RULE }} />
       <div
         style={{
           display: "flex",

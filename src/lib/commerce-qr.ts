@@ -5,6 +5,6 @@ import QRCode from "qrcode";
 export async function qrDataUrl(text: string): Promise<string> {
   return QRCode.toDataURL(text, {
     margin: 1,
-    color: { dark: "#F2F2F4", light: "#00000000" },
+    color: { dark: "#F4EFE6", light: "#00000000" },
   });
 }

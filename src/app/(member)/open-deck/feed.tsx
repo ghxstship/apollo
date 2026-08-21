@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { Avatar, Button, Dialog, Icon, IconButton, Select, Tag, Textarea, Toast } from "@/components/ds";
+import { Button, Dialog, Select, Tag, Textarea, Toast } from "@/components/ds";
+import {
+  PostCard as DeckPost,
+  Hail,
+  CommentThread,
+  FlagButton,
+} from "@/components/ds/feed";
 import { addComment, createPost, deletePost, flagPost, toggleHail, type OpenDeckResult } from "./actions";
 
 export type FeedComment = {
@@ -26,10 +32,9 @@ export type FeedPost = {
 
 export type VoyageOption = { id: string; title: string };
 
-/* — Composer — */
+/* — Composer — the kit's card: borderless textarea, sailing attach, gold
+   "Post to the deck". The confession-booth motif lives here, in the voice. */
 export function Composer({
-  authorName,
-  tone,
   voyages,
 }: {
   authorName: string;
@@ -37,59 +42,89 @@ export function Composer({
   voyages: VoyageOption[];
 }) {
   const formRef = React.useRef<HTMLFormElement>(null);
+  const [attaching, setAttaching] = React.useState(false);
   const [state, formAction, pending] = React.useActionState<OpenDeckResult, FormData>(
     async (prev, fd) => {
       const res = await createPost(prev, fd);
-      if (!res.error) formRef.current?.reset();
+      if (!res.error) {
+        formRef.current?.reset();
+        setAttaching(false);
+      }
       return res;
     },
     {}
   );
 
   return (
-    <div className="wd-post">
-      <div className="wd-post__head">
-        <Avatar name={authorName} tone={tone as "ink" | "sea" | "gold" | "sand"} />
-        <div className="wd-post__who">
-          <b>Say it to the crew</b>
-          <span>POSTS STAY ABOARD — NEVER PUBLIC</span>
-        </div>
-      </div>
-      <form ref={formRef} action={formAction} style={{ marginTop: 14 }}>
-        <Textarea
-          name="body"
-          rows={3}
-          maxLength={2000}
-          placeholder="A sighting, a thanks, a pass to claim…"
-          error={state.error}
-        />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-            gap: 12,
-            flexWrap: "wrap",
-            marginTop: 12,
-          }}
-        >
-          {voyages.length > 0 ? (
-            <Select
-              name="voyage_id"
-              aria-label="Tag a voyage"
-              placeholder="Tag a voyage — optional"
-              options={voyages.map((v) => ({ value: v.id, label: v.title }))}
-              style={{ minWidth: 220 }}
-            />
-          ) : (
-            <span />
-          )}
+    <form
+      ref={formRef}
+      action={formAction}
+      style={{
+        background: "var(--surface-card)",
+        border: "1px solid var(--line-faint)",
+        borderRadius: "var(--radius-md)",
+        padding: "14px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      <textarea
+        name="body"
+        rows={3}
+        maxLength={2000}
+        placeholder="The booth is open. Say it like the cameras are on."
+        aria-label="Post to the deck"
+        style={{
+          resize: "vertical",
+          background: "transparent",
+          border: "none",
+          outline: "none",
+          font: "400 14px/1.55 var(--font-sans)",
+          color: "var(--text-1)",
+          minHeight: 56,
+        }}
+      />
+      {state.error ? (
+        <p role="alert" style={{ fontSize: 12.5, color: "var(--danger)", margin: 0 }}>
+          {state.error}
+        </p>
+      ) : null}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        {attaching && voyages.length > 0 ? (
+          <Select
+            name="voyage_id"
+            aria-label="Attach a sailing"
+            placeholder="Pick the sailing"
+            options={voyages.map((v) => ({ value: v.id, label: v.title }))}
+            style={{ minWidth: 200 }}
+          />
+        ) : voyages.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setAttaching(true)}
+            style={{
+              all: "unset",
+              cursor: "pointer",
+              font: "700 9px/1 var(--font-mono)",
+              letterSpacing: ".12em",
+              color: "var(--text-3)",
+              minHeight: 24,
+              whiteSpace: "nowrap",
+            }}
+          >
+            + ATTACH A SAILING
+          </button>
+        ) : (
+          <span />
+        )}
+        <span style={{ marginLeft: "auto" }}>
           <Button type="submit" variant="gold" size="sm" disabled={pending}>
-            Post to the Booth
+            Post to the deck
           </Button>
-        </div>
-      </form>
-    </div>
+        </span>
+      </div>
+    </form>
   );
 }
 
@@ -110,7 +145,7 @@ export function FeedList({ posts }: { posts: FeedPost[] }) {
   const shown = filter ? posts.filter((p) => p.voyageId === filter) : posts;
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {threads.length > 0 ? (
         <div className="wd-filter" role="group" aria-label="Crew threads">
           <Tag active={filter === null} onClick={() => setFilter(null)}>
@@ -128,7 +163,7 @@ export function FeedList({ posts }: { posts: FeedPost[] }) {
         </div>
       ) : null}
       {shown.map((post) => (
-        <PostCard key={post.id} post={post} />
+        <FeedEntry key={post.id} post={post} />
       ))}
     </div>
   );
@@ -141,8 +176,8 @@ const FLAG_REASONS = [
   { value: "other", label: "Other" },
 ];
 
-/* — Post card — */
-export function PostCard({ post }: { post: FeedPost }) {
+/* — One post: the kit card, with hail, thread, flag, and (for your own) strike. — */
+function FeedEntry({ post }: { post: FeedPost }) {
   const [pending, startTransition] = React.useTransition();
   const [showComments, setShowComments] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
@@ -152,12 +187,7 @@ export function PostCard({ post }: { post: FeedPost }) {
   const [note, setNote] = React.useState("");
   const [flagError, setFlagError] = React.useState<string | null>(null);
   const [flagged, setFlagged] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!flagged) return;
-    const t = setTimeout(() => setFlagged(false), 4000);
-    return () => clearTimeout(t);
-  }, [flagged]);
+  const [toasting, setToasting] = React.useState(false);
 
   const hail = () => startTransition(async () => void (await toggleHail(post.id, post.myHail)));
   const remove = () =>
@@ -182,70 +212,64 @@ export function PostCard({ post }: { post: FeedPost }) {
       setReason("");
       setNote("");
       setFlagged(true);
+      setToasting(true);
     });
 
   return (
-    <article className="wd-post">
-      <div className="wd-post__head">
-        <Avatar name={post.who} tone={post.tone} />
-        <div className="wd-post__who" style={{ flex: 1 }}>
-          <b>{post.who}</b>
-          <span>{post.meta}</span>
-        </div>
-        {post.voyageTitle ? <Tag>{post.voyageTitle}</Tag> : null}
-        {post.mine ? (
+    <DeckPost
+      author={post.who}
+      tone={post.tone}
+      timestamp={post.meta}
+      sailing={post.voyageTitle ?? undefined}
+      body={post.body}
+      footer={
+        <>
+          <Hail count={post.hails} hailed={post.myHail} onToggle={pending ? undefined : hail} />
           <button
             type="button"
-            className="wd-x"
-            aria-label="Delete post"
-            onClick={() => setConfirming(true)}
+            onClick={() => setShowComments((s) => !s)}
+            aria-expanded={showComments}
+            style={{
+              all: "unset",
+              cursor: "pointer",
+              font: "700 10px/1 var(--font-mono)",
+              letterSpacing: ".14em",
+              textTransform: "uppercase",
+              color: "var(--text-2)",
+              minHeight: 24,
+              whiteSpace: "nowrap",
+            }}
           >
-            ✕
+            {post.comments.length > 0 ? `WORDS · ${post.comments.length}` : "REPLY"}
           </button>
-        ) : (
-          <IconButton
-            label="Report this post"
-            variant="ghost"
-            size="sm"
-            onClick={() => setReporting(true)}
-          >
-            <Icon name="Flag" size={14} />
-          </IconButton>
-        )}
-      </div>
-      <p className="wd-post__body">{post.body}</p>
-      <div className="wd-post__acts">
-        <button
-          type="button"
-          className={"wd-hail" + (post.myHail ? " on" : "")}
-          aria-pressed={post.myHail}
-          disabled={pending}
-          onClick={hail}
-        >
-          <Icon name="Anchor" size={13} />
-          Hail · {post.hails}
-        </button>
-        <button
-          type="button"
-          className="wd-hail"
-          onClick={() => setShowComments((s) => !s)}
-          aria-expanded={showComments}
-        >
-          <Icon name="MessageCircle" size={13} />
-          {post.comments.length || "Reply"}
-        </button>
-      </div>
+          <span style={{ marginLeft: "auto" }}>
+            {post.mine ? (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                style={{
+                  all: "unset",
+                  cursor: "pointer",
+                  font: "700 9px/1 var(--font-mono)",
+                  letterSpacing: ".14em",
+                  color: "var(--text-3)",
+                  minHeight: 24,
+                }}
+              >
+                STRIKE
+              </button>
+            ) : (
+              <FlagButton flagged={flagged} onFlag={() => setReporting(true)} />
+            )}
+          </span>
+        </>
+      }
+    >
       {showComments ? (
         <div>
-          {post.comments.map((c) => (
-            <div className="wd-cmt" key={c.id}>
-              <Avatar name={c.who} size="sm" tone="sand" />
-              <div className="wd-cmt__b">
-                <b>{c.who}</b>
-                {c.body}
-              </div>
-            </div>
-          ))}
+          <CommentThread
+            comments={post.comments.map((c) => ({ author: c.who, tone: "sand", body: c.body }))}
+          />
           <div className="wd-cmt__form">
             <Textarea
               rows={1}
@@ -255,12 +279,7 @@ export function PostCard({ post }: { post: FeedPost }) {
               onChange={(e) => setDraft(e.target.value)}
               style={{ flex: 1 }}
             />
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pending || !draft.trim()}
-              onClick={comment}
-            >
+            <Button variant="outline" size="sm" disabled={pending || !draft.trim()} onClick={comment}>
               Reply
             </Button>
           </div>
@@ -270,7 +289,7 @@ export function PostCard({ post }: { post: FeedPost }) {
         open={confirming}
         onClose={() => setConfirming(false)}
         width={360}
-        eyebrow="The Booth"
+        eyebrow="Open Deck"
         title="Strike this post?"
         footer={
           <>
@@ -289,19 +308,14 @@ export function PostCard({ post }: { post: FeedPost }) {
         open={reporting}
         onClose={() => setReporting(false)}
         width={420}
-        eyebrow="The Booth"
+        eyebrow="Open Deck"
         title="Flag for the Bridge"
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => setReporting(false)}>
               Stand down
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pending || !reason}
-              onClick={report}
-            >
+            <Button variant="outline" size="sm" disabled={pending || !reason} onClick={report}>
               Send the flag
             </Button>
           </>
@@ -326,13 +340,9 @@ export function PostCard({ post }: { post: FeedPost }) {
           />
         </div>
       </Dialog>
-      {flagged ? (
-        <Toast
-          fixed
-          message="Flagged for the Bridge. Never silently."
-          onDismiss={() => setFlagged(false)}
-        />
+      {toasting ? (
+        <Toast fixed message="Flagged for the Bridge. Never silently." onDismiss={() => setToasting(false)} />
       ) : null}
-    </article>
+    </DeckPost>
   );
 }

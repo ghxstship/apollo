@@ -60,7 +60,7 @@ export default async function YouPage() {
                 </p>
               ) : null}
               <p className="mbr-mono" style={{ marginTop: 4 }}>
-                {profile?.member_no ?? "LYR-0000"} · MEMBER SINCE {roman(joinedYear)}
+                {profile?.member_no ?? "SYR-0000"} · MEMBER SINCE {roman(joinedYear)}
               </p>
             </div>
           </div>

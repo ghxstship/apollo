@@ -5,3 +5,7 @@ export { Input, Textarea, Select, Checkbox, Radio, Switch, Stepper } from "./for
 export { Dialog, Progress, StateBlock, Toast, Tooltip } from "./feedback";
 export { Tabs } from "./navigation";
 export type { TabItem } from "./navigation";
+export { PassageLog as KitPassageLog, MarksList, ContestCard, StandingsTable, KnotsLedger } from "./logbook";
+export type { LogFigure, MarkItem, StandingRow, LedgerEntry, LedgerReward } from "./logbook";
+export { PostCard, Hail, CommentThread, Composer, FlagButton, FlagQueue } from "./feed";
+export type { FeedComment, FlagItem } from "./feed";

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, Radio, Select, StateBlock, Table, Toast } from "@/components/ds";
 import { CONTEST_METRIC, knots } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -154,11 +154,12 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
       <Dialog
         open={calling}
         onClose={() => setCalling(false)}
+        eyebrow="THE BRIDGE · CALL A CONTEST"
         title="Call a contest"
         footer={
           <>
             <Button variant="ghost" onClick={() => setCalling(false)}>
-              Cancel
+              Not now
             </Button>
             <Button
               variant="gold"
@@ -204,14 +205,20 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
             onChange={(e) => setSlug(e.target.value)}
           />
           <Input label="Blurb" value={blurb} onChange={(e) => setBlurb(e.target.value)} />
-          <Select
-            label="Shape"
-            value={shape}
-            onChange={(e) => setShape(e.target.value as ContestShape)}
-          >
-            <option value="regatta">Regatta — ranked</option>
-            <option value="challenge">Challenge — reach a number</option>
-          </Select>
+          <div role="radiogroup" aria-label="Shape" style={{ display: "flex", gap: 18 }}>
+            <Radio
+              name="contest-shape"
+              label="Regatta — ranked"
+              checked={shape === "regatta"}
+              onChange={() => setShape("regatta")}
+            />
+            <Radio
+              name="contest-shape"
+              label="Challenge — reach a number"
+              checked={shape === "challenge"}
+              onChange={() => setShape("challenge")}
+            />
+          </div>
           <Select
             label="Measured by"
             value={metric}
@@ -238,7 +245,8 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
             onChange={(e) => setPrize(e.target.value)}
           />
           <Input
-            label="Knots to the winner"
+            label="Knots award"
+            hint="Paid on settle; regattas split I / II / III."
             type="number"
             value={award}
             onChange={(e) => setAward(e.target.value)}
@@ -261,6 +269,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
       <Dialog
         open={Boolean(confirmSettle)}
         onClose={() => setConfirmSettle(null)}
+        eyebrow="SETTLE · PUBLISHES ONCE"
         title="Settle it?"
         footer={
           <>
@@ -281,15 +290,14 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
                 });
               }}
             >
-              Settle
+              Settle · publish results
             </Button>
           </>
         }
       >
         <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>
-          The standing freezes exactly as it reads now, the award posts, and everyone
-          who entered is notified. This cannot be undone — a settled result is the
-          record.
+          Standings freeze, Knots pay out, and everyone who entered is notified.
+          This cannot be undone — a settled result is the record.
         </p>
       </Dialog>
 

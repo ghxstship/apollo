@@ -205,7 +205,7 @@ export default function BrandKitPage() {
             in Space Mono — 38°54′N 1°26′E.
           </p>
           <div className="bk-lex">
-            {["Charters", "Tables", "The Manifest", "Passes", "Cabins", "The Booth", "Knots", "Leagues", "Marks", "Regattas", "Member Card", "Live", "the Bridge", "Shoreside", "Episodes", "The Producer", "Aboard", "Weather Hold", "The Gangway"].map((w) => (
+            {["Charters", "Tables", "The Manifest", "Passes", "Cabins", "Open Deck", "Knots", "Leagues", "Marks", "Regattas", "Member Card", "Live", "the Bridge", "Shoreside", "Episodes", "The Producer", "Aboard", "Weather Hold", "The Gangway"].map((w) => (
               <Tag key={w}>{w}</Tag>
             ))}
           </div>

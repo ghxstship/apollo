@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Progress, Stat, StateBlock, Table } from "@/components/ds";
+import { Progress, Stat, StateBlock, Table, type LedgerEntry } from "@/components/ds";
 import { CURRENCY, knots, LEAGUES } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { CopyCode } from "./copy-code";
-import { MintInvite, RedeemButton } from "./portal-client";
+import { KnotsPanel, MintInvite } from "./portal-client";
 import { SettleCardButton, SettledNotice } from "./settle-card";
 
 export const metadata: Metadata = { title: "Portal" };
@@ -42,7 +42,8 @@ export default async function PortalPage({
         .from("fathoms_ledger")
         .select("*")
         .eq("profile_id", user.id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(40),
       supabase
         .from("rewards")
         .select("*")
@@ -71,6 +72,12 @@ export default async function PortalPage({
 
   const balance = balanceRes.data?.balance ?? 0;
   const ledger: LedgerRow[] = (ledgerRes.data ?? []).map((r) => ({ ...r }));
+  /* Kit ledger rows — the minus is the kit's U+2212, which it colors muted. */
+  const entries: LedgerEntry[] = ledger.map((r) => ({
+    reason: r.reason,
+    delta: (r.delta < 0 ? "\u2212" : "+") + knots(Math.abs(r.delta)),
+    date: logDate(r.created_at),
+  }));
   const rewards = rewardsRes.data ?? [];
   const rewardName = new Map(rewards.map((r) => [r.id, r.name]));
   const redemptions = redemptionsRes.data ?? [];
@@ -162,35 +169,28 @@ export default async function PortalPage({
 
       <section className="mbr-sec">
         <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
-          Rewards
+          Knots and rewards
         </span>
-        {rewards.length === 0 ? (
+        {ledger.length === 0 && rewards.length === 0 ? (
           <StateBlock
             status="empty"
             icon="Anchor"
             bare
-            title="Nothing on offer."
-            detail="The rewards shelf is being restocked. Watch the Word."
+            title="A clean slate."
+            detail="Your first entry lands when you step aboard. The rewards shelf is being restocked."
           />
         ) : (
-          <div className="ptl-rew">
-            {rewards.map((r) => (
-              <div key={r.id} className="ptl-panel" style={{ marginTop: 0 }}>
-                <div className="mbr-mono">{knots(r.cost_fm)}</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 20, marginTop: 8 }}>
-                  {r.name}
-                </div>
-                {r.detail ? (
-                  <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 8 }}>{r.detail}</p>
-                ) : null}
-                <RedeemButton
-                  rewardId={r.id}
-                  rewardName={r.name}
-                  affordable={balance >= r.cost_fm}
-                  short={Math.max(0, r.cost_fm - balance)}
-                />
-              </div>
-            ))}
+          <div className="ptl-panel">
+            <KnotsPanel
+              balance={balance}
+              entries={entries}
+              rewards={rewards.map((r) => ({
+                id: r.id,
+                name: r.name,
+                cost: knots(r.cost_fm),
+                costValue: r.cost_fm,
+              }))}
+            />
           </div>
         )}
         {redemptions.length > 0 ? (
@@ -236,49 +236,6 @@ export default async function PortalPage({
             <MintInvite />
           )}
         </div>
-      </section>
-
-      <section className="mbr-sec">
-        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
-          The full ledger
-        </span>
-        {ledger.length === 0 ? (
-          <StateBlock
-            status="empty"
-            icon="BookOpen"
-            bare
-            title="A clean slate."
-            detail="Your first entry lands when you step aboard."
-          />
-        ) : (
-          <div className="ptl-panel" style={{ padding: "8px 20px 12px" }}>
-            <Table<LedgerRow>
-              columns={[
-                {
-                  key: "created_at",
-                  label: "Date",
-                  mono: true,
-                  width: 90,
-                  render: (r) => logDate(r.created_at),
-                },
-                { key: "reason", label: "Entry" },
-                {
-                  key: "delta",
-                  label: "Knots",
-                  mono: true,
-                  render: (r) => (
-                    <span style={{ color: r.delta < 0 ? "var(--siren)" : "var(--laurel)" }}>
-                      {r.delta > 0 ? "+" : ""}
-                      {knots(r.delta)}
-                    </span>
-                  ),
-                },
-              ]}
-              rows={ledger}
-              rowKey={(r) => r.id}
-            />
-          </div>
-        )}
       </section>
 
       <section className="mbr-sec">

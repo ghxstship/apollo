@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Badge } from "@/components/ds";
+import { ContestCard } from "@/components/ds";
 import { CONTEST_METRIC, knots, LOGBOOK } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { getMember } from "../data";
@@ -52,30 +52,23 @@ export default async function RegattasPage() {
               const closes = new Date(c.ends_at).getTime();
               const days = Math.max(0, Math.ceil((closes - now) / 86_400_000));
               return (
-                <Link key={c.id} href={`/regattas/${c.slug}`} className="rgt-row">
-                  <div>
-                    <h3>{c.title}</h3>
-                    {c.blurb ? <p>{c.blurb}</p> : null}
-                    <div className="rgt-meta">
-                      <Badge tone="outline">
-                        {c.shape === "regatta" ? "Regatta" : "Challenge"}
-                      </Badge>
-                      <Badge tone="outline">
-                        {c.shape === "challenge" && c.target
-                          ? `${c.target} ${CONTEST_METRIC[c.metric] ?? c.metric}`
-                          : (CONTEST_METRIC[c.metric] ?? c.metric)}
-                      </Badge>
-                      {c.knots_award > 0 ? (
-                        <Badge tone="outline">{knots(c.knots_award)}</Badge>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="rgt-aside">
-                    {entered.has(c.id) ? <Badge tone="positive">Entered</Badge> : null}
-                    <span className="mbr-mono">
-                      {days === 0 ? "CLOSES TODAY" : `${days} DAY${days === 1 ? "" : "S"} LEFT`}
-                    </span>
-                  </div>
+                <Link key={c.id} href={`/regattas/${c.slug}`} className="mbr-plain">
+                  <ContestCard
+                    shape={c.shape === "challenge" ? "challenge" : "regatta"}
+                    name={c.title}
+                    metric={
+                      c.shape === "challenge" && c.target
+                        ? `${c.target} ${CONTEST_METRIC[c.metric] ?? c.metric}`
+                        : (CONTEST_METRIC[c.metric] ?? c.metric)
+                    }
+                    award={c.knots_award > 0 ? knots(c.knots_award) : undefined}
+                    entered={entered.has(c.id)}
+                    daysLeft={days}
+                  >
+                    {c.blurb ? (
+                      <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)" }}>{c.blurb}</p>
+                    ) : null}
+                  </ContestCard>
                 </Link>
               );
             })}
@@ -88,16 +81,17 @@ export default async function RegattasPage() {
           <span className="mbr-eyebrow">Settled</span>
           <div className="rgt-list">
             {past.map((c) => (
-              <Link key={c.id} href={`/regattas/${c.slug}`} className="rgt-row">
-                <div>
-                  <h3>{c.title}</h3>
-                  {c.blurb ? <p>{c.blurb}</p> : null}
-                </div>
-                <div className="rgt-aside">
-                  <span className="mbr-mono">
-                    {c.settled_at ? logDate(c.settled_at) : logDate(c.ends_at)}
-                  </span>
-                </div>
+              <Link key={c.id} href={`/regattas/${c.slug}`} className="mbr-plain">
+                <ContestCard
+                  shape={c.shape === "challenge" ? "challenge" : "regatta"}
+                  name={c.title}
+                  window={c.settled_at ? logDate(c.settled_at) : logDate(c.ends_at)}
+                  settled
+                >
+                  {c.blurb ? (
+                    <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)" }}>{c.blurb}</p>
+                  ) : null}
+                </ContestCard>
               </Link>
             ))}
           </div>

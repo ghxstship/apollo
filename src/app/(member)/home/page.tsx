@@ -145,7 +145,7 @@ export default async function HarborPage() {
             <Stat label={CURRENCY.name} value={knots(balance)} sub="MORE KNOTS, FARTHER WATER" />
           </div>
           <div className="hbr-links" style={{ gridTemplateColumns: "1fr" }}>
-            <Link href="/booth" className="hbr-link">
+            <Link href="/open-deck" className="hbr-link">
               <Icon name="MessageCircle" size={18} style={{ color: "var(--text-2)" }} />
               <div>
                 <b>{SURFACES.openDeck}</b>

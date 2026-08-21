@@ -112,7 +112,7 @@ export default async function StubPage({
   const berthsTotal = capRes.data?.berths_total ?? voyage.berths_total;
   const qr = await qrDataUrl(code);
   const name = host?.full_name ?? "A member";
-  const memberNo = host?.member_no ?? "LYR-0000";
+  const memberNo = host?.member_no ?? "SYR-0000";
   const tier = TIER_LABEL[host?.tier ?? "regional"] ?? "Regional";
 
   return (
@@ -143,7 +143,7 @@ export default async function StubPage({
             style={{
               fontFamily: "var(--font-display)",
               fontSize: 24,
-              color: "var(--bone, #F2F2F4)",
+              color: "var(--bone, #F4EFE6)",
               marginTop: 14,
             }}
           >
@@ -217,7 +217,7 @@ export default async function StubPage({
             width: 100% !important;
             max-width: 480px !important;
             margin-inline: auto !important;
-            border-color: #060607 !important;
+            border-color: #0B0E12 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }

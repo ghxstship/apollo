@@ -87,8 +87,8 @@
 .ls-badge--positive{background:color-mix(in srgb, var(--positive) 12%, transparent);border-color:color-mix(in srgb, var(--positive) 55%, transparent);color:var(--positive)}
 .ls-badge--caution{background:color-mix(in srgb, var(--terracotta) 12%, transparent);border-color:color-mix(in srgb, var(--terracotta) 55%, transparent);color:var(--terracotta)}
 /* Paper theme: deepened anchors keep AA at badge sizes. */
-[data-theme="light"] .ls-badge--positive{--positive:#0B7A4B}
-[data-theme="light"] .ls-badge--caution{--terracotta:#A6116F}
+[data-theme="light"] .ls-badge--positive{--positive:#3E8A60}
+[data-theme="light"] .ls-badge--caution{--terracotta:#A96C15}
 .ls-badge--outline{border-color:var(--line-strong);color:var(--text-1)}
 .ls-badge--outline.ls-badge--inverse{border-color:var(--line-inverse-strong);color:var(--text-inverse-1)}
 

@@ -1,4 +1,5 @@
 import { LOGBOOK, MARK_KIND } from "@/lib/brand";
+import { KitPassageLog, MarksList, type LogFigure, type MarkItem } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import type { createClient } from "@/lib/supabase/server";
 
@@ -74,6 +75,9 @@ function nm(v: number): string {
   return Number.isInteger(v) ? String(v) : v.toFixed(1);
 }
 
+/* Rendered with the kit's logbook components — the auto-fit figure grid and the
+   marks rows are the design system's now, not bespoke CSS. Your own log shows
+   what is still ahead; another member's does not. */
 export function PassageLog({
   log,
   marks,
@@ -84,88 +88,53 @@ export function PassageLog({
   own: boolean;
 }) {
   const sailed = (log?.sailings ?? 0) > 0;
-  const held = marks.filter((m) => m.held);
-  const open = marks.filter((m) => !m.held);
+
+  const figures: LogFigure[] = sailed
+    ? [
+        { value: nm(log!.nmLogged), label: "Nautical miles" },
+        { value: String(log!.sailings), label: "Sailings" },
+        { value: String(Math.round(log!.hoursAtSea)), label: "Hours at sea" },
+        { value: String(log!.harborsMade), label: "Harbors" },
+        { value: String(log!.vesselsSailed), label: "Hulls" },
+        { value: String(log!.crewMet), label: "Cast met" },
+      ]
+    : [];
+
+  const items: MarkItem[] = marks.map((m) => ({
+    kind: MARK_KIND[m.kind] ?? m.kind,
+    name: m.name,
+    detail: m.blurb,
+    held: m.held,
+    date: m.conferredAt ? logDate(m.conferredAt) : undefined,
+  }));
 
   return (
     <section className="plog">
       <div className="plog-head">
         <span className="mbr-eyebrow">{LOGBOOK.log}</span>
-        {sailed && log?.firstSailAt ? (
-          <span className="mbr-mono plog-since">SINCE {logDate(log.firstSailAt)}</span>
-        ) : null}
       </div>
-
       {!sailed ? (
-        <p className="plog-empty">
-          {own
-            ? "Nothing logged yet. The log starts on your first sailing — not before."
-            : "No sailings logged yet."}
-        </p>
+        <KitPassageLog
+          figures={[]}
+          emptyLabel={
+            own
+              ? "Nothing logged yet. The log starts on your first sailing — not before."
+              : "No sailings logged yet."
+          }
+        />
       ) : (
         <>
-          <dl className="plog-figs">
-            <div>
-              <dt>Nautical miles</dt>
-              <dd>{nm(log!.nmLogged)}</dd>
-            </div>
-            <div>
-              <dt>Sailings</dt>
-              <dd>{log!.sailings}</dd>
-            </div>
-            <div>
-              <dt>Hours at sea</dt>
-              <dd>{Math.round(log!.hoursAtSea)}</dd>
-            </div>
-            <div>
-              <dt>Harbors</dt>
-              <dd>{log!.harborsMade}</dd>
-            </div>
-            <div>
-              <dt>Hulls</dt>
-              <dd>{log!.vesselsSailed}</dd>
-            </div>
-            <div>
-              <dt>Crew met</dt>
-              <dd>{log!.crewMet}</dd>
-            </div>
-          </dl>
-
-          {held.length > 0 ? (
-            <div className="plog-marks">
-              <span className="mbr-eyebrow plog-sub">
-                {LOGBOOK.marks} {LOGBOOK.markVerb}
-              </span>
-              <ul>
-                {held.map((m) => (
-                  <li key={m.code}>
-                    <span className="plog-mark-name">{m.name}</span>
-                    <span className="plog-mark-blurb">{m.blurb}</span>
-                    <span className="mbr-mono plog-mark-when">
-                      {MARK_KIND[m.kind] ?? ""}
-                      {m.conferredAt ? ` · ${logDate(m.conferredAt)}` : ""}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {/* Only your own log shows what is still ahead. Reading another
-              member's page should not read as a list of what they lack. */}
-          {own && open.length > 0 ? (
-            <div className="plog-marks plog-marks--open">
-              <span className="mbr-eyebrow plog-sub">Still ahead</span>
-              <ul>
-                {open.map((m) => (
-                  <li key={m.code}>
-                    <span className="plog-mark-name">{m.name}</span>
-                    <span className="plog-mark-blurb">{m.blurb}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
+          <KitPassageLog
+            figures={figures}
+            since={log?.firstSailAt ? logDate(log.firstSailAt) : undefined}
+            style={{ marginTop: 12 }}
+          />
+          <div className="plog-marks">
+            <span className="mbr-eyebrow plog-sub">
+              {LOGBOOK.marks} {LOGBOOK.markVerb}
+            </span>
+            <MarksList marks={items} showAhead={own} />
+          </div>
         </>
       )}
     </section>

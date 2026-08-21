@@ -11,7 +11,7 @@ const LINKS = [
   ["/home", "Home"],
   ["/live", SURFACES.gateway],
   ["/manifest", "Voyages"],
-  ["/booth", SURFACES.openDeck],
+  ["/open-deck", SURFACES.openDeck],
   ["/directory", "Directory"],
   ["/tables", "Tonight"],
   ["/matches", "Matches"],

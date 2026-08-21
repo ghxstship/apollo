@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Toast } from "@/components/ds";
+import { Badge, Button, KnotsLedger, Toast, type LedgerEntry, type LedgerReward } from "@/components/ds";
 import { mintInvite, redeemReward } from "./actions";
 
 /* — Redeem a reward against the knots balance — */
@@ -80,5 +80,54 @@ export function MintInvite() {
         </span>
       ) : null}
     </div>
+  );
+}
+
+/* — The kit's KnotsLedger, wired to redeem_reward. Balance, the running
+   ledger, and the Slop Chest rewards in the kit's single arrangement. — */
+export function KnotsPanel({
+  balance,
+  entries,
+  rewards,
+}: {
+  balance: number;
+  entries: LedgerEntry[];
+  rewards: (LedgerReward & { id: string })[];
+}) {
+  const [pending, startTransition] = React.useTransition();
+  const [error, setError] = React.useState<string | null>(null);
+  const [redeemed, setRedeemed] = React.useState<string | null>(null);
+
+  return (
+    <>
+      <KnotsLedger
+        balance={balance}
+        entries={entries}
+        rewards={rewards}
+        onRedeem={(r) => {
+          if (pending) return;
+          setError(null);
+          startTransition(async () => {
+            const res = await redeemReward((r as LedgerReward & { id: string }).id);
+            if (res.error) setError(res.error);
+            else setRedeemed(r.name);
+          });
+        }}
+      />
+      {error ? (
+        <span role="alert" style={{ display: "block", marginTop: 10, fontSize: 12, color: "var(--siren)" }}>
+          {error}
+        </span>
+      ) : null}
+      {redeemed ? (
+        <Toast
+          fixed
+          tone="positive"
+          message="Redeemed. Shoreside will make it so."
+          meta={redeemed}
+          onDismiss={() => setRedeemed(null)}
+        />
+      ) : null}
+    </>
   );
 }

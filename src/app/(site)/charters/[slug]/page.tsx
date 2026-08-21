@@ -286,7 +286,7 @@ export default async function VoyagePage({
               </p>
             ) : voyage.status === "live" ? (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
-                This one is on the water. Follow along in the Booth, or find the
+                This one is on the water. Follow along on the Open Deck, or find the
                 next sailing on the manifest.
               </p>
             ) : full ? (

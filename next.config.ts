@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/home-port", destination: "/home", permanent: true },
       { source: "/gateway", destination: "/live", permanent: true },
-      { source: "/open-deck", destination: "/booth", permanent: true },
+      { source: "/booth", destination: "/open-deck", permanent: true },
       { source: "/passbook", destination: "/card", permanent: true },
       { source: "/chandlery", destination: "/slop-chest", permanent: true },
       { source: "/word", destination: "/inbox", permanent: true },

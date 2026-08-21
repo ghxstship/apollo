@@ -24,7 +24,7 @@ export default async function MemberCardPage() {
   const balanceCents = account?.balance_cents ?? 0;
 
   const name = profile?.full_name ?? "A member";
-  const memberNo = profile?.member_no ?? "LYR-0000";
+  const memberNo = profile?.member_no ?? "SYR-0000";
   const tier = TIER_LABEL[profile?.tier ?? "regional"] ?? "Regional";
   const joinedYear = profile?.joined_at
     ? new Date(profile.joined_at).getFullYear()
@@ -160,7 +160,7 @@ export default async function MemberCardPage() {
             width: 100% !important;
             max-width: 480px !important;
             margin-inline: auto !important;
-            border-color: #060607 !important;
+            border-color: #0B0E12 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }

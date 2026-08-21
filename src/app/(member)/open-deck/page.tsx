@@ -96,7 +96,7 @@ export default async function OpenDeckPage() {
       <OpenDeckRealtime />
       <span className="mbr-eyebrow">Members only · mind the code</span>
       <h1 className="mbr-h1" style={{ marginTop: 6, marginBottom: 24 }}>
-        The Booth.
+        Open Deck.
       </h1>
       <Composer
         authorName={profile?.full_name ?? "You"}
