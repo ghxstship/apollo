@@ -114,7 +114,7 @@ day someone adds a policy.
 - `render_document()` is definer — it must read `clause_versions`, which members
   cannot — and therefore refuses to render an unpublished draft to a non-staff
   caller.
-- All 521 `security_report()` invariants hold across the enlarged schema.
+- All 548 `security_report()` invariants hold across the enlarged schema.
 
 ## Accessibility (WCAG 2.2 AA / EN 301 549)
 
