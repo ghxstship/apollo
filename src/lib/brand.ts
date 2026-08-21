@@ -8,7 +8,9 @@
      Sub-brands swap the accent only (rose / riviera) — never type or surfaces.
    - Ops console = the Bridge · live mode = Live · feed = the Booth
    - Credential = Member Card · shop = the Slop Chest · editorial = Episodes
-   - Agent = the Producer (confirm-first; money always asks)
+   - Agent = the Producer (confirm-first; money always asks). The engine is
+     Aurora, the shared ATLVS intelligence — the Producer is its Syrius face;
+     Aurora is never named in member-facing copy (see BANNED_TERMS).
    - Events: Charters (aboard, Yacht Club) and Tables (ashore, Dating).
    - Carried over, kit coverage pending (docs/SYRIUS-KIT-REQUEST.md):
      Knots · Leagues · Marks · Regattas · the Passage Log · Shoreside.

@@ -1,5 +1,8 @@
 "use client";
 
+/* The Producer — Syrius face of Aurora, the ATLVS ecosystem engine. The name
+   is per-stage; the confirm-first contract is Aurora's. */
+
 import React from "react";
 import Link from "next/link";
 import { Button, Icon, IconButton } from "@/components/ds";
