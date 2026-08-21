@@ -4,7 +4,7 @@ import { Badge, StateBlock } from "@/components/ds";
 import { TIER_LABEL, logDate, logTime } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { getMember } from "../../data";
-import { PrintButton } from "../../passbook/print-button";
+import { PrintButton } from "../../card/print-button";
 
 export const metadata: Metadata = { title: "Boarding stub" };
 
@@ -134,7 +134,7 @@ export default async function StubPage({
             >
               {guest ? "GUEST STUB" : "BOARDING STUB"}
             </span>
-            <Badge tone="brass" inverse>
+            <Badge tone="gold" inverse>
               {tier}
             </Badge>
           </div>

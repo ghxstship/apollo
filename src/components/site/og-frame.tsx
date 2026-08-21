@@ -46,7 +46,7 @@ export function OgFrame({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 24, letterSpacing: 15 }}>LYRE SOCIAL</div>
+          <div style={{ display: "flex", fontSize: 24, letterSpacing: 15 }}>SYRIUS SOCIAL</div>
           <div
             style={{ display: "flex", fontSize: 17, letterSpacing: 6, color: MUTED, marginTop: 18 }}
           >

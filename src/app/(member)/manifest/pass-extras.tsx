@@ -163,7 +163,7 @@ export function HandOff({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               size="sm"
               disabled={pending || !choice}
               onClick={() => {
@@ -419,7 +419,7 @@ export function CrewCall({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               size="sm"
               disabled={pending}
               onClick={() => {

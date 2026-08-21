@@ -39,10 +39,21 @@ const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 /* Brand lexicon guard — copied from BANNED_TERMS in src/lib/brand.ts (this
-   script is plain mjs and can't import TS). Case-sensitive on purpose:
-   lowercase "dispatch"/"purser"/"fathoms" are literal words and allowed;
-   the capitalized brand uses are not. */
+   script is plain mjs and can't import TS). Case-sensitive on purpose. */
 const BANNED = [
+  // the retired brand, wholesale
+  "Lyre",
+  "LYRE",
+  "lyre.social",
+  "Strike a chord",
+  "Chandlery",
+  "Passbook",
+  "Open Deck",
+  "Home Port",
+  "Gateway",
+  "LORE",
+  "Aurora",
+  // pre-Syrius bans that still hold
   "Harbormaster console",
   "The Purser",
   "The Wardroom",
@@ -50,16 +61,16 @@ const BANNED = [
   " FM ",
   "The Dispatch",
   "Shore office",
-  "Member card",
   "ticket",
   "points",
   "ahoy",
-  // Admission is a pass; berths are for boats. Salon triggers the wrong SEO.
   "berth",
   "Berth",
   "salon",
   "Salon",
   "Overnight",
+  "leaderboard",
+  "Leaderboard",
 ];
 
 const results = [];
@@ -90,6 +101,19 @@ function checkHtml(route, html) {
   note(route, "images carry alt", badImgs.length === 0, badImgs.length ? `${badImgs.length} <img> without alt` : "");
   const offLexicon = BANNED.filter((term) => html.includes(term));
   note(route, "on-lexicon", offLexicon.length === 0, offLexicon.length ? `banned terms: ${offLexicon.join(", ")}` : "");
+  /* The producer never shouts: no exclamation marks and no emoji in visible
+     text. Strip script/style/doctype/comments and tags first — attributes and
+     code may legitimately carry both. */
+  const visible = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<![^>]*>/g, "")
+    .replace(/<[^>]+>/g, " ");
+  const shouts = (visible.match(/!/g) || []).length;
+  note(route, "the producer never shouts", shouts === 0, shouts ? `${shouts} exclamation mark(s) in visible text` : "");
+  const emoji = visible.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/u);
+  note(route, "no emoji", !emoji, emoji ? `found ${emoji[0]}` : "");
 }
 
 function internalLinks(html) {

@@ -1,0 +1,41 @@
+/* The Producer — launcher pill + confirm-first panel. Ported from the design
+   system's agent kit; deterministic member v1. */
+
+.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:900;display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite}
+.pr-fab span{display:inline-flex;align-items:center;gap:8px;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:12px 20px;font:600 10.5px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.16em;text-transform:uppercase}
+.pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:950;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--line);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column}
+.pr-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-faint)}
+.pr-head b{font-family:var(--font-display);font-weight:400;font-size:17px}
+.pr-head span{font-family:var(--font-mono);font-size:8.5px;letter-spacing:var(--track-data);color:var(--text-3)}
+.pr-seam{height:3px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite;flex:none}
+.pr-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.pr-msg{max-width:85%;padding:10px 14px;font-size:13.5px;line-height:1.5}
+.pr-msg--user{align-self:flex-end;background:var(--action-primary);color:var(--action-on-primary)}
+.pr-msg--bot{align-self:flex-start;background:var(--surface-tint);color:var(--text-1)}
+.pr-msg--bot a{color:var(--text-link);text-decoration:none}
+.pr-msg--bot a:hover{text-decoration:underline}
+.pr-msg--sys{align-self:center;font-family:var(--font-mono);font-size:9.5px;letter-spacing:var(--track-data);color:var(--text-3);background:none;padding:2px;text-align:center}
+.pr-card{align-self:flex-start;width:100%;border:1px solid var(--line);background:var(--surface-page)}
+.pr-card__seam{height:4px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite}
+.pr-card__in{padding:14px 16px}
+.pr-card__t{font-family:var(--font-display);font-size:17px}
+.pr-card__m{font-family:var(--font-mono);font-size:9.5px;letter-spacing:var(--track-data);color:var(--text-3);margin-top:6px}
+.pr-card__acts{display:flex;gap:8px;margin-top:12px}
+.pr-typing{align-self:flex-start;display:inline-flex;gap:4px;padding:12px 14px;background:var(--surface-tint)}
+.pr-typing i{width:5px;height:5px;border-radius:999px;background:var(--text-3);animation:pr-blink 1.2s infinite}
+.pr-typing i:nth-child(2){animation-delay:.2s}.pr-typing i:nth-child(3){animation-delay:.4s}
+@keyframes pr-blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.pr-quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 10px}
+.pr-quick button{all:unset;cursor:pointer;border:1px solid var(--line);padding:6px 12px;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;color:var(--text-2);text-transform:uppercase;transition:border-color var(--dur-1) var(--ease-swell)}
+.pr-quick button:hover{border-color:var(--line-strong)}
+.pr-quick button:focus-visible{outline:2px solid var(--focus)}
+.pr-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line-faint)}
+.pr-foot input{flex:1;box-sizing:border-box;height:38px;padding:0 12px;background:var(--surface-page);border:1px solid var(--line);color:var(--text-1);font:400 13px var(--font-sans)}
+.pr-foot input:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}
+
+/* Clear the member tab bar on small screens. */
+@media (max-width:959px){
+  .pr-fab{bottom:calc(84px + env(safe-area-inset-bottom))}
+  .pr-panel{bottom:calc(84px + env(safe-area-inset-bottom));height:min(520px,calc(100vh - 120px));height:min(520px,calc(100dvh - 120px))}
+}

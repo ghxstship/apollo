@@ -63,8 +63,8 @@ export function FleetStrip({
   const distribute = () => {
     startTransition(async () => {
       const res = await assignVesselsEvenly(voyageId);
-      if (res.error) show({ msg: res.error, tone: "siren" });
-      else show({ msg: "Passes spread across the flotilla.", tone: "laurel" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
+      else show({ msg: "Passes spread across the flotilla.", tone: "positive" });
     });
   };
 
@@ -135,7 +135,7 @@ export function AddToManifest({
   const submit = () => {
     startTransition(async () => {
       const res = await addToManifest(voyageId, profileId, comp, guestNames.slice(0, guests));
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         setOpen(false);
         reset();
@@ -143,7 +143,7 @@ export function AddToManifest({
         show({
           msg: `${name} on the manifest.`,
           meta: comp ? "COMP · COMPLIMENTARY" : voyageTitle.toUpperCase(),
-          tone: "laurel",
+          tone: "positive",
         });
       }
     });
@@ -153,7 +153,7 @@ export function AddToManifest({
     <section className="hm-sec">
       <div className="hm-head">
         <h2>The roster.</h2>
-        <Button variant="brass" size="sm" onClick={() => setOpen(true)}>
+        <Button variant="gold" size="sm" onClick={() => setOpen(true)}>
           Add to manifest
         </Button>
       </div>
@@ -169,7 +169,7 @@ export function AddToManifest({
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Not yet
             </Button>
-            <Button variant="brass" disabled={pending || !profileId} onClick={submit}>
+            <Button variant="gold" disabled={pending || !profileId} onClick={submit}>
               Put them aboard
             </Button>
           </>
@@ -244,12 +244,12 @@ export function RosterTable({
   const checkIn = (r: RosterRow) => {
     startTransition(async () => {
       const res = await checkInRsvp(r.rsvpId);
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
           msg: `${r.name} aboard.`,
           meta: `${r.boardingCode || "NO CODE"} · MUSTER ${muster}`,
-          tone: "laurel",
+          tone: "positive",
         });
     });
   };
@@ -257,7 +257,7 @@ export function RosterTable({
   const moveTo = (r: RosterRow, vesselId: string | null) => {
     startTransition(async () => {
       const res = await setRsvpVessel(r.rsvpId, vesselId);
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         const name = vessels.find((v) => v.id === vesselId)?.name;
         show({
@@ -333,7 +333,7 @@ export function RosterTable({
       render: (r: RosterRow) => (
         <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap" as const }}>
           {r.checkedInAt ? (
-            <Badge tone="laurel">Checked in</Badge>
+            <Badge tone="positive">Checked in</Badge>
           ) : r.status === "waitlist" ? (
             <Badge tone="outline">Waitlist</Badge>
           ) : (
@@ -347,7 +347,7 @@ export function RosterTable({
               Comp
             </Badge>
           ) : null}
-          {r.waiverMissing ? <Badge tone="clay">Waiver missing</Badge> : null}
+          {r.waiverMissing ? <Badge tone="caution">Waiver missing</Badge> : null}
         </span>
       ),
     },

@@ -37,8 +37,8 @@ export default async function StaffLayout({
               {(profile.full_name ?? "Operator").toUpperCase()}
               {profile.member_no ? ` · ${profile.member_no}` : ""}
             </span>
-            <Link className="hm-top__back" href="/home-port">
-              Back to Home Port
+            <Link className="hm-top__back" href="/home">
+              Back to Home
             </Link>
           </div>
         </div>

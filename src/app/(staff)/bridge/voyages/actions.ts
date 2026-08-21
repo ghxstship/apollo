@@ -8,9 +8,9 @@ function done(): ActionResult {
   revalidatePath("/bridge/voyages");
   revalidatePath("/bridge/manifests");
   revalidatePath("/manifest");
-  revalidatePath("/home-port");
-  revalidatePath("/gateway");
-  revalidatePath("/voyages");
+  revalidatePath("/home");
+  revalidatePath("/live");
+  revalidatePath("/charters");
   return {};
 }
 

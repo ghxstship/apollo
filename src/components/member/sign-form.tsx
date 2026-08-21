@@ -136,7 +136,7 @@ export function SignForm({
         <h2>Signed.</h2>
         <p>
           A copy is kept with your record, along with the exact wording you agreed
-          to. You can read it again from your Passbook at any time.
+          to. You can read it again from your member card at any time.
         </p>
       </div>
     );
@@ -242,7 +242,7 @@ export function SignForm({
         {error}
       </div>
 
-      <Button variant="brass" disabled={pending} onClick={submit}>
+      <Button variant="gold" disabled={pending} onClick={submit}>
         {pending ? "Signing…" : "Sign"}
       </Button>
     </div>

@@ -13,7 +13,7 @@ export function LinkButton({
   children,
 }: {
   href: string;
-  variant?: "primary" | "brass" | "outline" | "ghost";
+  variant?: "primary" | "gold" | "outline" | "ghost";
   size?: "sm" | "md" | "lg";
   inverse?: boolean;
   fullWidth?: boolean;

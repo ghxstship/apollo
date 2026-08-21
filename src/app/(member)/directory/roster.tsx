@@ -8,7 +8,7 @@ export type DirectoryMember = {
   id: string;
   name: string;
   handle: string | null;
-  tone: "ink" | "sea" | "brass" | "sand";
+  tone: "ink" | "sea" | "gold" | "sand";
   harborId: string;
   harborName: string;
   harborCode: string;

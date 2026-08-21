@@ -7,7 +7,7 @@ import React from "react";
 export type ToastMsg = {
   msg: string;
   meta?: string;
-  tone?: "ink" | "laurel" | "clay" | "siren";
+  tone?: "ink" | "positive" | "caution" | "danger";
 };
 
 export function useToast() {
@@ -32,7 +32,7 @@ export function relTime(iso: string): string {
   return `${Math.floor(h / 24)}D AGO`;
 }
 
-export const AVATAR_TONES = ["ink", "sea", "brass", "sand"] as const;
+export const AVATAR_TONES = ["ink", "sea", "gold", "sand"] as const;
 export type AvatarTone = (typeof AVATAR_TONES)[number];
 
 export function avatarTone(raw: string | null | undefined): AvatarTone {

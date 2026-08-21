@@ -68,7 +68,7 @@ function FlotillaMeter({ row }: { row: VoyageOpsRow }) {
         label={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             FLOTILLA FORMS AT {FLOTILLA_FORMS_AT} — profitable at 3 yachts
-            {holding ? <Badge tone="clay">Under 30 inside T-72h</Badge> : null}
+            {holding ? <Badge tone="caution">Under 30 inside T-72h</Badge> : null}
           </span>
         }
         detail={`${row.aboard} / ${FLOTILLA_FORMS_AT} · ${row.vessels} ${row.vessels === 1 ? "YACHT" : "YACHTS"}`}
@@ -77,11 +77,11 @@ function FlotillaMeter({ row }: { row: VoyageOpsRow }) {
   );
 }
 
-const STATUS_TONE: Record<VoyageStatus, "brass" | "ink" | "laurel" | "clay" | "outline"> = {
+const STATUS_TONE: Record<VoyageStatus, "gold" | "ink" | "positive" | "caution" | "outline"> = {
   scheduled: "outline",
-  live: "brass",
-  weather_hold: "clay",
-  completed: "laurel",
+  live: "gold",
+  weather_hold: "caution",
+  completed: "positive",
   cancelled: "ink",
 };
 
@@ -99,7 +99,7 @@ type StatusMove = {
   title: string;
   body: string;
   confirm: string;
-  tone: "laurel" | "clay" | "ink";
+  tone: "positive" | "caution" | "ink";
 };
 
 function movesFor(status: VoyageStatus): StatusMove[] {
@@ -109,7 +109,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     title: "Call the weather hold?",
     body: "Every pass gets the word by email and the Word tab. We call it by 18:00 the night before.",
     confirm: "Call the hold",
-    tone: "clay",
+    tone: "caution",
   };
   const lift: StatusMove = {
     to: "scheduled",
@@ -125,7 +125,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     title: "Mark completed?",
     body: "Completion banks knots — 10 per NM, 40 per Port Day. The ledger writes once.",
     confirm: "Mark completed",
-    tone: "laurel",
+    tone: "positive",
   };
   const cancel: StatusMove = {
     to: "cancelled",
@@ -133,7 +133,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     title: "Cancel the voyage?",
     body: "Cancelling credits every account in full and sends the word — the trigger does it, no forms.",
     confirm: "Cancel the voyage",
-    tone: "clay",
+    tone: "caution",
   };
   if (status === "scheduled") return [hold, complete, cancel];
   if (status === "live") return [hold, complete, cancel];
@@ -158,7 +158,7 @@ export function VoyagesClient({
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
       const res = await fn();
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
   };
@@ -175,7 +175,7 @@ export function VoyagesClient({
           Holds, completions, and cancellations fan out to every pass — each one asks first. Held
           passes are off sale — capacity for sale = total − holds.
         </p>
-        <Button variant="brass" size="sm" onClick={() => setCreating(true)}>
+        <Button variant="gold" size="sm" onClick={() => setCreating(true)}>
           New voyage
         </Button>
       </div>
@@ -401,7 +401,7 @@ export function VoyagesClient({
             () => createVoyage(input),
             () => {
               setCreating(false);
-              show({ msg: "Voyage on the board.", meta: title.toUpperCase(), tone: "laurel" });
+              show({ msg: "Voyage on the board.", meta: title.toUpperCase(), tone: "positive" });
             }
           )
         }
@@ -534,7 +534,7 @@ function NewVoyageDialog({
           <Button variant="ghost" onClick={onClose}>
             Not yet
           </Button>
-          <Button variant="brass" disabled={pending || !f.title || !f.startsAt} onClick={submit}>
+          <Button variant="gold" disabled={pending || !f.title || !f.startsAt} onClick={submit}>
             Set the voyage
           </Button>
         </>

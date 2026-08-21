@@ -51,7 +51,7 @@ export function TransferInbox({ offers }: { offers: IncomingOffer[] }) {
           </p>
           <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
             <Button
-              variant="brass"
+              variant="gold"
               size="sm"
               disabled={pending}
               onClick={() => act(() => acceptOffer(o.id))}

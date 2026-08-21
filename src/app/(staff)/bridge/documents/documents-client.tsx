@@ -183,7 +183,7 @@ export function DocumentsClient({
       width: 110,
       render: (d: DocRow) =>
         d.draftVersion ? (
-          <Badge tone="clay">v{d.draftVersion} · {d.draftClauses}</Badge>
+          <Badge tone="caution">v{d.draftVersion} · {d.draftClauses}</Badge>
         ) : (
           "—"
         ),
@@ -205,7 +205,7 @@ export function DocumentsClient({
               onClick={() =>
                 startTransition(async () => {
                   const res = await publishVersion(d.draftVersionId!);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else show({ msg: "Published.", meta: `${d.code.toUpperCase()} · V${d.draftVersion}` });
                 })
               }
@@ -221,7 +221,7 @@ export function DocumentsClient({
             onClick={() =>
               startTransition(async () => {
                 const res = await draftNextVersion(d.code);
-                if (res.error) show({ msg: res.error, tone: "siren" });
+                if (res.error) show({ msg: res.error, tone: "danger" });
                 else show({ msg: "Draft opened from the standing version." });
               })
             }
@@ -241,7 +241,7 @@ export function DocumentsClient({
         <span>
           {s.signer}
           {s.isGuest ? <Badge tone="outline">Guest</Badge> : null}
-          {s.redacted ? <Badge tone="clay">Redacted</Badge> : null}
+          {s.redacted ? <Badge tone="caution">Redacted</Badge> : null}
         </span>
       ),
     },
@@ -268,9 +268,9 @@ export function DocumentsClient({
         !s.isContract ? (
           <span style={{ color: "var(--text-3)" }}>Waiver</span>
         ) : s.counterSignedBy ? (
-          <Badge tone="laurel">Counter-signed</Badge>
+          <Badge tone="positive">Counter-signed</Badge>
         ) : (
-          <Badge tone="clay">Awaiting the club</Badge>
+          <Badge tone="caution">Awaiting the club</Badge>
         ),
     },
     {
@@ -314,7 +314,7 @@ export function DocumentsClient({
       {tab === "library" ? (
         <>
           <div style={{ margin: "18px 0 14px" }}>
-            <Button variant="brass" onClick={() => setWriting(true)}>
+            <Button variant="gold" onClick={() => setWriting(true)}>
               Write a clause
             </Button>
           </div>
@@ -355,13 +355,13 @@ export function DocumentsClient({
           <>
             <Button variant="ghost" onClick={() => setWriting(false)}>Cancel</Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
                   const res = await createClause({ code, title, category, body });
                   if (res.error) {
-                    show({ msg: res.error, tone: "siren" });
+                    show({ msg: res.error, tone: "danger" });
                     return;
                   }
                   setWriting(false);
@@ -393,7 +393,7 @@ export function DocumentsClient({
           <>
             <Button variant="ghost" onClick={() => setRevising(null)}>Cancel</Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const target = revising;
@@ -401,7 +401,7 @@ export function DocumentsClient({
                 startTransition(async () => {
                   const res = await reviseClause(target.code, body, note);
                   if (res.error) {
-                    show({ msg: res.error, tone: "siren" });
+                    show({ msg: res.error, tone: "danger" });
                     return;
                   }
                   setRevising(null);
@@ -469,7 +469,7 @@ export function DocumentsClient({
                         cond ? { class: cond } : {},
                         e.target.checked
                       );
-                      if (res.error) show({ msg: res.error, tone: "siren" });
+                      if (res.error) show({ msg: res.error, tone: "danger" });
                     });
                   }}
                 />
@@ -496,7 +496,7 @@ export function DocumentsClient({
                         value ? { class: value } : {},
                         true
                       );
-                      if (res.error) show({ msg: res.error, tone: "siren" });
+                      if (res.error) show({ msg: res.error, tone: "danger" });
                     });
                   }}
                 >
@@ -516,7 +516,7 @@ export function DocumentsClient({
           <>
             <Button variant="ghost" onClick={() => setConfirmRedact(null)}>Keep it</Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const target = confirmRedact;
@@ -524,7 +524,7 @@ export function DocumentsClient({
                 startTransition(async () => {
                   const res = await redactSignature(target.id);
                   setConfirmRedact(null);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else show({ msg: "Redacted.", meta: "PERSON REMOVED · PROOF KEPT" });
                 });
               }}
@@ -550,7 +550,7 @@ export function DocumentsClient({
           <>
             <Button variant="ghost" onClick={() => setCountering(null)}>Not yet</Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const target = countering;
@@ -558,7 +558,7 @@ export function DocumentsClient({
                 startTransition(async () => {
                   const res = await counterSign(target.id, signerTitle);
                   setCountering(null);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else show({ msg: "Counter-signed.", meta: "IN FORCE · BOTH SIDES" });
                 });
               }}
@@ -589,13 +589,13 @@ export function DocumentsClient({
           <>
             <Button variant="ghost" onClick={() => setCardsOpen(false)}>Cancel</Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
                   const res = await sendSeasonCards(seasonFrom, seasonTo, seasonLabel);
                   if (res.error) {
-                    show({ msg: res.error, tone: "siren" });
+                    show({ msg: res.error, tone: "danger" });
                     return;
                   }
                   setCardsOpen(false);

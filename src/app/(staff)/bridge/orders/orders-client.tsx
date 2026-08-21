@@ -29,10 +29,10 @@ export type ShopOrderRow = {
 
 export type MemberOption = { value: string; label: string };
 
-const ORDER_TONE: Record<ShopOrderRow["status"], "brass" | "ink" | "laurel" | "clay" | "outline"> = {
+const ORDER_TONE: Record<ShopOrderRow["status"], "gold" | "ink" | "positive" | "caution" | "outline"> = {
   placed: "outline",
-  fulfilled: "laurel",
-  refund_requested: "clay",
+  fulfilled: "positive",
+  refund_requested: "caution",
   refunded: "ink",
 };
 
@@ -65,7 +65,7 @@ export function OrdersClient({
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
       const res = await fn();
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
   };
@@ -85,7 +85,7 @@ export function OrdersClient({
         show({
           msg: kind === "payment" ? "Payment posted." : "Refund posted.",
           meta: "SHIP'S RECORD · YOUR NAME ON IT",
-          tone: "laurel",
+          tone: "positive",
         });
       }
     );
@@ -137,7 +137,7 @@ export function OrdersClient({
               key: "kind",
               label: "Kind",
               render: (e: LedgerRow) => (
-                <Badge tone={e.deltaCents < 0 ? "outline" : "laurel"}>{e.kind}</Badge>
+                <Badge tone={e.deltaCents < 0 ? "outline" : "positive"}>{e.kind}</Badge>
               ),
             },
             { key: "memo", label: "Memo", render: (e: LedgerRow) => e.memo || "—" },
@@ -154,7 +154,7 @@ export function OrdersClient({
       </div>
 
       <section className="hm-sec">
-        <h2>Chandlery orders.</h2>
+        <h2>Slop Chest orders.</h2>
         <p className="hm-note">Refund requests wait here — approval credits the member account and emails the receipt.</p>
         <div className="hm-panel">
           <Table
@@ -253,7 +253,7 @@ export function OrdersClient({
                 Not yet
               </Button>
               <Button
-                variant="brass"
+                variant="gold"
                 disabled={pending}
                 onClick={() => {
                   const o = refund;
@@ -264,7 +264,7 @@ export function OrdersClient({
                       show({
                         msg: "Refund posted — email sent.",
                         meta: `${o.shortId} · ${o.total} TO MEMBER ACCOUNT`,
-                        tone: "laurel",
+                        tone: "positive",
                       })
                   );
                 }}

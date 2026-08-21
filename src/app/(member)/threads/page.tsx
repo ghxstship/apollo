@@ -9,11 +9,11 @@ import { ThreadsRealtime } from "./realtime";
 
 export const metadata: Metadata = { title: "Threads" };
 
-const TONES = new Set(["ink", "sea", "brass", "sand"]);
+const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
-function toneOf(p: Profile | undefined | null): "ink" | "sea" | "brass" | "sand" {
+function toneOf(p: Profile | undefined | null): "ink" | "sea" | "gold" | "sand" {
   const t = p?.avatar_tone;
-  return t && TONES.has(t) ? (t as "ink" | "sea" | "brass" | "sand") : "sand";
+  return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "sand";
 }
 
 export default async function ThreadsPage() {

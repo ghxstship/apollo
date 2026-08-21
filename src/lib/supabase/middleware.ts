@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 /* Paths under these prefixes require a signed-in member. */
 /* Legacy paths (/harbor, /wardroom, /card, /now, /harbormaster, /dispatch)
    need no entries: next.config redirects run before the proxy. */
-const PROTECTED = ["/home-port", "/manifest", "/open-deck", "/directory", "/threads", "/portal", "/account", "/passbook", "/word", "/you", "/gateway", "/chandlery", "/stub", "/regattas", "/agreements", "/bridge"];
+const PROTECTED = ["/home", "/manifest", "/booth", "/directory", "/threads", "/portal", "/account", "/card", "/inbox", "/you", "/live", "/slop-chest", "/stub", "/regattas", "/agreements", "/bridge"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

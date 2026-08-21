@@ -1,0 +1,286 @@
+/* SYRIUS SOCIAL color tokens — noir & antique gold.
+   MASTER: dark-first. Page noir #101418, cards #161B21, ivory text #F4EFE6 —
+   never pure white, it blooms on camera. ONE metallic accent per view: antique
+   gold #B98A2F (hover lightens, press darkens, never shrinks).
+   SUB-BRANDS swap accent only — Dating rose #FF5C7A, Yacht Club riviera #2E9BB5
+   — carried by the event themes below (sea = Yacht Club, shore = Dating).
+   LIGHT THEME: data-theme="light" is the paper theme; metallics deepen for
+   contrast (gold #966E22, rose #D82B4E, riviera #1F7A91). */
+:root{
+/* — noir scale (the structure) — */
+--void-black:#0B0E12;
+--carbon:#101418;
+--panel:#161B21;
+--graphite:#1E252D;
+--steel:#2A333D;
+--smoke:#9AA3AD;
+--silver:#C9C0AC;
+--paper:#F4EFE6;
+--white:#FAF7F0;
+/* — kit scales (canonical names for new code) — */
+--noir-950:#0B0E12;--noir-900:#101418;--noir-800:#161B21;--noir-700:#1E252D;--noir-600:#2A333D;--noir-500:#3C4854;
+--ivory-50:#FAF7F0;--ivory-100:#F4EFE6;--ivory-300:#E3DCCC;--ivory-500:#C9C0AC;
+--gold-200:#EEDCA9;--gold-300:#E3C983;--gold-400:#D3B15E;--gold-500:#B98A2F;--gold-600:#966E22;
+--rose-300:#FFA3B4;--rose-400:#FF7D95;--rose-500:#FF5C7A;--rose-600:#E13D5E;
+--riviera-300:#6FC5D6;--riviera-400:#48AEC4;--riviera-500:#2E9BB5;--riviera-600:#217D95;
+--brand-social:var(--gold-500);--brand-dating:var(--rose-500);--brand-yacht:var(--riviera-500);
+/* — the metallic channel (was neon; gold is the only electricity now) — */
+--neon-cyan:var(--gold-400);
+--neon-violet:var(--gold-500);
+--neon-magenta:var(--rose-500);
+--neon-amber:#D98E2B;
+--neon-green:#5BAE7E;
+--neon-red:#E0503C;
+/* — gold gradients (was lava) — */
+--lava:linear-gradient(120deg,#E3C983,#B98A2F); /* @kind color */
+--lava-hot:linear-gradient(120deg,#B98A2F,#E3C983); /* @kind color */
+--lava-vert:linear-gradient(180deg,#E3C983,#B98A2F); /* @kind color */
+/* — legacy dark aliases — */
+--kiln:var(--void-black);
+--pelike:var(--carbon);
+--umber:var(--graphite);
+--abyss:var(--void-black);
+--ink:var(--carbon);
+--sea:var(--steel);
+--lapis:var(--gold-400);
+--aegean:var(--gold-400);
+/* — legacy light aliases — */
+--parian:var(--white);
+--sail:var(--white);
+--marble:var(--paper);
+--bone:var(--paper);
+--frond:var(--paper);
+--fresco:var(--silver);
+--sand:var(--silver);
+--palm:var(--silver);
+--relief:var(--smoke);
+--driftwood:var(--smoke);
+--canopy:var(--smoke);
+/* — legacy accent aliases (brass/gilt = antique gold) — */
+--gilt:var(--gold-500);
+--brass:var(--gold-500);
+--gilt-bright:var(--gold-400);
+--brass-bright:var(--gold-400);
+--bronze:var(--gold-500);
+--brass-deep:var(--gold-500);
+--terracotta:var(--rose-500);
+--starlight:var(--gold-400);
+--nebula:var(--gold-500);
+--orchid:var(--rose-500);
+--void:var(--gold-500);
+/* — renamed tone aliases (post-sweep canonical names) — */
+--gold:var(--gold-500);
+--gold-deep:var(--brass-deep);
+--gold-bright:var(--gold-400);
+--wash-gold:var(--wash-brass);
+/* — signals — */
+--laurel:#5BAE7E;
+--siren:#E0503C;
+--positive:#5BAE7E;
+--caution:#D98E2B;
+/* — lines — */
+--line-faint:rgba(244,239,230,.10);
+--line:rgba(244,239,230,.22);
+--line-strong:rgba(244,239,230,.55);
+--line-inverse-faint:rgba(244,239,230,.10);
+--line-inverse:rgba(244,239,230,.22);
+--line-inverse-strong:rgba(244,239,230,.55);
+--border-gold:rgba(211,177,94,.45);
+/* — text — */
+--text-1:#F4EFE6;
+--text-2:rgba(244,239,230,.72);
+--text-3:#9AA3AD;
+--text-inverse-1:#F4EFE6;
+--text-inverse-2:rgba(244,239,230,.72);
+--text-inverse-3:#9AA3AD;
+--text-link:var(--gold-400);
+--text-on-media:rgba(244,239,230,.85);
+--veil:rgba(11,14,18,.82); /* modal/drawer scrims */
+--glow-cyan:0 0 24px rgba(211,177,94,.25); /* @kind shadow — the gold glow, single primary CTA only */
+/* — semantic surfaces — */
+--surface-page:var(--carbon);
+--surface-card:var(--panel);
+--surface-tint:var(--graphite);
+--surface-deep:var(--panel);
+--surface-deep-2:var(--graphite);
+--surface-abyss:var(--void-black);
+/* — semantic actions & states — */
+--action-primary:var(--paper);
+--action-primary-hover:var(--white);
+--action-on-primary:var(--carbon);
+--action-accent:var(--lava); /* @kind color */
+--action-accent-hover:var(--lava-hot); /* @kind color */
+--action-on-accent:var(--void-black);
+--focus:var(--gold-400);
+--ok:#5BAE7E;
+--warn:#D98E2B;
+--danger:#E0503C;
+--urgent:var(--gold-400);
+/* — washes — */
+--wash-ink:rgba(244,239,230,.07);
+--wash-ink-2:rgba(244,239,230,.12);
+--wash-bone:rgba(211,177,94,.08);
+--wash-bone-2:rgba(211,177,94,.13);
+--wash-brass:rgba(185,138,47,.16);
+/* — placeholder media: the scene gradients. Photography is IMAGERY TK. — */
+--scene-gold:linear-gradient(165deg,#E3C983 0%,#B98A2F 35%,#3C2F1A 75%,#101418 100%); /* @kind color */
+--scene-night:linear-gradient(165deg,#2E9BB5 0%,#173B4E 45%,#0B0E12 100%); /* @kind color */
+--scene-rose:linear-gradient(165deg,#FF7D95 0%,#8E2E4C 45%,#14090F 100%); /* @kind color */
+--sea-day:var(--scene-night); /* @kind color */
+--sea-dusk:var(--scene-rose); /* @kind color */
+--sea-dawn:var(--scene-gold); /* @kind color */
+}
+/* — LIGHT (PAPER) THEME: ivory surfaces, metallics deepen, noir panels stay noir — */
+[data-theme="light"]{
+--surface-page:#F4EFE6;
+--surface-card:#FAF7F0;
+--surface-tint:#E9E2D2;
+--surface-deep:#161B21;
+--surface-deep-2:#1E252D;
+--surface-abyss:#0B0E12;
+--text-1:#161B21;
+--text-2:#4A5560;
+--text-3:#7E8894;
+--line-faint:rgba(22,27,33,.14);
+--line:rgba(22,27,33,.30);
+--line-strong:rgba(22,27,33,.6);
+--action-primary:#161B21;
+--action-primary-hover:#0B0E12;
+--action-on-primary:#F4EFE6;
+--text-link:#966E22;
+--focus:#966E22;
+--brass-deep:#966E22;
+--bronze:#966E22;
+--gilt:#966E22;
+--brass:#966E22;
+--brand-social:#966E22;--brand-dating:#D82B4E;--brand-yacht:#1F7A91;
+--ok:#3E8A60;--warn:#A96C15;--danger:#C23A28;
+--laurel:#3E8A60;--siren:#C23A28;--positive:#3E8A60;--caution:#A96C15;
+--border-gold:rgba(150,110,34,.5);
+--glow-cyan:0 0 24px rgba(150,110,34,.25); /* @kind shadow */
+--wash-ink:rgba(22,27,33,.06);
+--wash-ink-2:rgba(22,27,33,.10);
+--wash-bone:rgba(150,110,34,.08);
+--wash-bone-2:rgba(150,110,34,.13);
+--wash-brass:rgba(150,110,34,.14);
+--text-on-media:rgba(244,239,230,.85);
+--sea-day:linear-gradient(165deg,#6FC5D6 0%,#2E9BB5 60%,#173B4E 100%); /* @kind color */
+}
+/* — SUB-BRAND THEME: Sea = Syrius Yacht Club (riviera) — accent swap only — */
+[data-theme="sea"]{
+--lava:linear-gradient(120deg,#6FC5D6,#2E9BB5); /* @kind color */
+--lava-hot:linear-gradient(120deg,#2E9BB5,#6FC5D6); /* @kind color */
+--action-accent:linear-gradient(120deg,#6FC5D6,#2E9BB5); /* @kind color */
+--action-accent-hover:linear-gradient(120deg,#2E9BB5,#6FC5D6); /* @kind color */
+--action-on-accent:#0B0E12;
+--focus:#48AEC4;
+--text-link:#48AEC4;
+--brass-deep:#2E9BB5;
+--urgent:#48AEC4;
+--glow-cyan:0 0 24px rgba(72,174,196,.25); /* @kind shadow */
+--wash-bone:rgba(46,155,181,.10);
+--wash-bone-2:rgba(46,155,181,.16);
+--wash-brass:rgba(46,155,181,.16);
+--sea-day:var(--scene-night); /* @kind color */
+--sea-dusk:linear-gradient(165deg,#48AEC4 0%,#173B4E 55%,#0B0E12 100%); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#6FC5D6 0%,#2E9BB5 60%,#161B21 100%); /* @kind color */
+}
+/* — SUB-BRAND THEME: Shore = Syrius Dating (neon rose) — accent swap only — */
+[data-theme="shore"]{
+--lava:linear-gradient(120deg,#FF7D95,#FF5C7A); /* @kind color */
+--lava-hot:linear-gradient(120deg,#FF5C7A,#FF7D95); /* @kind color */
+--action-accent:linear-gradient(120deg,#FF7D95,#FF5C7A); /* @kind color */
+--action-accent-hover:linear-gradient(120deg,#FF5C7A,#FF7D95); /* @kind color */
+--action-on-accent:#0B0E12;
+--focus:#FF7D95;
+--text-link:#FF7D95;
+--brass-deep:#FF5C7A;
+--urgent:#FF7D95;
+--glow-cyan:0 0 24px rgba(255,92,122,.25); /* @kind shadow */
+--wash-bone:rgba(255,92,122,.10);
+--wash-bone-2:rgba(255,92,122,.16);
+--wash-brass:rgba(255,92,122,.16);
+--sea-day:var(--scene-rose); /* @kind color */
+--sea-dusk:var(--scene-rose); /* @kind color */
+--sea-dawn:linear-gradient(165deg,#FFA3B4 0%,#FF5C7A 55%,#14090F 100%); /* @kind color */
+}
+/* — SUB-BRAND THEME: Sky = umbrella gold (marquee occasions) — */
+[data-theme="sky"]{
+--lava:linear-gradient(120deg,#E3C983,#B98A2F); /* @kind color */
+--lava-hot:linear-gradient(120deg,#B98A2F,#E3C983); /* @kind color */
+--action-accent:linear-gradient(120deg,#E3C983,#B98A2F); /* @kind color */
+--action-accent-hover:linear-gradient(120deg,#B98A2F,#E3C983); /* @kind color */
+--action-on-accent:#0B0E12;
+--focus:#D3B15E;
+--text-link:#D3B15E;
+--urgent:#D3B15E;
+--sea-day:var(--scene-gold); /* @kind color */
+--sea-dusk:var(--scene-gold); /* @kind color */
+--sea-dawn:var(--scene-gold); /* @kind color */
+}
+/* — paper-theme anchor pairs for sub-brand accents (AA on ivory) — */
+[data-theme="light"][data-event="sea"]{--focus:#1F7A91;--text-link:#1F7A91;--brass-deep:#1F7A91}
+[data-theme="light"][data-event="shore"]{--focus:#D82B4E;--text-link:#D82B4E;--brass-deep:#D82B4E}
+[data-theme="light"][data-event="sky"]{--focus:#966E22;--text-link:#966E22}
+/* SYRIUS SOCIAL type tokens — cinematic serif over a geometric sans, mono for the call sheet. */
+:root{
+--font-display:'Marcellus','Times New Roman',serif;
+--font-sans:'Jost','Helvetica Neue',Helvetica,sans-serif;
+--font-body:'Jost','Helvetica Neue',Helvetica,sans-serif;
+--font-mono:'Space Mono','Courier New',monospace;
+/* display scale (Marcellus, single weight 400) */
+--text-display-xl:clamp(46px,5.5vw,76px);
+--text-display-l:clamp(36px,4vw,56px);
+--text-display-m:clamp(30px,2.9vw,40px);
+--text-display-s:clamp(24px,2vw,28px);
+--text-display-xs:22px;
+--leading-display:1.06;
+--track-display:.01em;
+/* body scale (Archivo) */
+--text-body-l:17px;
+--text-body:15px;
+--text-body-s:13px;
+--leading-body:1.6;
+/* labels — expanded caps, the "club jacket" voice */
+--text-eyebrow:11px;
+--text-eyebrow-s:10px;
+--track-eyebrow:.16em;
+--track-button:.14em;
+--stretch-wide:100%;
+--stretch-normal:100%;
+/* data — ship's log */
+--text-data:12px;
+--text-data-s:10.5px;
+--track-data:.04em;
+}
+/* SYRIUS SOCIAL effects — restrained corners, deep soft shadows, cinematic ease-out.
+   The Cut (none) / the Drift (fade + 8px rise) / the Dim (scene reveal). */
+:root{
+--radius-sharp:2px;
+--radius-sm:4px;
+--radius-md:8px;
+--radius-lg:14px;
+--radius-pill:999px;
+--shadow-overlay:0 16px 48px rgba(0,0,0,.5);
+--shadow-card:inset 0 1px 0 rgba(255,255,255,.04),0 8px 24px rgba(0,0,0,.35);
+--shadow-raised:0 16px 48px rgba(0,0,0,.5);
+--shadow-glow-gold:0 0 24px rgba(211,177,94,.25);
+--shadow-float:0 8px 24px rgba(0,0,0,.35);
+--ease-swell:cubic-bezier(.22,.61,.36,1); /* @kind other */
+--ease-out:cubic-bezier(.22,1,.36,1); /* @kind other — the Drift */
+--dur-1:120ms; /* @kind other */
+--dur-2:300ms; /* @kind other — the Drift */
+--dur-3:560ms; /* @kind other — the Dim */
+--blur-veil:14px;
+--blur-glass:blur(14px); /* @kind other */
+/* distressed subtlety — grain system, three sanctioned intensities:
+   hero fields/full-bleed media  ::after background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply
+   dark cards/panels             opacity:var(--grain-card)
+   text-bearing light surfaces   NONE — never under running text */
+--grain-hero:.5; /* @kind other */
+--grain-card:.25; /* @kind other */
+--grain:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0"/></filter><rect width="140" height="140" filter="url(%23n)"/></svg>'); /* @kind other */
+--scrim:linear-gradient(180deg,rgba(11,14,18,0) 0%,rgba(11,14,18,.85) 100%); /* @kind color — gradient-protect */
+--scrim-top:linear-gradient(180deg,rgba(11,14,18,.6) 0%,rgba(11,14,18,0) 100%); /* @kind color */
+/* NOTE: placeholder --sea-day/dusk/dawn gradients are owned by tokens/colors.css (SSOT) — do not redeclare here; effects.css loads after colors.css and would override them. */
+}

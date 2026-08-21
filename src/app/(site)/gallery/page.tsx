@@ -60,7 +60,7 @@ export default async function GalleryPage() {
           <section className="gl-group" key={g.voyageId}>
             <div className="gl-group__head">
               <h2>
-                <Link href={`/voyages/${g.slug}`}>{g.title}</Link>
+                <Link href={`/charters/${g.slug}`}>{g.title}</Link>
               </h2>
               <span className="gl-group__meta">
                 {[

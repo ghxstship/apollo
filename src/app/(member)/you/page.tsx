@@ -45,7 +45,7 @@ export default async function YouPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <Avatar
               name={profile?.full_name ?? "A member"}
-              tone={(profile?.avatar_tone ?? "ink") as "ink" | "sea" | "brass" | "sand"}
+              tone={(profile?.avatar_tone ?? "ink") as "ink" | "sea" | "gold" | "sand"}
               size="lg"
               ring
             />
@@ -63,7 +63,7 @@ export default async function YouPage() {
               </p>
             </div>
           </div>
-          <Badge tone="brass">{TIER_LABEL[tier]}</Badge>
+          <Badge tone="gold">{TIER_LABEL[tier]}</Badge>
         </div>
       </div>
 

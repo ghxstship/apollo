@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { CITY_CODES, TAGLINE } from "@/lib/brand";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
 
-export const alt = "LYRE SOCIAL — Sea Days and Port Days, aboard and ashore.";
+export const alt = "SYRIUS SOCIAL — The Unscripted Social Experiment.";
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 

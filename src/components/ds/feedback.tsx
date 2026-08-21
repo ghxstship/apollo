@@ -93,7 +93,7 @@ const TOAST_TONES: Record<string, string> = {
 export function Toast({
   message, meta, tone = "ink", fixed = false, onDismiss, dismissLabel = "Dismiss", className = "", style,
 }: {
-  message: React.ReactNode; meta?: React.ReactNode; tone?: "ink" | "laurel" | "clay" | "siren";
+  message: React.ReactNode; meta?: React.ReactNode; tone?: "ink" | "positive" | "caution" | "danger";
   fixed?: boolean; onDismiss?: () => void; dismissLabel?: string; className?: string; style?: React.CSSProperties;
 }) {
   return (

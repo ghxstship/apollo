@@ -117,7 +117,7 @@ export function CameraScanner({ onScan }: { onScan: (code: string) => void }) {
       </Button>
       {open ? (
         <div className="hm-cam__frame">
-          {/* Mirrorless: the dock crew points the back camera at the Passbook. */}
+          {/* Mirrorless: the dock crew points the back camera at the member card. */}
           <video ref={videoRef} muted playsInline className="hm-cam__video" />
           <div className="hm-cam__reticle" aria-hidden="true"></div>
           <span className="hm-cam__hint">Hold the code steady in the frame</span>

@@ -71,7 +71,7 @@ export default async function RegattasPage() {
                     </div>
                   </div>
                   <div className="rgt-aside">
-                    {entered.has(c.id) ? <Badge tone="laurel">Entered</Badge> : null}
+                    {entered.has(c.id) ? <Badge tone="positive">Entered</Badge> : null}
                     <span className="mbr-mono">
                       {days === 0 ? "CLOSES TODAY" : `${days} DAY${days === 1 ? "" : "S"} LEFT`}
                     </span>

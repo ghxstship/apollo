@@ -81,7 +81,7 @@ export function AutomationsClient({
   return (
     <>
       <div className="hm-acts" style={{ marginTop: 20 }}>
-        <Button variant="brass" size="sm" onClick={() => setWriting(true)}>
+        <Button variant="gold" size="sm" onClick={() => setWriting(true)}>
           New rule
         </Button>
       </div>
@@ -92,7 +92,7 @@ export function AutomationsClient({
           <div className="hm-item" key={r.id}>
             <div className="hm-item__head">
               <b>{r.name}</b>
-              {r.active ? <Badge tone="laurel">Live</Badge> : <Badge tone="outline">Held</Badge>}
+              {r.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Held</Badge>}
               <div className="hm-item__acts">
                 <Switch
                   label={r.active ? "Live" : "Held"}
@@ -102,7 +102,7 @@ export function AutomationsClient({
                     const next = e.target.checked;
                     startTransition(async () => {
                       const res = await setAutomationActive(r.id, next);
-                      if (res.error) show({ msg: res.error, tone: "siren" });
+                      if (res.error) show({ msg: res.error, tone: "danger" });
                       else
                         show({
                           msg: next ? "Rule is live." : "Rule held.",
@@ -145,7 +145,7 @@ export function AutomationsClient({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const action: RuleAction =
@@ -164,7 +164,7 @@ export function AutomationsClient({
                 };
                 startTransition(async () => {
                   const res = await createAutomation(rule);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setWriting(false);
                     setName("");

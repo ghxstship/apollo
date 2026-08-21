@@ -56,7 +56,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       await navigator.clipboard.writeText(minted);
       show({ msg: "Copied. Put it somewhere safe.", meta: "SHOWN ONCE" });
     } catch {
-      show({ msg: "Copy it by hand — the clipboard refused.", tone: "clay" });
+      show({ msg: "Copy it by hand — the clipboard refused.", tone: "caution" });
     }
   };
 
@@ -92,7 +92,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       label: "State",
       width: 100,
       render: (k: KeyRow) =>
-        k.revoked ? <Badge tone="clay">Revoked</Badge> : <Badge tone="laurel">Live</Badge>,
+        k.revoked ? <Badge tone="caution">Revoked</Badge> : <Badge tone="positive">Live</Badge>,
     },
     {
       key: "acts",
@@ -118,7 +118,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               lose the key and you cut a new one.
             </p>
           </div>
-          <Button variant="brass" size="sm" onClick={() => setCuttingKey(true)}>
+          <Button variant="gold" size="sm" onClick={() => setCuttingKey(true)}>
             New key
           </Button>
         </div>
@@ -146,7 +146,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               ten attempts sit under each one.
             </p>
           </div>
-          <Button variant="brass" size="sm" onClick={() => setAddingHook(true)}>
+          <Button variant="gold" size="sm" onClick={() => setAddingHook(true)}>
             New hook
           </Button>
         </div>
@@ -158,7 +158,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
                 <b style={{ fontFamily: "var(--font-mono)", fontSize: 13, wordBreak: "break-all" }}>
                   {h.url}
                 </b>
-                {h.active ? <Badge tone="laurel">Live</Badge> : <Badge tone="outline">Held</Badge>}
+                {h.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Held</Badge>}
                 <div className="hm-item__acts">
                   <Switch
                     label={h.active ? "Live" : "Held"}
@@ -168,7 +168,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
                       const next = e.target.checked;
                       startTransition(async () => {
                         const res = await setWebhookActive(h.id, next);
-                        if (res.error) show({ msg: res.error, tone: "siren" });
+                        if (res.error) show({ msg: res.error, tone: "danger" });
                         else
                           show({
                             msg: next ? "Hook is live." : "Hook held.",
@@ -237,14 +237,14 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const name = label;
                 const picked = scopes;
                 startTransition(async () => {
                   const res = await createApiKey(name, picked);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setCuttingKey(false);
                     setLabel("");
@@ -292,7 +292,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
             <Button variant="outline" onClick={copyKey}>
               Copy key
             </Button>
-            <Button variant="brass" onClick={() => setMinted(null)}>
+            <Button variant="gold" onClick={() => setMinted(null)}>
               I have it
             </Button>
           </>
@@ -320,19 +320,19 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
                 Leave it live
               </Button>
               <Button
-                variant="brass"
+                variant="gold"
                 disabled={pending}
                 onClick={() => {
                   const target = revoking;
                   setRevoking(null);
                   startTransition(async () => {
                     const res = await revokeApiKey(target.id);
-                    if (res.error) show({ msg: res.error, tone: "siren" });
+                    if (res.error) show({ msg: res.error, tone: "danger" });
                     else
                       show({
                         msg: "Key revoked.",
                         meta: `${target.prefix}… · SHUT OUT`,
-                        tone: "clay",
+                        tone: "caution",
                       });
                   });
                 }}
@@ -360,14 +360,14 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const target = url;
                 const picked = events;
                 startTransition(async () => {
                   const res = await createWebhook(target, picked);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setAddingHook(false);
                     setUrl("");
@@ -385,7 +385,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
         <div className="hm-form">
           <Input
             label="Destination URL"
-            placeholder="https://example.com/lyre"
+            placeholder="https://example.com/syrius"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />

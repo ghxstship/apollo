@@ -90,7 +90,7 @@ export default async function ShoresidePage() {
       <span className="hm-eyebrow">Shoreside</span>
       <h1 className="hm-h1">The concierge line.</h1>
       <p className="hm-lede">
-        A member asking a person, not the agent. Answer in your own words — Aurora AI hands over
+        A member asking a person, not the agent. Answer in your own words — The Producer hands over
         anything it should not decide.
       </p>
       <ShoresideClient threads={cards} />

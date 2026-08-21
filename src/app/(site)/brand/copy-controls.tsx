@@ -58,7 +58,7 @@ export function CopyTextButton({
   label, text, children, variant = "outline", inverse = false, fullWidth = false, size,
 }: {
   label: string; text: string; children: React.ReactNode;
-  variant?: "primary" | "brass" | "outline" | "ghost"; inverse?: boolean; fullWidth?: boolean;
+  variant?: "primary" | "gold" | "outline" | "ghost"; inverse?: boolean; fullWidth?: boolean;
   size?: "sm" | "md" | "lg";
 }) {
   const copy = useCopy();

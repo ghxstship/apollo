@@ -15,13 +15,13 @@ import {
 import { fleetByVoyage } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
-  title: "LYRE SOCIAL — Sea Days and Port Days, aboard and ashore.",
+  title: "SYRIUS SOCIAL — The Unscripted Social Experiment.",
 };
 
 const STEPS: Array<[string, string]> = [
-  ["Apply.", "A short application, read by a person. A Port Day invitation usually follows within the week."],
-  ["Board.", "Claim a pass from the manifest. Solo is normal — crews form at muster, not before."],
-  ["Belong.", "Knots bank with every mile. The person across the cockpit becomes someone you'd sail with again."],
+  ["Apply.", "A short casting form, read by a person. We reply inside the week."],
+  ["Board.", "Claim a pass from the manifest. Solo is normal — the cast meets at the gangway, not before."],
+  ["See what happens.", "Cameras from boarding to docking. No scripts, no second takes."],
 ];
 
 export default async function HomePage() {
@@ -53,18 +53,18 @@ export default async function HomePage() {
     <>
       <header className="ws-hero">
         <div className="ls-container ws-hero__in">
-          <div className="ls-eyebrow">The social club for sea and shore</div>
+          <div className="ls-eyebrow">Season I · Casting now</div>
           <h1>{TAGLINE}</h1>
           <p className="ws-hero__sub">
-            Sea Days on the water. Port Days ashore. A crew worth the crossing —
-            Miami, Los Angeles, and the waters beyond.
+            Twelve strangers. One yacht. Cameras from boarding to docking —
+            whatever happens after sunset is the show.
           </p>
           <div className="ws-hero__cta">
-            <LinkButton href="/membership#apply" variant="brass" size="lg">
-              Request invitation
+            <LinkButton href="/membership#apply" variant="gold" size="lg">
+              Apply to be cast
             </LinkButton>
-            <LinkButton href="/voyages" variant="ghost" size="lg" inverse>
-              View voyages <Icon name="ArrowUpRight" size={16} />
+            <LinkButton href="/charters" variant="ghost" size="lg" inverse>
+              See the charters <Icon name="ArrowUpRight" size={16} />
             </LinkButton>
           </div>
         </div>
@@ -77,7 +77,7 @@ export default async function HomePage() {
             <div className="ls-container ws-livestrip__in">
               <span className="ls-live">Live now</span>
               {live.map((v) => (
-                <Link key={v.id} href={`/voyages/${v.slug}`}>
+                <Link key={v.id} href={`/charters/${v.slug}`}>
                   {v.title} — underway
                 </Link>
               ))}
@@ -89,11 +89,11 @@ export default async function HomePage() {
       <section className="ls-section" style={{ paddingBlock: 96 }}>
         <div className="ls-container">
           <SectionHeader
-            eyebrow="The season's manifest"
-            title="Next up on the water."
+            eyebrow="On this charter"
+            title="Next up. Every camera on."
             aside={
-              <LinkButton href="/voyages" variant="ghost">
-                All voyages <Icon name="ArrowUpRight" size={15} />
+              <LinkButton href="/charters" variant="ghost">
+                All charters <Icon name="ArrowUpRight" size={15} />
               </LinkButton>
             }
           />
@@ -115,7 +115,7 @@ export default async function HomePage() {
               return (
                 <Link
                   key={v.id}
-                  href={`/voyages/${v.slug}`}
+                  href={`/charters/${v.slug}`}
                   style={{ color: "inherit", textDecoration: "none" }}
                   className={"ls-rise-" + Math.min(i + 1, 3)}
                 >
@@ -132,9 +132,9 @@ export default async function HomePage() {
                           </span>
                         ) : null}
                         {v.status === "weather_hold" ? (
-                          <Badge tone="clay">Weather hold</Badge>
+                          <Badge tone="caution">Weather hold</Badge>
                         ) : left != null && left <= 5 ? (
-                          <Badge tone="clay">Last passes</Badge>
+                          <Badge tone="caution">Last passes</Badge>
                         ) : null}
                       </>
                     }
@@ -150,7 +150,7 @@ export default async function HomePage() {
 
       <section style={{ paddingBlock: "0 96px" }}>
         <div className="ls-container">
-          <SectionHeader eyebrow="How it works" title="Three steps aboard." />
+          <SectionHeader eyebrow="The format" title="Apply. Board. See what happens." />
           <div className="ws-steps">
             {STEPS.map(([title, body], i) => (
               <div className="ws-step" key={title}>
@@ -165,7 +165,7 @@ export default async function HomePage() {
 
       <section style={{ paddingBlock: "0 96px" }}>
         <div className="ls-container">
-          <SectionHeader eyebrow="Harbors" title="Two harbors now. Two more at first light." />
+          <SectionHeader eyebrow="Harbors" title="Two harbors now. The Balearics are next." />
           <div>
             {(harbors ?? []).map((h) => (
               <div className="ws-harbor-row" key={h.id}>
@@ -176,7 +176,7 @@ export default async function HomePage() {
                   {h.launch_year ? ` · ${roman(h.launch_year)}` : ""}
                 </span>
                 {h.status === "open" ? (
-                  <Badge tone="laurel">Open</Badge>
+                  <Badge tone="positive">Open</Badge>
                 ) : (
                   <Badge tone="outline">{h.status === "waitlist" ? "Waitlist" : "Soon"}</Badge>
                 )}
@@ -185,7 +185,7 @@ export default async function HomePage() {
           </div>
           <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
             Founding passes in new harbors go to the waitlist first —{" "}
-            <Link href="/membership#apply">join the manifest</Link>.
+            <Link href="/membership#apply">get on the list</Link>.
           </p>
         </div>
       </section>
@@ -193,11 +193,11 @@ export default async function HomePage() {
       <section className="ws-dispatch-teaser">
         <div className="ls-container">
           <SectionHeader
-            eyebrow="LORE"
-            title="The ship's log, published."
+            eyebrow="Episodes"
+            title="What the cameras kept."
             aside={
-              <LinkButton href="/lore" variant="ghost">
-                All entries <Icon name="ArrowUpRight" size={15} />
+              <LinkButton href="/episodes" variant="ghost">
+                All episodes <Icon name="ArrowUpRight" size={15} />
               </LinkButton>
             }
           />
@@ -205,7 +205,7 @@ export default async function HomePage() {
             {(posts ?? []).map((p) => (
               <Link
                 key={p.id}
-                href={`/lore/${p.slug}`}
+                href={`/episodes/${p.slug}`}
                 style={{ color: "inherit", textDecoration: "none", display: "block" }}
               >
                 <div className="ws-dp-row">
@@ -226,14 +226,14 @@ export default async function HomePage() {
 
       <section className="ws-band">
         <div className="ls-container">
-          <h2>Passes are few by design.</h2>
+          <h2>12 cabins. 200 applicants.</h2>
           <p>
-            Membership is by invitation or application. Apply once, sail a season —
-            the water does the rest.
+            Casting is by application or invitation. Apply once, board a season —
+            the cameras do the rest.
           </p>
           <div style={{ marginTop: 32 }}>
             <LinkButton href="/membership#apply" variant="outline" size="lg" inverse>
-              Request invitation
+              Apply to be cast
             </LinkButton>
           </div>
         </div>

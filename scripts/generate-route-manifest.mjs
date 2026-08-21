@@ -36,8 +36,8 @@ function readProtectedPrefixes() {
 const CREDENTIAL_ROUTES = new Set(["/sign/[token]"]);
 
 const DYNAMIC_SOURCES = {
-  "/voyages/[slug]": { table: "voyages", column: "slug" },
-  "/lore/[slug]": { table: "dispatch_posts", column: "slug" },
+  "/charters/[slug]": { table: "voyages", column: "slug" },
+  "/episodes/[slug]": { table: "dispatch_posts", column: "slug" },
   "/regattas/[slug]": { table: "contests", column: "slug" },
   "/agreements/[code]": { table: "documents", column: "code" },
 };

@@ -49,6 +49,6 @@ export async function signDocument(
   }
 
   revalidatePath("/agreements");
-  revalidatePath("/passbook");
+  revalidatePath("/card");
   return { signed: true };
 }

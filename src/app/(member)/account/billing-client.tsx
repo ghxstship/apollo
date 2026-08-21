@@ -105,7 +105,7 @@ export function StandingControls({
             </span>
           </span>
           <Button
-            variant={currentInterval === "year" ? "outline" : "brass"}
+            variant={currentInterval === "year" ? "outline" : "gold"}
             size="sm"
             disabled={pending !== null || currentInterval === "year"}
             onClick={() => go("year")}
@@ -156,7 +156,7 @@ export function JoinedNotice() {
   return (
     <Toast
       fixed
-      tone="laurel"
+      tone="positive"
       message="Aboard. Dues are running."
       onDismiss={() => setOpen(false)}
     />

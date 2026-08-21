@@ -33,8 +33,8 @@ type Scan = {
 
 type QueueItem = { rsvpId: string; voyageId: string; code: string; at: string };
 
-const QUEUE_KEY = "lyre-gangway-queue";
-const ROSTER_KEY = "lyre-gangway-roster:";
+const QUEUE_KEY = "syrius-gangway-queue";
+const ROSTER_KEY = "syrius-gangway-roster:";
 
 function readQueue(): QueueItem[] {
   try {

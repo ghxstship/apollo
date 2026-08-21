@@ -31,7 +31,7 @@ export const getOperator = cache(async () => {
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
-  if (!profile?.is_staff) redirect("/home-port");
+  if (!profile?.is_staff) redirect("/home");
 
   return { supabase, user, profile };
 });

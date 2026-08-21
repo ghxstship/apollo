@@ -96,7 +96,7 @@ export default async function ApplicationsPage() {
                 label: "Status",
                 render: (r: RollRow) =>
                   r.memberNo ? (
-                    <Badge tone="laurel">Joined · {r.memberNo}</Badge>
+                    <Badge tone="positive">Joined · {r.memberNo}</Badge>
                   ) : (
                     <Badge tone="outline">Awaiting sign-in</Badge>
                   ),

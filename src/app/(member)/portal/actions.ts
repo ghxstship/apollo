@@ -22,7 +22,7 @@ export async function redeemReward(rewardId: string): Promise<PortalResult> {
   if (error) return { error: brandError(error.message) };
 
   revalidatePath("/portal");
-  revalidatePath("/home-port");
+  revalidatePath("/home");
   return {};
 }
 

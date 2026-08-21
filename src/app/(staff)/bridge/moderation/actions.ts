@@ -5,7 +5,7 @@ import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staf
 
 function done(): ActionResult {
   revalidatePath("/bridge/moderation");
-  revalidatePath("/open-deck");
+  revalidatePath("/booth");
   return {};
 }
 
@@ -31,7 +31,7 @@ export async function removeAndNotify(
     await supabase.from("notifications").insert({
       profile_id: authorId,
       kind: "word",
-      title: "Removed from the Open Deck",
+      title: "Removed from the Booth",
       body: line,
     });
   }

@@ -39,7 +39,7 @@ export async function GET(
       row.boarding_code ? `Boarding code ${row.boarding_code}.` : "",
       row.guests > 0 ? `${row.guests} guest${row.guests === 1 ? "" : "s"} on your pass.` : "",
       "Boards thirty minutes before cast off.",
-      `${SITE_URL}/voyages/${row.slug}`,
+      `${SITE_URL}/charters/${row.slug}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -50,12 +50,12 @@ export async function GET(
       summary: voyageSummary(row),
       location: voyageLocation(row),
       description,
-      url: `${SITE_URL}/voyages/${row.slug}`,
+      url: `${SITE_URL}/charters/${row.slug}`,
       alarm: `${row.title} — boards tomorrow.`,
     };
   });
 
   /* No name on the feed: the token is unauthenticated, so it carries the
      season and nothing that identifies whose season it is. */
-  return icsResponse(buildCalendar("LYRE SOCIAL — your season", events), "lyre-social.ics");
+  return icsResponse(buildCalendar("SYRIUS SOCIAL — your season", events), "syrius-social.ics");
 }

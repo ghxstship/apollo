@@ -50,7 +50,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
     const threadId = active.id;
     startTransition(async () => {
       const res = await replyToThread(threadId, line);
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         setDraft("");
         show({ msg: "Sent.", meta: "SHORESIDE · ON THE RECORD" });
@@ -83,7 +83,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
           <div className="hm-inbox__pane">
             <div className="hm-item__head" style={{ padding: "14px 18px" }}>
               <b>{active.member}</b>
-              {active.waiting ? <Badge tone="brass">Waiting on us</Badge> : null}
+              {active.waiting ? <Badge tone="gold">Waiting on us</Badge> : null}
               {active.closed ? <Badge tone="outline">Closed</Badge> : null}
               <span className="hm-mono hm-item__acts">{active.memberNo}</span>
             </div>
@@ -117,7 +117,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
               />
               <div className="hm-acts">
                 <Button
-                  variant="brass"
+                  variant="gold"
                   size="sm"
                   disabled={pending || active.closed || !draft.trim()}
                   onClick={send}

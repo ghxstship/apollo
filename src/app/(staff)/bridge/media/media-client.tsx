@@ -40,7 +40,7 @@ export function MediaClient({
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
       const res = await fn();
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
   };
@@ -96,7 +96,7 @@ export function MediaClient({
                 <span className="hm-mono">{c.uploader.toUpperCase()}</span>
                 <span>
                   {c.approved ? (
-                    <Badge tone="laurel">Cleared</Badge>
+                    <Badge tone="positive">Cleared</Badge>
                   ) : (
                     <Badge tone="outline">Waiting</Badge>
                   )}
@@ -125,7 +125,7 @@ export function MediaClient({
                     onClick={() =>
                       run(
                         () => approveMedia(c.id),
-                        () => show({ msg: "Cleared to show.", meta: "APPROVED", tone: "laurel" })
+                        () => show({ msg: "Cleared to show.", meta: "APPROVED", tone: "positive" })
                       )
                     }
                   >
@@ -162,7 +162,7 @@ export function MediaClient({
                 Keep it
               </Button>
               <Button
-                variant="brass"
+                variant="gold"
                 disabled={pending}
                 onClick={() => {
                   const target = removing;
@@ -173,7 +173,7 @@ export function MediaClient({
                       show({
                         msg: "Frame removed from the record.",
                         meta: "GONE FROM THE GALLERY",
-                        tone: "clay",
+                        tone: "caution",
                       })
                   );
                 }}

@@ -64,7 +64,7 @@ export function ProfileForm({
           options={[
             { value: "ink", label: "Ink" },
             { value: "sea", label: "Sea" },
-            { value: "brass", label: "Brass" },
+            { value: "gold", label: "Brass" },
             { value: "sand", label: "Sand" },
           ]}
         />
@@ -115,7 +115,7 @@ export function ProfileForm({
         <Toast
           fixed
           message="Logged. The manifest reads it your way."
-          tone="laurel"
+          tone="positive"
           onDismiss={() => setDismissedState(state)}
         />
       ) : null}
@@ -180,7 +180,7 @@ export function NotificationPrefsForm({
         <Toast
           fixed
           message="Logged. The word reaches you your way."
-          tone="laurel"
+          tone="positive"
           onDismiss={() => setDismissedState(state)}
         />
       ) : null}
@@ -206,7 +206,7 @@ export function ResumeBanner() {
           {error ? <p style={{ color: "var(--siren)" }}>{error}</p> : null}
         </div>
         <Button
-          variant="brass"
+          variant="gold"
           size="sm"
           disabled={pending}
           onClick={() => {

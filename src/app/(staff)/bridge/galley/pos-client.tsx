@@ -59,7 +59,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
     startTransition(async () => {
       const res = await lookupMember(code);
       if (res.error || !res.member) {
-        show({ msg: res.error ?? "No member under that number.", meta: "CHECK THE CARD", tone: "siren" });
+        show({ msg: res.error ?? "No member under that number.", meta: "CHECK THE CARD", tone: "danger" });
       } else {
         setMember(res.member);
         show({
@@ -83,12 +83,12 @@ export function PosClient({ items }: { items: PosItem[] }) {
     setTender(null);
     startTransition(async () => {
       const res = await settleTicket(m.id, ticket, how);
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         show({
           msg: `Settled — ${how === "account" ? "member account" : "at the till"}.`,
           meta: `${price(settledTotal)} · ${settledCount} ITEMS · ${m.memberNo}`,
-          tone: "laurel",
+          tone: "positive",
         });
         setLines([]);
         setMember(null);
@@ -120,7 +120,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
           <div className="hm-ticket__head">
             {member ? (
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <Avatar name={member.name} tone="brass" size="sm" />
+                <Avatar name={member.name} tone="gold" size="sm" />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13 }}>{member.name}</div>
                   <span className="hm-mono">
@@ -179,7 +179,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
 
           <div className="hm-ticket__tender">
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending || !lines.length || !member}
               onClick={() => setTender("account")}
             >
@@ -212,7 +212,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
             <Button variant="ghost" onClick={() => setTender(null)}>
               Back
             </Button>
-            <Button variant="brass" disabled={pending} onClick={() => settle(tender!)}>
+            <Button variant="gold" disabled={pending} onClick={() => settle(tender!)}>
               Settle
             </Button>
           </>

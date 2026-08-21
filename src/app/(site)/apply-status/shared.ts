@@ -33,6 +33,6 @@ export const STAGE_LINE: Record<ApplicationStage, string> = {
   received: "Received. A person reads it — not a filter.",
   review: "In front of a person now. A word follows within the week.",
   invited: "Invited ashore. Pick a Port Day and come as our guest.",
-  aboard: "Aboard. Your Passbook is waiting behind the gangway.",
+  aboard: "Aboard. Your member card is waiting behind the gangway.",
   declined: "Not this season.",
 };

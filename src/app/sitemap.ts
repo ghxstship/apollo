@@ -12,9 +12,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 const PRIORITY: Record<string, number> = {
   "/": 1,
-  "/voyages": 0.9,
+  "/charters": 0.9,
   "/membership": 0.9,
-  "/lore": 0.7,
+  "/episodes": 0.7,
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -25,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .map((r) => ({
       url: SITE_URL + (r.path === "/" ? "" : r.path),
       lastModified: now,
-      changeFrequency: r.path === "/" || r.path === "/voyages" ? "daily" : "weekly",
+      changeFrequency: r.path === "/" || r.path === "/charters" ? "daily" : "weekly",
       priority: PRIORITY[r.path] ?? 0.5,
     }));
 
@@ -36,14 +36,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   const voyageEntries: MetadataRoute.Sitemap = (voyages ?? []).map((v) => ({
-    url: `${SITE_URL}/voyages/${v.slug}`,
+    url: `${SITE_URL}/charters/${v.slug}`,
     lastModified: new Date(v.created_at),
     changeFrequency: "daily",
     priority: 0.8,
   }));
 
   const dispatchEntries: MetadataRoute.Sitemap = (posts ?? []).map((p) => ({
-    url: `${SITE_URL}/lore/${p.slug}`,
+    url: `${SITE_URL}/episodes/${p.slug}`,
     lastModified: new Date(p.published_at),
     changeFrequency: "monthly",
     priority: 0.6,

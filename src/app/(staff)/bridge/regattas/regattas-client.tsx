@@ -30,10 +30,10 @@ export type ContestRow = {
 
 const METRICS: ContestMetric[] = ["nm", "sailings", "harbors", "vessels", "crew_met", "frames"];
 
-function statusTone(s: ContestRow["status"]): "laurel" | "clay" | "outline" {
-  if (s === "open") return "laurel";
+function statusTone(s: ContestRow["status"]): "positive" | "caution" | "outline" {
+  if (s === "open") return "positive";
   if (s === "settled") return "outline";
-  return "clay";
+  return "caution";
 }
 
 export function RegattasClient({ rows }: { rows: ContestRow[] }) {
@@ -119,7 +119,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
             onClick={() =>
               startTransition(async () => {
                 const res = await openContest(r.id);
-                if (res.error) show({ msg: res.error, tone: "siren" });
+                if (res.error) show({ msg: res.error, tone: "danger" });
                 else show({ msg: "Open. Members can enter.", meta: `${r.title.toUpperCase()} · LIVE` });
               })
             }
@@ -137,7 +137,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
   return (
     <>
       <div style={{ margin: "22px 0 14px", display: "flex", gap: 10 }}>
-        <Button variant="brass" onClick={() => setCalling(true)}>
+        <Button variant="gold" onClick={() => setCalling(true)}>
           Call a contest
         </Button>
       </div>
@@ -161,7 +161,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
               Cancel
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
@@ -178,7 +178,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
                     endsAt,
                   });
                   if (res.error) {
-                    show({ msg: res.error, tone: "siren" });
+                    show({ msg: res.error, tone: "danger" });
                     return;
                   }
                   setCalling(false);
@@ -268,7 +268,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const target = confirmSettle;
@@ -276,7 +276,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
                 startTransition(async () => {
                   const res = await settleContest(target.id);
                   setConfirmSettle(null);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else show({ msg: "Settled.", meta: `${target.title.toUpperCase()} · RESULT POSTED` });
                 });
               }}

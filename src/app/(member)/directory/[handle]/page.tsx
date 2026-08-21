@@ -8,10 +8,10 @@ import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
 import { sendAWord } from "../actions";
 
-const TONES = new Set(["ink", "sea", "brass", "sand"]);
+const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
-function toneOf(t: string | null | undefined): "ink" | "sea" | "brass" | "sand" {
-  return t && TONES.has(t) ? (t as "ink" | "sea" | "brass" | "sand") : "ink";
+function toneOf(t: string | null | undefined): "ink" | "sea" | "gold" | "sand" {
+  return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "ink";
 }
 
 type SharedVoyage = { id: string; title: string; class: string; starts_at: string };

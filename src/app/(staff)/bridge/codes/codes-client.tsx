@@ -87,7 +87,7 @@ export function CodesClient({
       label: "State",
       width: 110,
       render: (r: CodeRow) =>
-        r.active ? <Badge tone="laurel">Live</Badge> : <Badge tone="outline">Retired</Badge>,
+        r.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Retired</Badge>,
     },
     {
       key: "acts",
@@ -106,7 +106,7 @@ export function CodesClient({
             onClick={() =>
               startTransition(async () => {
                 const res = await setCodeActive(r.code, true);
-                if (res.error) show({ msg: res.error, tone: "siren" });
+                if (res.error) show({ msg: res.error, tone: "danger" });
                 else show({ msg: "Back in circulation.", meta: `${r.code} · LIVE` });
               })
             }
@@ -120,7 +120,7 @@ export function CodesClient({
   return (
     <>
       <div className="hm-acts" style={{ marginTop: 20 }}>
-        <Button variant="brass" size="sm" onClick={() => setCutting(true)}>
+        <Button variant="gold" size="sm" onClick={() => setCutting(true)}>
           New code
         </Button>
         <Button
@@ -162,7 +162,7 @@ export function CodesClient({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const payload = {
@@ -176,7 +176,7 @@ export function CodesClient({
                 };
                 startTransition(async () => {
                   const res = await createCode(payload);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setCutting(false);
                     setCode("");
@@ -265,19 +265,19 @@ export function CodesClient({
                 Leave it live
               </Button>
               <Button
-                variant="brass"
+                variant="gold"
                 disabled={pending}
                 onClick={() => {
                   const target = confirmOff;
                   setConfirmOff(null);
                   startTransition(async () => {
                     const res = await setCodeActive(target.code, false);
-                    if (res.error) show({ msg: res.error, tone: "siren" });
+                    if (res.error) show({ msg: res.error, tone: "danger" });
                     else
                       show({
                         msg: "Code retired.",
                         meta: `${target.code} · NO LONGER REDEEMABLE`,
-                        tone: "clay",
+                        tone: "caution",
                       });
                   });
                 }}
@@ -306,13 +306,13 @@ export function CodesClient({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 setReconciling(false);
                 startTransition(async () => {
                   const res = await reconcileUses();
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else
                     show({
                       msg: "Tallies set straight.",

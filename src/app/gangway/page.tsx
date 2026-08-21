@@ -5,7 +5,7 @@ import "./gangway.css";
 
 export const metadata: Metadata = {
   title: "The gangway",
-  description: "Passwordless sign-in for LYRE SOCIAL members.",
+  description: "Passwordless sign-in for the SYRIUS SOCIAL cast.",
 };
 
 export default async function GangwayPage({
@@ -14,8 +14,8 @@ export default async function GangwayPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const sp = await searchParams;
-  const rawNext = sp.next ?? "/home-port";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/home-port";
+  const rawNext = sp.next ?? "/home";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/home";
   const expired = sp.error === "expired";
 
   return (

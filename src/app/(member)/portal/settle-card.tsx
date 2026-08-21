@@ -50,7 +50,7 @@ export function SettledNotice() {
   return (
     <Toast
       fixed
-      tone="laurel"
+      tone="positive"
       message="Payment received — the ledger updates when the processor confirms."
       onDismiss={() => setOpen(false)}
     />

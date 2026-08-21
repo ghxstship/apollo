@@ -8,28 +8,28 @@ import { LOGBOOK, SURFACES } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/client";
 
 const LINKS = [
-  ["/home-port", "Home Port"],
-  ["/gateway", SURFACES.gateway],
+  ["/home", "Home"],
+  ["/live", SURFACES.gateway],
   ["/manifest", "Voyages"],
-  ["/open-deck", SURFACES.openDeck],
+  ["/booth", SURFACES.openDeck],
   ["/directory", "Directory"],
   ["/regattas", LOGBOOK.regattas],
   ["/threads", "Threads"],
-  ["/chandlery", "Chandlery"],
+  ["/slop-chest", "Slop Chest"],
   ["/portal", "Portal"],
   ["/account", "Account"],
-  ["/passbook", SURFACES.passbook],
+  ["/card", SURFACES.passbook],
   ["/agreements", "Agreements"],
-  ["/word", "Word"],
+  ["/inbox", "Word"],
   ["/you", "You"],
 ] as const;
 
 const TABS = [
-  ["/home-port", "Anchor", "Home Port"],
-  ["/gateway", "Navigation", SURFACES.gateway],
+  ["/home", "Anchor", "Home"],
+  ["/live", "Navigation", SURFACES.gateway],
   ["/manifest", "Sailboat", "Voyages"],
-  ["/passbook", "IdCard", SURFACES.passbook],
-  ["/word", "Bell", "Word"],
+  ["/card", "IdCard", SURFACES.passbook],
+  ["/inbox", "Bell", "Word"],
   ["/you", "User", "You"],
 ] as const;
 
@@ -165,7 +165,7 @@ export function MemberTopBar({
   return (
     <header className="mbr-top">
       <div className="mbr-top__in">
-        <Link href="/home-port" className="mbr-top__wm" aria-label="Home Port — home">
+        <Link href="/home" className="mbr-top__wm" aria-label="Home — home">
           <Wordmark size="sm" />
         </Link>
         <nav className="mbr-nav" aria-label="Member navigation">
@@ -176,7 +176,7 @@ export function MemberTopBar({
               aria-current={isCurrent(pathname, href) ? "page" : undefined}
             >
               {label}
-              {href === "/word" ? <WordDot count={unread} /> : null}
+              {href === "/inbox" ? <WordDot count={unread} /> : null}
               {href === "/threads" ? <WordDot count={unreadThreads} /> : null}
             </Link>
           ))}
@@ -222,7 +222,7 @@ export function MemberTabBar({
         >
           <span className="mbr-tab__ic">
             <Icon name={icon} size={20} />
-            {href === "/word" ? <WordDot count={unread} /> : null}
+            {href === "/inbox" ? <WordDot count={unread} /> : null}
           </span>
           <span>{label}</span>
         </Link>

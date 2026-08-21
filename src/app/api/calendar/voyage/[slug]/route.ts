@@ -30,7 +30,7 @@ export async function GET(
   if (!voyage) return new Response("Not found", { status: 404 });
 
   const { start, end } = voyageWindow(voyage);
-  const url = `${SITE_URL}/voyages/${voyage.slug}`;
+  const url = `${SITE_URL}/charters/${voyage.slug}`;
   const description = [
     voyage.blurb ?? "",
     "Boards thirty minutes before cast off.",

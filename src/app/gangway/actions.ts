@@ -11,7 +11,7 @@ export type GangwayState = {
 
 /* Only ever bounce back to a path we own. */
 function safeNext(raw: string): string {
-  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/home-port";
+  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/home";
 }
 
 export async function sendMagicLink(
@@ -19,7 +19,7 @@ export async function sendMagicLink(
   formData: FormData
 ): Promise<GangwayState> {
   const email = String(formData.get("email") ?? "").trim();
-  const next = safeNext(String(formData.get("next") ?? "/home-port"));
+  const next = safeNext(String(formData.get("next") ?? "/home"));
 
   if (!email || !email.includes("@")) {
     return { error: "Enter the email on file." };

@@ -25,7 +25,7 @@ export async function createApiKey(
   const picked = scopes.filter((s) => (SCOPES as readonly string[]).includes(s));
   if (!picked.length) return { error: "A key with no scope opens nothing." };
 
-  const key = `lyre_${randomBytes(24).toString("base64url")}`;
+  const key = `syr_${randomBytes(24).toString("base64url")}`;
   const keyHash = createHash("sha256").update(key).digest("hex");
   const prefix = key.slice(0, 8);
 

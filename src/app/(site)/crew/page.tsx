@@ -39,12 +39,12 @@ const ROLES: Array<{
       "Run the manifest, the gangway, and the weather calls. The first voice a member hears and the last one off the dock.",
   },
   {
-    title: "Aurora AI engineering",
+    title: "The Producer engineering",
     dept: "Engineering",
     type: "Full time",
     port: "Remote",
     blurb:
-      "Build the ledger, the manifest, and Aurora AI — the agent that minds them. TypeScript on the surface, judgment underneath.",
+      "Build the ledger, the manifest, and The Producer — the agent that minds them. TypeScript on the surface, judgment underneath.",
   },
 ];
 

@@ -31,7 +31,7 @@ export default function LegalPage() {
           included; recklessness is not. Impairment ends your sailing day, kindly
           and immediately.
         </p>
-        <h3>Ashore and on the Open Deck.</h3>
+        <h3>Ashore and on the Booth.</h3>
         <ul>
           <li>What happens aboard stays aboard — no posting people without their yes.</li>
           <li>Passes are never resold for cash. Release them; the waitlist is the market.</li>

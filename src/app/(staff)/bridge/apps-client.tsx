@@ -23,12 +23,12 @@ export type AppRow = {
   [key: string]: unknown;
 };
 
-const STATUS_TONE: Record<AppRow["status"], "brass" | "ink" | "laurel" | "clay" | "outline"> = {
+const STATUS_TONE: Record<AppRow["status"], "gold" | "ink" | "positive" | "caution" | "outline"> = {
   received: "outline",
   review: "ink",
-  invited: "brass",
-  aboard: "laurel",
-  declined: "clay",
+  invited: "gold",
+  aboard: "positive",
+  declined: "caution",
 };
 
 const STATUS_LABEL: Record<AppRow["status"], string> = {
@@ -49,7 +49,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
       const res = await fn();
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
   };
@@ -128,7 +128,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
           {a.status === "invited" ? (
             <>
               <Button
-                variant="brass"
+                variant="gold"
                 size="sm"
                 disabled={pending}
                 onClick={() => setConfirm({ app: a, mode: "accept" })}
@@ -173,7 +173,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const a = confirm!.app;
@@ -184,7 +184,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
                     show({
                       msg: `${a.name} aboard.`,
                       meta: "MEMBER ROLL · WELCOME EMAIL QUEUED",
-                      tone: "laurel",
+                      tone: "positive",
                     })
                 );
               }}
@@ -218,7 +218,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
                 setConfirm(null);
                 run(
                   () => declineApplication(a.id),
-                  () => show({ msg: "Declined.", meta: a.email.toUpperCase(), tone: "clay" })
+                  () => show({ msg: "Declined.", meta: a.email.toUpperCase(), tone: "caution" })
                 );
               }}
             >

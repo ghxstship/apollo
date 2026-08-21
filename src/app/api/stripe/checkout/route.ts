@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency: "usd",
           unit_amount: -balanceCents,
-          product_data: { name: "LYRE SOCIAL — member account settlement" },
+          product_data: { name: "SYRIUS SOCIAL — member account settlement" },
         },
       },
     ],

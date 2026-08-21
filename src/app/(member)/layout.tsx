@@ -1,4 +1,4 @@
-import { AuroraLauncher } from "@/components/aurora/launcher";
+import { ProducerLauncher } from "@/components/producer/launcher";
 import { getMember } from "./data";
 import { MemberTabBar, MemberTopBar } from "./nav";
 import "./member.css";
@@ -24,7 +24,7 @@ export default async function MemberLayout({
       />
       <main className="mbr-main">{children}</main>
       <MemberTabBar userId={user.id} unreadWord={count ?? 0} />
-      <AuroraLauncher />
+      <ProducerLauncher />
     </div>
   );
 }

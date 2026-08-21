@@ -24,9 +24,9 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
           </div>
           <div className="ws-footer__col">
             <b>The club</b>
-            <Link href="/voyages">Voyages</Link>
+            <Link href="/charters">Voyages</Link>
             <Link href="/membership">Membership</Link>
-            <Link href="/lore">LORE</Link>
+            <Link href="/episodes">Episodes</Link>
             <Link href="/gallery">Gallery</Link>
             <Link href="/crew">Crew wanted</Link>
           </div>
@@ -53,7 +53,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
           </div>
         </div>
         <div className="ws-footer__base">
-          <span>© MMXXVI Lyre Social</span>
+          <span>© MMXXVI Syrius Social</span>
           <span>Est. MMXXIV · Marina del Rey</span>
         </div>
       </div>

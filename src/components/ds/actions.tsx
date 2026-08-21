@@ -7,7 +7,7 @@ export function Button({
   variant = "primary", size = "md", inverse = false, fullWidth = false,
   disabled = false, type = "button", className = "", children, ...rest
 }: {
-  variant?: "primary" | "brass" | "outline" | "ghost"; size?: "sm" | "md" | "lg";
+  variant?: "primary" | "gold" | "outline" | "ghost"; size?: "sm" | "md" | "lg";
   inverse?: boolean; fullWidth?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", className].filter(Boolean).join(" ");
@@ -25,7 +25,7 @@ export function IconButton({
 }
 
 /* — ThemeToggle — */
-const THEME_KEY = "lyre-theme";
+const THEME_KEY = "syrius-theme";
 type ThemeMode = "dark" | "light" | "system";
 
 function resolveTheme(mode: ThemeMode): "dark" | "light" {
@@ -43,7 +43,7 @@ export function applyTheme(mode: ThemeMode) {
 
 /* The persisted mode lives in localStorage — read it as an external store so
    SSR renders "dark" and the client syncs without a hydration mismatch. */
-const THEME_EVENT = "lyre-theme-change";
+const THEME_EVENT = "syrius-theme-change";
 
 function subscribeTheme(cb: () => void) {
   window.addEventListener("storage", cb);

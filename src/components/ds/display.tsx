@@ -50,7 +50,7 @@ export function Card({
 /* — Badge — */
 export function Badge({
   tone = "outline", inverse = false, className = "", children, ...rest
-}: { tone?: "brass" | "ink" | "laurel" | "clay" | "outline"; inverse?: boolean; className?: string; children?: React.ReactNode } & React.HTMLAttributes<HTMLSpanElement>) {
+}: { tone?: "gold" | "ink" | "positive" | "caution" | "outline"; inverse?: boolean; className?: string; children?: React.ReactNode } & React.HTMLAttributes<HTMLSpanElement>) {
   const cls = ["ls-badge", "ls-badge--" + tone, inverse ? "ls-badge--inverse" : "", className].filter(Boolean).join(" ");
   return <span className={cls} {...rest}>{children}</span>;
 }
@@ -77,7 +77,7 @@ const initials = (n: string) => String(n || "").trim().split(/\s+/).map((w) => w
 
 export function Avatar({
   name = "", tone = "ink", size = "md", ring = false, className = "", style, ...rest
-}: { name?: string; tone?: "ink" | "sea" | "brass" | "sand"; size?: "sm" | "md" | "lg"; ring?: boolean; className?: string; style?: React.CSSProperties } & React.HTMLAttributes<HTMLSpanElement>) {
+}: { name?: string; tone?: "ink" | "sea" | "gold" | "sand"; size?: "sm" | "md" | "lg"; ring?: boolean; className?: string; style?: React.CSSProperties } & React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span className={["ls-avatar", "ls-avatar--" + tone, "ls-avatar--" + size, ring ? "ls-avatar--ring" : "", className].filter(Boolean).join(" ")} style={style} title={name} {...rest}>
       {initials(name)}
@@ -139,7 +139,7 @@ export function Wordmark({
   const px = typeof size === "number" ? size : WM_SIZES[size] || 20;
   return (
     <span className={["ls-wm", inverse ? "ls-wm--inverse" : "", className].filter(Boolean).join(" ")} style={{ fontSize: px, ...style }}>
-      <span className="ls-wm__t" style={{ fontSize: px }}>LYRE SOCIAL</span>
+      <span className="ls-wm__t" style={{ fontSize: px }}>SYRIUS SOCIAL</span>
       {sub ? <span className="ls-wm__sub" style={{ fontSize: Math.max(8, px * 0.42) }}>{sub}</span> : null}
       {seam ? <span className="ls-wm__seam"></span> : null}
     </span>

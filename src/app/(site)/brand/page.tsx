@@ -1,82 +1,82 @@
 import type { Metadata } from "next";
-import { Badge, Icon, Tag } from "@/components/ds";
+import { Badge, Tag, Icon } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, MAILBOX, SUB_CLASSES, SURFACES, TAGLINE } from "@/lib/brand";
+import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, MAILBOX, SUB_BRANDS, SUB_CLASSES, SURFACES, TAGLINE, WORDMARK } from "@/lib/brand";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
 
 export const metadata: Metadata = {
   title: "The brand kit",
   description:
-    "The mark, the palette, the type, the voice, and the facts — everything needed to write about, partner with, or sponsor the club.",
+    "The wordmark, the palette, the type, the voice, and the facts — everything needed to write about, partner with, or sponsor the show.",
 };
 
 const BOILER =
-  "LYRE SOCIAL is a membership club for experiential connection at sea and ashore. Founded MMXXIV in Marina del Rey, the club runs Sea Days aboard — day sails, crossings, regattas, night passages — and Port Days ashore for a crew that believes the long way home is the point. Membership is by invitation or application — Access, Regional, National, and Global, with Guest passes alongside.";
+  "SYRIUS SOCIAL is the unscripted social experiment — a reality-format social club running Charters on the water and Tables ashore, cameras from boarding to docking. Real people, real chemistry, filmed and unfiltered, wrapped in charter-grade luxury. Two sub-brands sail under the umbrella: Syrius Dating and Syrius Yacht Club. Casting is by application or invitation.";
 
 const SEAS: Record<string, string> = {
-  dawn: "var(--sea-dawn)",
-  day: "var(--sea-day)",
-  dusk: "var(--sea-dusk)",
+  dawn: "var(--scene-gold)",
+  day: "var(--scene-night)",
+  dusk: "var(--scene-rose)",
 };
 
-const GREYS: Array<[string, string, string, boolean]> = [
-  ["Void", "#060607", "deepest fields", true],
-  ["Carbon", "#0B0B0C", "the page", true],
-  ["Panel", "#141416", "cards", true],
-  ["Steel", "#2A2A2E", "hairlines", true],
+const NOIRS: Array<[string, string, string, boolean]> = [
+  ["Noir 950", "#0B0E12", "sunken fields", true],
+  ["Noir 900", "#101418", "the page", true],
+  ["Noir 800", "#161B21", "cards", true],
+  ["Noir 700", "#1E252D", "raised", true],
 ];
-const PAPERS: Array<[string, string, string, boolean]> = [
-  ["White", "#FFFFFF", "light-theme cards", false],
-  ["Paper", "#F2F2F4", "text, light page", false],
-  ["Silver", "#C9C9CF", "secondary", false],
-  ["Smoke", "#8A8A93", "muted", false],
+const IVORIES: Array<[string, string, string, boolean]> = [
+  ["Ivory 50", "#FAF7F0", "paper cards", false],
+  ["Ivory 100", "#F4EFE6", "text, paper page", false],
+  ["Ivory 500", "#C9C0AC", "secondary", false],
+  ["Muted", "#9AA3AD", "muted text", false],
 ];
-const NEON: Array<[string, string, string, boolean]> = [
-  ["Cyan", "#00E8FF", "links, focus, live", false],
-  ["Violet", "#8B5CFF", "emphasis", false],
-  ["Magenta", "#FF2EC4", "urgency", true],
-  ["Amber", "#FF9E3D", "warnings", false],
+const METALS: Array<[string, string, string, boolean]> = [
+  ["Gold 500", "#B98A2F", "the accent", false],
+  ["Gold 400", "#D3B15E", "hover, focus, live", false],
+  ["Rose 500", "#FF5C7A", "Syrius Dating", true],
+  ["Riviera 500", "#2E9BB5", "Syrius Yacht Club", true],
 ];
-const LAVAS: Array<[string, string, string]> = [
-  ["Master", "linear-gradient(90deg,#00E8FF,#8B5CFF,#FF2EC4)", "the union"],
-  ["Sea", "linear-gradient(90deg,#7DF3FF,#2E6FFF,#0B1E4A)", "sunlit to midnight"],
-  ["Shore", "linear-gradient(90deg,#C6FF4A,#17B877,#063B2A)", "noon to night forest"],
-  ["Sky", "linear-gradient(90deg,#FFD24A,#FF2EC4,#2E1A66)", "golden hour to nightfall"],
+const GRADIENTS: Array<[string, string, string]> = [
+  ["Gold", "linear-gradient(120deg,#E3C983,#B98A2F)", "hero rules and small fills"],
+  ["Scene gold", "linear-gradient(165deg,#E3C983 0%,#B98A2F 35%,#3C2F1A 75%,#101418 100%)", "imagery TK — golden hour"],
+  ["Scene night", "linear-gradient(165deg,#2E9BB5 0%,#173B4E 45%,#0B0E12 100%)", "imagery TK — on the water"],
+  ["Scene rose", "linear-gradient(165deg,#FF7D95 0%,#8E2E4C 45%,#14090F 100%)", "imagery TK — after sunset"],
 ];
 
 const TYPE_VOICES: Array<[string, string, string, string, string]> = [
-  ["var(--font-display)", "Marcellus", "Display and headlines. Single weight — never bold, never italic. Inscriptional, like harbor stone.", "https://fonts.google.com/specimen/Marcellus", "FONTS.GOOGLE.COM/MARCELLUS"],
-  ["var(--font-sans)", "Archivo", "Body and UI at normal width; expanded (125%) tracked caps for eyebrows, buttons, badges — the club-jacket voice.", "https://fonts.google.com/specimen/Archivo", "FONTS.GOOGLE.COM/ARCHIVO"],
-  ["var(--font-mono)", "Space Mono", "The ship's log: coordinates, times, distances, wind. Data is decoration.", "https://fonts.google.com/specimen/Space+Mono", "FONTS.GOOGLE.COM/SPACE+MONO"],
+  ["var(--font-display)", "Marcellus", "Display and headlines. Single weight — never bold, never italic. Cinematic, like a title card.", "https://fonts.google.com/specimen/Marcellus", "FONTS.GOOGLE.COM/MARCELLUS"],
+  ["var(--font-sans)", "Jost", "Body and UI, 300–600. Sentence case everywhere — the producer speaks plainly.", "https://fonts.google.com/specimen/Jost", "FONTS.GOOGLE.COM/JOST"],
+  ["var(--font-mono)", "Space Mono", "The call sheet: coordinates, times, cabin counts. Data is decoration.", "https://fonts.google.com/specimen/Space+Mono", "FONTS.GOOGLE.COM/SPACE+MONO"],
 ];
 
 /* The rooms of the house — names from brand.ts, roles annotated here. */
 const ROOMS: Array<[keyof typeof SURFACES, string]> = [
-  ["bridge", "The ops console"],
-  ["gateway", "Live mode — the day underway"],
-  ["openDeck", "The members' feed"],
-  ["passbook", "The credential"],
-  ["shoreside", "The shore office"],
-  ["magazine", "The magazine — the ship's log, published"],
-  ["agent", "The agent — shared brain of the ATLVS ecosystem"],
-  ["gangway", "Arrivals — auth and vetting"],
+  ["bridge", "The crew console"],
+  ["gateway", "Live mode — the charter underway"],
+  ["openDeck", "The cast's feed — the confession booth"],
+  ["passbook", "The credential, with its rotating code"],
+  ["shoreside", "The crew desk ashore"],
+  ["magazine", "What the cameras kept, published"],
+  ["agent", "Confirm-first assistant — it proposes, you confirm; money always asks"],
+  ["gangway", "Arrivals — sign-in and casting"],
   ["chandlery", "The shop"],
   ["galley", "Food and drink, aboard and ashore"],
 ];
 
 const IMAGERY: Array<[string, string]> = [
-  ["dawn", "Departures — first light, long shadows, rope and linen."],
-  ["day", "Underway — water, sails, bodies in motion."],
-  ["dusk", "Ashore — long tables, records on, the day's last brass light."],
+  ["dawn", "Golden hour — gold on water, the day's last warm light."],
+  ["day", "Underway — riviera water, sails, bodies in motion."],
+  ["dusk", "After sunset — night-deck flash, candid, a little grainy."],
 ];
 
 const FACTS: Array<[string, string]> = [
-  ["Founded", "MMXXIV · MARINA DEL REY, CALIFORNIA"],
+  ["Founded", "MMXXVI · MARINA DEL REY, CALIFORNIA"],
   ["Home port", "33.9803° N — 118.4517° W"],
-  ["What we run", "SEA DAYS ABOARD · PORT DAYS ASHORE"],
-  ["Membership", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY INVITATION OR APPLICATION"],
-  ["Cadence", "LORE, SUNDAYS · SEASON II — THE WINE-DARK SEA"],
+  ["What we run", "CHARTERS ABOARD · TABLES ASHORE · CAMERAS ON"],
+  ["Casting", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY APPLICATION OR INVITATION"],
+  ["Cadence", "EPISODES, SUNDAYS · SEASON I — CASTING NOW"],
 ];
 
 export default function BrandKitPage() {
@@ -84,14 +84,14 @@ export default function BrandKitPage() {
     <CopyProvider>
       <div className="ls-container">
         <div className="bk-head">
-          <div className="ls-eyebrow" style={{ color: "var(--brass-deep)", marginBottom: 16 }}>
+          <div className="ls-eyebrow" style={{ color: "var(--gold-deep)", marginBottom: 16 }}>
             Press · Partners · Sponsors
           </div>
           <h1>The brand kit.</h1>
           <p style={{ color: "var(--text-2)", marginTop: 16, maxWidth: "56ch" }}>
-            Everything needed to write about, partner with, or sponsor the club — the mark, the
-            palette, the type, the voice, and the facts. Use it as given; the sea doesn&apos;t
-            negotiate either.
+            Everything needed to write about, partner with, or sponsor the show —
+            the wordmark, the palette, the type, the voice, and the facts. Use it
+            as given; the cameras don&apos;t negotiate either.
           </p>
           <div className="bk-boiler">
             <p>{BOILER}</p>
@@ -100,55 +100,55 @@ export default function BrandKitPage() {
         </div>
 
         <section className="bk-sec">
-          <SectionHeader eyebrow="01 — The mark" title="The lyre, and the letters." />
+          <SectionHeader eyebrow="01 — The wordmark" title="Type only. There is no logo." />
           <div className="bk-lockups">
             <div className="bk-lock" style={{ background: "var(--surface-card)" }}>
-              <span className="bk-wm">LYRE SOCIAL</span>
-              <span className="cap">INLINE · MARCELLUS · TRACK .3EM</span>
+              <span className="bk-wm">{WORDMARK}</span>
+              <span className="cap">INLINE · MARCELLUS · TRACK .14EM · GOLD RULE BENEATH</span>
             </div>
             <div className="bk-lock bk-lock--ink">
               <div className="bk-stack">
-                <div className="a">LYRE</div>
+                <div className="a">SYRIUS</div>
                 <div className="b">Social</div>
               </div>
-              <span className="cap">STACKED · NEON DESCRIPTOR · DARK ONLY</span>
+              <span className="cap">STACKED · MONOGRAM STANDARD · NOIR ONLY</span>
             </div>
           </div>
           <ul className="bk-rules">
-            <li><b>The lyre is official.</b> Use the files in the logo kit — never redraw, fill, or restyle it.</li>
+            <li><b>No logo exists.</b> The wordmark is set in plain type. Never draw, generate, or commission a mark.</li>
             <li><b>Clearspace:</b> one cap-height on all sides; nothing enters it.</li>
-            <li><b>Colors:</b> paper on carbon, carbon on paper. Neon for the descriptor only.</li>
-            <li><b>Never</b> bold, italicize, outline, gradient, or arc the mark.</li>
+            <li><b>Colors:</b> ivory on noir, noir on ivory. Gold for the rule beneath, nothing else.</li>
+            <li><b>Never</b> bold, italicize, outline, gradient, or arc the letters.</li>
           </ul>
         </section>
 
         <section className="bk-sec">
           <SectionHeader
             eyebrow="02 — Color"
-            title="Greyscale by default; neon is the only color."
+            title="Noir by default; one metal per view."
             aside={<span className="ls-mono-data" style={{ color: "var(--text-3)" }}>CLICK ANY SWATCH TO COPY</span>}
           />
-          <div className="bk-swlbl">The greys</div>
+          <div className="bk-swlbl">The noir</div>
           <div className="bk-swgrid">
-            {GREYS.map(([nm, hex, use, inv]) => (
+            {NOIRS.map(([nm, hex, use, inv]) => (
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
             ))}
           </div>
-          <div className="bk-swlbl">Paper &amp; smoke</div>
+          <div className="bk-swlbl">Ivory &amp; smoke — never pure white; it blooms on camera</div>
           <div className="bk-swgrid">
-            {PAPERS.map(([nm, hex, use, inv]) => (
+            {IVORIES.map(([nm, hex, use, inv]) => (
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
             ))}
           </div>
-          <div className="bk-swlbl">The neon</div>
+          <div className="bk-swlbl">The metals</div>
           <div className="bk-swgrid">
-            {NEON.map(([nm, hex, use, inv]) => (
+            {METALS.map(([nm, hex, use, inv]) => (
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
             ))}
           </div>
-          <div className="bk-swlbl">The lavas</div>
+          <div className="bk-swlbl">Gradients &amp; scenes</div>
           <div className="bk-lavas">
-            {LAVAS.map(([nm, g, use]) => (
+            {GRADIENTS.map(([nm, g, use]) => (
               <div className="bk-lava" key={nm}>
                 <div className="bar" style={{ background: g }}></div>
                 <div className="nm">{nm}</div>
@@ -157,17 +157,19 @@ export default function BrandKitPage() {
             ))}
           </div>
           <p className="bk-note">
-            The master brand is greyscale brutalism — carbon, paper, steel hairlines — with neon
-            lava gradients (cyan→violet→magenta) as the only color, spent one seam per view. A
-            paper light theme ships via <b>data-theme=&quot;light&quot;</b>. Sea, Shore, and Sky
-            are event themes that swap only the lava — each running daylight into its own night:
-            sunlit aqua→midnight water, noon lime→night forest, golden hour→ultraviolet — over the
-            same greys.
+            The umbrella brand is noir and antique gold — one metallic accent per
+            view, hover lightens, press darkens, never shrinks. Sub-brands swap
+            the accent only: Syrius Dating runs rose, Syrius Yacht Club runs
+            riviera — never their own type or surfaces. One stage, different
+            spotlights. A paper light theme ships via{" "}
+            <b>data-theme=&quot;light&quot;</b>, where every metal deepens for
+            contrast. Scene gradients stand in wherever photography belongs,
+            always labeled IMAGERY TK.
           </p>
         </section>
 
         <section className="bk-sec">
-          <SectionHeader eyebrow="03 — Type" title="Three voices, one crew." />
+          <SectionHeader eyebrow="03 — Type" title="Three voices, one show." />
           <div className="bk-typegrid">
             {TYPE_VOICES.map(([family, name, use, href, label]) => (
               <div className="bk-type" key={name}>
@@ -181,36 +183,51 @@ export default function BrandKitPage() {
         </section>
 
         <section className="bk-sec">
-          <SectionHeader eyebrow="04 — Voice" title="Assured, spare, mythic-modern." />
+          <SectionHeader eyebrow="04 — Voice" title="A producer who respects the audience." />
           <div className="bk-voice">
             <div>
               <div className="h">Say</div>
-              <div className="ex">Passes are few by design.</div>
-              <div className="ex">Come aboard. We&apos;ll handle the wind.</div>
-              <div className="ex">Ashore at golden hour. Dress for salt.</div>
+              <div className="ex">No scripts. No second takes.</div>
+              <div className="ex">The cameras are on. So is the bar.</div>
+              <div className="ex">12 cabins. 200 applicants.</div>
             </div>
             <div className="no">
               <div className="h">Never</div>
-              <div className="ex">Don&apos;t miss out on this AMAZING event!</div>
-              <div className="ex">We&apos;re so excited to announce…</div>
-              <div className="ex">Ahoy matey! Set sail with us!</div>
+              <div className="ex">Don&apos;t miss this AMAZING night&hellip; (never shout)</div>
+              <div className="ex">We&apos;re so excited to announce&hellip;</div>
+              <div className="ex">Any emoji, anywhere, ever.</div>
             </div>
           </div>
+          <p className="bk-note">
+            Present tense, sentence case. &ldquo;You&rdquo; is the guest,
+            &ldquo;we&rdquo; is the crew; cast are first names only. Scarcity is
+            stated flatly, never hyped. Numbers, coordinates, and timestamps set
+            in Space Mono — 38°54′N 1°26′E.
+          </p>
           <div className="bk-lex">
-            {["Sea Days", "Port Days", "The Manifest", "Passes", "Open Deck", "Knots", "Leagues", "Passbook", "Gateway", "the Bridge", "Shoreside", "LORE", "Aurora AI", "Aboard", "Weather Hold", "Gangway"].map((w) => (
+            {["Charters", "Tables", "The Manifest", "Passes", "Cabins", "The Booth", "Knots", "Leagues", "Marks", "Regattas", "Member Card", "Live", "the Bridge", "Shoreside", "Episodes", "The Producer", "Aboard", "Weather Hold", "The Gangway"].map((w) => (
               <Tag key={w}>{w}</Tag>
             ))}
           </div>
         </section>
 
         <section className="bk-sec bk-rooms">
-          <SectionHeader eyebrow="05 — The rooms of the house" title="One house, many rooms." />
+          <SectionHeader eyebrow="05 — One stage, different spotlights" title="The umbrella and its rooms." />
           <p className="bk-note" style={{ marginTop: 0 }}>
-            Micro-brands never get their own logos, colors, or type — they are
-            rooms in one house, spoken with the definite article and lowercase
-            in prose. The only marks that exist: the lyre, the wordmark, and
-            LORE&rsquo;s masthead (type-only).
+            Sub-brands never get their own logos, colors beyond the accent, or
+            type — they are spotlights on one stage. Rooms are spoken with the
+            definite article and lowercase in prose. The only marks that exist
+            are type-set: the wordmark and the Episodes masthead.
           </p>
+          <div className="bk-swlbl">The sub-brands</div>
+          <div className="bk-facts">
+            {Object.values(SUB_BRANDS).map((b) => (
+              <div className="row" key={b.handle}>
+                <span className="k">{b.name}</span>
+                <span className="bk-rooms__role">{b.handle} · accent: {b.accent}</span>
+              </div>
+            ))}
+          </div>
           <div className="bk-swlbl">The rooms</div>
           <div className="bk-facts">
             {ROOMS.map(([key, role]) => (
@@ -250,7 +267,9 @@ export default function BrandKitPage() {
                   {CLASS_CODES[fam]} · {FAMILY_LABEL[fam]}
                 </span>
                 <span className="bk-rooms__role">
-                  {fam === "sea" ? "Aboard — the day on the water" : "Ashore — the day on land"}
+                  {fam === "sea"
+                    ? "Aboard — Syrius Yacht Club, riviera accent"
+                    : "Ashore — Syrius Dating's Thursday format, rose accent"}
                 </span>
               </div>
             ))}
@@ -282,18 +301,13 @@ export default function BrandKitPage() {
               </span>
             </div>
           </div>
-          <p className="bk-note">
-            &ldquo;dispatch&rdquo; and &ldquo;purser&rdquo; are literal words
-            now, never brand names — you file a dispatch to LORE; a purser is
-            nobody. Lowercase in prose, always.
-          </p>
         </section>
 
         <section className="bk-sec">
           <SectionHeader
             eyebrow="06 — Imagery"
-            title="Golden hour, film grain, salt."
-            aside={<Badge tone="clay">Photography TK</Badge>}
+            title="Warm, candid, grainy night-flash."
+            aside={<Badge tone="caution">Photography TK</Badge>}
           />
           <div className="bk-img">
             {IMAGERY.map(([k, cap]) => (
@@ -306,8 +320,9 @@ export default function BrandKitPage() {
             ))}
           </div>
           <p className="bk-note">
-            When photography exists: warm and sun-washed, never cool or clinical stock. No
-            illustration, no renders. Type sits over a bottom scrim, never over open detail.
+            When photography exists: warm, candid, slightly grainy — night-deck
+            flash, not stock lifestyle. No illustration, no renders. Type sits
+            over a bottom scrim, never over open detail.
           </p>
         </section>
 
@@ -327,13 +342,14 @@ export default function BrandKitPage() {
       <section className="bk-dl">
         <div className="ls-container bk-dl__in">
           <div>
-            <div className="ls-eyebrow" style={{ color: "var(--brass-bright)", marginBottom: 16 }}>
+            <div className="ls-eyebrow" style={{ color: "var(--gold-bright)", marginBottom: 16 }}>
               Downloads &amp; contact
             </div>
             <h2>Take it with you.</h2>
             <p>
-              Tokens and the logo kit ship today; photography follows once commissioned. For
-              anything the kit doesn&apos;t answer, write us.
+              Tokens ship today; photography follows once commissioned. There is
+              no logo kit, and there never will be one — the wordmark is type.
+              For anything the kit doesn&apos;t answer, write us.
             </p>
             <div className="bk-dl__contact">
               PRESS — <a href={`mailto:${MAILBOX.press}`}>{MAILBOX.press.toUpperCase()}</a>
@@ -342,16 +358,13 @@ export default function BrandKitPage() {
             </div>
           </div>
           <div className="bk-dl__list">
-            <a className="ls-btn ls-btn--brass ls-btn--md ls-btn--full" href="/brand/lyre-social-tokens.css" download>
+            <a className="ls-btn ls-btn--gold ls-btn--md ls-btn--full" href="/brand/syrius-social-tokens.css" download>
               <Icon name="Download" size={15} />
               Color &amp; type tokens · CSS
             </a>
             <CopyTextButton label="Boilerplate" text={BOILER} variant="outline" inverse fullWidth>
               Boilerplate · copy text
             </CopyTextButton>
-            <a className="ls-btn ls-btn--outline ls-btn--inverse ls-btn--md ls-btn--full" href="/brand/lyre-logo-kit.zip" download>
-              Logo kit · 15 SVGs
-            </a>
             <span className="ls-btn ls-btn--outline ls-btn--inverse ls-btn--md ls-btn--full" style={{ opacity: 0.4, pointerEvents: "none" }}>
               Photography · pending shoot
             </span>

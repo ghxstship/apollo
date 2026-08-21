@@ -51,7 +51,7 @@ export default async function ModerationPage() {
   return (
     <div>
       <span className="hm-eyebrow">Moderation</span>
-      <h1 className="hm-h1">The Open Deck queue.</h1>
+      <h1 className="hm-h1">The Booth queue.</h1>
       <p className="hm-lede">
         Flagged by members or the code-of-conduct filters. Remove with a reason, or leave up and
         keep eyes on — never silently.

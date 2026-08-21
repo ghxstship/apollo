@@ -6,10 +6,10 @@ import { DirectoryList, type DirectoryMember, type HarborOption } from "./roster
 
 export const metadata: Metadata = { title: "Directory" };
 
-const TONES = new Set(["ink", "sea", "brass", "sand"]);
+const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
-function toneOf(t: string | null | undefined): "ink" | "sea" | "brass" | "sand" {
-  return t && TONES.has(t) ? (t as "ink" | "sea" | "brass" | "sand") : "ink";
+function toneOf(t: string | null | undefined): "ink" | "sea" | "gold" | "sand" {
+  return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "ink";
 }
 
 export default async function DirectoryPage() {

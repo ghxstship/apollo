@@ -5,11 +5,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "LYRE SOCIAL — Sea Days and Port Days, aboard and ashore.",
-    template: "%s · LYRE SOCIAL",
+    default: "SYRIUS SOCIAL — The Unscripted Social Experiment.",
+    template: "%s · SYRIUS SOCIAL",
   },
   description:
-    "A membership club for experiential connection at sea and ashore. Sea Days, Port Days, and the people worth crossing water for. Home port: Marina del Rey.",
+    "Twelve strangers. One yacht. Cameras from boarding to docking. No scripts, no second takes — whatever happens after sunset is the show.",
   manifest: "/manifest.webmanifest",
   icons: {
     apple: "/apple-icon.png",
@@ -17,12 +17,12 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "LYRE",
+    title: "SYRIUS",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B0B0C",
+  themeColor: "#101418",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 
 /* Applies the persisted theme before first paint — dark is the default;
    only "light" sets an attribute. Runs from <head>, so it targets <html>. */
-const themeInit = `try{var m=localStorage.getItem("lyre-theme")||"dark";var l=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;if(l==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}`;
+const themeInit = `try{var m=localStorage.getItem("syrius-theme")||"dark";var l=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;if(l==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -40,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Script id="lyre-theme-init" strategy="beforeInteractive">{themeInit}</Script>
+        <Script id="syrius-theme-init" strategy="beforeInteractive">{themeInit}</Script>
         <SwRegister />
         {children}
       </body>

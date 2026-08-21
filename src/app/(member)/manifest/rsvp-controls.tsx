@@ -262,14 +262,14 @@ export function RsvpControls({
     <div className="voy-foot">
       {weatherHold ? (
         <>
-          <Badge tone="clay">Weather hold</Badge>
+          <Badge tone="caution">Weather hold</Badge>
           <span className="voy-hold">
             Held for weather. We call it by 18:00 the night before.
           </span>
         </>
       ) : myStatus === "aboard" ? (
         <>
-          <Badge tone="laurel">Aboard</Badge>
+          <Badge tone="positive">Aboard</Badge>
           <span className="mbr-mono">GUESTS</span>
           <Stepper size="sm" min={0} max={2} value={guests} onChange={onGuestStep} />
           {boardingCode ? (
@@ -365,7 +365,7 @@ export function RsvpControls({
             </Button>
           ) : null}
           <Button
-            variant={recommended ? "brass" : "outline"}
+            variant={recommended ? "gold" : "outline"}
             size="sm"
             disabled={pending}
             onClick={() =>
@@ -410,7 +410,7 @@ export function RsvpControls({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               size="sm"
               disabled={pending || namesMissing}
               onClick={() =>
@@ -443,7 +443,7 @@ export function RsvpControls({
           {depositRequired ? (
             <div style={rowStyle}>
               <span>
-                <Badge tone="brass">Deposit</Badge>{" "}
+                <Badge tone="gold">Deposit</Badge>{" "}
                 <span style={{ color: "var(--text-3)", fontSize: 12 }}>
                   credited to the galley aboard, forfeited on no-show
                 </span>
@@ -556,7 +556,7 @@ export function RsvpControls({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               size="sm"
               disabled={pending || !guestEdit || guestEdit.names.some((n) => !n.trim())}
               onClick={() =>
@@ -600,7 +600,7 @@ export function RsvpControls({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               size="sm"
               disabled={pending || improveChosen.size === 0}
               onClick={() =>

@@ -1,7 +1,7 @@
 import "@/components/site/site.css";
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
-import { AuroraGate } from "@/components/aurora/gate";
+import { ProducerGate } from "@/components/producer/gate";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function SiteLayout({
@@ -18,7 +18,7 @@ export default async function SiteLayout({
       <SiteNav />
       <main>{children}</main>
       <SiteFooter harbors={harbors ?? []} />
-      <AuroraGate />
+      <ProducerGate />
     </>
   );
 }

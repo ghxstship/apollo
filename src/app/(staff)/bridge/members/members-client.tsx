@@ -45,12 +45,12 @@ const EMPTY: SegmentFilters = {
   q: "",
 };
 
-const DUES_TONE: Record<string, "brass" | "ink" | "laurel" | "clay" | "outline"> = {
-  active: "laurel",
-  trialing: "brass",
-  past_due: "clay",
+const DUES_TONE: Record<string, "gold" | "ink" | "positive" | "caution" | "outline"> = {
+  active: "positive",
+  trialing: "gold",
+  past_due: "caution",
   paused: "outline",
-  canceled: "clay",
+  canceled: "caution",
   incomplete: "outline",
   none: "outline",
 };
@@ -149,7 +149,7 @@ export function MembersClient({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `lyre-members-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `syrius-members-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     show({ msg: "File written.", meta: `${filtered.length} ROWS · CSV` });
@@ -162,7 +162,7 @@ export function MembersClient({
     startTransition(async () => {
       const res = await loadMember(row.id);
       setLoading(false);
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else setDetail(res.detail ?? null);
     });
   };
@@ -296,7 +296,7 @@ export function MembersClient({
                 const id = segmentId;
                 startTransition(async () => {
                   const res = await removeSegment(id);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setSegmentId("");
                     show({ msg: "View dropped.", meta: "SAVED VIEW REMOVED" });
@@ -343,14 +343,14 @@ export function MembersClient({
               Not yet
             </Button>
             <Button
-              variant="brass"
+              variant="gold"
               disabled={pending}
               onClick={() => {
                 const name = segmentName;
                 const filters = f;
                 startTransition(async () => {
                   const res = await saveSegment(name, filters);
-                  if (res.error) show({ msg: res.error, tone: "siren" });
+                  if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setNaming(false);
                     setSegmentName("");

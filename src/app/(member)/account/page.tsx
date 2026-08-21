@@ -32,10 +32,10 @@ type AccountRow = {
   [key: string]: unknown;
 };
 
-const STATUS_TONE: Record<string, "laurel" | "clay" | "outline"> = {
-  active: "laurel",
-  trialing: "laurel",
-  past_due: "clay",
+const STATUS_TONE: Record<string, "positive" | "caution" | "outline"> = {
+  active: "positive",
+  trialing: "positive",
+  past_due: "caution",
   paused: "outline",
   canceled: "outline",
   incomplete: "outline",

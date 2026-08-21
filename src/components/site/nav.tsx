@@ -8,9 +8,9 @@ import { LockupHorizontal } from "./logo";
 import { LinkButton } from "./link-button";
 
 const LINKS: Array<[string, string]> = [
-  ["/voyages", "Voyages"],
-  ["/membership", "Membership"],
-  ["/lore", "LORE"],
+  ["/charters", "Charters"],
+  ["/membership", "Casting"],
+  ["/episodes", "Episodes"],
   ["/gallery", "Gallery"],
   ["/crew", "Crew wanted"],
 ];
@@ -44,7 +44,7 @@ export function SiteNav() {
   return (
     <nav className="ws-nav">
       <div className="ls-container ws-nav__in">
-        <Link href="/" className="ws-nav__logo" aria-label="LYRE SOCIAL — home">
+        <Link href="/" className="ws-nav__logo" aria-label="SYRIUS SOCIAL — home">
           <LockupHorizontal height={34} />
         </Link>
         <div className="ws-nav__links">
@@ -81,7 +81,7 @@ export function SiteNav() {
       {open ? (
         <div className="ws-menu" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="ws-menu__top">
-            <Link href="/" className="ws-nav__logo" aria-label="LYRE SOCIAL — home" onClick={close}>
+            <Link href="/" className="ws-nav__logo" aria-label="SYRIUS SOCIAL — home" onClick={close}>
               <LockupHorizontal height={30} />
             </Link>
             <IconButton label="Close menu" variant="ghost" inverse onClick={close}>

@@ -95,7 +95,7 @@ export default async function MembershipPage() {
           <div className="ws-plans__row" key={type}>
             <div className="ws-plans__label">
               <b>{name}</b>
-              {type === "global" ? <Badge tone="brass">Most aboard</Badge> : null}
+              {type === "global" ? <Badge tone="gold">Most aboard</Badge> : null}
               <span>{blurb}</span>
             </div>
             {/* Access has no tiers — platform account, passes bought à la

@@ -31,8 +31,8 @@ function isFullMessage(raw: string | null | undefined): boolean {
 
 function done(): RsvpResult {
   revalidatePath("/manifest");
-  revalidatePath("/home-port");
-  revalidatePath("/gateway");
+  revalidatePath("/home");
+  revalidatePath("/live");
   return {};
 }
 

@@ -32,12 +32,12 @@ const STAGES: Array<{ id: CrewStage; label: string }> = [
   { id: "passed", label: "Passed" },
 ];
 
-const STAGE_TONE: Record<CrewStage, "brass" | "ink" | "laurel" | "clay" | "outline"> = {
+const STAGE_TONE: Record<CrewStage, "gold" | "ink" | "positive" | "caution" | "outline"> = {
   applied: "outline",
   interview: "ink",
-  sea_trial: "brass",
-  offer: "laurel",
-  passed: "clay",
+  sea_trial: "gold",
+  offer: "positive",
+  passed: "caution",
 };
 
 const STAGE_LABEL = Object.fromEntries(STAGES.map((s) => [s.id, s.label])) as Record<
@@ -73,7 +73,7 @@ export function CrewClient({
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
       const res = await fn();
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
   };
@@ -100,7 +100,7 @@ export function CrewClient({
         show({
           msg: `${c.name} passed — kindly, in writing.`,
           meta: role ? role.title.toUpperCase() : undefined,
-          tone: "clay",
+          tone: "caution",
         })
     );
   };
@@ -248,7 +248,7 @@ export function CrewClient({
                 </Button>
               ) : null}
               {ADVANCE[current.stage] ? (
-                <Button variant="brass" disabled={pending} onClick={() => advance(current)}>
+                <Button variant="gold" disabled={pending} onClick={() => advance(current)}>
                   Advance → {STAGE_LABEL[ADVANCE[current.stage]!]}
                 </Button>
               ) : null}

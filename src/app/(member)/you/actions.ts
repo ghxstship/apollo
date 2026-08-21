@@ -7,7 +7,7 @@ import { BIO_MAX, INTERESTS } from "./interests";
 
 export type ProfileFormState = { saved?: boolean; error?: string };
 
-const TONES = new Set(["ink", "sea", "brass", "sand"]);
+const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
 export async function updateProfile(
   _prev: ProfileFormState,
@@ -50,8 +50,8 @@ export async function updateProfile(
   if (error) return { error: "That didn't land. Try again." };
 
   revalidatePath("/you");
-  revalidatePath("/home-port");
-  revalidatePath("/passbook");
+  revalidatePath("/home");
+  revalidatePath("/card");
   revalidatePath("/directory");
   return { saved: true };
 }
@@ -103,7 +103,7 @@ export async function pauseMembership(): Promise<StatusResult> {
   const res = await setStatus("paused");
   if (res.error) return res;
   revalidatePath("/you");
-  revalidatePath("/home-port");
+  revalidatePath("/home");
   return {};
 }
 
@@ -111,7 +111,7 @@ export async function resumeMembership(): Promise<StatusResult> {
   const res = await setStatus("active");
   if (res.error) return res;
   revalidatePath("/you");
-  revalidatePath("/home-port");
+  revalidatePath("/home");
   return {};
 }
 

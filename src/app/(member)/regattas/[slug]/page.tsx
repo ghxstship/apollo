@@ -102,7 +102,7 @@ export default async function ContestPage({
           <form action={entered ? withdrawFromContest : enterContest}>
             <input type="hidden" name="contest" value={contest.id} />
             <input type="hidden" name="slug" value={contest.slug} />
-            <Button type="submit" variant={entered ? "ghost" : "brass"}>
+            <Button type="submit" variant={entered ? "ghost" : "gold"}>
               {entered ? "Withdraw" : "Enter"}
             </Button>
           </form>

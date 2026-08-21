@@ -32,7 +32,7 @@ export function RedeemButton({
   return (
     <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
       {affordable ? (
-        <Button variant="brass" size="sm" disabled={pending} onClick={redeem}>
+        <Button variant="gold" size="sm" disabled={pending} onClick={redeem}>
           Redeem
         </Button>
       ) : (
@@ -46,7 +46,7 @@ export function RedeemButton({
       {redeemed ? (
         <Toast
           fixed
-          tone="laurel"
+          tone="positive"
           message="Redeemed. Shoreside will make it so."
           meta={rewardName}
           onDismiss={() => setRedeemed(false)}

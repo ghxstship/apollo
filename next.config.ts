@@ -7,17 +7,19 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
-  // 2026-07 rebrand: permanent moves to the new surface names.
+  // 2026-08 Syrius rebrand: the Lyre-era paths move permanently.
   async redirects() {
     return [
-      { source: "/harbor", destination: "/home-port", permanent: true },
-      { source: "/wardroom", destination: "/open-deck", permanent: true },
-      { source: "/now", destination: "/gateway", permanent: true },
-      { source: "/card", destination: "/passbook", permanent: true },
-      { source: "/harbormaster", destination: "/bridge", permanent: true },
-      { source: "/harbormaster/:path*", destination: "/bridge/:path*", permanent: true },
-      { source: "/dispatch", destination: "/lore", permanent: true },
-      { source: "/dispatch/:path*", destination: "/lore/:path*", permanent: true },
+      { source: "/home-port", destination: "/home", permanent: true },
+      { source: "/gateway", destination: "/live", permanent: true },
+      { source: "/open-deck", destination: "/booth", permanent: true },
+      { source: "/passbook", destination: "/card", permanent: true },
+      { source: "/chandlery", destination: "/slop-chest", permanent: true },
+      { source: "/word", destination: "/inbox", permanent: true },
+      { source: "/voyages", destination: "/charters", permanent: true },
+      { source: "/voyages/:path*", destination: "/charters/:path*", permanent: true },
+      { source: "/lore", destination: "/episodes", permanent: true },
+      { source: "/lore/:path*", destination: "/episodes/:path*", permanent: true },
     ];
   },
 };

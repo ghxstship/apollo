@@ -45,7 +45,7 @@ export function GangwayPanel({ next, expired }: { next: string; expired: boolean
         </form>
       ) : (
         <div className="gw-sent" aria-live="polite">
-          <Badge tone="laurel">Link away</Badge>
+          <Badge tone="positive">Link away</Badge>
           <p>The link is in your inbox.</p>
           <div className="gw-mono" style={{ marginTop: 12 }}>
             SENT TO {String(state.email ?? "").toUpperCase()} · HOLDS FOR 15 MINUTES

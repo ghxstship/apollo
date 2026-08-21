@@ -1,7 +1,8 @@
-/* LYRE SOCIAL type tokens — inscriptional serif over a modern grotesque, mono for the ship's log. */
+/* SYRIUS SOCIAL type tokens — cinematic serif over a geometric sans, mono for the call sheet. */
 :root{
 --font-display:'Marcellus','Times New Roman',serif;
---font-sans:'Archivo','Helvetica Neue',Helvetica,sans-serif;
+--font-sans:'Jost','Helvetica Neue',Helvetica,sans-serif;
+--font-body:'Jost','Helvetica Neue',Helvetica,sans-serif;
 --font-mono:'Space Mono','Courier New',monospace;
 /* display scale (Marcellus, single weight 400) */
 --text-display-xl:clamp(46px,5.5vw,76px);
@@ -19,9 +20,9 @@
 /* labels — expanded caps, the "club jacket" voice */
 --text-eyebrow:11px;
 --text-eyebrow-s:10px;
---track-eyebrow:.22em;
+--track-eyebrow:.16em;
 --track-button:.14em;
---stretch-wide:125%;
+--stretch-wide:100%;
 --stretch-normal:100%;
 /* data — ship's log */
 --text-data:12px;

@@ -10,10 +10,10 @@ export const metadata: Metadata = { title: "Agreements" };
    The state is computed by signature_standing() rather than stored, so a new
    published version moves everyone to "out of date" the moment it lands. */
 
-const STATE_COPY: Record<string, { label: string; tone: "laurel" | "clay" | "outline"; line: string }> = {
-  signed: { label: "Signed", tone: "laurel", line: "On file." },
-  lapsed: { label: "Out of date", tone: "clay", line: "The wording has moved on, or a year has passed." },
-  missing: { label: "Not signed", tone: "clay", line: "Needed before you board." },
+const STATE_COPY: Record<string, { label: string; tone: "positive" | "caution" | "outline"; line: string }> = {
+  signed: { label: "Signed", tone: "positive", line: "On file." },
+  lapsed: { label: "Out of date", tone: "caution", line: "The wording has moved on, or a year has passed." },
+  missing: { label: "Not signed", tone: "caution", line: "Needed before you board." },
 };
 
 export default async function AgreementsPage() {

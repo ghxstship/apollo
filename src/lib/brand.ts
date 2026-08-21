@@ -1,38 +1,51 @@
-/* LYRE SOCIAL — the brand, as code. Single source for names, taxonomy, and
+/* SYRIUS SOCIAL — the brand, as code. Single source for names, taxonomy, and
    lexicon. Every surface imports from here; the /brand page renders from it;
-   the route audit greps rendered HTML for BANNED terms.
+   the route audit greps rendered HTML for BANNED terms and for exclamation
+   marks — the producer never shouts.
 
-   Naming decisions (2026-07):
-   - Ops console = the Bridge · live mode = Gateway · feed = Open Deck
-   - Currency = Knots (KN — more knots, farther) · loyalty depth = Leagues
-   - Agent = Aurora AI (shared brain of the ATLVS ecosystem)
-   - Credential = Passbook · main office = Shoreside · editorial = LORE
-   - "dispatch" and "purser" are literal words now, never brand names.
-   - Internal DB names (fathoms_ledger, wardroom_*, etc.) are legacy plumbing;
-     display names come from here. */
+   Naming decisions (2026-08, Syrius rebrand):
+   - Umbrella = Syrius Social · sub-brands = Syrius Dating, Syrius Yacht Club.
+     Sub-brands swap the accent only (rose / riviera) — never type or surfaces.
+   - Ops console = the Bridge · live mode = Live · feed = the Booth
+   - Credential = Member Card · shop = the Slop Chest · editorial = Episodes
+   - Agent = the Producer (confirm-first; money always asks)
+   - Events: Charters (aboard, Yacht Club) and Tables (ashore, Dating).
+   - Carried over, kit coverage pending (docs/SYRIUS-KIT-REQUEST.md):
+     Knots · Leagues · Marks · Regattas · the Passage Log · Shoreside.
+   - Internal DB names (voyages, fathoms_ledger, wardroom_*, rsvps…) are legacy
+     plumbing; display names come from here. */
 
-export const TAGLINE = "Strike a chord.";
+export const BRAND = "Syrius Social";
+export const WORDMARK = "SYRIUS SOCIAL";
+export const TAGLINE = "The Unscripted Social Experiment.";
+
+/* One stage, different spotlights. Sub-brands ride the event-theme system:
+   data-theme="sea" is the Yacht Club's riviera, "shore" is Dating's rose. */
+export const SUB_BRANDS = {
+  social: { name: "Syrius Social", handle: "@syrius.social", accent: "gold" },
+  dating: { name: "Syrius Dating", handle: "@syrius.dating", accent: "rose", theme: "shore" },
+  yacht: { name: "Syrius Yacht Club", handle: "@syrius.yachts", accent: "riviera", theme: "sea" },
+} as const;
 
 export const SURFACES = {
-  homePort: "Home Port",
+  homePort: "Home",
   bridge: "The Bridge",
-  gateway: "Gateway",
-  openDeck: "Open Deck",
-  passbook: "Passbook",
+  gateway: "Live",
+  openDeck: "The Booth",
+  passbook: "Member Card",
   shoreside: "Shoreside",
-  magazine: "LORE",
-  agent: "Aurora AI",
-  gangway: "Gangway",
-  chandlery: "The Chandlery",
+  magazine: "Episodes",
+  agent: "The Producer",
+  gangway: "The Gangway",
+  chandlery: "The Slop Chest",
   galley: "The Galley",
 } as const;
 
-/* Mail and web domain, in one place. The club's addresses read at
-   MAIL_DOMAIN; the Resend sender lives in Supabase Vault (OUTBOX_FROM) and is
-   on atlvs.pro until lyre.social is registered and verified. If the wordmark
-   moves, these two constants and that one Vault row are the whole migration. */
-export const MAIL_DOMAIN = "lyre.social";
-export const SITE_DOMAIN = "lyre.social";
+/* Mail and web domain, in one place. The show's addresses read at MAIL_DOMAIN;
+   the Resend sender lives in Supabase Vault (OUTBOX_FROM) and stays on
+   atlvs.pro until syrius.social is registered and verified. */
+export const MAIL_DOMAIN = "syrius.social";
+export const SITE_DOMAIN = "syrius.social";
 
 export const MAILBOX = {
   shore: `shore@${MAIL_DOMAIN}`,
@@ -40,21 +53,17 @@ export const MAILBOX = {
   press: `press@${MAIL_DOMAIN}`,
   partners: `partners@${MAIL_DOMAIN}`,
   signal: `signal@${MAIL_DOMAIN}`,
-  /* Editorial submissions. "dispatch" here is the literal word for
-     sending something in, not the retired brand name. */
-  dispatch: `dispatch@${MAIL_DOMAIN}`,
+  casting: `casting@${MAIL_DOMAIN}`,
 } as const;
 
-/* The logbook. Gamification in the club's register: a member accumulates a
-   record, not a rank. Marks are permanent and personal; regattas and challenges
-   are bounded and then become history. There is deliberately no all-time table.
-
-   "Marks" rather than "Orders" because the Bridge already books Chandlery
-   purchase orders, and one word cannot carry both. In navigation a mark is a
-   fixed point you round on the way somewhere — which is what these are. */
+/* The logbook. Carried over from the club era and re-voiced for the show: a
+   cast member accumulates a record, not a rank. Marks are permanent; regattas
+   and challenges are bounded and then become history. There is deliberately no
+   all-time table — a persistent ranking tells the bottom of the roll they are
+   losing at belonging. */
 export const LOGBOOK = {
   log: "The Passage Log",
-  logLine: "What you have actually done, and nothing you have not.",
+  logLine: "Your season, on the record.",
   marks: "Marks",
   markVerb: "rounded",
   regattas: "Regattas",
@@ -71,10 +80,10 @@ export const MARK_KIND: Record<string, string> = {
 
 export const CONTEST_METRIC: Record<string, string> = {
   nm: "nautical miles",
-  sailings: "sailings",
+  sailings: "charters",
   harbors: "harbors",
   vessels: "hulls",
-  crew_met: "crew met",
+  crew_met: "cast met",
   frames: "frames posted",
 };
 
@@ -98,13 +107,15 @@ export const CITY_CODES: Record<string, string> = {
   "los-angeles": "LAX",
   chicago: "CHI",
   "new-york": "NYC",
+  mallorca: "PMI",
+  ibiza: "IBZ",
 };
 
-/* Event taxonomy — two families only: Sea Day (aboard) / Port Day (ashore).
-   Both run the same class ladder by duration. "Salon" and "Overnight" are
-   retired from the brand; the sky visual theme survives as styling only. */
-export const CLASS_CODES: Record<string, string> = { sea: "SEA", shore: "PRT", sky: "PRT" };
-export const FAMILY_LABEL: Record<string, string> = { sea: "Sea Day", shore: "Port Day", sky: "Port Day" };
+/* Event taxonomy — two families: a Charter (aboard, Syrius Yacht Club) and a
+   Table (ashore, Syrius Dating's Thursday format). Both run the same class
+   ladder by duration. The sky visual theme survives as styling only. */
+export const CLASS_CODES: Record<string, string> = { sea: "CHT", shore: "TBL", sky: "TBL" };
+export const FAMILY_LABEL: Record<string, string> = { sea: "Charter", shore: "Table", sky: "Table" };
 export const SUB_CLASSES: Record<string, { label: string; note: string }> = {
   voyage: { label: "Voyage", note: "Under 4 hours" },
   expedition: { label: "Expedition", note: "4–8 hours" },
@@ -115,10 +126,23 @@ export function knots(n: number): string {
   return `${n >= 0 ? "" : "−"}${Math.abs(n)} KN`;
 }
 
-/* Terms that must not appear in rendered copy (audit-enforced, case-insensitive).
-   "purser" and "dispatch" are allowed only in literal lowercase prose; the
-   audit flags the capitalized brand uses. */
+/* Terms that must not appear in rendered copy (audit-enforced, case-sensitive
+   raw-HTML match). The Lyre era is fully retired; the producer never shouts,
+   so the audit also scans visible text for exclamation marks and emoji. */
 export const BANNED_TERMS = [
+  // the retired brand, wholesale
+  "Lyre",
+  "LYRE",
+  "lyre.social",
+  "Strike a chord",
+  "Chandlery",
+  "Passbook",
+  "Open Deck",
+  "Home Port",
+  "Gateway",
+  "LORE",
+  "Aurora",
+  // pre-Syrius bans that still hold
   "Harbormaster console",
   "The Purser",
   "The Wardroom",
@@ -126,18 +150,14 @@ export const BANNED_TERMS = [
   " FM ",
   "The Dispatch",
   "Shore office",
-  "Member card",
   "ticket",
   "points",
   "ahoy",
-  // Admission is a pass; berths are for boats. Salon triggers the wrong SEO.
   "berth",
   "Berth",
   "salon",
   "Salon",
   "Overnight",
-  /* The club keeps a logbook, not a scoreboard. A persistent public ranking
-     tells the bottom of the roll they are losing at belonging. */
   "leaderboard",
   "Leaderboard",
 ];

@@ -946,7 +946,7 @@ async function routeMatrix(personas) {
       const isStaffRoute = r.path.startsWith("/bridge");
       if (isStaffRoute && name !== "staff") {
         const loc = res.headers.get("location") || "";
-        const ok = res.status >= 300 && res.status < 400 && loc.includes("/home-port");
+        const ok = res.status >= 300 && res.status < 400 && loc.includes("/home");
         note(name, `staff gate holds on ${r.path}`, ok, `got ${res.status} → ${res.headers.get("location")}`);
       } else {
         const ok = res.status === 200;
@@ -954,6 +954,13 @@ async function routeMatrix(personas) {
         if (ok) {
           const html = await res.text();
           note(name, `${r.path} free of error text`, !/Application error|__next_error__/i.test(html));
+          /* The lexicon holds behind the gangway too — the audit only sees
+             public pages, so the member surface is checked here. */
+          const banned = ["Lyre", "LYRE", "lyre.social", "Chandlery", "Passbook", "Open Deck", "Home Port", "Gateway", "LORE", "Aurora"].filter((t) => html.includes(t));
+          note(name, `${r.path} on-lexicon`, banned.length === 0, banned.join(", "));
+          const visible = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<![^>]*>/g, "").replace(/<[^>]+>/g, " ");
+          const shouts = (visible.match(/!/g) || []).length;
+          note(name, `${r.path} never shouts`, shouts === 0, shouts ? `${shouts} exclamation` : "");
         }
       }
     }
@@ -1255,11 +1262,11 @@ async function main() {
   console.log(`e2e against ${BASE}\n`);
   const personas = {};
   for (const [name, email] of [
-    ["regional", "e2e-regional@lyre.social"],
-    ["national", "e2e-national@lyre.social"],
-    ["global", "e2e-global@lyre.social"],
-    ["paused", "e2e-paused@lyre.social"],
-    ["staff", "e2e-staff@lyre.social"],
+    ["regional", "e2e-regional@syrius.social"],
+    ["national", "e2e-national@syrius.social"],
+    ["global", "e2e-global@syrius.social"],
+    ["paused", "e2e-paused@syrius.social"],
+    ["staff", "e2e-staff@syrius.social"],
   ]) {
     personas[name] = await login(email);
   }

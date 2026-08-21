@@ -24,7 +24,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
       const res = await fn();
-      if (res.error) show({ msg: res.error, tone: "siren" });
+      if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
   };
@@ -35,7 +35,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
         <StateBlock
           status="empty"
           title="Queue's clear."
-          detail="Nothing flagged. The Open Deck is behaving."
+          detail="Nothing flagged. The Booth is behaving."
         />
       </div>
     );
@@ -49,7 +49,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
             <span>{f.authorName.toUpperCase()}</span>
             <span>·</span>
             <span>{relTime(f.flaggedAt)}</span>
-            <Badge tone="clay">{f.reason}</Badge>
+            <Badge tone="caution">{f.reason}</Badge>
           </div>
           <p>&quot;{f.body}&quot;</p>
           <div className="hm-mod__acts">
@@ -90,7 +90,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
         onClose={() => setRemoving(null)}
         width={420}
         eyebrow={removing ? removing.authorName : ""}
-        title="Remove from the Open Deck?"
+        title="Remove from the Booth?"
         footer={
           removing ? (
             <>
@@ -98,7 +98,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
                 Not yet
               </Button>
               <Button
-                variant="brass"
+                variant="gold"
                 disabled={pending}
                 onClick={() => {
                   const f = removing;
@@ -110,7 +110,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
                       show({
                         msg: "Removed, author notified with the reason.",
                         meta: "CODE OF CONDUCT · LOGGED",
-                        tone: "clay",
+                        tone: "caution",
                       })
                   );
                 }}
