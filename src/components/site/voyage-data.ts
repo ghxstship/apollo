@@ -33,9 +33,24 @@ export interface FrameGroup {
   frames: Frame[];
 }
 
-function frameUrl(storagePath: string): string {
-  const base = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").replace(/\/$/, "");
-  return `${base}/storage/v1/object/public/voyage-media/${storagePath}`;
+/* The bucket is private: an unapproved frame, or one pulled for consent, must
+   not be fetchable by anyone who guesses its path. What the gallery shows is a
+   short-lived signed URL the server mints for a frame that HAS been cleared. */
+const FRAME_URL_TTL_SECONDS = 60 * 60;
+
+async function signFrames(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  paths: string[]
+): Promise<Map<string, string>> {
+  const signed = new Map<string, string>();
+  if (paths.length === 0) return signed;
+  const { data } = await supabase.storage
+    .from("voyage-media")
+    .createSignedUrls(paths, FRAME_URL_TTL_SECONDS);
+  for (const row of data ?? []) {
+    if (row.path && row.signedUrl) signed.set(row.path, row.signedUrl);
+  }
+  return signed;
 }
 
 /* Flotilla assignments for a set of sailings, in the Bridge's own order. */
@@ -91,12 +106,15 @@ export async function framesFor(voyageId: string): Promise<Frame[]> {
       .eq("voyage_id", voyageId)
       .eq("approved", true)
       .order("created_at", { ascending: true });
-    return (data ?? []).map((m) => ({
-      id: m.id,
-      voyageId: m.voyage_id,
-      url: frameUrl(m.storage_path),
-      caption: m.caption,
-    }));
+    const signed = await signFrames(supabase, (data ?? []).map((m) => m.storage_path));
+    return (data ?? [])
+      .filter((m) => signed.has(m.storage_path))
+      .map((m) => ({
+        id: m.id,
+        voyageId: m.voyage_id,
+        url: signed.get(m.storage_path) as string,
+        caption: m.caption,
+      }));
   } catch {
     return [];
   }
@@ -139,11 +157,14 @@ export async function frameGroups(): Promise<FrameGroup[]> {
         frames: [],
       });
     }
+    const signedAll = await signFrames(supabase, media.map((m) => m.storage_path));
     for (const m of media) {
+      const url = signedAll.get(m.storage_path);
+      if (!url) continue;
       groups.get(m.voyage_id)?.frames.push({
         id: m.id,
         voyageId: m.voyage_id,
-        url: frameUrl(m.storage_path),
+        url,
         caption: m.caption,
       });
     }

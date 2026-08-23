@@ -53,35 +53,22 @@ function cleanNames(names: string[], count: number): string[] {
    add-ons are skipped. Returns a raw error message, or null on success. */
 async function attachAddons(
   supabase: Supa,
-  userId: string,
-  voyageId: string,
+  _userId: string,
+  _voyageId: string,
   rsvpId: string,
   addonIds: string[],
   qty: number
 ): Promise<string | null> {
-  const [{ data: addons }, { data: already }] = await Promise.all([
-    supabase.from("addons").select("*").in("id", addonIds).eq("active", true),
-    supabase.from("rsvp_addons").select("addon_id").eq("rsvp_id", rsvpId),
-  ]);
-  const attached = new Set((already ?? []).map((a) => a.addon_id));
-
-  for (const addon of addons ?? []) {
-    if (attached.has(addon.id)) continue;
-    const { error: rowError } = await supabase
-      .from("rsvp_addons")
-      .insert({ rsvp_id: rsvpId, addon_id: addon.id, qty });
-    if (rowError) return rowError.message;
-    const { error: chargeError } = await supabase.from("account_ledger").insert({
-      profile_id: userId,
-      delta_cents: -(addon.price_cents * qty),
-      kind: "addon",
-      memo: addon.name,
-      voyage_id: voyageId,
-      rsvp_id: rsvpId,
-    });
-    if (chargeError) return chargeError.message;
-  }
-  return null;
+  /* Priced and charged in one definer. The member used to insert both the line
+     and its charge, which meant they could write their own folio — and a single
+     one-cent row of their own made the aboard trigger believe the pass was
+     already paid for. */
+  const { error } = await supabase.rpc("attach_addons", {
+    p_rsvp: rsvpId,
+    p_addons: addonIds,
+    p_qty: qty,
+  });
+  return error ? error.message : null;
 }
 
 export async function setRsvpStatus(
@@ -181,19 +168,14 @@ export async function confirmBerth(
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
 
+  /* The code is validated here so a bad one is refused in the brand's voice
+     rather than silently ignored; the PRICE it implies is the trigger's to
+     compute, from the club's own code table. */
   let promo: PromoOk | null = null;
-  let priced: PricedVoyage | null = null;
   if (promoCode && promoCode.trim()) {
     const checked = await validatePromo(supabase, promoCode, voyageId);
     if ("reason" in checked) return { error: checked.reason };
-    const { data: voyage } = await supabase
-      .from("voyages")
-      .select("id, title, price_cents, deposit_required")
-      .eq("id", voyageId)
-      .maybeSingle();
-    if (!voyage) return { error: "That sailing is off the manifest." };
     promo = checked;
-    priced = voyage;
   }
 
   const clamped = clampGuests(guests);
@@ -206,7 +188,9 @@ export async function confirmBerth(
         status: "aboard",
         guests: clamped,
         guest_names: cleanNames(guestNames, clamped),
-        ...(promo ? { promo_code: promo.code, comp: true } : {}),
+        /* The trigger prices the pass, promo included — the row no longer
+           carries an exemption a member could have written themselves. */
+        ...(promo ? { promo_code: promo.code } : {}),
       },
       { onConflict: "voyage_id,profile_id" }
     );
@@ -220,10 +204,6 @@ export async function confirmBerth(
       .eq("profile_id", userId)
       .maybeSingle();
 
-    if (rsvp && promo && priced) {
-      const failed = await postDiscountedCharges(supabase, userId, priced, rsvp.id, promo);
-      if (failed) return { error: guardMessage(failed) };
-    }
     if (rsvp && addonIds.length > 0) {
       const failed = await attachAddons(
         supabase,
@@ -493,64 +473,7 @@ export async function applyPromo(rawCode: string, voyageId: string): Promise<Pro
   };
 }
 
-type PricedVoyage = {
-  id: string;
-  title: string;
-  price_cents: number;
-  deposit_required: boolean;
-};
 
-/* With a code on the pass we set rsvps.comp so the aboard trigger prices
-   nothing, then post the discounted charge ourselves. Members may insert
-   negative 'berth'/'deposit' rows but not the positive 'credit' row a
-   compensating posting would need — this keeps the folio exact either way. */
-async function postDiscountedCharges(
-  supabase: Supa,
-  userId: string,
-  voyage: PricedVoyage,
-  rsvpId: string,
-  promo: PromoOk
-): Promise<string | null> {
-  const { data: already } = await supabase
-    .from("account_ledger")
-    .select("id")
-    .eq("rsvp_id", rsvpId)
-    .in("kind", ["berth", "deposit"]);
-  if ((already ?? []).length > 0) return null;
-
-  const net = discountedPass(voyage.price_cents, promo.kind, promo.value);
-  const rows: Array<{
-    profile_id: string;
-    delta_cents: number;
-    kind: string;
-    memo: string;
-    voyage_id: string;
-    rsvp_id: string;
-  }> = [];
-  if (net > 0) {
-    rows.push({
-      profile_id: userId,
-      delta_cents: -net,
-      kind: "berth",
-      memo: `${voyage.title} — code ${promo.code}`,
-      voyage_id: voyage.id,
-      rsvp_id: rsvpId,
-    });
-  }
-  if (voyage.deposit_required) {
-    rows.push({
-      profile_id: userId,
-      delta_cents: -5000,
-      kind: "deposit",
-      memo: "Pass deposit — credited to the galley aboard",
-      voyage_id: voyage.id,
-      rsvp_id: rsvpId,
-    });
-  }
-  if (rows.length === 0) return null;
-  const { error } = await supabase.from("account_ledger").insert(rows);
-  return error?.message ?? null;
-}
 
 /* — Crew forming — */
 

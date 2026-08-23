@@ -458,6 +458,10 @@ export type Database = {
       is_staff: { Args: Record<string, never>; Returns: boolean }
       email_may_board: { Args: { p_email: string }; Returns: boolean }
       validate_invite: { Args: { p_code: string }; Returns: boolean }
+      attach_addons: {
+        Args: { p_rsvp: string; p_addons: string[]; p_qty: number }
+        Returns: number
+      }
       apply_with_invite: {
         Args: { p_full_name: string; p_email: string; p_city: string; p_note: string; p_code: string }
         Returns: string

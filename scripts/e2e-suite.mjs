@@ -1195,20 +1195,23 @@ async function roundTwoRules(p) {
     };
     const claim = () => reg.post("rsvps", { voyage_id: v.id, profile_id: me, status: "aboard" });
 
+    const before = await folio();
     const first = await claim();
     const afterFirst = await folio();
-    note("regional", "claiming a pass charges for it", afterFirst === -v.price_cents,
-      `folio ${afterFirst}, price ${-v.price_cents}`);
+    note("regional", "claiming a pass charges for it", afterFirst - before === -v.price_cents,
+      `moved ${afterFirst - before}, price ${-v.price_cents}`);
 
     const rid = first.data?.[0]?.id;
     if (rid) await reg.del(`rsvps?id=eq.${rid}`);
     const afterRelease = await folio();
-    note("regional", "releasing 48h+ out credits the charge", afterRelease === 0, `folio ${afterRelease}`);
+    note("regional", "releasing 48h+ out credits the charge", afterRelease === before,
+      `moved ${afterRelease - before}`);
 
     const again = await claim();
     const afterSecond = await folio();
-    note("regional", "re-claiming a credited pass is charged again", afterSecond === -v.price_cents,
-      `folio ${afterSecond} — a free pass if this is 0`);
+    note("regional", "re-claiming a credited pass is charged again",
+      afterSecond - afterRelease === -v.price_cents,
+      `moved ${afterSecond - afterRelease} — a free pass if this is 0`);
 
     // — You are not your own waitlister —
     const rid2 = again.data?.[0]?.id;
@@ -1301,6 +1304,147 @@ async function roundTwoRules(p) {
   note("staff", "guest filming consent is a real column the sheet can read",
     (camera.data || []).every((g) => typeof g.on_camera === "boolean"),
     JSON.stringify(camera.data).slice(0, 60));
+
+  await stf.del("applications?email=like.e2e-anon-probe*");
+}
+
+
+/* ---------- J. what round three found ----------
+   Every one of these was a fix of mine applied to one of two paths, or damage a
+   fix did next door. They encode the SECOND way in. */
+async function roundThreeRules(p) {
+  const reg = rest(p.regional), stf = rest(p.staff), pau = rest(p.paused);
+  const me = uid(p.regional);
+
+  // — The free pass, through every door —
+  const ahead = await stf.get(
+    "voyages?status=eq.scheduled&select=id,price_cents&price_cents=gt.0" +
+      `&starts_at=gt.${new Date().toISOString()}&order=starts_at.asc&limit=1`
+  );
+  const v = ahead.data?.[0];
+  if (v) {
+    /* account_ledger is append-only to everyone including staff, so a wipe is a
+       silent no-op and an absolute folio carries residue from earlier runs.
+       Every check below measures the CHANGE across the action instead. */
+    const wipe = async () => {
+      await stf.del(`rsvps?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
+      await stf.del(`fathoms_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
+    };
+    const folio = async () => {
+      const rows = await reg.get(`account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}&select=delta_cents`);
+      return (rows.data || []).reduce((n, r) => n + r.delta_cents, 0);
+    };
+    const claim = () => reg.post("rsvps", { voyage_id: v.id, profile_id: me, status: "aboard" });
+
+    for (const [label, away] of [["not_going", "not_going"], ["waitlist", "waitlist"]]) {
+      await wipe();
+      const start = await folio();
+      const first = await claim();
+      const rid = first.data?.[0]?.id;
+      if (rid) {
+        await reg.patch(`rsvps?id=eq.${rid}`, { status: away });
+        const released = await folio();
+        await reg.patch(`rsvps?id=eq.${rid}`, { status: "aboard" });
+        const f = await folio();
+        note("regional", `a pass released via ${label} is charged again`,
+          f - released === -v.price_cents,
+          `moved ${f - released} on re-claim (start ${start}) — a free pass if this is 0`);
+      }
+    }
+
+    // An ordinary edit while aboard must not charge twice.
+    await wipe();
+    const editStart = await folio();
+    const held = await claim();
+    const hid = held.data?.[0]?.id;
+    if (hid) {
+      const charged = await folio();
+      await reg.patch(`rsvps?id=eq.${hid}`, { show_on_manifest: false });
+      const f = await folio();
+      note("regional", "editing a pass you hold does not charge again", f === charged,
+        `moved ${f - charged} on an edit (charge was ${charged - editStart})`);
+      await reg.patch(`rsvps?id=eq.${hid}`, { show_on_manifest: true });
+    }
+    await wipe();
+  }
+
+  // — A seat in a thread is not self-granted —
+  const someThread = await stf.get("threads?kind=eq.direct&select=id&limit=1");
+  const tid = someThread.data?.[0]?.id;
+  if (tid) {
+    for (const [who, client] of [["regional", reg], ["paused", pau]]) {
+      const seat = await client.post("thread_members", { thread_id: tid, profile_id: uid(p[who]) });
+      note(who, "cannot seat yourself in a stranger's thread", seat.status >= 400, `got ${seat.status}`);
+    }
+    const peek = await reg.get(`messages?thread_id=eq.${tid}&select=body&limit=1`);
+    note("regional", "a stranger's messages stay unread", (peek.data || []).length === 0,
+      `${(peek.data || []).length} rows`);
+  }
+  const mySeat = await reg.get(`thread_members?profile_id=eq.${me}&select=thread_id&limit=1`);
+  if (mySeat.data?.[0] && tid) {
+    const move = await reg.patch(
+      `thread_members?profile_id=eq.${me}&thread_id=eq.${mySeat.data[0].thread_id}`,
+      { thread_id: tid }
+    );
+    note("regional", "you cannot walk your seat into another thread", move.status >= 400,
+      `got ${move.status}`);
+  }
+
+  // — The club's words are not a member's to rewrite —
+  const mine = await reg.get(`notifications?profile_id=eq.${me}&select=id,title&limit=1`);
+  if (mine.data?.[0]) {
+    const forge = await reg.patch(`notifications?id=eq.${mine.data[0].id}`, { title: "E2E FORGED" });
+    note("regional", "a member cannot rewrite a notification", forge.status >= 400, `got ${forge.status}`);
+    const read = await reg.patch(`notifications?id=eq.${mine.data[0].id}`, { read: true });
+    note("regional", "a member can still mark it read", read.status < 400, `got ${read.status}`);
+  }
+
+  // — A guest code is the first free slot —
+  if (v) {
+    const gid = uid(p.global);
+    await stf.del(`rsvps?profile_id=eq.${gid}&voyage_id=eq.${v.id}`);
+    const seatG = await stf.post("rsvps", {
+      voyage_id: v.id, profile_id: gid, status: "aboard", comp: true,
+      guests: 2, guest_names: ["E2E Slot One", "E2E Slot Two"],
+    });
+    const grid = seatG.data?.[0]?.id;
+    if (grid) {
+      await stf.patch(`rsvps?id=eq.${grid}`, {
+        guests: 2, guest_names: ["E2E Slot Two", "E2E Slot Three"],
+      });
+      const party = await stf.get(`rsvp_guests?rsvp_id=eq.${grid}&select=name,boarding_code,sign_token`);
+      const rows = party.data || [];
+      const complete = rows.length === 2 && rows.every((g) => g.boarding_code && g.sign_token);
+      note("staff", "swapping a guest still cuts the newcomer a code and a link", complete,
+        JSON.stringify(rows.map((g) => [g.name, g.boarding_code])).slice(0, 120));
+      await stf.del(`rsvp_guests?rsvp_id=eq.${grid}`);
+      await stf.del(`rsvps?id=eq.${grid}`);
+    }
+    await stf.del(`account_ledger?profile_id=eq.${gid}&voyage_id=eq.${v.id}`);
+    await stf.del(`fathoms_ledger?profile_id=eq.${gid}&voyage_id=eq.${v.id}`);
+  }
+
+  // — A definer carries the rules its policy carries —
+  for (const [label, args] of [
+    ["an over-long name", { p_full_name: "N".repeat(200), p_email: "e2e-anon-probe@example.com", p_city: "Miami", p_note: "x", p_code: "none" }],
+    ["an address with no @", { p_full_name: "E2E Probe", p_email: "not-an-address", p_city: "Miami", p_note: "x", p_code: "none" }],
+    ["a five-kilobyte note", { p_full_name: "E2E Probe", p_email: "e2e-anon-probe@example.com", p_city: "Miami", p_note: "x".repeat(5000), p_code: "none" }],
+  ]) {
+    const r = await rest(null).rpc("apply_with_invite", args);
+    note("anon", `the invite path refuses ${label}`, r.status >= 400, `got ${r.status}`);
+  }
+
+  // — A line is a dozen, and no constraint text reaches anyone —
+  const prod = await reg.get("products?select=id&active=eq.true&limit=1");
+  if (prod.data?.[0]?.id) {
+    const over = await reg.rpc("place_shop_order", {
+      p_lines: [{ productId: prod.data[0].id, qty: 13 }],
+    });
+    const msg = JSON.stringify(over.data ?? "");
+    note("regional", "a line over a dozen is refused", over.status >= 400, `got ${over.status}`);
+    note("regional", "the refusal names no constraint", !/constraint|relation "/i.test(msg),
+      msg.slice(0, 80));
+  }
 
   await stf.del("applications?email=like.e2e-anon-probe*");
 }
@@ -1700,6 +1844,7 @@ async function main() {
   await syriusRules(personas);
   await hardeningRules(personas);
   await roundTwoRules(personas);
+  await roundThreeRules(personas);
   await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;

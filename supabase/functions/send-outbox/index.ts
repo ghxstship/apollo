@@ -9,6 +9,7 @@ type OutboxRow = {
   payload: Record<string, unknown>;
   status: string;
   created_at: string;
+  attempts?: number;
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -46,6 +47,22 @@ async function resolveSecrets(): Promise<void> {
 }
 
 const REST = `${SUPABASE_URL}/rest/v1/email_outbox`;
+
+/* The drain is scheduler-only work. It used to run with verify_jwt off, so any
+   caller on the internet could empty the club's queue on demand — and the anon
+   key that would have gated it ships in the browser bundle anyway. The cron
+   presents a shared secret from the Vault; nobody else can. */
+const MAX_ATTEMPTS = 5;
+
+function retryable(status: number): boolean {
+  /* 429 is the provider saying "later", not "never" — treating it as final is
+     what stranded seventy boarding passes. 5xx is the same shape. */
+  return status === 429 || status === 408 || status >= 500;
+}
+
+function backoffMinutes(attempts: number): number {
+  return Math.min(60 * 6, Math.round(5 * Math.pow(3, Math.max(0, attempts - 1))));
+}
 const HEADERS = {
   apikey: SERVICE_KEY,
   Authorization: `Bearer ${SERVICE_KEY}`,
@@ -273,17 +290,54 @@ function render(row: OutboxRow): Rendered {
 // ---------- outbox plumbing ----------
 
 async function fetchPending(): Promise<OutboxRow[]> {
-  const url = `${REST}?status=eq.pending&order=created_at.asc&limit=25&select=id,to_email,template,payload,status,created_at`;
+  const now = new Date().toISOString();
+  const url =
+    `${REST}?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${now})` +
+    `&order=created_at.asc&limit=25&select=id,to_email,template,payload,status,created_at,attempts`;
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`outbox fetch failed: ${res.status} ${await res.text()}`);
   return await res.json();
 }
 
+/* Claim before sending. Marking after the provider call stops two runs
+   double-MARKING a row; it does not stop them double-SENDING it. */
+async function claim(id: string): Promise<boolean> {
+  const res = await fetch(`${REST}?id=eq.${id}&status=eq.pending`, {
+    method: "PATCH",
+    headers: { ...HEADERS, Prefer: "return=representation" },
+    body: JSON.stringify({ status: "sending" }),
+  });
+  if (!res.ok) return false;
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length === 1;
+}
+
+async function requeue(row: OutboxRow, why: string): Promise<void> {
+  const attempts = (row.attempts ?? 0) + 1;
+  const terminal = attempts >= MAX_ATTEMPTS;
+  await fetch(`${REST}?id=eq.${row.id}`, {
+    method: "PATCH",
+    headers: HEADERS,
+    body: JSON.stringify(
+      terminal
+        ? { status: "failed", attempts, last_error: `${why} (gave up after ${attempts})` }
+        : {
+            status: "pending",
+            attempts,
+            last_error: why,
+            next_attempt_at: new Date(Date.now() + backoffMinutes(attempts) * 60_000).toISOString(),
+          },
+    ),
+  });
+}
+
 async function mark(id: string, status: "sent" | "skipped" | "failed"): Promise<void> {
-  // Guarded on status=eq.pending so a concurrent run cannot double-mark a row.
+  /* The row was claimed into 'sending' before the provider call, so that is the
+     state we are moving it out of. Guarding on 'pending' here would have left
+     every successfully sent row stuck mid-flight. */
   const body: Record<string, unknown> = { status };
   if (status === "sent") body.sent_at = new Date().toISOString();
-  const res = await fetch(`${REST}?id=eq.${id}&status=eq.pending`, {
+  const res = await fetch(`${REST}?id=eq.${id}&status=in.(pending,sending)`, {
     method: "PATCH",
     headers: HEADERS,
     body: JSON.stringify(body),
@@ -291,7 +345,7 @@ async function mark(id: string, status: "sent" | "skipped" | "failed"): Promise<
   if (!res.ok) console.error(`mark ${status} failed for ${id}: ${res.status} ${await res.text()}`);
 }
 
-async function sendViaResend(row: OutboxRow): Promise<boolean> {
+async function sendViaResend(row: OutboxRow): Promise<{ ok: boolean; status: number }> {
   const { subject, html } = render(row);
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -302,12 +356,21 @@ async function sendViaResend(row: OutboxRow): Promise<boolean> {
     body: JSON.stringify({ from: FROM, to: [row.to_email], subject, html }),
   });
   if (!res.ok) console.error(`resend failed for ${row.id} (${row.template}): ${res.status} ${await res.text()}`);
-  return res.ok;
+  return { ok: res.ok, status: res.status };
 }
 
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
   try {
     await resolveSecrets();
+
+    /* Scheduler only. The anon key is public, so it proves nothing. */
+    const cronKey = Deno.env.get("CRON_SECRET") || (await vaultSecret("CRON_SECRET"));
+    if (cronKey && req.headers.get("x-cron-key") !== cronKey) {
+      return new Response(JSON.stringify({ error: "not for you" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const rows = await fetchPending();
     let sent = 0, skipped = 0, failed = 0;
 
@@ -321,9 +384,29 @@ Deno.serve(async (_req: Request) => {
       }
     } else {
       for (const row of rows) {
-        const ok = await sendViaResend(row);
-        await mark(row.id, ok ? "sent" : "failed");
-        ok ? sent++ : failed++;
+        /* Claim first: marking after the send stops double-marking, not
+           double-sending. A row another run already took is skipped. */
+        if (!(await claim(row.id))) continue;
+
+        const outcome = await sendViaResend(row);
+        if (outcome.ok) {
+          await mark(row.id, "sent");
+          sent++;
+        } else if (retryable(outcome.status)) {
+          await requeue(row, `provider said ${outcome.status}`);
+          skipped++;
+        } else {
+          await fetch(`${REST}?id=eq.${row.id}`, {
+            method: "PATCH",
+            headers: HEADERS,
+            body: JSON.stringify({
+              status: "failed",
+              attempts: (row.attempts ?? 0) + 1,
+              last_error: `provider said ${outcome.status}`,
+            }),
+          });
+          failed++;
+        }
       }
     }
 
