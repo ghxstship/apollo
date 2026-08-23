@@ -1,3 +1,13 @@
-/* SYRIUS SOCIAL webfonts — Google Fonts substitutions until brand fonts are licensed.
-   Marcellus (display serif, 400 only), Jost (UI + body, 300–600), Space Mono (labels + data). */
-@import url("https://fonts.googleapis.com/css2?family=Marcellus&family=Jost:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap");
+/* SYRIUS SOCIAL webfonts.
+
+   This file used to carry a remote @import of Google Fonts. Nested inside
+   globals.css's own @import chain, the build dropped it: no `googleapis` and no
+   @font-face survived into any built stylesheet, so Marcellus, Jost and Space
+   Mono silently fell back to Times, Helvetica and Courier — the whole brand
+   rendered in system faces and nothing said so.
+
+   The faces are now loaded through next/font in src/app/layout.tsx, which
+   self-hosts them at build time. That fixes the drop AND keeps the CSP closed:
+   no fonts.googleapis.com in style-src, no fonts.gstatic.com in font-src, no
+   third-party request from a member's browser. The families are bound to the
+   same CSS variables typography.css already reads. */

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import manifest from "@/lib/route-manifest.json";
+import { SITE_DOMAIN } from "@/lib/brand";
 
 /* Public sitemap, derived from the generated route manifest (static pages)
    plus live Supabase slugs (dynamic pages). Member and auth surfaces are
@@ -8,7 +9,11 @@ import manifest from "@/lib/route-manifest.json";
 
 export const revalidate = 3600;
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+/* Never localhost as the fallback: these two files are what search engines
+   and social cards read, and a production deploy without the env var was
+   publishing http://localhost:3000 URLs while og:image on the same page said
+   https://syrius.social. */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`;
 
 const PRIORITY: Record<string, number> = {
   "/": 1,

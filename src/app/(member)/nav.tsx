@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Icon, IconButton, Wordmark } from "@/components/ds";
 import { LOGBOOK, SURFACES } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/client";
+import { SignOutForm } from "@/components/sign-out-form";
 
 const LINKS = [
   ["/home", "Home"],
@@ -209,11 +210,11 @@ export function MemberTopBar({
         </nav>
         <div className="mbr-top__meta">
           {memberNo ? <span className="mbr-top__no">{memberNo}</span> : null}
-          <form action="/auth/signout" method="post" style={{ display: "inline-flex" }}>
+          <SignOutForm style={{ display: "inline-flex" }}>
             <IconButton label="Sign out" variant="ghost" size="sm" type="submit">
               <Icon name="LogOut" size={16} />
             </IconButton>
-          </form>
+          </SignOutForm>
         </div>
       </div>
     </header>

@@ -45,11 +45,14 @@ export default async function VoyagesPage() {
     supabase.from("pass_transfers").select("*").eq("status", "offered"),
     /* Everyone forming crew on the sailings ahead. */
     supabase.from("crew_requests").select("*").eq("open", true),
-    /* The roll a pass may be handed to. */
+    /* The roll a pass may be handed to: members who chose to be findable.
+       This filtered on `status = active`, which stopped meaning "active" the
+       moment the directory opt-out began masking standing — say what is
+       actually meant instead of relying on a column that is now withheld. */
     supabase
       .from("member_directory")
       .select("id, full_name, member_no, handle")
-      .eq("status", "active")
+      .eq("in_directory", true)
       .neq("id", user.id)
       .order("full_name", { ascending: true }),
   ]);

@@ -1022,6 +1022,9 @@ async function enforcementRules(p) {
   });
   note("staff", "a season must run forwards", backwards.status >= 400, `got ${backwards.status}`);
 
+  /* Only what THIS run queues. Reading the whole template picked up rows sent
+     months ago, before the guard existed, and reported history as a live leak. */
+  const mailSince = new Date(Date.now() - 60_000).toISOString();
   const cards = await stf.rpc("send_season_cards", {
     p_from: "2026-02-01T00:00:00Z", p_to: "2026-07-01T00:00:00Z", p_season: `E2E ${stamp}`,
   });
@@ -1029,7 +1032,29 @@ async function enforcementRules(p) {
   const queued = await stf.get(`email_outbox?select=payload&template=eq.season-card&limit=5`);
   note("staff", "a card carries the member's figures",
     (queued.data || []).some((e) => Number(e.payload?.nm_logged) > 0), JSON.stringify(queued.data?.[0]?.payload || {}).slice(0, 90));
+
+  /* Delivery is live: a Resend key sits in Vault and cron drains every five
+     minutes, so the ONLY thing between this run and real mail to a made-up
+     address is the queue-boundary guard. Every card this suite just queued to
+     a fixture must be skipped, never pending. The guard used to miss anything
+     that was not e2e-/@demo./@lyre.social — an audit account left on the
+     club's own domain queued for real and stopped at the provider's quota. */
+  const addressed = await stf.get(
+    `email_outbox?select=to_email,status&template=eq.season-card&created_at=gt.${mailSince}&limit=500`
+  );
+  const fixtures = (addressed.data || []).filter((e) =>
+    /^(e2e|test|probe|audit|fixture|smoke|viewport|qa)[-.]/i.test(e.to_email || "") ||
+    /@(demo\.|example\.)/i.test(e.to_email || "") ||
+    /@lyre\.social$/i.test(e.to_email || "")
+  );
+  note("staff", "the suite queued at least one fixture card to check the guard",
+    fixtures.length > 0, "no fixture address in the season run");
+  note("staff", "no card to a fixture address is left sendable",
+    fixtures.every((e) => e.status === "skipped"),
+    fixtures.filter((e) => e.status !== "skipped").map((e) => `${e.to_email}=${e.status}`).join(", "));
+
   await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
+  await stf.del("email_outbox?template=eq.season-card&status=eq.skipped");
 }
 
 /* ---------- M. Syrius: cabins, consent, tables, matches ----------
@@ -1079,6 +1104,19 @@ async function syriusRules(p) {
   note("staff", "crew set a table", Boolean(tblId), `got ${tbl.status}`);
 
   if (tblId) {
+    /* A seat at a table now needs a pass for that night. It used to need only
+       an active membership, so anyone could take a chair at a Table Night they
+       had not booked — burning a seat and reading that table's roster. Board
+       the personas first; the refusal for someone who is not aboard is checked
+       below. See "a seat at a table belongs to someone who booked the night". */
+    const gatecrash = await reg.rpc("claim_table_seat", { p_table: tblId });
+    note("regional", "cannot take a chair at a night they are not booked on",
+      gatecrash.status >= 400, `got ${gatecrash.status}`);
+
+    for (const who of ["regional", "national"]) {
+      await stf.post("rsvps", { voyage_id: nightId, profile_id: uid(p[who]), status: "aboard" });
+    }
+
     const seat1 = await reg.rpc("claim_table_seat", { p_table: tblId });
     note("regional", "a seat holds for fifteen minutes", seat1.status < 400 && seat1.data, `got ${seat1.status}`);
     const c1 = await reg.rpc("confirm_table_seat", { p_table: tblId });
@@ -1563,7 +1601,11 @@ async function roundThreeRules(p) {
     note("regional", "a stranger's messages stay unread", (peek.data || []).length === 0,
       `${(peek.data || []).length} rows`);
   }
-  const mySeat = await reg.get(`thread_members?profile_id=eq.${me}&select=thread_id&limit=1`);
+  /* Pick a seat that is genuinely somewhere else. Taking the first seat and
+     moving it to `tid` was a no-op whenever that seat was already in `tid` —
+     the trigger has nothing to refuse, PostgREST answers 200, and the check
+     failed on the suite's own ordering rather than on behaviour. */
+  const mySeat = await reg.get(`thread_members?profile_id=eq.${me}&select=thread_id&thread_id=neq.${tid}&limit=1`);
   if (mySeat.data?.[0] && tid) {
     const move = await reg.patch(
       `thread_members?profile_id=eq.${me}&thread_id=eq.${mySeat.data[0].thread_id}`,
@@ -1819,6 +1861,18 @@ async function parityRules(p) {
   }
 
   // --- Direct threads: idempotent, and private to the two of them ---
+  /* A DM now needs entitlement, not merely a signed-in sender: you may write to
+     someone you have sailed with, or to someone who chose to be listed. The
+     fixtures are neither by default, which is exactly why this used to pass —
+     any member could open a conversation with any other. List the recipient for
+     the duration, and check the refusal on someone who is not.
+     See "a direct message is something the other person can refuse". */
+  const strangerDm = await glo.rpc("open_direct_thread", { p_other: uid(p.paused) });
+  note("global", "cannot DM a member they have not sailed with or found listed",
+    strangerDm.status >= 400, `got ${strangerDm.status}`);
+
+  await stf.patch(`profiles?id=eq.${uid(p.national)}`, { in_directory: true });
+
   const open1 = await glo.rpc("open_direct_thread", { p_other: uid(p.national) });
   const open2 = await glo.rpc("open_direct_thread", { p_other: uid(p.national) });
   note("global", "opens a direct thread", open1.status === 200 && !!open1.data, `got ${open1.status}`);

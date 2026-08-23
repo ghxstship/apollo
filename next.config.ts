@@ -47,8 +47,13 @@ const nextConfig: NextConfig = {
              whatever a member clicks through to next. */
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
+            /* camera=(self), not camera=(). The empty list disables the feature
+               for EVERY origin including our own, and the Gangway's QR scanner
+               is our own — it fell straight through to "The camera declined.
+               Check permissions, or type the code.", turning every check-in on
+               the dock into manual typing. */
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+            value: "camera=(self), microphone=(), geolocation=(), interest-cohort=()",
           },
           {
             key: "Strict-Transport-Security",
@@ -57,9 +62,19 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: "/api/calendar/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Cache-Control", value: "private, no-store, max-age=0" },
+        ],
+      },
+      {
         /* A signing link or a boarding stub must never leak its own URL, not
            even the origin, and must never be cached by anything in between. */
-        source: "/:path(sign|stub)/:token*",
+        /* Every path that carries its credential in the URL. The calendar feed
+           was missing from this list, so a bearer-token URL kept the default
+           referrer policy and stayed cacheable. */
+        source: "/:path(sign|stub|kiosk)/:token*",
         headers: [
           { key: "Referrer-Policy", value: "no-referrer" },
           { key: "Cache-Control", value: "private, no-store, max-age=0" },

@@ -1,7 +1,31 @@
 import type { Metadata, Viewport } from "next";
+import { Marcellus, Jost, Space_Mono } from "next/font/google";
 import Script from "next/script";
 import { SwRegister } from "@/components/sw-register";
 import { SITE_DOMAIN } from "@/lib/brand";
+
+/* Self-hosted at build time — see src/styles/fonts.css for why this is not an
+   @import. The variable names are the ones typography.css already reads. */
+const marcellus = Marcellus({
+  subsets: ["latin"],
+  weight: "400",
+  display: "swap",
+  variable: "--font-marcellus",
+});
+const jost = Jost({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-jost",
+});
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-space-mono",
+});
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -42,7 +66,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${marcellus.variable} ${jost.variable} ${spaceMono.variable}`}>
       <body>
         <Script id="syrius-theme-init" strategy="beforeInteractive">{themeInit}</Script>
         <SwRegister />

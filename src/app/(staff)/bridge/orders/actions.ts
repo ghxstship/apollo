@@ -54,11 +54,22 @@ export async function refundShopOrder(orderId: string): Promise<ActionResult> {
     .eq("id", order.profile_id)
     .maybeSingle();
 
-  const { error: statusError } = await supabase
+  /* The flip IS the guard. Reading the status and then updating leaves a
+     window every concurrent call walks through: four simultaneous approvals
+     each read "refund_requested", each passed the check, and each credited the
+     account — $435.20 back on a $108.80 order, with no error shown to the
+     operator. Narrowing the update to the status we expect means the database
+     decides who wins, and only the winner gets a row back. */
+  const { data: flipped, error: statusError } = await supabase
     .from("shop_orders")
     .update({ status: "refunded" })
-    .eq("id", orderId);
+    .eq("id", orderId)
+    .eq("status", "refund_requested")
+    .select("id");
   if (statusError) return { error: ERR_LAND };
+  if (!flipped || flipped.length === 0) {
+    return { error: "That refund was already approved." };
+  }
 
   /* Refund what was charged, not what was listed. charge_shop_order posts
      total_cents minus discount_cents, so crediting the gross handed back the

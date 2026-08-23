@@ -9,6 +9,7 @@ import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
 import { NotificationPrefsForm, Offboarding, ProfileForm, ResumeBanner } from "./you-client";
+import { SignOutForm } from "@/components/sign-out-form";
 
 export const metadata: Metadata = { title: "You" };
 
@@ -168,11 +169,11 @@ export default async function YouPage() {
               <b>Sign out</b>
               <p>This device only.</p>
             </div>
-            <form action="/auth/signout" method="post">
+            <SignOutForm>
               <Button type="submit" variant="outline" size="sm">
                 Sign out
               </Button>
-            </form>
+            </SignOutForm>
           </div>
         </div>
       </div>

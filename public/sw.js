@@ -1,8 +1,25 @@
 /* SYRIUS SOCIAL service worker — precache the shell, cache-first for brand
    assets, network-first for pages, branded offline fallback. No workbox. */
 
-const CACHE = "syrius-sw-v1";
+const CACHE = "syrius-sw-v2";
 const PRECACHE = ["/", "/icons/icon-192.png", "/logo/favicon.svg"];
+
+/* Nothing behind the gangway is written to disk. The navigation branch used to
+   cache every response it saw — /card, /stub/<code>, /sign/<token>, even a 500
+   and the sign-in page — into one origin-wide cache that outlived signing out.
+   On a shared or resold phone, a failed fetch fell through to the previous
+   member's boarding stub. These paths are also the ones the server marks
+   `Cache-Control: private, no-store`; the worker was overriding that. */
+const PRIVATE = [
+  "/home", "/card", "/manifest", "/portal", "/account", "/inbox", "/you",
+  "/threads", "/open-deck", "/directory", "/matches", "/tables", "/live",
+  "/agreements", "/regattas", "/slop-chest", "/stub", "/sign", "/kiosk",
+  "/bridge", "/gangway", "/api",
+];
+
+function isPrivate(pathname) {
+  return PRIVATE.some((p) => pathname === p || pathname.startsWith(p + "/"));
+}
 
 const OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -53,17 +70,23 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  /* Navigations: network-first; fall back to cache, then the offline page. */
+  /* Navigations: network-first; fall back to cache, then the offline page.
+     Only public pages are ever written, and only when they actually succeeded
+     — caching a 500 or a redirect to the gangway under the address the member
+     asked for is how a broken page becomes a sticky one. */
   if (request.mode === "navigate") {
+    const priv = isPrivate(url.pathname);
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          if (!priv && res.status === 200 && !res.redirected) {
+            const copy = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
           return res;
         })
         .catch(async () => {
-          const hit = (await caches.match(request)) || (await caches.match("/"));
+          const hit = priv ? null : (await caches.match(request)) || (await caches.match("/"));
           return (
             hit || new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html" } })
           );
@@ -75,6 +98,14 @@ self.addEventListener("fetch", (event) => {
 /* — The word, pushed —
    send-push delivers {title, body, url}; the outbox is filled by a trigger on
    notifications. Anything unreadable still surfaces as a plain word. */
+
+/* Signing out clears what was kept. The route only ends the Supabase session;
+   Cache Storage is the worker's, so the worker has to be told. */
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SYRIUS_SIGNED_OUT") {
+    event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
+  }
+});
 
 self.addEventListener("push", (event) => {
   let payload = {};
