@@ -195,7 +195,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
           </div>
           {!member && lines.length ? (
             <p className="hm-note" style={{ padding: "0 16px 14px", marginTop: 0 }}>
-              Attach a member to settle — every ticket lands on a record.
+              Attach a member to settle — every round lands on a record.
             </p>
           ) : null}
         </aside>

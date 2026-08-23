@@ -14,7 +14,9 @@ export type MediaCard = {
   caption: string;
   approved: boolean;
   createdAt: string;
-  src: string;
+  /* Null when the file is gone from the bucket but the row remains — staff
+     still need the card in order to clear it. */
+  src: string | null;
 };
 
 export function MediaClient({
@@ -77,16 +79,22 @@ export function MediaClient({
           {shown.map((c) => (
             <figure className="hm-media__card" key={c.id} style={{ margin: 0 }}>
               <div className="hm-media__shot">
-                {/* eslint-disable-next-line @next/next/no-img-element -- member uploads served straight from the storage bucket; no loader in front of it */}
-                <img
-                  src={c.src}
-                  alt={
-                    c.caption
-                      ? `${c.caption} — ${c.voyageTitle}`
-                      : `Frame from ${c.voyageTitle}, sent up by ${c.uploader}`
-                  }
-                  loading="lazy"
-                />
+                {c.src ? (
+                  /* eslint-disable-next-line @next/next/no-img-element -- member uploads served from a signed bucket URL; no loader in front of it */
+                  <img
+                    src={c.src}
+                    alt={
+                      c.caption
+                        ? `${c.caption} — ${c.voyageTitle}`
+                        : `Frame from ${c.voyageTitle}, sent up by ${c.uploader}`
+                    }
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="hm-mono" style={{ padding: 12, display: "block" }}>
+                    FILE MISSING — CLEAR THIS RECORD
+                  </span>
+                )}
               </div>
               <figcaption className="hm-media__body">
                 <span className="hm-mono">

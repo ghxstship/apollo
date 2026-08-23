@@ -29,10 +29,18 @@ export function voice(error: PgLikeError | null | undefined): string {
     return "That didn't land — check the numbers and try again.";
   }
 
+  /* 22P02 — a malformed value reached the driver, usually a bad id off a
+     stale link. "invalid input syntax for type uuid" names a Postgres type at
+     a member who never chose one. */
+  if (error.code === "22P02" || error.code === "22007" ||
+      /invalid input syntax for type/i.test(error.message ?? "")) {
+    return "That link looks wrong. Try again from your manifest.";
+  }
+
   const m = (error.message ?? "").trim();
   if (!m) return "That didn't land. Try again.";
   /* Anything still carrying database furniture is the schema talking, not us. */
-  if (/relation "|column "|constraint "|violates /i.test(m)) {
+  if (/relation "|column "|constraint "|violates |input syntax|type "/i.test(m)) {
     return "That didn't land. Try again.";
   }
   return m.charAt(0).toUpperCase() + m.slice(1) + (/[.?]$/.test(m) ? "" : ".");

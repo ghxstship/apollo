@@ -3,6 +3,7 @@ import { Stat, Table } from "@/components/ds";
 import { knots } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { getOperator } from "../../data";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Referrals" };
 
@@ -25,8 +26,8 @@ export default async function ReferralsPage() {
     supabase.from("fathoms_ledger").select("profile_id, delta, reason").ilike("reason", "Referral signature%"),
   ]);
 
-  const invites = invitesRes.data ?? [];
-  const roll = rollRes.data ?? [];
+  const invites = must(invitesRes);
+  const roll = must(rollRes);
 
   const inviterIds = [...new Set(invites.map((i) => i.inviter_id))];
   const rollEmails = roll.map((r) => r.email);
@@ -40,9 +41,9 @@ export default async function ReferralsPage() {
       : Promise.resolve({ data: [] as Array<{ email: string | null; full_name: string | null; member_no: string | null }> }),
   ]);
 
-  const sponsors = new Map((sponsorsRes.data ?? []).map((p) => [p.id, p]));
+  const sponsors = new Map((must(sponsorsRes)).map((p) => [p.id, p]));
   const joined = new Map(
-    (joinedRes.data ?? [])
+    (must(joinedRes))
       .filter((p) => p.email)
       .map((p) => [String(p.email).toLowerCase(), p])
   );
@@ -60,7 +61,7 @@ export default async function ReferralsPage() {
   }
 
   const knotsByInviter = new Map<string, number>();
-  for (const f of knotsRes.data ?? []) {
+  for (const f of must(knotsRes)) {
     knotsByInviter.set(f.profile_id, (knotsByInviter.get(f.profile_id) ?? 0) + f.delta);
   }
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Stat, Table } from "@/components/ds";
 import { price } from "@/lib/format";
 import { getOperator } from "../../data";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Reports" };
 
@@ -46,8 +47,6 @@ export default async function ReportsPage() {
     subsRes,
     plansRes,
     installmentsRes,
-    pushRes,
-    smsRes,
     transfersRes,
     compsRes,
   ] = await Promise.all([
@@ -61,11 +60,13 @@ export default async function ReportsPage() {
       .gte("created_at", seasonStart),
     supabase.from("member_roll").select("invite_code"),
     supabase.from("fathoms_ledger").select("voyage_id, delta").not("voyage_id", "is", null),
-    supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("kind", "weather"),
-    supabase.from("email_outbox").select("status"),
+    /* notifications is member-private and has no staff policy, so counting it
+       directly returned the operator's own notices — 0 weather, while 14 had
+       gone out. The definer returns the number and never the rows. */
+    supabase.rpc("notice_count", { p_kind: "weather" }),
+    /* Counted in the database: PostgREST caps a response at 1000, and these
+       queues are past it, so counting fetched rows froze every figure. */
+    supabase.rpc("delivery_health"),
     supabase.from("voyage_vessels").select("voyage_id, vessel_id, position"),
     supabase.from("vessels").select("id, capacity"),
     supabase
@@ -82,21 +83,20 @@ export default async function ReportsPage() {
     supabase
       .from("installment_plans")
       .select("total_cents, down_payment_cents, installments, paid_count, status"),
-    supabase.from("push_outbox").select("status"),
-    supabase.from("sms_outbox").select("status"),
+
     supabase.from("pass_transfers").select("status"),
     supabase.from("rsvps").select("id", { count: "exact", head: true }).eq("comp", true),
   ]);
 
   /* Members */
-  const profiles = profilesRes.data ?? [];
+  const profiles = must(profilesRes);
   const activeMembers = profiles.filter((p) => p.status === "active").length;
   const newThisSeason = profiles.filter((p) => p.joined_at >= seasonStart).length;
 
   /* Berth fill — past + live, non-cancelled */
-  const voyages = voyagesRes.data ?? [];
+  const voyages = must(voyagesRes);
   const capacity = new Map(
-    (capacityRes.data ?? []).filter((c) => c.voyage_id).map((c) => [c.voyage_id as string, c])
+    (must(capacityRes)).filter((c) => c.voyage_id).map((c) => [c.voyage_id as string, c])
   );
   const sailed = voyages.filter(
     (v) =>
@@ -111,29 +111,29 @@ export default async function ReportsPage() {
   const fillPct = sailedBerths ? Math.round((sailedAboard / sailedBerths) * 100) : 0;
 
   /* House account — charge volume this season */
-  const houseCents = (ledgerRes.data ?? []).reduce((t, l) => t + Math.abs(l.delta_cents), 0);
+  const houseCents = (must(ledgerRes)).reduce((t, l) => t + Math.abs(l.delta_cents), 0);
 
   /* Referrals */
-  const roll = rollRes.data ?? [];
+  const roll = must(rollRes);
   const referred = roll.filter((r) => r.invite_code).length;
   const referralPct = roll.length ? Math.round((referred / roll.length) * 100) : 0;
 
   /* Knots paid per voyage (the ledger table keeps its legacy name) */
   const knotsByVoyage = new Map<string, number>();
-  for (const f of knotsRes.data ?? []) {
+  for (const f of must(knotsRes)) {
     if (!f.voyage_id || f.delta <= 0) continue;
     knotsByVoyage.set(f.voyage_id, (knotsByVoyage.get(f.voyage_id) ?? 0) + f.delta);
   }
 
   /* Per-yacht fill — flotilla voyages only. */
-  const vesselCapacity = new Map((vesselsRes.data ?? []).map((v) => [v.id, v.capacity]));
+  const vesselCapacity = new Map((must(vesselsRes)).map((v) => [v.id, v.capacity]));
   const berthsByVessel = new Map<string, number>();
-  for (const r of berthRes.data ?? []) {
+  for (const r of must(berthRes)) {
     const key = `${r.voyage_id}:${r.vessel_id}`;
     berthsByVessel.set(key, (berthsByVessel.get(key) ?? 0) + 1);
   }
   const flotillaByVoyage = new Map<string, Array<{ vessel_id: string; position: number }>>();
-  for (const vv of flotillaRes.data ?? []) {
+  for (const vv of must(flotillaRes)) {
     const list = flotillaByVoyage.get(vv.voyage_id) ?? [];
     list.push(vv);
     flotillaByVoyage.set(vv.voyage_id, list);
@@ -152,25 +152,29 @@ export default async function ReportsPage() {
   /* Net revenue per voyage — pass and deposit charges, add-ons, credits,
      and refunds all carry the voyage_id; the sum is the net. */
   const revenueByVoyage = new Map<string, number>();
-  for (const l of voyageLedgerRes.data ?? []) {
+  for (const l of must(voyageLedgerRes)) {
     if (!l.voyage_id) continue;
     revenueByVoyage.set(l.voyage_id, (revenueByVoyage.get(l.voyage_id) ?? 0) + l.delta_cents);
   }
 
   /* Holds */
   const holdsLive = voyages.filter((v) => v.status === "weather_hold").length;
-  const weatherNotices = weatherRes.count ?? 0;
+  const weatherNotices = (weatherRes.data as number | null) ?? 0;
 
-  /* Outbox health */
-  const outbox = outboxRes.data ?? [];
-  const outboxCount = (s: string) => outbox.filter((e) => e.status === s).length;
+  /* Outbox health, counted in the database rather than in the first page of
+     rows the API happened to return. */
+  type Health = { channel: string; status: string; n: number };
+  const health = (outboxRes.data as Health[] | null) ?? [];
+  const tally = (channel: string, status: string) =>
+    Number(health.find((h) => h.channel === channel && h.status === status)?.n ?? 0);
+  const outboxCount = (s: string) => tally("email", s);
 
   /* Dues that recur — a year's plan carries one twelfth of itself each month,
      so the two intervals can sit in the same number. */
   const planPrice = new Map(
-    (plansRes.data ?? []).map((p) => [p.id, p])
+    (must(plansRes)).map((p) => [p.id, p])
   );
-  const subs = subsRes.data ?? [];
+  const subs = must(subsRes);
   const mrrCents = subs
     .filter((sub) => sub.status === "active")
     .reduce((total, sub) => {
@@ -189,7 +193,7 @@ export default async function ReportsPage() {
   const duesAtRisk = subs.filter((sub) => sub.status === "past_due").length;
 
   /* What is still to be drawn on the plans people are paying down. */
-  const installments = (installmentsRes.data ?? []).filter((p) => p.status === "active");
+  const installments = (must(installmentsRes)).filter((p) => p.status === "active");
   /* The same slice draw_installments actually takes: the remainder is spread
      over installments - 1 draws, because the down payment is the first of the
      n. Dividing by n valued a draw at three quarters of what the cron charges,
@@ -203,15 +207,11 @@ export default async function ReportsPage() {
   }, 0);
 
   /* Delivery health — the three channels the cron drains. */
-  const push = pushRes.data ?? [];
-  const sms = smsRes.data ?? [];
-  const countBy = (rows: Array<{ status: string }>, status: string) =>
-    rows.filter((r) => r.status === status).length;
-  const healthLine = (rows: Array<{ status: string }>) =>
-    `${countBy(rows, "sent")} SENT · ${countBy(rows, "skipped")} SKIPPED · ${countBy(rows, "failed")} FAILED`;
+  const healthLine = (channel: string) =>
+    `${tally(channel, "sent")} SENT · ${tally(channel, "skipped")} SKIPPED · ${tally(channel, "failed")} FAILED`;
 
   /* Passes that moved hands, and passes that cost nothing. */
-  const transfers = transfersRes.data ?? [];
+  const transfers = must(transfersRes);
   const transfersAccepted = transfers.filter((t) => t.status === "accepted").length;
   const transfersOffered = transfers.filter((t) => t.status === "offered").length;
   const compedPasses = compsRes.count ?? 0;
@@ -312,14 +312,14 @@ export default async function ReportsPage() {
           <Stat
             size="sm"
             label="Push"
-            value={countBy(push, "pending")}
-            sub={`PENDING · ${healthLine(push)}`}
+            value={tally("push", "pending")}
+            sub={`PENDING · ${healthLine("push")}`}
           />
           <Stat
             size="sm"
             label="SMS"
-            value={countBy(sms, "pending")}
-            sub={`PENDING · ${healthLine(sms)}`}
+            value={tally("sms", "pending")}
+            sub={`PENDING · ${healthLine("sms")}`}
           />
         </div>
       </section>

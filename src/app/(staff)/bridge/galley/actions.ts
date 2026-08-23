@@ -43,7 +43,7 @@ export async function settleTicket(
   if (!staffId) return { error: ERR_STAFF };
   if (!profileId) return { error: "Attach a member first." };
   const clean = lines.filter((l) => l.qty > 0 && l.itemId);
-  if (!clean.length) return { error: "Ring the first item — the ticket is empty." };
+  if (!clean.length) return { error: "Ring the first item — the order is empty." };
 
   const total = clean.reduce((t, l) => t + l.priceCents * l.qty, 0);
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LOGBOOK } from "@/lib/brand";
 import { getOperator } from "../../data";
 import { RegattasClient, type ContestRow } from "./regattas-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: LOGBOOK.regattas };
 
@@ -14,11 +15,11 @@ export default async function RegattasPage() {
   ]);
 
   const counts = new Map<string, number>();
-  for (const e of entriesRes.data ?? []) {
+  for (const e of must(entriesRes)) {
     counts.set(e.contest_id, (counts.get(e.contest_id) ?? 0) + 1);
   }
 
-  const rows: ContestRow[] = (contestsRes.data ?? []).map((c) => ({
+  const rows: ContestRow[] = (must(contestsRes)).map((c) => ({
     id: c.id,
     slug: c.slug,
     title: c.title,

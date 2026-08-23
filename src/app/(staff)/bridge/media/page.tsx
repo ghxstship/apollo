@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
+import { signFrames } from "@/components/site/voyage-data";
 import { MediaClient, type MediaCard } from "./media-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Media" };
 
@@ -29,11 +31,18 @@ export default async function MediaPage() {
         }),
   ]);
 
-  const voyages = new Map((voyagesRes.data ?? []).map((v) => [v.id, v]));
-  const uploaders = new Map((uploadersRes.data ?? []).map((p) => [p.id, p]));
+  const voyages = new Map((must(voyagesRes)).map((v) => [v.id, v]));
+  const uploaders = new Map((must(uploadersRes)).map((p) => [p.id, p]));
 
-  /* Public bucket — the path is the only secret and there isn't one. */
-  const base = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/voyage-media/`;
+  /* The bucket is private, so the path is not a URL — this screen built one
+     against /object/public/ and every thumbnail came back 400. The Bridge was
+     approving and rejecting frames it could not see. Sign them, the same way
+     the gallery does.
+
+     A frame whose file is missing gets no signed URL and keeps `src: null`
+     rather than being dropped: the row is exactly what staff need to see in
+     order to clear it. */
+  const signed = await signFrames(supabase, media.map((m) => m.storage_path));
 
   const cards: MediaCard[] = media.map((m) => {
     const voyage = voyages.get(m.voyage_id);
@@ -47,7 +56,7 @@ export default async function MediaPage() {
       caption: m.caption ?? "",
       approved: m.approved,
       createdAt: m.created_at,
-      src: base + m.storage_path,
+      src: signed.get(m.storage_path) ?? null,
     };
   });
 

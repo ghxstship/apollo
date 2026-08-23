@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { staffContext, ERR_STAFF, ERR_LAND, boardingError, type ActionResult } from "../../staff";
 
 function done(): ActionResult {
   revalidatePath("/bridge/manifests");
@@ -16,7 +16,7 @@ export async function checkInRsvp(rsvpId: string): Promise<ActionResult> {
     .from("rsvps")
     .update({ checked_in_at: new Date().toISOString(), checked_in_by: staffId })
     .eq("id", rsvpId);
-  if (error) return { error: ERR_LAND };
+  if (error) return { error: boardingError(error) };
   return done();
 }
 

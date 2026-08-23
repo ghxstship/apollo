@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { staffContext, ERR_STAFF, ERR_LAND } from "../../staff";
+import { staffContext, ERR_STAFF, ERR_LAND, boardingError } from "../../staff";
 
 /* Onsite check-in by boarding code. The scanner types the code and hits
    Enter; we stamp checked_in_at/by and hand back what the door needs. */
@@ -122,16 +122,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       .update({ checked_in_at: guestAt, checked_in_by: staffId })
       .eq("id", guest.id);
 
-    /* The guest waiver gate refuses at the database, in the same voice the
-       member gate uses. */
-    if (guestError) {
-      if (/boards unsigned/i.test(guestError.message)) {
-        return {
-          error: `${guestError.message.replace(/^.*— /, "")} — send them the link to sign, then scan again.`,
-        };
-      }
-      return { error: ERR_LAND };
-    }
+    if (guestError) return { error: boardingError(guestError) };
 
     revalidatePath("/bridge/gangway");
     revalidatePath("/bridge/manifests");
@@ -170,15 +161,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     .from("rsvps")
     .update({ checked_in_at: checkedInAt, checked_in_by: staffId })
     .eq("id", rsvp.id);
-  /* The waiver gate refuses at the database. Hand the skipper the reason and
-     what to do about it rather than a generic failure — the fix is thirty
-     seconds on the member's own phone. */
-  if (error) {
-    if (/boards unsigned/i.test(error.message)) {
-      return { error: `${error.message.replace(/^.*— /, "")} — send them the link to sign, then scan again.` };
-    }
-    return { error: ERR_LAND };
-  }
+  if (error) return { error: boardingError(error) };
 
   revalidatePath("/bridge/gangway");
   revalidatePath("/bridge/manifests");

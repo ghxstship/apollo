@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { CodesClient, type CodeRow } from "./codes-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Codes" };
 
@@ -17,10 +18,10 @@ export default async function CodesPage() {
       .limit(60),
   ]);
 
-  const voyages = voyagesRes.data ?? [];
+  const voyages = must(voyagesRes);
   const titles = new Map(voyages.map((v) => [v.id, v.title]));
 
-  const rows: CodeRow[] = (codesRes.data ?? []).map((c) => ({
+  const rows: CodeRow[] = (must(codesRes)).map((c) => ({
     code: c.code,
     kind: c.kind,
     value: c.value,

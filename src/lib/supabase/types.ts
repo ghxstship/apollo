@@ -564,6 +564,38 @@ export type Database = {
           status: string
         }>
       }
+      /* Both count in the database and refuse a non-staff caller — the Bridge
+         used to count fetched rows, which PostgREST caps at 1000. */
+      delivery_health: {
+        Args: Record<string, never>
+        Returns: Array<{ channel: string; status: string; n: number }>
+      }
+      notice_count: {
+        Args: { p_kind: string }
+        Returns: number
+      }
+      signature_tally: {
+        Args: Record<string, never>
+        Returns: Array<{ document_version_id: string; n: number }>
+      }
+      /* Three reads a member is owed but RLS cannot answer: an offer names the
+         offerer's sailing, a roster names consenting shipmates, a cabin plan
+         names claims that are not yours. */
+      incoming_transfers: {
+        Args: Record<string, never>
+        Returns: Array<{
+          transfer_id: string; from_name: string; voyage_id: string
+          title: string; starts_at: string; time_zone: string
+        }>
+      }
+      voyage_manifest: {
+        Args: { p_voyage: string }
+        Returns: Array<{ full_name: string; avatar_tone: string; guests: number }>
+      }
+      claimed_cabins: {
+        Args: { p_cabins: string[] }
+        Returns: Array<{ cabin_id: string; voyage_id: string }>
+      }
     }
     Enums: {
       application_status: ApplicationStatus

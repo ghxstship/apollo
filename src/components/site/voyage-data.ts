@@ -38,7 +38,9 @@ export interface FrameGroup {
    short-lived signed URL the server mints for a frame that HAS been cleared. */
 const FRAME_URL_TTL_SECONDS = 60 * 60;
 
-async function signFrames(
+/* Exported because the Bridge needs the same signing the gallery does — the
+   bucket is private, so a path is not a URL anywhere. */
+export async function signFrames(
   supabase: Awaited<ReturnType<typeof createClient>>,
   paths: string[]
 ): Promise<Map<string, string>> {

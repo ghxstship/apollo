@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { SwRegister } from "@/components/sw-register";
+import { SITE_DOMAIN } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  /* Without this every og:image and canonical resolves against localhost, so
+     a link shared from production previews as http://localhost:3000/... */
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`),
   title: {
     default: "SYRIUS SOCIAL — The Unscripted Social Experiment.",
     template: "%s · SYRIUS SOCIAL",

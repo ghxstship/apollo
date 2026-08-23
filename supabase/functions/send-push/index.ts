@@ -85,7 +85,8 @@ Deno.serve(async () => {
         }
       }
       await mark(row.id, ok ? "sent" : "failed");
-      ok ? sent++ : failed++;
+      if (ok) sent++;
+      else failed++;
     }
     return Response.json({ fetched: rows.length, sent, failed, skipped });
   } catch (err) {

@@ -203,9 +203,13 @@ async function schemaInvariants(p) {
    is none. Both are asserted table by table rather than assumed, and reads are
    checked for a clean empty result rather than an error — an error means the
    protection is coming from a missing grant somewhere instead of from policy. */
+/* Every relation anon can reach has to be named in one of these two lists, or
+   it is covered by neither: `cabins` and `episodes` were readable and appeared
+   in neither, so nothing ever checked what they hand out. */
 const ANON_READABLE = [
   "voyages", "harbors", "vessels", "voyage_vessels", "dispatch_posts",
   "addons", "membership_plans", "crew_roles", "voyage_capacity",
+  "cabins", "episodes",
 ];
 const ANON_SEALED = [
   "profiles", "rsvps", "rsvp_guests", "rsvp_addons", "pass_transfers",
@@ -269,6 +273,19 @@ async function anonSurface() {
     const direct = await fetch(`${SUPA}/storage/v1/object/public/voyage-media/${somePath}`);
     note("anon", "a known frame path is still not a public URL", direct.status >= 400,
       `got ${direct.status}`);
+  }
+
+  /* The two lists above are only worth as much as their coverage. PostgREST
+     publishes every relation it exposes, so ask it rather than trusting that
+     someone remembered to add a new table to one list or the other. */
+  const exposed = await fetch(`${SUPA}/rest/v1/`, { headers: { apikey: ANON } });
+  if (exposed.ok) {
+    const spec = await exposed.json();
+    const named = new Set([...ANON_READABLE, ...ANON_SEALED]);
+    const missing = Object.keys(spec.definitions ?? spec.components?.schemas ?? {})
+      .filter((t) => !named.has(t) && !t.includes("."));
+    note("anon", "every exposed relation is named in one list or the other",
+      missing.length === 0, `unaccounted: ${missing.slice(0, 12).join(", ")}`);
   }
 
   // Writes: the two public funnels take an INSERT, nothing else takes anything.
@@ -1347,6 +1364,137 @@ async function roundTwoRules(p) {
 /* ---------- J. what round three found ----------
    Every one of these was a fix of mine applied to one of two paths, or damage a
    fix did next door. They encode the SECOND way in. */
+/* Round five: consent on a frame, and the screen that reviews them.
+
+   A member could upload a photograph and then had no way to take it back —
+   DELETE and PATCH both answered 200 with an empty array, the silent no-op
+   that reads to a UI as success. And the Bridge, the one screen that decides
+   what goes public, was building /object/public/ URLs against a bucket that
+   had been made private, so every thumbnail was a 400 and staff were clearing
+   frames they could not see. */
+async function roundFiveRules(p) {
+  const stf = rest(p.staff), glo = rest(p.global), reg = rest(p.regional);
+
+  const ahead = await stf.get(
+    `voyages?status=eq.scheduled&select=id&starts_at=gt.${new Date().toISOString()}&order=starts_at.asc&limit=1`
+  );
+  const vid = ahead.data?.[0]?.id;
+  if (!vid) return;
+
+  /* A real object behind the row, because the whole point is whether a URL can
+     be signed for it. Staff uploads: the storage INSERT policy wants an aboard
+     pass, and the row's uploaded_by is what the consent rules actually key on. */
+  const path = `${uid(p.staff)}/e2e-consent-${Date.now().toString(36)}.png`;
+  const pixel = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64"
+  );
+  const put = await fetch(`${SUPA}/storage/v1/object/voyage-media/${path}`, {
+    method: "POST",
+    headers: { apikey: ANON, Authorization: `Bearer ${p.staff.access_token}`, "Content-Type": "image/png" },
+    body: pixel,
+  });
+  note("staff", "puts a real frame in the bucket", put.status < 400, `got ${put.status}`);
+
+  const signAs = async (session) => {
+    const res = await fetch(`${SUPA}/storage/v1/object/sign/voyage-media`, {
+      method: "POST",
+      headers: {
+        apikey: ANON,
+        ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn: 60, paths: [path] }),
+    });
+    const rows = await res.json();
+    return Array.isArray(rows) && !!rows[0]?.signedURL;
+  };
+
+  const mk = await stf.post("voyage_media", {
+    voyage_id: vid, storage_path: path, caption: "E2E consent frame",
+    uploaded_by: uid(p.global), approved: false,
+  });
+  const fid = mk.data?.[0]?.id;
+  note("staff", "seeds a frame for the consent checks", !!fid, `got ${mk.status}`);
+  if (!fid) return;
+
+  /* An unapproved frame is nobody's business but the Bridge's and its owner's. */
+  note("anon", "cannot sign a frame the Bridge has not cleared", !(await signAs(null)), "signed it");
+
+  /* The Bridge must sign its own thumbnails. It built /object/public/ URLs
+     against a private bucket for a while, so every thumbnail was a 400 and the
+     screen read as empty rather than broken — checked while a frame is
+     guaranteed to be on it, or the assertion passes on an empty page. */
+  const html = await (await page(p.staff, "/bridge/media")).text();
+  note("staff", "the seeded frame reaches the Bridge's media screen",
+    html.includes("E2E consent frame"), "the frame did not reach the screen");
+  note("staff", "the Bridge signs its thumbnails",
+    /object\/sign\/voyage-media/.test(html), "no signed URL on the media screen");
+  note("staff", "the Bridge builds no public URL against a private bucket",
+    !/object\/public\/voyage-media/.test(html), "found a /object/public/ URL");
+
+  const selfClear = await glo.patch(`voyage_media?id=eq.${fid}`, { approved: true });
+  note("global", "cannot clear their own frame for the water", selfClear.status >= 400,
+    `got ${selfClear.status}`);
+
+  const bridgeClear = await stf.patch(`voyage_media?id=eq.${fid}`, { approved: true });
+  note("staff", "the Bridge clears a frame", (bridgeClear.data || [])[0]?.approved === true,
+    `got ${bridgeClear.status}`);
+
+  /* The row said public while the file said no, and the gallery quietly
+     rendered nothing. Approval has to reach the object too. */
+  note("anon", "can sign a frame the Bridge cleared", await signAs(null), "could not sign it");
+  note("national", "can sign a cleared frame they did not upload", await signAs(p.national),
+    "could not sign it");
+
+  const gallery = await (await page(null, "/gallery")).text();
+  note("anon", "the gallery actually renders a cleared frame",
+    /object\/sign\/voyage-media/.test(gallery), "no signed frame on the gallery");
+
+  /* The point of the whole block: a published frame can be pulled by the hand
+     that sent it up, without going and finding a staff member — and the file
+     stops being fetchable the moment they do. */
+  const pull = await glo.patch(`voyage_media?id=eq.${fid}`, { approved: false });
+  note("global", "takes their own frame back off the water",
+    (pull.data || [])[0]?.approved === false, `got ${pull.status}`);
+  note("anon", "a withdrawn frame stops being signable at once", !(await signAs(null)),
+    "still signed it");
+
+  await stf.patch(`voyage_media?id=eq.${fid}`, { approved: true });
+  const amend = await glo.patch(`voyage_media?id=eq.${fid}`, { caption: "E2E second thoughts" });
+  note("global", "a rewritten caption goes back into the queue",
+    (amend.data || [])[0]?.approved === false && (amend.data || [])[0]?.caption === "E2E second thoughts",
+    `got ${amend.status} ${JSON.stringify(amend.data).slice(0, 90)}`);
+
+  const move = await glo.patch(`voyage_media?id=eq.${fid}`, { uploaded_by: uid(p.regional) });
+  note("global", "cannot hand their frame to someone else", move.status >= 400, `got ${move.status}`);
+
+  /* Refusal must be a refusal, not an empty array a UI would read as done. */
+  const strangerEdit = await reg.patch(`voyage_media?id=eq.${fid}`, { caption: "not mine" });
+  note("regional", "cannot edit a frame that is not theirs",
+    (strangerEdit.data || []).length === 0, `got ${strangerEdit.status}`);
+  const strangerDel = await reg.del(`voyage_media?id=eq.${fid}`);
+  note("regional", "cannot withdraw a frame that is not theirs",
+    strangerDel.status >= 400 || (strangerDel.data || []).length === 0, `got ${strangerDel.status}`);
+
+  const own = await glo.del(`voyage_media?id=eq.${fid}`);
+  note("global", "withdraws their own frame entirely",
+    own.status < 400 && (own.data || []).length === 1, `got ${own.status}`);
+
+  /* Storage will not delete from SQL, so a withdrawn row records its path for
+     a sweep rather than leaving the file unnoticed. */
+  const noted = await stf.get(`orphaned_media?select=storage_path&storage_path=eq.${path}`);
+  note("staff", "a withdrawn frame leaves its file on the sweep list",
+    (noted.data || []).length === 1, `got ${noted.status} ${JSON.stringify(noted.data).slice(0, 80)}`);
+
+  await fetch(`${SUPA}/storage/v1/object/voyage-media`, {
+    method: "DELETE",
+    headers: { apikey: ANON, Authorization: `Bearer ${p.staff.access_token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ prefixes: [path] }),
+  });
+  await stf.patch(`orphaned_media?storage_path=eq.${path}`, { cleared_at: new Date().toISOString() });
+}
+
 async function roundThreeRules(p) {
   const reg = rest(p.regional), stf = rest(p.staff), pau = rest(p.paused);
   const me = uid(p.regional);
@@ -1507,7 +1655,14 @@ async function routeMatrix(personas) {
           /* Against VISIBLE text, not raw HTML: a word like "berth" lives in
              RSC payloads as berths_total forever, and what matters is what a
              person reads. */
-          const banned = BANNED.filter((t) => visible.includes(t));
+          /* Case-insensitively, and against visible text only. The list is
+             written in the casing the copy uses, so a lower-cased "chandlery"
+             in an empty state and an upper-cased "SHORE OFFICE" coming out of
+             a data row both slipped past an exact match. Comparing on a folded
+             copy is safe here because `visible` is rendered text — class names
+             like hm-ticket and RSC payload keys never reach it. */
+          const haystack = visible.toLowerCase();
+          const banned = BANNED.filter((t) => haystack.includes(t.toLowerCase()));
           note(name, `${r.path} on-lexicon`, banned.length === 0, banned.join(", "));
           const shouts = (visible.match(/!/g) || []).length;
           note(name, `${r.path} never shouts`, shouts === 0, shouts ? `${shouts} exclamation` : "");
@@ -1883,6 +2038,7 @@ async function main() {
   await hardeningRules(personas);
   await roundTwoRules(personas);
   await roundThreeRules(personas);
+  await roundFiveRules(personas);
   await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;

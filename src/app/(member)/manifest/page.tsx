@@ -114,9 +114,11 @@ export default async function VoyagesPage() {
     ? await supabase.from("cabins").select("*").in("vessel_id", myVesselIds).eq("active", true).order("position")
     : { data: [] };
   const cabinIds = (cabinRows ?? []).map((c) => c.id);
+  /* Through a definer: rsvps is `profile_id = auth.uid()`, so reading other
+     members' claims directly returned nothing and every cabin rendered free. */
   const { data: cabinClaims } = cabinIds.length
-    ? await supabase.from("rsvps").select("cabin_id, voyage_id").in("cabin_id", cabinIds).eq("status", "aboard")
-    : { data: [] };
+    ? await supabase.rpc("claimed_cabins", { p_cabins: cabinIds })
+    : { data: [] as Array<{ cabin_id: string; voyage_id: string }> };
 
   const guestsByRsvp = new Map<string, GuestStub[]>();
   for (const g of guestRes.data ?? []) {
@@ -159,28 +161,17 @@ export default async function VoyagesPage() {
   const inboundRows = transfers.filter((t) => t.to_profile === user.id);
   let inbound: IncomingOffer[] = [];
   if (inboundRows.length > 0) {
-    const { data: theirRsvps } = await supabase
-      .from("rsvps")
-      .select("id, voyage_id")
-      .in("id", inboundRows.map((t) => t.rsvp_id));
-    const voyageOfRsvp = new Map((theirRsvps ?? []).map((r) => [r.id, r.voyage_id] as const));
-    const wantedVoyages = Array.from(new Set((theirRsvps ?? []).map((r) => r.voyage_id)));
-    const { data: theirVoyages } = wantedVoyages.length
-      ? await supabase.from("voyages").select("id, title, starts_at, time_zone").in("id", wantedVoyages)
-      : { data: [] as Array<{ id: string; title: string; starts_at: string; time_zone: string }> };
-    const voyageById = new Map((theirVoyages ?? []).map((v) => [v.id, v] as const));
-    inbound = inboundRows.flatMap((t) => {
-      const voyage = voyageById.get(voyageOfRsvp.get(t.rsvp_id) ?? "");
-      if (!voyage) return [];
-      return [
-        {
-          id: t.id,
-          fromName: nameOf.get(t.from_profile) ?? "A member",
-          voyageTitle: voyage.title,
-          meta: `${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`,
-        },
-      ];
-    });
+    /* Naming the sailing behind an offer means reading the OFFERER's rsvp, and
+       rsvps is `profile_id = auth.uid()`. The old code resolved it directly,
+       always got zero rows, and returned [] — so an offer could be made and
+       never seen, and acceptOffer/declineOffer were unreachable. */
+    const { data: offers } = await supabase.rpc("incoming_transfers");
+    inbound = (offers ?? []).map((o) => ({
+      id: o.transfer_id,
+      fromName: o.from_name,
+      voyageTitle: o.title,
+      meta: `${logDate(o.starts_at, o.time_zone)} · ${logTime(o.starts_at, o.time_zone)}`,
+    }));
   }
 
   /* Crew forming — yours on one side, everyone else's on the other. */

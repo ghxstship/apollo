@@ -185,7 +185,7 @@ export function OrdersClient({
           />
           {shopOrders.length === 0 ? (
             <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
-              No chandlery orders on the books.
+              No Slop Chest orders on the books.
             </p>
           ) : null}
         </div>

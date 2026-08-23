@@ -70,7 +70,7 @@ export default async function HarborPage() {
   return (
     <div>
       <div className="ls-rise">
-        <span className="mbr-eyebrow">Home port</span>
+        <span className="mbr-eyebrow">Home harbor</span>
         <h1 className="mbr-h1" style={{ marginTop: 6 }}>
           Fair winds, {firstName(profile)}.
         </h1>

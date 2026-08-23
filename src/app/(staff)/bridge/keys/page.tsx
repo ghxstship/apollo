@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { KeysClient, type HookRow, type KeyRow } from "./keys-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Keys and hooks" };
 
@@ -17,7 +18,7 @@ export default async function KeysPage() {
       .limit(200),
   ]);
 
-  const keys: KeyRow[] = (keysRes.data ?? []).map((k) => ({
+  const keys: KeyRow[] = (must(keysRes)).map((k) => ({
     id: k.id,
     label: k.label,
     prefix: k.prefix,
@@ -29,7 +30,7 @@ export default async function KeysPage() {
 
   /* Last ten per hook — enough to see a pattern, short enough to read. */
   const byHook = new Map<string, HookRow["deliveries"]>();
-  for (const d of deliveriesRes.data ?? []) {
+  for (const d of must(deliveriesRes)) {
     const list = byHook.get(d.webhook_id) ?? [];
     if (list.length >= 10) continue;
     list.push({
@@ -42,7 +43,7 @@ export default async function KeysPage() {
     byHook.set(d.webhook_id, list);
   }
 
-  const hooks: HookRow[] = (hooksRes.data ?? []).map((h) => ({
+  const hooks: HookRow[] = (must(hooksRes)).map((h) => ({
     id: h.id,
     url: h.url,
     events: h.events ?? [],

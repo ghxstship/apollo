@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { logDateTime, price } from "@/lib/format";
 import { getOperator, readConditions } from "../../data";
 import { VoyagesClient, type VoyageOpsRow } from "./voyages-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Voyages" };
 
@@ -16,16 +17,16 @@ export default async function VoyagesOpsPage() {
   ]);
 
   const capacity = new Map(
-    (capacityRes.data ?? []).filter((c) => c.voyage_id).map((c) => [c.voyage_id as string, c])
+    (must(capacityRes)).filter((c) => c.voyage_id).map((c) => [c.voyage_id as string, c])
   );
 
   /* Yachts assigned per voyage — the flotilla meter needs the count. */
   const vesselCount = new Map<string, number>();
-  for (const vv of flotillaRes.data ?? []) {
+  for (const vv of must(flotillaRes)) {
     vesselCount.set(vv.voyage_id, (vesselCount.get(vv.voyage_id) ?? 0) + 1);
   }
 
-  const rows: VoyageOpsRow[] = (voyagesRes.data ?? []).map((v) => {
+  const rows: VoyageOpsRow[] = (must(voyagesRes)).map((v) => {
     const c = readConditions(v.conditions);
     return {
       id: v.id,
@@ -49,7 +50,7 @@ export default async function VoyagesOpsPage() {
     };
   });
 
-  const harbors = (harborsRes.data ?? []).map((h) => ({ value: h.id, label: h.name }));
+  const harbors = (must(harborsRes)).map((h) => ({ value: h.id, label: h.name }));
 
   return (
     <div>

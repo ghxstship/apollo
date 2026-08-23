@@ -4,6 +4,7 @@ import { TIER_LABEL } from "@/lib/format";
 import { getOperator } from "../../data";
 import type { SegmentFilters } from "./actions";
 import { MembersClient, type MemberRow, type SegmentOption } from "./members-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Members" };
 
@@ -61,29 +62,29 @@ export default async function MembersPage() {
     supabase.from("saved_segments").select("*").order("created_at", { ascending: false }),
   ]);
 
-  const harbors = harborsRes.data ?? [];
+  const harbors = must(harborsRes);
   const harborById = new Map(harbors.map((h) => [h.id, h]));
-  const plans = plansRes.data ?? [];
+  const plans = must(plansRes);
   const planById = new Map(plans.map((p) => [p.id, p]));
 
   const engagement = new Map(
-    (engagementRes.data ?? [])
+    (must(engagementRes))
       .filter((e) => e.profile_id)
       .map((e) => [e.profile_id as string, e])
   );
   const leagues = new Map(
-    (leagueRes.data ?? []).filter((l) => l.profile_id).map((l) => [l.profile_id as string, l])
+    (must(leagueRes)).filter((l) => l.profile_id).map((l) => [l.profile_id as string, l])
   );
 
   /* One member, one dues line — newest subscription row wins. */
   const subs = new Map<string, { status: string; plan_id: string | null }>();
-  for (const s of (subsRes.data ?? []).sort((a, b) =>
+  for (const s of (must(subsRes)).sort((a, b) =>
     a.created_at < b.created_at ? 1 : -1
   )) {
     if (!subs.has(s.profile_id)) subs.set(s.profile_id, { status: s.status, plan_id: s.plan_id });
   }
 
-  const rows: MemberRow[] = (profilesRes.data ?? []).map((p) => {
+  const rows: MemberRow[] = (must(profilesRes)).map((p) => {
     const harbor = p.home_harbor ? harborById.get(p.home_harbor) : undefined;
     const sub = subs.get(p.id);
     const planId = sub?.plan_id ?? p.plan_id;
@@ -115,7 +116,7 @@ export default async function MembersPage() {
     };
   });
 
-  const segments: SegmentOption[] = (segmentsRes.data ?? [])
+  const segments: SegmentOption[] = (must(segmentsRes))
     .map((s) => {
       const filters = readFilters(s.filters);
       return filters ? { id: s.id, name: s.name, filters } : null;

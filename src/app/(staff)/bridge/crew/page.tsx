@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { logDateTime } from "@/lib/format";
 import { getOperator } from "../../data";
 import { CrewClient, type CandidateRow, type RoleRow } from "./crew-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Crew" };
 
@@ -13,7 +14,7 @@ export default async function CrewPage() {
     supabase.from("crew_candidates").select("*").order("created_at", { ascending: false }),
   ]);
 
-  const roles: RoleRow[] = (rolesRes.data ?? []).map((r) => ({
+  const roles: RoleRow[] = (must(rolesRes)).map((r) => ({
     id: r.id,
     title: r.title,
     port: r.port,
@@ -21,7 +22,7 @@ export default async function CrewPage() {
     open: r.open,
   }));
 
-  const candidates: CandidateRow[] = (candidatesRes.data ?? []).map((c) => ({
+  const candidates: CandidateRow[] = (must(candidatesRes)).map((c) => ({
     id: c.id,
     roleId: c.role_id,
     name: c.full_name,

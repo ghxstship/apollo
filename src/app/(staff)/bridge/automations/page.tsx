@@ -3,6 +3,7 @@ import { CITY_CODES } from "@/lib/brand";
 import { getOperator } from "../../data";
 import { AutomationsClient, type RuleRow } from "./automations-client";
 import type { RuleAction, RuleConditions, TriggerEvent } from "./actions";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Automations" };
 
@@ -46,7 +47,7 @@ export default async function AutomationsPage() {
     supabase.from("sms_templates").select("code").eq("active", true).order("code"),
   ]);
 
-  const rows: RuleRow[] = (rulesRes.data ?? []).map((a) => ({
+  const rows: RuleRow[] = (must(rulesRes)).map((a) => ({
     id: a.id,
     name: a.name,
     trigger: (TRIGGERS as string[]).includes(a.trigger_event)
@@ -58,7 +59,7 @@ export default async function AutomationsPage() {
     lastRunAt: a.last_run_at,
   }));
 
-  const harbors = (harborsRes.data ?? []).map((h) => ({
+  const harbors = (must(harborsRes)).map((h) => ({
     slug: h.slug,
     label: `${CITY_CODES[h.slug] ?? h.name.slice(0, 3).toUpperCase()} — ${h.name}`,
   }));
@@ -74,7 +75,7 @@ export default async function AutomationsPage() {
       <AutomationsClient
         rows={rows}
         harbors={harbors}
-        smsTemplates={(smsRes.data ?? []).map((t) => t.code)}
+        smsTemplates={(must(smsRes)).map((t) => t.code)}
       />
     </div>
   );

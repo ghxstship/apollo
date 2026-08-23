@@ -3,6 +3,7 @@ import { Badge, Table } from "@/components/ds";
 import { TIER_LABEL, logDateTime } from "@/lib/format";
 import { getOperator } from "../data";
 import { AppsClient, type AppRow } from "./apps-client";
+import { must } from "../staff";
 
 export const metadata: Metadata = { title: "Applications" };
 
@@ -24,8 +25,8 @@ export default async function ApplicationsPage() {
     supabase.from("member_roll").select("*").order("created_at", { ascending: false }),
   ]);
 
-  const applications = appsRes.data ?? [];
-  const roll = rollRes.data ?? [];
+  const applications = must(appsRes);
+  const roll = must(rollRes);
 
   const rollEmails = roll.map((r) => r.email);
   const { data: joinedProfiles } = rollEmails.length

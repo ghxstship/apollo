@@ -12,7 +12,8 @@
     "routes:manifest": "node scripts/generate-route-manifest.mjs",
     "routes:audit": "node scripts/audit-routes.mjs",
     "e2e": "node scripts/e2e-suite.mjs",
-    "sms:register": "node scripts/register-sms-templates.mjs"
+    "sms:register": "node scripts/register-sms-templates.mjs",
+    "migrations:mirror": "node scripts/mirror-migrations.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.114.0",

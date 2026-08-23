@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { voice } from "@/lib/errors";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 /* The filter set is stored verbatim as the segment's jsonb — one shape, so a
@@ -187,14 +188,25 @@ export async function adjustKnots(
   if (!staffId) return { error: ERR_STAFF };
   const line = reason.trim();
   if (!line) return { error: "The ledger never writes without a reason." };
-  if (!Number.isInteger(delta) || delta === 0) return { error: "A zero adjustment is not an entry." };
+  /* Three refusals, each saying what actually happened. The one message used
+     to cover all three, so a decimal came back as "A zero adjustment is not an
+     entry." — which is not what the operator did. */
+  if (!Number.isFinite(delta)) return { error: "Knots take a number." };
+  if (!Number.isInteger(delta)) return { error: "Knots come in whole numbers." };
+  if (delta === 0) return { error: "A zero adjustment is not an entry." };
+  /* The column is a 32-bit integer and the field is an unbounded number input,
+     so an operator leaning on the keyboard got Postgres's own words back:
+     'value "99999999999" is out of range for type integer'. */
+  if (Math.abs(delta) > 1_000_000) {
+    return { error: "That is more knots than anyone has. Keep it under a million." };
+  }
 
   const { error } = await supabase.rpc("adjust_knots", {
     p_profile: profileId,
     p_delta: delta,
     p_reason: line,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: voice(error) };
 
   revalidatePath("/bridge/members");
   return {};

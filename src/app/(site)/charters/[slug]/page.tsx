@@ -104,29 +104,21 @@ export default async function VoyagePage({
   let crew: Array<{ name: string; tone: "gold" | "sea" | "ink" | "sand" }> = [];
   let guestCount = 0;
   if (user) {
-    const { data: aboardRsvps } = await supabase
-      .from("rsvps")
-      .select("profile_id, guests")
-      .eq("voyage_id", voyage.id)
-      .eq("status", "aboard")
-      .eq("show_on_manifest", true)
-      .limit(12);
-    guestCount = (aboardRsvps ?? []).reduce((sum, r) => sum + (r.guests ?? 0), 0);
-    const ids = (aboardRsvps ?? []).map((r) => r.profile_id);
-    if (ids.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_tone")
-        .in("id", ids);
-      crew = (profiles ?? [])
-        .filter((p) => p.full_name)
-        .map((p) => ({
-          name: p.full_name as string,
-          tone: (["gold", "sea", "ink", "sand"].includes(p.avatar_tone)
-            ? p.avatar_tone
-            : "ink") as "gold" | "sea" | "ink" | "sand",
-        }));
-    }
+    /* Through a definer, because rsvps is `profile_id = auth.uid()`: reading
+       the roster directly returned only the viewer's own row, so this list was
+       empty for every member and guestCount was always 0 — the feature had
+       never worked for anyone but staff. Consent is the gate here, not
+       ownership; show_on_manifest is the member saying yes. */
+    const { data: aboard } = await supabase.rpc("voyage_manifest", { p_voyage: voyage.id });
+    guestCount = (aboard ?? []).reduce((sum, r) => sum + (r.guests ?? 0), 0);
+    crew = (aboard ?? [])
+      .slice(0, 12)
+      .map((r) => ({
+        name: r.full_name,
+        tone: (["gold", "sea", "ink", "sand"].includes(r.avatar_tone)
+          ? r.avatar_tone
+          : "ink") as "gold" | "sea" | "ink" | "sand",
+      }));
   }
 
   const aboard = cap?.aboard ?? 0;

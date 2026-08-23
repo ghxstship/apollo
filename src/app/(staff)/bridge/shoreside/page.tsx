@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { ShoresideClient, type ThreadCard } from "./shoreside-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Shoreside" };
 
@@ -36,8 +37,8 @@ export default async function ShoresidePage() {
         }),
   ]);
 
-  const members = membersRes.data ?? [];
-  const messages = messagesRes.data ?? [];
+  const members = must(membersRes);
+  const messages = must(messagesRes);
 
   const peopleIds = [
     ...new Set([

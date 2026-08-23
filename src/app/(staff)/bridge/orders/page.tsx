@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { logDateTime, price } from "@/lib/format";
 import { getOperator } from "../../data";
+import { must } from "../../staff";
 import {
   OrdersClient,
   type LedgerRow,
@@ -37,9 +38,9 @@ export default async function OrdersPage() {
       .order("full_name", { ascending: true }),
   ]);
 
-  const ledger = ledgerRes.data ?? [];
-  const shop = shopRes.data ?? [];
-  const memberRows = membersRes.data ?? [];
+  const ledger = must(ledgerRes);
+  const shop = must(shopRes);
+  const memberRows = must(membersRes);
   const byId = new Map(memberRows.map((m) => [m.id, m]));
 
   /* Names for ledger/shop rows whose members are paused or departed. */
