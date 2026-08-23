@@ -190,12 +190,15 @@ export default async function ReportsPage() {
 
   /* What is still to be drawn on the plans people are paying down. */
   const installments = (installmentsRes.data ?? []).filter((p) => p.status === "active");
+  /* The same slice draw_installments actually takes: the remainder is spread
+     over installments - 1 draws, because the down payment is the first of the
+     n. Dividing by n valued a draw at three quarters of what the cron charges,
+     so the operator's exposure figure was wrong in the club's favour. */
   const exposureCents = installments.reduce((total, p) => {
-    const per =
-      p.installments > 0
-        ? Math.round((p.total_cents - p.down_payment_cents) / p.installments)
-        : 0;
-    const drawn = p.down_payment_cents + per * p.paid_count;
+    const slices = Math.max(1, p.installments - 1);
+    const per = Math.ceil((p.total_cents - p.down_payment_cents) / slices);
+    /* paid_count counts the down payment as one, so drawn slices are one fewer. */
+    const drawn = p.down_payment_cents + per * Math.max(0, p.paid_count - 1);
     return total + Math.max(0, p.total_cents - drawn);
   }, 0);
 

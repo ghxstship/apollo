@@ -20,7 +20,10 @@ export function ThreadsRealtime() {
     };
     const channel = supabase
       .channel(`threads-live-${topic}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, refresh)
+      /* Realtime withholds INSERT and UPDATE a member cannot SELECT, but
+         broadcasts every DELETE — so a deletion in a stranger's thread used to
+         make every client in the club re-read its list. */
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, refresh)
       .subscribe();
     return () => {
       if (timer) clearTimeout(timer);

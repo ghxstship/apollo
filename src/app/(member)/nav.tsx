@@ -67,7 +67,21 @@ function useUnreadWord(userId: string, initial: number): number {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          /* Your own notices only, and never the DELETE that realtime would
+             broadcast past the filter. */
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `profile_id=eq.${userId}`,
+        },
+        recount
+      )
+      /* UPDATE is RLS-filtered too, and it is how the badge falls when the
+         member marks a notice read in another tab. */
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
           schema: "public",
           table: "notifications",
           filter: `profile_id=eq.${userId}`,
@@ -130,7 +144,9 @@ function useUnreadThreads(userId: string): number {
     void recount();
     const channel = supabase
       .channel(`threads-unread-${topic}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, schedule)
+      /* INSERT and UPDATE are filtered by RLS; DELETE is broadcast to everyone
+         whatever the policy says, and an unread count never needs it. */
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, schedule)
       .subscribe();
     return () => {
       alive = false;

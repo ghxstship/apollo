@@ -26,7 +26,9 @@ export function ThreadLive({ threadId }: { threadId: string }) {
       .channel(`thread-live-${topic}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "messages", filter: `thread_id=eq.${threadId}` },
+        /* This one is already scoped to the thread; INSERT and UPDATE are the
+           events that carry a message, and DELETE is the one realtime leaks. */
+        { event: "INSERT", schema: "public", table: "messages", filter: `thread_id=eq.${threadId}` },
         refresh
       )
       .subscribe();
