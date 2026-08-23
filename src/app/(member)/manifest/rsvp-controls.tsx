@@ -100,9 +100,13 @@ export function RsvpControls({
   crewMine,
   crewSeekers,
   splitOffered,
+  guestsAllowed,
 }: {
   voyageId: string;
   voyageTitle: string;
+  /* Guest passes ride on Global memberships; the control is hidden otherwise
+     rather than offered and refused at submit. */
+  guestsAllowed: boolean;
   myStatus: "aboard" | "waitlist" | "not_going" | null;
   guests: number;
   guestNames: string[];
@@ -275,8 +279,12 @@ export function RsvpControls({
       ) : myStatus === "aboard" ? (
         <>
           <Badge tone="positive">Aboard</Badge>
-          <span className="mbr-mono">GUESTS</span>
-          <Stepper size="sm" min={0} max={2} value={guests} onChange={onGuestStep} />
+          {guestsAllowed ? (
+            <>
+              <span className="mbr-mono">GUESTS</span>
+              <Stepper size="sm" min={0} max={2} value={guests} onChange={onGuestStep} />
+            </>
+          ) : null}
           {boardingCode ? (
             <Link href={`/stub/${boardingCode}`} className="ls-btn ls-btn--outline ls-btn--sm">
               Boarding stub
@@ -486,19 +494,21 @@ export function RsvpControls({
               </span>
             </div>
           ) : null}
-          <div style={rowStyle}>
-            <span className="mbr-mono">GUESTS</span>
-            <Stepper
-              size="sm"
-              min={0}
-              max={2}
-              value={coGuests}
-              onChange={(n) => {
-                setCoGuests(n);
-                setCoNames((prev) => sizeNames(n, prev));
-              }}
-            />
-          </div>
+          {guestsAllowed ? (
+            <div style={rowStyle}>
+              <span className="mbr-mono">GUESTS</span>
+              <Stepper
+                size="sm"
+                min={0}
+                max={2}
+                value={coGuests}
+                onChange={(n) => {
+                  setCoGuests(n);
+                  setCoNames((prev) => sizeNames(n, prev));
+                }}
+              />
+            </div>
+          ) : null}
           {coGuests > 0 ? (
             <GuestNameInputs
               names={checkoutNames}

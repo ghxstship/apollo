@@ -6,7 +6,7 @@ import "./member.css";
 export default async function MemberLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, onHold } = await getMember();
 
   const { count } = await supabase
     .from("notifications")
@@ -22,6 +22,18 @@ export default async function MemberLayout({
         unreadWord={count ?? 0}
         isStaff={profile?.is_staff ?? false}
       />
+      {onHold ? (
+        <div className="mbr-hold" role="status">
+          <span className="mbr-hold__eyebrow">MEMBERSHIP ON HOLD</span>
+          <p>
+            Your log, your ledger and what you owe stay open. Booking, posting
+            and contests wait until you resume — that happens on your page.
+          </p>
+          <a href="/you" className="mbr-hold__link">
+            Your page
+          </a>
+        </div>
+      ) : null}
       <main className="mbr-main">{children}</main>
       <MemberTabBar userId={user.id} unreadWord={count ?? 0} />
       <ProducerLauncher />

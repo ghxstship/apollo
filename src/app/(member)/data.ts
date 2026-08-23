@@ -30,7 +30,11 @@ export const getMember = cache(async () => {
     .eq("id", user.id)
     .maybeSingle();
 
-  return { supabase, user, profile: profile ?? null };
+  /* A hold is a first-class state, not a flag one banner happens to read.
+     RLS refuses a held member's writes; the UI owes them the reason. */
+  const onHold = (profile?.status ?? "active") !== "active";
+
+  return { supabase, user, profile: profile ?? null, onHold };
 });
 
 export function firstName(profile: Profile | null): string {

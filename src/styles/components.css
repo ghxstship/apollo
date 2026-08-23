@@ -1,4 +1,4 @@
-/* LYRE SOCIAL component styles — extracted from the design-system primitives
+/* SYRIUS SOCIAL component styles — extracted from the design-system primitives
    (components/**). Class names match the reference kit exactly. */
 
 /* — Button — */
@@ -147,7 +147,7 @@
 .ls-wm--inverse .ls-wm__t{color:var(--text-inverse-1)}
 .ls-wm__sub{font:600 .32em var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.5em;text-transform:uppercase;color:var(--text-3);margin-top:.28em}
 .ls-wm--inverse .ls-wm__sub{color:var(--text-inverse-3)}
-.ls-wm__seam{height:3px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite;margin-top:.4em}
+.ls-wm__seam{height:3px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite;margin-top:.4em}
 
 /* — Checkbox — */
 .ls-check{display:inline-flex;gap:12px;align-items:flex-start;cursor:pointer;font-family:var(--font-sans);user-select:none}
@@ -266,12 +266,12 @@
 .ls-progress__label{font-weight:600;font-stretch:var(--stretch-wide);font-size:var(--text-eyebrow-s);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--text-2)}
 .ls-progress__val{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3)}
 .ls-progress__track{height:6px;background:var(--surface-tint);border:1px solid var(--line-faint);border-radius:var(--radius-pill);overflow:hidden}
-.ls-progress__fill{height:100%;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite;border-radius:var(--radius-pill);transition:width var(--dur-3) var(--ease-out)}
+.ls-progress__fill{height:100%;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite;border-radius:var(--radius-pill);transition:width var(--dur-3) var(--ease-out)}
 .ls-progress--thick .ls-progress__track{height:10px}
 .ls-progress--inverse .ls-progress__label{color:var(--text-inverse-2)}
 .ls-progress--inverse .ls-progress__val{color:var(--text-inverse-3)}
 .ls-progress--inverse .ls-progress__track{background:var(--graphite)}
-.ls-progress--inverse .ls-progress__fill{background:var(--lava);background-size:200% 100%}
+.ls-progress--inverse .ls-progress__fill{background:var(--lava-loop);background-size:200% 100%}
 
 /* — StateBlock — */
 .ls-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px;gap:6px;border:1px dashed var(--line);background:var(--surface-card)}
@@ -281,7 +281,7 @@
 .ls-state__detail{font-size:13px;color:var(--text-2);max-width:38ch}
 .ls-state__act{margin-top:14px}
 .ls-state__bar{width:120px;height:6px;background:var(--surface-tint);border:1px solid var(--line-faint);border-radius:var(--radius-pill);overflow:hidden;margin-bottom:10px}
-.ls-state__bar div{height:100%;width:45%;background:var(--lava);background-size:200% 100%;animation:ls-lava 1.6s linear infinite}
+.ls-state__bar div{height:100%;width:45%;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 1.6s linear infinite}
 .ls-state--error .ls-state__icon{color:var(--danger)}
 .ls-state--offline .ls-state__icon{color:var(--warn)}
 

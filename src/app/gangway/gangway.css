@@ -5,7 +5,7 @@
 .gw-side__wm{position:relative}
 .gw-side__big{font-family:var(--font-display);font-size:clamp(40px,4.5vw,64px);line-height:1.02;color:var(--paper);max-width:14ch;position:relative}
 .gw-side__log{position:relative;display:flex;gap:20px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-inverse-3)}
-.gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite;position:relative}
+.gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite;position:relative}
 .gw-main{padding:48px;display:flex;flex-direction:column;box-sizing:border-box}
 .gw-theme{display:flex;justify-content:flex-end;transform:scale(.82);transform-origin:bottom right;opacity:.55;transition:opacity var(--dur-1) var(--ease-swell)}
 .gw-theme:hover,.gw-theme:focus-within{opacity:1}

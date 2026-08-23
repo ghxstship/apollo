@@ -33,6 +33,7 @@
 --neon-red:#E0503C;
 /* — gold gradients (was lava) — */
 --lava:linear-gradient(120deg,#E3C983,#B98A2F); /* @kind color */
+--lava-loop:linear-gradient(120deg,#E3C983,#B98A2F,#E3C983); /* @kind color */
 --lava-hot:linear-gradient(120deg,#B98A2F,#E3C983); /* @kind color */
 --lava-vert:linear-gradient(180deg,#E3C983,#B98A2F); /* @kind color */
 /* — legacy dark aliases — */
@@ -108,8 +109,8 @@
 --action-primary:var(--paper);
 --action-primary-hover:var(--white);
 --action-on-primary:var(--carbon);
---action-accent:var(--lava); /* @kind color */
---action-accent-hover:var(--lava-hot); /* @kind color */
+--action-accent:var(--lava-loop); /* @kind color */
+--action-accent-hover:linear-gradient(120deg,#B98A2F,#E3C983,#B98A2F); /* @kind color */
 --action-on-accent:var(--void-black);
 --focus:var(--gold-400);
 --ok:#5BAE7E;
@@ -169,9 +170,10 @@
 /* — SUB-BRAND THEME: Sea = Syrius Yacht Club (riviera) — accent swap only — */
 [data-theme="sea"]{
 --lava:linear-gradient(120deg,#6FC5D6,#2E9BB5); /* @kind color */
+--lava-loop:linear-gradient(120deg,#6FC5D6,#2E9BB5,#6FC5D6); /* @kind color */
 --lava-hot:linear-gradient(120deg,#2E9BB5,#6FC5D6); /* @kind color */
---action-accent:linear-gradient(120deg,#6FC5D6,#2E9BB5); /* @kind color */
---action-accent-hover:linear-gradient(120deg,#2E9BB5,#6FC5D6); /* @kind color */
+--action-accent:linear-gradient(120deg,#6FC5D6,#2E9BB5,#6FC5D6); /* @kind color */
+--action-accent-hover:linear-gradient(120deg,#2E9BB5,#6FC5D6,#2E9BB5); /* @kind color */
 --action-on-accent:#0B0E12;
 --focus:#48AEC4;
 --text-link:#48AEC4;
@@ -188,9 +190,10 @@
 /* — SUB-BRAND THEME: Shore = Syrius Dating (neon rose) — accent swap only — */
 [data-theme="shore"]{
 --lava:linear-gradient(120deg,#FF7D95,#FF5C7A); /* @kind color */
+--lava-loop:linear-gradient(120deg,#FF7D95,#FF5C7A,#FF7D95); /* @kind color */
 --lava-hot:linear-gradient(120deg,#FF5C7A,#FF7D95); /* @kind color */
---action-accent:linear-gradient(120deg,#FF7D95,#FF5C7A); /* @kind color */
---action-accent-hover:linear-gradient(120deg,#FF5C7A,#FF7D95); /* @kind color */
+--action-accent:linear-gradient(120deg,#FF7D95,#FF5C7A,#FF7D95); /* @kind color */
+--action-accent-hover:linear-gradient(120deg,#FF5C7A,#FF7D95,#FF5C7A); /* @kind color */
 --action-on-accent:#0B0E12;
 --focus:#FF7D95;
 --text-link:#FF7D95;
@@ -207,9 +210,10 @@
 /* — SUB-BRAND THEME: Sky = umbrella gold (marquee occasions) — */
 [data-theme="sky"]{
 --lava:linear-gradient(120deg,#E3C983,#B98A2F); /* @kind color */
+--lava-loop:linear-gradient(120deg,#E3C983,#B98A2F,#E3C983); /* @kind color */
 --lava-hot:linear-gradient(120deg,#B98A2F,#E3C983); /* @kind color */
---action-accent:linear-gradient(120deg,#E3C983,#B98A2F); /* @kind color */
---action-accent-hover:linear-gradient(120deg,#B98A2F,#E3C983); /* @kind color */
+--action-accent:linear-gradient(120deg,#E3C983,#B98A2F,#E3C983); /* @kind color */
+--action-accent-hover:linear-gradient(120deg,#B98A2F,#E3C983,#B98A2F); /* @kind color */
 --action-on-accent:#0B0E12;
 --focus:#D3B15E;
 --text-link:#D3B15E;

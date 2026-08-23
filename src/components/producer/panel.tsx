@@ -6,7 +6,7 @@
 import React from "react";
 import Link from "next/link";
 import { Button, Icon, IconButton } from "@/components/ds";
-import { knots, SURFACES } from "@/lib/brand";
+import { knots, MAILBOX, SURFACES } from "@/lib/brand";
 import { logDateTime, price } from "@/lib/format";
 import {
   producerBalance,
@@ -28,7 +28,7 @@ type Msg =
   | { kind: "user"; text: string }
   | { kind: "card"; title: string; meta: string; confirm: string; action: CardAction };
 
-const SHORE = "shore@lyresocial.com";
+const SHORE = MAILBOX.shore;
 
 const QUICK = [
   ["berth", "Next pass"],

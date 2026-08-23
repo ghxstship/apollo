@@ -382,12 +382,31 @@ async function commerceRules(p) {
   const prod = await reg.get("products?select=id,price_cents&active=eq.true&limit=1");
   note("regional", "the Chandlery shelf is readable", (prod.data || []).length > 0, JSON.stringify(prod.status));
 
-  // An order belongs to whoever placed it, and its total is not theirs to set.
-  const order = await reg.post("shop_orders", { profile_id: uid(p.regional), total_cents: 22000 });
-  const oid = order.data?.[0]?.id;
-  note("regional", "may place an order", order.status < 400, `got ${order.status}`);
+  /* An order is priced by the database, never by the member. The raw INSERT is
+     closed: it once let a member set their own total — and a discount larger
+     than the total posted a CREDIT, minting house money out of nothing. */
+  const raw = await reg.post("shop_orders", { profile_id: uid(p.regional), total_cents: 22000 });
+  note("regional", "cannot write an order row directly", raw.status >= 400, `got ${raw.status}`);
+
+  const mint = await reg.post("shop_orders", {
+    profile_id: uid(p.regional), total_cents: 1, discount_cents: 100000,
+  });
+  note("regional", "cannot mint credit with a discount", mint.status >= 400, `got ${mint.status}`);
+
+  const placed = await reg.rpc("place_shop_order", {
+    p_lines: [{ productId: prod.data?.[0]?.id, qty: 2, size: null }],
+  });
+  note("regional", "may place an order", placed.status < 400, `got ${placed.status} ${JSON.stringify(placed.data).slice(0, 120)}`);
+  const oid = typeof placed.data === "string" ? placed.data : null;
 
   if (oid) {
+    const priced = await reg.get(`shop_orders?id=eq.${oid}&select=total_cents,status`);
+    const want = (prod.data?.[0]?.price_cents ?? 0) * 2;
+    note("regional", "the database priced the crate", priced.data?.[0]?.total_cents === want,
+      `${priced.data?.[0]?.total_cents} vs ${want}`);
+    note("regional", "a fresh order is placed, not fulfilled", priced.data?.[0]?.status === "placed",
+      String(priced.data?.[0]?.status));
+
     const forOther = await reg.post("shop_orders", { profile_id: uid(p.global), total_cents: 22000 });
     note("regional", "cannot order on another member's account", forOther.status >= 400, `got ${forOther.status}`);
 
@@ -1223,9 +1242,18 @@ async function parityRules(p) {
   note("anon", "code checking is closed to anon", anonCode.status >= 400, `got ${anonCode.status}`);
 
   // --- Per-guest credentials are generated, not hand-written ---
-  const guests = await glo.get("rsvp_guests?select=name,boarding_code&limit=3");
-  const coded = (guests.data || []).every((g) => /^LS-/.test(g.boarding_code || ""));
-  note("global", "guests carry their own codes", (guests.data || []).length > 0 && coded, JSON.stringify(guests.data).slice(0, 120));
+  /* Codes the system minted — fixtures with hand-written codes are not the
+     subject here, and one of them is undeletable by design (it signed). */
+  const guests = await stf.get(
+    "rsvp_guests?select=name,boarding_code&boarding_code=not.is.null&name=not.like.E2E*&limit=3"
+  );
+  const coded = (guests.data || []).every((g) => /^SYR-/.test(g.boarding_code || ""));
+  note("staff", "guests carry their own codes", (guests.data || []).length > 0 && coded, JSON.stringify(guests.data).slice(0, 120));
+
+  /* A guest's sign_token is a bearer credential — it opens and signs that
+     guest's waiver — so it belongs to the host and the Bridge, nobody else. */
+  const nosy = await glo.get("rsvp_guests?select=id,sign_token&limit=5");
+  note("global", "another member's guests are not yours to read", (nosy.data || []).length === 0, JSON.stringify(nosy.data).slice(0, 120));
 
   // --- Waitlist position is visible and ordered ---
   const wl = await glo.get("waitlist_position?select=position&limit=1");
@@ -1304,7 +1332,7 @@ async function businessRules(p) {
   const natLedger = await nat.get(`account_ledger?voyage_id=eq.${vid}&kind=eq.berth&select=delta_cents`);
   note("national", "berth charge posts to house account", natLedger.data?.[0]?.delta_cents === -1000, JSON.stringify(natLedger.data));
   const natCode = await nat.get(`rsvps?voyage_id=eq.${vid}&profile_id=eq.${uid(p.national)}&select=boarding_code`);
-  note("national", "boarding code issued", /^LS-/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
+  note("national", "boarding code issued", /^SYR-/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
 
   // Capacity: global bounced to full manifest
   const gloTry = await glo.post("rsvps", { voyage_id: vid, profile_id: uid(p.global), status: "aboard" });

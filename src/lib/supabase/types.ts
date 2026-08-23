@@ -467,6 +467,21 @@ export type Database = {
         }>
       }
       settle_contest: { Args: { p_contest_id: string }; Returns: number }
+      place_shop_order: { Args: { p_lines: Json }; Returns: string }
+      set_own_standing: { Args: { p_status: string }; Returns: null }
+      shared_voyages: { Args: { p_other: string }; Returns: Array<{ voyage_id: string }> }
+      adjust_knots: {
+        Args: { p_profile: string; p_delta: number; p_reason: string }
+        Returns: null
+      }
+      notify_member: {
+        Args: { p_profile: string; p_kind: string; p_title: string; p_body: string }
+        Returns: string
+      }
+      queue_email: {
+        Args: { p_to: string; p_template: string; p_payload?: Json }
+        Returns: string
+      }
       season_card: {
         Args: { p_profile_id: string; p_from: string; p_to: string }
         Returns: Array<{

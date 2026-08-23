@@ -66,11 +66,9 @@ export default async function MemberPage({
         .eq("profile_id", user.id)
         .eq("other_id", member.id)
         .maybeSingle(),
-      supabase
-        .from("rsvps")
-        .select("voyage_id,profile_id")
-        .in("profile_id", [user.id, member.id])
-        .eq("status", "aboard"),
+      /* A pass row is its owner's; the shared list comes from a definer that
+         answers only "which voyages were you both on". */
+      supabase.rpc("shared_voyages", { p_other: member.id }),
       supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
     ]);
 
@@ -87,12 +85,9 @@ export default async function MemberPage({
   let both: SharedVoyage[] = [];
   if (!own) {
     const rows = rsvpsRes.data ?? [];
-    const mine = new Set(rows.filter((r) => r.profile_id === user.id).map((r) => r.voyage_id));
     const bothIds = Array.from(
       new Set(
-        rows
-          .filter((r) => r.profile_id === member.id && mine.has(r.voyage_id))
-          .map((r) => r.voyage_id)
+        rows.map((r) => r.voyage_id)
       )
     );
     if (bothIds.length) {

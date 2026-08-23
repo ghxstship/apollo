@@ -51,6 +51,7 @@ export type MemberDetail = {
   knotsRecent: Array<{ id: string; reason: string; delta: number; when: string }>;
   passes: Array<{ id: string; title: string; when: string; status: string }>;
   balanceCents: number;
+  status: string;
 };
 
 /* Pulled on row click rather than shipped with every row — fourteen members
@@ -146,6 +147,59 @@ export async function loadMember(
         status: r.status,
       })),
       balanceCents: accountRes.data?.balance_cents ?? 0,
+      status: profile.status ?? "active",
     },
   };
+}
+
+/* — The two corrections the Bridge actually makes on a member record. Both go
+     through definer RPCs or the staff-correction policy; neither is reachable
+     from a member's own session. — */
+
+export async function setMemberStatus(
+  profileId: string,
+  status: "active" | "paused"
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const { error } = await supabase.from("profiles").update({ status }).eq("id", profileId);
+  if (error) return { error: ERR_LAND };
+
+  /* A hold is not a silent thing — the member is told, in the same motion. */
+  const { error: wordError } = await supabase.rpc("notify_member", {
+    p_profile: profileId,
+    p_kind: "word",
+    p_title: status === "paused" ? "Your membership is on hold." : "Your membership is running again.",
+    p_body:
+      status === "paused"
+        ? "Your log and your ledger stay open. Booking, posting and contests wait until the hold lifts."
+        : "Everything opens back up. The water keeps.",
+  });
+  if (wordError) return { error: "Status moved, but the member was not told." };
+
+  revalidatePath("/bridge/members");
+  return {};
+}
+
+export async function adjustKnots(
+  profileId: string,
+  delta: number,
+  reason: string
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const line = reason.trim();
+  if (!line) return { error: "The ledger never writes without a reason." };
+  if (!Number.isInteger(delta) || delta === 0) return { error: "A zero adjustment is not an entry." };
+
+  const { error } = await supabase.rpc("adjust_knots", {
+    p_profile: profileId,
+    p_delta: delta,
+    p_reason: line,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/bridge/members");
+  return {};
 }

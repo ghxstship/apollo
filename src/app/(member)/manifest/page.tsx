@@ -202,6 +202,17 @@ export default async function VoyagesPage() {
     : null;
   const earlyDays = plan?.early_days ?? 0;
 
+  /* The class ceiling is the second gate, and it used to be invisible: an
+     odyssey sailing looked claimable to everyone and the guard refused it at
+     submit ("this sailing runs past your class tier"). A pass you cannot claim
+     should read as locked, not as an invitation. */
+  const CLASS_RANK: Record<string, number> = {
+    excursion: 0, voyage: 0, overland: 1, expedition: 1, trek: 2, odyssey: 2,
+  };
+  const myCeiling = CLASS_RANK[plan?.class_ceiling ?? "voyage"] ?? 0;
+  const pastMyClass = (v: { sub_class: string | null }) =>
+    v.sub_class ? (CLASS_RANK[v.sub_class] ?? 0) > myCeiling : false;
+
   const myRank = TIER_RANK[profile?.tier ?? "regional"] ?? 0;
 
   /* Split draws are written shoreside — offered only when the club can. */
@@ -216,6 +227,7 @@ export default async function VoyagesPage() {
       return (
         v.status === "scheduled" &&
         (TIER_RANK[v.min_tier] ?? 0) <= myRank &&
+        !pastMyClass(v) &&
         left > 0 &&
         nowMs >= new Date(v.starts_at).getTime() - earlyDays * 86400000 &&
         (!r || r.status === "not_going")
@@ -229,7 +241,7 @@ export default async function VoyagesPage() {
         Voyages.
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
-        Passes are few by design. Claim one, bring up to two guests, or hold the
+        Passes are few by design. Claim one{profile?.tier === "global" ? ", bring up to two guests," : ""} or hold the
         waitlist — releases go out in order.
       </p>
       {passMeter ? (
@@ -256,7 +268,8 @@ export default async function VoyagesPage() {
             const left = cap?.berths_left ?? v.berths_total;
             const aboard = cap?.aboard ?? 0;
             const r = mine.get(v.id) ?? null;
-            const locked = (TIER_RANK[v.min_tier] ?? 0) > myRank;
+            const overClass = pastMyClass(v);
+            const locked = (TIER_RANK[v.min_tier] ?? 0) > myRank || overClass;
             /* Booking window: opens early_days ahead of departure, per plan. */
             const start = new Date(v.starts_at);
             const opensMs = start.getTime() - earlyDays * 86400000;
@@ -305,8 +318,13 @@ export default async function VoyagesPage() {
                       guestNames={r?.guest_names ?? []}
                       passesLeft={left}
                       weatherHold={v.status === "weather_hold"}
+                      guestsAllowed={profile?.tier === "global"}
                       locked={locked}
-                      lockedNote={`${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.`}
+                      lockedNote={
+                        overClass
+                          ? `This sailing runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`
+                          : `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.`
+                      }
                       windowNote={windowNote}
                       recommended={v.id === recommendedId}
                       priceCents={v.price_cents}

@@ -27,13 +27,17 @@ export async function removeAndNotify(
     .eq("id", flagId);
   if (flagError) return { error: ERR_LAND };
 
+  /* notifications is definer-write only, so the word goes through the Bridge's
+     RPC — and its failure is surfaced, not swallowed. Telling the author is the
+     point of this action; if it cannot be done, the post stays up. */
   if (authorId) {
-    await supabase.from("notifications").insert({
-      profile_id: authorId,
-      kind: "word",
-      title: "Removed from the Open Deck",
-      body: line,
+    const { error: wordError } = await supabase.rpc("notify_member", {
+      p_profile: authorId,
+      p_kind: "word",
+      p_title: "Removed from the Open Deck",
+      p_body: line,
     });
+    if (wordError) return { error: "The author could not be told, so the post stands." };
   }
 
   const { error: deleteError } = await supabase.from("wardroom_posts").delete().eq("id", postId);

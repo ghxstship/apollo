@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { voice } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 import { BIO_MAX, INTERESTS } from "./interests";
 
@@ -94,8 +95,10 @@ async function setStatus(status: "active" | "paused" | "departed"): Promise<Stat
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  const { error } = await supabase.from("profiles").update({ status }).eq("id", user.id);
-  if (error) return { error: "That didn't land. Try again." };
+  /* Standing does not move by hand — the profile guard refuses a raw update.
+     set_own_standing is the one door, and it only opens for your own row. */
+  const { error } = await supabase.rpc("set_own_standing", { p_status: status });
+  if (error) return { error: voice(error) };
   return {};
 }
 

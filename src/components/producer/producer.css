@@ -1,14 +1,14 @@
 /* The Producer — launcher pill + confirm-first panel. Ported from the design
    system's agent kit; deterministic member v1. */
 
-.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:900;display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite}
+.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:900;display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite}
 .pr-fab span{display:inline-flex;align-items:center;gap:8px;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:12px 20px;font:600 10.5px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.16em;text-transform:uppercase}
 .pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:950;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--line);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column}
 .pr-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-faint)}
 .pr-head b{font-family:var(--font-display);font-weight:400;font-size:17px}
 .pr-head span{font-family:var(--font-mono);font-size:8.5px;letter-spacing:var(--track-data);color:var(--text-3)}
-.pr-seam{height:3px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite;flex:none}
+.pr-seam{height:3px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite;flex:none}
 .pr-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .pr-msg{max-width:85%;padding:10px 14px;font-size:13.5px;line-height:1.5}
 .pr-msg--user{align-self:flex-end;background:var(--action-primary);color:var(--action-on-primary)}
@@ -17,7 +17,7 @@
 .pr-msg--bot a:hover{text-decoration:underline}
 .pr-msg--sys{align-self:center;font-family:var(--font-mono);font-size:9.5px;letter-spacing:var(--track-data);color:var(--text-3);background:none;padding:2px;text-align:center}
 .pr-card{align-self:flex-start;width:100%;border:1px solid var(--line);background:var(--surface-page)}
-.pr-card__seam{height:4px;background:var(--lava);background-size:200% 100%;animation:ls-lava 6s linear infinite}
+.pr-card__seam{height:4px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite}
 .pr-card__in{padding:14px 16px}
 .pr-card__t{font-family:var(--font-display);font-size:17px}
 .pr-card__m{font-family:var(--font-mono);font-size:9.5px;letter-spacing:var(--track-data);color:var(--text-3);margin-top:6px}

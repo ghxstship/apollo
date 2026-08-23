@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { voice } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type OpenDeckResult = { error?: string };
@@ -26,7 +27,7 @@ export async function createPost(
   const { error } = await supabase
     .from("wardroom_posts")
     .insert({ author_id: userId, body, voyage_id: voyageId || null });
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: voice(error) };
   revalidatePath("/open-deck");
   return {};
 }
@@ -43,7 +44,7 @@ export async function toggleHail(postId: string, hailed: boolean): Promise<OpenD
     : await supabase
         .from("wardroom_hails")
         .insert({ post_id: postId, profile_id: userId });
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: voice(error) };
   revalidatePath("/open-deck");
   return {};
 }
@@ -57,7 +58,7 @@ export async function addComment(postId: string, body: string): Promise<OpenDeck
   const { error } = await supabase
     .from("wardroom_comments")
     .insert({ post_id: postId, author_id: userId, body: text });
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: voice(error) };
   revalidatePath("/open-deck");
   return {};
 }
@@ -78,7 +79,7 @@ export async function flagPost(
     flagger_id: userId,
     reason: trimmed ? `${reason} — ${trimmed}` : reason,
   });
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: voice(error) };
   return {};
 }
 
@@ -90,7 +91,7 @@ export async function deletePost(postId: string): Promise<OpenDeckResult> {
     .delete()
     .eq("id", postId)
     .eq("author_id", userId);
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: voice(error) };
   revalidatePath("/open-deck");
   return {};
 }

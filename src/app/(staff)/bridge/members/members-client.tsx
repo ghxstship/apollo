@@ -6,7 +6,15 @@ import { Badge, Button, Checkbox, Dialog, Input, Select, StateBlock, Table, Toas
 import { LEAGUES, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
-import { loadMember, removeSegment, saveSegment, type MemberDetail, type SegmentFilters } from "./actions";
+import {
+  adjustKnots,
+  loadMember,
+  removeSegment,
+  saveSegment,
+  setMemberStatus,
+  type MemberDetail,
+  type SegmentFilters,
+} from "./actions";
 
 export type MemberRow = {
   id: string;
@@ -112,6 +120,10 @@ export function MembersClient({
   const [openRow, setOpenRow] = React.useState<MemberRow | null>(null);
   const [detail, setDetail] = React.useState<MemberDetail | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [holding, setHolding] = React.useState(false);
+  const [adjusting, setAdjusting] = React.useState(false);
+  const [knotDelta, setKnotDelta] = React.useState("");
+  const [knotReason, setKnotReason] = React.useState("");
 
   const set = <K extends keyof SegmentFilters>(key: K, value: SegmentFilters[K]) => {
     setF((prev) => ({ ...prev, [key]: value }));
@@ -443,6 +455,17 @@ export function MembersClient({
               )}
             </div>
             <div className="hm-acts">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={() => setHolding(true)}
+              >
+                {detail.status === "paused" ? "Lift the hold" : "Place on hold"}
+              </Button>
+              <Button size="sm" variant="outline" disabled={pending} onClick={() => setAdjusting(true)}>
+                Correct knots
+              </Button>
               <Link className="ls-btn ls-btn--outline ls-btn--sm" href="/bridge/manifests">
                 Manifests
               </Link>
@@ -455,6 +478,104 @@ export function MembersClient({
             </div>
           </div>
         )}
+      </Dialog>
+
+      <Dialog
+        open={holding}
+        onClose={() => setHolding(false)}
+        width={420}
+        eyebrow={detail ? detail.name : ""}
+        title={detail?.status === "paused" ? "Lift the hold?" : "Place this membership on hold?"}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setHolding(false)}>
+              Not now
+            </Button>
+            <Button
+              variant="gold"
+              disabled={pending}
+              onClick={() => {
+                const row = openRow;
+                const next = detail?.status === "paused" ? "active" : "paused";
+                if (!row) return;
+                setHolding(false);
+                startTransition(async () => {
+                  const res = await setMemberStatus(row.id, next);
+                  if (res.error) show({ msg: res.error, tone: "danger" });
+                  else {
+                    setDetail((d) => (d ? { ...d, status: next } : d));
+                    show({
+                      msg: next === "paused" ? "On hold. The member has the word." : "Running again.",
+                      meta: `${row.name.toUpperCase()} · ${next === "paused" ? "HELD" : "ACTIVE"}`,
+                      tone: next === "paused" ? "caution" : "positive",
+                    });
+                  }
+                });
+              }}
+            >
+              {detail?.status === "paused" ? "Lift it" : "Hold it"}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13, lineHeight: 1.6 }}>
+          {detail?.status === "paused"
+            ? "Booking, posting and contests open back up, and the member is told."
+            : "Their log and ledger stay open; booking, posting and contests stop until the hold lifts. The member is told, with no guessing."}
+        </p>
+      </Dialog>
+
+      <Dialog
+        open={adjusting}
+        onClose={() => setAdjusting(false)}
+        width={420}
+        eyebrow={detail ? detail.name : ""}
+        title="Correct the knots ledger"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setAdjusting(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="gold"
+              disabled={pending}
+              onClick={() => {
+                const row = openRow;
+                if (!row) return;
+                const delta = Number(knotDelta);
+                startTransition(async () => {
+                  const res = await adjustKnots(row.id, delta, knotReason);
+                  if (res.error) {
+                    show({ msg: res.error, tone: "danger" });
+                    return;
+                  }
+                  setAdjusting(false);
+                  setKnotDelta("");
+                  setKnotReason("");
+                  show({ msg: "Posted to the ledger.", meta: `${row.name.toUpperCase()} · CORRECTED` });
+                });
+              }}
+            >
+              Post it
+            </Button>
+          </>
+        }
+      >
+        <div className="hm-form">
+          <Input
+            label="Knots"
+            type="number"
+            hint="Negative claws back. Never zero."
+            value={knotDelta}
+            onChange={(e) => setKnotDelta(e.target.value)}
+          />
+          <Input
+            label="Reason"
+            hint="The member reads this on their ledger."
+            value={knotReason}
+            onChange={(e) => setKnotReason(e.target.value)}
+          />
+        </div>
       </Dialog>
 
       {toast ? (

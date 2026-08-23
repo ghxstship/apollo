@@ -69,12 +69,18 @@ export async function refundShopOrder(orderId: string): Promise<ActionResult> {
   });
   if (ledgerError) return { error: ERR_LAND };
 
+  /* email_outbox is definer-write only. The credit has already posted, so a
+     receipt that fails to queue must not fail the refund — it is reported
+     instead, and the member's ledger still shows the money back. */
   if (member?.email) {
-    await supabase.from("email_outbox").insert({
-      to_email: member.email,
-      template: "refund-posted",
-      payload: { name: member.full_name ?? "sailor", amount: price(order.total_cents) },
+    const { error: receiptError } = await supabase.rpc("queue_email", {
+      p_to: member.email,
+      p_template: "refund-posted",
+      p_payload: { name: member.full_name ?? "sailor", amount: price(order.total_cents) },
     });
+    if (receiptError) {
+      return { error: "Refunded and credited, but the receipt did not queue." };
+    }
   }
 
   return done();
