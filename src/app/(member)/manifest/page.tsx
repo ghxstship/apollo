@@ -9,7 +9,7 @@ import { TransferInbox, type IncomingOffer } from "./transfer-inbox";
 export const metadata: Metadata = { title: "Voyages" };
 
 export default async function VoyagesPage() {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, onHold } = await getMember();
   const now = new Date();
   const nowIso = now.toISOString();
   const nowMs = now.getTime();
@@ -269,13 +269,13 @@ export default async function VoyagesPage() {
             const aboard = cap?.aboard ?? 0;
             const r = mine.get(v.id) ?? null;
             const overClass = pastMyClass(v);
-            const locked = (TIER_RANK[v.min_tier] ?? 0) > myRank || overClass;
+            const locked = (TIER_RANK[v.min_tier] ?? 0) > myRank || overClass || onHold;
             /* Booking window: opens early_days ahead of departure, per plan. */
             const start = new Date(v.starts_at);
             const opensMs = start.getTime() - earlyDays * 86400000;
             const windowNote =
               nowMs < opensMs
-                ? `THE WINDOW OPENS ${logDate(new Date(opensMs).toISOString())} FOR YOUR TIER`
+                ? `THE WINDOW OPENS ${logDate(new Date(opensMs).toISOString())} ON YOUR PLAN`
                 : null;
             /* Add-on upsell stays open until 18:00 the night before. */
             const addonCutoff = new Date(
@@ -321,9 +321,11 @@ export default async function VoyagesPage() {
                       guestsAllowed={profile?.tier === "global"}
                       locked={locked}
                       lockedNote={
-                        overClass
-                          ? `This sailing runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`
-                          : `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.`
+                        onHold
+                          ? "Your membership is on hold. Resume it on your page to claim a pass."
+                          : overClass
+                            ? `This sailing runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`
+                            : `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.`
                       }
                       windowNote={windowNote}
                       recommended={v.id === recommendedId}

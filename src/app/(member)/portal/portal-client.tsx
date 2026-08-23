@@ -89,10 +89,13 @@ export function KnotsPanel({
   balance,
   entries,
   rewards,
+  onHold = false,
 }: {
   balance: number;
   entries: LedgerEntry[];
   rewards: (LedgerReward & { id: string })[];
+  /* A held membership keeps its ledger and reads it; spending waits. */
+  onHold?: boolean;
 }) {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -104,7 +107,7 @@ export function KnotsPanel({
         balance={balance}
         entries={entries}
         rewards={rewards}
-        onRedeem={(r) => {
+        onRedeem={onHold ? undefined : (r) => {
           if (pending) return;
           setError(null);
           startTransition(async () => {

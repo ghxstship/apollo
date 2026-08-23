@@ -32,7 +32,7 @@ export default async function PortalPage({
 }: {
   searchParams: Promise<{ settled?: string }>;
 }) {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, onHold } = await getMember();
   const { settled } = await searchParams;
 
   const [balanceRes, ledgerRes, rewardsRes, redemptionsRes, inviteRes, accountRes, accountBalRes, leagueRes] =
@@ -182,6 +182,7 @@ export default async function PortalPage({
         ) : (
           <div className="ptl-panel">
             <KnotsPanel
+              onHold={onHold}
               balance={balance}
               entries={entries}
               rewards={rewards.map((r) => ({

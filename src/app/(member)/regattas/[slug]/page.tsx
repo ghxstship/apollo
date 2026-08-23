@@ -33,7 +33,7 @@ export default async function ContestPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { supabase, user } = await getMember();
+  const { supabase, user, onHold } = await getMember();
 
   const { data: contest } = await supabase
     .from("contests")
@@ -121,7 +121,12 @@ export default async function ContestPage({
         <p style={{ marginTop: 14, fontSize: 13, color: "var(--text-2)" }}>{contest.prize}</p>
       ) : null}
 
-      {open && !closed ? (
+      {open && !closed && onHold ? (
+        <p style={{ marginTop: 22, fontSize: 13, color: "var(--text-2)" }}>
+          Entries wait while your membership is on hold. Resume it on your page
+          and this contest opens back up.
+        </p>
+      ) : open && !closed ? (
         <div style={{ marginTop: 22 }}>
           <form action={entered ? withdrawFromContest : enterContest}>
             <input type="hidden" name="contest" value={contest.id} />

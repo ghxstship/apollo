@@ -13,7 +13,8 @@ export type TriggerEvent =
 export type RuleConditions = { tier?: string; harbor?: string; class?: string };
 export type RuleAction =
   | { kind: "notify"; title: string; body: string }
-  | { kind: "email"; template: string };
+  | { kind: "email"; template: string }
+  | { kind: "sms"; template: string };
 
 export type NewRule = {
   name: string;
@@ -37,6 +38,19 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
     return { error: "A word needs a title." };
   if (rule.action.kind === "email" && !rule.action.template.trim())
     return { error: "Name the email template." };
+  /* A text is template-only at the provider, so a rule may only name one we
+     have actually registered — otherwise it queues a message that bounces. */
+  if (rule.action.kind === "sms") {
+    const code = rule.action.template.trim();
+    if (!code) return { error: "Pick a text template." };
+    const { data: known } = await supabase
+      .from("sms_templates")
+      .select("code")
+      .eq("code", code)
+      .eq("active", true)
+      .maybeSingle();
+    if (!known) return { error: "That text template is not registered." };
+  }
 
   const { error } = await supabase.from("automations").insert({
     name,

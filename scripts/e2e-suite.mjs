@@ -1080,6 +1080,13 @@ async function routeMatrix(personas) {
           const visible = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<![^>]*>/g, "").replace(/<[^>]+>/g, " ");
           const shouts = (visible.match(/!/g) || []).length;
           note(name, `${r.path} never shouts`, shouts === 0, shouts ? `${shouts} exclamation` : "");
+          /* The producer voice carries no emoji. The audit only sees public
+             pages, so the member surface is checked here — with the kit's own
+             text glyphs (⚐ ⚑ Hail, ✓ reached) carved out of the range. */
+          const emoji = visible.match(
+            /[\u{1F300}-\u{1FAFF}\u{2600}-\u{268F}\u{2692}-\u{2712}\u{2714}-\u{27BF}\u{FE0F}]/u
+          );
+          note(name, `${r.path} carries no emoji`, !emoji, emoji ? `found ${emoji[0]}` : "");
         }
       }
     }

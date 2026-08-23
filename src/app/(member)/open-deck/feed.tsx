@@ -36,10 +36,14 @@ export type VoyageOption = { id: string; title: string };
    "Post to the deck". The confession-booth motif lives here, in the voice. */
 export function Composer({
   voyages,
+  onHold = false,
 }: {
   authorName: string;
   tone: string;
   voyages: VoyageOption[];
+  /* A held membership cannot post; the deck says so rather than taking the
+     words and refusing them at the door. */
+  onHold?: boolean;
 }) {
   const formRef = React.useRef<HTMLFormElement>(null);
   const [attaching, setAttaching] = React.useState(false);
@@ -54,6 +58,24 @@ export function Composer({
     },
     {}
   );
+
+  if (onHold) {
+    return (
+      <div
+        style={{
+          background: "var(--surface-card)",
+          border: "1px solid var(--line-faint)",
+          borderRadius: "var(--radius-md)",
+          padding: "16px 18px",
+          fontSize: 13,
+          color: "var(--text-2)",
+        }}
+      >
+        The deck is closed while your membership is on hold. Resume it on your
+        page and the composer opens back up.
+      </div>
+    );
+  }
 
   return (
     <form

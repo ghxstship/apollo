@@ -26,6 +26,8 @@ function readAction(raw: unknown): RuleAction {
     const o = raw as Record<string, unknown>;
     if (o.kind === "email")
       return { kind: "email", template: typeof o.template === "string" ? o.template : "" };
+    if (o.kind === "sms")
+      return { kind: "sms", template: typeof o.template === "string" ? o.template : "" };
     return {
       kind: "notify",
       title: typeof o.title === "string" ? o.title : "",
@@ -38,9 +40,10 @@ function readAction(raw: unknown): RuleAction {
 export default async function AutomationsPage() {
   const { supabase } = await getOperator();
 
-  const [rulesRes, harborsRes] = await Promise.all([
+  const [rulesRes, harborsRes, smsRes] = await Promise.all([
     supabase.from("automations").select("*").order("created_at", { ascending: false }),
     supabase.from("harbors").select("slug, name").order("position", { ascending: true }),
+    supabase.from("sms_templates").select("code").eq("active", true).order("code"),
   ]);
 
   const rows: RuleRow[] = (rulesRes.data ?? []).map((a) => ({
@@ -68,7 +71,11 @@ export default async function AutomationsPage() {
         When something happens on the water, and the member matches, send the word. Write the rule
         once; it holds for the season.
       </p>
-      <AutomationsClient rows={rows} harbors={harbors} />
+      <AutomationsClient
+        rows={rows}
+        harbors={harbors}
+        smsTemplates={(smsRes.data ?? []).map((t) => t.code)}
+      />
     </div>
   );
 }

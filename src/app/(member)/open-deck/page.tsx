@@ -16,7 +16,7 @@ function toneOf(p: Profile | undefined | null): "ink" | "sea" | "gold" | "sand" 
 }
 
 export default async function OpenDeckPage() {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, onHold } = await getMember();
 
   const [postsRes, hailsRes, commentsRes, voyagesRes] = await Promise.all([
     supabase.from("wardroom_posts").select("*").order("created_at", { ascending: false }),
@@ -102,6 +102,7 @@ export default async function OpenDeckPage() {
         authorName={profile?.full_name ?? "You"}
         tone={toneOf(profile)}
         voyages={taggable}
+        onHold={onHold}
       />
       <FeedList posts={feed} />
     </div>

@@ -114,7 +114,7 @@ function checkHtml(route, html) {
     .replace(/<[^>]+>/g, " ");
   const shouts = (visible.match(/!/g) || []).length;
   note(route, "the producer never shouts", shouts === 0, shouts ? `${shouts} exclamation mark(s) in visible text` : "");
-  const emoji = visible.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{268F}\u{2692}-\u{27BF}\u{FE0F}]/u /* U+2690/1 ⚐⚑ are the kit's Hail glyphs, not emoji */);
+  const emoji = visible.match(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{268F}\u{2692}-\u{2712}\u{2714}-\u{27BF}\u{FE0F}]/u /* U+2690/1 ⚐⚑ are the kit's Hail glyphs, not emoji */);
   note(route, "no emoji", !emoji, emoji ? `found ${emoji[0]}` : "");
 }
 

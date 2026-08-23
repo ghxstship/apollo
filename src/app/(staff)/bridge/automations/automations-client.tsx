@@ -52,15 +52,21 @@ function conditionLine(c: RuleConditions, harborLabel: (slug: string) => string)
 }
 
 function actionLine(a: RuleAction): string {
-  return a.kind === "email" ? `Email — ${a.template}` : `Send the word — ${a.title}`;
+  if (a.kind === "email") return `Email — ${a.template}`;
+  if (a.kind === "sms") return `Text — ${a.template}`;
+  return `Send the word — ${a.title}`;
 }
 
 export function AutomationsClient({
   rows,
   harbors,
+  smsTemplates,
 }: {
   rows: RuleRow[];
   harbors: Array<{ slug: string; label: string }>;
+  /* Texts are template-only at the provider; the rule picks from what is
+     registered rather than typing a code that will bounce on send. */
+  smsTemplates: string[];
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -71,7 +77,7 @@ export function AutomationsClient({
   const [tier, setTier] = React.useState("");
   const [harbor, setHarbor] = React.useState("");
   const [klass, setKlass] = React.useState("");
-  const [actionKind, setActionKind] = React.useState<"notify" | "email">("notify");
+  const [actionKind, setActionKind] = React.useState<"notify" | "email" | "sms">("notify");
   const [title, setTitle] = React.useState("");
   const [body, setBody] = React.useState("");
   const [template, setTemplate] = React.useState("");
@@ -151,7 +157,9 @@ export function AutomationsClient({
                 const action: RuleAction =
                   actionKind === "email"
                     ? { kind: "email", template: template.trim() }
-                    : { kind: "notify", title: title.trim(), body: body.trim() };
+                    : actionKind === "sms"
+                      ? { kind: "sms", template: template.trim() }
+                      : { kind: "notify", title: title.trim(), body: body.trim() };
                 const rule = {
                   name,
                   trigger,
@@ -223,10 +231,14 @@ export function AutomationsClient({
           <Select
             label="Then"
             value={actionKind}
-            onChange={(e) => setActionKind(e.target.value as "notify" | "email")}
+            onChange={(e) => {
+              setActionKind(e.target.value as "notify" | "email" | "sms");
+              setTemplate("");
+            }}
             options={[
               { value: "notify", label: "Send the word" },
               { value: "email", label: "Send an email" },
+              { value: "sms", label: "Send a text" },
             ]}
           />
           {actionKind === "notify" ? (
@@ -245,6 +257,15 @@ export function AutomationsClient({
                 onChange={(e) => setBody(e.target.value)}
               />
             </>
+          ) : actionKind === "sms" ? (
+            <Select
+              label="Text template"
+              hint="Only registered templates send; the provider takes no ad-hoc text."
+              placeholder="Pick a template"
+              value={template}
+              onChange={(e) => setTemplate(e.target.value)}
+              options={smsTemplates.map((c) => ({ value: c, label: c }))}
+            />
           ) : (
             <Input
               label="Template key"
