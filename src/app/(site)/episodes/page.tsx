@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/episodes" },
   title: "Episodes",
   description: "The ship's log, published. What sails, what gathers, where to be at golden hour.",
 };

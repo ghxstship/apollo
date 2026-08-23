@@ -3,6 +3,7 @@ import { SectionHeader } from "@/components/site/section-header";
 import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/crew" },
   title: "Crew wanted",
   description: "Work the water. Small crew, high standard, good light.",
 };

@@ -5,6 +5,7 @@ import { logDate, roman } from "@/lib/format";
 import { frameGroups } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/gallery" },
   title: "Gallery",
   description: "The season in frames — shot by members, credited by name, never staged.",
 };

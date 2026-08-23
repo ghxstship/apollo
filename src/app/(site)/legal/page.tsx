@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/legal" },
   title: "The fine print",
   description: "Code of conduct, terms of passage, and privacy — short, honest, binding.",
 };

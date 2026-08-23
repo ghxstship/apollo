@@ -73,6 +73,7 @@ export async function generateMetadata({
     .eq("slug", slug)
     .maybeSingle();
   return {
+    alternates: { canonical: `/charters/${slug}` },
     title: voyage?.title ?? "Voyages",
     description: voyage?.blurb ?? undefined,
   };

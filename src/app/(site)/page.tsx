@@ -15,6 +15,7 @@ import {
 import { fleetByVoyage } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/" },
   title: "SYRIUS SOCIAL — The Unscripted Social Experiment.",
 };
 

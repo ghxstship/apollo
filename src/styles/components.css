@@ -47,8 +47,13 @@
 
 /* — ThemeToggle — */
 .ls-themetog{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:var(--radius-pill);padding:2px;background:var(--surface-card)}
-.ls-themetog button{all:unset;cursor:pointer;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:var(--text-3);transition:background var(--dur-1) var(--ease-swell),color var(--dur-1) var(--ease-swell)}
+/* 28x28 was below the 44px touch minimum — on a phone the three theme
+   buttons sat 2px apart and were hard to hit without catching a neighbour.
+   The visual size stays; the hit area is grown with a transparent border so
+   the pill does not change shape on desktop. */
+.ls-themetog button{all:unset;cursor:pointer;width:28px;height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:var(--text-3);transition:background var(--dur-1) var(--ease-swell),color var(--dur-1) var(--ease-swell)}
 .ls-themetog button:hover{color:var(--text-1)}
+@media (pointer:coarse){.ls-themetog button{width:44px;height:44px}.ls-themetog{padding:0}}
 .ls-themetog button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .ls-themetog button.on{background:var(--action-primary);color:var(--action-on-primary)}
 

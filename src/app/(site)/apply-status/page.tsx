@@ -3,6 +3,7 @@ import Link from "next/link";
 import { StatusLookup } from "./status-client";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/apply-status" },
   title: "Application status",
   description:
     "Where your application stands — applied, invited ashore, signatures, aboard. No black box.",

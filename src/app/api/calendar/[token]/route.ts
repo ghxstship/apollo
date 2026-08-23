@@ -33,9 +33,13 @@ export async function GET(
 
   const events: CalendarEvent[] = rows.map((row) => {
     const { start, end } = voyageWindow(row);
+    /* The boarding code does not ride in the feed. An ICS subscription syncs
+       to Google and Apple servers and onto every device on the account,
+       including shared family calendars — the one credential that gets a
+       person up the gangway should not be copied to all of them. It lives on
+       the member's own pass at /card and /stub. */
     const description = [
       row.blurb ?? "",
-      row.boarding_code ? `Boarding code ${row.boarding_code}.` : "",
       row.guests > 0 ? `${row.guests} guest${row.guests === 1 ? "" : "s"} on your pass.` : "",
       "Boards thirty minutes before cast off.",
       `${SITE_URL}/charters/${row.slug}`,

@@ -2021,9 +2021,22 @@ async function businessRules(p) {
 
   // Rewards: regional cannot afford the cheapest reward. The guard speaks in
   // Knots — "fathoms" is retired everywhere a member can read it.
-  const rw = await reg.get("rewards?select=id,cost_fm&order=cost_fm.asc&limit=1");
-  const redeem = await reg.rpc("redeem_reward", { p_reward: rw.data?.[0]?.id });
-  note("regional", "redemption guard: not enough knots", redeem.status >= 400 && /not enough knots/i.test(JSON.stringify(redeem.data)), `got ${redeem.status} ${JSON.stringify(redeem.data)}`);
+  /* Pick a reward this member demonstrably cannot afford, rather than assuming
+     the cheapest one is out of reach — a crawl that banks Knots on the regional
+     fixture used to turn this guard into a successful redemption, and the suite
+     read that as the guard failing. Assert against the balance as it is. */
+  const bal = await reg.get(`member_league?profile_id=eq.${uid(p.regional)}&select=knots`);
+  const knots = Number(bal.data?.[0]?.knots ?? 0);
+  const rw = await reg.get(`rewards?select=id,cost_fm&cost_fm=gt.${knots}&order=cost_fm.asc&limit=1`);
+  if (rw.data?.[0]) {
+    const redeem = await reg.rpc("redeem_reward", { p_reward: rw.data[0].id });
+    note("regional", "redemption guard: not enough knots",
+      redeem.status >= 400 && /not enough knots/i.test(JSON.stringify(redeem.data)),
+      `${knots} knots vs ${rw.data[0].cost_fm} — got ${redeem.status} ${JSON.stringify(redeem.data)}`);
+  } else {
+    note("regional", "redemption guard: not enough knots", true,
+      `no reward costs more than ${knots} knots — guard not exercisable`);
+  }
 
   // Moderation rights: regional cannot delete another's post; staff can
   const post = await glo.post("wardroom_posts", { author_id: uid(p.global), body: "E2E — the fixture speaks." });

@@ -6,6 +6,7 @@ import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/brand" },
   title: "The brand kit",
   description:
     "The wordmark, the palette, the type, the voice, and the facts — everything needed to write about, partner with, or sponsor the show.",

@@ -11,6 +11,7 @@ import { ApplyForm } from "./apply-form";
 import { JoinControl } from "./join-control";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/membership" },
   title: "Membership",
   description:
     "Five ways aboard — Access, Regional, National, Global, and Guest passes, each in three class tiers. Membership is by invitation or application.",

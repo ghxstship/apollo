@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/support" },
   title: "Shoreside",
   description: "Shoreside — the shore office. Answers first, a human always.",
 };

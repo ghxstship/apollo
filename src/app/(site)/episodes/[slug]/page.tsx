@@ -17,6 +17,7 @@ export async function generateMetadata({
     .eq("slug", slug)
     .maybeSingle();
   return {
+    alternates: { canonical: `/episodes/${slug}` },
     title: post?.title ?? "Episodes",
     description: post?.dek ?? undefined,
   };

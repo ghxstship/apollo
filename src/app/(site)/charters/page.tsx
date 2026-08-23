@@ -12,6 +12,7 @@ import { fleetByVoyage } from "@/components/site/voyage-data";
 import { VoyageManifest, type ManifestItem } from "./manifest";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/charters" },
   title: "Voyages",
   description:
     "Every Sea Day and Port Day on the season's manifest. Passes are few by design.",
