@@ -55,29 +55,38 @@ export async function setCodeActive(code: string, active: boolean): Promise<Acti
   return done();
 }
 
-/* Redemption runs through check_promo, which reads and never writes back, so
-   the uses column drifts from the truth. The truth is the passes: recount the
-   passes carrying each code and set the tally to match. */
+/* The tally is written by claim_promo_code when a pass actually goes aboard, so
+   it should not drift — this stays as the operator's repair for when it has.
+   It used to count EVERY rsvp carrying a code, waitlist and released ones
+   included, which quietly deflated a spent code back under its cap and handed
+   out uses that were never earned. A use is a pass aboard, on the sailing the
+   code was issued for. (The old comment claimed nothing wrote the column back;
+   that stopped being true.) */
 export async function reconcileUses(): Promise<{ error?: string; adjusted?: number; scanned?: number }> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
   const [codesRes, rsvpRes] = await Promise.all([
-    supabase.from("promo_codes").select("code, uses"),
-    supabase.from("rsvps").select("promo_code").not("promo_code", "is", null),
+    supabase.from("promo_codes").select("code, uses, voyage_id"),
+    supabase
+      .from("rsvps")
+      .select("promo_code, voyage_id")
+      .not("promo_code", "is", null)
+      .eq("status", "aboard"),
   ]);
   if (codesRes.error || rsvpRes.error) return { error: ERR_LAND };
 
-  const counted = new Map<string, number>();
-  for (const r of rsvpRes.data ?? []) {
-    const key = (r.promo_code ?? "").toUpperCase();
-    if (!key) continue;
-    counted.set(key, (counted.get(key) ?? 0) + 1);
-  }
+  const aboard = rsvpRes.data ?? [];
 
   let adjusted = 0;
   for (const c of codesRes.data ?? []) {
-    const real = counted.get(c.code.toUpperCase()) ?? 0;
+    /* A code scoped to one sailing is only spent on that sailing — the same
+       test pass_price and claim_promo_code apply. */
+    const real = aboard.filter(
+      (r) =>
+        (r.promo_code ?? "").toUpperCase() === c.code.toUpperCase() &&
+        (c.voyage_id == null || r.voyage_id === c.voyage_id)
+    ).length;
     if (real === c.uses) continue;
     const { error } = await supabase.from("promo_codes").update({ uses: real }).eq("code", c.code);
     if (error) return { error: ERR_LAND };

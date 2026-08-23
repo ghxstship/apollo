@@ -60,61 +60,61 @@ export default async function ManifestsPage({
   const rsvps = must(rsvpsRes);
 
   const profileIds = rsvps.map((r) => r.profile_id);
-  const { data: profilesData } = profileIds.length
+  const profilesRes = profileIds.length
     ? await supabase
         .from("profiles")
         .select("id, full_name, member_no, avatar_tone, on_camera")
         .in("id", profileIds)
     : { data: [] };
-  const profiles = new Map((profilesData ?? []).map((p) => [p.id, p]));
+  const profiles = new Map((must(profilesRes)).map((p) => [p.id, p]));
 
   /* Derived from the signature record; the profile carries no waiver flag. */
-  const { data: waiverData } = profileIds.length
+  const waiverRes = profileIds.length
     ? await supabase
         .from("member_waiver_standing")
         .select("profile_id, current")
         .in("profile_id", profileIds)
     : { data: [] };
   const waiverCurrent = new Map(
-    (waiverData ?? []).map((w) => [w.profile_id, Boolean(w.current)])
+    (must(waiverRes)).map((w) => [w.profile_id, Boolean(w.current)])
   );
 
   /* Active members for the box-office picker — anyone can be walked on. */
-  const { data: membersData } = await supabase
+  const membersRes = await supabase
     .from("profiles")
     .select("id, full_name, member_no")
     .eq("status", "active")
     .order("full_name", { ascending: true });
-  const memberOptions = (membersData ?? []).map((m) => ({
+  const memberOptions = (must(membersRes)).map((m) => ({
     value: m.id,
     label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` — ${m.member_no}` : ""}`,
   }));
 
   /* The flotilla for this voyage — yachts in position order, fill from
      rsvps.vessel_id (aboard berths only). */
-  const { data: voyageVessels } = await supabase
+  const voyageVesselsRes = await supabase
     .from("voyage_vessels")
     .select("vessel_id, position")
     .eq("voyage_id", voyage.id)
     .order("position", { ascending: true });
-  const vesselIds = (voyageVessels ?? []).map((vv) => vv.vessel_id);
-  const { data: vesselsData } = vesselIds.length
+  const vesselIds = (must(voyageVesselsRes)).map((vv) => vv.vessel_id);
+  const vesselsRes = vesselIds.length
     ? await supabase.from("vessels").select("id, name, capacity").in("id", vesselIds)
     : { data: [] };
-  const vesselById = new Map((vesselsData ?? []).map((v) => [v.id, v]));
+  const vesselById = new Map((must(vesselsRes)).map((v) => [v.id, v]));
 
   /* Per-guest filming consent, captured when the guest signed. The sheet used
      to derive off-camera from the HOST's profile alone, so a guest who declined
      never reached the floor at all. */
   const rsvpIds = rsvps.map((r) => r.id);
-  const { data: guestRows } = rsvpIds.length
+  const guestRowsRes = rsvpIds.length
     ? await supabase
         .from("rsvp_guests")
         .select("rsvp_id, name, on_camera")
         .in("rsvp_id", rsvpIds)
     : { data: [] };
   const guestsByRsvp = new Map<string, Array<{ name: string; onCamera: boolean }>>();
-  for (const g of guestRows ?? []) {
+  for (const g of must(guestRowsRes)) {
     if (!g.rsvp_id) continue;
     guestsByRsvp.set(g.rsvp_id, [
       ...(guestsByRsvp.get(g.rsvp_id) ?? []),
@@ -123,7 +123,7 @@ export default async function ManifestsPage({
   }
 
   const aboardRsvps = rsvps.filter((r) => r.status === "aboard");
-  const fleet: FleetVessel[] = (voyageVessels ?? [])
+  const fleet: FleetVessel[] = (must(voyageVesselsRes))
     .map((vv) => vesselById.get(vv.vessel_id))
     .filter((v): v is NonNullable<typeof v> => Boolean(v))
     .map((v) => ({

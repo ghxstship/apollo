@@ -8,12 +8,12 @@ export const metadata: Metadata = { title: "Shoreside" };
 export default async function ShoresidePage() {
   const { supabase } = await getOperator();
 
-  const { data: threadsData } = await supabase
+  const threadsRes = await supabase
     .from("threads")
     .select("*")
     .eq("kind", "shoreside")
     .order("created_at", { ascending: false });
-  const threads = threadsData ?? [];
+  const threads = must(threadsRes);
   const threadIds = threads.map((t) => t.id);
 
   const [membersRes, messagesRes] = await Promise.all([
@@ -46,10 +46,10 @@ export default async function ShoresidePage() {
       ...messages.map((m) => m.author_id).filter((id): id is string => !!id),
     ]),
   ];
-  const { data: peopleData } = peopleIds.length
+  const peopleRes = peopleIds.length
     ? await supabase.from("profiles").select("id, full_name, member_no, is_staff").in("id", peopleIds)
     : { data: [] as Array<{ id: string; full_name: string | null; member_no: string | null; is_staff: boolean }> };
-  const people = new Map((peopleData ?? []).map((p) => [p.id, p]));
+  const people = new Map((must(peopleRes)).map((p) => [p.id, p]));
 
   const cards: ThreadCard[] = threads.map((t) => {
     const roster = members.filter((m) => m.thread_id === t.id);

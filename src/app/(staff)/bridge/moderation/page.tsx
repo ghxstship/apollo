@@ -32,10 +32,10 @@ export default async function ModerationPage() {
   const authorIds = [
     ...new Set((postsData ?? []).map((p) => p.author_id).filter((id): id is string => !!id)),
   ];
-  const { data: authorsData } = authorIds.length
+  const authorsRes = authorIds.length
     ? await supabase.from("profiles").select("id, full_name, member_no").in("id", authorIds)
     : { data: [] };
-  const authors = new Map((authorsData ?? []).map((a) => [a.id, a]));
+  const authors = new Map((must(authorsRes)).map((a) => [a.id, a]));
 
   /* A flag whose post is already gone still has to be resolvable — otherwise it
      sits 'open' forever with no way to clear it. */

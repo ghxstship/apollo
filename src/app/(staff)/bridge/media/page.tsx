@@ -9,11 +9,11 @@ export const metadata: Metadata = { title: "Media" };
 export default async function MediaPage() {
   const { supabase } = await getOperator();
 
-  const { data: mediaData } = await supabase
+  const mediaRes = await supabase
     .from("voyage_media")
     .select("*")
     .order("created_at", { ascending: false });
-  const media = mediaData ?? [];
+  const media = must(mediaRes);
 
   const voyageIds = [...new Set(media.map((m) => m.voyage_id))];
   const uploaderIds = [

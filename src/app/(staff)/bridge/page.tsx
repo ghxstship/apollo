@@ -29,11 +29,11 @@ export default async function ApplicationsPage() {
   const roll = must(rollRes);
 
   const rollEmails = roll.map((r) => r.email);
-  const { data: joinedProfiles } = rollEmails.length
+  const joinedProfilesRes = rollEmails.length
     ? await supabase.from("profiles").select("email, member_no").in("email", rollEmails)
     : { data: [] as Array<{ email: string | null; member_no: string | null }> };
   const joined = new Map(
-    (joinedProfiles ?? [])
+    (must(joinedProfilesRes))
       .filter((p) => p.email)
       .map((p) => [String(p.email).toLowerCase(), p.member_no])
   );

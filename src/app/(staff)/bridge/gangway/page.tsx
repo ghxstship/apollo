@@ -53,31 +53,31 @@ export default async function GangwayPage({
   const rsvps = must(rsvpsRes);
 
   const profileIds = rsvps.map((r) => r.profile_id);
-  const { data: profilesData } = profileIds.length
+  const profilesRes = profileIds.length
     ? await supabase
         .from("profiles")
         .select("id, full_name, member_no")
         .in("id", profileIds)
     : { data: [] };
-  const profiles = new Map((profilesData ?? []).map((p) => [p.id, p]));
+  const profiles = new Map((must(profilesRes)).map((p) => [p.id, p]));
 
   /* Waiver standing is derived from the signature record, never from a flag on
      the profile — one question, one answer. */
-  const { data: waiverData } = profileIds.length
+  const waiverRes = profileIds.length
     ? await supabase
         .from("member_waiver_standing")
         .select("profile_id, current")
         .in("profile_id", profileIds)
     : { data: [] };
   const waiverCurrent = new Map(
-    (waiverData ?? []).map((w) => [w.profile_id, Boolean(w.current)])
+    (must(waiverRes)).map((w) => [w.profile_id, Boolean(w.current)])
   );
 
   const vesselIds = [...new Set(rsvps.map((r) => r.vessel_id).filter((id): id is string => !!id))];
-  const { data: vesselsData } = vesselIds.length
+  const vesselsRes = vesselIds.length
     ? await supabase.from("vessels").select("id, name").in("id", vesselIds)
     : { data: [] };
-  const vesselById = new Map((vesselsData ?? []).map((v) => [v.id, v.name]));
+  const vesselById = new Map((must(vesselsRes)).map((v) => [v.id, v.name]));
 
   const rows: GangwayRow[] = rsvps.map((r) => {
     const p = profiles.get(r.profile_id);
