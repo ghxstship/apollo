@@ -279,6 +279,11 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .thr-msg__who .mbr-mono{text-transform:uppercase}
 .thr-msg__body p{font-size:14px;line-height:1.6;margin-top:6px;white-space:pre-wrap;max-width:60ch}
 .thr-composer{margin-top:24px;padding-top:18px;border-top:1px solid var(--line-faint)}
+/* The Producer pill sits at the bottom-right of every member page, and on a
+   phone it landed exactly on Send — 6 of 25 sampled points across that button
+   reached it, in a 4px strip, at maximum scroll. Nobody could reply to a
+   thread on a phone. Leave the pill its room. */
+@media (max-width:959px){.thr-composer{padding-bottom:64px}}
 .thr-composer__foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
 
 /* — you: directory fields — */

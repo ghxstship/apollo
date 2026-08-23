@@ -79,7 +79,7 @@ export function Progress({
 const STATE_DEFAULTS: Record<string, { icon?: string; title: string; detail: string }> = {
   empty: { icon: "Waves", title: "Nothing on the water.", detail: "When there's something to show, it shows here." },
   loading: { title: "Hauling it in.", detail: "A moment — the manifest is loading." },
-  error: { icon: "CloudLightning", title: "That didn't land.", detail: "Something broke on our side. Try again; if it holds, hail the shore office." },
+  error: { icon: "CloudLightning", title: "That didn't land.", detail: "Something broke on our side. Try again; if it holds, hail Shoreside." },
   offline: { icon: "WifiOff", title: "No signal past the breakwater.", detail: "You're offline. What you've loaded keeps working; changes sync when you're back." },
 };
 
@@ -114,7 +114,19 @@ export function Toast({
   message: React.ReactNode; meta?: React.ReactNode; tone?: "ink" | "positive" | "caution" | "danger";
   fixed?: boolean; onDismiss?: () => void; dismissLabel?: string; className?: string; style?: React.CSSProperties;
 }) {
-  return (
+  /* A fixed toast is z-index 1100 and the member tab bar is 300, and the bar
+     still won: pages wrapped in `.ls-fade` (an animation, so a stacking
+     context) trapped the toast inside it. On /live that made
+     "Order placed — the galley has it. Charged to your account." invisible
+     behind the bar, and tapping the toast's ✕ navigated to the Word tab.
+     Portalled like Dialog, for the same reason. */
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
+  const node = (
     <div className={["ls-toast", fixed ? "ls-toast--fixed" : "", className].filter(Boolean).join(" ")} style={style} role="status" aria-live="polite">
       <span className="ls-toast__rule" style={{ background: TOAST_TONES[tone] || TOAST_TONES.ink }}></span>
       <span>{message}</span>
@@ -122,6 +134,9 @@ export function Toast({
       {onDismiss ? <button type="button" className="ls-toast__x" aria-label={dismissLabel} onClick={onDismiss}>✕</button> : null}
     </div>
   );
+
+  if (!fixed) return node;
+  return mounted ? createPortal(node, document.body) : null;
 }
 
 /* — Tooltip — */

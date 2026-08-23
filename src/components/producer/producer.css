@@ -1,7 +1,12 @@
 /* The Producer — launcher pill + confirm-first panel. Ported from the design
    system's agent kit; deterministic member v1. */
 
-.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:900;display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite}
+/* 400, not 900. The pill floats above page content — that is all it needs —
+   and at 900 it painted over the public nav's whole subtree (.ws-nav is a
+   sticky z-index:500 stacking context, so its 920 menu could never escape it)
+   and swallowed the "Come aboard" CTA. It sits vertically above the tab bar
+   (300) already, so it does not need to outrank it. */
+.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:400;display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite}
 .pr-fab span{display:inline-flex;align-items:center;gap:8px;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:12px 20px;font:600 10.5px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.16em;text-transform:uppercase}
 .pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:950;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--line);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column}

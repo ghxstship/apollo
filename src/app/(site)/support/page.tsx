@@ -5,7 +5,7 @@ import { MAILBOX } from "@/lib/brand";
 export const metadata: Metadata = {
   alternates: { canonical: "/support" },
   title: "Shoreside",
-  description: "Shoreside — the shore office. Answers first, a human always.",
+  description: "Shoreside — the shore desk. Answers first, a human always.",
 };
 
 const FAQS: Array<[string, Array<[string, string]>]> = [
@@ -66,7 +66,7 @@ export default function SupportPage() {
   return (
     <div className="lg-wrap">
       <span className="ls-eyebrow" style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}>
-        Shoreside — the shore office
+        Shoreside — the shore desk
       </span>
       <h1>Hail us.</h1>
       <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "54ch" }}>

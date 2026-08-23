@@ -51,7 +51,11 @@ export function PostCard({
         ...style,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      {/* Wrapping, and allowed to shrink. A post carrying a sailing chip pushed
+          the byline past the right edge — five of nine on the Open Deck ran to
+          521px in a 375px viewport, and the page would not scroll to them, so
+          the league and the age were simply unreachable. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
         <Avatar name={author} tone={tone} size="sm" />
         <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-1)" }}>{author}</span>
         {sailing ? (

@@ -38,43 +38,22 @@ loadEnvLocal();
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-/* Brand lexicon guard — copied from BANNED_TERMS in src/lib/brand.ts (this
-   script is plain mjs and can't import TS). Case-sensitive on purpose. */
-const BANNED = [
-  // the retired brand, wholesale
-  "Lyre",
-  "LYRE",
-  "lyre.social",
-  "LYR-",
-  "Strike a chord",
-  "Chandlery",
-  "Passbook",
-  "The Booth",
-  "the Booth",
-  "Home Port",
-  "Gateway",
-  "LORE",
-  "Aurora",
-  // pre-Syrius bans that still hold
-  "Harbormaster console",
-  "The Purser",
-  "The Wardroom",
-  "Fathoms",
-  "fathoms",
-  " FM ",
-  "The Dispatch",
-  "Shore office",
-  "ticket",
-  "points",
-  "ahoy",
-  "berth",
-  "Berth",
-  "salon",
-  "Salon",
-  "Overnight",
-  "leaderboard",
-  "Leaderboard",
-];
+/* Brand lexicon guard, read from the source of truth. This used to be a
+   hand-copied list matched case-sensitively against raw HTML — the exact
+   failure the e2e suite was rewritten to avoid. The copies agreed, but the
+   casing did not: "Shore office" is banned and /support rendered "Shoreside —
+   the shore office" on every load, past both gates. */
+function bannedTerms() {
+  try {
+    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8");
+    const block = src.match(/export const BANNED_TERMS = \[([\s\S]*?)\]/);
+    if (!block) return [];
+    return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  } catch {
+    return [];
+  }
+}
+const BANNED = bannedTerms();
 
 const results = [];
 const failures = [];
@@ -102,7 +81,26 @@ function checkHtml(route, html) {
   note(route, "no error boundary", !/Application error|Internal Server Error|__next_error__/i.test(html), "error text found");
   const badImgs = [...html.matchAll(/<img\b[^>]*>/gi)].filter((m) => !/\balt=/i.test(m[0]));
   note(route, "images carry alt", badImgs.length === 0, badImgs.length ? `${badImgs.length} <img> without alt` : "");
-  const offLexicon = BANNED.filter((term) => html.includes(term));
+  const lexHay = html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<![^>]*>/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .toLowerCase();
+  /* A missing value must never reach a reader as the word for it. "UNTIL
+     AUG 23 · undefined" shipped on /agreements because a date helper read a
+     part its own formatter never produced, and every gate here was looking
+     only for banned brand words. */
+  const spilled = ["undefined", "null", "nan", "[object object]"].filter((w) => {
+    /* Escaped: "[object object]" is a regex character class if you don't, and
+       compiles into something that matches almost any letter. */
+    const lit = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|[\\s·—,:(])${lit}([\\s·—,.:)]|$)`, "i").test(lexHay);
+  });
+  note(route, "no spilled placeholder in visible text", spilled.length === 0,
+    spilled.length ? `found: ${spilled.join(", ")}` : "");
+  const offLexicon = BANNED.filter((term) => lexHay.includes(term.toLowerCase()));
   note(route, "on-lexicon", offLexicon.length === 0, offLexicon.length ? `banned terms: ${offLexicon.join(", ")}` : "");
   /* The producer never shouts: no exclamation marks and no emoji in visible
      text. Strip script/style/doctype/comments and tags first — attributes and

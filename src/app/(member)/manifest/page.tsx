@@ -144,10 +144,31 @@ export default async function VoyagesPage() {
 
   /* The roll, for a hand-off and for putting names to crew requests. */
   const roll = rollRes.data ?? [];
+
+  /* Names for people this member is already dealing with, whether or not they
+     chose to be listed. The roll is filtered to in_directory, so building the
+     name map from it alone rendered "offered to A member" on the sender's own
+     card — a pass hand-off is one of the grounds member_directory will name
+     someone on, so the view would have answered. */
+  const dealingWith = Array.from(
+    new Set(
+      [
+        ...(transferRes.data ?? []).flatMap((t) => [t.from_profile, t.to_profile]),
+        ...(crewRes.data ?? []).map((c) => c.profile_id),
+      ].filter((id): id is string => !!id && id !== user.id)
+    )
+  ).filter((id) => !roll.some((p) => p.id === id));
+
+  const extraRes = dealingWith.length
+    ? await supabase.from("member_directory").select("id, full_name, handle").in("id", dealingWith)
+    : { data: [] as Array<{ id: string; full_name: string | null; handle: string | null }> };
+
   const nameOf = new Map<string, string>(
-    roll.map((p) => [p.id, p.full_name ?? "A member"] as const)
+    [...roll, ...(extraRes.data ?? [])].map((p) => [p.id, p.full_name ?? "A member"] as const)
   );
-  const handleOf = new Map<string, string | null>(roll.map((p) => [p.id, p.handle] as const));
+  const handleOf = new Map<string, string | null>(
+    [...roll, ...(extraRes.data ?? [])].map((p) => [p.id, p.handle] as const)
+  );
   const members: MemberOption[] = roll.map((p) => ({
     id: p.id,
     label: `${p.full_name ?? "A member"} · ${p.member_no ?? "SYR-0000"}`,

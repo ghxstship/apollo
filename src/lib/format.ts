@@ -13,6 +13,7 @@ function partsIn(iso: string, zone: Zone): Record<string, string> {
   const d = new Date(iso);
   if (!zone) {
     return {
+      year: String(d.getFullYear()),
       month: String(d.getMonth() + 1),
       day: String(d.getDate()),
       hour: String(d.getHours()),
@@ -21,6 +22,7 @@ function partsIn(iso: string, zone: Zone): Record<string, string> {
   }
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: zone,
+    year: "numeric",
     month: "numeric",
     day: "numeric",
     hour: "2-digit",
@@ -44,7 +46,12 @@ export function logDate(iso: string, zone?: Zone): string {
    it, which made a waiver signed today and valid for a year read
    "AUG 23 · UNTIL AUG 23": expiring the day it was signed. */
 export function logDateYear(iso: string, zone?: Zone): string {
-  return `${logDate(iso, zone)} · ${partsIn(iso, zone).year}`;
+  /* partsIn used to return no year at all, so this emitted
+     "AUG 23 · undefined" — on /agreements, where it was added to stop a waiver
+     reading as though it expired the day it was signed. A fallback so a
+     missing part can never again reach a member as the word "undefined". */
+  const year = partsIn(iso, zone).year ?? String(new Date(iso).getFullYear());
+  return `${logDate(iso, zone)} · ${year}`;
 }
 
 export function logTime(iso: string, zone?: Zone): string {

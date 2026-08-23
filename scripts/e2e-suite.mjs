@@ -362,16 +362,24 @@ async function isolationRules(p) {
       `got ${res.status} ${JSON.stringify(res.data).slice(0, 70)}`);
   }
 
-  /* These views are security_invoker, so RLS on the underlying tables empties
-     them out. A row may still appear for another member — the id is already
-     public in the directory — but every figure in it must be zero. Asserting
-     the row is absent would be asserting the wrong thing. */
+  /* These are definer views now, so they return what is really there rather
+     than what RLS let the viewer see. This check used to demand that EVERY
+     figure be zero for another member — which passed only because the views
+     were broken and showed zeros to everyone, and which the directory itself
+     contradicts by rendering "N passes held" for each member.
+
+     So name what is actually private. `passes` and League are shown on the
+     roster by design; attended, posts, knots and last_booked_at are the
+     Bridge's business and must never reach another member. */
+  const PUBLIC_TO_MEMBERS = new Set([
+    "profile_id", "league", "league_name", "month", "passes", "other_id", "shared",
+  ]);
   for (const v of OWNED_VIEWS) {
     const res = await reg.get(`${v}?select=*&profile_id=eq.${other}&limit=5`);
     const rows = Array.isArray(res.data) ? res.data : [];
     const bare = rows.every((row) =>
       Object.entries(row).every(([k, val]) =>
-        k === "profile_id" || val === 0 || val === null || k === "league" || k === "league_name" || k === "month"));
+        PUBLIC_TO_MEMBERS.has(k) || val === 0 || val === null));
     note("regional", `view ${v} carries no figures for another member`, bare,
       `got ${res.status} ${JSON.stringify(rows).slice(0, 100)}`);
   }
