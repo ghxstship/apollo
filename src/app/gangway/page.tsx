@@ -1,3 +1,4 @@
+import { safeNext } from "@/lib/safe-next";
 import type { Metadata } from "next";
 import { ThemeToggle, Wordmark } from "@/components/ds";
 import { GangwayPanel } from "./panel";
@@ -14,8 +15,7 @@ export default async function GangwayPage({
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
   const sp = await searchParams;
-  const rawNext = sp.next ?? "/home";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/home";
+  const next = safeNext(sp.next);
   const expired = sp.error === "expired";
 
   return (

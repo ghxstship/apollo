@@ -4,14 +4,14 @@ import { notFound } from "next/navigation";
 import { Avatar, Icon, StateBlock } from "@/components/ds";
 import { FAMILY_LABEL } from "@/lib/brand";
 import { logDateTime } from "@/lib/format";
-import { getMember, type Profile } from "../../data";
+import { getMember, type DirectoryMember, type Profile } from "../../data";
 import { Composer, ThreadLive } from "./live";
 
 export const metadata: Metadata = { title: "Thread" };
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
-function toneOf(p: Profile | undefined | null): "ink" | "sea" | "gold" | "sand" {
+function toneOf(p: { avatar_tone?: string | null } | undefined | null): "ink" | "sea" | "gold" | "sand" {
   const t = p?.avatar_tone;
   return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "sand";
 }
@@ -47,7 +47,7 @@ export default async function ThreadPage({
   );
   const [peopleRes, voyageRes] = await Promise.all([
     peopleIds.length
-      ? supabase.from("profiles").select("*").in("id", peopleIds)
+      ? supabase.from("member_directory").select("*").in("id", peopleIds)
       : Promise.resolve({ data: null }),
     thread.voyage_id
       ? supabase
@@ -58,7 +58,7 @@ export default async function ThreadPage({
       : Promise.resolve({ data: null }),
   ]);
 
-  const peopleById = new Map<string, Profile>((peopleRes.data ?? []).map((p) => [p.id, p]));
+  const peopleById = new Map<string, DirectoryMember>((peopleRes.data ?? []).map((p) => [p.id, p]));
   const voyage = voyageRes.data;
 
   const others = (roster ?? [])

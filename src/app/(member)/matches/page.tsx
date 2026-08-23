@@ -24,7 +24,7 @@ export default async function MatchesPage() {
 
   const [{ data: people }, { data: tables }] = await Promise.all([
     otherIds.length
-      ? supabase.from("profiles").select("id, full_name, avatar_tone, bio").in("id", otherIds)
+      ? supabase.from("member_directory").select("id, full_name, avatar_tone, bio").in("id", otherIds)
       : Promise.resolve({ data: [] }),
     tableIds.length
       ? supabase.from("dating_tables").select("id, number, voyage_id").in("id", tableIds)

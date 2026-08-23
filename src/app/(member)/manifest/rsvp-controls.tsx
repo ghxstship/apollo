@@ -257,7 +257,13 @@ export function RsvpControls({
       </p>
     ) : null;
 
-  if (locked) {
+  /* A lock governs claiming a NEW pass. It must never swallow one the member
+     already holds — otherwise a waitlister cannot see their place or leave the
+     list, and a member who puts their own membership on hold loses the Release
+     control while the 48-hour credit window runs out on them. When there is a
+     pass on this sailing, the note rides alongside the standing instead. */
+  const holdsAPass = myStatus === "aboard" || myStatus === "waitlist";
+  if (locked && !holdsAPass) {
     return (
       <div className="voy-foot">
         <span className="voy-lock">
@@ -269,6 +275,11 @@ export function RsvpControls({
 
   return (
     <div className="voy-foot">
+      {locked ? (
+        <span className="voy-lock" style={{ flexBasis: "100%" }}>
+          {lockedNote}
+        </span>
+      ) : null}
       {weatherHold ? (
         <>
           <Badge tone="caution">Weather hold</Badge>

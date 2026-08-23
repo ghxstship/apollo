@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/ds";
-import { CITY_CODES } from "@/lib/brand";
+import { CITY_CODES, EST_YEAR_ROMAN } from "@/lib/brand";
 import { roman } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -54,7 +54,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
         </div>
         <div className="ws-footer__base">
           <span>© MMXXVI Syrius Social</span>
-          <span>Est. MMXXIV · Marina del Rey</span>
+          <span>Est. {EST_YEAR_ROMAN} · Marina del Rey</span>
         </div>
       </div>
     </footer>

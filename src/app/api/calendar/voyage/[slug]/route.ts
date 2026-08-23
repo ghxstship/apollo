@@ -5,8 +5,7 @@ import {
   icsResponse,
   voyageLocation,
   voyageSummary,
-  voyageWindow,
-} from "../../ics";
+  voyageWindow, icsStatus } from "../../ics";
 
 /* GET /api/calendar/voyage/[slug] — one public sailing, no sign-in.
    The same row the event page already shows the shore, in a form a calendar
@@ -50,6 +49,7 @@ export async function GET(
       description,
       url,
       alarm: `${voyage.title} — tomorrow. Boards thirty minutes before cast off.`,
+      status: icsStatus(voyage.status),
     },
   ]);
 

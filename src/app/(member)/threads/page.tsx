@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Avatar, Icon, StateBlock } from "@/components/ds";
 import { FAMILY_LABEL } from "@/lib/brand";
 import type { Tables } from "@/lib/supabase/types";
-import { getMember, type Profile } from "../data";
+import { getMember, type DirectoryMember, type Profile } from "../data";
 import { relTime } from "../relative";
 import { ThreadsRealtime } from "./realtime";
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Threads" };
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
-function toneOf(p: Profile | undefined | null): "ink" | "sea" | "gold" | "sand" {
+function toneOf(p: { avatar_tone?: string | null } | undefined | null): "ink" | "sea" | "gold" | "sand" {
   const t = p?.avatar_tone;
   return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "sand";
 }
@@ -63,12 +63,12 @@ export default async function ThreadsPage() {
       ? supabase.from("voyages").select("id,title,class,starts_at").in("id", voyageIds)
       : Promise.resolve({ data: null }),
     otherIds.length
-      ? supabase.from("profiles").select("*").in("id", Array.from(new Set(otherIds)))
+      ? supabase.from("member_directory").select("*").in("id", Array.from(new Set(otherIds)))
       : Promise.resolve({ data: null }),
   ]);
 
   const voyageById = new Map((voyagesRes.data ?? []).map((v) => [v.id, v]));
-  const peopleById = new Map<string, Profile>((peopleRes.data ?? []).map((p) => [p.id, p]));
+  const peopleById = new Map<string, DirectoryMember>((peopleRes.data ?? []).map((p) => [p.id, p]));
 
   const rows = threads
     .map((t) => {

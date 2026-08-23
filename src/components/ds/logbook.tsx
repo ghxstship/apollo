@@ -258,6 +258,7 @@ export function ContestCard({
       {children}
       {!entered && !settled && onEnter ? (
         <button
+      className="ls-bare"
           onClick={onEnter}
           style={{
             all: "unset",
@@ -441,6 +442,7 @@ export function KnotsLedger({
               <span style={{ font: `700 11px/1 ${MONO}`, color: "var(--text-gold)", whiteSpace: "nowrap" }}>{r.cost}</span>
               {onRedeem ? (
                 <button
+      className="ls-bare"
                   onClick={() => onRedeem(r)}
                   disabled={balance != null && r.costValue != null && r.costValue > balance}
                   style={{

@@ -166,17 +166,10 @@ export async function setMemberStatus(
   const { error } = await supabase.from("profiles").update({ status }).eq("id", profileId);
   if (error) return { error: ERR_LAND };
 
-  /* A hold is not a silent thing — the member is told, in the same motion. */
-  const { error: wordError } = await supabase.rpc("notify_member", {
-    p_profile: profileId,
-    p_kind: "word",
-    p_title: status === "paused" ? "Your membership is on hold." : "Your membership is running again.",
-    p_body:
-      status === "paused"
-        ? "Your log and your ledger stay open. Booking, posting and contests wait until the hold lifts."
-        : "Everything opens back up. The water keeps.",
-  });
-  if (wordError) return { error: "Status moved, but the member was not told." };
+  /* The member is told by the handle_profile_status trigger, which fires on
+     the status change itself — so a member who pauses themselves and one the
+     Bridge pauses hear the same single thing. Sending a second word from here
+     produced two notifications 114ms apart that disagreed about dues. */
 
   revalidatePath("/bridge/members");
   return {};

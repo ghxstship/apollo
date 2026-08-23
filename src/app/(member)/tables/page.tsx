@@ -44,7 +44,7 @@ export default async function TablesPage() {
      through. */
   const seatmateIds = [...new Set((seats ?? []).map((s) => s.profile_id))];
   const { data: people } = seatmateIds.length
-    ? await supabase.from("profiles").select("id, full_name, avatar_tone").in("id", seatmateIds)
+    ? await supabase.from("member_directory").select("id, full_name, avatar_tone").in("id", seatmateIds)
     : { data: [] };
   const nameOf = new Map((people ?? []).map((p) => [p.id, (p.full_name ?? "A guest").split(" ")[0]]));
 

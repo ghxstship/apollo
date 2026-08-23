@@ -530,8 +530,13 @@ async function moderationRules(p) {
   const flag = await reg.post("wardroom_flags", { post_id: pid, flagger_id: uid(p.regional), reason: "E2E" });
   note("regional", "may flag a post", flag.status < 400, `got ${flag.status}`);
 
-  const readFlags = await reg.get("wardroom_flags?select=status&limit=5");
-  note("regional", "flag queue is not a member's to read", (readFlags.data || []).length <= 1, `got ${readFlags.status} ${(readFlags.data || []).length} rows`);
+  /* A member sees the flags they raised and no others — counting rows only
+     held while this persona happened to have raised none. The rule is about
+     whose flags they are, so assert that directly. */
+  const readFlags = await reg.get("wardroom_flags?select=flagger_id&limit=20");
+  const foreign = (readFlags.data || []).filter((f) => f.flagger_id !== uid(p.regional));
+  note("regional", "the flag queue shows only your own flags", foreign.length === 0,
+    `got ${readFlags.status}, ${foreign.length} raised by others`);
 
   await stf.del(`wardroom_flags?post_id=eq.${pid}`);
   await stf.del(`wardroom_comments?post_id=eq.${pid}`);

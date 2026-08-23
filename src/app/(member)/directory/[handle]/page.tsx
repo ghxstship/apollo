@@ -34,7 +34,7 @@ export default async function MemberPage({
   const { supabase, user, profile: viewer } = await getMember();
 
   const { data: member } = await supabase
-    .from("profiles")
+    .from("member_directory")
     .select("*")
     .eq("handle", handle)
     .maybeSingle();

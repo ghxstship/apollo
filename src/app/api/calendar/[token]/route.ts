@@ -6,8 +6,7 @@ import {
   voyageLocation,
   voyageSummary,
   voyageWindow,
-  type CalendarEvent,
-} from "../ics";
+  type CalendarEvent, icsStatus } from "../ics";
 
 /* GET /api/calendar/[token] — a member's season, public by secret.
    The caller is unauthenticated by design (calendar apps carry no cookies),
@@ -52,6 +51,7 @@ export async function GET(
       description,
       url: `${SITE_URL}/charters/${row.slug}`,
       alarm: `${row.title} — boards tomorrow.`,
+      status: icsStatus(row.status),
     };
   });
 

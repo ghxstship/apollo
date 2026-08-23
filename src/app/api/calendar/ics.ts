@@ -48,7 +48,17 @@ export type CalendarEvent = {
   description?: string | null;
   url?: string | null;
   alarm?: string | null;
+  /* A calendar strikes a cancelled event and greys a tentative one; hardcoding
+     CONFIRMED published a called-off sailing as going ahead. */
+  status?: "CONFIRMED" | "TENTATIVE" | "CANCELLED";
 };
+
+/* A calendar client greys a tentative event and strikes a cancelled one. */
+export function icsStatus(status: string | null | undefined): "CONFIRMED" | "TENTATIVE" | "CANCELLED" {
+  if (status === "cancelled") return "CANCELLED";
+  if (status === "weather_hold") return "TENTATIVE";
+  return "CONFIRMED";
+}
 
 export function voyageWindow(voyage: Pick<VoyageRow, "starts_at" | "ends_at">): {
   start: string;
@@ -98,7 +108,7 @@ export function buildCalendar(name: string, events: CalendarEvent[]): string {
     if (event.description) lines.push(`DESCRIPTION:${escapeText(event.description)}`);
     if (event.url) lines.push(`URL:${event.url}`);
     lines.push(
-      "STATUS:CONFIRMED",
+      `STATUS:${event.status ?? "CONFIRMED"}`,
       "TRANSP:OPAQUE",
       /* A day's warning — the same margin a weather hold is called on. */
       "BEGIN:VALARM",

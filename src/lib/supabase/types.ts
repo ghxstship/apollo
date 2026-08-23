@@ -24,6 +24,8 @@ export type ProfileRow = {
 export type HarborRow = {
   id: string; slug: string; name: string; status: string; coordinates: string | null
   launch_year: number | null; position: number
+  /* IANA zone the harbor keeps — departures read on this clock. */
+  time_zone: string
 }
 export type VoyageRow = {
   id: string; slug: string; title: string; class: EventClass; kind: string
@@ -382,6 +384,19 @@ export type Database = {
       counter_signatures: Table<CounterSignatureRow, Ins<CounterSignatureRow, "signature_id" | "signed_by" | "signer_name">>
     }
     Views: {
+      /* What one member may see of another. Deliberately narrower than the
+         profiles row: no email, phone, calendar_token, stripe id or plan. */
+      member_directory: {
+        Row: {
+          /* id is NOT NULL on the table beneath, so it is not null here. */
+          id: string; member_no: string | null; full_name: string | null
+          handle: string | null; tier: "regional" | "national" | "global" | null
+          home_harbor: string | null; avatar_tone: string | null; is_staff: boolean | null
+          joined_at: string | null; status: string | null; bio: string | null
+          in_directory: boolean | null; interests: string[] | null; on_camera: boolean | null
+        }
+        Relationships: []
+      }
       voyage_capacity: {
         Row: {
           voyage_id: string | null; berths_total: number | null; aboard: number | null
@@ -536,6 +551,7 @@ export type Database = {
           rsvp_id: string; boarding_code: string | null; guests: number
           slug: string; title: string; class: EventClass; blurb: string | null
           starts_at: string; ends_at: string | null; coordinates: string | null; muster: string | null
+          status: string
         }>
       }
     }

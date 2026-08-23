@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SURFACES } from "@/lib/brand";
 import { TIER_LABEL } from "@/lib/format";
-import { getMember, type Profile } from "../data";
+import { getMember, type DirectoryMember } from "../data";
 import { relTime } from "../relative";
 import { Composer, FeedList, type FeedPost, type VoyageOption } from "./feed";
 import { OpenDeckRealtime } from "./realtime";
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: SURFACES.openDeck };
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
-function toneOf(p: Profile | undefined | null): "ink" | "sea" | "gold" | "sand" {
+function toneOf(p: { avatar_tone?: string | null } | undefined | null): "ink" | "sea" | "gold" | "sand" {
   const t = p?.avatar_tone;
   return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "sand";
 }
@@ -52,16 +52,16 @@ export default async function OpenDeckPage() {
     )
   );
   const profilesRes = authorIds.length
-    ? await supabase.from("profiles").select("*").in("id", authorIds)
-    : { data: [] as Profile[] };
-  const byId = new Map<string, Profile>((profilesRes.data ?? []).map((p) => [p.id, p]));
+    ? await supabase.from("member_directory").select("*").in("id", authorIds)
+    : { data: [] as DirectoryMember[] };
+  const byId = new Map<string, DirectoryMember>((profilesRes.data ?? []).map((p) => [p.id, p]));
 
   const feed: FeedPost[] = posts.map((p) => {
     const author = p.author_id ? byId.get(p.author_id) : null;
     const who = author?.full_name ?? p.author_name ?? "A member";
     const meta = [
       author?.member_no,
-      author ? TIER_LABEL[author.tier]?.toUpperCase() : "CREW",
+      author?.tier ? TIER_LABEL[author.tier]?.toUpperCase() : "CREW",
       relTime(p.created_at),
     ]
       .filter(Boolean)

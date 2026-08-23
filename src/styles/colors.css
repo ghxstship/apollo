@@ -76,7 +76,11 @@
 --wash-gold:var(--wash-brass);
 /* — signals — */
 --laurel:#5BAE7E;
---siren:#E0503C;
+/* Siren carries every error line and the debit amounts, at 12px on the noir
+   surfaces — the raw kit red lands at 4.44:1 there, just under AA. Lifted
+   toward the kit's ivory until it clears 4.5 on card, page and tint alike.
+   Both stops are kit colours, so the palette stays closed. */
+--siren:color-mix(in srgb,#E0503C 85%,#F4EFE6);
 --positive:#5BAE7E;
 --caution:#D98E2B;
 /* — lines — */
@@ -140,23 +144,27 @@
 --surface-deep-2:#1E252D;
 --surface-abyss:#0B0E12;
 --text-1:#161B21;
---text-2:#4A5560;
---text-3:#7E8894;
+/* The muted ramp used to land at 3.1–3.4:1 on these ivory surfaces — under AA
+   for every nav label, member number, mono strap and table header. Each step
+   moves one stop darker so the three-level hierarchy survives and all of them
+   clear 4.5:1 on paper, card and tint alike. */
+--text-2:#3C4854;
+--text-3:#4A5560;
 --line-faint:rgba(22,27,33,.14);
 --line:rgba(22,27,33,.30);
 --line-strong:rgba(22,27,33,.6);
 --action-primary:#161B21;
 --action-primary-hover:#0B0E12;
 --action-on-primary:#F4EFE6;
---text-link:#966E22;
---focus:#966E22;
---brass-deep:#966E22;
+--text-link:#7C5A1B;
+--focus:#7C5A1B;
+--brass-deep:#7C5A1B;
 --bronze:#966E22;
 --gilt:#966E22;
 --brass:#966E22;
 --brand-social:#966E22;--brand-dating:#D82B4E;--brand-yacht:#1F7A91;
---ok:#3E8A60;--warn:#A96C15;--danger:#C23A28;
---laurel:#3E8A60;--siren:#C23A28;--positive:#3E8A60;--caution:#A96C15;
+--ok:color-mix(in srgb,#3E8A60 70%,#101418);--warn:#A96C15;--danger:color-mix(in srgb,#C23A28 90%,#101418);
+--laurel:color-mix(in srgb,#3E8A60 70%,#101418);--siren:color-mix(in srgb,#C23A28 90%,#101418);--positive:color-mix(in srgb,#3E8A60 70%,#101418);--caution:#A96C15;
 --border-gold:rgba(150,110,34,.5);
 --glow-cyan:0 0 24px rgba(150,110,34,.25); /* @kind shadow */
 --wash-ink:rgba(22,27,33,.06);

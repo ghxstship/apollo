@@ -1,5 +1,6 @@
 "use client";
 
+import { EST_YEAR_ROMAN } from "@/lib/brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -99,7 +100,7 @@ export function SiteNav() {
             <LinkButton href="/gangway" variant="outline" size="md" inverse fullWidth>
               Come aboard
             </LinkButton>
-            <span className="ws-menu__coords">{COORDS} · Est. MMXXIV</span>
+            <span className="ws-menu__coords">{COORDS} · Est. {EST_YEAR_ROMAN}</span>
           </div>
         </div>
       ) : null}

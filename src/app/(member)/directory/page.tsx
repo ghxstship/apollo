@@ -17,7 +17,7 @@ export default async function DirectoryPage() {
 
   const [profilesRes, harborsRes, leagueRes, engagementRes, affinityRes] = await Promise.all([
     supabase
-      .from("profiles")
+      .from("member_directory")
       .select("*")
       .eq("in_directory", true)
       .eq("status", "active")

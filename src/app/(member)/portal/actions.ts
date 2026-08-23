@@ -1,15 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { voice } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type PortalResult = { error?: string };
-
-function brandError(raw: string | null | undefined): string {
-  const m = (raw ?? "").trim();
-  if (!m) return "That didn't land. Try again.";
-  return m.charAt(0).toUpperCase() + m.slice(1) + (/[.!?]$/.test(m) ? "" : ".");
-}
 
 export async function redeemReward(rewardId: string): Promise<PortalResult> {
   const supabase = await createClient();
@@ -19,7 +14,7 @@ export async function redeemReward(rewardId: string): Promise<PortalResult> {
   if (!user) return { error: "Sign in first." };
 
   const { error } = await supabase.rpc("redeem_reward", { p_reward: rewardId });
-  if (error) return { error: brandError(error.message) };
+  if (error) return { error: voice(error) };
 
   revalidatePath("/portal");
   revalidatePath("/home");
@@ -35,27 +30,22 @@ export async function mintInvite(): Promise<PortalResult> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("id", user.id)
-    .maybeSingle();
-  const first = (profile?.full_name ?? "member").trim().split(/\s+/)[0] || "member";
-  const suffix = first.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12) || "MEMBER";
-
+  /* The code used to carry the inviter's first name and four Math.random
+     characters. validate_invite is anon-callable, so that made a member's name
+     brute-forceable from a code that already named them. Nothing about the
+     inviter goes into the code now, and the randomness is crypto-strength. */
   for (let attempt = 0; attempt < 6; attempt++) {
-    let mid = "";
-    for (let i = 0; i < 4; i++) {
-      mid += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
-    }
-    const code = `SYR-${mid}-${suffix}`;
+    const bytes = new Uint8Array(8);
+    crypto.getRandomValues(bytes);
+    const body = Array.from(bytes, (b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
+    const code = `SYR-${body.slice(0, 4)}-${body.slice(4, 8)}`;
     const { error } = await supabase.from("invites").insert({ code, inviter_id: user.id });
     if (!error) {
       revalidatePath("/portal");
       return {};
     }
     /* 23505: the code is taken — roll again. Anything else, surface it. */
-    if (error.code !== "23505") return { error: brandError(error.message) };
+    if (error.code !== "23505") return { error: voice(error) };
   }
   return { error: "The mint jammed. Try once more." };
 }

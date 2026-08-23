@@ -42,3 +42,10 @@ next-env.d.ts
 route-audit-report.json
 e2e-report.json
 supabase/.temp/
+
+# Scratch files from test/harden runs. One of these carried a live staff
+# session into a commit once; nothing of the sort gets tracked again.
+scratchpad*
+*session*.json
+*.session
+.env.local

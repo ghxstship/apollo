@@ -123,6 +123,7 @@ export function Composer({
           />
         ) : voyages.length > 0 ? (
           <button
+      className="ls-bare"
             type="button"
             onClick={() => setAttaching(true)}
             style={{
@@ -248,6 +249,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
         <>
           <Hail count={post.hails} hailed={post.myHail} onToggle={pending ? undefined : hail} />
           <button
+      className="ls-bare"
             type="button"
             onClick={() => setShowComments((s) => !s)}
             aria-expanded={showComments}
@@ -267,6 +269,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
           <span style={{ marginLeft: "auto" }}>
             {post.mine ? (
               <button
+      className="ls-bare"
                 type="button"
                 onClick={() => setConfirming(true)}
                 style={{

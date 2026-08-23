@@ -20,7 +20,7 @@ export function ProducerLauncher() {
       type="button"
       className="pr-fab"
       onClick={() => setOpen(true)}
-      aria-label={`Open the ${SURFACES.agent} assistant`}
+      aria-label={`Open ${SURFACES.agent}`}
     >
       <span>
         <Icon name="Compass" size={15} />

@@ -302,3 +302,10 @@
 .ls-tip__bubble{position:absolute;left:50%;transform:translate(-50%,-4px);bottom:100%;margin-bottom:6px;background:var(--surface-deep);color:var(--text-inverse-1);font:600 10px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.14em;text-transform:uppercase;padding:7px 12px;border-radius:var(--radius-sharp);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity var(--dur-1) var(--ease-swell),transform var(--dur-1) var(--ease-swell);z-index:900}
 .ls-tip--bottom .ls-tip__bubble{bottom:auto;top:100%;margin-bottom:0;margin-top:6px;transform:translate(-50%,4px)}
 .ls-tip:hover .ls-tip__bubble,.ls-tip:focus-within .ls-tip__bubble{opacity:1;transform:translate(-50%,0)}
+
+/* — bare buttons — `all: unset` is the cleanest way to strip a button back to
+     text, but it resets `outline` too, and because it is set inline it outranks
+     the global :focus-visible ring — leaving Hail, Flag, Reply, Strike, Enter
+     and Redeem with no keyboard focus indicator at all (WCAG 2.4.7). Overriding
+     an inline declaration is the one case !important is actually for. — */
+.ls-bare:focus-visible{outline:2px solid var(--focus) !important;outline-offset:3px;border-radius:2px}

@@ -1,5 +1,6 @@
 "use server";
 
+import { safeNext } from "@/lib/safe-next";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,10 +10,7 @@ export type GangwayState = {
   error?: string;
 };
 
-/* Only ever bounce back to a path we own. */
-function safeNext(raw: string): string {
-  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/home";
-}
+
 
 export async function sendMagicLink(
   _prev: GangwayState,

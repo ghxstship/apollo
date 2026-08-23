@@ -115,6 +115,7 @@ export function Hail({
 }) {
   return (
     <button
+      className="ls-bare"
       onClick={onToggle}
       style={{
         all: "unset",
@@ -239,6 +240,7 @@ export function Composer({
           </span>
         ) : onAttachSailing ? (
           <button
+      className="ls-bare"
             onClick={onAttachSailing}
             style={{
               all: "unset",
@@ -282,6 +284,7 @@ export function FlagButton({
 }) {
   return (
     <button
+      className="ls-bare"
       onClick={onFlag}
       disabled={flagged}
       style={{

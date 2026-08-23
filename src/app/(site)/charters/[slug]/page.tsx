@@ -92,10 +92,15 @@ export default async function VoyagePage({
     .maybeSingle();
   if (!voyage) notFound();
 
-  const [{ data: cap }, { data: { user } }] = await Promise.all([
+  const [{ data: cap }, { data: { user } }, { data: harbor }] = await Promise.all([
     supabase.from("voyage_capacity").select("*").eq("voyage_id", voyage.id).maybeSingle(),
     supabase.auth.getUser(),
+    voyage.harbor_id
+      ? supabase.from("harbors").select("time_zone").eq("id", voyage.harbor_id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  /* A sailing is announced on its harbor's clock, not the server's. */
+  const zone = harbor?.time_zone ?? null;
 
   /* Real names ride with consent, and only for signed-in members —
      profiles aren't readable from the shore. */
@@ -147,6 +152,18 @@ export default async function VoyagePage({
     .filter(Boolean)
     .join(" · ");
 
+  /* A sailing in the past, or one the club called off, is a log entry — not a
+     pass on sale. The panel below branched only on weather_hold/live/full, so
+     fourteen voyages advertised "Reserve a pass" with a live pass count. */
+  /* Server-rendered per request, so "now" is request time — captured once,
+     the way the manifest does it. */
+  const nowMs = new Date().getTime();
+  const cancelled = voyage.status === "cancelled";
+  const sailed =
+    !cancelled &&
+    (voyage.status === "completed" || new Date(voyage.starts_at).getTime() < nowMs);
+  const closed = cancelled || sailed;
+
   /* The plan — itinerary stops as offsets (minutes) from cast off. */
   const stops = (Array.isArray(voyage.itinerary) ? voyage.itinerary : []).flatMap((raw) => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
@@ -156,7 +173,7 @@ export default async function VoyagePage({
       : [];
   });
   const stopTime = (offset: number) =>
-    logTime(new Date(new Date(voyage.starts_at).getTime() + offset * 60 * 1000).toISOString());
+    logTime(new Date(new Date(voyage.starts_at).getTime() + offset * 60 * 1000).toISOString(), zone);
 
   const firstNames = crew.map((c) => c.name.split(" ")[0]);
 
@@ -177,9 +194,9 @@ export default async function VoyagePage({
           <div className="ev-hero__meta">
             <span>{classMeta}</span>
             <span>·</span>
-            <span>{logDate(voyage.starts_at)}</span>
+            <span>{logDate(voyage.starts_at, zone)}</span>
             <span>·</span>
-            <span>{logTime(voyage.starts_at)}</span>
+            <span>{logTime(voyage.starts_at, zone)}</span>
             {voyage.coordinates ? (
               <>
                 <span>·</span>
@@ -269,7 +286,11 @@ export default async function VoyagePage({
           <div className="ev-panel">
             <div className="ev-panel__label">Passage</div>
             <div style={{ marginBottom: 16 }}>
-              {voyage.status === "weather_hold" ? (
+              {cancelled ? (
+                <Badge tone="caution">Cancelled</Badge>
+              ) : sailed ? (
+                <Badge tone="outline">Sailed</Badge>
+              ) : voyage.status === "weather_hold" ? (
                 <Badge tone="caution">Weather hold</Badge>
               ) : voyage.status === "live" ? (
                 <span className="ls-live ws-live-label">Underway</span>
@@ -279,7 +300,16 @@ export default async function VoyagePage({
                 <Badge tone="outline">Passes open</Badge>
               )}
             </div>
-            {voyage.status === "weather_hold" ? (
+            {cancelled ? (
+              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+                The club called this one off. Anything reserved against it was
+                credited in full — the manifest holds the next open water.
+              </p>
+            ) : sailed ? (
+              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+                This one is in the log. What the cameras kept is in Episodes.
+              </p>
+            ) : voyage.status === "weather_hold" ? (
               <p style={{ fontSize: 13, color: "var(--text-2)" }}>
                 A hold is a postponement, not a cancellation. The new date arrives in
                 Episodes, and every reserved pass carries forward in full.
@@ -316,9 +346,11 @@ export default async function VoyagePage({
                 Reserve a pass
               </LinkButton>
             )}
-            <p className="ev-mono-note">
-              {price(voyage.price_cents)} · {TIER_LABEL[voyage.min_tier]} tier and up
-            </p>
+            {closed ? null : (
+              <p className="ev-mono-note">
+                {price(voyage.price_cents)} · {TIER_LABEL[voyage.min_tier]} tier and up
+              </p>
+            )}
           </div>
 
           <div className="ev-log">
@@ -328,15 +360,15 @@ export default async function VoyagePage({
             </div>
             <div>
               <span>Date</span>
-              <span>{logDate(voyage.starts_at)}</span>
+              <span>{logDate(voyage.starts_at, zone)}</span>
             </div>
             <div>
               <span>Boards</span>
-              <span>{logTime(boards)}</span>
+              <span>{logTime(boards, zone)}</span>
             </div>
             <div>
               <span>Cast off</span>
-              <span>{logTime(voyage.starts_at)}</span>
+              <span>{logTime(voyage.starts_at, zone)}</span>
             </div>
             {voyage.coordinates ? (
               <div>
@@ -353,7 +385,11 @@ export default async function VoyagePage({
             <div>
               <span>{seatsWord}</span>
               <span>
-                {left != null ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT` : voyage.berths_total}
+                {closed
+                  ? `${cap?.berths_total ?? voyage.berths_total} ABOARD`
+                  : left != null
+                    ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT`
+                    : voyage.berths_total}
               </span>
             </div>
             <div>

@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/lib/supabase/types";
 
 export type Profile = Tables<"profiles">;
+/* What one member sees of another — narrower than their own Profile on
+   purpose: no email, phone, calendar token, stripe id or plan. */
+export type DirectoryMember = Tables<"member_directory">;
 export type Harbor = Tables<"harbors">;
 export type Voyage = Tables<"voyages">;
 export type Rsvp = Tables<"rsvps">;

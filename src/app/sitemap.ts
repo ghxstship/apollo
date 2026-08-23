@@ -31,7 +31,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const supabase = await createClient();
   const [{ data: voyages }, { data: posts }] = await Promise.all([
-    supabase.from("voyages").select("slug, created_at"),
+    /* The listing shows scheduled/live/held sailings; the sitemap used to
+       publish every row, which put E2E fixtures and cancelled voyages in front
+       of search engines. One rule, both places. */
+    supabase
+      .from("voyages")
+      .select("slug, created_at")
+      .in("status", ["scheduled", "live", "weather_hold", "completed"]),
     supabase.from("dispatch_posts").select("slug, published_at"),
   ]);
 

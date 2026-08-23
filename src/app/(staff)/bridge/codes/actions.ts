@@ -28,7 +28,7 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
   if (!code) return { error: "A code needs characters." };
   if (input.kind === "percent" && (input.value < 1 || input.value > 100))
     return { error: "A percentage runs 1 to 100." };
-  if (input.kind === "amount" && input.value < 1) return { error: "An amount off needs dollars." };
+  if (input.kind === "amount" && input.value < 100) return { error: "An amount off needs at least a dollar." };
 
   const { error } = await supabase.from("promo_codes").insert({
     code,

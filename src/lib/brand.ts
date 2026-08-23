@@ -50,6 +50,10 @@ export const SURFACES = {
 export const MAIL_DOMAIN = "syrius.social";
 export const SITE_DOMAIN = "syrius.social";
 
+/* The founding year, in one place. The press kit's "for the record" table and
+   the footer used to disagree — MMXXVI against MMXXIV — on the same page. */
+export const EST_YEAR_ROMAN = "MMXXIV";
+
 export const MAILBOX = {
   shore: `shore@${MAIL_DOMAIN}`,
   crew: `crew@${MAIL_DOMAIN}`,

@@ -1,24 +1,58 @@
 /* Ship's-log formatting — mono caps data per the design system.
-   "JUL 26 · 06:00 · 26 NM", "33.9803° N — 118.4517° W", EST. MMXXIV. */
+   "JUL 26 · 06:00 · 26 NM", "33.9803° N — 118.4517° W", EST. MMXXIV.
+
+   A sailing happens on its harbor's clock. Passing `zone` reads the instant
+   there; omitting it falls back to the rendering machine's zone, which is only
+   ever right by luck — every departure surface should pass one. */
 
 const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-export function logDate(iso: string): string {
+export type Zone = string | null | undefined;
+
+function partsIn(iso: string, zone: Zone): Record<string, string> {
   const d = new Date(iso);
-  return `${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}`;
+  if (!zone) {
+    return {
+      month: String(d.getMonth() + 1),
+      day: String(d.getDate()),
+      hour: String(d.getHours()),
+      minute: String(d.getMinutes()),
+    };
+  }
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone,
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const out: Record<string, string> = {};
+  for (const p of fmt.formatToParts(d)) {
+    if (p.type !== "literal") out[p.type] = p.value;
+  }
+  return out;
 }
 
-export function logTime(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+export function logDate(iso: string, zone?: Zone): string {
+  const p = partsIn(iso, zone);
+  const m = Number(p.month) - 1;
+  return `${MONTHS[m] ?? "—"} ${String(Number(p.day)).padStart(2, "0")}`;
 }
 
-export function logDateTime(iso: string): string {
-  return `${logDate(iso)} · ${logTime(iso)}`;
+export function logTime(iso: string, zone?: Zone): string {
+  const p = partsIn(iso, zone);
+  /* Intl renders midnight as "24" under hour12:false in some engines. */
+  const h = Number(p.hour) % 24;
+  return `${String(h).padStart(2, "0")}:${String(Number(p.minute)).padStart(2, "0")}`;
 }
 
-export function logMeta(iso: string, distanceNm?: number | null): string[] {
-  const parts = [logDate(iso), logTime(iso)];
+export function logDateTime(iso: string, zone?: Zone): string {
+  return `${logDate(iso, zone)} · ${logTime(iso, zone)}`;
+}
+
+export function logMeta(iso: string, distanceNm?: number | null, zone?: Zone): string[] {
+  const parts = [logDate(iso, zone), logTime(iso, zone)];
   if (distanceNm != null) parts.push(`${distanceNm} NM`);
   return parts;
 }

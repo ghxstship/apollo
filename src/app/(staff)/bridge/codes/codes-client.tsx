@@ -22,7 +22,8 @@ export type CodeRow = {
 function valueLine(kind: CodeKind, value: number): string {
   if (kind === "comp") return "COMPLIMENTARY";
   if (kind === "percent") return `${value}% OFF`;
-  return `$${value} OFF`;
+  /* Stored in cents, like every other money column. */
+  return `$${(value / 100).toFixed(value % 100 ? 2 : 0)} OFF`;
 }
 
 export function CodesClient({
@@ -168,7 +169,11 @@ export function CodesClient({
                 const payload = {
                   code,
                   kind,
-                  value: Number(value) || 0,
+                  /* The field asks for dollars; the column keeps cents. */
+                  value:
+                    kind === "amount"
+                      ? Math.round((Number(value) || 0) * 100)
+                      : Number(value) || 0,
                   voyageId,
                   maxUses: Number(maxUses) || 1,
                   expiresAt: expires,

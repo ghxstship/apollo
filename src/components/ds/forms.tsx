@@ -1,6 +1,43 @@
 "use client";
 import React from "react";
 
+/* Error text used to render as a bare sibling span: visible, but invisible to
+   a screen reader. The control never announced itself invalid, the message was
+   never associated with it, and nothing was announced on submit — so someone
+   filling in the membership application by ear was told nothing when it
+   failed. Every field here now wires aria-invalid + aria-describedby and
+   announces the message when it appears. WCAG 3.3.1 / 1.3.1. */
+function describedBy(
+  error: React.ReactNode,
+  hint: React.ReactNode,
+  errorId: string,
+  hintId: string,
+  own?: string
+): string | undefined {
+  const ids = [own, error ? errorId : hint ? hintId : null].filter(Boolean);
+  return ids.length ? ids.join(" ") : undefined;
+}
+
+function Message({
+  error, hint, errorId, hintId,
+}: { error: React.ReactNode; hint: React.ReactNode; errorId: string; hintId: string }) {
+  if (error) {
+    return (
+      <span className="ls-field__error" id={errorId} role="alert">
+        {error}
+      </span>
+    );
+  }
+  if (hint) {
+    return (
+      <span className="ls-field__hint" id={hintId}>
+        {hint}
+      </span>
+    );
+  }
+  return null;
+}
+
 /* — Input — */
 export function Input({
   label, hint, error, id, className = "", style, ...rest
@@ -10,8 +47,14 @@ export function Input({
   return (
     <div className={["ls-field", error ? "ls-field--error" : "", className].filter(Boolean).join(" ")} style={style}>
       {label ? <label className="ls-field__label" htmlFor={iid}>{label}</label> : null}
-      <input id={iid} className="ls-input" {...rest} />
-      {error ? <span className="ls-field__error">{error}</span> : hint ? <span className="ls-field__hint">{hint}</span> : null}
+      <input
+        id={iid}
+        className="ls-input"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, rest["aria-describedby"])}
+        {...rest}
+      />
+      <Message error={error} hint={hint} errorId={`${iid}-err`} hintId={`${iid}-hint`} />
     </div>
   );
 }
@@ -25,8 +68,15 @@ export function Textarea({
   return (
     <div className={["ls-field", error ? "ls-field--error" : "", className].filter(Boolean).join(" ")} style={style}>
       {label ? <label className="ls-field__label" htmlFor={iid}>{label}</label> : null}
-      <textarea id={iid} rows={rows} className="ls-textarea" {...rest}></textarea>
-      {error ? <span className="ls-field__error">{error}</span> : hint ? <span className="ls-field__hint">{hint}</span> : null}
+      <textarea
+        id={iid}
+        rows={rows}
+        className="ls-textarea"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, rest["aria-describedby"])}
+        {...rest}
+      ></textarea>
+      <Message error={error} hint={hint} errorId={`${iid}-err`} hintId={`${iid}-hint`} />
     </div>
   );
 }
@@ -45,13 +95,20 @@ export function Select({
     <div className={["ls-field", error ? "ls-field--error" : "", className].filter(Boolean).join(" ")} style={style}>
       {label ? <label className="ls-field__label" htmlFor={iid}>{label}</label> : null}
       <div className="ls-select-wrap">
-        <select id={iid} className="ls-select" defaultValue={rest.value === undefined && placeholder ? "" : undefined} {...rest}>
+        <select
+          id={iid}
+          className="ls-select"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, rest["aria-describedby"])}
+          defaultValue={rest.value === undefined && placeholder ? "" : undefined}
+          {...rest}
+        >
           {placeholder ? <option value="" disabled>{placeholder}</option> : null}
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           {children}
         </select>
       </div>
-      {error ? <span className="ls-field__error">{error}</span> : hint ? <span className="ls-field__hint">{hint}</span> : null}
+      <Message error={error} hint={hint} errorId={`${iid}-err`} hintId={`${iid}-hint`} />
     </div>
   );
 }

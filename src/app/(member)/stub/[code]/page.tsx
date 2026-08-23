@@ -74,7 +74,7 @@ export default async function StubPage({
     rsvp.profile_id === user.id
       ? { data: profile }
       : await supabase
-          .from("profiles")
+          .from("member_directory")
           .select("full_name, member_no, tier")
           .eq("id", rsvp.profile_id)
           .maybeSingle();

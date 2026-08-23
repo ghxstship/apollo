@@ -193,7 +193,7 @@ export async function redactSignature(id: string): Promise<ActionResult> {
 
   const { error } = await supabase.rpc("redact_signature", { p_id: id });
   if (error) {
-    if (/already redacted/i.test(error.message)) return { error: "That one is already redacted." };
+    if (/^signature .*already redacted/i.test(error.message)) return { error: "That one is already redacted." };
     return { error: ERR_LAND };
   }
   revalidatePath("/bridge/documents");

@@ -47,7 +47,7 @@ export default async function VoyagesPage() {
     supabase.from("crew_requests").select("*").eq("open", true),
     /* The roll a pass may be handed to. */
     supabase
-      .from("profiles")
+      .from("member_directory")
       .select("id, full_name, member_no, handle")
       .eq("status", "active")
       .neq("id", user.id)

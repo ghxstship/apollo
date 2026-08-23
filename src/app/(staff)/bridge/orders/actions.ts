@@ -60,9 +60,18 @@ export async function refundShopOrder(orderId: string): Promise<ActionResult> {
     .eq("id", orderId);
   if (statusError) return { error: ERR_LAND };
 
+  /* Refund what was charged, not what was listed. charge_shop_order posts
+     total_cents minus discount_cents, so crediting the gross handed back the
+     discount as real account credit on every order-then-refund cycle — a
+     purchase quietly paying the member. */
+  const refundCents = Math.max(
+    (order.total_cents ?? 0) - (order.discount_cents ?? 0),
+    0
+  );
+
   const { error: ledgerError } = await supabase.from("account_ledger").insert({
     profile_id: order.profile_id,
-    delta_cents: order.total_cents,
+    delta_cents: refundCents,
     kind: "refund",
     memo: `Slop Chest order ${orderId.slice(0, 8).toUpperCase()} refunded`,
     created_by: staffId,
@@ -76,7 +85,7 @@ export async function refundShopOrder(orderId: string): Promise<ActionResult> {
     const { error: receiptError } = await supabase.rpc("queue_email", {
       p_to: member.email,
       p_template: "refund-posted",
-      p_payload: { name: member.full_name ?? "sailor", amount: price(order.total_cents) },
+      p_payload: { name: member.full_name ?? "sailor", amount: price(refundCents) },
     });
     if (receiptError) {
       return { error: "Refunded and credited, but the receipt did not queue." };

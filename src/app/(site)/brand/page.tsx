@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Badge, Tag, Icon } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, MAILBOX, SUB_BRANDS, SUB_CLASSES, SURFACES, TAGLINE, WORDMARK } from "@/lib/brand";
+import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, MAILBOX, SUB_BRANDS, SUB_CLASSES, SURFACES, TAGLINE, WORDMARK, EST_YEAR_ROMAN } from "@/lib/brand";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
 
@@ -72,7 +72,7 @@ const IMAGERY: Array<[string, string]> = [
 ];
 
 const FACTS: Array<[string, string]> = [
-  ["Founded", "MMXXVI · MARINA DEL REY, CALIFORNIA"],
+  ["Founded", `${EST_YEAR_ROMAN} · MARINA DEL REY, CALIFORNIA`],
   ["Home port", "33.9803° N — 118.4517° W"],
   ["What we run", "CHARTERS ABOARD · TABLES ASHORE · CAMERAS ON"],
   ["Casting", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY APPLICATION OR INVITATION"],
