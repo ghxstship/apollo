@@ -60,7 +60,8 @@ export function Composer({ threadId, closed }: { threadId: string; closed: boole
         rows={3}
         maxLength={4000}
         disabled={closed}
-        placeholder={closed ? "The thread is closed." : "Say it to the crew"}
+        /* A direct thread is not the crew. */
+        placeholder={closed ? "Nobody is left to read this." : "Say it"}
         error={state.error}
         aria-label="Your word"
       />

@@ -40,6 +40,13 @@ export function logDate(iso: string, zone?: Zone): string {
   return `${MONTHS[m] ?? "—"} ${String(Number(p.day)).padStart(2, "0")}`;
 }
 
+/* "AUG 23 · 2027" — the ship's-log date carrying its year. logDate alone drops
+   it, which made a waiver signed today and valid for a year read
+   "AUG 23 · UNTIL AUG 23": expiring the day it was signed. */
+export function logDateYear(iso: string, zone?: Zone): string {
+  return `${logDate(iso, zone)} · ${partsIn(iso, zone).year}`;
+}
+
 export function logTime(iso: string, zone?: Zone): string {
   const p = partsIn(iso, zone);
   /* Intl renders midnight as "24" under hour12:false in some engines. */

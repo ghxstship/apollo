@@ -2,7 +2,7 @@ import { LEDGER_KIND } from "@/lib/brand";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Progress, StateBlock, Table } from "@/components/ds";
-import { TIER_LABEL, logDate, price } from "@/lib/format";
+import { TIER_LABEL, logDate, price, logDateYear } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
@@ -53,11 +53,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 function money(cents: number): string {
   return `$${(Math.abs(cents) / 100).toFixed(2)}`;
-}
-
-/* "AUG 18 · 2026" — the ship's-log date, carrying the year the ledger needs. */
-function logDateYear(iso: string): string {
-  return `${logDate(iso)} · ${new Date(iso).getFullYear()}`;
 }
 
 export default async function AccountPage({
@@ -386,9 +381,14 @@ export default async function AccountPage({
               rowKey={(r) => r.id}
             />
             <p className="mbr-mono" style={{ marginTop: 12 }}>
+              {/* A member $776 in credit was told "SETTLED" — true only in the
+                  sense that they owe nothing, and wrong about the money that is
+                  theirs. Three states, not two. */}
               {accountBalance < 0
                 ? `BALANCE — ${money(accountBalance)} DUE`
-                : "BALANCE — SETTLED"}
+                : accountBalance > 0
+                  ? `BALANCE — ${money(accountBalance)} IN CREDIT`
+                  : "BALANCE — SETTLED"}
             </p>
             {accountBalance < 0 && processorLive ? (
               <div style={{ marginTop: 12 }}>

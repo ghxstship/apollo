@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ds";
-import { logDate } from "@/lib/format";
+import { logDate, logDateYear } from "@/lib/format";
 import { getMember } from "../data";
 
 export const metadata: Metadata = { title: "Agreements" };
@@ -73,7 +73,7 @@ export default async function AgreementsPage() {
                   {r.state === "signed" ? (
                     <span className="agr-when">
                       {r.signed_at ? logDate(r.signed_at) : ""}
-                      {r.expires_at ? ` · UNTIL ${logDate(r.expires_at)}` : ""}
+                      {r.expires_at ? ` · UNTIL ${logDateYear(r.expires_at)}` : ""}
                     </span>
                   ) : (
                     <Link href={`/agreements/${r.document_code}`} className="ls-btn ls-btn--sm">

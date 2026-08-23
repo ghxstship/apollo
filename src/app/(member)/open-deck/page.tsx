@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { SURFACES } from "@/lib/brand";
-import { TIER_LABEL } from "@/lib/format";
 import { getMember, type DirectoryMember } from "../data";
 import { relTime } from "../relative";
 import { Composer, FeedList, type FeedPost, type VoyageOption } from "./feed";
@@ -56,12 +55,23 @@ export default async function OpenDeckPage() {
     : { data: [] as DirectoryMember[] };
   const byId = new Map<string, DirectoryMember>((profilesRes.data ?? []).map((p) => [p.id, p]));
 
+  /* League, not tier — tenure rather than spend, matching the directory. */
+  const leagueRes = authorIds.length
+    ? await supabase.from("member_league").select("profile_id, league_name").in("profile_id", authorIds)
+    : { data: [] as Array<{ profile_id: string; league_name: string }> };
+  const leagueOf = new Map(
+    (leagueRes.data ?? []).map((l) => [l.profile_id, (l.league_name ?? "").split(" — ")[0]])
+  );
+
   const feed: FeedPost[] = posts.map((p) => {
     const author = p.author_id ? byId.get(p.author_id) : null;
     const who = author?.full_name ?? p.author_name ?? "A member";
     const meta = [
       author?.member_no,
-      author?.tier ? TIER_LABEL[author.tier]?.toUpperCase() : "CREW",
+      /* Not the paid tier. The directory deliberately shows League — tenure —
+         rather than what someone spends, and this was the one surface
+         broadcasting a member's plan level beside everything they wrote. */
+      leagueOf.get(p.author_id ?? "")?.toUpperCase() ?? "CREW",
       relTime(p.created_at),
     ]
       .filter(Boolean)

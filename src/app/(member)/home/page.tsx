@@ -75,7 +75,9 @@ export default async function HarborPage() {
           Fair winds, {firstName(profile)}.
         </h1>
         <div className="mbr-mono" style={{ marginTop: 8 }}>
-          {(harbor?.name ?? "MARINA DEL REY").toUpperCase()}
+          {/* The club's own harbour is not the member's. Every fixture with a
+              null home_harbor was being told theirs was Marina del Rey. */}
+          {harbor?.name ? harbor.name.toUpperCase() : "NO HOME HARBOR YET"}
           {harbor?.coordinates ? ` · ${harbor.coordinates}` : ""}
         </div>
       </div>

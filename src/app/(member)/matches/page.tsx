@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Avatar } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import { getMember } from "../data";
-import { sendAWord } from "../directory/actions";
+import { SendAWord } from "@/components/member/send-a-word";
 
 export const metadata: Metadata = { title: "Matches" };
 
@@ -78,12 +78,7 @@ export default async function MatchesPage() {
                     <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 4 }}>{p.bio}</p>
                   ) : null}
                 </div>
-                <form action={sendAWord}>
-                  <input type="hidden" name="other" value={otherId} />
-                  <button className="ls-btn ls-btn--gold ls-btn--sm" type="submit">
-                    Say something
-                  </button>
-                </form>
+                <SendAWord otherId={otherId} label="Say something" />
               </div>
             );
           })}

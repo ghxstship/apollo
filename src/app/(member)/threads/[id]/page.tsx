@@ -66,11 +66,28 @@ export default async function ThreadPage({
     .map((r) => peopleById.get(r.profile_id))
     .filter((p): p is Profile => !!p);
 
+  /* A direct thread whose other seat is empty: the member left, or a moderator
+     removed them. The header used to fall back to "A member" while every
+     message below was bylined with their real name — the same screen
+     contradicting itself — and the composer stayed live, so a member could go
+     on writing into a room nobody was in. Name them from the messages that are
+     still there, and say plainly that they are gone. */
+  const departed =
+    thread.kind === "direct" &&
+    others.length === 0 &&
+    (messages ?? []).some((m) => m.author_id !== user.id);
+  const departedName =
+    departed
+      ? (messages ?? [])
+          .map((m) => (m.author_id !== user.id ? peopleById.get(m.author_id ?? "")?.full_name : null))
+          .find((n): n is string => !!n) ?? "That member"
+      : null;
+
   const title =
     thread.kind === "crew"
       ? `${voyage?.title ?? thread.title ?? "A voyage"} — crew`
       : thread.kind === "direct"
-        ? others[0]?.full_name ?? "A member"
+        ? others[0]?.full_name ?? departedName ?? "A member"
         : thread.title ?? "Shoreside";
   const eyebrow =
     thread.kind === "crew"
@@ -113,6 +130,11 @@ export default async function ThreadPage({
         {thread.closed_at ? (
           <p className="mbr-mono thr-closed">Closed after the debrief</p>
         ) : null}
+        {departed ? (
+          <p className="mbr-mono thr-closed">
+            {departedName} has left this conversation
+          </p>
+        ) : null}
       </header>
 
       {(messages ?? []).length === 0 ? (
@@ -147,7 +169,7 @@ export default async function ThreadPage({
         </div>
       )}
 
-      <Composer threadId={thread.id} closed={!!thread.closed_at} />
+      <Composer threadId={thread.id} closed={!!thread.closed_at || departed} />
     </div>
   );
 }

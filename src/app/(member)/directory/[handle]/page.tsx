@@ -6,7 +6,7 @@ import { CITY_CODES, CURRENCY, FAMILY_LABEL, knots } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
-import { sendAWord } from "../actions";
+import { SendAWord } from "@/components/member/send-a-word";
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
@@ -124,12 +124,7 @@ export default async function MemberPage({
           </p>
         </div>
         {!own ? (
-          <form action={sendAWord} className="dir-head__act">
-            <input type="hidden" name="other" value={member.id} />
-            <button type="submit" className="ls-btn ls-btn--brass ls-btn--sm">
-              Send a word
-            </button>
-          </form>
+          <SendAWord otherId={member.id} className="dir-head__act" />
         ) : null}
       </header>
 

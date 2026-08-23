@@ -49,7 +49,9 @@ export default async function MemberCardPage() {
           <div className="crd-meta">
             {memberNo} · {tier}
           </div>
-          <div className="crd-est">EST. {roman(joinedYear)} · MARINA DEL REY</div>
+          {/* The card carries the club's founding, not a harbour the member
+              may never have set. */}
+          <div className="crd-est">EST. {roman(joinedYear)}</div>
           <div className="crd-code" aria-label={`Boarding code ${memberNo}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- data URI QR, no next/image benefit */}
             <img

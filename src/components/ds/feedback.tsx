@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "./icon";
 
 /* — Dialog — */
@@ -11,6 +12,14 @@ export function Dialog({
 }) {
   const boxRef = React.useRef<HTMLDivElement>(null);
   const titleId = React.useId();
+  /* useSyncExternalStore rather than a setState in an effect: the server
+     snapshot is false and the client's is true, which is exactly the
+     "am I mounted?" question a portal needs, without a render-then-set. */
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && onClose) onClose(); };
@@ -20,8 +29,16 @@ export function Dialog({
     if (boxRef.current) boxRef.current.focus();
     return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
   }, [open, onClose]);
-  if (!open) return null;
-  return (
+  /* Portalled to the document root. The veil is z-index 1000 and the member
+     tab bar is 300, but z-index only orders siblings within a stacking
+     context — rendered in place, the dialog sat inside one the tab bar was not
+     part of, and the bar painted straight over the footer. On a phone that put
+     the tab bar on top of "CONFIRM YOUR PASS", and with body overflow hidden
+     there was no way to scroll it clear: nobody on a phone could book a pass.
+
+     Mounted state, because a portal has no document to aim at on the server. */
+  if (!open || !mounted) return null;
+  return createPortal(
     <div className="ls-dialog-veil" onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
       <div className="ls-dialog" ref={boxRef} tabIndex={-1} style={{ maxWidth: "min(" + width + "px, calc(100vw - 32px))" }} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined}>
         <div className="ls-dialog__head">
@@ -34,7 +51,8 @@ export function Dialog({
         <div className="ls-dialog__body">{children}</div>
         {footer ? <div className="ls-dialog__foot">{footer}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
