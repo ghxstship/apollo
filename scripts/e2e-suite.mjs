@@ -218,7 +218,7 @@ const ANON_SEALED = [
   "galley_order_items", "galley_items", "products", "rewards",
   "reward_redemptions", "saved_segments", "api_keys", "webhooks", "sms_templates",
   "webhook_deliveries", "automations", "marks", "member_marks",
-  "contests", "contest_entries", "contest_results", "voyage_media",
+  "contests", "contest_entries", "contest_results",
   "member_engagement", "member_affinity", "fathoms_balance", "account_balance",
   "waitlist_position", "member_league", "member_pass_usage",
 ];
@@ -240,6 +240,35 @@ async function anonSurface() {
     const clean = res.status === 200 && Array.isArray(res.data) && res.data.length === 0;
     note("anon", `${t} is sealed and fails closed`, clean,
       `got ${res.status} ${JSON.stringify(res.data).slice(0, 80)}`);
+  }
+
+  /* voyage_media is NOT sealed and must not be listed as such — the public
+     gallery reads approved frames by design, and the assertion only ever
+     passed because no approved row happened to exist. What actually matters
+     is the line between approved and not: a frame pulled for consent, or one
+     still waiting on the Bridge, must be invisible to the open water.
+
+     Stated as a property of whatever is there rather than against a fixture,
+     so it holds on an empty table and bites the moment a row leaks. */
+  const frames = await anon.get("voyage_media?select=id,approved,storage_path");
+  note("anon", "the gallery is readable, not sealed",
+    frames.status === 200 && Array.isArray(frames.data), `got ${frames.status}`);
+  note("anon", "every frame anon can see is approved",
+    Array.isArray(frames.data) && frames.data.every((f) => f.approved === true),
+    `${(frames.data || []).filter((f) => !f.approved).length} unapproved frames visible`);
+
+  const pending = await anon.get("voyage_media?select=id&approved=eq.false");
+  note("anon", "frames awaiting the Bridge stay off the water",
+    pending.status === 200 && (pending.data || []).length === 0,
+    `got ${pending.status} ${JSON.stringify(pending.data).slice(0, 80)}`);
+
+  /* Knowing a frame's path must not be the same as being able to fetch it —
+     the row is public, the file is not. Display goes through a signed URL. */
+  const somePath = (frames.data || [])[0]?.storage_path;
+  if (somePath) {
+    const direct = await fetch(`${SUPA}/storage/v1/object/public/voyage-media/${somePath}`);
+    note("anon", "a known frame path is still not a public URL", direct.status >= 400,
+      `got ${direct.status}`);
   }
 
   // Writes: the two public funnels take an INSERT, nothing else takes anything.
@@ -771,12 +800,18 @@ async function documentRules(p) {
      what removes it once even the proof has expired. */
   const purgeAsMember = await reg.rpc("purge_expired_signatures", { p_years: 6 });
   note("regional", "a member cannot run the retention sweep", purgeAsMember.status >= 400, `got ${purgeAsMember.status}`);
-  const before = (await stf.get("signatures?select=id&limit=1000")).data || [];
+  /* Name the signatures in the window and check those exact ones survive.
+     A bare count under a limit saturates once the table passes it, and then
+     a sweep that deleted everything would read as "unchanged". */
+  const inWindow = ((await stf.get("signatures?select=id&order=signed_at.desc&limit=25")).data || [])
+    .map((r) => r.id);
   const purge = await stf.rpc("purge_expired_signatures", { p_years: 6 });
-  const afterCount = ((await stf.get("signatures?select=id&limit=1000")).data || []).length;
   note("staff", "the retention sweep runs", purge.status < 400, `got ${purge.status}`);
-  note("staff", "the sweep spares signatures inside the window", afterCount === before.length,
-    `${before.length} before, ${afterCount} after`);
+  const survivors = inWindow.length
+    ? ((await stf.get(`signatures?select=id&id=in.(${inWindow.join(",")})`)).data || []).length
+    : 0;
+  note("staff", "the sweep spares signatures inside the window", survivors === inWindow.length,
+    `${inWindow.length} in window, ${survivors} survived`);
 
   if (gId) await stf.del(`rsvp_guests?id=eq.${gId}`);
   if (grId) await stf.del(`rsvps?id=eq.${grId}`);
@@ -1602,7 +1637,10 @@ async function parityRules(p) {
   const svid = mkS.data?.[0]?.id;
   note("staff", "creates the signal fixture", mkS.status === 201, `got ${mkS.status}`);
 
-  const pushBefore = ((await stf.get("push_outbox?select=id&limit=1000")).data || []).length;
+  /* Count what this action queues, not what the table holds. Counting rows
+     under a limit saturates — push_outbox passed 1000 and before/after both
+     read 1000, so a fan-out that had stopped entirely would still "pass". */
+  const pushSince = new Date().toISOString();
   const board = await glo.post("rsvps", { voyage_id: svid, profile_id: uid(p.global), status: "aboard" });
   note("global", "boards the fixture", board.status === 201, `got ${board.status}`);
   await new Promise((r) => setTimeout(r, 600));
@@ -1612,8 +1650,8 @@ async function parityRules(p) {
   note("global", "a confirmed pass opens a crew thread", !!tid, JSON.stringify(crew.data).slice(0, 80));
 
   // Fan-out is a trigger, not app code: the Word queued a push on its own.
-  const pushAfter = ((await stf.get("push_outbox?select=id&limit=1000")).data || []).length;
-  note("staff", "notifications fan out to push", pushAfter > pushBefore, `${pushBefore} → ${pushAfter}`);
+  const pushNew = ((await stf.get(`push_outbox?select=id&created_at=gt.${pushSince}`)).data || []).length;
+  note("staff", "notifications fan out to push", pushNew > 0, `${pushNew} queued since boarding`);
 
   if (tid) {
     const said = await glo.post("messages", { thread_id: tid, author_id: uid(p.global), body: "Who has the midnight watch?" });
