@@ -33,7 +33,7 @@ export default async function VoyagesOpsPage() {
       cls: v.class,
       subClass: v.sub_class,
       kind: v.kind,
-      departs: logDateTime(v.starts_at),
+      departs: logDateTime(v.starts_at, v.time_zone),
       startsAtIso: v.starts_at,
       vessels: vesselCount.get(v.id) ?? 0,
       aboard: capacity.get(v.id)?.aboard ?? 0,

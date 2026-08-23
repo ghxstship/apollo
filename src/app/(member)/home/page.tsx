@@ -88,7 +88,7 @@ export default async function HarborPage() {
             eyebrow={`Your next pass · T-${daysOut} ${daysOut === 1 ? "day" : "days"}`}
             title={nextBerth.title}
             meta={[
-              ...logMeta(nextBerth.starts_at, nextBerth.distance_nm),
+              ...logMeta(nextBerth.starts_at, nextBerth.distance_nm, nextBerth.time_zone),
               ...(passLine ? [passLine] : []),
             ]}
             footer={

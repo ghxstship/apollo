@@ -283,11 +283,12 @@ export function RsvpControls({
       {weatherHold ? (
         <>
           <Badge tone="caution">Weather hold</Badge>
-          <span className="voy-hold">
+          <span className="voy-hold" style={holdsAPass ? { flexBasis: "100%" } : undefined}>
             Held for weather. We call it by 18:00 the night before.
           </span>
         </>
-      ) : myStatus === "aboard" ? (
+      ) : null}
+      {weatherHold && !holdsAPass ? null : myStatus === "aboard" ? (
         <>
           <Badge tone="positive">Aboard</Badge>
           {guestsAllowed ? (

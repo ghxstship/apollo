@@ -151,14 +151,14 @@ export default async function ManifestsPage({
     <div>
       <span className="hm-eyebrow">Manifests</span>
       <h1 className="hm-h1">
-        {logDate(voyage.starts_at)}&apos;s manifest — {voyage.title.replace(/\.+$/, "")}.
+        {logDate(voyage.starts_at, voyage.time_zone)}&apos;s manifest — {voyage.title.replace(/\.+$/, "")}.
       </h1>
 
       <div className="hm-sec" style={{ marginTop: 20 }}>
         <VoyagePicker
           options={voyages.map((v) => ({
             value: v.id,
-            label: `${logDate(v.starts_at)} · ${logTime(v.starts_at)} — ${v.title}`,
+            label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,
           }))}
           value={voyage.id}
         />

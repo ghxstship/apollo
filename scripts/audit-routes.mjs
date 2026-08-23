@@ -60,6 +60,7 @@ const BANNED = [
   "The Purser",
   "The Wardroom",
   "Fathoms",
+  "fathoms",
   " FM ",
   "The Dispatch",
   "Shore office",

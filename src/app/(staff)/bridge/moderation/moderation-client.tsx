@@ -12,7 +12,8 @@ import { leaveUp, removeAndNotify } from "./actions";
 
 export type FlagCard = {
   flagId: string;
-  postId: string;
+  /* Null when the post is already gone — the flag is still resolvable. */
+  postId: string | null;
   authorId: string | null;
   authorName: string;
   reason: string;

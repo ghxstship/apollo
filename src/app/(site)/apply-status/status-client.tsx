@@ -80,6 +80,9 @@ export function StatusLookup() {
         </Button>
       </form>
 
+      {/* The looked-up answer is the entire purpose of this page, and it was
+          injected silently — announced to nobody (WCAG 4.1.3). */}
+      <div aria-live="polite">
       {state.state === "unknown" ? (
         <p style={{ marginTop: 24, fontSize: 14, color: "var(--text-2)" }}>
           No application under that address.
@@ -105,6 +108,7 @@ export function StatusLookup() {
           <Ladder reached={REACHED[state.status]} />
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

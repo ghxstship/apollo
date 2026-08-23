@@ -147,6 +147,7 @@ async function sweep(p) {
   await stf.del("automations?name=like.E2E*");
   await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
   await stf.del("notifications?title=like.E2E*");
+  await stf.del("account_ledger?memo=like.E2E*");
   await stf.del("notifications?title=eq.A match, from your table");
   await stf.del("dating_tables?number=eq.99");
   await stf.del("voyages?slug=like.e2e-table-night-*");
@@ -1061,6 +1062,96 @@ async function syriusRules(p) {
   if (nightId) await stf.del(`voyages?id=eq.${nightId}`);
 }
 
+
+/* ---------- H. what the hardening rounds found ----------
+   Every check here stands for a defect that was real and is now closed. They
+   are the ones a refactor is most likely to quietly reopen: a credential that
+   becomes readable again, a charge that pays out, a gate that stops gating. */
+async function hardeningRules(p) {
+  const reg = rest(p.regional), glo = rest(p.global), stf = rest(p.staff);
+  const me = uid(p.regional);
+
+  // — A profile is not an open file —
+  for (const col of ["email", "phone", "calendar_token", "stripe_customer_id"]) {
+    const leak = await reg.get(`profiles?select=${col}&id=neq.${me}&limit=3`);
+    const rows = Array.isArray(leak.data) ? leak.data : [];
+    note("regional", `another member's ${col} is not readable`, rows.length === 0,
+      `got ${leak.status}, ${rows.length} rows`);
+  }
+  const viewLeak = await reg.get("member_directory?select=calendar_token&limit=1");
+  note("regional", "the directory view has no credential columns", viewLeak.status >= 400,
+    `got ${viewLeak.status}`);
+  const optedOut = await reg.get("member_directory?in_directory=eq.false&select=bio,interests&limit=5");
+  const spilled = (optedOut.data || []).filter((r) => r.bio || r.interests);
+  note("regional", "the directory opt-out withholds bio and interests", spilled.length === 0,
+    `${spilled.length} opted-out rows still carrying a bio`);
+
+  // — A member cannot price their own order, nor be paid by one —
+  const mint = await reg.post("shop_orders", {
+    profile_id: me, total_cents: 1, discount_cents: 100000,
+  });
+  note("regional", "a discount cannot mint house credit", mint.status >= 400, `got ${mint.status}`);
+  const rawGalley = await reg.post("galley_orders", { profile_id: me, total_cents: 1, source: "self" });
+  note("regional", "a member cannot write a galley order directly", rawGalley.status >= 400,
+    `got ${rawGalley.status}`);
+
+  // — A ledger row belongs to your own pass —
+  const foreignRsvp = await stf.get(`rsvps?profile_id=neq.${me}&select=id&limit=1`);
+  const theirRsvp = foreignRsvp.data?.[0]?.id;
+  if (theirRsvp) {
+    const poison = await reg.post("account_ledger", {
+      profile_id: me, delta_cents: -1, kind: "galley", rsvp_id: theirRsvp, memo: "E2E poison",
+    });
+    note("regional", "a charge cannot be pinned to another member's pass", poison.status >= 400,
+      `got ${poison.status}`);
+  }
+
+  // — A pass is taken before the sailing, not after —
+  const past = await stf.get("voyages?status=eq.completed&select=id&limit=1");
+  if (past.data?.[0]?.id) {
+    const back = await reg.post("rsvps", {
+      voyage_id: past.data[0].id, profile_id: me, status: "aboard",
+    });
+    note("regional", "a sailing in the log cannot be boarded", back.status >= 400, `got ${back.status}`);
+  }
+
+  // — phone_verified is not a member's to claim —
+  const claim = await reg.patch(`profiles?id=eq.${me}`, { phone_verified: true });
+  note("regional", "a member cannot verify their own number", claim.status >= 400, `got ${claim.status}`);
+
+  // — A guest token opens guest paper only —
+  const anyGuest = await stf.get("rsvp_guests?select=sign_token&sign_token=not.is.null&limit=1");
+  const tok = anyGuest.data?.[0]?.sign_token;
+  if (tok) {
+    for (const code of ["member-waiver", "membership-agreement", "crew-agreement"]) {
+      const doc = await rest(null).rpc("guest_document", { p_token: tok, p_document_code: code });
+      const rows = Array.isArray(doc.data) ? doc.data : [];
+      note("anon", `a guest token does not open ${code}`, rows.length === 0, JSON.stringify(rows).slice(0, 60));
+    }
+    const own = await rest(null).rpc("guest_document", { p_token: tok, p_document_code: "guest-waiver" });
+    note("anon", "a guest token opens its own waiver", (own.data || []).length === 1,
+      `got ${own.status}`);
+  }
+  const myRsvps = await glo.get(`rsvps?profile_id=eq.${uid(p.global)}&select=id`);
+  const mine = new Set((myRsvps.data || []).map((r) => r.id));
+  const harvest = await glo.get("rsvp_guests?select=rsvp_id,sign_token&limit=20");
+  const foreignGuests = (harvest.data || []).filter((g) => !mine.has(g.rsvp_id));
+  note("global", "guest sign tokens are not other hosts' to harvest", foreignGuests.length === 0,
+    `${foreignGuests.length} guests belonging to other hosts`);
+
+  // — The Bridge can reach a member, and only the Bridge —
+  const memberWord = await reg.rpc("notify_member", {
+    p_profile: me, p_kind: "word", p_title: "E2E forgery", p_body: "no",
+  });
+  note("regional", "a member cannot put a word in someone's Word", memberWord.status >= 400,
+    `got ${memberWord.status}`);
+  const memberMail = await reg.rpc("queue_email", {
+    p_to: "nobody@example.com", p_template: "welcome-aboard", p_payload: {},
+  });
+  note("regional", "a member cannot queue shoreside mail", memberMail.status >= 400,
+    `got ${memberMail.status}`);
+}
+
 /* ---------- A. route × role matrix ---------- */
 async function routeMatrix(personas) {
   const memberPages = manifest.routes.filter((r) => r.type === "page" && !r.dynamic && r.access === "member");
@@ -1092,6 +1183,13 @@ async function routeMatrix(personas) {
             /[\u{1F300}-\u{1FAFF}\u{2600}-\u{268F}\u{2692}-\u{2712}\u{2714}-\u{27BF}\u{FE0F}]/u
           );
           note(name, `${r.path} carries no emoji`, !emoji, emoji ? `found ${emoji[0]}` : "");
+          /* The retired currency. The public audit checks "Fathoms" against raw
+             HTML and case-sensitively, so a lowercase "fathoms" inside a
+             database-generated notification slipped past it twice — and those
+             render here, on the member surface, not on a public page. */
+          const retired = visible.match(/fathom/i);
+          note(name, `${r.path} says knots, not fathoms`, !retired,
+            retired ? `found "${retired[0]}"` : "");
         }
       }
     }
@@ -1264,8 +1362,12 @@ async function parityRules(p) {
 
   /* A guest's sign_token is a bearer credential — it opens and signs that
      guest's waiver — so it belongs to the host and the Bridge, nobody else. */
-  const nosy = await glo.get("rsvp_guests?select=id,sign_token&limit=5");
-  note("global", "another member's guests are not yours to read", (nosy.data || []).length === 0, JSON.stringify(nosy.data).slice(0, 120));
+  const nosyRsvps = await glo.get(`rsvps?profile_id=eq.${uid(p.global)}&select=id`);
+  const own = new Set((nosyRsvps.data || []).map((r) => r.id));
+  const nosy = await glo.get("rsvp_guests?select=id,rsvp_id&limit=20");
+  const notMine = (nosy.data || []).filter((g) => !own.has(g.rsvp_id));
+  note("global", "another host's guests are not yours to read", notMine.length === 0,
+    JSON.stringify(notMine).slice(0, 120));
 
   // --- Waitlist position is visible and ordered ---
   const wl = await glo.get("waitlist_position?select=position&limit=1");
@@ -1440,6 +1542,7 @@ async function main() {
   await documentRules(personas);
   await enforcementRules(personas);
   await syriusRules(personas);
+  await hardeningRules(personas);
   await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;

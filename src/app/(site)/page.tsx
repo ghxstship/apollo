@@ -48,6 +48,14 @@ export default async function HomePage() {
         .limit(3),
     ]);
 
+  /* The harbors line, said by the data. */
+  const WORDS = ["No harbors", "One harbor", "Two harbors", "Three harbors", "Four harbors"];
+  const openHarbors = (harbors ?? []).filter((h) => h.status === "open");
+  const nextHarbor = (harbors ?? []).find((h) => h.status !== "open");
+  const harborsLine = `${WORDS[openHarbors.length] ?? `${openHarbors.length} harbors`} now.${
+    nextHarbor ? ` ${nextHarbor.name} is next.` : ""
+  }`;
+
   const capacityById = new Map(
     (capacity ?? []).map((c) => [c.voyage_id, c] as const)
   );
@@ -112,7 +120,7 @@ export default async function HomePage() {
               /* Ship's-log chips: how long, which week, how many hulls, what
                  holds a pass. Nothing that scores or hurries the reader. */
               const meta = [
-                ...logMeta(v.starts_at, v.distance_nm),
+                ...logMeta(v.starts_at, v.distance_nm, v.time_zone),
                 durationChip(v.starts_at, v.ends_at),
                 weekChip(v.starts_at),
                 v.class === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
@@ -171,7 +179,10 @@ export default async function HomePage() {
 
       <section style={{ paddingBlock: "0 96px" }}>
         <div className="ls-container">
-          <SectionHeader eyebrow="Harbors" title="Two harbors now. The Balearics are next." />
+          {/* Read from the harbors table rather than hardcoded: the copy used to
+              promise the Balearics, which is not a harbor the club has, directly
+              above a list naming Chicago and New York as the ones coming. */}
+          <SectionHeader eyebrow="Harbors" title={harborsLine} />
           <div>
             {(harbors ?? []).map((h) => (
               <div className="ws-harbor-row" key={h.id}>

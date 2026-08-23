@@ -21,7 +21,10 @@ export function LockupHorizontal({ height = 34 }: { height?: number }) {
           fontFamily: "var(--font-display)",
           fontSize,
           letterSpacing: ".14em",
-          color: "var(--text-1)",
+          /* Inherit: this sits inside an always-dark nav on a page whose --text-1
+             flips with the theme, so pinning it made the wordmark identical to
+             the nav background in light mode — invisible at 1.00:1. */
+          color: "inherit",
           whiteSpace: "nowrap",
         }}
       >

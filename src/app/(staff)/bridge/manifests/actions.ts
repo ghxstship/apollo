@@ -34,6 +34,23 @@ export async function addToManifest(
 
   const names = guestNames.map((n) => n.trim()).filter(Boolean).slice(0, 2);
 
+  /* The database exempts staff from the past-sailing guard, on the assumption
+     the Bridge knows what it is doing. It does not know that a tab has been
+     open since before the voyage completed. Seating someone retroactively mints
+     knots, queues a boarding email for a sailing that has happened, and — since
+     contest_standing scores aboard rows on completed voyages — quietly moves
+     regatta standings. The box office checks the clock itself. */
+  const { data: target } = await supabase
+    .from("voyages")
+    .select("status, starts_at, title")
+    .eq("id", voyageId)
+    .maybeSingle();
+  if (!target) return { error: "No such sailing." };
+  if (target.status === "cancelled") return { error: "That sailing was called off." };
+  if (target.status === "completed" || new Date(target.starts_at).getTime() <= Date.now()) {
+    return { error: "That sailing has already left — nobody can be seated on it now." };
+  }
+
   const { data: existing } = await supabase
     .from("rsvps")
     .select("id, status")

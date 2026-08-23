@@ -36,6 +36,8 @@ export type VoyageRow = {
   fathoms_multiplier: number; held_passes: number
   sub_class: "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland" | null
   itinerary: Json
+  /* The harbor's IANA clock, carried on the sailing. */
+  time_zone: string
 }
 export type DatingTableRow = {
   id: string; voyage_id: string; number: number; seats: number
@@ -455,7 +457,11 @@ export type Database = {
     Functions: {
       is_staff: { Args: Record<string, never>; Returns: boolean }
       email_may_board: { Args: { p_email: string }; Returns: boolean }
-      validate_invite: { Args: { p_code: string }; Returns: string | null }
+      validate_invite: { Args: { p_code: string }; Returns: boolean }
+      apply_with_invite: {
+        Args: { p_full_name: string; p_email: string; p_city: string; p_note: string; p_code: string }
+        Returns: string
+      }
       application_status_for: { Args: { p_email: string }; Returns: ApplicationStatus | null }
       set_application_status: { Args: { p_id: string; p_status: ApplicationStatus }; Returns: undefined }
       accept_application: { Args: { p_id: string }; Returns: undefined }
@@ -535,6 +541,7 @@ export type Database = {
         Returns: Array<{
           guest_name: string; voyage_title: string; voyage_starts: string
           document_title: string; body: string; already_signed: boolean
+          voyage_state: string
         }>
       }
       signature_standing: {

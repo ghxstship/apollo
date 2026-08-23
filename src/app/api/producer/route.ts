@@ -152,10 +152,19 @@ async function getMyBalances(supabase: SupabaseServer, userId: string) {
   };
 }
 
+/* A turn a person could plausibly type. The endpoint is authenticated, but it
+   spends real tokens per call, and nothing else bounded the payload — twenty-four
+   messages of unbounded length is a bill, not a conversation. */
+const MAX_CHARS = 4000;
+
 function isChatMessage(m: unknown): m is { role: "user" | "assistant"; content: string } {
   if (typeof m !== "object" || m === null) return false;
   const r = m as Record<string, unknown>;
-  return (r.role === "user" || r.role === "assistant") && typeof r.content === "string";
+  return (
+    (r.role === "user" || r.role === "assistant") &&
+    typeof r.content === "string" &&
+    r.content.length <= MAX_CHARS
+  );
 }
 
 function textOf(content: Anthropic.ContentBlock[]): string {

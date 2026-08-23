@@ -9,6 +9,8 @@ import { staffContext, ERR_STAFF, ERR_LAND } from "../../staff";
 export type ScanResult = {
   error?: string;
   outcome?: "aboard" | "already" | "not_found";
+  /* Set when the code scanned was a guest's stub rather than a member's pass. */
+  guestOf?: string;
   name?: string;
   memberNo?: string;
   vessel?: string;
@@ -68,7 +70,67 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     }
   }
 
-  if (!rsvp) return { outcome: "not_found" };
+  /* A guest stub carries its own code (…-G1) and its own signature gate. The
+     scanner could only ever resolve rsvps.boarding_code, so every guest stub
+     the product issues — printed on the host's manifest, rendered as a QR, and
+     captioned "Present at the gangway" — came back as "No pass under that
+     code", and the guest waiver gate (a trigger on rsvp_guests.checked_in_at)
+     never fired because nothing in the product ever wrote that column. */
+  if (!rsvp) {
+    const { data: guest } = await supabase
+      .from("rsvp_guests")
+      .select("*")
+      .ilike("boarding_code", code)
+      .maybeSingle();
+
+    if (!guest) return { outcome: "not_found" };
+
+    const { data: guestRsvp } = await supabase
+      .from("rsvps")
+      .select("*")
+      .eq("id", guest.rsvp_id)
+      .maybeSingle();
+
+    const { data: host } = guestRsvp
+      ? await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", guestRsvp.profile_id)
+          .maybeSingle()
+      : { data: null };
+
+    const base: ScanResult = {
+      name: guest.name ?? "A guest",
+      memberNo: "GUEST",
+      guestOf: host?.full_name ?? undefined,
+      guestNames: [],
+    };
+
+    if (guest.checked_in_at) {
+      return { ...base, outcome: "already", checkedInAt: guest.checked_in_at };
+    }
+
+    const guestAt = new Date().toISOString();
+    const { error: guestError } = await supabase
+      .from("rsvp_guests")
+      .update({ checked_in_at: guestAt, checked_in_by: staffId })
+      .eq("id", guest.id);
+
+    /* The guest waiver gate refuses at the database, in the same voice the
+       member gate uses. */
+    if (guestError) {
+      if (/boards unsigned/i.test(guestError.message)) {
+        return {
+          error: `${guestError.message.replace(/^.*— /, "")} — send them the link to sign, then scan again.`,
+        };
+      }
+      return { error: ERR_LAND };
+    }
+
+    revalidatePath("/bridge/gangway");
+    revalidatePath("/bridge/manifests");
+    return { ...base, outcome: "aboard", checkedInAt: guestAt };
+  }
 
   const [{ data: profile }, vesselName] = await Promise.all([
     supabase

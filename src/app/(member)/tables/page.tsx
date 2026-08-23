@@ -59,7 +59,7 @@ export default async function TablesPage() {
       seats: t.seats,
       taken: taken.length,
       nightTitle: night?.title ?? "",
-      nightWhen: night ? `${logDate(night.starts_at)} · ${logTime(night.starts_at)}` : "",
+      nightWhen: night ? `${logDate(night.starts_at, night.time_zone)} · ${logTime(night.starts_at, night.time_zone)}` : "",
       started,
       mine: mine ? { state: mine.state as "held" | "confirmed", heldUntil: mine.held_until } : null,
       /* First names only — the cast rule. Picks render after the night starts. */

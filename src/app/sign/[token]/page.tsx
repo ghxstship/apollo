@@ -44,14 +44,23 @@ export default async function GuestSignPage({
     <main className="gsn">
       <header className="gsn-head">
         <Wordmark size="sm" />
-        <p className="gsn-lede">
+        <h1 className="gsn-lede">
           {row.guest_name}, you&rsquo;re booked aboard <b>{row.voyage_title}</b> on{" "}
           {logDate(row.voyage_starts)}. Read this and sign before you come down to
           the dock.
-        </p>
+        </h1>
       </header>
 
-      {row.already_signed ? (
+      {row.voyage_state !== "ahead" ? (
+        <div className="sgn-done" role="status">
+          <h2>{row.voyage_state === "cancelled" ? "That sailing was called off." : "That sailing has gone."}</h2>
+          <p>
+            {row.voyage_state === "cancelled"
+              ? "Nothing to sign — the club called it off. Whoever booked you will know the next date."
+              : "Nothing to sign — this one is already in the log. Whoever booked you will know the next date."}
+          </p>
+        </div>
+      ) : row.already_signed ? (
         <div className="sgn-done" role="status">
           <h2>Already signed.</h2>
           <p>

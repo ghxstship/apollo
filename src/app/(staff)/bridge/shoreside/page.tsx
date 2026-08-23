@@ -90,8 +90,11 @@ export default async function ShoresidePage() {
       <span className="hm-eyebrow">Shoreside</span>
       <h1 className="hm-h1">The concierge line.</h1>
       <p className="hm-lede">
-        A member asking a person, not the agent. Answer in your own words — The Producer hands over
-        anything it should not decide.
+        A member asking a person, not the agent. Answer in your own words.
+      </p>
+      <p className="hm-note" style={{ marginTop: 10, maxWidth: "60ch" }}>
+        The hand-off is not wired yet: The Producer cannot open a line here, so
+        this stays empty until it can. Replies work the moment a thread arrives.
       </p>
       <ShoresideClient threads={cards} />
     </div>

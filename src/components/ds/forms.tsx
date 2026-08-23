@@ -113,15 +113,45 @@ export function Select({
   );
 }
 
-/* — Checkbox — */
+/* — Checkbox —
+   The only blocking error on the public casting form lived here, and unlike
+   Input/Select/Textarea this component had no `error` prop at all: the message
+   was a coloured span with no role, no aria-invalid and no association, so a
+   screen-reader user got nothing and the sole cue was colour (WCAG 1.4.1). */
 export function Checkbox({
-  label, description, disabled = false, className = "", style, ...rest
-}: { label?: React.ReactNode; description?: React.ReactNode; className?: string; style?: React.CSSProperties } & React.InputHTMLAttributes<HTMLInputElement>) {
+  label, description, error, disabled = false, id, className = "", style, ...rest
+}: {
+  label?: React.ReactNode; description?: React.ReactNode; error?: React.ReactNode;
+  className?: string; style?: React.CSSProperties;
+} & React.InputHTMLAttributes<HTMLInputElement>) {
+  const auto = React.useId();
+  const iid = id || auto;
   return (
-    <label className={["ls-check", disabled ? "ls-check--disabled" : "", className].filter(Boolean).join(" ")} style={style}>
-      <input type="checkbox" disabled={disabled} {...rest} />
+    <label
+      className={["ls-check", disabled ? "ls-check--disabled" : "", error ? "ls-check--error" : "", className].filter(Boolean).join(" ")}
+      style={style}
+    >
+      <input
+        id={iid}
+        type="checkbox"
+        disabled={disabled}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${iid}-err` : undefined}
+        {...rest}
+      />
       <span className="ls-check__box"></span>
-      {label ? <span className="ls-check__label">{label}{description ? <span className="ls-check__desc">{description}</span> : null}</span> : null}
+      {label ? (
+        <span className="ls-check__label">
+          {label}
+          {error ? (
+            <span className="ls-check__desc" id={`${iid}-err`} role="alert" style={{ color: "var(--siren)" }}>
+              {error}
+            </span>
+          ) : description ? (
+            <span className="ls-check__desc">{description}</span>
+          ) : null}
+        </span>
+      ) : null}
     </label>
   );
 }

@@ -39,7 +39,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const meta = [
     family,
     sub?.label,
-    logDate(voyage.starts_at),
+    logDate(voyage.starts_at, voyage.time_zone),
     harbor?.slug ? CITY_CODES[harbor.slug] : null,
   ]
     .filter(Boolean)

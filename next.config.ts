@@ -20,6 +20,12 @@ const nextConfig: NextConfig = {
       { source: "/voyages/:path*", destination: "/charters/:path*", permanent: true },
       { source: "/lore", destination: "/episodes", permanent: true },
       { source: "/lore/:path*", destination: "/episodes/:path*", permanent: true },
+      /* The ledger's currency was renamed; this article's address had not been. */
+      {
+        source: "/episodes/the-fathom-standard",
+        destination: "/episodes/the-knot-standard",
+        permanent: true,
+      },
     ];
   },
 };

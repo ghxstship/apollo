@@ -24,6 +24,8 @@ type Scan = {
   kind: "aboard" | "already" | "not_found";
   name?: string;
   memberNo?: string;
+  /* A guest stub scanned at the door — whose guest it is. */
+  guestOf?: string;
   vessel?: string;
   guestNames?: string[];
   time?: string;
@@ -198,6 +200,7 @@ export function GangwayConsole({
               memberNo: res.memberNo,
               vessel: res.vessel,
               guestNames: res.guestNames,
+              guestOf: res.guestOf,
               time: res.checkedInAt,
               otherVoyage: res.otherVoyage,
             };
@@ -296,6 +299,7 @@ export function GangwayConsole({
               <>
                 <b>
                   ABOARD — {(scan.name ?? "").toUpperCase()} · {scan.memberNo}
+                  {scan.guestOf ? ` · GUEST OF ${scan.guestOf.toUpperCase()}` : ""}
                   {scan.vessel ? ` · ${scan.vessel.toUpperCase()}` : ""}
                 </b>
                 {guestsLine(scan) ? <span>{guestsLine(scan)}</span> : null}
@@ -308,6 +312,7 @@ export function GangwayConsole({
                 <b>ALREADY CHECKED IN {scan.time ? logTime(scan.time) : ""}</b>
                 <span>
                   {scan.name} · {scan.memberNo}
+                  {scan.guestOf ? ` · guest of ${scan.guestOf}` : ""}
                   {scan.vessel ? ` · ${scan.vessel}` : ""}
                 </span>
                 {guestsLine(scan) ? <span>{guestsLine(scan)}</span> : null}

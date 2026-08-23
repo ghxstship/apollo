@@ -29,6 +29,7 @@ export function SignForm({
   body,
   onSign,
   askGuardian = false,
+  asGuest = false,
 }: {
   documentTitle: string;
   body: string;
@@ -42,6 +43,10 @@ export function SignForm({
     userAgent: string;
   }) => Promise<SignResult>;
   askGuardian?: boolean;
+  /* A guest has no account and never will — the confirmation must not send
+     them to a member card they do not have. ESIGN also expects a signer to be
+     able to retain what they signed, so point them at the link they hold. */
+  asGuest?: boolean;
 }) {
   const [pending, startTransition] = React.useTransition();
   const [kind, setKind] = React.useState<"typed" | "drawn">("typed");
@@ -135,8 +140,9 @@ export function SignForm({
       <div className="sgn-done" role="status">
         <h2>Signed.</h2>
         <p>
-          A copy is kept with your record, along with the exact wording you agreed
-          to. You can read it again from your member card at any time.
+          {asGuest
+            ? "A copy is kept with the sailing, along with the exact wording you agreed to. This link stays good — keep it if you want to read it again."
+            : "A copy is kept with your record, along with the exact wording you agreed to. You can read it again from your member card at any time."}
         </p>
       </div>
     );

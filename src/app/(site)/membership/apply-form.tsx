@@ -67,16 +67,13 @@ export function ApplyForm() {
       <Checkbox
         name="conduct"
         label="I'll sail by the code of conduct."
-        description={
-          state.errors.conduct ? (
-            <span style={{ color: "var(--siren)" }}>{state.errors.conduct}</span>
-          ) : (
-            "Follow the skipper, mind the boom, leave every port better."
-          )
-        }
+        error={state.errors.conduct}
+        description="Follow the skipper, mind the boom, leave every port better."
       />
       {state.errors.form ? (
-        <p style={{ fontSize: 13, color: "var(--siren)" }}>{state.errors.form}</p>
+        <p role="alert" style={{ fontSize: 13, color: "var(--siren)" }}>
+          {state.errors.form}
+        </p>
       ) : null}
       <div>
         <Button type="submit" size="lg" disabled={pending}>

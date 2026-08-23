@@ -74,7 +74,7 @@ export default async function LivePage() {
             title="Nothing underway."
             detail={
               next
-                ? `Next departure: ${next.title} · ${logDateTime(next.starts_at)}.`
+                ? `Next departure: ${next.title} · ${logDateTime(next.starts_at, next.time_zone)}.`
                 : "The manifest holds the next departure."
             }
             action={

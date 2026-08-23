@@ -59,6 +59,11 @@ export default async function KeysPage() {
         Keys for reading the club from outside; hooks for telling another system what happened. Both
         are scoped narrowly and both can be shut off from here.
       </p>
+      <p className="hm-note" style={{ marginTop: 10, maxWidth: "60ch" }}>
+        Not yet connected. Keys and hooks are recorded here, but nothing reads a
+        key and nothing posts a hook — issue one only to hold a place, never to
+        a partner expecting it to work.
+      </p>
       <KeysClient keys={keys} hooks={hooks} />
     </div>
   );

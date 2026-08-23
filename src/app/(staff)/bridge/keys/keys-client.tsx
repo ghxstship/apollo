@@ -142,8 +142,9 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           <div>
             <h2>Webhooks.</h2>
             <p className="hm-note">
-              We post the event to your https URL and sign it with the hook&apos;s secret. The last
-              ten attempts sit under each one.
+              Recorded, not yet delivered — nothing posts these hooks today. When
+              delivery is wired, the event goes to your https URL signed with the
+              hook&apos;s secret and the last ten attempts sit under each one.
             </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => setAddingHook(true)}>

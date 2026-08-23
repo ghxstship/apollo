@@ -92,15 +92,12 @@ export default async function VoyagePage({
     .maybeSingle();
   if (!voyage) notFound();
 
-  const [{ data: cap }, { data: { user } }, { data: harbor }] = await Promise.all([
+  const [{ data: cap }, { data: { user } }] = await Promise.all([
     supabase.from("voyage_capacity").select("*").eq("voyage_id", voyage.id).maybeSingle(),
     supabase.auth.getUser(),
-    voyage.harbor_id
-      ? supabase.from("harbors").select("time_zone").eq("id", voyage.harbor_id).maybeSingle()
-      : Promise.resolve({ data: null }),
   ]);
-  /* A sailing is announced on its harbor's clock, not the server's. */
-  const zone = harbor?.time_zone ?? null;
+  /* A sailing is announced on its harbor's clock, which it carries itself. */
+  const zone = voyage.time_zone;
 
   /* Real names ride with consent, and only for signed-in members —
      profiles aren't readable from the shore. */
@@ -134,7 +131,22 @@ export default async function VoyagePage({
 
   const aboard = cap?.aboard ?? 0;
   const left = cap?.berths_left ?? null;
-  const boards = new Date(new Date(voyage.starts_at).getTime() - 30 * 60 * 1000).toISOString();
+  /* Boarding was pinned at thirty minutes before cast off regardless of the
+     sailing's own plan, so a voyage whose first stop is at −15 published two
+     different boarding times on one page — and the ICS repeated the wrong one.
+     The itinerary leads when it has something to say. */
+  const firstStopOffset = (Array.isArray(voyage.itinerary) ? voyage.itinerary : [])
+    .map((raw) =>
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? (raw as { offset?: unknown }).offset
+        : undefined
+    )
+    .filter((o): o is number => typeof o === "number" && o < 0)
+    .sort((a, b) => a - b)[0];
+  const boardsOffsetMin = firstStopOffset ?? -30;
+  const boards = new Date(
+    new Date(voyage.starts_at).getTime() + boardsOffsetMin * 60 * 1000
+  ).toISOString();
   const paragraphs = (voyage.description ?? voyage.blurb ?? "")
     .split(/\n\n+/)
     .filter(Boolean);
@@ -225,7 +237,7 @@ export default async function VoyagePage({
           </div>
           {stops.length > 0 ? (
             <div className="ev-plan">
-              <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The plan.</h3>
+              <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The plan.</h2>
               {stops.map((s) => (
                 <div className="ev-plan__row" key={`${s.offset}-${s.title}`}>
                   <span className="ev-plan__t">{stopTime(s.offset)}</span>
@@ -239,7 +251,7 @@ export default async function VoyagePage({
           ) : null}
           {fleet.length > 0 ? (
             <div className="ev-fleet">
-              <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The fleet.</h3>
+              <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The fleet.</h2>
               {fleet.map((v) => (
                 <div className="ev-fleet__row" key={v.id}>
                   <span className="ev-fleet__name">{v.name}</span>
@@ -249,7 +261,7 @@ export default async function VoyagePage({
             </div>
           ) : null}
           <div className="ev-frames">
-            <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Frames.</h3>
+            <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Frames.</h2>
             {frames.length > 0 ? (
               <div className="ev-frames__strip">
                 {frames.map((f) => (
@@ -272,7 +284,7 @@ export default async function VoyagePage({
             )}
           </div>
           <div className="ev-faq">
-            <h3 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Asked often.</h3>
+            <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Asked often.</h2>
             {faq.map(([q, a]) => (
               <details key={q}>
                 <summary>{q}</summary>
@@ -386,7 +398,7 @@ export default async function VoyagePage({
               <span>{seatsWord}</span>
               <span>
                 {closed
-                  ? `${cap?.berths_total ?? voyage.berths_total} ABOARD`
+                  ? `${aboard} ABOARD`
                   : left != null
                     ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT`
                     : voyage.berths_total}

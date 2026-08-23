@@ -19,6 +19,7 @@ export function GuestSignPanel({
       documentTitle={documentTitle}
       body={body}
       askGuardian
+      asGuest
       onSign={(input) =>
         signAsGuest({
           token,

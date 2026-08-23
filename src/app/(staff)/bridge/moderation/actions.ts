@@ -13,7 +13,7 @@ function done(): ActionResult {
    marked first so the record survives the post's cascade. */
 export async function removeAndNotify(
   flagId: string,
-  postId: string,
+  postId: string | null,
   authorId: string | null,
   reason: string
 ): Promise<ActionResult> {
@@ -40,8 +40,12 @@ export async function removeAndNotify(
     if (wordError) return { error: "The author could not be told, so the post stands." };
   }
 
-  const { error: deleteError } = await supabase.from("wardroom_posts").delete().eq("id", postId);
-  if (deleteError) return { error: ERR_LAND };
+  /* The post may already be gone — the author can strike their own. Resolving
+     the flag is still the point. */
+  if (postId) {
+    const { error: deleteError } = await supabase.from("wardroom_posts").delete().eq("id", postId);
+    if (deleteError) return { error: ERR_LAND };
+  }
 
   return done();
 }

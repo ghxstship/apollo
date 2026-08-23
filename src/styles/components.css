@@ -87,8 +87,12 @@
 .ls-badge--positive{background:color-mix(in srgb, var(--positive) 12%, transparent);border-color:color-mix(in srgb, var(--positive) 55%, transparent);color:var(--positive)}
 .ls-badge--caution{background:color-mix(in srgb, var(--terracotta) 12%, transparent);border-color:color-mix(in srgb, var(--terracotta) 55%, transparent);color:var(--terracotta)}
 /* Paper theme: deepened anchors keep AA at badge sizes. */
-[data-theme="light"] .ls-badge--positive{--positive:#3E8A60}
-[data-theme="light"] .ls-badge--caution{--terracotta:#A96C15}
+/* These two overrides re-pinned the raw kit greens and ambers, undoing the
+   light palette's own darkening and dropping 10px uppercase badge text back to
+   3.7–4.1:1. They now take the same deepened tokens the rest of the light theme
+   uses, which clear 4.5:1 on both page and card. */
+[data-theme="light"] .ls-badge--positive{--positive:color-mix(in srgb,#3E8A60 70%,#101418)}
+[data-theme="light"] .ls-badge--caution{--terracotta:color-mix(in srgb,#A96C15 78%,#101418)}
 .ls-badge--outline{border-color:var(--line-strong);color:var(--text-1)}
 .ls-badge--outline.ls-badge--inverse{border-color:var(--line-inverse-strong);color:var(--text-inverse-1)}
 

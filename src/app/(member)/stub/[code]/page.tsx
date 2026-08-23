@@ -85,6 +85,44 @@ export default async function StubPage({
     supabase.from("rsvp_addons").select("*").eq("rsvp_id", rsvp.id),
   ]);
   const voyage = voyageRes.data;
+
+  /* A stub is a pass you can present. It was rendered live — QR, muster time,
+     "Present at the gangway" — for a pass that had been released and for
+     sailings that were completed or called off, so it stayed scannable long
+     after it stopped meaning anything. */
+  /* Server-rendered per request, so "now" is request time. */
+  const nowMs = new Date().getTime();
+  const passHeld = guest ? true : rsvp.status === "aboard";
+  const voyageOver =
+    voyage &&
+    (voyage.status === "cancelled" ||
+      voyage.status === "completed" ||
+      new Date(voyage.starts_at).getTime() < nowMs);
+  if (voyage && (!passHeld || voyageOver)) {
+    return (
+      <div className="mbr-sec">
+        <StateBlock
+          status="empty"
+          icon="Ticket"
+          title={
+            voyage.status === "cancelled"
+              ? "That sailing was called off."
+              : voyageOver
+                ? "That sailing is in the log."
+                : "That pass is no longer held."
+          }
+          detail={
+            voyage.status === "cancelled"
+              ? "Anything reserved against it was credited in full. The manifest holds the next open water."
+              : voyageOver
+                ? "The stub is spent. What the cameras kept is in Episodes."
+                : "Claim it again on the manifest and a fresh stub is cut for you."
+          }
+        />
+      </div>
+    );
+  }
+
   if (!voyage) {
     return (
       <div className="mbr-sec">
@@ -151,7 +189,7 @@ export default async function StubPage({
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <Row label="DEPARTS" value={`${logDate(voyage.starts_at)} · ${logTime(voyage.starts_at)}`} />
+            <Row label="DEPARTS" value={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`} />
             <Row label="MUSTER" value={voyage.muster ?? "GANGWAY B-12"} />
             <Row label="MANIFEST" value={`${aboard}/${berthsTotal} ABOARD`} />
             {guest ? (

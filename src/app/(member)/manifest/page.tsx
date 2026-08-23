@@ -90,8 +90,19 @@ export default async function VoyagesPage() {
      Whether each guest has signed comes from the signature record; the member
      can see the standing of their own guests, and pass on the link. */
   const guestIds = (guestRes.data ?? []).map((g) => g.id);
+  /* Against the CURRENTLY PUBLISHED waiver, not any signature ever. Counting
+     every signature meant that after a waiver was republished the host saw
+     "WAIVER SIGNED" beside a guest who had to sign again — and the copy-link
+     block, which only shows for unsigned guests, was hidden from exactly the
+     people who needed it. The gangway gate uses the published version, so this
+     has to agree with it. */
   const { data: guestSigs } = guestIds.length
-    ? await supabase.from("signatures").select("guest_id").in("guest_id", guestIds)
+    ? await supabase
+        .from("signatures")
+        .select("guest_id, document_versions!inner(status, document_code)")
+        .in("guest_id", guestIds)
+        .eq("document_versions.status", "published")
+        .is("redacted_at", null)
     : { data: [] };
   const signedGuests = new Set((guestSigs ?? []).map((s) => s.guest_id));
 
@@ -155,8 +166,8 @@ export default async function VoyagesPage() {
     const voyageOfRsvp = new Map((theirRsvps ?? []).map((r) => [r.id, r.voyage_id] as const));
     const wantedVoyages = Array.from(new Set((theirRsvps ?? []).map((r) => r.voyage_id)));
     const { data: theirVoyages } = wantedVoyages.length
-      ? await supabase.from("voyages").select("id, title, starts_at").in("id", wantedVoyages)
-      : { data: [] as Array<{ id: string; title: string; starts_at: string }> };
+      ? await supabase.from("voyages").select("id, title, starts_at, time_zone").in("id", wantedVoyages)
+      : { data: [] as Array<{ id: string; title: string; starts_at: string; time_zone: string }> };
     const voyageById = new Map((theirVoyages ?? []).map((v) => [v.id, v] as const));
     inbound = inboundRows.flatMap((t) => {
       const voyage = voyageById.get(voyageOfRsvp.get(t.rsvp_id) ?? "");
@@ -166,7 +177,7 @@ export default async function VoyagesPage() {
           id: t.id,
           fromName: nameOf.get(t.from_profile) ?? "A member",
           voyageTitle: voyage.title,
-          meta: `${logDate(voyage.starts_at)} · ${logTime(voyage.starts_at)}`,
+          meta: `${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`,
         },
       ];
     });
@@ -293,8 +304,8 @@ export default async function VoyagesPage() {
             const knotsOnCompletion =
               baseFm != null ? Math.round(baseFm * (v.fathoms_multiplier ?? 1)) : null;
             const meta = [
-              logDate(v.starts_at),
-              logTime(v.starts_at),
+              logDate(v.starts_at, v.time_zone),
+              logTime(v.starts_at, v.time_zone),
               EVENT_CLASS_LABEL[v.class].toUpperCase(),
               ...(v.distance_nm != null ? [`${v.distance_nm} NM`] : []),
               price(v.price_cents),
@@ -306,7 +317,7 @@ export default async function VoyagesPage() {
               <div key={v.id} className={i === 0 ? "ls-rise" : i < 4 ? `ls-rise-${Math.min(i, 3)}` : undefined}>
                 <Card
                   media={v.media}
-                  eyebrow={`${v.kind === "port_day" ? "Ashore" : "At sea"} · ${logDate(v.starts_at)}`}
+                  eyebrow={`${v.kind === "port_day" ? "Ashore" : "At sea"} · ${logDate(v.starts_at, v.time_zone)}`}
                   title={v.title}
                   meta={meta}
                   footer={

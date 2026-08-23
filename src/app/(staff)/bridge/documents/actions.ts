@@ -193,7 +193,12 @@ export async function redactSignature(id: string): Promise<ActionResult> {
 
   const { error } = await supabase.rpc("redact_signature", { p_id: id });
   if (error) {
-    if (/^signature .*already redacted/i.test(error.message)) return { error: "That one is already redacted." };
+    /* The RPC distinguishes these; the operator should see the difference.
+       Telling someone a signature that does not exist has "already" been dealt
+       with invites them to retry something that can never succeed. */
+    if (/already redacted/i.test(error.message)) return { error: "That one is already redacted." };
+    if (/no signature under that id/i.test(error.message))
+      return { error: "No signature under that id." };
     return { error: ERR_LAND };
   }
   revalidatePath("/bridge/documents");
@@ -212,6 +217,8 @@ export async function counterSign(signatureId: string, title: string): Promise<A
   });
   if (error) {
     if (/already counter-signed/i.test(error.message)) return { error: "That one is already counter-signed." };
+    if (/no such signature|no signature under that id/i.test(error.message))
+      return { error: "No signature under that id." };
     if (/one-way/i.test(error.message)) return { error: "A waiver is one-way — only a contract is counter-signed." };
     return { error: ERR_LAND };
   }
