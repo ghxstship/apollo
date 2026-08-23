@@ -532,8 +532,7 @@ export type Database = {
           p_token: string; p_document_code: string; p_consent?: boolean
           p_consent_text?: string | null; p_signature_kind?: string
           p_signature_data?: string | null; p_signer_name?: string | null
-          p_guardian_name?: string | null; p_user_agent?: string | null
-        }
+          p_guardian_name?: string | null; p_user_agent?: string | null; p_on_camera: boolean }
         Returns: string
       }
       guest_document: {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Progress, Stat, StateBlock, Table, type LedgerEntry } from "@/components/ds";
-import { CURRENCY, knots, LEAGUES } from "@/lib/brand";
+import { CURRENCY, knots, LEAGUES, LEDGER_KIND } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
@@ -265,9 +265,9 @@ export default async function PortalPage({
                 {
                   key: "memo",
                   label: "Entry",
-                  render: (r) => r.memo ?? r.kind.toUpperCase(),
+                  render: (r) => r.memo ?? (LEDGER_KIND[r.kind] ?? r.kind).toUpperCase(),
                 },
-                { key: "kind", label: "Kind", mono: true, width: 90, render: (r) => r.kind.toUpperCase() },
+                { key: "kind", label: "Kind", mono: true, width: 90, render: (r) => (LEDGER_KIND[r.kind] ?? r.kind).toUpperCase() },
                 {
                   key: "delta_cents",
                   label: "Amount",

@@ -35,6 +35,21 @@ function loadEnvLocal() {
   } catch { /* CI provides env */ }
 }
 loadEnvLocal();
+
+/* The one ban list, read from the source of truth. A hand-copied subset in this
+   file is how "berth" stayed on the Bridge through three hardening rounds while
+   the audit reported a clean lexicon. */
+function bannedTerms() {
+  try {
+    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8");
+    const block = src.match(/export const BANNED_TERMS = \[([\s\S]*?)\]/);
+    if (!block) return [];
+    return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  } catch {
+    return [];
+  }
+}
+const BANNED = bannedTerms();
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const PASSWORD = process.env.E2E_PASSWORD;
@@ -663,7 +678,7 @@ async function documentRules(p) {
   }
 
   // Guests: token is the whole credential, and it is scoped to guest documents.
-  const guests = await stf.get("rsvp_guests?select=id,sign_token,name&limit=1");
+  const guests = await stf.get("rsvp_guests?select=id,sign_token,name&rsvp_id=not.is.null&limit=1");
   const token = guests.data?.[0]?.sign_token;
   if (token) {
     const doc = await anon.rpc("guest_document", { p_token: token, p_document_code: "guest-waiver" });
@@ -1120,7 +1135,9 @@ async function hardeningRules(p) {
   note("regional", "a member cannot verify their own number", claim.status >= 400, `got ${claim.status}`);
 
   // — A guest token opens guest paper only —
-  const anyGuest = await stf.get("rsvp_guests?select=sign_token&sign_token=not.is.null&limit=1");
+  const anyGuest = await stf.get(
+    "rsvp_guests?select=sign_token&sign_token=not.is.null&rsvp_id=not.is.null&limit=1"
+  );
   const tok = anyGuest.data?.[0]?.sign_token;
   if (tok) {
     for (const code of ["member-waiver", "membership-agreement", "crew-agreement"]) {
@@ -1152,6 +1169,142 @@ async function hardeningRules(p) {
     `got ${memberMail.status}`);
 }
 
+
+/* ---------- I. what round two found ----------
+   Round two's findings were mostly round one's fixes applied to one call site
+   out of nine. These are the specific shapes that were wrong, so a future
+   half-fix fails here instead of in a crawl. */
+async function roundTwoRules(p) {
+  const reg = rest(p.regional), stf = rest(p.staff);
+  const me = uid(p.regional);
+
+  // — A released pass is paid for again —
+  const claimable = await stf.get(
+    "voyages?status=eq.scheduled&select=id,price_cents&price_cents=gt.0" +
+      `&starts_at=gt.${new Date().toISOString()}&order=starts_at.asc&limit=1`
+  );
+  const v = claimable.data?.[0];
+  if (v) {
+    await stf.del(`rsvps?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
+    await stf.del(`account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
+    await stf.del(`fathoms_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
+
+    const folio = async () => {
+      const rows = await reg.get(`account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}&select=delta_cents`);
+      return (rows.data || []).reduce((n, r) => n + r.delta_cents, 0);
+    };
+    const claim = () => reg.post("rsvps", { voyage_id: v.id, profile_id: me, status: "aboard" });
+
+    const first = await claim();
+    const afterFirst = await folio();
+    note("regional", "claiming a pass charges for it", afterFirst === -v.price_cents,
+      `folio ${afterFirst}, price ${-v.price_cents}`);
+
+    const rid = first.data?.[0]?.id;
+    if (rid) await reg.del(`rsvps?id=eq.${rid}`);
+    const afterRelease = await folio();
+    note("regional", "releasing 48h+ out credits the charge", afterRelease === 0, `folio ${afterRelease}`);
+
+    const again = await claim();
+    const afterSecond = await folio();
+    note("regional", "re-claiming a credited pass is charged again", afterSecond === -v.price_cents,
+      `folio ${afterSecond} — a free pass if this is 0`);
+
+    // — You are not your own waitlister —
+    const rid2 = again.data?.[0]?.id;
+    if (rid2) {
+      /* notifications has no DELETE policy — it is the club's record. So the
+         window is bounded by time rather than by clearing history first, which
+         silently measured rows from an earlier run. */
+      const since = new Date().toISOString();
+      await reg.patch(`rsvps?id=eq.${rid2}`, { status: "waitlist" });
+      const mine = await reg.get(`rsvps?id=eq.${rid2}&select=status`);
+      note("regional", "releasing to the waitlist does not put you back aboard",
+        mine.data?.[0]?.status === "waitlist", `ended ${mine.data?.[0]?.status}`);
+      const selfNote = await reg.get(
+        `notifications?profile_id=eq.${me}&title=like.*released to you*&created_at=gt.${since}&select=id`
+      );
+      note("regional", "you are not offered your own released pass",
+        (selfNote.data || []).length === 0, `${(selfNote.data || []).length} notices`);
+      await stf.del(`rsvps?id=eq.${rid2}`);
+    }
+    await stf.del(`account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
+    await stf.del(`fathoms_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
+    await stf.del(`notifications?profile_id=eq.${me}&title=like.*released to you*`);
+  }
+
+  // — A waitlist is for a sailing still ahead —
+  const gone = await stf.get("voyages?status=eq.completed&select=id&limit=1");
+  if (gone.data?.[0]?.id) {
+    const late = await reg.post("rsvps", {
+      voyage_id: gone.data[0].id, profile_id: me, status: "waitlist",
+    });
+    note("regional", "a sailing in the log cannot be waitlisted", late.status >= 400, `got ${late.status}`);
+  }
+
+  // — Every voyage carries its harbor's clock —
+  const clocks = await stf.get("voyages?select=slug,time_zone&limit=200");
+  const missing = (clocks.data || []).filter((x) => !x.time_zone);
+  note("staff", "every sailing carries a harbor clock", missing.length === 0,
+    `${missing.length} without one`);
+
+  // — An invite code names nobody, and validate_invite tells nobody —
+  const codes = await stf.get("invites?select=code&limit=50");
+  const named = (codes.data || []).filter((c) => !/^SYR-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(c.code));
+  note("staff", "no invite code carries a member's name", named.length === 0,
+    named.map((c) => c.code).join(", "));
+  const anyCode = codes.data?.[0]?.code;
+  if (anyCode) {
+    const answer = await rest(null).rpc("validate_invite", { p_code: anyCode });
+    note("anon", "validate_invite answers yes or no, not who",
+      typeof answer.data === "boolean", JSON.stringify(answer.data).slice(0, 40));
+  }
+
+  // — An applicant does not decide their own application —
+  for (const [label, body] of [
+    ["a self-signed waiver", { full_name: "E2E Probe", email: "e2e-anon-probe@example.com", waiver_swim: true }],
+    ["a borrowed invite code", { full_name: "E2E Probe", email: "e2e-anon-probe@example.com", invite_code: "SYR-AAAA-BBBB" }],
+    ["an unbounded city", { full_name: "E2E Probe", email: "e2e-anon-probe@example.com", city: "C".repeat(500) }],
+  ]) {
+    const r = await rest(null).post("applications", body);
+    note("anon", `an application cannot carry ${label}`, r.status >= 400, `got ${r.status}`);
+  }
+
+  // — A guest link for a sailing that has gone —
+  const goneGuest = await stf.get(
+    "rsvp_guests?select=sign_token,rsvps!inner(voyages!inner(status))&rsvps.voyages.status=eq.completed&limit=1"
+  );
+  const goneToken = goneGuest.data?.[0]?.sign_token;
+  if (goneToken) {
+    const doc = await rest(null).rpc("guest_document", {
+      p_token: goneToken, p_document_code: "guest-waiver",
+    });
+    const state = Array.isArray(doc.data) ? doc.data[0]?.voyage_state : null;
+    note("anon", "a guest link for a finished sailing says so", state === "sailed" || state === "cancelled",
+      `state ${state}`);
+    const stillOpen = await rest(null).rpc("guest_may_still_sign", { p_token: goneToken });
+    note("anon", "a finished sailing cannot be signed for", stillOpen.data === false,
+      JSON.stringify(stillOpen.data));
+  }
+
+  // — A hold speaks on both transitions —
+  const held = uid(p.paused);
+  const holdNotes = await stf.get(
+    `notifications?profile_id=eq.${held}&select=title,body&order=created_at.desc&limit=20`
+  );
+  const bodies = JSON.stringify(holdNotes.data || []);
+  note("staff", "the hold notice says knots, not fathoms", !/fathom/i.test(bodies),
+    bodies.slice(0, 80));
+
+  // — A guest's filming consent is recorded, not assumed —
+  const camera = await stf.get("rsvp_guests?select=on_camera&limit=50");
+  note("staff", "guest filming consent is a real column the sheet can read",
+    (camera.data || []).every((g) => typeof g.on_camera === "boolean"),
+    JSON.stringify(camera.data).slice(0, 60));
+
+  await stf.del("applications?email=like.e2e-anon-probe*");
+}
+
 /* ---------- A. route × role matrix ---------- */
 async function routeMatrix(personas) {
   const memberPages = manifest.routes.filter((r) => r.type === "page" && !r.dynamic && r.access === "member");
@@ -1171,9 +1324,12 @@ async function routeMatrix(personas) {
           note(name, `${r.path} free of error text`, !/Application error|__next_error__/i.test(html));
           /* The lexicon holds behind the gangway too — the audit only sees
              public pages, so the member surface is checked here. */
-          const banned = ["Lyre", "LYRE", "lyre.social", "LYR-", "Chandlery", "Passbook", "The Booth", "the Booth", "Home Port", "Gateway", "LORE", "Aurora"].filter((t) => html.includes(t));
-          note(name, `${r.path} on-lexicon`, banned.length === 0, banned.join(", "));
           const visible = html.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<!--[\s\S]*?-->/g, "").replace(/<![^>]*>/g, "").replace(/<[^>]+>/g, " ");
+          /* Against VISIBLE text, not raw HTML: a word like "berth" lives in
+             RSC payloads as berths_total forever, and what matters is what a
+             person reads. */
+          const banned = BANNED.filter((t) => visible.includes(t));
+          note(name, `${r.path} on-lexicon`, banned.length === 0, banned.join(", "));
           const shouts = (visible.match(/!/g) || []).length;
           note(name, `${r.path} never shouts`, shouts === 0, shouts ? `${shouts} exclamation` : "");
           /* The producer voice carries no emoji. The audit only sees public
@@ -1543,6 +1699,7 @@ async function main() {
   await enforcementRules(personas);
   await syriusRules(personas);
   await hardeningRules(personas);
+  await roundTwoRules(personas);
   await sweep(personas);
 
   const passed = results.filter((r) => r.ok).length;

@@ -20,6 +20,7 @@ export function GuestSignPanel({
       body={body}
       askGuardian
       asGuest
+      askCamera
       onSign={(input) =>
         signAsGuest({
           token,
@@ -29,6 +30,7 @@ export function GuestSignPanel({
           data: input.data,
           name: input.name || guestName,
           guardian: input.guardian,
+          onCamera: input.onCamera,
           userAgent: input.userAgent,
         })
       }

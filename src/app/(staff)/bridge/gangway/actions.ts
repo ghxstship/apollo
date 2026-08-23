@@ -91,6 +91,12 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       .eq("id", guest.rsvp_id)
       .maybeSingle();
 
+    /* The guest rides on the host's pass: no pass, no boarding. Without this
+       the scanner walked aboard a guest whose host had already released. */
+    if (!guestRsvp || guestRsvp.status !== "aboard") {
+      return { error: "That guest's host is not aboard — no pass, no boarding." };
+    }
+
     const { data: host } = guestRsvp
       ? await supabase
           .from("profiles")

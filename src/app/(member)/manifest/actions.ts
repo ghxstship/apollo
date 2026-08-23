@@ -303,6 +303,32 @@ export async function setGuests(
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
   const clamped = clampGuests(guests);
+
+  /* sync_guest_rows keeps a guest who has already signed — their signature is a
+     record and cannot be swept. Dropping the count below that number left the
+     member reading "0 guests" while the gangway would still admit someone and
+     their stub stayed live. The count cannot go below the guests who signed. */
+  const { data: myRsvp } = await supabase
+    .from("rsvps")
+    .select("id")
+    .eq("voyage_id", voyageId)
+    .eq("profile_id", userId)
+    .maybeSingle();
+
+  if (myRsvp) {
+    const { data: signedGuests } = await supabase
+      .from("rsvp_guests")
+      .select("id, name, signatures!inner(id)")
+      .eq("rsvp_id", myRsvp.id);
+    const signedCount = (signedGuests ?? []).length;
+    if (clamped < signedCount) {
+      const who = (signedGuests ?? []).map((g) => g.name).join(" and ");
+      return {
+        error: `${who} already signed the waiver, so that guest stays on the pass. Shoreside can take them off.`,
+      };
+    }
+  }
+
   const { error } = await supabase
     .from("rsvps")
     .update({ guests: clamped, guest_names: cleanNames(guestNames, clamped) })

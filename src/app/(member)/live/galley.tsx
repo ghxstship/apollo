@@ -145,7 +145,7 @@ export function GalleyOrderForm({
                   <Stepper
                     size="sm"
                     min={0}
-                    max={20}
+                    max={12}
                     value={qty[i.id] ?? 0}
                     onChange={(n) => setQty((q) => ({ ...q, [i.id]: n }))}
                     incrementLabel={`Add ${i.name}`}

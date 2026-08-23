@@ -32,6 +32,9 @@ export default async function HomePage() {
         .from("voyages")
         .select("*")
         .in("status", ["scheduled", "live", "weather_hold"])
+      /* A sailing that has cast off is not on offer, whatever its status
+         still says — the detail page and the manifest already knew this. */
+      .gte("starts_at", new Date().toISOString())
         .order("starts_at", { ascending: true }),
       supabase.from("voyage_capacity").select("*"),
       supabase.from("harbors").select("*").order("position", { ascending: true }),

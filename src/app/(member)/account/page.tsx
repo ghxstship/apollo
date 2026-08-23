@@ -1,3 +1,4 @@
+import { LEDGER_KIND } from "@/lib/brand";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Progress, StateBlock, Table } from "@/components/ds";
@@ -361,13 +362,13 @@ export default async function AccountPage({
                   width: 90,
                   render: (r) => logDate(r.created_at),
                 },
-                { key: "memo", label: "Entry", render: (r) => r.memo ?? r.kind.toUpperCase() },
+                { key: "memo", label: "Entry", render: (r) => r.memo ?? (LEDGER_KIND[r.kind] ?? r.kind).toUpperCase() },
                 {
                   key: "kind",
                   label: "Kind",
                   mono: true,
                   width: 90,
-                  render: (r) => r.kind.toUpperCase(),
+                  render: (r) => (LEDGER_KIND[r.kind] ?? r.kind).toUpperCase(),
                 },
                 {
                   key: "delta_cents",

@@ -20,7 +20,7 @@ export async function placeGalleyOrder(
 
   const clean = lines
     .map((l) => ({ itemId: String(l.itemId), qty: Math.round(Number(l.qty)) }))
-    .filter((l) => l.itemId && l.qty > 0 && l.qty <= 20);
+    .filter((l) => l.itemId && l.qty > 0 && l.qty <= 12);
   if (clean.length === 0) return { error: "Nothing in the order yet." };
 
   const { data: items } = await supabase

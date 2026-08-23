@@ -47,6 +47,20 @@ export const SURFACES = {
 /* Mail and web domain, in one place. The show's addresses read at MAIL_DOMAIN;
    the Resend sender lives in Supabase Vault (OUTBOX_FROM) and stays on
    atlvs.pro until syrius.social is registered and verified. */
+/* account_ledger.kind keeps its legacy values (berth, chandlery) because the
+   column is written by triggers all over the schema. What a member or an
+   operator reads is this. */
+export const LEDGER_KIND: Record<string, string> = {
+  berth: "Pass",
+  deposit: "Deposit",
+  addon: "Add-on",
+  galley: "Galley",
+  chandlery: "Slop Chest",
+  credit: "Credit",
+  refund: "Refund",
+  payment: "Payment",
+};
+
 export const MAIL_DOMAIN = "syrius.social";
 export const SITE_DOMAIN = "syrius.social";
 

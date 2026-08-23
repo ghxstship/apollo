@@ -197,15 +197,26 @@ export default async function VoyagesPage() {
     else crewOthersByVoyage.set(c.voyage_id, [...(crewOthersByVoyage.get(c.voyage_id) ?? []), seeker]);
   }
 
-  /* Pass meter — this calendar month's usage against the plan allowance. */
+  /* Pass meter. The allowance is spent against a sailing's DEPARTURE month —
+     that is what rsvp_guard counts — but this read the current calendar month,
+     so a member aboard a September sailing was shown August's untouched
+     allowance while September's was gone. It follows the next sailing they
+     could actually claim, and says which month it is talking about. */
   const plan = planRes.data;
+  const nextAhead = voyages
+    .filter((v) => new Date(v.starts_at).getTime() > nowMs)
+    .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())[0];
+  const meterMonth = nextAhead ? new Date(nextAhead.starts_at) : now;
   const passesUsed =
     (usageRes.data ?? []).find((u) => {
       if (!u.month) return false;
       const m = new Date(u.month);
-      return m.getUTCFullYear() === now.getUTCFullYear() && m.getUTCMonth() === now.getUTCMonth();
+      return (
+        m.getUTCFullYear() === meterMonth.getUTCFullYear() &&
+        m.getUTCMonth() === meterMonth.getUTCMonth()
+      );
     })?.passes_used ?? 0;
-  const monthName = now.toLocaleString("en-US", { month: "long" }).toUpperCase();
+  const monthName = meterMonth.toLocaleString("en-US", { month: "long" }).toUpperCase();
   const passMeter = plan
     ? plan.events_per_month > 0
       ? `${passesUsed} OF ${plan.events_per_month} PASSES USED · ${monthName}`

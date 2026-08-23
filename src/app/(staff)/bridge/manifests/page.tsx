@@ -102,6 +102,25 @@ export default async function ManifestsPage({
     : { data: [] };
   const vesselById = new Map((vesselsData ?? []).map((v) => [v.id, v]));
 
+  /* Per-guest filming consent, captured when the guest signed. The sheet used
+     to derive off-camera from the HOST's profile alone, so a guest who declined
+     never reached the floor at all. */
+  const rsvpIds = rsvps.map((r) => r.id);
+  const { data: guestRows } = rsvpIds.length
+    ? await supabase
+        .from("rsvp_guests")
+        .select("rsvp_id, name, on_camera")
+        .in("rsvp_id", rsvpIds)
+    : { data: [] };
+  const guestsByRsvp = new Map<string, Array<{ name: string; onCamera: boolean }>>();
+  for (const g of guestRows ?? []) {
+    if (!g.rsvp_id) continue;
+    guestsByRsvp.set(g.rsvp_id, [
+      ...(guestsByRsvp.get(g.rsvp_id) ?? []),
+      { name: g.name, onCamera: g.on_camera !== false },
+    ]);
+  }
+
   const aboardRsvps = rsvps.filter((r) => r.status === "aboard");
   const fleet: FleetVessel[] = (voyageVessels ?? [])
     .map((vv) => vesselById.get(vv.vessel_id))
@@ -128,6 +147,7 @@ export default async function ManifestsPage({
       memberNo: p?.member_no ?? "GUEST",
       guests: r.guests,
       guestNames: r.guest_names ?? [],
+      guestParty: guestsByRsvp.get(r.id) ?? [],
       comp: r.comp,
       boardingCode: r.boarding_code ?? "",
       status: r.status as "aboard" | "waitlist",

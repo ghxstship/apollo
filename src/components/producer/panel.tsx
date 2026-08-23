@@ -167,7 +167,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
           ? [
               {
                 kind: "bot",
-                text: `You're aboard ${res.berth.title} — ${logDateTime(res.berth.startsAt)}. Your member card holds your details.`,
+                text: `You're aboard ${res.berth.title} — ${logDateTime(res.berth.startsAt, res.berth.zone)}. Your member card holds your details.`,
               },
             ]
           : [{ kind: "bot", text: "No pass held. The manifest has open water when you're ready." }];
@@ -182,7 +182,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
         const cards: Msg[] = res.sailings.map((s) => ({
           kind: "card",
           title: s.title,
-          meta: `${logDateTime(s.startsAt).toUpperCase()} · ${Math.max(0, s.berthsLeft)} PASSES LEFT`,
+          meta: `${logDateTime(s.startsAt, s.zone).toUpperCase()} · ${Math.max(0, s.berthsLeft)} PASSES LEFT`,
           confirm: "Reserve",
           action: { type: "link", href: "/manifest" },
         }));
@@ -204,7 +204,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
           {
             kind: "card",
             title: `Release pass — ${res.berth.title}`,
-            meta: `${logDateTime(res.berth.startsAt).toUpperCase()} · RELEASES 1 PASS TO THE WAITLIST`,
+            meta: `${logDateTime(res.berth.startsAt, res.berth.zone).toUpperCase()} · RELEASES 1 PASS TO THE WAITLIST`,
             confirm: "Release it",
             action: { type: "release", voyageId: res.berth.voyageId },
           },
@@ -228,7 +228,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
         if (!res.holds || res.holds.length === 0) {
           return [{ kind: "bot", text: "Clear charts — no weather holds on your sailings." }];
         }
-        const list = res.holds.map((h) => `${h.title} (${logDateTime(h.startsAt)})`).join("; ");
+        const list = res.holds.map((h) => `${h.title} (${logDateTime(h.startsAt, h.zone)})`).join("; ");
         return [
           {
             kind: "bot",

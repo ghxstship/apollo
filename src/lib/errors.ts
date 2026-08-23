@@ -20,7 +20,20 @@ export function voice(error: PgLikeError | null | undefined): string {
     return HOLD_MESSAGE;
   }
 
+  /* 23514 — a check constraint. Postgres names the constraint, which is our
+     schema talking to itself, not to a member: "new row for relation
+     \"shop_order_items\" violates check constraint \"shop_order_items_qty_check\"".
+     23505 is the same problem for a unique index. Neither ever speaks. */
+  if (error.code === "23514" || error.code === "23505" ||
+      /violates (check|unique) constraint/i.test(error.message ?? "")) {
+    return "That didn't land — check the numbers and try again.";
+  }
+
   const m = (error.message ?? "").trim();
   if (!m) return "That didn't land. Try again.";
+  /* Anything still carrying database furniture is the schema talking, not us. */
+  if (/relation "|column "|constraint "|violates /i.test(m)) {
+    return "That didn't land. Try again.";
+  }
   return m.charAt(0).toUpperCase() + m.slice(1) + (/[.?]$/.test(m) ? "" : ".");
 }

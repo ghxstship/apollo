@@ -220,6 +220,8 @@ export type RosterRow = {
   memberNo: string;
   guests: number;
   guestNames: string[];
+  /* Named guests with their own filming consent. */
+  guestParty: Array<{ name: string; onCamera: boolean }>;
   comp: boolean;
   boardingCode: string;
   status: "aboard" | "waitlist";
@@ -295,7 +297,17 @@ export function RosterTable({
           <span className="hm-mono" style={{ color: "var(--text-2)" }}>
             {r.guests}
           </span>
-          {r.guestNames.length ? (
+          {r.guestParty.length ? (
+            <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
+              {r.guestParty.map((g, i) => (
+                <span key={g.name + i}>
+                  {i > 0 ? ", " : ""}
+                  {g.name}
+                  {g.onCamera ? "" : " (off camera)"}
+                </span>
+              ))}
+            </span>
+          ) : r.guestNames.length ? (
             <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{r.guestNames.join(", ")}</span>
           ) : null}
         </span>

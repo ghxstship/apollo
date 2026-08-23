@@ -15,6 +15,7 @@ export type GuestSignInput = {
   data: string;
   name: string;
   guardian: string;
+  onCamera: boolean;
   userAgent: string;
 };
 
@@ -34,6 +35,7 @@ export async function signAsGuest(
     p_signer_name: input.name || null,
     p_guardian_name: input.guardian || null,
     p_user_agent: input.userAgent || null,
+    p_on_camera: input.onCamera,
   });
 
   if (error) {
@@ -43,6 +45,8 @@ export async function signAsGuest(
       return { error: "That link isn't recognised. Ask the member who invited you for a fresh one." };
     if (/signature is required/i.test(error.message))
       return { error: "A signature is required." };
+    if (/nothing left to sign/i.test(error.message))
+      return { error: "That sailing has gone — there is nothing left to sign." };
     return { error: "That didn't land. Try again." };
   }
 

@@ -443,7 +443,7 @@ export function MembersClient({
                   {detail.passes.map((p) => (
                     <li key={p.id} style={{ display: "flex", gap: 10, padding: "3px 0" }}>
                       <span className="hm-mono" style={{ minWidth: 96 }}>
-                        {logDate(p.when)}
+                        {logDate(p.when, p.zone || undefined)}
                       </span>
                       <span style={{ flex: 1 }}>{p.title}</span>
                       <span className="hm-mono">{p.status.replace("_", " ").toUpperCase()}</span>

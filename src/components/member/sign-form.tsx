@@ -30,6 +30,7 @@ export function SignForm({
   onSign,
   askGuardian = false,
   asGuest = false,
+  askCamera = false,
 }: {
   documentTitle: string;
   body: string;
@@ -40,9 +41,14 @@ export function SignForm({
     data: string;
     name: string;
     guardian: string;
+    onCamera: boolean;
     userAgent: string;
   }) => Promise<SignResult>;
   askGuardian?: boolean;
+  /* The guest waiver promises a camera choice and says a minor's default is
+     off. Until this, the form offered no such control and the column defaulted
+     to true — the signer agreed to a consent nobody collected. */
+  askCamera?: boolean;
   /* A guest has no account and never will — the confirmation must not send
      them to a member card they do not have. ESIGN also expects a signer to be
      able to retain what they signed, so point them at the link they hold. */
@@ -52,6 +58,10 @@ export function SignForm({
   const [kind, setKind] = React.useState<"typed" | "drawn">("typed");
   const [typed, setTyped] = React.useState("");
   const [guardian, setGuardian] = React.useState("");
+  /* Adults are on camera unless they say otherwise; a minor is off unless the
+     signing adult says otherwise. Tracking whether the control was touched lets
+     one piece of state carry both defaults without fighting the user. */
+  const [cameraChoice, setCameraChoice] = React.useState<boolean | null>(null);
   const [consent, setConsent] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [done, setDone] = React.useState(false);
@@ -128,6 +138,7 @@ export function SignForm({
         data: kind === "typed" ? name : (drawn ?? ""),
         name,
         guardian: guardian.trim(),
+        onCamera: cameraChoice ?? !(guardian.trim().length > 0),
         userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent,
       });
       if (res.error) setError(res.error);
@@ -231,6 +242,19 @@ export function SignForm({
           value={guardian}
           autoComplete="name"
           onChange={(e) => setGuardian(e.target.value)}
+        />
+      ) : null}
+
+      {askCamera ? (
+        <Checkbox
+          label="Happy to appear on camera."
+          description={
+            guardian.trim().length > 0
+              ? "Off for anyone under eighteen unless you tick it — production keeps them out of frame."
+              : "Untick and production keeps you out of frame. The crew sheet carries it either way."
+          }
+          checked={cameraChoice ?? !(guardian.trim().length > 0)}
+          onChange={(e) => setCameraChoice(e.target.checked)}
         />
       ) : null}
 

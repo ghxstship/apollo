@@ -49,7 +49,7 @@ export type MemberDetail = {
   duesLine: string;
   knotsBalance: number;
   knotsRecent: Array<{ id: string; reason: string; delta: number; when: string }>;
-  passes: Array<{ id: string; title: string; when: string; status: string }>;
+  passes: Array<{ id: string; title: string; when: string; zone: string; status: string }>;
   balanceCents: number;
   status: string;
 };
@@ -96,8 +96,8 @@ export async function loadMember(
 
   const voyageIds = [...new Set((passesRes.data ?? []).map((r) => r.voyage_id))];
   const { data: voyagesData } = voyageIds.length
-    ? await supabase.from("voyages").select("id, title, starts_at").in("id", voyageIds)
-    : { data: [] as Array<{ id: string; title: string; starts_at: string }> };
+    ? await supabase.from("voyages").select("id, title, starts_at, time_zone").in("id", voyageIds)
+    : { data: [] as Array<{ id: string; title: string; starts_at: string; time_zone: string }> };
   const voyages = new Map((voyagesData ?? []).map((v) => [v.id, v]));
 
   const planId = subRes.data?.plan_id ?? profile.plan_id;
@@ -144,6 +144,9 @@ export async function loadMember(
         id: r.id,
         title: voyages.get(r.voyage_id)?.title ?? "Voyage off the books",
         when: voyages.get(r.voyage_id)?.starts_at ?? r.created_at,
+        /* The drawer used to read this on the operator's clock, disagreeing
+           with every other Bridge console about the same sailing. */
+        zone: voyages.get(r.voyage_id)?.time_zone ?? "",
         status: r.status,
       })),
       balanceCents: accountRes.data?.balance_cents ?? 0,

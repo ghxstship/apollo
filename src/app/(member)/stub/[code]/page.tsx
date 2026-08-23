@@ -92,7 +92,11 @@ export default async function StubPage({
      after it stopped meaning anything. */
   /* Server-rendered per request, so "now" is request time. */
   const nowMs = new Date().getTime();
-  const passHeld = guest ? true : rsvp.status === "aboard";
+  /* A guest stub rides on the host's pass. Exempting guests from this check
+     meant the host could release and their guest's stub stayed live and
+     scannable — the gangway walked a guest aboard whose host held nothing. The
+     rsvp here is the host's either way, so one rule covers both. */
+  const passHeld = rsvp.status === "aboard";
   const voyageOver =
     voyage &&
     (voyage.status === "cancelled" ||

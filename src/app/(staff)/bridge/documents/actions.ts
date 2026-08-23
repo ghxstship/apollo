@@ -179,7 +179,12 @@ export async function publishVersion(versionId: string): Promise<ActionResult> {
   const { error } = await supabase.rpc("publish_document_version", { p_id: versionId });
   if (error) {
     if (/no clauses/i.test(error.message)) return { error: "A document with no clauses says nothing." };
-    if (/only a draft/i.test(error.message)) return { error: "That version is already published." };
+    if (/already the standing one/i.test(error.message))
+      return { error: "That version is already the standing one." };
+    if (/retired/i.test(error.message))
+      return { error: "That version is retired. Copy it into a fresh draft to bring it back." };
+    if (/no such version/i.test(error.message)) return { error: "No version under that id." };
+    if (/only a draft/i.test(error.message)) return { error: "Only a draft can be published." };
     return { error: ERR_LAND };
   }
   return done();

@@ -159,7 +159,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
               lines.map((l) => (
                 <div className="hm-ticket__line" key={l.item.id}>
                   <span>{l.item.name}</span>
-                  <Stepper size="sm" min={0} max={20} value={l.qty} onChange={(q) => setQty(l.item.id, q)} />
+                  <Stepper size="sm" min={0} max={12} value={l.qty} onChange={(q) => setQty(l.item.id, q)} />
                   <span className="num">{price(l.item.priceCents * l.qty)}</span>
                 </div>
               ))

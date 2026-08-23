@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export type ProducerHold = { voyageId: string; title: string; startsAt: string };
-export type ProducerSailing = { id: string; title: string; startsAt: string; berthsLeft: number };
+export type ProducerHold = { voyageId: string; title: string; startsAt: string; zone: string };
+export type ProducerSailing = { id: string; title: string; startsAt: string; zone: string; berthsLeft: number };
 
 async function member() {
   const supabase = await createClient();
@@ -27,13 +27,13 @@ export async function producerNextBerth(): Promise<{ error?: string; berth?: Pro
   if (ids.length === 0) return { berth: null };
   const { data: voyages } = await supabase
     .from("voyages")
-    .select("id,title,starts_at")
+    .select("id,title,starts_at,time_zone")
     .in("id", ids)
     .gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true })
     .limit(1);
   const v = voyages?.[0];
-  return { berth: v ? { voyageId: v.id, title: v.title, startsAt: v.starts_at } : null };
+  return { berth: v ? { voyageId: v.id, title: v.title, startsAt: v.starts_at, zone: v.time_zone } : null };
 }
 
 /* Three soonest open sailings with berths left. */
@@ -43,7 +43,7 @@ export async function producerSailings(): Promise<{ error?: string; sailings?: P
   const [voyagesRes, capacityRes] = await Promise.all([
     supabase
       .from("voyages")
-      .select("id,title,starts_at,berths_total")
+      .select("id,title,starts_at,berths_total,time_zone")
       .eq("status", "scheduled")
       .gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true })
@@ -59,7 +59,7 @@ export async function producerSailings(): Promise<{ error?: string; sailings?: P
     sailings: (voyagesRes.data ?? []).map((v) => ({
       id: v.id,
       title: v.title,
-      startsAt: v.starts_at,
+      startsAt: v.starts_at, zone: v.time_zone,
       berthsLeft: left.get(v.id) ?? v.berths_total,
     })),
   };
@@ -116,7 +116,7 @@ export async function producerBalance(): Promise<{
 /* Weather holds on sailings I hold a berth or list spot for. */
 export async function producerWeather(): Promise<{
   error?: string;
-  holds?: Array<{ title: string; startsAt: string }>;
+  holds?: Array<{ title: string; startsAt: string; zone: string }>;
 }> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
@@ -129,11 +129,11 @@ export async function producerWeather(): Promise<{
   if (ids.length === 0) return { holds: [] };
   const { data: voyages } = await supabase
     .from("voyages")
-    .select("title,starts_at")
+    .select("title,starts_at,time_zone")
     .in("id", ids)
     .eq("status", "weather_hold")
     .order("starts_at", { ascending: true });
   return {
-    holds: (voyages ?? []).map((v) => ({ title: v.title, startsAt: v.starts_at })),
+    holds: (voyages ?? []).map((v) => ({ title: v.title, startsAt: v.starts_at, zone: v.time_zone })),
   };
 }

@@ -4,7 +4,15 @@
 /* ————— chrome: nav ————— */
 .ws-nav{position:sticky;top:0;z-index:500;background:var(--surface-deep);color:var(--text-inverse-1);border-bottom:1px solid var(--line-inverse-faint)}
 .ws-nav__in{display:flex;align-items:center;gap:28px;height:72px}
-.ws-nav__logo{display:inline-flex;align-items:center;flex:none}
+/* The wordmark is an <a>, so the global `a{color:var(--text-link)}` and
+   `a:hover{color:var(--ink)}` beat anything inherited from .ws-nav. In light
+   theme that painted it #7C5A1B on the noir bar (2.75:1), and hovering painted
+   it near-black on near-black (1.07:1) in BOTH themes — the brand name
+   disappeared when you pointed at it. The chrome stays noir whatever the page
+   does, so it carries the inverse tokens, focus ring included. */
+.ws-nav{--focus:var(--gold-400)}
+.ws-nav__logo{display:inline-flex;align-items:center;flex:none;color:var(--text-inverse-1)}
+.ws-nav__logo:hover{color:var(--bone);text-decoration:none}
 .ws-nav__logo svg{display:block;height:34px;width:auto}
 .ws-nav__links{display:flex;gap:26px}
 .ws-nav__link{font:600 10px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--text-inverse-2);padding:6px 0;border-bottom:2px solid transparent;transition:color var(--dur-1) var(--ease-swell)}

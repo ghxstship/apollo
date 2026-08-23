@@ -212,7 +212,7 @@ export function SlopChestShop({
             ) : null}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span className="mbr-mono">QTY</span>
-              <Stepper size="sm" min={1} max={20} value={qty} onChange={setQty} />
+              <Stepper size="sm" min={1} max={12} value={qty} onChange={setQty} />
             </div>
           </div>
         ) : null}
@@ -241,7 +241,7 @@ export function SlopChestShop({
                         {price(l.priceCents)}
                       </span>
                     </div>
-                    <Stepper size="sm" min={0} max={20} value={l.qty} onChange={(n) => setLineQty(i, n)} />
+                    <Stepper size="sm" min={0} max={12} value={l.qty} onChange={(n) => setLineQty(i, n)} />
                   </div>
                 ))
               )}

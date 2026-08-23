@@ -1,5 +1,6 @@
 "use client";
 
+import { LEDGER_KIND } from "@/lib/brand";
 import React from "react";
 import { Badge, Button, Dialog, Input, Select, Table, Tag, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
@@ -137,7 +138,7 @@ export function OrdersClient({
               key: "kind",
               label: "Kind",
               render: (e: LedgerRow) => (
-                <Badge tone={e.deltaCents < 0 ? "outline" : "positive"}>{e.kind}</Badge>
+                <Badge tone={e.deltaCents < 0 ? "outline" : "positive"}>{LEDGER_KIND[e.kind] ?? e.kind}</Badge>
               ),
             },
             { key: "memo", label: "Memo", render: (e: LedgerRow) => e.memo || "—" },

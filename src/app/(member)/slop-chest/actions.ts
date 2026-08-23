@@ -24,7 +24,7 @@ export async function placeShopOrder(lines: CrateLine[]): Promise<SlopChestResul
       qty: Math.round(Number(l.qty)),
       size: l.size ? String(l.size) : null,
     }))
-    .filter((l) => l.productId && l.qty > 0 && l.qty <= 20);
+    .filter((l) => l.productId && l.qty > 0 && l.qty <= 12);
   if (clean.length === 0) return { error: "The crate is empty." };
 
   const { error } = await supabase.rpc("place_shop_order", { p_lines: clean });
