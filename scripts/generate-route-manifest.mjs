@@ -35,6 +35,11 @@ function readProtectedPrefixes() {
    credential-bearing instead, and the audit leaves them alone. */
 const CREDENTIAL_ROUTES = new Set(["/sign/[token]"]);
 
+/* Reviewer surfaces that exist only under `next dev` — the page itself calls
+   notFound() in production. Classified here rather than left "public" so the
+   sitemap never advertises a URL that 404s in the deploy. */
+const DEV_ROUTES = new Set(["/preview/documents"]);
+
 const DYNAMIC_SOURCES = {
   "/charters/[slug]": { table: "voyages", column: "slug" },
   "/episodes/[slug]": { table: "dispatch_posts", column: "slug" },
@@ -72,7 +77,13 @@ const routes = walk(appDir)
       ...r,
       path: r.path === "/" ? "/" : r.path.replace(/\/$/, ""),
       dynamic,
-      access: isProtected(r.path) ? "member" : r.path.startsWith("/auth") || r.path === "/gangway" ? "auth" : "public",
+      access: isProtected(r.path)
+        ? "member"
+        : DEV_ROUTES.has(r.path)
+          ? "dev"
+          : r.path.startsWith("/auth") || r.path === "/gangway"
+            ? "auth"
+            : "public",
       ...(dynamic && DYNAMIC_SOURCES[r.path] ? { source: DYNAMIC_SOURCES[r.path] } : {}),
       ...(CREDENTIAL_ROUTES.has(r.path) ? { credential: true } : {}),
     };

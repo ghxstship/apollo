@@ -76,7 +76,9 @@ export default async function ReferralsPage() {
       uses: `${i.uses}/${i.max_uses}`,
       aboard: came.length ? came.join(" · ") : "—",
       knotsAwarded: knots(knotsByInviter.get(i.inviter_id) ?? 0),
-      cut: logDate(i.created_at),
+      /* UTC, not the server's local zone: an invite cut 01:17Z rendered
+         AUG 22 here and AUG 23 on a UTC deploy. */
+      cut: logDate(i.created_at, "UTC"),
     };
   });
 

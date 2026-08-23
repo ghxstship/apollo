@@ -433,6 +433,13 @@
       "access": "member"
     },
     {
+      "path": "/preview/documents",
+      "file": "src/app/preview/documents/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "dev"
+    },
+    {
       "path": "/regattas",
       "file": "src/app/(member)/regattas/page.tsx",
       "type": "page",

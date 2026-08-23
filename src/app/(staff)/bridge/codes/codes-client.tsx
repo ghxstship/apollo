@@ -87,8 +87,19 @@ export function CodesClient({
       key: "active",
       label: "State",
       width: 110,
-      render: (r: CodeRow) =>
-        r.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Retired</Badge>,
+      /* "Live" used to mean `active` alone, ignoring the two other things
+         check_promo refuses on. Seven of twelve real codes were spent or
+         expired and every one of them badged Live, with a Deactivate button
+         beside it — an operator handing out a code the Bridge had just told
+         them was good. Badge from the same predicate the guard uses. */
+      render: (r: CodeRow) => {
+        if (!r.active) return <Badge tone="outline">Retired</Badge>;
+        if (r.expiresAt && new Date(r.expiresAt) <= new Date())
+          return <Badge tone="caution">Expired</Badge>;
+        if (r.maxUses != null && r.uses >= r.maxUses)
+          return <Badge tone="caution">Spent</Badge>;
+        return <Badge tone="positive">Live</Badge>;
+      },
     },
     {
       key: "acts",

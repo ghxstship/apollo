@@ -52,3 +52,16 @@ export function must<T>(res: { data: T[] | null; error?: { message?: string } | 
   }
   return res.data ?? [];
 }
+
+/* The RPC twin of must(). The Reports and Documents screens moved their counts
+   onto definer RPCs to escape PostgREST's 1000-row cap — and then read the
+   results with `?? 0`, which is the very failure must() exists to end: an RPC
+   error would render 0 weather notices and 0 across all nine outbox figures,
+   silently, which is exactly "the push counter read 0 pending while fourteen
+   were waiting". */
+export function mustValue<T>(res: { data: T | null; error?: { message?: string } | null }, fallback: T): T {
+  if (res.error) {
+    throw new Error(`the Bridge could not read its rows: ${res.error.message ?? "unknown"}`);
+  }
+  return res.data ?? fallback;
+}

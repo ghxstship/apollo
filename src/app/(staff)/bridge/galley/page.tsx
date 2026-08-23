@@ -1,19 +1,20 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { PosClient, type PosItem } from "./pos-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Galley POS" };
 
 export default async function GalleyPage() {
   const { supabase } = await getOperator();
 
-  const { data: itemsData } = await supabase
+  const itemsRes = await supabase
     .from("galley_items")
     .select("*")
     .eq("active", true)
     .order("name", { ascending: true });
 
-  const items: PosItem[] = (itemsData ?? []).map((i) => ({
+  const items: PosItem[] = must(itemsRes).map((i) => ({
     id: i.id,
     category: i.category,
     name: i.name,

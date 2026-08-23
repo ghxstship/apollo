@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { DocumentsClient, type ClauseRow, type DocRow, type SignatureRow } from "./documents-client";
-import { must } from "../../staff";
+import { must, mustValue } from "../../staff";
 
 export const metadata: Metadata = { title: "Documents" };
 
@@ -28,7 +28,10 @@ export default async function DocumentsPage() {
     ]);
 
   const tally = new Map(
-    ((tallyRes.data as Array<{ document_version_id: string; n: number }> | null) ?? []).map(
+    mustValue<Array<{ document_version_id: string; n: number }>>(
+      tallyRes as { data: Array<{ document_version_id: string; n: number }> | null; error?: { message?: string } | null },
+      []
+    ).map(
       (row) => [row.document_version_id, Number(row.n)]
     )
   );

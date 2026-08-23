@@ -1,0 +1,135 @@
+{
+  "generatedAt": "2026-08-23",
+  "source": "supabase mpyvwpunwrioakmtmcdo · render_document() over published versions",
+  "documents": [
+    {
+      "code": "member-waiver",
+      "title": "Member waiver and release",
+      "kind": "waiver",
+      "audience": "member",
+      "validity_months": 12,
+      "version": 2,
+      "effective_from": "2026-08-21T16:20:51.986714+00:00",
+      "gates": ["board_sea", "board_shore"],
+      "renderings": [
+        {
+          "class": "sea",
+          "clauses": [
+            { "clause_code": "assumption-of-risk", "title": "Assumption of risk", "category": "liability", "version": 1, "position": 1, "condition": {} },
+            { "clause_code": "sea-conditions", "title": "Conditions at sea", "category": "liability", "version": 1, "position": 2, "condition": { "class": "sea" } },
+            { "clause_code": "swim-competency", "title": "Swimming and water competency", "category": "liability", "version": 1, "position": 3, "condition": { "class": "sea" } },
+            { "clause_code": "medical-disclosure", "title": "Medical disclosure", "category": "liability", "version": 1, "position": 4, "condition": { "class": "sea" } },
+            { "clause_code": "vessel-instructions", "title": "Instructions aboard", "category": "conduct", "version": 1, "position": 5, "condition": { "class": "sea" } },
+            { "clause_code": "alcohol-conduct", "title": "Alcohol and conduct", "category": "conduct", "version": 1, "position": 7, "condition": {} },
+            { "clause_code": "media-release", "title": "Photography aboard", "category": "media", "version": 1, "position": 8, "condition": {} },
+            { "clause_code": "data-notice", "title": "What the club records", "category": "privacy", "version": 1, "position": 9, "condition": {} },
+            { "clause_code": "filming-release", "title": "Appearance and filming", "category": "media", "version": 1, "position": 91, "condition": {} },
+            { "clause_code": "voice-likeness", "title": "Voice and likeness", "category": "media", "version": 1, "position": 92, "condition": {} }
+          ],
+          "body": "Assumption of risk. Time on and around the water carries risk that no amount of seamanship removes — weather turns, decks move, and equipment fails. You accept those risks knowingly and voluntarily when you come aboard.\n\nConditions at sea. The skipper has final authority over the sailing, including whether it happens at all. A sailing may be shortened, rerouted, or called off for weather or safety, and the decision is not open to appeal at the dock.\n\nSwimming and water competency. You confirm you can swim unaided, or that you will wear the flotation the crew provides for the whole time you are aboard. Tell the skipper before you board if anything about this has changed.\n\nMedical disclosure. You will tell the skipper before boarding about any condition, medication, or allergy that could matter at sea, and about anything that would make evacuation difficult. It stays between you and the skipper.\n\nInstructions aboard. You will follow the instructions of the skipper and crew without argument, and immediately in a safety matter. This is the one rule aboard that is not a matter of taste.\n\nAlcohol and conduct. The club serves at its discretion and stops serving at its discretion. Anyone whose conduct endangers or diminishes the day may be put ashore at the next reasonable opportunity, without refund.\n\nPhotography aboard. The club photographs its sailings and publishes a selection, credited by name. You may decline at any time by telling Shoreside, and a frame already published will be removed on request.\n\nWhat the club records. The club keeps your membership record, the sailings you attend, and this agreement, for as long as you are a member and for six years afterwards, so that a claim can be answered. You may ask what is held, ask for it to be corrected, or ask for it to be erased — where a record is needed to answer a legal claim, the club redacts the person and keeps the proof. Write to Shoreside.\n\nAppearance and filming. The cameras run from boarding to docking. By boarding you agree to be filmed and photographed, and to the use of that footage in the show and its promotion. You may decline to appear: tell the crew before boarding or toggle it in your settings, and production will keep you out of frame and out of the cut.\n\nVoice and likeness. What the microphones catch is part of the footage, on the same terms and with the same right to decline. Nothing recorded is sold to third parties; the footage is the show's and only the show's."
+        },
+        {
+          "class": "shore",
+          "clauses": [
+            { "clause_code": "assumption-of-risk", "title": "Assumption of risk", "category": "liability", "version": 1, "position": 1, "condition": {} },
+            { "clause_code": "shore-venue", "title": "Ashore, at a venue", "category": "liability", "version": 1, "position": 6, "condition": { "class": "shore" } },
+            { "clause_code": "alcohol-conduct", "title": "Alcohol and conduct", "category": "conduct", "version": 1, "position": 7, "condition": {} },
+            { "clause_code": "media-release", "title": "Photography aboard", "category": "media", "version": 1, "position": 8, "condition": {} },
+            { "clause_code": "data-notice", "title": "What the club records", "category": "privacy", "version": 1, "position": 9, "condition": {} },
+            { "clause_code": "filming-release", "title": "Appearance and filming", "category": "media", "version": 1, "position": 91, "condition": {} },
+            { "clause_code": "voice-likeness", "title": "Voice and likeness", "category": "media", "version": 1, "position": 92, "condition": {} }
+          ],
+          "body": "Assumption of risk. Time on and around the water carries risk that no amount of seamanship removes — weather turns, decks move, and equipment fails. You accept those risks knowingly and voluntarily when you come aboard.\n\nAshore, at a venue. Port Days take place at venues the club does not own. You accept the ordinary risks of the premises, and the club is not answerable for the acts of a venue or its staff.\n\nAlcohol and conduct. The club serves at its discretion and stops serving at its discretion. Anyone whose conduct endangers or diminishes the day may be put ashore at the next reasonable opportunity, without refund.\n\nPhotography aboard. The club photographs its sailings and publishes a selection, credited by name. You may decline at any time by telling Shoreside, and a frame already published will be removed on request.\n\nWhat the club records. The club keeps your membership record, the sailings you attend, and this agreement, for as long as you are a member and for six years afterwards, so that a claim can be answered. You may ask what is held, ask for it to be corrected, or ask for it to be erased — where a record is needed to answer a legal claim, the club redacts the person and keeps the proof. Write to Shoreside.\n\nAppearance and filming. The cameras run from boarding to docking. By boarding you agree to be filmed and photographed, and to the use of that footage in the show and its promotion. You may decline to appear: tell the crew before boarding or toggle it in your settings, and production will keep you out of frame and out of the cut.\n\nVoice and likeness. What the microphones catch is part of the footage, on the same terms and with the same right to decline. Nothing recorded is sold to third parties; the footage is the show's and only the show's."
+        }
+      ]
+    },
+    {
+      "code": "guest-waiver",
+      "title": "Guest waiver and release",
+      "kind": "waiver",
+      "audience": "guest",
+      "validity_months": null,
+      "version": 4,
+      "effective_from": "2026-08-23T14:09:25.819292+00:00",
+      "gates": ["guest_board"],
+      "renderings": [
+        {
+          "class": "sea",
+          "clauses": [
+            { "clause_code": "assumption-of-risk", "title": "Assumption of risk", "category": "liability", "version": 1, "position": 1, "condition": {} },
+            { "clause_code": "sea-conditions", "title": "Conditions at sea", "category": "liability", "version": 1, "position": 2, "condition": { "class": "sea" } },
+            { "clause_code": "swim-competency", "title": "Swimming and water competency", "category": "liability", "version": 1, "position": 3, "condition": { "class": "sea" } },
+            { "clause_code": "medical-disclosure", "title": "Medical disclosure", "category": "liability", "version": 1, "position": 4, "condition": { "class": "sea" } },
+            { "clause_code": "vessel-instructions", "title": "Instructions aboard", "category": "conduct", "version": 1, "position": 5, "condition": { "class": "sea" } },
+            { "clause_code": "alcohol-conduct", "title": "Alcohol and conduct", "category": "conduct", "version": 1, "position": 7, "condition": {} },
+            { "clause_code": "guardian-consent", "title": "Signing for a minor", "category": "liability", "version": 1, "position": 8, "condition": {} },
+            { "clause_code": "media-release", "title": "Photography aboard", "category": "media", "version": 1, "position": 9, "condition": {} },
+            { "clause_code": "data-notice-guest", "title": "What the club records — guest", "category": "privacy", "version": 1, "position": 10, "condition": {} },
+            { "clause_code": "filming-release-guest", "title": "Appearance and filming — guest", "category": "media", "version": 1, "position": 91, "condition": {} },
+            { "clause_code": "voice-likeness", "title": "Voice and likeness", "category": "media", "version": 1, "position": 92, "condition": {} },
+            { "clause_code": "minor-appearance", "title": "Minors on camera", "category": "media", "version": 1, "position": 93, "condition": {} }
+          ],
+          "body": "Assumption of risk. Time on and around the water carries risk that no amount of seamanship removes — weather turns, decks move, and equipment fails. You accept those risks knowingly and voluntarily when you come aboard.\n\nConditions at sea. The skipper has final authority over the sailing, including whether it happens at all. A sailing may be shortened, rerouted, or called off for weather or safety, and the decision is not open to appeal at the dock.\n\nSwimming and water competency. You confirm you can swim unaided, or that you will wear the flotation the crew provides for the whole time you are aboard. Tell the skipper before you board if anything about this has changed.\n\nMedical disclosure. You will tell the skipper before boarding about any condition, medication, or allergy that could matter at sea, and about anything that would make evacuation difficult. It stays between you and the skipper.\n\nInstructions aboard. You will follow the instructions of the skipper and crew without argument, and immediately in a safety matter. This is the one rule aboard that is not a matter of taste.\n\nAlcohol and conduct. The club serves at its discretion and stops serving at its discretion. Anyone whose conduct endangers or diminishes the day may be put ashore at the next reasonable opportunity, without refund.\n\nSigning for a minor. Where the person aboard is under eighteen, the adult signing accepts these terms on their behalf and confirms they hold the authority to do so.\n\nPhotography aboard. The club photographs its sailings and publishes a selection, credited by name. You may decline at any time by telling Shoreside, and a frame already published will be removed on request.\n\nWhat the club records. The club keeps your name, the sailing you attended and this agreement for six years from the date of that sailing, so that a claim can be answered. Nothing else is kept about you, and you are not enrolled in anything by signing. You may ask what is held, ask for it to be corrected, or ask for it to be erased — where a record is needed to answer a legal claim, the club redacts the person and keeps the proof. Write to Shoreside.\n\nAppearance and filming. The cameras run from boarding to docking. By boarding you agree to be filmed and photographed, and to the use of that footage in the show and its promotion. You may decline to appear: untick the camera box on this form, or tell the crew before boarding, and production will keep you out of frame and out of the cut. To change your mind afterwards, write to Shoreside.\n\nVoice and likeness. What the microphones catch is part of the footage, on the same terms and with the same right to decline. Nothing recorded is sold to third parties; the footage is the show's and only the show's.\n\nMinors on camera. A guest under eighteen appears on camera only with the signing adult's explicit consent, given here. Without it, production keeps them out of frame — the default is off."
+        },
+        {
+          "class": "shore",
+          "clauses": [
+            { "clause_code": "assumption-of-risk", "title": "Assumption of risk", "category": "liability", "version": 1, "position": 1, "condition": {} },
+            { "clause_code": "shore-venue", "title": "Ashore, at a venue", "category": "liability", "version": 1, "position": 6, "condition": { "class": "shore" } },
+            { "clause_code": "alcohol-conduct", "title": "Alcohol and conduct", "category": "conduct", "version": 1, "position": 7, "condition": {} },
+            { "clause_code": "guardian-consent", "title": "Signing for a minor", "category": "liability", "version": 1, "position": 8, "condition": {} },
+            { "clause_code": "media-release", "title": "Photography aboard", "category": "media", "version": 1, "position": 9, "condition": {} },
+            { "clause_code": "data-notice-guest", "title": "What the club records — guest", "category": "privacy", "version": 1, "position": 10, "condition": {} },
+            { "clause_code": "filming-release-guest", "title": "Appearance and filming — guest", "category": "media", "version": 1, "position": 91, "condition": {} },
+            { "clause_code": "voice-likeness", "title": "Voice and likeness", "category": "media", "version": 1, "position": 92, "condition": {} },
+            { "clause_code": "minor-appearance", "title": "Minors on camera", "category": "media", "version": 1, "position": 93, "condition": {} }
+          ],
+          "body": "Assumption of risk. Time on and around the water carries risk that no amount of seamanship removes — weather turns, decks move, and equipment fails. You accept those risks knowingly and voluntarily when you come aboard.\n\nAshore, at a venue. Port Days take place at venues the club does not own. You accept the ordinary risks of the premises, and the club is not answerable for the acts of a venue or its staff.\n\nAlcohol and conduct. The club serves at its discretion and stops serving at its discretion. Anyone whose conduct endangers or diminishes the day may be put ashore at the next reasonable opportunity, without refund.\n\nSigning for a minor. Where the person aboard is under eighteen, the adult signing accepts these terms on their behalf and confirms they hold the authority to do so.\n\nPhotography aboard. The club photographs its sailings and publishes a selection, credited by name. You may decline at any time by telling Shoreside, and a frame already published will be removed on request.\n\nWhat the club records. The club keeps your name, the sailing you attended and this agreement for six years from the date of that sailing, so that a claim can be answered. Nothing else is kept about you, and you are not enrolled in anything by signing. You may ask what is held, ask for it to be corrected, or ask for it to be erased — where a record is needed to answer a legal claim, the club redacts the person and keeps the proof. Write to Shoreside.\n\nAppearance and filming. The cameras run from boarding to docking. By boarding you agree to be filmed and photographed, and to the use of that footage in the show and its promotion. You may decline to appear: untick the camera box on this form, or tell the crew before boarding, and production will keep you out of frame and out of the cut. To change your mind afterwards, write to Shoreside.\n\nVoice and likeness. What the microphones catch is part of the footage, on the same terms and with the same right to decline. Nothing recorded is sold to third parties; the footage is the show's and only the show's.\n\nMinors on camera. A guest under eighteen appears on camera only with the signing adult's explicit consent, given here. Without it, production keeps them out of frame — the default is off."
+        }
+      ]
+    },
+    {
+      "code": "membership-agreement",
+      "title": "Membership agreement",
+      "kind": "contract",
+      "audience": "member",
+      "validity_months": null,
+      "version": 1,
+      "effective_from": "2026-08-21T12:02:02.175601+00:00",
+      "gates": ["join_club"],
+      "renderings": [
+        {
+          "class": "sea",
+          "clauses": [
+            { "clause_code": "membership-terms", "title": "Terms of membership", "category": "payment", "version": 1, "position": 1, "condition": {} },
+            { "clause_code": "dues-and-cancellation", "title": "Dues and cancellation", "category": "payment", "version": 1, "position": 2, "condition": {} },
+            { "clause_code": "alcohol-conduct", "title": "Alcohol and conduct", "category": "conduct", "version": 1, "position": 3, "condition": {} },
+            { "clause_code": "data-notice", "title": "What the club records", "category": "privacy", "version": 1, "position": 4, "condition": {} }
+          ],
+          "body": "Terms of membership. Membership is personal, non-transferable, and offered at the club's discretion. It may be ended by either side; where the club ends it other than for conduct, the unused part of the dues is returned.\n\nDues and cancellation. Dues are charged in advance for the period chosen. A pass released more than forty-eight hours before departure is credited in full; inside that window the club keeps the charge, because the seat sailed empty.\n\nAlcohol and conduct. The club serves at its discretion and stops serving at its discretion. Anyone whose conduct endangers or diminishes the day may be put ashore at the next reasonable opportunity, without refund.\n\nWhat the club records. The club keeps your membership record, the sailings you attend, and this agreement, for as long as you are a member and for six years afterwards, so that a claim can be answered. You may ask what is held, ask for it to be corrected, or ask for it to be erased — where a record is needed to answer a legal claim, the club redacts the person and keeps the proof. Write to Shoreside."
+        }
+      ]
+    },
+    {
+      "code": "crew-agreement",
+      "title": "Crew engagement agreement",
+      "kind": "contract",
+      "audience": "crew",
+      "validity_months": null,
+      "version": 1,
+      "effective_from": "2026-08-21T12:02:02.175601+00:00",
+      "gates": ["crew_engage"],
+      "renderings": [
+        {
+          "class": "sea",
+          "clauses": [
+            { "clause_code": "crew-engagement", "title": "Terms of engagement", "category": "crew", "version": 1, "position": 1, "condition": {} },
+            { "clause_code": "vessel-instructions", "title": "Instructions aboard", "category": "conduct", "version": 1, "position": 2, "condition": {} },
+            { "clause_code": "data-notice", "title": "What the club records", "category": "privacy", "version": 1, "position": 3, "condition": {} }
+          ],
+          "body": "Terms of engagement. Engagement is per sailing unless agreed otherwise in writing. Certification must be current and produced on request, and the club carries the insurance stated in your engagement letter.\n\nInstructions aboard. You will follow the instructions of the skipper and crew without argument, and immediately in a safety matter. This is the one rule aboard that is not a matter of taste.\n\nWhat the club records. The club keeps your membership record, the sailings you attend, and this agreement, for as long as you are a member and for six years afterwards, so that a claim can be answered. You may ask what is held, ask for it to be corrected, or ask for it to be erased — where a record is needed to answer a legal claim, the club redacts the person and keeps the proof. Write to Shoreside."
+        }
+      ]
+    }
+  ]
+}

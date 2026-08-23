@@ -59,7 +59,12 @@ export function logMeta(iso: string, distanceNm?: number | null, zone?: Zone): s
 
 export function price(cents: number): string {
   if (!cents) return "COMPLIMENTARY";
-  return `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+  /* Grouped: the Bridge's revenue figures reach five digits, and "$56169" is
+     a number an operator has to stop and count. */
+  return `$${(cents / 100).toLocaleString("en-US", {
+    minimumFractionDigits: cents % 100 ? 2 : 0,
+    maximumFractionDigits: cents % 100 ? 2 : 0,
+  })}`;
 }
 
 export function fathoms(n: number): string {

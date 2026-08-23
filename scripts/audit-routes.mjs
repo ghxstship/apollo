@@ -175,6 +175,15 @@ async function main() {
       continue;
     }
 
+    if (access === "dev") {
+      /* A dev-only route must NOT answer in a production build. The audit used
+         to demand 200 from every non-member route, which would have insisted a
+         route whose whole point is to be unreachable in production be
+         reachable — and would have passed a build that shipped it. */
+      note(path, "is not reachable in a production build", res.status === 404, `got ${res.status}`);
+      continue;
+    }
+
     note(path, "status 200", res.status === 200, `got ${res.status}`);
     if (res.status !== 200) continue;
     const html = await res.text();

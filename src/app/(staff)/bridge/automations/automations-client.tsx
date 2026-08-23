@@ -91,7 +91,11 @@ export function AutomationsClient({
           New rule
         </Button>
       </div>
-      <span className="hm-count">WIRED TO THE TRIGGERS NEXT; RULES SAVE NOW.</span>
+      {/* This said "WIRED TO THE TRIGGERS NEXT; RULES SAVE NOW." while four
+          triggers were live and the one existing rule had already sent 194
+          notifications to members. The dangerous direction: an operator writes
+          a rule believing it is a draft, and it messages the club. */}
+      <span className="hm-count">LIVE — A SAVED RULE FIRES ON THE NEXT MATCHING EVENT.</span>
 
       {rows.length ? (
         rows.map((r) => (

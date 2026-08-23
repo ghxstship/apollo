@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { ModerationClient, type FlagCard } from "./moderation-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Moderation" };
 
 export default async function ModerationPage() {
   const { supabase } = await getOperator();
 
-  const { data: flagsData } = await supabase
+  const flagsRes = await supabase
     .from("wardroom_flags")
     .select("*")
     .eq("status", "open")
     .order("created_at", { ascending: true });
-  const flags = flagsData ?? [];
+  const flags = must(flagsRes);
 
   /* A flag now outlives the post it was about, so post_id can be null. Passing
      that straight into .in() sent the literal string "null" and Postgres

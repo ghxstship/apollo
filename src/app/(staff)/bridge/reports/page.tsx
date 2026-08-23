@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Stat, Table } from "@/components/ds";
 import { price } from "@/lib/format";
 import { getOperator } from "../../data";
-import { must } from "../../staff";
+import { must, mustValue } from "../../staff";
 
 export const metadata: Metadata = { title: "Reports" };
 
@@ -159,12 +159,12 @@ export default async function ReportsPage() {
 
   /* Holds */
   const holdsLive = voyages.filter((v) => v.status === "weather_hold").length;
-  const weatherNotices = (weatherRes.data as number | null) ?? 0;
+  const weatherNotices = mustValue<number>(weatherRes as { data: number | null; error?: { message?: string } | null }, 0);
 
   /* Outbox health, counted in the database rather than in the first page of
      rows the API happened to return. */
   type Health = { channel: string; status: string; n: number };
-  const health = (outboxRes.data as Health[] | null) ?? [];
+  const health = mustValue<Health[]>(outboxRes as { data: Health[] | null; error?: { message?: string } | null }, []);
   const tally = (channel: string, status: string) =>
     Number(health.find((h) => h.channel === channel && h.status === status)?.n ?? 0);
   const outboxCount = (s: string) => tally("email", s);

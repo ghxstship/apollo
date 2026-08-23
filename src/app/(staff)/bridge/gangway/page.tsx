@@ -3,6 +3,7 @@ import { StateBlock } from "@/components/ds";
 import { EVENT_CLASS_LABEL, logDate, logTime } from "@/lib/format";
 import { getOperator } from "../../data";
 import { GangwayConsole, type GangwayRow } from "./gangway-client";
+import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Gangway" };
 
@@ -16,13 +17,13 @@ export default async function GangwayPage({
 
   /* Today's departures stay on the board for 24 hours; upcoming line up after. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
-  const { data: voyagesData } = await supabase
+  const voyagesRes = await supabase
     .from("voyages")
     .select("*")
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
     .order("starts_at", { ascending: true });
-  const voyages = voyagesData ?? [];
+  const voyages = must(voyagesRes);
 
   if (voyages.length === 0) {
     return (
@@ -43,13 +44,13 @@ export default async function GangwayPage({
 
   const voyage = voyages.find((v) => v.id === sp.voyage) ?? voyages[0];
 
-  const { data: rsvpsData } = await supabase
+  const rsvpsRes = await supabase
     .from("rsvps")
     .select("*")
     .eq("voyage_id", voyage.id)
     .eq("status", "aboard")
     .order("created_at", { ascending: true });
-  const rsvps = rsvpsData ?? [];
+  const rsvps = must(rsvpsRes);
 
   const profileIds = rsvps.map((r) => r.profile_id);
   const { data: profilesData } = profileIds.length

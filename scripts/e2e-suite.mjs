@@ -2025,8 +2025,11 @@ async function businessRules(p) {
      the cheapest one is out of reach — a crawl that banks Knots on the regional
      fixture used to turn this guard into a successful redemption, and the suite
      read that as the guard failing. Assert against the balance as it is. */
-  const bal = await reg.get(`member_league?profile_id=eq.${uid(p.regional)}&select=knots`);
-  const knots = Number(bal.data?.[0]?.knots ?? 0);
+  /* The balance redeem_reward actually tests is the sum of fathoms_ledger,
+     not member_league.knots — reading the wrong source made the assertion
+     compare against 0 while the member could plainly afford the reward. */
+  const bal = await reg.get(`fathoms_ledger?profile_id=eq.${uid(p.regional)}&select=delta`);
+  const knots = (bal.data || []).reduce((sum, r) => sum + Number(r.delta ?? 0), 0);
   const rw = await reg.get(`rewards?select=id,cost_fm&cost_fm=gt.${knots}&order=cost_fm.asc&limit=1`);
   if (rw.data?.[0]) {
     const redeem = await reg.rpc("redeem_reward", { p_reward: rw.data[0].id });

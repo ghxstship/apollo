@@ -20,12 +20,13 @@ function signedAmount(cents: number): string {
 export default async function OrdersPage() {
   const { supabase } = await getOperator();
 
-  const [ledgerRes, shopRes, membersRes] = await Promise.all([
+  const LEDGER_SHOWN = 120;
+  const [ledgerRes, shopRes, membersRes, ledgerCount] = await Promise.all([
     supabase
       .from("account_ledger")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(120),
+      .limit(LEDGER_SHOWN),
     supabase
       .from("shop_orders")
       .select("*")
@@ -36,7 +37,14 @@ export default async function OrdersPage() {
       .select("id, full_name, member_no")
       .eq("status", "active")
       .order("full_name", { ascending: true }),
+    /* The screen showed the newest 120 of what is now 692 rows and called
+       itself "every charge, payment, and refund". 573 were unreachable with no
+       count and no paging, so an operator looking for last month's charge
+       concluded it did not exist. Say what is on screen and what is not. */
+    supabase.from("account_ledger").select("id", { count: "exact", head: true }),
   ]);
+
+  const ledgerTotal = ledgerCount.count ?? 0;
 
   const ledger = must(ledgerRes);
   const shop = must(shopRes);
@@ -92,9 +100,14 @@ export default async function OrdersPage() {
       <span className="hm-eyebrow">Orders &amp; refunds</span>
       <h1 className="hm-h1">The ship&apos;s record.</h1>
       <p className="hm-lede">
-        Every charge, payment, and refund on the member accounts — newest first, logged with a
+        Charges, payments and refunds on the member accounts — newest first, logged with a
         name.
       </p>
+      <span className="hm-count">
+        {ledgerTotal > LEDGER_SHOWN
+          ? `NEWEST ${LEDGER_SHOWN} OF ${ledgerTotal} ENTRIES`
+          : `${ledgerTotal} ${ledgerTotal === 1 ? "ENTRY" : "ENTRIES"}`}
+      </span>
       <OrdersClient entries={entries} shopOrders={shopOrders} members={members} />
     </div>
   );
