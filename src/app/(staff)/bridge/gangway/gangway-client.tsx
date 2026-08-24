@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button, Input, Select, Stat, StateBlock } from "@/components/ds";
 import { logTime } from "@/lib/format";
+import { GANGWAY_QUEUE_KEY, GANGWAY_ROSTER_PREFIX } from "@/lib/device-storage";
 import { gangwayCheckIn, gangwayFlush } from "./actions";
 import { CameraScanner } from "./camera-scanner";
 
@@ -25,7 +26,16 @@ type Scan = {
      most often. It used to be reported as not_found, so the operator on the
      dock read "NOT ON THIS MANIFEST" for somebody standing in front of them
      holding a real pass, and had no idea what to do about it. */
-  kind: "aboard" | "already" | "not_found" | "refused";
+  /* "unsure" is the one the dock most needed and did not have: the cached
+     roster has no match, and the cached roster CANNOT ANSWER for at least four
+     legitimate passes — a guest stub (guest codes live in rsvp_guests and are
+     only resolvable server-side), a pass for a different sailing (online the
+     action falls back across upcoming voyages and even names one that has
+     already gone), anyone whose RSVP is not `aboard` (the roster filters on
+     that; the action does not), and anyone who booked since the cache. Saying
+     "NOT ON THIS MANIFEST" to those people tells someone holding a real pass
+     that their pass is fake, on the strength of a lookup that never happened. */
+  kind: "aboard" | "already" | "not_found" | "refused" | "unsure";
   reason?: string;
   name?: string;
   memberNo?: string;
@@ -48,8 +58,8 @@ type QueueItem = {
   tries?: number;
 };
 
-const QUEUE_KEY = "syrius-gangway-queue";
-const ROSTER_KEY = "syrius-gangway-roster:";
+const QUEUE_KEY = GANGWAY_QUEUE_KEY;
+const ROSTER_KEY = GANGWAY_ROSTER_PREFIX;
 
 function readQueue(): QueueItem[] {
   try {
@@ -67,6 +77,23 @@ function writeQueue(items: QueueItem[]) {
   } catch {
     /* storage full or blocked — the optimistic marks still hold on screen */
   }
+}
+
+/* EVERY change to the queue goes through here, and nothing else writes it.
+   The flush loop used to take one snapshot of the queue and then write that
+   snapshot back after each await — so any stamp the crew queued DURING the
+   flush was erased by the next iteration. That is the exact marina-wifi shape:
+   signal flickers back, `online` fires, flush starts, the crew keeps scanning,
+   those scans fall to the offline path, and the flush wipes them on its way
+   out. Reproduced end to end: a member showed ABOARD on screen, the queue
+   emptied, and her checked_in_at was still null — she walked aboard and the
+   manifest, which is the evacuation list, said she was ashore.
+
+   Read-modify-write against storage, so a concurrent addition survives. */
+function mutateQueue(fn: (items: QueueItem[]) => QueueItem[]): QueueItem[] {
+  const next = fn(readQueue());
+  writeQueue(next);
+  return next;
 }
 
 function csvCell(v: string): string {
@@ -134,21 +161,22 @@ export function GangwayConsole({
     if (flushing.current) return;
     flushing.current = true;
     try {
-      let q = readQueue();
-      for (const item of [...q]) {
+      /* Iterate over the ids present when we started, but never write a stale
+         list back: each branch below re-reads the queue through mutateQueue. */
+      const startingIds = readQueue().map((x) => x.rsvpId);
+      for (const rsvpId of startingIds) {
+        const item = readQueue().find((x) => x.rsvpId === rsvpId);
+        if (!item) continue; /* dropped by another pass */
         try {
           const res = await gangwayFlush(item.rsvpId, item.at);
           if (!res.error) {
-            q = q.filter((x) => x.rsvpId !== item.rsvpId);
-            writeQueue(q);
-            setQueued(q.length);
+            setQueued(mutateQueue((q) => q.filter((x) => x.rsvpId !== rsvpId)).length);
           } else if (res.final) {
-            /* A refusal that will not change on a retry: they have not signed.
-               Drop it and say so — retrying forever told the operator only that
-               something was "waiting to sync". */
-            q = q.filter((x) => x.rsvpId !== item.rsvpId);
-            writeQueue(q);
-            setQueued(q.length);
+            /* A refusal that will not change on a retry: they have not signed,
+               or the pass was already boarded on another device. Drop it and
+               say so — retrying forever told the operator only that something
+               was "waiting to sync". */
+            setQueued(mutateQueue((q) => q.filter((x) => x.rsvpId !== rsvpId)).length);
             setRejected((prev) => [...prev, { code: item.code, reason: res.error! }]);
           } else {
             /* Anything else is indeterminate — a staff session that blinked, a
@@ -157,12 +185,11 @@ export function GangwayConsole({
                them on the manifest as ashore, which is what an evacuation list
                is read from. Count the attempts and surface it after a few, so
                the operator learns about it without it being thrown away. */
-            q = q.map((x) =>
-              x.rsvpId === item.rsvpId ? { ...x, tries: (x.tries ?? 0) + 1 } : x
+            const q = mutateQueue((items) =>
+              items.map((x) => (x.rsvpId === rsvpId ? { ...x, tries: (x.tries ?? 0) + 1 } : x))
             );
-            writeQueue(q);
-            const tries = q.find((x) => x.rsvpId === item.rsvpId)?.tries ?? 0;
-            if (tries === 3) {
+            const tries = q.find((x) => x.rsvpId === rsvpId)?.tries ?? 0;
+            if (tries >= 3) {
               setStuck((prev) =>
                 prev.some((s) => s.code === item.code)
                   ? prev
@@ -179,11 +206,29 @@ export function GangwayConsole({
     }
   }, []);
 
+  /* Mount and the `online` event were the only two triggers, and marina wifi
+     that stays associated while the uplink is dead never fires `online` — so
+     queued stamps sat until somebody reloaded the page, on that same phone,
+     in that same browser profile. A phone waking from sleep does not fire it
+     either. Three more ways in, all cheap: the tab becoming visible again, a
+     slow heartbeat, and the page being hidden (the last chance to land a stamp
+     before iOS discards the tab). */
   React.useEffect(() => {
     if (navigator.onLine) void flush();
-    const onOnline = () => void flush();
-    window.addEventListener("online", onOnline);
-    return () => window.removeEventListener("online", onOnline);
+    const go = () => void flush();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") go();
+    };
+    window.addEventListener("online", go);
+    document.addEventListener("visibilitychange", onVisible);
+    const beat = setInterval(() => {
+      if (navigator.onLine && readQueue().length > 0) go();
+    }, 60_000);
+    return () => {
+      window.removeEventListener("online", go);
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(beat);
+    };
   }, [flush]);
 
   const markRow = (rsvpId: string, at: string) =>
@@ -206,7 +251,7 @@ export function GangwayConsole({
       /* fall back to in-memory rows */
     }
     const hit = pool.find((r) => r.code && r.code.toLowerCase() === needle);
-    if (!hit) return { kind: "not_found", queued: true };
+    if (!hit) return { kind: "unsure", queued: true };
     const base = {
       name: hit.name,
       memberNo: hit.memberNo,
@@ -238,11 +283,20 @@ export function GangwayConsole({
   };
 
   const submit = async (value?: string) => {
-    if (pending) return;
+    /* The field was cleared AFTER this guard, so a scan arriving mid-request
+       was swallowed with the code still sitting in the input — and the next
+       hardware-scanner read concatenated onto it and produced a garbage code.
+       Clear first: a dropped scan should cost the crew a re-present, not a
+       corrupted one. */
     const raw = (value ?? code).trim();
     setCode("");
-    if (!raw) return;
+    if (pending || !raw) return;
     setPending(true);
+    /* `pending` was set and never rendered anywhere. With a slow request the
+       screen kept showing the PREVIOUS person's verdict — a confident green
+       ABOARD belonging to somebody else — while the crew waved the next person
+       through on it. The old verdict goes as soon as a new scan starts. */
+    setScan(null);
     try {
       if (typeof navigator !== "undefined" && !navigator.onLine) {
         setScan(localScan(raw));
@@ -353,7 +407,14 @@ export function GangwayConsole({
         </form>
         <CameraScanner onScan={(scanned) => void submit(scanned)} />
 
-        {scan ? (
+        {pending ? (
+          <div className="hm-gang__result hm-gang__result--waiting" role="status" aria-live="polite" aria-busy="true">
+            <b>CHECKING&hellip;</b>
+            <span>Holding the answer until the manifest replies.</span>
+          </div>
+        ) : null}
+
+        {!pending && scan ? (
           <div
             className={`hm-gang__result hm-gang__result--${scan.kind}`}
             role="status"
@@ -386,12 +447,27 @@ export function GangwayConsole({
                 <b>NOT ABOARD YET</b>
                 <span>{scan.reason}</span>
               </>
+            ) : scan.kind === "unsure" ? (
+              <>
+                <b>CAN&rsquo;T CHECK THIS ONE FROM HERE</b>
+                <span>
+                  No signal, and the cached list does not cover guest stubs,
+                  passes for another sailing, or anyone who booked since this
+                  page loaded. This is not a refusal.
+                </span>
+                <span>Board them by name off the manifest, or hold them for the crew.</span>
+              </>
             ) : (
               <>
                 <b>NOT ON THIS MANIFEST</b>
                 <span>No pass matches that code on this voyage.</span>
               </>
             )}
+            {scan.queued && scan.kind !== "unsure" ? (
+              <span className="hm-gang__offline">
+                Answered from the cached list — no signal. It syncs on its own.
+              </span>
+            ) : null}
           </div>
         ) : null}
 

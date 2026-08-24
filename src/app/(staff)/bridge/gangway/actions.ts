@@ -28,6 +28,16 @@ const UPCOMING_STATUSES: Array<"scheduled" | "live" | "weather_hold"> = [
   "weather_hold",
 ];
 
+/* Boarding codes were matched with .ilike(), and % and _ are WILDCARDS there.
+   A QR encoding `SYR-NIGH-0823-003%` matched whatever it resolved to and
+   boarded that person — a scanned value is untrusted input, and this is the
+   one place the club turns a scanned value into a person walking aboard.
+   Codes are fixed-shape and case-insensitive, so upper() + eq() answers the
+   real question and leaves no pattern syntax in play. */
+function literalCode(raw: string): string {
+  return raw.trim().toUpperCase();
+}
+
 function upcomingCutoff(): string {
   return new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 }
@@ -36,7 +46,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const code = rawCode.trim();
+  const code = literalCode(rawCode);
   if (!code) return { error: "Type or scan a code first." };
 
   /* Selected voyage first; fall back to any upcoming voyage. */
@@ -44,7 +54,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     .from("rsvps")
     .select("*")
     .eq("voyage_id", voyageId)
-    .ilike("boarding_code", code)
+    .eq("boarding_code", code)
     .neq("status", "not_going")
     .maybeSingle();
 
@@ -61,7 +71,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
         .from("rsvps")
         .select("*")
         .in("voyage_id", ids)
-        .ilike("boarding_code", code)
+        .eq("boarding_code", code)
         .neq("status", "not_going")
         .maybeSingle();
       if (fallback) {
@@ -81,7 +91,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     const { data: guest } = await supabase
       .from("rsvp_guests")
       .select("*")
-      .ilike("boarding_code", code)
+      .eq("boarding_code", code)
       .maybeSingle();
 
     if (!guest) {
@@ -93,7 +103,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       const { data: old } = await supabase
         .from("rsvps")
         .select("voyage_id")
-        .ilike("boarding_code", code)
+        .eq("boarding_code", code)
         .maybeSingle();
       if (old) {
         const { data: v } = await supabase
@@ -184,12 +194,29 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
 
   if (rsvp.checked_in_at) return { ...base, outcome: "already", checkedInAt: rsvp.checked_in_at };
 
+  /* Read-then-write: two scanners on the same code both read null and both
+     wrote, so the second overwrote the first's time and operator — and that
+     pair is the audit record for an incident. Narrowed on the prior state, so
+     only one stamp lands and the other learns it was second. gangwayFlush has
+     done this since it was written; this path had not. */
   const checkedInAt = new Date().toISOString();
-  const { error } = await supabase
+  const { data: stamped, error } = await supabase
     .from("rsvps")
     .update({ checked_in_at: checkedInAt, checked_in_by: staffId })
-    .eq("id", rsvp.id);
+    .eq("id", rsvp.id)
+    .is("checked_in_at", null)
+    .select("checked_in_at");
   if (error) return { error: boardingError(error) };
+  if (!stamped || stamped.length === 0) {
+    /* Somebody stamped it between our read and our write. Not our stamp, and
+       not a failure — the person is aboard. */
+    const { data: fresh } = await supabase
+      .from("rsvps")
+      .select("checked_in_at")
+      .eq("id", rsvp.id)
+      .maybeSingle();
+    return { ...base, outcome: "already", checkedInAt: fresh?.checked_in_at ?? checkedInAt };
+  }
 
   revalidatePath("/bridge/gangway");
   revalidatePath("/bridge/manifests");
@@ -212,11 +239,12 @@ export async function gangwayFlush(
   if (!staffId) return { error: ERR_STAFF };
   const at = new Date(atIso);
   const stamp = Number.isNaN(at.getTime()) ? new Date().toISOString() : at.toISOString();
-  const { error } = await supabase
+  const { data: landed, error } = await supabase
     .from("rsvps")
     .update({ checked_in_at: stamp, checked_in_by: staffId })
     .eq("id", rsvpId)
-    .is("checked_in_at", null);
+    .is("checked_in_at", null)
+    .select("id");
   if (error) {
     /* A queued offline check-in can land against an unsigned member; the queue
        keeps it rather than silently dropping the stamp. */
@@ -225,6 +253,30 @@ export async function gangwayFlush(
     }
     return { error: ERR_LAND };
   }
+
+  /* Zero rows matched is not success, and it was being read as success — the
+     queued stamp was deleted and nothing was said. Two ways to get here and
+     they are not the same thing:
+
+       the row is already stamped — somebody else boarded this pass, which is
+       exactly the two-phones-one-pass case. The stamp is genuinely done with,
+       so the queue may drop it, but the operator is told, because two people
+       boarding on one code is the thing a crew needs to know about.
+
+       the row is gone — the RSVP was cancelled or deleted while the stamp sat
+       in the queue. Indeterminate: never drop it silently. */
+  if (!landed || landed.length === 0) {
+    const { data: row } = await supabase
+      .from("rsvps")
+      .select("checked_in_at")
+      .eq("id", rsvpId)
+      .maybeSingle();
+    if (row?.checked_in_at) {
+      return { error: "Already boarded on another device — that pass is aboard.", final: true };
+    }
+    return { error: ERR_LAND };
+  }
+
   revalidatePath("/bridge/gangway");
   revalidatePath("/bridge/manifests");
   return {};

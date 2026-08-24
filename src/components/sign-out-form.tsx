@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { clearCachedRosters, unflushedCount } from "@/lib/device-storage";
 
 /* Signing out ends the Supabase session server-side, but Cache Storage belongs
    to the service worker and outlived it — on a shared or resold phone the next
@@ -23,8 +24,25 @@ export function SignOutForm({
       action="/auth/signout"
       method="post"
       style={style}
-      onSubmit={() => {
+      onSubmit={(e) => {
         try {
+          /* Cache Storage was cleared here and localStorage was not, so the
+             gangway's cached roster — member names, member numbers and LIVE
+             BOARDING CODES — stayed on the phone forever, for every voyage it
+             had ever opened. */
+          const waiting = unflushedCount();
+          if (waiting > 0) {
+            const go = window.confirm(
+              `${waiting} check-in${waiting === 1 ? "" : "s"} ${waiting === 1 ? "has" : "have"} not reached shore yet. ` +
+                "They are kept on this device and sync when it has signal, but only while you are signed in here. " +
+                "Sign out anyway?"
+            );
+            if (!go) {
+              e.preventDefault();
+              return;
+            }
+          }
+          clearCachedRosters();
           navigator.serviceWorker?.controller?.postMessage({ type: "SYRIUS_SIGNED_OUT" });
           if (typeof caches !== "undefined") {
             void caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))));

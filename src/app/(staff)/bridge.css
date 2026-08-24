@@ -136,6 +136,15 @@
 .hm-gang__result--not_found{border-color:var(--terracotta);background:color-mix(in srgb,var(--terracotta) 10%,var(--surface-card))}
 .hm-gang__result--not_found b{color:var(--terracotta)}
 .hm-gang__result--already{border-color:var(--line-strong)}
+/* Uncertainty must not borrow the colour of a refusal. Amber says "stop and
+   look", which is what it is; red said "this pass is fake", which it never
+   was. --refused shares it: a real pass that may not board yet is also a
+   held-back, not a rejection. */
+.hm-gang__result--unsure,.hm-gang__result--refused{border-color:var(--brass);background:color-mix(in srgb,var(--brass) 12%,var(--surface-card))}
+.hm-gang__result--unsure b,.hm-gang__result--refused b{color:var(--brass-bright)}
+.hm-gang__result--waiting{border-color:var(--line-strong);opacity:.75}
+.hm-gang__result--waiting b{color:var(--text-2)}
+.hm-gang__offline{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
 .hm-gang__result--already b{color:var(--text-1)}
 
 /* — the door list prints alone; the console never does — */

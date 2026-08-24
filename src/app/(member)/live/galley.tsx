@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { GALLEY_QUEUE_KEY } from "@/lib/device-storage";
 import { useRouter } from "next/navigation";
 import { Button, StateBlock, Stepper, Toast } from "@/components/ds";
 import { price } from "@/lib/format";
@@ -19,7 +20,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   merch: "Merch",
 };
 
-const QUEUE_KEY = "syrius-galley-queue";
+const QUEUE_KEY = GALLEY_QUEUE_KEY;
 
 type QueuedOrder = { voyageId: string; lines: GalleyLine[] };
 

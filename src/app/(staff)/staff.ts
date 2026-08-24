@@ -5,8 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { error?: string };
 
-export const ERR_STAFF = "Staff only. If that's wrong, hail Shoreside.";
-export const ERR_LAND = "That didn't land. Try again.";
+/* Defined in @/lib/staff-errors so client screens can recognise them without
+   importing this module, which reaches for the server client. Imported and
+   re-exported here because every existing caller expects them from this file. */
+import { ERR_STAFF, ERR_LAND } from "@/lib/staff-errors";
+export { ERR_STAFF, ERR_LAND };
 
 export async function staffContext() {
   const supabase = await createClient();
