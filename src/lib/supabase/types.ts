@@ -132,6 +132,7 @@ export type EmailOutboxRow = {
      since the drains were written — a row in flight was a state the type system
      said could not exist, so no screen could be built to show one. */
   status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+  claimed_at: string | null
 }
 export type GalleyItemRow = {
   id: string; category: "bar" | "galley" | "merch"; name: string; price_cents: number; active: boolean
@@ -223,6 +224,7 @@ export type SmsOutboxRow = {
      since the drains were written — a row in flight was a state the type system
      said could not exist, so no screen could be built to show one. */
   status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+  claimed_at: string | null
 }
 export type PushOutboxRow = {
   id: string; profile_id: string; title: string; body: string | null; url: string | null
@@ -472,7 +474,7 @@ export type Database = {
          asks this on an RLS refusal rather than assuming a hold. */
       is_active: { Args: Record<string, never>; Returns: boolean }
       take_a_producer_turn: { Args: Record<string, never>; Returns: number }
-      email_may_board: { Args: { p_email: string }; Returns: boolean }
+      email_may_board: { Args: { p_email: string; p_fingerprint?: string | null }; Returns: boolean }
       validate_invite: { Args: { p_code: string }; Returns: boolean }
       attach_addons: {
         Args: { p_rsvp: string; p_addons: string[]; p_qty: number }

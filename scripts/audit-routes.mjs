@@ -167,9 +167,45 @@ function emailTemplatesReadOnlyWrittenKeys() {
     orphans.length === 0, orphans.length ? `read but never written: ${orphans.join(", ")}` : "");
 }
 
+/* The letter registry and the sender must agree. run_automations refuses to
+   queue a letter the registry does not list — which is only worth anything if
+   the registry lists what the sender can actually render. Two sources of truth
+   that drift is worse than one that is merely incomplete: the guard would start
+   refusing real letters, or waving through letters that arrive empty. */
+function theLetterRegistryMatchesTheSender() {
+  let sender;
+  try {
+    sender = readFileSync(join(root, "supabase/functions/send-outbox/index.ts"), "utf8");
+  } catch {
+    return;
+  }
+  const renderable = new Set([
+    ...[...sender.matchAll(/^\s*"([a-z0-9-]+)":\s*\(p\)\s*=>/gm)].map((m) => m[1]),
+    ...[...sender.matchAll(/templates\["([a-z0-9-]+)"\]\s*=/g)].map((m) => m[1]),
+  ]);
+
+  const registered = new Set();
+  const migrations = join(root, "supabase/migrations");
+  for (const f of readdirSync(migrations)) {
+    const sql = readFileSync(join(migrations, f), "utf8");
+    const block = sql.match(/insert into public\.email_templates[\s\S]*?;/);
+    if (!block) continue;
+    for (const m of block[0].matchAll(/\(\s*'([a-z0-9-]+)'\s*,/g)) registered.add(m[1]);
+  }
+  if (registered.size === 0) return;
+
+  const listedButUnrenderable = [...registered].filter((c) => !renderable.has(c)).sort();
+  const renderableButUnlisted = [...renderable].filter((c) => !registered.has(c)).sort();
+  note("supabase/functions/send-outbox", "the letter registry lists only letters that render",
+    listedButUnrenderable.length === 0, listedButUnrenderable.join(", "));
+  note("supabase/functions/send-outbox", "every letter the sender renders is in the registry",
+    renderableButUnlisted.length === 0, renderableButUnlisted.join(", "));
+}
+
 function sourceInvariants() {
   pagesHaveALanding();
   emailTemplatesReadOnlyWrittenKeys();
+  theLetterRegistryMatchesTheSender();
   const files = sourceFiles(join(root, "src"));
   for (const file of files) {
     const rel = file.slice(root.length + 1);

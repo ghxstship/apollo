@@ -32,7 +32,24 @@ export async function sendMagicLink(
 
   // Vetted club: only emails on the member roll (accepted application or
   // redeemed invite) or existing members may board. Everyone else applies.
-  const { data: mayBoard } = await supabase.rpc("email_may_board", { p_email: email });
+  /* The visitor's own address is forwarded, because this runs in a SERVER
+     ACTION: without it PostgREST sees this web server for every caller and the
+     per-caller bucket becomes one shared budget for the whole site — the exact
+     trap that made the status-page limit a self-inflicted outage. */
+  const { data: mayBoard, error: gateError } = await supabase.rpc("email_may_board", {
+    p_email: email,
+    p_fingerprint: h.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+  });
+  if (gateError) {
+    /* 53400 is the pacing speaking, and it says something useful. Anything else
+       is ours and should not be dressed up as the member's problem. */
+    return {
+      error:
+        gateError.code === "53400"
+          ? gateError.message
+          : "That didn't land. Give it a moment and send again.",
+    };
+  }
   if (!mayBoard) {
     return {
       error: "No pass under that email. Apply for membership, or check the address on file.",

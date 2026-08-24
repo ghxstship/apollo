@@ -361,7 +361,17 @@ export default async function ReportsPage() {
             size="sm"
             label="Email"
             value={outboxCount("pending")}
-            sub={`PENDING · ${outboxCount("sent")} SENT · ${outboxCount("skipped")} SKIPPED · ${outboxCount("failed")} FAILED`}
+            /* "Skipped" was one number covering two unrelated things: a fixture
+               address the guard correctly held back, and a real member's letter
+               skipped for a reason nobody chose. There are well over a thousand
+               of the first, so the number could only ever be ignored — and a
+               real member's suppressed letter would sit in the middle of it,
+               invisible. Held-back fixtures are shown last and quietly. */
+            sub={
+              `PENDING · ${outboxCount("sent")} SENT · ${outboxCount("failed")} FAILED` +
+              (outboxCount("skipped_real") > 0 ? ` · ${outboxCount("skipped_real")} SKIPPED` : "") +
+              ` · ${outboxCount("held_back_fixture")} HELD (FIXTURES)`
+            }
           />
           <Stat
             size="sm"

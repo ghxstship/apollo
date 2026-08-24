@@ -355,7 +355,11 @@ async function claim(id: string): Promise<boolean> {
   const res = await fetch(`${REST}?id=eq.${id}&status=eq.pending`, {
     method: "PATCH",
     headers: { ...HEADERS, Prefer: "return=representation" },
-    body: JSON.stringify({ status: "sending" }),
+    /* Stamped here, because the stall rescue measures from when a sender took
+       the row. It used to measure from created_at, so a letter written twenty
+       minutes ago and claimed a second ago — in a live call to Resend right
+       now — was rescued and sent twice. */
+    body: JSON.stringify({ status: "sending", claimed_at: new Date().toISOString() }),
   });
   if (!res.ok) return false;
   const rows = await res.json();

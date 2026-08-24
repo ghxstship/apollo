@@ -111,7 +111,8 @@ async function claim(id: string): Promise<boolean> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/sms_outbox?id=eq.${id}&status=eq.pending`, {
     method: "PATCH",
     headers: { ...H, Prefer: "return=representation" },
-    body: JSON.stringify({ status: "sending" }),
+    /* See send-outbox: the stall rescue measures from the claim. */
+    body: JSON.stringify({ status: "sending", claimed_at: new Date().toISOString() }),
   });
   if (!res.ok) return false;
   const rows = await res.json();
