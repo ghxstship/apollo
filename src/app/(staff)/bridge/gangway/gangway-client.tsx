@@ -38,7 +38,15 @@ type Scan = {
   queued?: boolean;
 };
 
-type QueueItem = { rsvpId: string; voyageId: string; code: string; at: string };
+type QueueItem = {
+  rsvpId: string;
+  voyageId: string;
+  code: string;
+  at: string;
+  /* How many times the database has refused this for a reason we could not
+     read. It stays queued regardless — this only decides when to say so. */
+  tries?: number;
+};
 
 const QUEUE_KEY = "syrius-gangway-queue";
 const ROSTER_KEY = "syrius-gangway-roster:";
@@ -89,6 +97,9 @@ export function GangwayConsole({
   /* Stamps the database refused when the signal came back. They must not sit
      in the queue being retried forever under a "waiting to sync" line. */
   const [rejected, setRejected] = React.useState<Array<{ code: string; reason: string }>>([]);
+  /* Still queued, still trying, but not landing — the operator should know
+     rather than read "waiting to sync" indefinitely. */
+  const [stuck, setStuck] = React.useState<Array<{ code: string; reason: string }>>([]);
   const [mounted, setMounted] = React.useState(false);
   const [rows, setRows] = React.useState<GangwayRow[]>(serverRows);
   const flushing = React.useRef(false);
@@ -131,15 +142,33 @@ export function GangwayConsole({
             q = q.filter((x) => x.rsvpId !== item.rsvpId);
             writeQueue(q);
             setQueued(q.length);
-          } else {
-            /* The database refused this stamp — an outstanding waiver, a pass
-               that moved. Retrying it forever tells the operator only that
-               something is "waiting to sync". Drop it from the queue and say
-               what happened, so it can be dealt with on the dock. */
+          } else if (res.final) {
+            /* A refusal that will not change on a retry: they have not signed.
+               Drop it and say so — retrying forever told the operator only that
+               something was "waiting to sync". */
             q = q.filter((x) => x.rsvpId !== item.rsvpId);
             writeQueue(q);
             setQueued(q.length);
             setRejected((prev) => [...prev, { code: item.code, reason: res.error! }]);
+          } else {
+            /* Anything else is indeterminate — a staff session that blinked, a
+               database error we cannot read. The stamp STAYS: it is the only
+               record that this person walked aboard, and discarding it puts
+               them on the manifest as ashore, which is what an evacuation list
+               is read from. Count the attempts and surface it after a few, so
+               the operator learns about it without it being thrown away. */
+            q = q.map((x) =>
+              x.rsvpId === item.rsvpId ? { ...x, tries: (x.tries ?? 0) + 1 } : x
+            );
+            writeQueue(q);
+            const tries = q.find((x) => x.rsvpId === item.rsvpId)?.tries ?? 0;
+            if (tries === 3) {
+              setStuck((prev) =>
+                prev.some((s) => s.code === item.code)
+                  ? prev
+                  : [...prev, { code: item.code, reason: res.error! }]
+              );
+            }
           }
         } catch {
           break; /* still offline — try again on the next signal */
@@ -363,6 +392,33 @@ export function GangwayConsole({
                 <span>No pass matches that code on this voyage.</span>
               </>
             )}
+          </div>
+        ) : null}
+
+        {stuck.length > 0 ? (
+          <div className="hm-gang__result hm-gang__result--already" role="status">
+            <b>
+              {stuck.length === 1
+                ? "A QUEUED STAMP IS NOT LANDING"
+                : `${stuck.length} QUEUED STAMPS ARE NOT LANDING`}
+            </b>
+            <span>
+              Still queued and still trying — nothing is lost. Tell Shoreside if
+              it does not clear.
+            </span>
+            {stuck.map((r) => (
+              <span key={r.code}>
+                {r.code} — {r.reason}
+              </span>
+            ))}
+            <button
+              type="button"
+              className="ls-btn ls-btn--ghost ls-btn--sm"
+              onClick={() => setStuck([])}
+              style={{ marginTop: 8 }}
+            >
+              Dismiss
+            </button>
           </div>
         ) : null}
 

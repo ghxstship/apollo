@@ -198,7 +198,16 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
 
 /* Flush one queued offline check-in — keeps the original stamp time.
    A no-op when someone else already stamped the row. */
-export async function gangwayFlush(rsvpId: string, atIso: string): Promise<{ error?: string }> {
+/* `final` marks a refusal that will not change on a retry — the member has not
+   signed, so this stamp will be refused every time until they do. Everything
+   else (a staff context that blinked, any other database error) is
+   INDETERMINATE, and the caller must keep it queued: a queued stamp is the only
+   record that somebody physically walked aboard, and losing one means the
+   manifest says they are ashore. */
+export async function gangwayFlush(
+  rsvpId: string,
+  atIso: string
+): Promise<{ error?: string; final?: boolean }> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const at = new Date(atIso);
@@ -212,7 +221,7 @@ export async function gangwayFlush(rsvpId: string, atIso: string): Promise<{ err
     /* A queued offline check-in can land against an unsigned member; the queue
        keeps it rather than silently dropping the stamp. */
     if (/boards unsigned/i.test(error.message)) {
-      return { error: error.message.replace(/^.*— /, "") };
+      return { error: error.message.replace(/^.*— /, ""), final: true };
     }
     return { error: ERR_LAND };
   }
