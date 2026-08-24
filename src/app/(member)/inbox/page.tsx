@@ -17,7 +17,7 @@ function Row({ n, index }: { n: Notification; index: number }) {
         {n.body ? <p>{n.body}</p> : null}
       </div>
       <span className="wrd-t">
-        {!n.read ? <span className="ls-live" aria-label="Unread"></span> : null}
+        {!n.read ? <span className="ls-live" role="img" aria-label="Unread"></span> : null}
         {relTime(n.created_at)}
       </span>
     </div>

@@ -155,7 +155,7 @@ export default async function ThreadsPage() {
                 ) : null}
               </div>
               <span className="thr-row__meta mbr-mono">
-                {r.unread && !r.closed ? <span className="ls-live" aria-label="Unread"></span> : null}
+                {r.unread && !r.closed ? <span className="ls-live" role="img" aria-label="Unread"></span> : null}
                 {relTime(r.at)}
               </span>
             </Link>

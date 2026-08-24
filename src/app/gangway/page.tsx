@@ -36,7 +36,7 @@ export default async function GangwayPage({
           <span>SEASON II</span>
         </div>
       </aside>
-      <main className="gw-main">
+      <main id="main" className="gw-main">
         <div className="gw-panel">
           <GangwayPanel next={next} expired={expired} />
         </div>

@@ -72,6 +72,12 @@ export default function RootLayout({
             wordmark, sixteen nav links and Sign out before reaching content,
             on every navigation. */}
         <a href="#main" className="ls-skip">Skip to content</a>
+        {/* A live region has to be in the document BEFORE the text lands in
+            it — a node that arrives already carrying its message is, to most
+            screen readers, just new content, and goes unread. Every toast the
+            app raises is a receipt for something that already happened
+            (an order placed, a pass held), so it announces through here. */}
+        <div id="ls-announcer" role="status" aria-live="polite" aria-atomic="true" className="ls-visually-hidden" />
         <Script id="syrius-theme-init" strategy="beforeInteractive">{themeInit}</Script>
         <SwRegister />
         {children}

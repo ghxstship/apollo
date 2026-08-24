@@ -7,6 +7,7 @@ import React from "react";
 import { IconButton, ThemeToggle, Icon } from "@/components/ds";
 import { LockupHorizontal } from "./logo";
 import { LinkButton } from "./link-button";
+import { useModal } from "@/components/ds/use-modal";
 
 const LINKS: Array<[string, string]> = [
   ["/charters", "Charters"],
@@ -26,19 +27,10 @@ export function SiteNav() {
   const open = openPath === pathname;
   const close = () => setOpenPath(null);
 
-  React.useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenPath(null);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+  /* Escape and the scroll lock were already here; focus was not. The panel
+     said aria-modal while focus stayed on the burger behind it, Tab walked
+     straight out into the page under the veil, and closing left focus nowhere. */
+  const menuRef = useModal(open, close);
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
@@ -80,7 +72,7 @@ export function SiteNav() {
         </div>
       </div>
       {open ? (
-        <div className="ws-menu" role="dialog" aria-modal="true" aria-label="Menu">
+        <div className="ws-menu" role="dialog" aria-modal="true" aria-label="Menu" ref={menuRef} tabIndex={-1}>
           <div className="ws-menu__top">
             <Link href="/" className="ws-nav__logo" aria-label="SYRIUS SOCIAL — home" onClick={close}>
               <LockupHorizontal height={30} />

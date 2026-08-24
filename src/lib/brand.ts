@@ -165,6 +165,7 @@ export const BANNED_TERMS = [
   "Gateway",
   "LORE",
   "Aurora",
+  "ATLVS",
   // pre-Syrius bans that still hold
   "Harbormaster console",
   "The Purser",

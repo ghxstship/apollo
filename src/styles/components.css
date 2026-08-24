@@ -149,10 +149,14 @@
 .ls-table--dense td{padding:8px 14px}
 .ls-table tr.ls-table__row--click{cursor:pointer;transition:background var(--dur-1) var(--ease-swell)}
 .ls-table tr.ls-table__row--click:hover{background:var(--wash-ink)}
+/* outline-offset would draw the ring outside the row and be clipped by the
+   scroll wrapper on a narrow table; inset keeps every edge of it on screen. */
+.ls-table tr.ls-table__row--click:focus-visible{outline:2px solid var(--focus);outline-offset:-3px;background:var(--wash-ink)}
 .ls-table .num{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data)}
 .ls-table--inverse th{color:var(--text-inverse-3);border-bottom-color:var(--line-inverse)}
 .ls-table--inverse td{color:var(--text-inverse-1);border-bottom-color:var(--line-inverse-faint)}
 .ls-table--inverse tr.ls-table__row--click:hover{background:var(--wash-bone)}
+.ls-table--inverse tr.ls-table__row--click:focus-visible{outline-color:var(--focus-on-dark);background:var(--wash-bone)}
 .ls-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 
 /* — Wordmark — */

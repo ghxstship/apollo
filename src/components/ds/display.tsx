@@ -117,10 +117,31 @@ export function Table<R extends Record<string, unknown>>({
   return (
     <div className="ls-table-wrap">
       <table className={["ls-table", dense ? "ls-table--dense" : "", inverse ? "ls-table--inverse" : "", className].filter(Boolean).join(" ")} style={style}>
-        <thead><tr>{columns.map((c) => <th key={c.key} style={c.width ? { width: c.width } : undefined}>{c.label}</th>)}</tr></thead>
+        <thead><tr>{columns.map((c) => <th key={c.key} scope="col" style={c.width ? { width: c.width } : undefined}>{c.label}</th>)}</tr></thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={rowKey ? rowKey(r) : i} className={onRowClick ? "ls-table__row--click" : ""} onClick={onRowClick ? () => onRowClick(r) : undefined}>
+            /* A clickable row was mouse-only: the Bridge's crew queue and member
+               roster both open their detail dialog from a bare <tr onClick>, so
+               a keyboard could reach every filter and no record. Focusable and
+               Enter/Space-activated now — the row keeps its table semantics
+               rather than being relabelled a button, which would cost a screen
+               reader the column headers it reads out with each cell. */
+            <tr
+              key={rowKey ? rowKey(r) : i}
+              className={onRowClick ? "ls-table__row--click" : ""}
+              onClick={onRowClick ? () => onRowClick(r) : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onKeyDown={
+                onRowClick
+                  ? (e) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      if (e.target !== e.currentTarget) return;
+                      e.preventDefault();
+                      onRowClick(r);
+                    }
+                  : undefined
+              }
+            >
               {columns.map((c) => <td key={c.key} className={c.mono ? "num" : ""}>{c.render ? c.render(r) : (r[c.key] as React.ReactNode)}</td>)}
             </tr>
           ))}

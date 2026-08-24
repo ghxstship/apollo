@@ -2,6 +2,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "./icon";
+import { useModal } from "./use-modal";
 
 /* — Dialog — */
 export function Dialog({
@@ -10,7 +11,7 @@ export function Dialog({
   open: boolean; onClose?: () => void; eyebrow?: React.ReactNode; title?: React.ReactNode;
   children?: React.ReactNode; footer?: React.ReactNode; width?: number; closeLabel?: string;
 }) {
-  const boxRef = React.useRef<HTMLDivElement>(null);
+  const boxRef = useModal(open, onClose);
   const titleId = React.useId();
   /* useSyncExternalStore rather than a setState in an effect: the server
      snapshot is false and the client's is true, which is exactly the
@@ -20,60 +21,6 @@ export function Dialog({
     () => true,
     () => false
   );
-  /* onClose is an inline arrow at every call site, so it changes identity on
-     every parent render. With it in the deps this whole effect re-ran on each
-     keystroke and called focus() again — the caret jumped out of the field
-     after ONE character, in the guest-name and checkout dialogs among others.
-     The handler goes in a ref so the listener never has to be rebound. */
-  const closeRef = React.useRef(onClose);
-  React.useEffect(() => { closeRef.current = onClose; });
-
-  React.useEffect(() => {
-    if (!open) return;
-    const box = boxRef.current;
-    /* Where focus came from, so it can go back there when the dialog closes —
-       otherwise it falls to <body> and a keyboard user starts from the top of
-       the page again. */
-    const opener = document.activeElement as HTMLElement | null;
-
-    const focusable = () =>
-      Array.from(
-        box?.querySelectorAll<HTMLElement>(
-          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
-        ) ?? []
-      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { closeRef.current?.(); return; }
-      if (e.key !== "Tab") return;
-      /* Keep Tab inside the dialog. Without this it walked out into the page
-         behind the veil, which is still there and still clickable. */
-      const items = focusable();
-      if (items.length === 0) { e.preventDefault(); box?.focus(); return; }
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-      if (e.shiftKey && (active === first || active === box)) {
-        e.preventDefault(); last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault(); first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    box?.focus();
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-      /* Only if focus is still somewhere in the dialog we are unmounting —
-         if something else has deliberately taken it, leave it alone. */
-      if (opener && (!document.activeElement || document.activeElement === document.body)) {
-        opener.focus?.();
-      }
-    };
-  }, [open]);
   /* Portalled to the document root. The veil is z-index 1000 and the member
      tab bar is 300, but z-index only orders siblings within a stacking
      context — rendered in place, the dialog sat inside one the tab bar was not
@@ -171,10 +118,35 @@ export function Toast({
     () => false
   );
 
+  /* The visible toast is not the live region — it is created with its text
+     already inside it, which announces unreliably. It writes into the standing
+     one in the root layout instead, and drops the role so nothing is read
+     twice. */
+  const msgRef = React.useRef<HTMLSpanElement>(null);
+  const saidRef = React.useRef<string | null>(null);
+  /* No dependency array on purpose. `message` is a ReactNode at half the call
+     sites, so it has a new identity on every parent render; keying the effect
+     on it would clear and refill the region each time and read the same
+     sentence out over and over. The guard is the text itself. */
+  React.useEffect(() => {
+    const region = document.getElementById("ls-announcer");
+    const text = msgRef.current?.textContent?.trim();
+    if (!region || !text || text === saidRef.current) return;
+    saidRef.current = text;
+    region.textContent = text;
+  });
+  React.useEffect(
+    () => () => {
+      const region = document.getElementById("ls-announcer");
+      if (region && saidRef.current && region.textContent === saidRef.current) region.textContent = "";
+    },
+    []
+  );
+
   const node = (
-    <div className={["ls-toast", fixed ? "ls-toast--fixed" : "", className].filter(Boolean).join(" ")} style={style} role="status" aria-live="polite">
+    <div className={["ls-toast", fixed ? "ls-toast--fixed" : "", className].filter(Boolean).join(" ")} style={style}>
       <span className="ls-toast__rule" style={{ background: TOAST_TONES[tone] || TOAST_TONES.ink }}></span>
-      <span>{message}</span>
+      <span ref={msgRef}>{message}</span>
       {meta ? <span className="ls-toast__meta">{meta}</span> : null}
       {onDismiss ? <button type="button" className="ls-toast__x" aria-label={dismissLabel} onClick={onDismiss}>✕</button> : null}
     </div>

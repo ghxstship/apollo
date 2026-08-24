@@ -4,6 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Dialog, Icon, Select, Stepper, Tag, Toast } from "@/components/ds";
 import { logDate, price } from "@/lib/format";
+import { useModal } from "@/components/ds/use-modal";
 import { placeShopOrder, requestRefund, type CrateLine } from "./actions";
 
 export type ShopProduct = {
@@ -64,6 +65,9 @@ export function SlopChestShop({
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
+  /* The crate is behind a full veil, so it is a modal in every way except the
+     four things it owed the keyboard. */
+  const drawerRef = useModal(drawer, () => setDrawer(false));
 
   React.useEffect(() => {
     if (!toast) return;
@@ -221,7 +225,7 @@ export function SlopChestShop({
       {/* — crate drawer — */}
       {drawer ? (
         <div className="chd-veil" onClick={(e) => { if (e.target === e.currentTarget) setDrawer(false); }}>
-          <aside className="chd-drawer" role="dialog" aria-label="The crate">
+          <aside className="chd-drawer" role="dialog" aria-modal="true" aria-label="The crate" ref={drawerRef} tabIndex={-1}>
             <div className="chd-drawer__head">
               <b>The crate</b>
               <button type="button" className="wd-x" aria-label="Close the crate" onClick={() => setDrawer(false)}>

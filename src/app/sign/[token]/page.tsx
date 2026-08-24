@@ -41,7 +41,7 @@ export default async function GuestSignPage({
   if (!row) notFound();
 
   return (
-    <main className="gsn">
+    <main id="main" className="gsn">
       <header className="gsn-head">
         <Wordmark size="sm" />
         <h1 className="gsn-lede">

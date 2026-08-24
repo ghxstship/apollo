@@ -100,6 +100,15 @@ function checkHtml(route, html) {
   });
   note(route, "no spilled placeholder in visible text", spilled.length === 0,
     spilled.length ? `found: ${spilled.join(", ")}` : "");
+  /* The skip link is in the root layout, so it renders on every page — but its
+     target is per-layout, and /gangway, /sign/[token] and the kiosk each had a
+     <main> without the id. The first tab stop on the sign-in page pointed at
+     nothing and did nothing. A link that goes nowhere is worse than no link:
+     it costs a keystroke and teaches the reader the affordance is a lie. */
+  if (html.includes('class="ls-skip"')) {
+    note(route, "the skip link has somewhere to land", /id="main"/.test(html),
+      'ls-skip is present but no id="main"');
+  }
   const offLexicon = BANNED.filter((term) => lexHay.includes(term.toLowerCase()));
   note(route, "on-lexicon", offLexicon.length === 0, offLexicon.length ? `banned terms: ${offLexicon.join(", ")}` : "");
   /* The producer never shouts: no exclamation marks and no emoji in visible

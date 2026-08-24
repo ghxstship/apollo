@@ -532,12 +532,22 @@ export function RsvpControls({
           {addons.map((a) => (
             <div key={a.id} style={rowStyle}>
               <Checkbox
-                label={a.name}
+                /* The price sat in a sibling span outside the <label>, so the
+                   accessible name of this box was the add-on's name and
+                   nothing else — at qty 1 there is no description either, and
+                   a reader was asked to tick a charge whose amount was never
+                   said. Repeated silently for the screen, read aloud once. */
+                label={
+                  <>
+                    {a.name}
+                    <span className="ls-visually-hidden">{`, ${money(a.price_cents * qty)}`}</span>
+                  </>
+                }
                 description={qty > 1 ? `${money(a.price_cents)} × ${qty} (you and ${coGuests} guest${coGuests > 1 ? "s" : ""})` : undefined}
                 checked={chosen.has(a.id)}
                 onChange={() => toggleAddon(a.id)}
               />
-              <span className="mbr-mono" style={{ fontSize: 12 }}>
+              <span className="mbr-mono" style={{ fontSize: 12 }} aria-hidden="true">
                 {money(a.price_cents * qty)}
               </span>
             </div>
@@ -674,12 +684,17 @@ export function RsvpControls({
           {unattached.map((a, i) => (
             <div key={a.id} style={i === 0 ? { ...rowStyle, borderTop: "none" } : rowStyle}>
               <Checkbox
-                label={a.name}
+                label={
+                  <>
+                    {a.name}
+                    <span className="ls-visually-hidden">{`, ${money(a.price_cents * aboardQty)}`}</span>
+                  </>
+                }
                 description={aboardQty > 1 ? `${money(a.price_cents)} × ${aboardQty} (you and ${guests} guest${guests > 1 ? "s" : ""})` : undefined}
                 checked={improveChosen.has(a.id)}
                 onChange={() => toggleImprove(a.id)}
               />
-              <span className="mbr-mono" style={{ fontSize: 12 }}>
+              <span className="mbr-mono" style={{ fontSize: 12 }} aria-hidden="true">
                 {money(a.price_cents * aboardQty)}
               </span>
             </div>

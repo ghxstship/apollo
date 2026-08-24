@@ -39,7 +39,7 @@ export function KioskClient() {
 
   if (screen.kind === "help") {
     return (
-      <main className="kio" data-screen="help">
+      <main id="main" className="kio" data-screen="help">
         <h1>A person is on the way.</h1>
         <p>
           Stay right here. If your code will not scan, the crew at the gangway
@@ -56,7 +56,7 @@ export function KioskClient() {
     const r = screen.result;
     const refused = Boolean(r.error) || r.outcome === "not_found";
     return (
-      <main className="kio" data-screen="confirm" data-refused={refused ? "1" : "0"}>
+      <main id="main" className="kio" data-screen="confirm" data-refused={refused ? "1" : "0"}>
         {refused ? (
           <>
             <h1>Not this door.</h1>
@@ -88,7 +88,7 @@ export function KioskClient() {
   }
 
   return (
-    <main className="kio" data-screen="scan">
+    <main id="main" className="kio" data-screen="scan">
       <h1>Hold your code to the camera.</h1>
       <div className="kio-cam">
         <CameraScanner onScan={onScan} />
