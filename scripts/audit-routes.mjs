@@ -60,30 +60,63 @@ const BANNED = bannedTerms();
    a production build — correctly, that is the point of it — so there is no
    HTML to check, and a dev route is exactly where a reviewer reads longest.
    And no amount of served markup reveals whether a dialog handles a key. */
-function sourceFiles(dir, out = []) {
+function sourceFiles(dir, out = [], deep = true) {
   for (const name of readdirSync(dir)) {
     if (name === "node_modules" || name.startsWith(".")) continue;
     const full = join(dir, name);
-    if (statSync(full).isDirectory()) sourceFiles(full, out);
+    if (statSync(full).isDirectory()) { if (deep) sourceFiles(full, out); }
     else if (/\.tsx?$/.test(name)) out.push(full);
   }
   return out;
 }
 
+/* Reads a source file with its comments removed. */
+function stripped(file) {
+  /* The first cut of these checks read the prose in a comment that said
+     "no layout supplies a <main>" and failed the one file whose markup was
+     already correct — a gate that fires on the explanation of a rule rather
+     than on a breach of it is worse than no gate, because the fix it invites
+     is to reword the comment. The `:` guard keeps "https://" out of the
+     line-comment case. */
+  return readFileSync(file, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
+    .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "");
+}
+
+/* Every page must HAVE a landing, not merely label the one it has correctly.
+   The check below asserts the id on each <main> it finds, which says nothing
+   at all about a page that has none — and the served-HTML pass cannot speak
+   for a dev-only route, because that route 404s in production by design. A
+   page whose root is a bare <div> was invisible to both. */
+function pagesHaveALanding() {
+  for (const r of manifest.routes.filter((x) => x.type === "page")) {
+    let dir = dirname(r.file);
+    let from = null;
+    while (dir.startsWith("src/app")) {
+      const layout = join(root, dir, "layout.tsx");
+      try {
+        if (/<main\b/.test(stripped(layout))) { from = dir + "/layout.tsx"; break; }
+      } catch { /* no layout at this level */ }
+      if (dir === "src/app") break;
+      dir = dirname(dir);
+    }
+    if (from) { note(r.path, "has somewhere for the skip link to land", true, `from ${from}`); continue; }
+    /* No layout supplies one, so the route must bring its own — in the page
+       itself or in a component beside it, which is how /kiosk does it. */
+    const here = dirname(join(root, r.file));
+    const own = sourceFiles(here, [], false).filter((f) => /<main\b/.test(stripped(f)));
+    note(r.path, "has somewhere for the skip link to land", own.length > 0,
+      `nothing in ${dirname(r.file)} renders a <main>`);
+  }
+}
+
 function sourceInvariants() {
+  pagesHaveALanding();
   const files = sourceFiles(join(root, "src"));
   for (const file of files) {
     const rel = file.slice(root.length + 1);
-    /* Strip comments before matching. The first cut of this check read the
-       prose in a comment that said "no layout supplies a <main>" and failed the
-       one file whose markup was already correct — a gate that fires on the
-       explanation of the rule rather than on a breach of it is worse than no
-       gate, because the fix it invites is to reword the comment. The `:` guard
-       keeps "https://" out of the line-comment case. */
-    const src = readFileSync(file, "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
-      .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "");
+    const src = stripped(file);
 
     /* The skip link lives in the root layout and so renders on every page, but
        its target is per-layout. /gangway, /sign/[token], all three kiosk
