@@ -125,7 +125,10 @@ export type RewardRow = {
 export type RewardRedemptionRow = { id: string; profile_id: string; reward_id: string; created_at: string }
 export type EmailOutboxRow = {
   id: string; to_email: string; template: string; payload: Json
-  status: "pending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+  /* "sending" was missing from all three of these while claim() has written it
+     since the drains were written — a row in flight was a state the type system
+     said could not exist, so no screen could be built to show one. */
+  status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
 }
 export type GalleyItemRow = {
   id: string; category: "bar" | "galley" | "merch"; name: string; price_cents: number; active: boolean
@@ -213,11 +216,17 @@ export type SmsTemplateRow = {
 }
 export type SmsOutboxRow = {
   id: string; to_phone: string; template: string; payload: Json
-  status: "pending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+  /* "sending" was missing from all three of these while claim() has written it
+     since the drains were written — a row in flight was a state the type system
+     said could not exist, so no screen could be built to show one. */
+  status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
 }
 export type PushOutboxRow = {
   id: string; profile_id: string; title: string; body: string | null; url: string | null
-  status: "pending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+  /* "sending" was missing from all three of these while claim() has written it
+     since the drains were written — a row in flight was a state the type system
+     said could not exist, so no screen could be built to show one. */
+  status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
 }
 export type SavedSegmentRow = {
   id: string; name: string; filters: Json; created_by: string | null; created_at: string

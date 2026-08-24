@@ -72,6 +72,10 @@ export async function saveNotificationPrefs(
     weather: formData.get("weather") === "on",
     berths: formData.get("berths") === "on",
     fathoms: formData.get("fathoms") === "on",
+    /* The weekly dispatch went to every active member with no preference
+       consulted anywhere — bulk mail with no way off it. It has a switch now,
+       and the switch is the unsubscribe the footer has always claimed existed. */
+    digest: formData.get("digest") === "on",
   };
 
   const { error } = await supabase

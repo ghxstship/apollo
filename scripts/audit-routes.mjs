@@ -111,8 +111,65 @@ function pagesHaveALanding() {
   }
 }
 
+/* Every key an email template reads must be a key something actually writes.
+   `season-card` read `p["charters"]`; the payload has always carried
+   `sailings`; nothing has ever written `charters`. So `esc(value ?? 0)`
+   printed the number nought and stated it as fact, and every season card ever
+   sent told its member they had made 0 SAILINGS. Fourteen went out for real.
+   Nothing could have caught that: the audit reads rendered web pages, and an
+   email template is not a web page.
+
+   Note for whoever edits this: the first version of this extractor matched
+   jsonb_build_object with a non-greedy paren, which stops at the first `)` —
+   so `to_jsonb(c.marks_won)` truncated the argument list and it reported three
+   keys as unwritten that are written on the very next line. Balanced-paren
+   scan, and it is worth re-proving by breaking it rather than trusting green. */
+function jsonbObjects(src) {
+  const out = [];
+  const re = /jsonb_build_object\s*\(/g;
+  while (re.exec(src)) {
+    let depth = 1;
+    let i = re.lastIndex;
+    while (i < src.length && depth > 0) {
+      const c = src[i];
+      if (c === "(") depth++;
+      else if (c === ")") depth--;
+      i++;
+    }
+    out.push(src.slice(re.lastIndex, i - 1));
+  }
+  return out;
+}
+
+function emailTemplatesReadOnlyWrittenKeys() {
+  let tpl;
+  try {
+    tpl = readFileSync(join(root, "supabase/functions/send-outbox/index.ts"), "utf8");
+  } catch {
+    return; /* the function is not in this checkout */
+  }
+  const read = new Set([...tpl.matchAll(/\bp\[\s*"([^"]+)"\s*\]/g)].map((m) => m[1]));
+  const written = new Set();
+  const migrations = join(root, "supabase/migrations");
+  for (const f of readdirSync(migrations)) {
+    for (const body of jsonbObjects(readFileSync(join(migrations, f), "utf8"))) {
+      for (const k of body.matchAll(/'([a-z_][a-z0-9_]*)'\s*,/gi)) written.add(k[1]);
+    }
+  }
+  /* Payloads are built in TypeScript too. */
+  for (const file of sourceFiles(join(root, "src"))) {
+    const src = readFileSync(file, "utf8");
+    if (!src.includes("email_outbox")) continue;
+    for (const k of src.matchAll(/\b([a-z_][a-z0-9_]*)\s*:/gi)) written.add(k[1]);
+  }
+  const orphans = [...read].filter((k) => !written.has(k)).sort();
+  note("supabase/functions/send-outbox", "every template key is a key something writes",
+    orphans.length === 0, orphans.length ? `read but never written: ${orphans.join(", ")}` : "");
+}
+
 function sourceInvariants() {
   pagesHaveALanding();
+  emailTemplatesReadOnlyWrittenKeys();
   const files = sourceFiles(join(root, "src"));
   for (const file of files) {
     const rel = file.slice(root.length + 1);

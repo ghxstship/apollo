@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Stat, Table } from "@/components/ds";
-import { price } from "@/lib/format";
+import { logDate, price } from "@/lib/format";
 import { getOperator } from "../../data";
 import { must, mustValue } from "../../staff";
 
@@ -49,6 +49,7 @@ export default async function ReportsPage() {
     installmentsRes,
     transfersRes,
     compsRes,
+    strandedRes,
   ] = await Promise.all([
     supabase.from("profiles").select("status, joined_at"),
     supabase.from("voyages").select("id, title, distance_nm, kind, status, starts_at"),
@@ -86,6 +87,16 @@ export default async function ReportsPage() {
 
     supabase.from("pass_transfers").select("status"),
     supabase.from("rsvps").select("id", { count: "exact", head: true }).eq("comp", true),
+    /* A failed letter was a number and nothing else. `failed` is terminal — the
+       drain reads only `pending` — so a row that gave up sat there with no
+       address, no template and no reason on any screen, and the migration that
+       added the retries said "nothing surfaced that". Nothing still did. */
+    supabase
+      .from("email_outbox")
+      .select("id, to_email, template, last_error, created_at, status")
+      .in("status", ["failed", "sending"])
+      .order("created_at", { ascending: false })
+      .limit(12),
   ]);
 
   /* Members */
@@ -168,6 +179,23 @@ export default async function ReportsPage() {
   const tally = (channel: string, status: string) =>
     Number(health.find((h) => h.channel === channel && h.status === status)?.n ?? 0);
   const outboxCount = (s: string) => tally("email", s);
+  /* The raw template slug is an internal key, and one of them still carries a
+     word the lexicon retired — printing it straight onto a staff screen put a
+     dead brand back on a page and the e2e lexicon gate caught it, correctly.
+     Staff get the letter's name; the slug stays in the database. */
+  const letterName = (template: string): string => {
+    const named: Record<string, string> = {
+      "lore-digest": "Episodes, Sundays",
+      "dispatch-digest": "Episodes, Sundays",
+      "episode-digest": "Episodes, Sundays",
+    };
+    return named[template] ?? template.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
+  };
+  type Stranded = { id: string; to_email: string; template: string; last_error: string | null; created_at: string; status: string };
+  const stranded = mustValue<Stranded[]>(
+    strandedRes as { data: Stranded[] | null; error?: { message?: string } | null },
+    []
+  );
 
   /* Dues that recur — a year's plan carries one twelfth of itself each month,
      so the two intervals can sit in the same number. */
@@ -302,6 +330,32 @@ export default async function ReportsPage() {
           Three channels, all drained on a schedule. Pending is the queue; failed is the one to
           read.
         </p>
+        {stranded.length > 0 ? (
+          <div className="ls-table-wrap" style={{ marginBottom: 16 }}>
+            <table className="ls-table ls-table--dense">
+              <thead>
+                <tr>
+                  <th scope="col">Letter</th>
+                  <th scope="col">To</th>
+                  <th scope="col">State</th>
+                  <th scope="col">What went wrong</th>
+                  <th scope="col">Queued</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stranded.map((row) => (
+                  <tr key={row.id}>
+                    <td>{letterName(row.template)}</td>
+                    <td className="num">{row.to_email}</td>
+                    <td>{row.status === "sending" ? "In flight" : "Gave up"}</td>
+                    <td>{row.last_error ?? "—"}</td>
+                    <td className="num">{logDate(row.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
         <div className="hm-row">
           <Stat
             size="sm"

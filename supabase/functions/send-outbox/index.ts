@@ -25,6 +25,12 @@ let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
 const DEFAULT_FROM = "SYRIUS SOCIAL — Shoreside <shore@atlvs.pro>";
 /* Member-app origin for email deep links; overridable the same way as FROM. */
 const APP_URL = Deno.env.get("APP_URL") || "https://syrius.social";
+/* Derived from the sender rather than hard-coded, so the unsubscribe mailbox
+   is always one that actually receives mail for the domain we send from. */
+function shoresideAddress(): string {
+  const m = FROM.match(/<([^>]+)>/);
+  return m ? m[1] : "shore@atlvs.pro";
+}
 
 /* The tier as a member reads it. The welcome email used to interpolate the raw
    enum — "set at the regional tier" — which is the schema talking. */
@@ -126,7 +132,7 @@ function shell(bodyHtml: string, inverse = false, audience: Audience = "member")
 <tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>
 <tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:${muted};">${audience === "applicant"
   ? "You're getting this because you asked to come aboard. Nothing else follows unless we write again."
-  : "You're getting this because you're on the cast. Preferences live in the member app."}</td></tr>
+  : `You're getting this because you're on the cast. <a href="${APP_URL}/you" style="color:${muted};">Choose what we send you</a>.`}</td></tr>
 <tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${muted};">The unscripted social experiment.</td></tr>
 </table>
 </td></tr></table>`;
@@ -191,12 +197,24 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:0;">We call it by 18:00 the night before${p["starts_at"] ? ` — departure was set for ${esc(when(p["starts_at"]))}` : ""}.</p>`,
     ),
   }),
+  /* This letter used to arrive alongside a boarding-pass at the same
+     microsecond — two letters for one event, on every promotion there has ever
+     been. It is the one that survives, because it is the only one that can say
+     WHY a pass suddenly exists, so it now carries what the other one carried:
+     the code and the muster. */
   "waitlist-release": (p) => ({
     subject: "A pass released to you.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">You were first in order on the waitlist for ${esc(p["voyage"])}${p["starts_at"] ? `, departing ${esc(when(p["starts_at"]))}` : ""}. You're aboard.</p>
-<p style="margin:0;">If the tide has turned, release the pass within 48 hours so the next name can take it.</p>`,
+        `<p style="margin:0 0 20px;">You were first in order on the waitlist for ${esc(p["voyage"])}${p["starts_at"] ? `, departing ${esc(when(p["starts_at"]))}` : ""}. You're aboard.</p>` +
+        (p["code"]
+          ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${SERIF};font-size:15px;line-height:1.7;">
+<tr><td style="padding:2px 0;color:#6B6B70;width:120px;">Code</td><td style="letter-spacing:0.12em;">${esc(p["code"])}</td></tr>
+<tr><td style="padding:2px 0;color:#6B6B70;">Muster</td><td>${esc(p["muster"] ?? "Gangway B-12")}</td></tr>
+${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td>${esc(when(p["starts_at"]))}</td></tr>` : ""}
+</table>`
+          : "") +
+        `<p style="margin:20px 0 0;">If the tide has turned, release the pass within 48 hours so the next name can take it.</p>`,
     ),
   }),
   "voyage-cancelled": (p) => ({
@@ -229,9 +247,21 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
      read as a log entry, not a scorecard. Nothing comparative. */
   "season-card": (p) => {
     const marks = Array.isArray(p["marks"]) ? (p["marks"] as unknown[]) : [];
+    /* `esc(value ?? 0)` turned a MISSING figure into the number nought and
+       stated it as fact. That is how every season card ever sent told its
+       member they had made 0 SAILINGS: the payload carries `sailings` and this
+       template read `charters`, a key nothing has ever written. Fourteen of
+       them went out for real. The Bridge's own copy for this feature says "a
+       card reading nought miles is a reproach", which is exactly what it was.
+
+       A key that is absent is not a zero. It renders as an em dash — the card
+       declines to make a claim it has no basis for — and only a real 0 from
+       the payload prints as 0. */
     const fig = (value: unknown, label: string) =>
       `<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);padding:14px 0;">` +
-      `<div style="font-family:${MONO};font-size:22px;color:#101418;font-weight:700;">${esc(value ?? 0)}</div>` +
+      `<div style="font-family:${MONO};font-size:22px;color:#101418;font-weight:700;">${
+        value === undefined || value === null ? "&mdash;" : esc(value)
+      }</div>` +
       `<div style="font-family:${MONO};font-size:9px;letter-spacing:2px;color:#7E8894;padding-top:5px;">${esc(label)}</div></td>`;
     const strap = (label: string) =>
       `<div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:#7E8894;border-top:1px solid rgba(16,20,24,.2);padding-top:16px;margin-top:6px;">${esc(label)}</div>`;
@@ -242,7 +272,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <div style="font-family:${SERIF};font-size:30px;line-height:1.2;color:#101418;padding:14px 0 6px;">Your season, on the record.</div>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A5560;">The season is closed. This is what the log holds. No scripts. No second takes.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-<tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["charters"], "SAILINGS")}${fig(p["harbors"], "HARBORS")}</tr>
+<tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["sailings"], "SAILINGS")}${fig(p["harbors"], "HARBORS")}</tr>
 <tr>${fig(p["crew_met"], "CREW MET")}${fig(p["knots_earned"], "KNOTS BANKED")}<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);"></td></tr>
 </table>` +
           (marks.length
@@ -373,7 +403,25 @@ async function sendViaResend(row: OutboxRow): Promise<{ ok: boolean; status: num
       Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: FROM, to: [row.to_email], subject, html }),
+    /* There was no List-Unsubscribe header of any kind, on any letter,
+       including a weekly bulk one. Mail clients look for this to offer their
+       own unsubscribe control, and its absence is both a deliverability
+       problem and a reader being given no way out that does not involve
+       hunting through an app they may not be signed into.
+
+       A URL, not one-click POST: RFC 8058 one-click requires an endpoint that
+       acts on an unauthenticated POST, and this club does not have one. Naming
+       a capability we do not have would be worse than naming none — the client
+       would report success for something that never happened. */
+    body: JSON.stringify({
+      from: FROM,
+      to: [row.to_email],
+      subject,
+      html,
+      headers: {
+        "List-Unsubscribe": `<${APP_URL}/you>, <mailto:${shoresideAddress()}?subject=unsubscribe>`,
+      },
+    }),
   });
   if (!res.ok) console.error(`resend failed for ${row.id} (${row.template}): ${res.status} ${await res.text()}`);
   return { ok: res.ok, status: res.status };

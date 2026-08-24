@@ -112,6 +112,7 @@ export default async function YouPage() {
             weather={prefOn("weather", true)}
             berths={prefOn("berths", true)}
             fathoms={prefOn("fathoms", false)}
+            digest={prefOn("digest", true)}
           />
           <PushControls />
           {/* Weather holds are the one message that must not wait in an inbox. */}

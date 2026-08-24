@@ -128,10 +128,12 @@ export function NotificationPrefsForm({
   weather,
   berths,
   fathoms,
+  digest,
 }: {
   weather: boolean;
   berths: boolean;
   fathoms: boolean;
+  digest: boolean;
 }) {
   const [state, formAction, pending] = React.useActionState<ProfileFormState, FormData>(
     saveNotificationPrefs,
@@ -167,6 +169,13 @@ export function NotificationPrefsForm({
           <p>Every entry, as it lands in the ledger.</p>
         </div>
         <Switch name="fathoms" defaultChecked={fathoms} label="" aria-label="Knots notices" />
+      </div>
+      <div className="you-row">
+        <div>
+          <b>Episodes</b>
+          <p>The Sunday letter. Nothing to do with your passes.</p>
+        </div>
+        <Switch name="digest" defaultChecked={digest} label="" aria-label="Episodes letter" />
       </div>
       <div className="you-row">
         <div>
