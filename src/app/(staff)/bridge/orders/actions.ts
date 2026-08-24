@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { price } from "@/lib/format";
+import { logTime, price } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 
 function done(): ActionResult {
@@ -15,13 +15,40 @@ export async function postLedgerEntry(
   profileId: string,
   kind: "payment" | "refund",
   amountCents: number,
-  memo: string
-): Promise<ActionResult> {
+  memo: string,
+  /* Set only when the operator has been shown a matching recent entry and said
+     it is genuinely a second one. */
+  evenIfItLooksLikeARepeat = false
+): Promise<ActionResult & { looksLikeARepeat?: string }> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const cents = Math.round(amountCents);
   if (!profileId) return { error: "Pick a member first." };
   if (!Number.isFinite(cents) || cents <= 0) return { error: "Enter an amount above zero." };
+
+  /* This is the manual sibling of refundShopOrder, which is properly guarded.
+     Here two operators working the same request both post, neither is warned,
+     and the member is refunded twice out of the club's money. There is no
+     natural key for a hand-typed entry, so this does not silently dedupe —
+     that would swallow a genuine second refund. It surfaces the match and
+     makes a person decide. */
+  if (!evenIfItLooksLikeARepeat) {
+    const { data: recent } = await supabase
+      .from("account_ledger")
+      .select("created_at")
+      .eq("profile_id", profileId)
+      .eq("kind", kind)
+      .eq("delta_cents", cents)
+      .gte("created_at", new Date(Date.now() - 10 * 60 * 1000).toISOString())
+      .limit(1)
+      .maybeSingle();
+    if (recent) {
+      return {
+        looksLikeARepeat: `An identical ${kind} for this member was posted at ${logTime(recent.created_at)}. Post it again only if it is genuinely a second one.`,
+      };
+    }
+  }
+
   const { error } = await supabase.from("account_ledger").insert({
     profile_id: profileId,
     delta_cents: cents,

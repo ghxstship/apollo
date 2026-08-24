@@ -114,11 +114,17 @@ async function splitIntoDraws(
   }
   const n = Math.max(2, Math.min(4, Math.round(draws)));
 
-  /* Already split — a second confirm must not draw it twice. */
+  /* Already split — a second confirm must not draw it twice. This read is the
+     fast path and the courteous one; it is NOT the guard. Two tabs confirming
+     at once both read "no plan" and both wrote, and the member was then drawn
+     double the agreed slice every month until both plans completed. The guard
+     is a partial unique index on rsvp_id where status = 'active', and the
+     23505 handling below is what makes the second writer stand down. */
   const { data: standing } = await supabase
     .from("installment_plans")
     .select("id")
     .eq("rsvp_id", rsvpId)
+    .eq("status", "active")
     .limit(1)
     .maybeSingle();
   if (standing) return null;
@@ -143,7 +149,9 @@ async function splitIntoDraws(
     voyage_id: voyageId,
     rsvp_id: rsvpId,
   });
-  if (creditError) return creditError.message;
+  /* Somebody else split this pass between our read and our write. Nothing more
+     to do, and nothing to apologise for — the split they asked for exists. */
+  if (creditError) return creditError.code === "23505" ? null : creditError.message;
 
   const next = new Date();
   next.setMonth(next.getMonth() + 1);
@@ -157,7 +165,7 @@ async function splitIntoDraws(
     next_charge_at: next.toISOString(),
     status: "active",
   });
-  if (planError) return planError.message;
+  if (planError) return planError.code === "23505" ? null : planError.message;
   return null;
 }
 

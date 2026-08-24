@@ -22,7 +22,27 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 const QUEUE_KEY = GALLEY_QUEUE_KEY;
 
-type QueuedOrder = { voyageId: string; lines: GalleyLine[] };
+/* `key` is minted once, when the order is first attempted, and travels with it
+   through every retry — that is the whole point. Minting it at send time would
+   produce a new key per attempt and dedupe nothing. */
+type QueuedOrder = { voyageId: string; lines: GalleyLine[]; key: string };
+
+function mintKey(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
+/* Every change to the queue re-reads it first. Writing a snapshot taken before
+   an await erases anything ordered during the flush — the same bug the gangway
+   had, in the same shape, one screen along. */
+function mutateQueue(fn: (q: QueuedOrder[]) => QueuedOrder[]): QueuedOrder[] {
+  const next = fn(readQueue());
+  writeQueue(next);
+  return next;
+}
 
 function readQueue(): QueuedOrder[] {
   try {
@@ -64,22 +84,37 @@ export function GalleyOrderForm({
   }, [toast]);
 
   /* Flush any queued orders on mount and whenever signal returns. */
+  const flushing = React.useRef(false);
   const flush = React.useCallback(async () => {
-    const q = readQueue();
-    if (q.length === 0) return;
-    const remaining: QueuedOrder[] = [];
+    if (flushing.current) return;
+    flushing.current = true;
     let sent = 0;
-    for (const order of q) {
-      try {
-        const res = await placeGalleyOrder(order.voyageId, order.lines);
-        if (res.error) continue; // stale order — drop rather than retry forever
-        sent += 1;
-      } catch {
-        remaining.push(order); // still no signal — keep it
+    try {
+      const startingKeys = readQueue().map((o) => o.key);
+      for (const key of startingKeys) {
+        const order = readQueue().find((o) => o.key === key);
+        if (!order) continue;
+        try {
+          const res = await placeGalleyOrder(order.voyageId, order.lines, order.key);
+          if (res.error) {
+            /* Dropped, but SAID. This used to `continue` silently on any error,
+               so a member's order could vanish between the boat and the galley
+               with nothing on screen — and the comment called it "stale". */
+            setError(res.error);
+          } else {
+            sent += 1;
+          }
+          setQueued(mutateQueue((q) => q.filter((o) => o.key !== key)).length > 0);
+        } catch {
+          /* Still no signal. The order stays, and because it carries the same
+             key, sending it again cannot charge twice even if the first attempt
+             actually landed. */
+          break;
+        }
       }
+    } finally {
+      flushing.current = false;
     }
-    writeQueue(remaining);
-    setQueued(remaining.length > 0);
     if (sent > 0) {
       setToast(sent === 1 ? "Queued order sent to the galley." : `${sent} queued orders sent to the galley.`);
       router.refresh();
@@ -103,11 +138,14 @@ export function GalleyOrderForm({
   const total = items.reduce((sum, i) => sum + i.price_cents * (qty[i.id] ?? 0), 0);
 
   const submit = async () => {
-    if (lines.length === 0) return;
+    if (lines.length === 0 || pending) return;
+    /* Minted before the attempt, so the queued copy and the attempt that may
+       already have landed are the same order. */
+    const key = mintKey();
     setPending(true);
     setError(null);
     try {
-      const res = await placeGalleyOrder(voyageId, lines);
+      const res = await placeGalleyOrder(voyageId, lines, key);
       if (res.error) {
         setError(res.error);
       } else {
@@ -117,7 +155,7 @@ export function GalleyOrderForm({
       }
     } catch {
       /* Offline or the request never landed — queue it for later. */
-      writeQueue([...readQueue(), { voyageId, lines }]);
+      mutateQueue((q) => [...q, { voyageId, lines, key }]);
       setQty({});
       setQueued(true);
     } finally {

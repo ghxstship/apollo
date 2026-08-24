@@ -129,7 +129,12 @@ async function planLabelFor(admin: Admin, subscriptionId: string | null): Promis
 
 /* Dues land on the house account as a matched pair — the charge for the
    period, and the card that settled it — so the statement reads true and the
-   balance does not move. Idempotent on the charge memo. */
+   balance does not move.
+
+   Idempotent on a KEY THE DATABASE ENFORCES, not on a memo this code looked up
+   a round trip ago. Two concurrent deliveries of the same invoice.paid both
+   read "no existing row" and both inserted; the balance nets out but the
+   statement then shows a charge and a payment that never happened. */
 async function postDues(admin: Admin, profileId: string, invoice: Stripe.Invoice) {
   const amount = invoice.amount_paid || invoice.total || 0;
   if (amount <= 0) return;
@@ -139,25 +144,20 @@ async function postDues(admin: Admin, profileId: string, invoice: Stripe.Invoice
   const period = periodLabel(invoice.period_start);
   const memo = `Dues — ${label}${period ? ` ${period}` : ""}`;
 
-  const { data: existing } = await admin
-    .from("account_ledger")
-    .select("id")
-    .eq("profile_id", profileId)
-    .eq("kind", "dues")
-    .eq("memo", memo)
-    .limit(1)
-    .maybeSingle();
-  if (existing) return;
-
-  await admin.from("account_ledger").insert([
-    { profile_id: profileId, delta_cents: -amount, kind: "dues", memo },
+  const key = `stripe:invoice:${invoice.id}`;
+  const { error } = await admin.from("account_ledger").insert([
+    { profile_id: profileId, delta_cents: -amount, kind: "dues", memo, idem_key: `${key}:dues` },
     {
       profile_id: profileId,
       delta_cents: amount,
       kind: "payment",
       memo: `${memo} — settled by card`,
+      idem_key: `${key}:payment`,
     },
   ]);
+  /* 23505 is the unique index doing its job: this invoice has already been
+     posted. That is the desired outcome, not a failure. */
+  if (error && error.code !== "23505") throw error;
 }
 
 async function syncInvoice(admin: Admin, invoice: Stripe.Invoice) {
@@ -213,20 +213,19 @@ async function postSettlement(admin: Admin, session: Stripe.Checkout.Session) {
   if (session.payment_status !== "paid" || !profileId || !session.amount_total) return;
 
   const memo = `Card settlement — Stripe ${session.id}`;
-  const { data: existing } = await admin
-    .from("account_ledger")
-    .select("id")
-    .eq("memo", memo)
-    .limit(1)
-    .maybeSingle();
-  if (existing) return;
-
-  await admin.from("account_ledger").insert({
+  const { error } = await admin.from("account_ledger").insert({
     profile_id: profileId,
     delta_cents: session.amount_total,
     kind: "payment",
     memo,
+    idem_key: `stripe:session:${session.id}:payment`,
   });
+  /* Already posted by a concurrent delivery of the same event — say nothing
+     more, and do not tell the member their payment arrived a second time. */
+  if (error) {
+    if (error.code === "23505") return;
+    throw error;
+  }
   await admin.from("notifications").insert({
     profile_id: profileId,
     kind: "word",

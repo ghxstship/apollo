@@ -62,7 +62,7 @@ export async function setCodeActive(code: string, active: boolean): Promise<Acti
    out uses that were never earned. A use is a pass aboard, on the sailing the
    code was issued for. (The old comment claimed nothing wrote the column back;
    that stopped being true.) */
-export async function reconcileUses(): Promise<{ error?: string; adjusted?: number; scanned?: number }> {
+export async function reconcileUses(): Promise<{ error?: string; adjusted?: number; scanned?: number; skipped?: number }> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
@@ -79,6 +79,10 @@ export async function reconcileUses(): Promise<{ error?: string; adjusted?: numb
   const aboard = rsvpRes.data ?? [];
 
   let adjusted = 0;
+  /* Codes whose tally moved while we were reconciling. Reported rather than
+     hidden: a reconcile that silently did less than it says is the thing an
+     operator would go on to trust. */
+  let skipped = 0;
   for (const c of codesRes.data ?? []) {
     /* A code scoped to one sailing is only spent on that sailing — the same
        test pass_price and claim_promo_code apply. */
@@ -88,11 +92,31 @@ export async function reconcileUses(): Promise<{ error?: string; adjusted?: numb
         (c.voyage_id == null || r.voyage_id === c.voyage_id)
     ).length;
     if (real === c.uses) continue;
-    const { error } = await supabase.from("promo_codes").update({ uses: real }).eq("code", c.code);
+
+    /* Compare-and-swap on the tally we actually read, not a blind write.
+       This loop runs sequentially over every code, so the window between the
+       read at the top of this function and this write is the WHOLE reconcile,
+       not microseconds. In that window: staff press Reconcile; the scan reads
+       code X at 9 of 10; a member books with X and claim_promo_code atomically
+       takes it to 10, spending the last one; reconcile then writes 9 back. The
+       tenth use is erased and an eleventh person can redeem a ten-use code.
+
+       refundShopOrder in this same codebase already demonstrates this pattern,
+       with a comment explaining it. This was the one staff write that did not
+       follow it. Zero rows matched means the tally moved under us — the count
+       we computed is already stale, so leave it and let the next reconcile
+       settle it against fresh numbers. */
+    const { data: swapped, error } = await supabase
+      .from("promo_codes")
+      .update({ uses: real })
+      .eq("code", c.code)
+      .eq("uses", c.uses)
+      .select("code");
     if (error) return { error: ERR_LAND };
-    adjusted += 1;
+    if (swapped && swapped.length > 0) adjusted += 1;
+    else skipped += 1;
   }
 
   revalidatePath("/bridge/codes");
-  return { adjusted, scanned: (codesRes.data ?? []).length };
+  return { adjusted, scanned: (codesRes.data ?? []).length, skipped };
 }

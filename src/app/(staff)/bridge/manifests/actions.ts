@@ -8,15 +8,36 @@ function done(): ActionResult {
   return {};
 }
 
-/* Stamp the gangway — check a pass in with the operator's name on it. */
+/* Stamp the gangway — check a pass in with the operator's name on it.
+
+   Narrowed on the prior state. Without it a second crew phone silently
+   overwrote the original boarding time AND the operator who made it — and that
+   pair is the audit record for an incident: who let this person aboard, and
+   when. The gangway's flush path has done this since it was written; this one
+   and the scanner both did not. */
 export async function checkInRsvp(rsvpId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase
+  const { data: stamped, error } = await supabase
     .from("rsvps")
     .update({ checked_in_at: new Date().toISOString(), checked_in_by: staffId })
-    .eq("id", rsvpId);
+    .eq("id", rsvpId)
+    .is("checked_in_at", null)
+    .select("id");
   if (error) return { error: boardingError(error) };
+  if (!stamped || stamped.length === 0) {
+    /* Zero rows: either somebody boarded this pass already — in which case the
+       right outcome is "they are aboard", not an error — or the pass is gone.
+       Tell them apart rather than reporting success for both. */
+    const { data: row } = await supabase
+      .from("rsvps")
+      .select("checked_in_at")
+      .eq("id", rsvpId)
+      .maybeSingle();
+    if (!row) return { error: "That pass is no longer on the manifest." };
+    if (!row.checked_in_at) return { error: ERR_LAND };
+    /* Already aboard, stamped by someone else. Nothing to do and nothing wrong. */
+  }
   return done();
 }
 

@@ -2088,9 +2088,21 @@ async function businessRules(p) {
   const cross = await reg.get(`account_ledger?profile_id=eq.${uid(p.global)}&select=id&limit=1`);
   note("regional", "cannot read another member's ledger", (cross.data || []).length === 0, JSON.stringify(cross.data).slice(0, 80));
 
-  // Cleanup fixture (cascade removes rsvps/flags; ledger rows keep voyage_id null)
+  /* Cleanup fixture. The ledger rows CANNOT go with it: fathoms_ledger has a
+     select policy and nothing else, so no role can delete a row through the
+     API. That is deliberate — a member's knots history is append-only, and it
+     is the right call. It does mean the teardown leaves rows behind, which the
+     footprint check at the end of main() accounts for explicitly rather than
+     pretending it does not happen. */
   const rm = await stf.del(`voyages?id=eq.${vid}`);
   note("staff", "removes fixture voyage", rm.status === 200 || rm.status === 204, `got ${rm.status}`);
+}
+
+/* Read through staff so a paused persona's own read policy cannot skew it. */
+async function knotsFor(person, staffSession) {
+  const s = rest(staffSession);
+  const res = await s.get(`fathoms_ledger?profile_id=eq.${uid(person)}&select=delta`);
+  return (res.data || []).reduce((t, r) => t + Number(r.delta || 0), 0);
 }
 
 async function main() {
@@ -2105,6 +2117,11 @@ async function main() {
   ]) {
     personas[name] = await login(email);
   }
+  const knotsAtStart = {};
+  for (const name of ["regional", "national", "global", "paused"]) {
+    knotsAtStart[name] = await knotsFor(personas[name], personas.staff);
+  }
+
   await sweep(personas);
   await routeMatrix(personas);
   await businessRules(personas);
@@ -2124,6 +2141,28 @@ async function main() {
   await roundThreeRules(personas);
   await roundFiveRules(personas);
   await sweep(personas);
+
+  /* THE SUITE'S LEDGER FOOTPRINT, pinned.
+
+     "Leaves the balance as it found it" is not achievable and it would be
+     dishonest to assert it: fathoms_ledger is append-only by policy, and one of
+     these tests deliberately completes a voyage and checks that the miles are
+     banked. That award is the assertion — reversing it would defeat the test.
+
+     So the footprint is pinned instead. Every run moves the global persona by
+     exactly the awards its own tests intend and nobody else by anything. If
+     these numbers change, either a test changed on purpose — in which case
+     update them — or the suite has started leaving something behind, which is
+     how the balances quietly climbed until an audit of a real member's knots
+     became ambiguous and cost an hour to explain. */
+  const EXPECTED_KNOTS_DRIFT = { regional: 0, national: 0, global: 150, paused: 0 };
+  for (const [name, before] of Object.entries(knotsAtStart)) {
+    const after = await knotsFor(personas[name], personas.staff);
+    const moved = after - before;
+    const want = EXPECTED_KNOTS_DRIFT[name] ?? 0;
+    note(name, "the suite's knots footprint is the one it declares", moved === want,
+      `moved ${moved}, declared ${want}`);
+  }
 
   const passed = results.filter((r) => r.ok).length;
   writeFileSync(join(root, "e2e-report.json"), JSON.stringify({ base: BASE, checkedAt: new Date().toISOString(), passed, failed: failures.length, results }, null, 2));

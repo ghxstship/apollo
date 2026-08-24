@@ -331,8 +331,16 @@ export function CodesClient({
                   if (res.error) show({ msg: res.error, tone: "danger" });
                   else
                     show({
-                      msg: "Tallies set straight.",
-                      meta: `${res.adjusted ?? 0} CORRECTED OF ${res.scanned ?? 0} SCANNED`,
+                      /* A code whose tally moved mid-reconcile is left alone
+                         and said out loud. Reporting only "corrected" would
+                         have the operator believe every code was settled. */
+                      msg: res.skipped
+                        ? "Tallies set straight, bar a few that moved."
+                        : "Tallies set straight.",
+                      meta:
+                        `${res.adjusted ?? 0} CORRECTED OF ${res.scanned ?? 0} SCANNED` +
+                        (res.skipped ? ` · ${res.skipped} MOVED WHILE COUNTING — RUN IT AGAIN` : ""),
+                      tone: res.skipped ? "caution" : "ink",
                     });
                 });
               }}

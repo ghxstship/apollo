@@ -115,6 +115,9 @@ export type InviteRow = {
 export type AccountLedgerRow = {
   id: string; profile_id: string; delta_cents: number; kind: string; memo: string | null
   voyage_id: string | null; rsvp_id: string | null; created_by: string | null; created_at: string
+  /* Names the external event this row settles. Unique when present, so a
+     repeated webhook delivery cannot post the same money twice. */
+  idem_key: string | null
 }
 export type AddonRow = { id: string; slug: string; name: string; price_cents: number; active: boolean }
 export type RsvpAddonRow = { rsvp_id: string; addon_id: string; qty: number }
@@ -592,7 +595,13 @@ export type Database = {
         Returns: number
       }
       place_galley_order: {
-        Args: { p_voyage: string; p_lines: Array<{ itemId: string; qty: number }> }
+        Args: {
+          p_voyage: string
+          p_lines: Array<{ itemId: string; qty: number }>
+          /* Minted once per order by the client and re-sent unchanged on every
+             offline retry, so a replay is recognised rather than charged. */
+          p_idem_key?: string
+        }
         Returns: string
       }
       signature_tally: {

@@ -23,7 +23,12 @@ export type GalleyResult = { error?: string };
    words, which now reach the member instead of a generic line. */
 export async function placeGalleyOrder(
   voyageId: string,
-  lines: GalleyLine[]
+  lines: GalleyLine[],
+  /* The offline queue re-sends this unchanged. A request that reached the
+     galley and was charged, but whose response the boat wifi swallowed, used to
+     come back as a second order and a second charge — the exact failure the
+     offline queue exists to survive. */
+  idemKey?: string
 ): Promise<GalleyResult> {
   const supabase = await createClient();
   const {
@@ -42,6 +47,7 @@ export async function placeGalleyOrder(
        inside the RPC, and there is a whole migration named after getting this
        wrong on the shop's twin. */
     p_lines: clean.map((l) => ({ itemId: l.itemId, qty: l.qty })),
+    ...(idemKey ? { p_idem_key: idemKey } : {}),
   });
   if (error) return { error: await voiceWith(supabase, error) };
 

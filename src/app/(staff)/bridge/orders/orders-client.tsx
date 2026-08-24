@@ -57,6 +57,9 @@ export function OrdersClient({
   members: MemberOption[];
 }) {
   const [pending, startTransition] = React.useTransition();
+  /* A hand-typed entry that matches one posted minutes ago. Neither an error
+     nor a success — a question for a person. */
+  const [repeat, setRepeat] = React.useState<{ kind: "payment" | "refund"; cents: number; why: string } | null>(null);
   const { toast, show, clear } = useToast();
   const [filter, setFilter] = React.useState<Filter>("all");
   const [posting, setPosting] = React.useState<PostKind | null>(null);
@@ -75,22 +78,32 @@ export function OrdersClient({
     filter === "all" ? true : filter === "charges" ? e.deltaCents < 0 : e.deltaCents > 0
   );
 
-  const submitPost = () => {
+  const submitPost = (evenIfItLooksLikeARepeat = false) => {
     const kind = posting!;
     const cents = Math.round(Number(form.amount) * 100);
     setPosting(null);
-    run(
-      () => postLedgerEntry(form.profileId, kind, cents, form.memo),
-      () => {
-        setForm({ profileId: "", amount: "", memo: "" });
-        show({
-          msg: kind === "payment" ? "Payment posted." : "Refund posted.",
-          meta: "SHIP'S RECORD · YOUR NAME ON IT",
-          tone: "positive",
-        });
+    startTransition(async () => {
+      /* Not folded into run(): a suspected repeat is neither a failure nor a
+         success, and reporting it as either is how a member gets refunded
+         twice or an operator gives up on a refund that was never posted. */
+      const res = await postLedgerEntry(form.profileId, kind, cents, form.memo, evenIfItLooksLikeARepeat);
+      if (res.looksLikeARepeat) {
+        setRepeat({ kind, cents, why: res.looksLikeARepeat });
+        return;
       }
-    );
+      if (res.error) {
+        show({ msg: res.error, tone: "danger" });
+        return;
+      }
+      setForm({ profileId: "", amount: "", memo: "" });
+      show({
+        msg: kind === "payment" ? "Payment posted." : "Refund posted.",
+        meta: "SHIP'S RECORD · YOUR NAME ON IT",
+        tone: "positive",
+      });
+    });
   };
+
 
   return (
     <>
@@ -205,7 +218,7 @@ export function OrdersClient({
             <Button
               variant="outline"
               disabled={pending || !form.profileId || !(Number(form.amount) > 0)}
-              onClick={submitPost}
+              onClick={() => submitPost()}
             >
               Post it
             </Button>
@@ -239,6 +252,41 @@ export function OrdersClient({
             onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))}
           />
         </div>
+      </Dialog>
+
+      <Dialog
+        open={!!repeat}
+        onClose={() => setRepeat(null)}
+        width={430}
+        eyebrow="Already on the record"
+        title="This looks like one you just posted."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRepeat(null)}>
+              Leave it
+            </Button>
+            <Button
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                const again = repeat;
+                setRepeat(null);
+                if (!again) return;
+                setPosting(again.kind);
+                /* Same entry, posted deliberately this time. */
+                queueMicrotask(() => submitPost(true));
+              }}
+            >
+              Post it anyway
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13 }}>{repeat?.why}</p>
+        <p style={{ fontSize: 13, color: "var(--text-3)" }}>
+          Two operators working the same request is how a member gets refunded
+          twice out of the club&rsquo;s money. Nothing has been posted yet.
+        </p>
       </Dialog>
 
       <Dialog
