@@ -12,6 +12,22 @@ import React from "react";
    kept out of the dependency list — with it in, the effect re-ran on every
    parent render and re-called focus(), which took the caret out of the field
    after a single keystroke. */
+/* WHAT IS AND IS NOT VERIFIED HERE, so the next person knows what the gate
+   stands for. The route audit asserts, in the source, that every file
+   declaring role="dialog" imports this hook. That is structural only: it
+   proves the hook is WIRED UP, and nothing whatsoever about whether it still
+   WORKS. There is no unit or browser test harness in this repo.
+
+   Hand-verified in a real browser on 2026-08-24, against the site's mobile
+   menu (the same code path the Dialog, the crate drawer and the Producer
+   panel take): focus moves into the surface on open; Tab from the last item
+   wraps to the first with the event's default prevented; Shift+Tab from the
+   first wraps to the last; Escape closes; body overflow is restored; focus
+   returns to the opener.
+
+   NOT verified by anything, by hand or otherwise: that a later edit to this
+   file preserves any of the above. A regression here breaks four surfaces at
+   once — including the two on the checkout path. */
 export function useModal(
   open: boolean,
   onClose?: () => void,
