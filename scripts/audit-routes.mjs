@@ -15,7 +15,7 @@
  * Runs in CI on every push and on a daily schedule (.github/workflows/route-audit.yml).
  * Exits non-zero if anything fails; writes route-audit-report.json.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -54,6 +54,58 @@ function bannedTerms() {
   }
 }
 const BANNED = bannedTerms();
+
+/* ---------- source invariants ----------
+   Two things the fetch pass structurally cannot see. A dev-only route 404s in
+   a production build — correctly, that is the point of it — so there is no
+   HTML to check, and a dev route is exactly where a reviewer reads longest.
+   And no amount of served markup reveals whether a dialog handles a key. */
+function sourceFiles(dir, out = []) {
+  for (const name of readdirSync(dir)) {
+    if (name === "node_modules" || name.startsWith(".")) continue;
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) sourceFiles(full, out);
+    else if (/\.tsx?$/.test(name)) out.push(full);
+  }
+  return out;
+}
+
+function sourceInvariants() {
+  const files = sourceFiles(join(root, "src"));
+  for (const file of files) {
+    const rel = file.slice(root.length + 1);
+    /* Strip comments before matching. The first cut of this check read the
+       prose in a comment that said "no layout supplies a <main>" and failed the
+       one file whose markup was already correct — a gate that fires on the
+       explanation of the rule rather than on a breach of it is worse than no
+       gate, because the fix it invites is to reword the comment. The `:` guard
+       keeps "https://" out of the line-comment case. */
+    const src = readFileSync(file, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1")
+      .replace(/\{\s*\/\*[\s\S]*?\*\/\s*\}/g, "");
+
+    /* The skip link lives in the root layout and so renders on every page, but
+       its target is per-layout. /gangway, /sign/[token], all three kiosk
+       screens and the dev document preview each shipped a <main> with no id —
+       the first tab stop on the page you sign in on, the page you sign a
+       waiver on, and the screen the crew boards people with went nowhere. A
+       link that goes nowhere costs a keystroke and teaches the reader that the
+       affordance is a lie. */
+    for (const tag of src.match(/<main\b[\s\S]*?>/g) || []) {
+      note(rel, "every <main> is the skip link's landing", /\bid="main"/.test(tag),
+        tag.replace(/\s+/g, " ").slice(0, 60));
+    }
+
+    /* Four surfaces declared role="dialog" and none of them handled Escape,
+       took focus, trapped Tab or gave focus back. They share one hook now;
+       this is what stops a fifth from hand-rolling three of the four again. */
+    if (/role="dialog"/.test(src)) {
+      note(rel, "a role=dialog surface uses the shared modal hook", /useModal\s*\(/.test(src),
+        'declares role="dialog" without useModal()');
+    }
+  }
+}
 
 const results = [];
 const failures = [];
@@ -100,11 +152,8 @@ function checkHtml(route, html) {
   });
   note(route, "no spilled placeholder in visible text", spilled.length === 0,
     spilled.length ? `found: ${spilled.join(", ")}` : "");
-  /* The skip link is in the root layout, so it renders on every page — but its
-     target is per-layout, and /gangway, /sign/[token] and the kiosk each had a
-     <main> without the id. The first tab stop on the sign-in page pointed at
-     nothing and did nothing. A link that goes nowhere is worse than no link:
-     it costs a keystroke and teaches the reader the affordance is a lie. */
+  /* Belt to the source-level braces in sourceInvariants(): the served page is
+     the only place a layout and its page can be seen together. */
   if (html.includes('class="ls-skip"')) {
     note(route, "the skip link has somewhere to land", /id="main"/.test(html),
       'ls-skip is present but no id="main"');
@@ -134,6 +183,7 @@ function internalLinks(html) {
 
 async function main() {
   console.log(`auditing ${BASE}\n`);
+  sourceInvariants();
 
   // Expand the manifest into concrete URLs.
   const pages = [];
