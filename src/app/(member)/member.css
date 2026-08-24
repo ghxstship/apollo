@@ -7,7 +7,16 @@
 .mbr-top{position:sticky;top:0;z-index:300;background:var(--surface-page);border-bottom:1px solid var(--line-faint)}
 .mbr-top__in{max-width:1080px;margin-inline:auto;padding:0 24px;height:58px;display:flex;align-items:center;gap:22px}
 .mbr-top__wm{text-decoration:none;color:inherit;display:inline-flex}
-.mbr-nav{display:flex;align-items:center;gap:4px;margin-inline-start:8px}
+/* Sixteen links in a nowrap row is 1180px of nav inside a 1080px container, so
+   .mbr-top__in grew to 1587px and EVERY member page scrolled sideways on any
+   screen under about 1790 — 307px of overflow at 1280, 463 at 1024. The
+   breakpoint that hides this nav starts at 959, which is 800px too late.
+   Letting the nav scroll inside the bar keeps all sixteen reachable without the
+   document scrolling; hiding it earlier would strand ten destinations the tab
+   bar does not carry. */
+.mbr-nav{display:flex;align-items:center;gap:4px;margin-inline-start:8px;min-width:0;flex:1 1 auto;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.mbr-nav::-webkit-scrollbar{display:none}
+.mbr-nav a{flex:none}
 .mbr-nav a{font:600 10px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:8px 10px;border-radius:var(--radius-sharp);transition:color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
 .mbr-nav a:hover{color:var(--text-1);background:var(--wash-ink)}
 .mbr-nav a[aria-current="page"]{color:var(--gold-deep)}
@@ -19,6 +28,7 @@
 .mbr-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text-inverse-3);text-decoration:none;padding:4px 0;transition:color var(--dur-1) var(--ease-swell)}
 .mbr-tab span{font:600 8px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.12em;text-transform:uppercase}
 .mbr-tab:hover{color:var(--text-inverse-1)}
+.mbr-tab:focus-visible{outline:2px solid var(--focus-on-dark);outline-offset:-3px}
 .mbr-tab[aria-current="page"]{color:var(--neon-cyan)}
 
 @media (max-width:959px){

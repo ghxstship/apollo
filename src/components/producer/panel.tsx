@@ -67,6 +67,46 @@ function accountLine(cents: number): string {
 }
 
 export function ProducerPanel({ onClose }: { onClose: () => void }) {
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const closeRef = React.useRef(onClose);
+  React.useEffect(() => { closeRef.current = onClose; });
+
+  /* The panel declared role="dialog" and behaved like nothing of the sort:
+     focus stayed on <body> when it opened, Escape did not close it, Tab walked
+     straight out into the page behind it, and closing dropped focus to <body>
+     because the trigger unmounts. */
+  React.useEffect(() => {
+    const box = panelRef.current;
+    const opener = document.activeElement as HTMLElement | null;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { closeRef.current(); return; }
+      if (e.key !== "Tab" || !box) return;
+      const items = Array.from(
+        box.querySelectorAll<HTMLElement>(
+          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => el.offsetParent !== null);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === box)) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    box?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      if (opener && (!document.activeElement || document.activeElement === document.body)) {
+        opener.focus?.();
+      }
+    };
+  }, []);
+
   const [msgs, setMsgs] = React.useState<Msg[]>([
     { kind: "sys", text: "READS YOUR MANIFEST · NEVER POSTS OR PAYS WITHOUT ASKING" },
     {
@@ -279,7 +319,14 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="pr-panel" role="dialog" aria-label={SURFACES.agent}>
+    <div
+      className="pr-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-label={SURFACES.agent}
+      ref={panelRef}
+      tabIndex={-1}
+    >
       <div className="pr-head">
         <Icon name="Compass" size={18} style={{ color: "var(--neon-cyan)" }} />
         <div style={{ flex: 1 }}>

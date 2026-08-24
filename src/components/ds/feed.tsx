@@ -221,7 +221,6 @@ export function Composer({
           resize: "vertical",
           background: "transparent",
           border: "none",
-          outline: "none",
           fontFamily: BODY,
           fontWeight: 400,
           lineHeight: 1.55,
@@ -345,6 +344,10 @@ export function FlagQueue({
     <div style={{ fontFamily: BODY, ...style }}>
       {!items.length ? <div style={{ padding: "14px 0", fontSize: 13, color: "var(--text-3)" }}>{emptyLabel}</div> : null}
       {items.length > 0 ? (
+        /* The Bridge's other tables sit in .ls-table-wrap; this one did not, so
+           on a phone the moderation queue pushed the page 10px wide and made it
+           scroll sideways instead of scrolling the table. */
+        <div className="ls-table-wrap">
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, color: "var(--text-1)" }}>
           <thead>
             <tr>
@@ -372,6 +375,7 @@ export function FlagQueue({
             ))}
           </tbody>
         </table>
+        </div>
       ) : null}
       <Dialog
         open={!!pick}

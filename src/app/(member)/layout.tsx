@@ -34,7 +34,7 @@ export default async function MemberLayout({
           </a>
         </div>
       ) : null}
-      <main className="mbr-main">{children}</main>
+      <main id="main" className="mbr-main">{children}</main>
       <MemberTabBar userId={user.id} unreadWord={count ?? 0} />
       <ProducerLauncher />
     </div>

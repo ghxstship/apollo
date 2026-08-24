@@ -102,7 +102,6 @@ export function Composer({
           resize: "vertical",
           background: "transparent",
           border: "none",
-          outline: "none",
           fontFamily: "var(--font-sans)",
           fontWeight: 400,
           lineHeight: 1.55,

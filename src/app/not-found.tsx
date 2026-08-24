@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Off the chart" };
    boarding stub that had already sailed. */
 export default function NotFound() {
   return (
-    <main className="hm-shell" style={{ paddingTop: 96, paddingBottom: 96 }}>
+    <main id="main" className="hm-shell" style={{ paddingTop: 96, paddingBottom: 96 }}>
       <span className="hm-eyebrow">404</span>
       <h1 style={{ marginTop: 12 }}>Off the chart.</h1>
       <p style={{ maxWidth: 460, marginTop: 12 }}>

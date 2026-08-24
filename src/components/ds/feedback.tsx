@@ -20,15 +20,60 @@ export function Dialog({
     () => true,
     () => false
   );
+  /* onClose is an inline arrow at every call site, so it changes identity on
+     every parent render. With it in the deps this whole effect re-ran on each
+     keystroke and called focus() again — the caret jumped out of the field
+     after ONE character, in the guest-name and checkout dialogs among others.
+     The handler goes in a ref so the listener never has to be rebound. */
+  const closeRef = React.useRef(onClose);
+  React.useEffect(() => { closeRef.current = onClose; });
+
   React.useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && onClose) onClose(); };
+    const box = boxRef.current;
+    /* Where focus came from, so it can go back there when the dialog closes —
+       otherwise it falls to <body> and a keyboard user starts from the top of
+       the page again. */
+    const opener = document.activeElement as HTMLElement | null;
+
+    const focusable = () =>
+      Array.from(
+        box?.querySelectorAll<HTMLElement>(
+          'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { closeRef.current?.(); return; }
+      if (e.key !== "Tab") return;
+      /* Keep Tab inside the dialog. Without this it walked out into the page
+         behind the veil, which is still there and still clickable. */
+      const items = focusable();
+      if (items.length === 0) { e.preventDefault(); box?.focus(); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === box)) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    if (boxRef.current) boxRef.current.focus();
-    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
-  }, [open, onClose]);
+    box?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+      /* Only if focus is still somewhere in the dialog we are unmounting —
+         if something else has deliberately taken it, leave it alone. */
+      if (opener && (!document.activeElement || document.activeElement === document.body)) {
+        opener.focus?.();
+      }
+    };
+  }, [open]);
   /* Portalled to the document root. The veil is z-index 1000 and the member
      tab bar is 300, but z-index only orders siblings within a stacking
      context — rendered in place, the dialog sat inside one the tab bar was not

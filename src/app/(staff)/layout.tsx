@@ -44,7 +44,7 @@ export default async function StaffLayout({
         </div>
       </header>
       <HmTabs />
-      <main className="hm-main">{children}</main>
+      <main id="main" className="hm-main">{children}</main>
     </div>
   );
 }

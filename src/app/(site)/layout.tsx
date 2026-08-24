@@ -16,7 +16,7 @@ export default async function SiteLayout({
   return (
     <>
       <SiteNav />
-      <main>{children}</main>
+      <main id="main">{children}</main>
       <SiteFooter harbors={harbors ?? []} />
       <ProducerGate />
     </>

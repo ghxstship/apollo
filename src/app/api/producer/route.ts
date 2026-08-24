@@ -157,6 +157,8 @@ async function getMyBalances(supabase: SupabaseServer, userId: string) {
    messages of unbounded length is a bill, not a conversation. */
 const MAX_CHARS = 4000;
 
+/* Assistant turns are accepted by the parser and then discarded above — the
+   panel still sends them, and rejecting the shape outright would break it. */
 function isChatMessage(m: unknown): m is { role: "user" | "assistant"; content: string } {
   if (typeof m !== "object" || m === null) return false;
   const r = m as Record<string, unknown>;
@@ -184,6 +186,18 @@ export async function POST(request: Request) {
 
   if (!process.env.ANTHROPIC_API_KEY) return Response.json({ fallback: true });
 
+  /* Before spending anything. The route had no limit at all — thirty concurrent
+     requests from one member all went through, and each is up to six model
+     turns. The counter lives in the database because this runs serverless and
+     an in-memory bucket does not survive between invocations. */
+  const { error: budget } = await supabase.rpc("take_a_producer_turn");
+  if (budget) {
+    return Response.json(
+      { error: "The Producer needs a moment. Try again in a few minutes." },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -195,9 +209,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "Bad request." }, { status: 400 });
   }
 
+  /* Only the member's own turns. The client used to be able to post
+     `role:"assistant"` messages, so a member could fabricate what the Producer
+     had supposedly already said and steer it from there. The tools can only
+     reach the caller's own rows, so this was steering rather than disclosure —
+     but a transcript the client writes is not a transcript. */
   const messages: Anthropic.MessageParam[] = raw
-    .slice(-24)
-    .map((m) => ({ role: m.role, content: m.content }));
+    .filter((m) => m.role === "user")
+    .slice(-12)
+    .map((m) => ({ role: "user" as const, content: m.content }));
+  if (messages.length === 0) {
+    return Response.json({ error: "Bad request." }, { status: 400 });
+  }
 
   const anthropic = new Anthropic();
 

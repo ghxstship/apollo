@@ -117,6 +117,7 @@
 --action-accent-hover:linear-gradient(120deg,#B98A2F,#E3C983,#B98A2F); /* @kind color */
 --action-on-accent:var(--void-black);
 --focus:var(--gold-400);
+--focus-on-dark:var(--gold-400);
 --ok:#5BAE7E;
 --warn:#D98E2B;
 --danger:#E0503C;
@@ -158,6 +159,10 @@
 --action-on-primary:#F4EFE6;
 --text-link:#7C5A1B;
 --focus:#7C5A1B;
+/* The light theme's focus gold is 2.75:1 on --surface-deep, which the mobile
+   tab bar and the toast are painted with — under the 3:1 WCAG 1.4.11 needs.
+   Those surfaces stay dark in both themes, so the ring on them does too. */
+--focus-on-dark:#E8C878;
 --brass-deep:#7C5A1B;
 --bronze:#966E22;
 --gilt:#966E22;

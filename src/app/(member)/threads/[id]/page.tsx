@@ -146,7 +146,14 @@ export default async function ThreadPage({
           detail="Nobody has said anything yet. You could be first."
         />
       ) : (
-        <div className="thr-msgs">
+        /* role="log": realtime inserts refresh this list, and without it a
+           screen reader is never told a reply arrived. */
+        <div
+          className="thr-msgs"
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions"
+        >
           {(messages ?? []).map((m) => {
             const author = m.author_id ? peopleById.get(m.author_id) : null;
             const own = m.author_id === user.id;

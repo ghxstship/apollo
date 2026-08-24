@@ -19,7 +19,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main className="hm-shell" style={{ paddingTop: 96, paddingBottom: 96 }}>
+    <main id="main" className="hm-shell" style={{ paddingTop: 96, paddingBottom: 96 }}>
       <span className="hm-eyebrow">Something broke</span>
       <h1 style={{ marginTop: 12 }}>That didn&rsquo;t land.</h1>
       <p style={{ maxWidth: 460, marginTop: 12 }}>

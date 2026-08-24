@@ -112,6 +112,7 @@
 .ls-tag--click:hover{border-color:var(--line-strong)}
 .ls-tag--active.ls-tag--click:hover{background:var(--action-primary-hover)}
 .ls-tag__x{all:unset;cursor:pointer;line-height:0;display:inline-flex;opacity:.6;position:relative}
+.ls-tag__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
 .ls-tag__x:before{content:"";position:absolute;inset:-8px}
 .ls-tag__x:hover{opacity:1}
 
@@ -221,10 +222,13 @@
 .ls-stepper{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:var(--radius-pill);background:var(--surface-card)}
 .ls-stepper>:first-child{border-start-start-radius:var(--radius-pill);border-end-start-radius:var(--radius-pill)}
 .ls-stepper>:last-child{border-start-end-radius:var(--radius-pill);border-end-end-radius:var(--radius-pill)}
-@media (pointer:coarse){.ls-stepper--sm button{width:44px;height:44px}}
 .ls-stepper--inverse{background:transparent;border-color:var(--line-inverse-strong)}
 .ls-stepper button{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-1);font:600 15px var(--font-sans);transition:background var(--dur-1) var(--ease-swell);position:relative}
 .ls-stepper button:hover{background:var(--wash-ink)}
+/* `all: unset` strips the global :focus-visible ring, and these are the
+   quantity controls in the checkout dialog — a keyboard user tabbing through a
+   purchase had no idea where they were. */
+.ls-stepper button:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .ls-stepper button[disabled]{opacity:.3;pointer-events:none}
 .ls-stepper--inverse button{color:var(--text-inverse-1)}
 .ls-stepper--inverse button:hover{background:var(--wash-bone)}
@@ -234,6 +238,12 @@
 .ls-stepper--md .ls-stepper__val{min-width:36px;font-size:13px}
 .ls-stepper--sm button{width:28px;height:28px;font-size:13px}
 .ls-stepper--sm .ls-stepper__val{min-width:28px;font-size:11px}
+/* AFTER the 28px rule, not before it. A media query adds no specificity, so at
+   equal specificity the later declaration wins — this sat above and lost, and
+   the touch fix it was making never existed. The steppers it governs are the
+   guest count, the galley quantity and the crate quantity: the booking and the
+   money paths. */
+@media (pointer:coarse){.ls-stepper--sm button{width:44px;height:44px}.ls-stepper--sm .ls-stepper__val{min-width:44px}}
 .ls-stepper--sm button:after{content:"";position:absolute;inset:-6px}
 
 /* — Switch — */
@@ -281,6 +291,7 @@
 .ls-dialog__eyebrow{font-weight:600;font-stretch:var(--stretch-wide);font-size:var(--text-eyebrow-s);letter-spacing:var(--track-eyebrow);text-transform:uppercase;color:var(--gold-deep);margin-bottom:var(--space-2)}
 .ls-dialog__title{font-family:var(--font-display);font-size:var(--text-display-s);line-height:var(--leading-display)}
 .ls-dialog__x{all:unset;cursor:pointer;margin-left:auto;color:var(--text-3);line-height:1;padding:4px;font-size:15px;position:relative}
+.ls-dialog__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
 .ls-dialog__x:before{content:"";position:absolute;inset:-8px}
 .ls-dialog__x:hover{color:var(--text-1)}
 .ls-dialog__body{padding:var(--space-4) var(--space-6);color:var(--text-2);font-size:var(--text-body);line-height:var(--leading-body)}
@@ -322,6 +333,7 @@
 .ls-toast__rule{width:3px;align-self:stretch;border-radius:1px;flex:none}
 .ls-toast__meta{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3)}
 .ls-toast__x{all:unset;cursor:pointer;color:var(--text-inverse-3);line-height:1;padding:2px;font-size:13px;position:relative}
+.ls-toast__x:focus-visible{outline:2px solid var(--focus-on-dark);outline-offset:2px;border-radius:2px}
 .ls-toast__x:before{content:"";position:absolute;inset:-8px}
 .ls-toast>span:nth-child(2){min-width:0}
 .ls-toast__x:hover{color:var(--text-inverse-1)}

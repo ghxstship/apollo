@@ -459,6 +459,7 @@ export type Database = {
       /* Whether the caller's own membership is in good standing. voiceWith()
          asks this on an RLS refusal rather than assuming a hold. */
       is_active: { Args: Record<string, never>; Returns: boolean }
+      take_a_producer_turn: { Args: Record<string, never>; Returns: number }
       email_may_board: { Args: { p_email: string }; Returns: boolean }
       validate_invite: { Args: { p_code: string }; Returns: boolean }
       attach_addons: {

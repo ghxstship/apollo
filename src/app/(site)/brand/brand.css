@@ -10,7 +10,9 @@
 .bk-lock--ink{background:var(--surface-deep)}
 .bk-lock--ink .cap{color:var(--text-inverse-3)}
 .bk-lock img{max-width:70%;height:auto}
-.bk-wm{font-family:var(--font-display);letter-spacing:.3em;transform:translateX(.15em);font-size:clamp(20px,9vw,34px);color:var(--text-1);white-space:nowrap}
+/* 9vw plus .3em of tracking and a .15em nudge put the wordmark 14px past a
+   375px viewport, which makes the whole page scroll sideways. */
+.bk-wm{font-family:var(--font-display);letter-spacing:.3em;transform:translateX(.15em);font-size:clamp(16px,6.2vw,34px);color:var(--text-1);white-space:nowrap}
 .bk-stack .a{font-family:var(--font-display);font-size:38px;letter-spacing:.42em;transform:translateX(.21em);color:var(--bone)}
 .bk-stack .b{font:600 10px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.6em;transform:translateX(.3em);text-transform:uppercase;color:var(--gold-bright);text-align:center;margin-top:4px}
 .bk-rules{margin:20px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:0 32px}

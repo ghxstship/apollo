@@ -68,6 +68,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${marcellus.variable} ${jost.variable} ${spaceMono.variable}`}>
       <body>
+        {/* First tab stop on every page. Without it a keyboard user walked the
+            wordmark, sixteen nav links and Sign out before reaching content,
+            on every navigation. */}
+        <a href="#main" className="ls-skip">Skip to content</a>
         <Script id="syrius-theme-init" strategy="beforeInteractive">{themeInit}</Script>
         <SwRegister />
         {children}
