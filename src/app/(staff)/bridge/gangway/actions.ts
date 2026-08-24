@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, boardingError } from "../../staff";
+import { logDateYear } from "@/lib/format";
 
 /* Onsite check-in by boarding code. The scanner types the code and hits
    Enter; we stamp checked_in_at/by and hand back what the door needs. */
@@ -83,7 +84,34 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       .ilike("boarding_code", code)
       .maybeSingle();
 
-    if (!guest) return { outcome: "not_found" };
+    if (!guest) {
+      /* Before calling it a forgery: the fallback above only searches sailings
+         still ahead, so a pass for a sailing that has already gone came back as
+         "No pass matches that code on this voyage." The skipper is standing in
+         front of somebody holding a real pass and being told it is not real.
+         Look it up unscoped and say which sailing it was for. */
+      const { data: old } = await supabase
+        .from("rsvps")
+        .select("voyage_id")
+        .ilike("boarding_code", code)
+        .maybeSingle();
+      if (old) {
+        const { data: v } = await supabase
+          .from("voyages")
+          .select("title, starts_at, time_zone, status")
+          .eq("id", old.voyage_id)
+          .maybeSingle();
+        if (v) {
+          return {
+            error:
+              v.status === "cancelled"
+                ? `That pass is for ${v.title}, which was called off.`
+                : `That pass is for ${v.title}, which sailed on ${logDateYear(v.starts_at, v.time_zone)}.`,
+          };
+        }
+      }
+      return { outcome: "not_found" };
+    }
 
     const { data: guestRsvp } = await supabase
       .from("rsvps")

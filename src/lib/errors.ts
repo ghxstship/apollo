@@ -4,21 +4,44 @@
    is issued once"), so those messages pass through with only a capital and a
    full stop added. What does not speak for itself is an RLS refusal: Postgres
    says "new row violates row-level security policy", which tells a member
-   nothing. The commonest reason a member's write is refused by policy is that
-   their membership is on hold, so that is what we say. */
+   nothing.
+
+   This USED to answer every 42501 with "your membership is on hold", on the
+   reasoning that a hold is the commonest cause. Commonest is not only. The
+   galley proved it: galley_orders had no member INSERT policy at all, so every
+   member self-order was refused — and a member in perfect standing would have
+   been told their membership was on hold, sent to a page where nothing was
+   wrong, with nothing to do. Worse, it would have hidden the dead feature
+   behind a plausible billing story; nobody would have looked at the policy.
+
+   A confidently wrong message is worse than a vague one, because the reader
+   cannot tell it is wrong. So: voice() no longer asserts the hold. Where the
+   caller has a Supabase client — every server action does — voiceWith() asks
+   is_active() and says the true thing either way. */
 
 export type PgLikeError = { message?: string | null; code?: string | null };
 
 export const HOLD_MESSAGE =
   "Your membership is on hold. Resume it on your page and this opens back up.";
 
+/* What we can honestly say when the policy refused and we have not asked why. */
+export const REFUSED_MESSAGE =
+  "The club's records don't allow that just now. Shoreside can sort it.";
+
+export function isRlsRefusal(error: PgLikeError | null | undefined): boolean {
+  return (
+    !!error &&
+    (error.code === "42501" || /row-level security/i.test(error.message ?? ""))
+  );
+}
+
 export function voice(error: PgLikeError | null | undefined): string {
   if (!error) return "That didn't land. Try again.";
 
-  /* 42501 — insufficient privilege: the policy said no. */
-  if (error.code === "42501" || /row-level security/i.test(error.message ?? "")) {
-    return HOLD_MESSAGE;
-  }
+  /* 42501 — insufficient privilege: the policy said no, and from here we
+     cannot tell why. True and unhelpful beats specific and false; use
+     voiceWith() to get the specific-and-true version. */
+  if (isRlsRefusal(error)) return REFUSED_MESSAGE;
 
   /* 23514 — a check constraint. Postgres names the constraint, which is our
      schema talking to itself, not to a member: "new row for relation
@@ -44,4 +67,23 @@ export function voice(error: PgLikeError | null | undefined): string {
     return "That didn't land. Try again.";
   }
   return m.charAt(0).toUpperCase() + m.slice(1) + (/[.?]$/.test(m) ? "" : ".");
+}
+
+/* The honest version of the 42501 branch, for callers holding a client.
+
+   is_active() is SECURITY DEFINER, takes no arguments and is executable by
+   `authenticated`, so the answer costs one round trip and is the difference
+   between telling a member something true about their account and telling them
+   something false about it. */
+export async function voiceWith(
+  supabase: { rpc: (fn: "is_active") => PromiseLike<{ data: unknown }> },
+  error: PgLikeError | null | undefined
+): Promise<string> {
+  if (!isRlsRefusal(error)) return voice(error);
+  try {
+    const { data } = await supabase.rpc("is_active");
+    return data === false ? HOLD_MESSAGE : REFUSED_MESSAGE;
+  } catch {
+    return REFUSED_MESSAGE;
+  }
 }

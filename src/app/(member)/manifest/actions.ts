@@ -523,8 +523,11 @@ export async function chooseCabin(voyageId: string, cabinId: string | null): Pro
     .eq("profile_id", user.id)
     .eq("status", "aboard");
   if (error) {
+    /* Kept because it is shorter and kinder than the raise, which names the
+       cabin's berth count in vocabulary the lexicon retired. Everything else
+       the guard says reaches the member as written. */
     if (/spoken for/i.test(error.message)) return { error: "That cabin just went. Pick another." };
-    return { error: "That didn't land. Try again." };
+    return { error: guardMessage(error.message, error.code) };
   }
   revalidatePath("/manifest");
   return {};

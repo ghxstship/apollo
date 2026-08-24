@@ -8,6 +8,10 @@
 .gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite;position:relative}
 .gw-main{padding:48px;display:flex;flex-direction:column;box-sizing:border-box}
 .gw-theme{display:flex;justify-content:flex-end;transform:scale(.82);transform-origin:bottom right;opacity:.55;transition:opacity var(--dur-1) var(--ease-swell)}
+/* On a touch device the scale turned a 44px target into 36px, and the
+   opacity was only lifted by :hover/:focus-within — which never fire — so the
+   sign-in page's only control sat permanently at 55%. */
+@media (pointer:coarse){.gw-theme{transform:none;opacity:1}}
 .gw-theme:hover,.gw-theme:focus-within{opacity:1}
 .gw-theme .ls-themetog{border-color:transparent;background:transparent}
 .gw-theme .ls-themetog:hover,.gw-theme .ls-themetog:focus-within{border-color:var(--line);background:var(--surface-card)}

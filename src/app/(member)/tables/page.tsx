@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Badge } from "@/components/ds";
 import { logDate, logTime } from "@/lib/format";
 import { getMember } from "../data";
 import { TableCard, type TableView } from "./table-card";
@@ -99,8 +98,11 @@ export default async function TablesPage() {
         </div>
       )}
 
-      <p style={{ marginTop: 28 }}>
-        <Badge tone="outline">Seat held for 15 minutes. Confirm at the door.</Badge>
+      {/* A sentence in a fixed-height nowrap pill: 359.8px of badge at x=20 ran
+          past a 375px viewport and made the page scroll sideways. This is a
+          note, not a label. */}
+      <p className="mbr-mono" style={{ marginTop: 28 }}>
+        Seat held for 15 minutes. Confirm at the door.
       </p>
     </div>
   );

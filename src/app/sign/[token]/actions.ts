@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { voice } from "@/lib/errors";
 
 /* The token is the credential, so it is passed to a definer RPC that resolves
    the guest and their sailing itself. Nothing here trusts the caller for
@@ -47,7 +48,10 @@ export async function signAsGuest(
       return { error: "A signature is required." };
     if (/nothing left to sign/i.test(error.message))
       return { error: "That sailing has gone — there is nothing left to sign." };
-    return { error: "That didn't land. Try again." };
+    /* A guest has no account and no other way to ask what went wrong, so a
+       generic line strands them completely. The branches above are kept for
+       being shorter than the raise; everything else reaches them as written. */
+    return { error: voice(error) };
   }
 
   revalidatePath(`/sign/${input.token}`);

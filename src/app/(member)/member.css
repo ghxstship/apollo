@@ -25,7 +25,11 @@
   .mbr-nav{display:none}
   .mbr-top__no{display:none}
   .mbr-tabbar{display:flex}
-  .mbr-main{padding:20px 20px calc(96px + env(safe-area-inset-bottom))}
+  /* 140px, not 96px: the Producer pill floats 84px up from the bottom, so any
+     control resting in the last ~96px sits under it at EVERY scroll position.
+     /you's Sign out was 40% covered with no scroll that cleared it — the thread
+     composer got its own clearance and nothing else did. */
+  .mbr-main{padding:20px 20px calc(140px + env(safe-area-inset-bottom))}
 }
 
 /* — the Word's unread badge — */
@@ -154,7 +158,9 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .chd-line{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line-faint);background:var(--surface-page);padding:10px 12px}
 .chd-line b{font-size:12.5px;font-weight:600;display:block}
 .chd-line span{font-family:var(--font-mono);font-size:8.5px;letter-spacing:var(--track-data);color:var(--text-3)}
-.chd-drawer__foot{padding:16px 18px;border-top:1px solid var(--line-faint);display:flex;flex-direction:column;gap:8px}
+/* Every other bottom-anchored surface carries the inset; this one was missed,
+   so "Charge to member account" sat 18px inside the home indicator. */
+.chd-drawer__foot{padding:16px 18px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line-faint);display:flex;flex-direction:column;gap:8px}
 .chd-sum{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-2)}
 .chd-sum--gold{color:var(--gold-deep)}
 .chd-sum--total{font-weight:600;color:var(--text-1)}

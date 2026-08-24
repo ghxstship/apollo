@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { voice } from "@/lib/errors";
+import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 import { BIO_MAX, INTERESTS } from "./interests";
 
@@ -48,7 +48,7 @@ export async function updateProfile(
     })
     .eq("id", user.id);
 
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/you");
   revalidatePath("/home");
@@ -79,7 +79,7 @@ export async function saveNotificationPrefs(
     .update({ notification_prefs: prefs })
     .eq("id", user.id);
 
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/you");
   return { saved: true };
@@ -98,7 +98,7 @@ async function setStatus(status: "active" | "paused" | "departed"): Promise<Stat
   /* Standing does not move by hand — the profile guard refuses a raw update.
      set_own_standing is the one door, and it only opens for your own row. */
   const { error } = await supabase.rpc("set_own_standing", { p_status: status });
-  if (error) return { error: voice(error) };
+  if (error) return { error: await voiceWith(supabase, error) };
   return {};
 }
 
@@ -143,7 +143,7 @@ export async function setOnCamera(on: boolean): Promise<{ error?: string }> {
       camera_withdrawn_at: on ? null : new Date().toISOString(),
     })
     .eq("id", user.id);
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/you");
   return {};
 }

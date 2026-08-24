@@ -216,12 +216,15 @@ export function Composer({
         placeholder={placeholder}
         aria-label="Post to the deck"
         rows={3}
+        className="ls-writein"
         style={{
           resize: "vertical",
           background: "transparent",
           border: "none",
           outline: "none",
-          font: `400 14px/1.55 ${BODY}`,
+          fontFamily: BODY,
+          fontWeight: 400,
+          lineHeight: 1.55,
           color: "var(--text-1)",
           minHeight: 56,
         }}

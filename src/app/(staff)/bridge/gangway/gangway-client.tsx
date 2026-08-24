@@ -21,7 +21,12 @@ export type GangwayRow = {
 };
 
 type Scan = {
-  kind: "aboard" | "already" | "not_found";
+  /* "refused" is a pass that exists and may not board — an outstanding waiver,
+     most often. It used to be reported as not_found, so the operator on the
+     dock read "NOT ON THIS MANIFEST" for somebody standing in front of them
+     holding a real pass, and had no idea what to do about it. */
+  kind: "aboard" | "already" | "not_found" | "refused";
+  reason?: string;
   name?: string;
   memberNo?: string;
   /* A guest stub scanned at the door — whose guest it is. */
@@ -81,6 +86,9 @@ export function GangwayConsole({
   const [scan, setScan] = React.useState<Scan | null>(null);
   const [pending, setPending] = React.useState(false);
   const [queued, setQueued] = React.useState(0);
+  /* Stamps the database refused when the signal came back. They must not sit
+     in the queue being retried forever under a "waiting to sync" line. */
+  const [rejected, setRejected] = React.useState<Array<{ code: string; reason: string }>>([]);
   const [mounted, setMounted] = React.useState(false);
   const [rows, setRows] = React.useState<GangwayRow[]>(serverRows);
   const flushing = React.useRef(false);
@@ -123,6 +131,15 @@ export function GangwayConsole({
             q = q.filter((x) => x.rsvpId !== item.rsvpId);
             writeQueue(q);
             setQueued(q.length);
+          } else {
+            /* The database refused this stamp — an outstanding waiver, a pass
+               that moved. Retrying it forever tells the operator only that
+               something is "waiting to sync". Drop it from the queue and say
+               what happened, so it can be dealt with on the dock. */
+            q = q.filter((x) => x.rsvpId !== item.rsvpId);
+            writeQueue(q);
+            setQueued(q.length);
+            setRejected((prev) => [...prev, { code: item.code, reason: res.error! }]);
           }
         } catch {
           break; /* still offline — try again on the next signal */
@@ -168,6 +185,20 @@ export function GangwayConsole({
       guestNames: hit.guestNames,
     };
     if (hit.checkedInAt) return { kind: "already", ...base, time: hit.checkedInAt, queued: true };
+    /* The roster we are scanning against carries waiverSigned, and this path
+       never looked at it — so with no signal an unsigned member read ABOARD,
+       walked on, and the queued stamp was refused by the database on every
+       flush attempt for the rest of the day without anyone being told. Nobody
+       boards unsigned, signal or no signal. */
+    if (!hit.waiverSigned) {
+      return {
+        kind: "refused",
+        ...base,
+        reason:
+          "Waiver and release is outstanding — they sign before they board. No signal to check it against, so this one waits.",
+        queued: true,
+      };
+    }
     const at = new Date().toISOString();
     const q = readQueue().filter((x) => x.rsvpId !== hit.rsvpId);
     q.push({ rsvpId: hit.rsvpId, voyageId, code: hit.code, at });
@@ -190,7 +221,11 @@ export function GangwayConsole({
         try {
           const res = await gangwayCheckIn(raw, voyageId);
           if (res.error) {
-            setScan({ kind: "not_found" });
+            /* boardingError() already turned this into something the skipper
+               can act on — "…is outstanding — send them the link to sign, then
+               scan again." Throwing it away was the whole reason that helper
+               existed. */
+            setScan({ kind: "refused", reason: res.error });
           } else if (res.outcome === "not_found") {
             setScan({ kind: "not_found" });
           } else {
@@ -317,12 +352,36 @@ export function GangwayConsole({
                 </span>
                 {guestsLine(scan) ? <span>{guestsLine(scan)}</span> : null}
               </>
+            ) : scan.kind === "refused" ? (
+              <>
+                <b>NOT ABOARD YET</b>
+                <span>{scan.reason}</span>
+              </>
             ) : (
               <>
                 <b>NOT ON THIS MANIFEST</b>
                 <span>No pass matches that code on this voyage.</span>
               </>
             )}
+          </div>
+        ) : null}
+
+        {rejected.length > 0 ? (
+          <div className="hm-gang__result hm-gang__result--not_found" role="status">
+            <b>{rejected.length === 1 ? "A QUEUED STAMP WAS REFUSED" : `${rejected.length} QUEUED STAMPS WERE REFUSED`}</b>
+            {rejected.map((r) => (
+              <span key={r.code}>
+                {r.code} — {r.reason}
+              </span>
+            ))}
+            <button
+              type="button"
+              className="ls-btn ls-btn--ghost ls-btn--sm"
+              onClick={() => setRejected([])}
+              style={{ marginTop: 8 }}
+            >
+              Clear
+            </button>
           </div>
         ) : null}
 

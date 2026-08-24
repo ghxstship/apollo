@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { voice } from "@/lib/errors";
+import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type CrateLine = { productId: string; qty: number; size: string | null };
@@ -28,7 +28,7 @@ export async function placeShopOrder(lines: CrateLine[]): Promise<SlopChestResul
   if (clean.length === 0) return { error: "The crate is empty." };
 
   const { error } = await supabase.rpc("place_shop_order", { p_lines: clean });
-  if (error) return { error: voice(error) };
+  if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/slop-chest");
   return {};
@@ -47,7 +47,7 @@ export async function requestRefund(orderId: string): Promise<SlopChestResult> {
     .eq("id", orderId)
     .eq("profile_id", user.id)
     .in("status", ["placed", "fulfilled"]);
-  if (error) return { error: "That didn't land. Try again." };
+  if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/slop-chest");
   return {};

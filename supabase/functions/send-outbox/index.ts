@@ -26,6 +26,14 @@ const DEFAULT_FROM = "SYRIUS SOCIAL — Shoreside <shore@atlvs.pro>";
 /* Member-app origin for email deep links; overridable the same way as FROM. */
 const APP_URL = Deno.env.get("APP_URL") || "https://syrius.social";
 
+/* The tier as a member reads it. The welcome email used to interpolate the raw
+   enum — "set at the regional tier" — which is the schema talking. */
+const TIER_LABEL: Record<string, string> = {
+  regional: "Regional",
+  national: "National",
+  global: "Global",
+};
+
 async function vaultSecret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
     method: "POST",
@@ -96,7 +104,12 @@ function when(v: unknown): string {
 const SERIF = `'Marcellus', Georgia, 'Times New Roman', serif`;
 const MONO = `'Space Mono', 'Courier New', monospace`;
 
-function shell(bodyHtml: string, inverse = false): string {
+/* Who the footer is talking to. The first two emails a stranger ever gets —
+   application-received and port-invite — carried "you're on the cast" and
+   pointed at a member app they have no account for. */
+type Audience = "member" | "applicant";
+
+function shell(bodyHtml: string, inverse = false, audience: Audience = "member"): string {
   /* Kit email system: ivory canvas #E9E2D2, warm noir ink, a gold rule, mono
      strap footer. Email-safe stack — Georgia serif, Courier mono. */
   const ink = inverse ? "#F4EFE6" : "#161B21";
@@ -111,7 +124,9 @@ function shell(bodyHtml: string, inverse = false): string {
 <tr><td style="padding:0 24px;"><div style="border-top:2px solid ${rule};"></div></td></tr>
 <tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>
-<tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:${muted};">You're getting this because you're on the cast. Preferences live in the member app.</td></tr>
+<tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:${muted};">${audience === "applicant"
+  ? "You're getting this because you asked to come aboard. Nothing else follows unless we write again."
+  : "You're getting this because you're on the cast. Preferences live in the member app."}</td></tr>
 <tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${muted};">The unscripted social experiment.</td></tr>
 </table>
 </td></tr></table>`;
@@ -131,6 +146,8 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
       greet(p) +
         `<p style="margin:0 0 16px;">Your application is with Shoreside. A person reads it next — not a machine, not a scorecard.</p>
 <p style="margin:0;">We reply within the week. Until then, the water keeps.</p>`,
+      false,
+      "applicant",
     ),
   }),
   "port-invite": (p) => ({
@@ -139,14 +156,17 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
       greet(p) +
         `<p style="margin:0 0 16px;">We read your application and we would like to meet you. Join us for one Table, as our guest, before anything is decided.</p>
 <p style="margin:0;">Reply with a word and Shoreside will hold you a chair.</p>`,
+      false,
+      "applicant",
     ),
   }),
   "welcome-aboard": (p) => ({
     subject: "Welcome aboard.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">Your place in the show is set${p["tier"] ? ` at the ${esc(p["tier"])} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
-<p style="margin:0;">The first hundred knots are already in your ledger.</p>`,
+        `<p style="margin:0 0 16px;">Your place in the show is set${p["tier"] ? ` at the ${esc(TIER_LABEL[String(p["tier"])] ?? String(p["tier"]))} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
+<p style="margin:0 0 20px;">Your first hundred knots are waiting in the ledger — they land the first time you come aboard.</p>
+<p style="margin:0;"><a href="${APP_URL}/gangway" style="color:inherit;">Come aboard →</a></p>`,
       true,
     ),
   }),

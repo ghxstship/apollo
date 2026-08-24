@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { voiceWith } from "@/lib/errors";
 
 export type ThreadResult = { error?: string };
 
@@ -50,7 +51,9 @@ export async function sendMessage(
   const { error } = await supabase
     .from("messages")
     .insert({ thread_id: threadId, author_id: userId, body });
-  if (error) return { error: "That didn't land. Try again." };
+  /* The closed-thread case is caught above, so what reaches here is a policy
+     refusal — most often a membership on hold, which voice() names. */
+  if (error) return { error: await voiceWith(supabase, error) };
 
   /* Your own word is never unread to you. */
   await supabase

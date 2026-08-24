@@ -20,6 +20,7 @@ export type ClauseRow = {
   code: string;
   title: string;
   category: string;
+  active: boolean;
   versions: number;
   latestVersion: number;
   latestVersionId: string;
@@ -32,6 +33,7 @@ export type DocRow = {
   code: string;
   title: string;
   kind: string;
+  active: boolean;
   audience: string;
   validityMonths: number | null;
   gates: string[];
@@ -44,6 +46,7 @@ export type DocRow = {
   signedCount: number;
   draftComposition: Array<{
     clauseVersionId: string;
+    clauseCode: string;
     position: number;
     condition: Record<string, string>;
   }>;
@@ -87,6 +90,7 @@ export function DocumentsClient({
   const [writing, setWriting] = React.useState(false);
   const [revising, setRevising] = React.useState<ClauseRow | null>(null);
   const [composing, setComposing] = React.useState<DocRow | null>(null);
+
   const [confirmRedact, setConfirmRedact] = React.useState<SignatureRow | null>(null);
   const [countering, setCountering] = React.useState<SignatureRow | null>(null);
   const [cardsOpen, setCardsOpen] = React.useState(false);
@@ -106,8 +110,14 @@ export function DocumentsClient({
       key: "title",
       label: "Clause",
       render: (c: ClauseRow) => (
-        <span>
+        <span style={{ opacity: c.active ? 1 : 0.55 }}>
           <b style={{ fontWeight: 600 }}>{c.title}</b>
+          {c.active ? null : (
+            <>
+              {" "}
+              <Badge tone="outline">Out of use</Badge>
+            </>
+          )}
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{c.code}</span>
         </span>
       ),
@@ -131,19 +141,22 @@ export function DocumentsClient({
       key: "act",
       label: "",
       width: 110,
-      render: (c: ClauseRow) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            setRevising(c);
-            setBody(c.body);
-            setNote("");
-          }}
-        >
-          Reword
-        </Button>
-      ),
+      /* Rewording a withdrawn clause publishes a version nothing can carry —
+         publish_document_version() refuses a document that holds one. */
+      render: (c: ClauseRow) =>
+        c.active ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setRevising(c);
+              setBody(c.body);
+              setNote("");
+            }}
+          >
+            Reword
+          </Button>
+        ) : null,
     },
   ];
 
@@ -152,8 +165,14 @@ export function DocumentsClient({
       key: "title",
       label: "Document",
       render: (d: DocRow) => (
-        <span>
+        <span style={{ opacity: d.active ? 1 : 0.55 }}>
           <b style={{ fontWeight: 600 }}>{d.title}</b>
+          {d.active ? null : (
+            <>
+              {" "}
+              <Badge tone="outline">Not in use</Badge>
+            </>
+          )}
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
             {d.audience} · {d.kind}
             {d.validityMonths ? ` · renews every ${d.validityMonths}m` : ""}
@@ -293,9 +312,20 @@ export function DocumentsClient({
     },
   ];
 
+  /* Keyed on the CLAUSE, not on the version the catalogue happens to consider
+     latest. Keying on latestVersionId meant a draft holding v1 of a clause that
+     had since been revised to v2 showed that clause unticked — tick it and v2
+     joined the orphaned v1, two versions of one clause in one document. The
+     database refuses to publish that now; this stops the dialog offering it. */
   const composition = new Map(
-    (composing?.draftComposition ?? []).map((c) => [c.clauseVersionId, c] as const)
+    (composing?.draftComposition ?? []).map((c) => [c.clauseCode, c] as const)
   );
+
+  /* A withdrawn clause is not on the menu. The library kept probe clauses from
+     old hardening rounds active, and they sat in this dialog looking exactly
+     like the ones that bind people. One already in the draft still shows, or
+     there would be no way to untick it. */
+  const offerable = clauses.filter((c) => c.active || composition.has(c.code));
 
   return (
     <>
@@ -438,8 +468,11 @@ export function DocumentsClient({
           shore — one document, assembled per occasion.
         </p>
         <div style={{ display: "grid", gap: 10, maxHeight: "48vh", overflowY: "auto" }}>
-          {clauses.map((c, i) => {
-            const chosen = composition.get(c.latestVersionId);
+          {offerable.map((c, i) => {
+            const chosen = composition.get(c.code);
+            /* Ticked at a version that is no longer the newest wording. Say so,
+               rather than letting it read as though the draft is up to date. */
+            const stale = !!chosen && chosen.clauseVersionId !== c.latestVersionId;
             const cond = chosen?.condition?.class ?? "";
             return (
               <div
@@ -462,9 +495,14 @@ export function DocumentsClient({
                     const target = composing;
                     if (!target?.draftVersionId) return;
                     startTransition(async () => {
+                      /* Remove the version the draft actually holds; add the
+                         newest wording. Passing latestVersionId both ways meant
+                         unticking a clause composed at an older version tried to
+                         remove a row that was not there and left the old one
+                         orphaned in the document. */
                       const res = await setDraftClause(
                         target.draftVersionId!,
-                        c.latestVersionId,
+                        e.target.checked ? c.latestVersionId : chosen?.clauseVersionId ?? c.latestVersionId,
                         chosen?.position ?? i + 1,
                         cond ? { class: cond } : {},
                         e.target.checked
@@ -475,6 +513,12 @@ export function DocumentsClient({
                 />
                 <span style={{ fontSize: 13.5 }}>
                   {c.title}
+                  {stale ? (
+                    <>
+                      {" "}
+                      <Badge tone="caution">Older wording in this draft</Badge>
+                    </>
+                  ) : null}
                   <span style={{ display: "block", color: "var(--text-3)", fontSize: 11 }}>
                     v{c.latestVersion}
                   </span>
@@ -489,9 +533,17 @@ export function DocumentsClient({
                     if (!target?.draftVersionId) return;
                     const value = e.target.value;
                     startTransition(async () => {
+                      /* The row the draft actually holds, not the newest one.
+                         document_clauses' PK is (version, clause_version), so
+                         upserting the latest id against a draft composed at an
+                         older one INSERTS a second row rather than updating —
+                         which is the duplicate the publish guard now refuses,
+                         reached through the dropdown instead of the checkbox.
+                         Saying when a clause applies must not change what it
+                         says; re-wording is an untick and a retick. */
                       const res = await setDraftClause(
                         target.draftVersionId!,
-                        c.latestVersionId,
+                        chosen?.clauseVersionId ?? c.latestVersionId,
                         chosen?.position ?? i + 1,
                         value ? { class: value } : {},
                         true

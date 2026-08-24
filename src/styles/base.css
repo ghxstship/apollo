@@ -15,11 +15,24 @@ img{max-width:100%;height:auto}
 @keyframes ls-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes ls-fade{from{opacity:0}to{opacity:1}}
 @keyframes ls-pulse{0%,100%{opacity:1}50%{opacity:.45}}
-.ls-rise{animation:ls-rise var(--dur-2) var(--ease-out) both}
-.ls-rise-1{animation:ls-rise var(--dur-2) var(--ease-out) .06s both}
-.ls-rise-2{animation:ls-rise var(--dur-2) var(--ease-out) .12s both}
-.ls-rise-3{animation:ls-rise var(--dur-2) var(--ease-out) .18s both}
-.ls-fade{animation:ls-fade var(--dur-2) var(--ease-swell) both}
+/* `backwards`, not `both`. An element with an animation applied creates a
+   stacking context, and `both` keeps the fill applied FOREVER after the
+   animation ends — so every page wrapped in one of these became a permanent
+   stacking context, and anything inside it with a z-index was clamped to the
+   wrapper's place in root order. That is why the confirm dialog rendered
+   behind the tab bar, why a toast at z-index 1100 sat under a bar at 300, and
+   why .chd-drawer at 950 works only because /slop-chest happens to have no
+   .ls-fade on it — luck, not design.
+
+   Both keyframes end at the element's own natural state (opacity 1, transform
+   none), so dropping the forwards fill changes nothing that is visible: the
+   animation still runs, it simply stops asserting its final frame once it is
+   over, and the stacking context goes with it. */
+.ls-rise{animation:ls-rise var(--dur-2) var(--ease-out) backwards}
+.ls-rise-1{animation:ls-rise var(--dur-2) var(--ease-out) .06s backwards}
+.ls-rise-2{animation:ls-rise var(--dur-2) var(--ease-out) .12s backwards}
+.ls-rise-3{animation:ls-rise var(--dur-2) var(--ease-out) .18s backwards}
+.ls-fade{animation:ls-fade var(--dur-2) var(--ease-swell) backwards}
 .ls-live{display:inline-flex;align-items:center;gap:7px}
 .ls-eyebrow{font:600 11px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase}
 .ls-mono-data{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data)}

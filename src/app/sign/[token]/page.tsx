@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Wordmark } from "@/components/ds";
-import { logDate } from "@/lib/format";
+import { logDateYear, logTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import "../sign.css";
 import { GuestSignPanel } from "./guest-sign-panel";
@@ -45,9 +45,13 @@ export default async function GuestSignPage({
       <header className="gsn-head">
         <Wordmark size="sm" />
         <h1 className="gsn-lede">
+          {/* In the harbour's clock, with the year and the hour. A guest has no
+              app and no manifest to check this against, and the server's zone
+              had them reading a different day from the Bridge. */}
           {row.guest_name}, you&rsquo;re booked aboard <b>{row.voyage_title}</b> on{" "}
-          {logDate(row.voyage_starts)}. Read this and sign before you come down to
-          the dock.
+          {logDateYear(row.voyage_starts, row.voyage_time_zone)} at{" "}
+          {logTime(row.voyage_starts, row.voyage_time_zone)}. Read this and sign
+          before you come down to the dock.
         </h1>
       </header>
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { voiceWith } from "@/lib/errors";
 
 /* Signing goes through the RPC, never a table write. The hash, the timestamp and
    the IP are all computed server-side — a client that could insert its own
@@ -45,7 +46,11 @@ export async function signDocument(
       return { error: "That document isn't ready to sign yet." };
     if (/signature is required/i.test(error.message))
       return { error: "A signature is required." };
-    return { error: "That didn't land. Try again." };
+    /* Anything the RPC refuses in its own words reaches the member in them —
+       "that paper is not yours to sign", "that document is not published".
+       The branches above only exist because they say something SHORTER than
+       the raise does; the fallback used to throw the rest away. */
+    return { error: await voiceWith(supabase, error) };
   }
 
   revalidatePath("/agreements");

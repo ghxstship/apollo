@@ -456,6 +456,9 @@ export type Database = {
     }
     Functions: {
       is_staff: { Args: Record<string, never>; Returns: boolean }
+      /* Whether the caller's own membership is in good standing. voiceWith()
+         asks this on an RLS refusal rather than assuming a hold. */
+      is_active: { Args: Record<string, never>; Returns: boolean }
       email_may_board: { Args: { p_email: string }; Returns: boolean }
       validate_invite: { Args: { p_code: string }; Returns: boolean }
       attach_addons: {
@@ -466,7 +469,10 @@ export type Database = {
         Args: { p_full_name: string; p_email: string; p_city: string; p_note: string; p_code: string }
         Returns: string
       }
-      application_status_for: { Args: { p_email: string }; Returns: ApplicationStatus | null }
+      application_status_for: {
+        Args: { p_email: string; p_fingerprint?: string | null }
+        Returns: ApplicationStatus | null
+      }
       set_application_status: { Args: { p_id: string; p_status: ApplicationStatus }; Returns: undefined }
       accept_application: { Args: { p_id: string }; Returns: undefined }
       open_direct_thread: { Args: { p_other: string }; Returns: string }
@@ -543,6 +549,7 @@ export type Database = {
         Args: { p_token: string; p_document_code: string }
         Returns: Array<{
           guest_name: string; voyage_title: string; voyage_starts: string
+          voyage_time_zone: string
           document_title: string; body: string; already_signed: boolean
           voyage_state: string
         }>
@@ -573,6 +580,10 @@ export type Database = {
       notice_count: {
         Args: { p_kind: string }
         Returns: number
+      }
+      place_galley_order: {
+        Args: { p_voyage: string; p_lines: Array<{ itemId: string; qty: number }> }
+        Returns: string
       }
       signature_tally: {
         Args: Record<string, never>

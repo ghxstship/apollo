@@ -23,7 +23,11 @@
 .ls-btn--ghost.ls-btn--inverse{color:var(--text-inverse-1)}
 .ls-btn--ghost.ls-btn--inverse:hover{background:var(--wash-bone)}
 .ls-btn--full{width:100%}
-.ls-btn--sm:after{content:"";position:absolute;inset:-6px;border-radius:inherit}
+/* -7px, not -6px: `inset` resolves against the PADDING box, and .ls-btn has a
+   1px border, so -6px reached 42 rather than 44. Two pixels short of the touch
+   minimum on Send, Post to the deck, Redeem, Sign out and every dialog
+   footer — the most-pressed control in the product. */
+.ls-btn--sm:after{content:"";position:absolute;inset:-7px;border-radius:inherit}
 
 /* — IconButton — */
 .ls-iconbtn{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);cursor:pointer;border:1px solid transparent;transition:background var(--dur-1) var(--ease-swell),color var(--dur-1) var(--ease-swell),border-color var(--dur-1) var(--ease-swell),transform var(--dur-1) var(--ease-swell);flex:none;position:relative}
@@ -182,6 +186,11 @@
 .ls-field__hint{font-size:12px;color:var(--text-3)}
 .ls-field__error{font-size:12px;color:var(--danger)}
 @media (pointer:coarse){.ls-input{font-size:16px}}
+/* Any text field the app styles inline rather than through .ls-input still has
+   to clear 16px, or iOS zooms the page the moment it is focused — which on the
+   Open Deck composer meant posting always jerked the layout. */
+.ls-writein{font-size:14px}
+@media (pointer:coarse){.ls-writein{font-size:16px}}
 
 /* — Radio — */
 .ls-radio{display:inline-flex;gap:12px;align-items:center;cursor:pointer;font-family:var(--font-sans);user-select:none}
@@ -205,7 +214,14 @@
 @media (pointer:coarse){.ls-select{font-size:16px}}
 
 /* — Stepper — */
-.ls-stepper{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:var(--radius-pill);overflow:hidden;background:var(--surface-card)}
+/* No overflow:hidden — it clipped .ls-stepper--sm button:after{inset:-6px}
+   away entirely, so the declared 40x40 hit area never existed and the quantity
+   control on every purchase stayed a 28x28 target. The children carry the
+   rounding themselves. */
+.ls-stepper{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:var(--radius-pill);background:var(--surface-card)}
+.ls-stepper>:first-child{border-start-start-radius:var(--radius-pill);border-end-start-radius:var(--radius-pill)}
+.ls-stepper>:last-child{border-start-end-radius:var(--radius-pill);border-end-end-radius:var(--radius-pill)}
+@media (pointer:coarse){.ls-stepper--sm button{width:44px;height:44px}}
 .ls-stepper--inverse{background:transparent;border-color:var(--line-inverse-strong)}
 .ls-stepper button{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-1);font:600 15px var(--font-sans);transition:background var(--dur-1) var(--ease-swell);position:relative}
 .ls-stepper button:hover{background:var(--wash-ink)}

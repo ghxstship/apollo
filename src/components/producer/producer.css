@@ -37,6 +37,8 @@
 .pr-quick button:focus-visible{outline:2px solid var(--focus)}
 .pr-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line-faint)}
 .pr-foot input{flex:1;box-sizing:border-box;height:38px;padding:0 12px;background:var(--surface-page);border:1px solid var(--line);color:var(--text-1);font:400 13px var(--font-sans)}
+/* 13px zooms iOS on focus, and a 38px box is under the touch minimum. */
+@media (pointer:coarse){.pr-foot input{font-size:16px;height:44px}}
 .pr-foot input:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}
 
 /* Clear the member tab bar on small screens. */

@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { voice } from "@/lib/errors";
+import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type WordResult = { error?: string };
@@ -28,7 +28,7 @@ export async function sendAWord(
   if (!other || other === user.id) return { error: "That is you." };
 
   const { data, error } = await supabase.rpc("open_direct_thread", { p_other: other });
-  if (error) return { error: voice(error) };
+  if (error) return { error: await voiceWith(supabase, error) };
   if (!data) return { error: "That didn't land. Try again." };
   redirect(`/threads/${data}`);
 }

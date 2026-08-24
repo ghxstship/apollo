@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { voiceWith } from "@/lib/errors";
 
 /* Syrius Dating. A seat is claimed through the RPC — the fifteen-minute hold
    and the capacity race live at the database, so two people reaching for the
@@ -18,10 +19,11 @@ export async function claimSeat(tableId: string): Promise<SeatResult> {
   if (!user) return { error: "Sign in first." };
 
   const { data, error } = await supabase.rpc("claim_table_seat", { p_table: tableId });
-  if (error) {
-    if (/full/i.test(error.message)) return { error: "That table is full. Try the next one." };
-    return { error: "That didn't land. Try again." };
-  }
+  /* The RPC already refuses in the club's voice, and says more than a generic
+     line can — which table is full and how many seats it had, that the night
+     is not one you are booked on, that your membership is on hold. An
+     allow-list of two regexes threw all of that away. */
+  if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/tables");
   return { heldUntil: typeof data === "string" ? data : undefined };
 }
@@ -34,11 +36,7 @@ export async function confirmSeat(tableId: string): Promise<SeatResult> {
   if (!user) return { error: "Sign in first." };
 
   const { error } = await supabase.rpc("confirm_table_seat", { p_table: tableId });
-  if (error) {
-    if (/lapsed/i.test(error.message))
-      return { error: "The hold lapsed. Claim the seat again." };
-    return { error: "That didn't land. Try again." };
-  }
+  if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/tables");
   return {};
 }

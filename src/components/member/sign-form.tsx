@@ -237,7 +237,7 @@ export function SignForm({
 
       {askGuardian ? (
         <Input
-          label="If the person aboard is under 18, the adult signing"
+          label="If the person aboard is under 18, the name of the adult signing for them"
           hint="Leave blank if this is you and you are over 18."
           value={guardian}
           autoComplete="name"

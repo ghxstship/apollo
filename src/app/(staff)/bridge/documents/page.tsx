@@ -49,6 +49,7 @@ export default async function DocumentsPage() {
       code: c.code,
       title: c.title,
       category: c.category,
+      active: c.active,
       versions: versions.filter((v) => v.clause_code === c.code).length,
       latestVersion: latest?.version ?? 0,
       latestVersionId: latest?.id ?? "",
@@ -72,6 +73,7 @@ export default async function DocumentsPage() {
       code: d.code,
       title: d.title,
       kind: d.kind,
+      active: d.active,
       audience: d.audience,
       validityMonths: d.validity_months,
       gates: gates.filter((g) => g.document_code === d.code).map((g) => g.gate),
@@ -87,6 +89,12 @@ export default async function DocumentsPage() {
             .filter((c) => c.document_version_id === draft.id)
             .map((c) => ({
               clauseVersionId: c.clause_version_id,
+              /* The clause this composed version belongs to. Without it the
+                 dialog can only recognise a clause composed at its LATEST
+                 version, so revising a clause while a draft holds the old one
+                 made that clause look untouched. */
+              clauseCode:
+                versions.find((v) => v.id === c.clause_version_id)?.clause_code ?? "",
               position: c.position,
               condition: (c.condition ?? {}) as Record<string, string>,
             }))

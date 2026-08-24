@@ -1890,6 +1890,12 @@ async function parityRules(p) {
     note("global", "writes into own direct thread", said.status === 201, `got ${said.status}`);
     const peek = await reg.get(`messages?thread_id=eq.${open1.data}&select=id`);
     note("regional", "third party cannot read a direct thread", (peek.data || []).length === 0, JSON.stringify(peek.data).slice(0, 60));
+    /* Take it back out. Every run used to leave this line in a real member's
+       conversation — twelve of them had piled up, and a crawl agent reasonably
+       read the drip as another session driving the composer. A suite that
+       accumulates state in the product it is testing eventually gets reported
+       as a bug in the product. */
+    if (said.data?.[0]?.id) await glo.del(`messages?id=eq.${said.data[0].id}`);
   }
   const self = await glo.rpc("open_direct_thread", { p_other: uid(p.global) });
   note("global", "cannot open a thread with themselves", self.status >= 400, `got ${self.status}`);

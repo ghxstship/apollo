@@ -256,7 +256,10 @@ export function Offboarding({ status }: { status: string }) {
 
   return (
     <>
-      <div style={{ display: "flex", gap: 8 }}>
+      {/* Wrapping. Nowrap put "Depart the club" 9.7px past a 375px viewport,
+          which is enough to make the page scroll sideways and the phone zoom
+          out — the same defect the Open Deck bylines had. */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
         {status !== "paused" ? (
           <Button variant="ghost" size="sm" onClick={() => setMode("pause")}>
             Pause membership

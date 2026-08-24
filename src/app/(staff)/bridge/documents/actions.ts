@@ -179,6 +179,17 @@ export async function publishVersion(versionId: string): Promise<ActionResult> {
   const { error } = await supabase.rpc("publish_document_version", { p_id: versionId });
   if (error) {
     if (/no clauses/i.test(error.message)) return { error: "A document with no clauses says nothing." };
+    if (/out of use/i.test(error.message))
+      return { error: "This draft carries a clause that is out of use. Untick it, then publish." };
+    /* Ahead of the /retired/i branch below, which would not match this anyway,
+       but the order of these tests is load-bearing and worth keeping obvious.
+       Without a branch here the refusal fell through to "That didn't land." —
+       a dead end on the one screen where the operator needs a way forward. */
+    if (/more than one version|says its piece once/i.test(error.message))
+      return {
+        error:
+          "This draft carries the same clause at two versions, so it would say that thing twice. Untick it until the box clears, then tick it again to take the current wording.",
+      };
     if (/already the standing one/i.test(error.message))
       return { error: "That version is already the standing one." };
     if (/retired/i.test(error.message))
