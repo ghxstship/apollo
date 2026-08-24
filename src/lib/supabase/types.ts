@@ -17,7 +17,7 @@ export type ProfileRow = {
   email: string | null; tier: MembershipTier; home_harbor: string | null; avatar_tone: string
   is_staff: boolean; joined_at: string; status: "active" | "paused" | "departed"
   notification_prefs: Json; plan_id: string | null
-  on_camera: boolean; camera_withdrawn_at: string | null
+  on_camera: boolean; on_manifest: boolean; camera_withdrawn_at: string | null
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }
@@ -475,6 +475,7 @@ export type Database = {
       is_active: { Args: Record<string, never>; Returns: boolean }
       take_a_producer_turn: { Args: Record<string, never>; Returns: number }
       email_may_board: { Args: { p_email: string; p_fingerprint?: string | null }; Returns: boolean }
+      set_manifest_visibility: { Args: { p_on: boolean }; Returns: undefined }
       validate_invite: { Args: { p_code: string }; Returns: boolean }
       attach_addons: {
         Args: { p_rsvp: string; p_addons: string[]; p_qty: number }

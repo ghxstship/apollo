@@ -133,6 +133,22 @@ export async function departClub(): Promise<StatusResult> {
 /* Standing filming consent. Withdrawal is a fact with a timestamp — the crew
    sees it on the manifest, and production keeps you out of frame from the next
    port. Turning it back on clears the withdrawal. */
+/* Routed through a definer RPC rather than a table update, because this one
+   must work while a membership is held — see the migration for why. */
+export async function setManifestVisibility(on: boolean): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  const { error } = await supabase.rpc("set_manifest_visibility", { p_on: on });
+  if (error) return { error: await voiceWith(supabase, error) };
+  revalidatePath("/you");
+  revalidatePath("/manifest");
+  return {};
+}
+
 export async function setOnCamera(on: boolean): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {

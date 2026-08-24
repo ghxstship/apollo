@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CameraConsent } from "./camera-consent";
+import { ManifestConsent } from "./manifest-consent";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
 import { TIER_LABEL, roman } from "@/lib/format";
@@ -89,6 +90,7 @@ export default async function YouPage() {
         <div className="you-h">The cameras</div>
         <div className="you-sec">
           <CameraConsent onCamera={profile?.on_camera ?? true} />
+          <ManifestConsent onManifest={profile?.on_manifest ?? true} />
         </div>
       </div>
 
