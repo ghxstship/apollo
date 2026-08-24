@@ -34,8 +34,21 @@ async function mark(id: string, status: "sent" | "skipped" | "failed") {
   });
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req: Request) => {
   try {
+    /* Scheduler only. The migration that moved these drains behind a cron key
+       said "the matching check lives in the edge functions themselves" — and it
+       did, in send-outbox, and in neither of the other two. Both answered a
+       bare anon key with 200 for a week. The anon key is public; it proves
+       nothing about who is calling. */
+    const cronKey = Deno.env.get("CRON_SECRET") || (await secret("CRON_SECRET"));
+    if (cronKey && req.headers.get("x-cron-key") !== cronKey) {
+      return new Response(JSON.stringify({ error: "not for you" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const [pub, priv, subj] = await Promise.all([
       secret("VAPID_PUBLIC_KEY"),
       secret("VAPID_PRIVATE_KEY"),

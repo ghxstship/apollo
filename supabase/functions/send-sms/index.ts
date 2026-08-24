@@ -38,6 +38,7 @@ type Row = {
   to_phone: string;
   template: string;
   payload: Record<string, unknown>;
+  attempts?: number;
 };
 
 type Mapping = {
@@ -84,18 +85,76 @@ function parameters(row: Row, map: Record<string, string>): Record<string, strin
   return out;
 }
 
-async function mark(id: string, status: "sent" | "skipped" | "failed") {
+async function mark(id: string, status: "sent" | "skipped" | "failed", why?: string) {
   const body: Record<string, unknown> = { status };
   if (status === "sent") body.sent_at = new Date().toISOString();
-  await fetch(`${SUPABASE_URL}/rest/v1/sms_outbox?id=eq.${id}&status=eq.pending`, {
+  if (why) body.last_error = why;
+  /* `sending` too: the row is claimed before the carrier call, so by the time
+     this runs it is no longer pending. */
+  await fetch(`${SUPABASE_URL}/rest/v1/sms_outbox?id=eq.${id}&status=in.(pending,sending)`, {
     method: "PATCH",
     headers: H,
     body: JSON.stringify(body),
   });
 }
 
+const MAX_ATTEMPTS = 5;
+
+/* Nothing claimed a row before sending it. The fetch selected `pending` and the
+   POST to sent.dm went out, and only the MARKING collided — so two overlapping
+   invocations both put the message on a carrier and a real member's phone
+   buzzed twice. Now the row is moved to `sending` first and only the
+   invocation whose PATCH actually matched a pending row proceeds; the loser
+   gets zero rows back and skips it. Exactly the shape send-outbox has used
+   since it was written. */
+async function claim(id: string): Promise<boolean> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/sms_outbox?id=eq.${id}&status=eq.pending`, {
+    method: "PATCH",
+    headers: { ...H, Prefer: "return=representation" },
+    body: JSON.stringify({ status: "sending" }),
+  });
+  if (!res.ok) return false;
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length === 1;
+}
+
+/* Every non-ok response used to mark `failed`, which is terminal — the drain
+   reads only `pending`. A single transient 429 from the carrier permanently
+   dropped the message, and these are day-of messages: a weather hold is the
+   one thing /you promises "must not wait in an inbox". `attempts` and
+   `next_attempt_at` have been on this table since it was created and nothing
+   ever wrote to them. */
+async function requeue(row: Row, why: string): Promise<boolean> {
+  const attempts = (row.attempts ?? 0) + 1;
+  const terminal = attempts >= MAX_ATTEMPTS;
+  const backoff = new Date(Date.now() + Math.min(30, 2 ** attempts) * 60_000).toISOString();
+  await fetch(`${SUPABASE_URL}/rest/v1/sms_outbox?id=eq.${row.id}`, {
+    method: "PATCH",
+    headers: H,
+    body: JSON.stringify(
+      terminal
+        ? { status: "failed", attempts, last_error: `${why} (gave up after ${attempts})` }
+        : { status: "pending", attempts, next_attempt_at: backoff, last_error: why },
+    ),
+  });
+  return terminal;
+}
+
 Deno.serve(async (req) => {
   try {
+    /* Scheduler only. The migration that moved these drains behind a cron key
+       said "the matching check lives in the edge functions themselves" — and it
+       did, in send-outbox, and in neither of the other two. Both answered a
+       bare anon key with 200 for a week. The anon key is public; it proves
+       nothing about who is calling. */
+    const cronKey = Deno.env.get("CRON_SECRET") || (await secret("CRON_SECRET"));
+    if (cronKey && req.headers.get("x-cron-key") !== cronKey) {
+      return new Response(JSON.stringify({ error: "not for you" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     /* Sandbox proves the wiring — Vault key, template mapping, request shape —
        against the real sent.dm endpoint, without putting a message on a carrier.
        It deliberately does NOT touch the outbox. An earlier version validated
@@ -114,8 +173,8 @@ Deno.serve(async (req) => {
 
     const [rows, mappings]: [Row[], Mapping[]] = await Promise.all([
       fetch(
-        `${SUPABASE_URL}/rest/v1/sms_outbox?status=eq.pending&order=created_at.asc&limit=25` +
-          `&select=id,to_phone,template,payload`,
+        `${SUPABASE_URL}/rest/v1/sms_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${new Date().toISOString()})` +
+          `&order=created_at.asc&limit=25&select=id,to_phone,template,payload,attempts`,
         { headers: H },
       ).then((r) => r.json()),
       fetch(
@@ -160,7 +219,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    let sent = 0, failed = 0, skipped = 0;
+    let sent = 0, failed = 0, skipped = 0, retried = 0;
 
     for (const row of rows) {
       const map = byCode.get(row.template);
@@ -177,10 +236,14 @@ Deno.serve(async (req) => {
       const to = e164(row.to_phone);
       if (!to) {
         console.error(`send-sms ${row.id}: unusable number`);
-        await mark(row.id, "failed");
+        await mark(row.id, "failed", "unusable number");
         failed++;
         continue;
       }
+
+      /* Claimed immediately before the carrier call and not a line earlier:
+         everything above this point is a decision about the row, not a send. */
+      if (!(await claim(row.id))) continue;
 
       const res = await fetch(SENT_API, {
         method: "POST",
@@ -193,9 +256,18 @@ Deno.serve(async (req) => {
       });
 
       if (!res.ok) {
+        const why = `provider said ${res.status}`;
         console.error(`sent.dm ${row.id}: ${res.status} ${await res.text()}`);
-        await mark(row.id, "failed");
-        failed++;
+        /* 4xx that is not a rate limit is the club's mistake and will not get
+           better by repeating it; anything else is worth another try. */
+        const worthRetrying = res.status === 429 || res.status === 408 || res.status >= 500;
+        if (worthRetrying) {
+          if (await requeue(row, why)) failed++;
+          else retried++;
+        } else {
+          await mark(row.id, "failed", why);
+          failed++;
+        }
         continue;
       }
 
@@ -203,7 +275,10 @@ Deno.serve(async (req) => {
       sent++;
     }
 
-    return Response.json({ fetched: rows.length, sent, failed, skipped, sandbox });
+    /* `retried` is reported rather than folded into `failed`: a row waiting
+       on a backoff has not failed, and a drain that reports it as failed would
+       have the operator chasing an outage that is a carrier hiccup. */
+    return Response.json({ fetched: rows.length, sent, failed, skipped, retried, sandbox });
   } catch (err) {
     console.error(err);
     return Response.json({ error: String(err) }, { status: 500 });
