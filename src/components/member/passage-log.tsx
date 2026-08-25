@@ -82,10 +82,13 @@ export function PassageLog({
   log,
   marks,
   own,
+  zone,
 }: {
   log: Log | null;
   marks: Mark[];
   own: boolean;
+  /* Whose clock these dates are on. Null means the club's own. */
+  zone: string | null;
 }) {
   const sailed = (log?.sailings ?? 0) > 0;
 
@@ -105,7 +108,7 @@ export function PassageLog({
     name: m.name,
     detail: m.blurb,
     held: m.held,
-    date: m.conferredAt ? logDate(m.conferredAt) : undefined,
+    date: m.conferredAt ? logDate(m.conferredAt, zone) : undefined,
   }));
 
   return (
@@ -126,7 +129,7 @@ export function PassageLog({
         <>
           <KitPassageLog
             figures={figures}
-            since={log?.firstSailAt ? logDate(log.firstSailAt) : undefined}
+            since={log?.firstSailAt ? logDate(log.firstSailAt, zone) : undefined}
             style={{ marginTop: 12 }}
           />
           <div className="plog-marks">

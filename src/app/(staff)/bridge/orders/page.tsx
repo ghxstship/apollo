@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CLUB_ZONE } from "@/lib/brand";
 import { logDateTime, price } from "@/lib/format";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
@@ -78,7 +79,7 @@ export default async function OrdersPage() {
     memo: l.memo ?? "",
     amount: signedAmount(l.delta_cents),
     deltaCents: l.delta_cents,
-    created: logDateTime(l.created_at),
+    created: logDateTime(l.created_at, CLUB_ZONE),
   }));
 
   const shopOrders: ShopOrderRow[] = shop.map((o) => ({
@@ -87,7 +88,7 @@ export default async function OrdersPage() {
     member: nameOf(o.profile_id),
     total: price(o.total_cents),
     status: o.status,
-    created: logDateTime(o.created_at),
+    created: logDateTime(o.created_at, CLUB_ZONE),
   }));
 
   const members: MemberOption[] = memberRows.map((m) => ({

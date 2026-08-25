@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Table } from "@/components/ds";
 import { TIER_LABEL, logDateTime } from "@/lib/format";
 import { getOperator } from "../data";
@@ -46,7 +47,7 @@ export default async function ApplicationsPage() {
     tier: TIER_LABEL[a.tier_requested] ?? a.tier_requested,
     interests: a.interests ?? [],
     inviteCode: a.invite_code ?? "",
-    created: logDateTime(a.created_at),
+    created: logDateTime(a.created_at, CLUB_ZONE),
     status: a.status,
   }));
 
@@ -57,7 +58,7 @@ export default async function ApplicationsPage() {
     tier: TIER_LABEL[r.tier] ?? r.tier,
     source: r.source,
     invite: r.invite_code ?? "—",
-    approved: logDateTime(r.created_at),
+    approved: logDateTime(r.created_at, CLUB_ZONE),
     memberNo: joined.get(r.email.toLowerCase()) ?? null,
   }));
 

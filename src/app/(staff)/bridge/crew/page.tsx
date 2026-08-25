@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CLUB_ZONE } from "@/lib/brand";
 import { logDateTime } from "@/lib/format";
 import { getOperator } from "../../data";
 import { CrewClient, type CandidateRow, type RoleRow } from "./crew-client";
@@ -29,7 +30,7 @@ export default async function CrewPage() {
     email: c.email,
     note: c.note ?? "",
     stage: c.stage,
-    applied: logDateTime(c.created_at),
+    applied: logDateTime(c.created_at, CLUB_ZONE),
   }));
 
   return (

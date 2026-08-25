@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Button, StateBlock, Textarea, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { relTime, useToast } from "../../ui";
@@ -95,7 +96,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
                     key={m.id}
                   >
                     <span>
-                      {m.author.toUpperCase()} · {logDateTime(m.createdAt)}
+                      {m.author.toUpperCase()} · {logDateTime(m.createdAt, CLUB_ZONE)}
                     </span>
                     <p>{m.body}</p>
                   </div>

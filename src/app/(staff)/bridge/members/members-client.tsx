@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Badge, Button, Checkbox, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
-import { LEAGUES, knots } from "@/lib/brand";
+import { CLUB_ZONE, LEAGUES, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
@@ -217,7 +217,7 @@ export function MembersClient({
       label: "Last booked",
       width: 110,
       mono: true,
-      render: (r: MemberRow) => (r.lastBooked ? logDate(r.lastBooked) : "—"),
+      render: (r: MemberRow) => (r.lastBooked ? logDate(r.lastBooked, CLUB_ZONE) : "—"),
     },
     {
       key: "dues",
@@ -406,7 +406,7 @@ export function MembersClient({
               <p style={{ fontSize: 13, marginTop: 4 }}>
                 {detail.email} · {detail.phone}
                 <br />
-                {detail.handle} · joined {logDate(detail.joined)}
+                {detail.handle} · joined {logDate(detail.joined, CLUB_ZONE)}
               </p>
             </div>
             <div>
@@ -425,7 +425,7 @@ export function MembersClient({
                   {detail.knotsRecent.map((k) => (
                     <li key={k.id} style={{ display: "flex", gap: 10, padding: "3px 0" }}>
                       <span className="hm-mono" style={{ minWidth: 96 }}>
-                        {logDateTime(k.when)}
+                        {logDateTime(k.when, CLUB_ZONE)}
                       </span>
                       <span style={{ flex: 1 }}>{k.reason}</span>
                       <span className="hm-mono">{knots(k.delta)}</span>
@@ -443,7 +443,7 @@ export function MembersClient({
                   {detail.passes.map((p) => (
                     <li key={p.id} style={{ display: "flex", gap: 10, padding: "3px 0" }}>
                       <span className="hm-mono" style={{ minWidth: 96 }}>
-                        {logDate(p.when, p.zone || undefined)}
+                        {logDate(p.when, p.zone || null)}
                       </span>
                       <span style={{ flex: 1 }}>{p.title}</span>
                       <span className="hm-mono">{p.status.replace("_", " ").toUpperCase()}</span>

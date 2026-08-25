@@ -9,7 +9,7 @@ import { KIND_ICON, relTime } from "../relative";
 export const metadata: Metadata = { title: "Harbor" };
 
 export default async function HarborPage() {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, zone } = await getMember();
   const nowIso = new Date().toISOString();
 
   const [harborRes, voyagesRes, rsvpsRes, liveRes, balanceRes, wordRes, planRes, usageRes] =
@@ -210,7 +210,7 @@ export default async function HarborPage() {
         )}
         <div className="ls-double-rule" style={{ marginTop: 20 }}></div>
         <div className="mbr-mono" style={{ marginTop: 10 }}>
-          SHIP&apos;S LOG · {logDate(nowIso)} · ALL WELL
+          SHIP&apos;S LOG · {logDate(nowIso, zone)} · ALL WELL
         </div>
       </section>
     </div>

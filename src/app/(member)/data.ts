@@ -37,7 +37,17 @@ export const getMember = cache(async () => {
      RLS refuses a held member's writes; the UI owes them the reason. */
   const onHold = (profile?.status ?? "active") !== "active";
 
-  return { supabase, user, profile: profile ?? null, onHold };
+  /* The clock this member reads their own account on — their home harbour's,
+     unless they have said otherwise. Before this existed, every personal
+     timestamp rendered in whatever zone the render host sat in: on a UTC host
+     that is 19.6% of a member's own statement lines dated to the wrong day,
+     always the day after, since every harbour here is behind UTC.
+
+     null is a real answer (a member with no home harbour yet) and the
+     formatter reads it as the club's own clock rather than the machine's. */
+  const zone: string | null = profile?.time_zone ?? null;
+
+  return { supabase, user, profile: profile ?? null, onHold, zone };
 });
 
 export function firstName(profile: Profile | null): string {

@@ -31,7 +31,7 @@ export default async function MemberPage({
   params: Promise<{ handle: string }>;
 }) {
   const { handle } = await params;
-  const { supabase, user, profile: viewer } = await getMember();
+  const { supabase, user, profile: viewer, zone } = await getMember();
 
   const { data: member } = await supabase
     .from("member_directory")
@@ -167,7 +167,7 @@ export default async function MemberPage({
                   <li key={v.id}>
                     <span className="mbr-mono">{FAMILY_LABEL[v.class] ?? "Sea Day"}</span>
                     <b>{v.title}</b>
-                    <span className="mbr-mono">{logDate(v.starts_at)}</span>
+                    <span className="mbr-mono">{logDate(v.starts_at, zone)}</span>
                   </li>
                 ))}
               </ul>
@@ -178,7 +178,7 @@ export default async function MemberPage({
         ) : null}
       </section>
 
-      <PassageLog log={log} marks={marks} own={own} />
+      <PassageLog zone={zone} log={log} marks={marks} own={own} />
 
       {own ? (
         <section className="mbr-sec">

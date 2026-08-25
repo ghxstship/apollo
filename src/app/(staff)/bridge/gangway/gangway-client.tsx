@@ -105,6 +105,7 @@ export function GangwayConsole({
   voyageTitle,
   family,
   departs,
+  timeZone,
   options,
   rows: serverRows,
 }: {
@@ -112,6 +113,10 @@ export function GangwayConsole({
   voyageTitle: string;
   family: string;
   departs: string;
+  /* The sailing's own clock. A boarding stamp read on the render host's zone
+     is a stamp on nobody's clock — and this screen is the audit record for who
+     walked aboard and when. */
+  timeZone: string | null;
   options: Array<{ value: string; label: string }>;
   rows: GangwayRow[];
 }) {
@@ -434,7 +439,7 @@ export function GangwayConsole({
               </>
             ) : scan.kind === "already" ? (
               <>
-                <b>ALREADY CHECKED IN {scan.time ? logTime(scan.time) : ""}</b>
+                <b>ALREADY CHECKED IN {scan.time ? logTime(scan.time, timeZone) : ""}</b>
                 <span>
                   {scan.name} · {scan.memberNo}
                   {scan.guestOf ? ` · guest of ${scan.guestOf}` : ""}
@@ -553,7 +558,7 @@ export function GangwayConsole({
         ? createPortal(
             <div className="hm-doorlist" aria-hidden="true">
               <h1>Door list — {voyageTitle}</h1>
-              <p>{departs} · {rows.length} passes · printed {logTime(new Date().toISOString())}</p>
+              <p>{departs} · {rows.length} passes · printed {logTime(new Date().toISOString(), timeZone)}</p>
               <table>
                 <thead>
                   <tr>

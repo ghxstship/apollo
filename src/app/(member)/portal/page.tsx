@@ -32,7 +32,7 @@ export default async function PortalPage({
 }: {
   searchParams: Promise<{ settled?: string }>;
 }) {
-  const { supabase, user, profile, onHold } = await getMember();
+  const { supabase, user, profile, onHold, zone } = await getMember();
   const { settled } = await searchParams;
 
   const [balanceRes, ledgerRes, rewardsRes, redemptionsRes, inviteRes, accountRes, accountBalRes, leagueRes] =
@@ -76,7 +76,7 @@ export default async function PortalPage({
   const entries: LedgerEntry[] = ledger.map((r) => ({
     reason: r.reason,
     delta: (r.delta < 0 ? "\u2212" : "+") + knots(Math.abs(r.delta)),
-    date: logDate(r.created_at),
+    date: logDate(r.created_at, zone),
   }));
   const rewards = rewardsRes.data ?? [];
   const rewardName = new Map(rewards.map((r) => [r.id, r.name]));
@@ -211,7 +211,7 @@ export default async function PortalPage({
                 }}
               >
                 <span>{rewardName.get(rd.reward_id) ?? "A reward"}</span>
-                <span className="mbr-mono">{logDate(rd.created_at)}</span>
+                <span className="mbr-mono">{logDate(rd.created_at, zone)}</span>
               </div>
             ))}
           </div>
@@ -260,7 +260,7 @@ export default async function PortalPage({
                   label: "Date",
                   mono: true,
                   width: 90,
-                  render: (r) => logDate(r.created_at),
+                  render: (r) => logDate(r.created_at, zone),
                 },
                 {
                   key: "memo",

@@ -68,6 +68,13 @@ export const SITE_DOMAIN = "syrius.social";
    the footer used to disagree — MMXXVI against MMXXIV — on the same page. */
 export const EST_YEAR_ROMAN = "MMXXIV";
 
+/* The club's own clock, for surfaces that belong to the club rather than to a
+   sailing or a member: staff screens, the public site, anything ashore. Named
+   and passed explicitly rather than left to fall back, so a date on a page
+   always says which clock it is on — and so a server and a browser in
+   different zones can never render the same instant two ways. */
+export const CLUB_ZONE = "America/Los_Angeles";
+
 export const MAILBOX = {
   shore: `shore@${MAIL_DOMAIN}`,
   crew: `crew@${MAIL_DOMAIN}`,

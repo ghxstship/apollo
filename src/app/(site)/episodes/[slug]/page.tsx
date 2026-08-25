@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CLUB_ZONE } from "@/lib/brand";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { logDate, roman } from "@/lib/format";
@@ -53,7 +54,7 @@ export default async function LoreArticlePage({
             </>
           ) : null}
           <span>
-            {logDate(post.published_at)} · {roman(new Date(post.published_at).getFullYear())}
+            {logDate(post.published_at, CLUB_ZONE)} · {roman(new Date(post.published_at).getFullYear())}
           </span>
         </div>
         <h1>{post.title}</h1>

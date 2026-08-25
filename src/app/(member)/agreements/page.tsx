@@ -17,7 +17,7 @@ const STATE_COPY: Record<string, { label: string; tone: "positive" | "caution" |
 };
 
 export default async function AgreementsPage() {
-  const { supabase, user } = await getMember();
+  const { supabase, user, zone } = await getMember();
   const { data } = await supabase.rpc("signature_standing", { p_profile_id: user.id });
   const rows = Array.isArray(data) ? data : [];
 
@@ -72,8 +72,8 @@ export default async function AgreementsPage() {
                   <Badge tone={copy.tone}>{copy.label}</Badge>
                   {r.state === "signed" ? (
                     <span className="agr-when">
-                      {r.signed_at ? logDate(r.signed_at) : ""}
-                      {r.expires_at ? ` · UNTIL ${logDateYear(r.expires_at)}` : ""}
+                      {r.signed_at ? logDate(r.signed_at, zone) : ""}
+                      {r.expires_at ? ` · UNTIL ${logDateYear(r.expires_at, zone)}` : ""}
                     </span>
                   ) : (
                     <Link href={`/agreements/${r.document_code}`} className="ls-btn ls-btn--sm">

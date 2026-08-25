@@ -107,6 +107,7 @@ export default async function GangwayPage({
         voyageTitle={voyage.title}
         family={EVENT_CLASS_LABEL[voyage.class] ?? "Sea Day"}
         departs={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`}
+        timeZone={voyage.time_zone}
         options={voyages.map((v) => ({
           value: v.id,
           label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,

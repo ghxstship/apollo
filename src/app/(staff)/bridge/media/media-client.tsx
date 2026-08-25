@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Button, Dialog, Select, StateBlock, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -98,7 +99,7 @@ export function MediaClient({
               </div>
               <figcaption className="hm-media__body">
                 <span className="hm-mono">
-                  {c.voyageTitle.toUpperCase()} · {logDateTime(c.createdAt)}
+                  {c.voyageTitle.toUpperCase()} · {logDateTime(c.createdAt, CLUB_ZONE)}
                 </span>
                 <p>{c.caption || "No caption."}</p>
                 <span className="hm-mono">{c.uploader.toUpperCase()}</span>

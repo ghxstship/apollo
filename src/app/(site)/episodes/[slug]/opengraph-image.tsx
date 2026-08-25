@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { SURFACES } from "@/lib/brand";
+import { CLUB_ZONE, SURFACES } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
@@ -33,7 +33,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const meta = [
     SURFACES.magazine,
     post.tag,
-    logDate(post.published_at),
+    logDate(post.published_at, CLUB_ZONE),
     roman(new Date(post.published_at).getFullYear()),
   ]
     .filter(Boolean)

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
+import { CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -230,7 +230,7 @@ export default async function HomePage() {
                   media={(["day", "dusk", "dawn"] as const)[i % 3]}
                   eyebrow={`EPISODE ${String(ep.number).padStart(2, "0")}`}
                   title={ep.title}
-                  meta={ep.aired_at ? [logMeta(ep.aired_at)[0]] : []}
+                  meta={ep.aired_at ? [logMeta(ep.aired_at, null, CLUB_ZONE)[0]] : []}
                 >
                   {ep.dek}
                 </Card>
@@ -246,7 +246,7 @@ export default async function HomePage() {
               >
                 <div className="ws-dp-row">
                   <span className="ws-dp-row__d">
-                    {logMeta(p.published_at)[0]} · {roman(new Date(p.published_at).getFullYear())}
+                    {logMeta(p.published_at, null, CLUB_ZONE)[0]} · {roman(new Date(p.published_at).getFullYear())}
                   </span>
                   <div>
                     <div className="ws-dp-row__t">{p.title}</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Button, Checkbox, Dialog, Input, StateBlock, Switch, Table, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -85,7 +86,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       label: "Last used",
       width: 130,
       mono: true,
-      render: (k: KeyRow) => (k.lastUsedAt ? logDateTime(k.lastUsedAt) : "NEVER"),
+      render: (k: KeyRow) => (k.lastUsedAt ? logDateTime(k.lastUsedAt, CLUB_ZONE) : "NEVER"),
     },
     {
       key: "state",
@@ -183,7 +184,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               <div className="hm-item__meta">
                 <span>{h.events.join(" · ").toUpperCase()}</span>
                 <span>·</span>
-                <span>ADDED {logDateTime(h.createdAt).toUpperCase()}</span>
+                <span>ADDED {logDateTime(h.createdAt, CLUB_ZONE).toUpperCase()}</span>
               </div>
               <div className="hm-item__body">
                 {h.deliveries.length ? (
@@ -194,7 +195,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
                         className="hm-mono"
                         style={{ display: "flex", gap: 10, padding: "2px 0" }}
                       >
-                        <span style={{ minWidth: 108 }}>{logDateTime(d.createdAt)}</span>
+                        <span style={{ minWidth: 108 }}>{logDateTime(d.createdAt, CLUB_ZONE)}</span>
                         <span style={{ flex: 1 }}>{d.event.toUpperCase()}</span>
                         <span
                           style={{

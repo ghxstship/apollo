@@ -5,7 +5,7 @@ import { SlopChestShop, type ShopOrderView, type ShopProduct } from "./shop";
 export const metadata: Metadata = { title: "The Slop Chest" };
 
 export default async function SlopChestPage() {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, zone } = await getMember();
 
   const [productsRes, ordersRes] = await Promise.all([
     supabase
@@ -60,7 +60,7 @@ export default async function SlopChestPage() {
         harbor or the next Port Day.
       </p>
       <div className="mbr-sec">
-        <SlopChestShop
+        <SlopChestShop zone={zone}
           products={products}
           isGlobal={profile?.tier === "global"}
           orders={orderViews}

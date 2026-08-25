@@ -18,6 +18,8 @@ export type ProfileRow = {
   is_staff: boolean; joined_at: string; status: "active" | "paused" | "departed"
   notification_prefs: Json; plan_id: string | null
   on_camera: boolean; on_manifest: boolean; camera_withdrawn_at: string | null
+  /* The clock this member reads their own account on. */
+  time_zone: string | null
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }

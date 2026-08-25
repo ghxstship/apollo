@@ -22,7 +22,7 @@ export default async function ThreadPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, user } = await getMember();
+  const { supabase, user, zone } = await getMember();
 
   const { data: thread } = await supabase.from("threads").select("*").eq("id", id).maybeSingle();
   if (!thread) notFound();
@@ -166,7 +166,7 @@ export default async function ThreadPage({
                 <div className="thr-msg__body">
                   <div className="thr-msg__who">
                     <b>{own ? "You" : author?.full_name ?? "A member"}</b>
-                    <span className="mbr-mono">{logDateTime(m.created_at)}</span>
+                    <span className="mbr-mono">{logDateTime(m.created_at, zone)}</span>
                   </div>
                   <p>{m.body}</p>
                 </div>

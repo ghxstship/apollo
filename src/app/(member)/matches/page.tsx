@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Matches" };
    match is an introduction, not another inbox. */
 
 export default async function MatchesPage() {
-  const { supabase, user } = await getMember();
+  const { supabase, user, zone } = await getMember();
 
   const { data: matches } = await supabase
     .from("matches")
@@ -72,7 +72,7 @@ export default async function MatchesPage() {
                     {first}
                   </b>
                   <p className="mbr-mono" style={{ marginTop: 3 }}>
-                    {t ? `MATCHED AT TABLE ${t.number}` : "MATCHED"} · {logDate(m.created_at)} · YOU BOTH SAID THURSDAY
+                    {t ? `MATCHED AT TABLE ${t.number}` : "MATCHED"} · {logDate(m.created_at, zone)} · YOU BOTH SAID THURSDAY
                   </p>
                   {p?.bio ? (
                     <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 4 }}>{p.bio}</p>

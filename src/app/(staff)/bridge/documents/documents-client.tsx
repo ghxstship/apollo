@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Tabs, Textarea, Toast } from "@/components/ds";
 import type { ClauseCategory } from "@/lib/supabase/types";
 import { logDate } from "@/lib/format";
@@ -135,7 +136,7 @@ export function DocumentsClient({
       label: "Published",
       width: 120,
       mono: true,
-      render: (c: ClauseRow) => (c.publishedAt ? logDate(c.publishedAt) : "—"),
+      render: (c: ClauseRow) => (c.publishedAt ? logDate(c.publishedAt, CLUB_ZONE) : "—"),
     },
     {
       key: "act",
@@ -277,7 +278,7 @@ export function DocumentsClient({
       label: "Signed",
       width: 120,
       mono: true,
-      render: (s: SignatureRow) => logDate(s.signedAt),
+      render: (s: SignatureRow) => logDate(s.signedAt, CLUB_ZONE),
     },
     {
       key: "force",

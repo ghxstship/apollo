@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CLUB_ZONE } from "@/lib/brand";
 import { logTime, price } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 
@@ -44,7 +45,7 @@ export async function postLedgerEntry(
       .maybeSingle();
     if (recent) {
       return {
-        looksLikeARepeat: `An identical ${kind} for this member was posted at ${logTime(recent.created_at)}. Post it again only if it is genuinely a second one.`,
+        looksLikeARepeat: `An identical ${kind} for this member was posted at ${logTime(recent.created_at, CLUB_ZONE)}. Post it again only if it is genuinely a second one.`,
       };
     }
   }

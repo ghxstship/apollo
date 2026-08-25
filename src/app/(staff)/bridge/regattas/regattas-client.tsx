@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Badge, Button, Dialog, Input, Radio, Select, StateBlock, Table, Toast } from "@/components/ds";
-import { CONTEST_METRIC, knots } from "@/lib/brand";
+import { CLUB_ZONE, CONTEST_METRIC, knots } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
@@ -86,7 +86,7 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
       label: "Window",
       width: 170,
       mono: true,
-      render: (r: ContestRow) => `${logDate(r.startsAt)} — ${logDate(r.endsAt)}`,
+      render: (r: ContestRow) => `${logDate(r.startsAt, CLUB_ZONE)} — ${logDate(r.endsAt, CLUB_ZONE)}`,
     },
     { key: "entries", label: "Entered", width: 90, mono: true },
     {

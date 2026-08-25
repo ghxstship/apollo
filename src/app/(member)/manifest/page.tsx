@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Card, StateBlock } from "@/components/ds";
-import { EVENT_CLASS_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
+import { EVENT_CLASS_LABEL, TIER_LABEL, eveningBefore, logDate, logTime, price } from "@/lib/format";
 import { TIER_RANK, getMember, type Rsvp, type Voyage, type VoyageCapacity } from "../data";
 import { RsvpControls } from "./rsvp-controls";
 import type { CrewSeeker, GuestStub, MemberOption, StandingOffer } from "./pass-extras";
@@ -312,18 +312,15 @@ export default async function VoyagesPage() {
             const opensMs = start.getTime() - earlyDays * 86400000;
             const windowNote =
               nowMs < opensMs
-                ? `THE WINDOW OPENS ${logDate(new Date(opensMs).toISOString())} ON YOUR PLAN`
+                /* On the harbour's clock, because the database's refusal names
+                   the harbour's day. These two disagreed: the banner said
+                   "MAR 31" and the guard said "Apr 01" for the same sailing. */
+                ? `THE WINDOW OPENS ${logDate(new Date(opensMs).toISOString(), v.time_zone)} ON YOUR PLAN`
                 : null;
             /* Add-on upsell stays open until 18:00 the night before. */
-            const addonCutoff = new Date(
-              start.getFullYear(),
-              start.getMonth(),
-              start.getDate() - 1,
-              18,
-              0,
-              0,
-              0
-            );
+            /* 18:00 on the harbour's wall the night before — not 18:00 wherever
+               this page happens to be rendered. */
+            const addonCutoff = new Date(eveningBefore(v.starts_at, v.time_zone));
             /* Display only — knots land by trigger on completion (legacy fathoms_* plumbing). */
             const baseFm =
               v.kind === "port_day" ? 40 : v.distance_nm != null ? v.distance_nm * 10 : null;

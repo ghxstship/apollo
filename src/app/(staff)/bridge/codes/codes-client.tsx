@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -81,7 +82,7 @@ export function CodesClient({
       label: "Expires",
       width: 100,
       mono: true,
-      render: (r: CodeRow) => (r.expiresAt ? logDate(r.expiresAt) : "—"),
+      render: (r: CodeRow) => (r.expiresAt ? logDate(r.expiresAt, CLUB_ZONE) : "—"),
     },
     {
       key: "active",

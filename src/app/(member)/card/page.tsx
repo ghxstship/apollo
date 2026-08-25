@@ -12,7 +12,7 @@ import { PrintButton } from "./print-button";
 export const metadata: Metadata = { title: SURFACES.passbook };
 
 export default async function MemberCardPage() {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, zone } = await getMember();
 
   const { log, marks } = await readPassageLog(supabase, user.id);
 
@@ -146,7 +146,7 @@ export default async function MemberCardPage() {
         </section>
       ) : null}
       <div style={{ width: "min(680px, 100%)" }}>
-        <PassageLog log={log} marks={marks} own />
+        <PassageLog zone={zone} log={log} marks={marks} own />
       </div>
 
       {/* Print: the card alone, edge to edge, colors exact. */}

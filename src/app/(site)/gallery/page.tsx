@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FAMILY_LABEL } from "@/lib/brand";
+import { CLUB_ZONE, FAMILY_LABEL } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { frameGroups } from "@/components/site/voyage-data";
 
@@ -66,7 +66,7 @@ export default async function GalleryPage() {
               <span className="gl-group__meta">
                 {[
                   FAMILY_LABEL[g.cls],
-                  logDate(g.startsAt),
+                  logDate(g.startsAt, CLUB_ZONE),
                   roman(new Date(g.startsAt).getFullYear()),
                   g.harborCode,
                 ]
@@ -87,7 +87,7 @@ export default async function GalleryPage() {
                     <span className="gl-tile__cap">
                       <b>{f.caption}</b>
                       <span>
-                        {FAMILY_LABEL[g.cls]} · {logDate(g.startsAt)}
+                        {FAMILY_LABEL[g.cls]} · {logDate(g.startsAt, CLUB_ZONE)}
                       </span>
                     </span>
                   ) : null}

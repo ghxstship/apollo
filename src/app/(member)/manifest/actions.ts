@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { eveningBefore } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { voice } from "@/lib/errors";
 
@@ -247,20 +248,18 @@ export async function improvePass(voyageId: string, addonIds: string[]): Promise
 
   const { data: voyage } = await supabase
     .from("voyages")
-    .select("starts_at")
+    /* time_zone was not even selected here. "18:00 the night before" is a time
+       on a wall in a harbour; this read and wrote the render machine's zone
+       instead, so the window it enforced was never the window it promises. On
+       an Eastern host it ran ~21 hours long for a Pacific sailing — the galley
+       taking orders a day past its provisioning cut — and on a UTC host it
+       takes four hours off a morning sailing in an eastern harbour, while the
+       refusal text still says "18:00 the night before". */
+    .select("starts_at, time_zone")
     .eq("id", voyageId)
     .maybeSingle();
   if (!voyage) return { error: "That voyage is off the manifest." };
-  const starts = new Date(voyage.starts_at);
-  const cutoff = new Date(
-    starts.getFullYear(),
-    starts.getMonth(),
-    starts.getDate() - 1,
-    18,
-    0,
-    0,
-    0
-  );
+  const cutoff = new Date(eveningBefore(voyage.starts_at, voyage.time_zone));
   if (Date.now() >= cutoff.getTime()) {
     return { error: "The add-on window closed at 18:00 the night before." };
   }

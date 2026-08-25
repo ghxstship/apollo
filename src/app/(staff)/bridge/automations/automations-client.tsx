@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Switch, Textarea, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -128,7 +129,7 @@ export function AutomationsClient({
               <span>·</span>
               <span>IF {conditionLine(r.conditions, harborLabel)}</span>
               <span>·</span>
-              <span>LAST RUN {r.lastRunAt ? logDateTime(r.lastRunAt).toUpperCase() : "NEVER"}</span>
+              <span>LAST RUN {r.lastRunAt ? logDateTime(r.lastRunAt, CLUB_ZONE).toUpperCase() : "NEVER"}</span>
             </div>
             <div className="hm-item__body">{actionLine(r.action)}</div>
           </div>

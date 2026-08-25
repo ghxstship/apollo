@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ds";
 import { logDate, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { MAILBOX } from "@/lib/brand";
+import { CLUB_ZONE, MAILBOX } from "@/lib/brand";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/episodes" },
@@ -36,7 +36,7 @@ export default async function LorePage() {
           >
             <div className="ws-dp-row">
               <span className="ws-dp-row__d">
-                {logDate(p.published_at)} · {roman(new Date(p.published_at).getFullYear())}
+                {logDate(p.published_at, CLUB_ZONE)} · {roman(new Date(p.published_at).getFullYear())}
               </span>
               <div>
                 <div className="ws-dp-row__t">{p.title}</div>

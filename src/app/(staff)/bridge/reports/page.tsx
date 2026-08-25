@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CLUB_ZONE } from "@/lib/brand";
 import { Stat, Table } from "@/components/ds";
 import { logDate, price } from "@/lib/format";
 import { getOperator } from "../../data";
@@ -349,7 +350,7 @@ export default async function ReportsPage() {
                     <td className="num">{row.to_email}</td>
                     <td>{row.status === "sending" ? "In flight" : "Gave up"}</td>
                     <td>{row.last_error ?? "—"}</td>
-                    <td className="num">{logDate(row.created_at)}</td>
+                    <td className="num">{logDate(row.created_at, CLUB_ZONE)}</td>
                   </tr>
                 ))}
               </tbody>

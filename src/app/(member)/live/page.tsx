@@ -181,7 +181,7 @@ export default async function LivePage() {
       <div className="now-tl ls-rise">
         {LEGS.map((leg, i) => (
           <div key={leg.title} className={i < currentIdx ? "done" : i === currentIdx ? "here" : undefined}>
-            <span className="t">{logTime(new Date(legTimes[i]).toISOString())}</span>
+            <span className="t">{logTime(new Date(legTimes[i]).toISOString(), live.time_zone)}</span>
             <span className="dot"><i></i></span>
             <div>
               <b className={i === currentIdx ? "ls-live" : undefined}>{leg.title}</b>
@@ -205,7 +205,7 @@ export default async function LivePage() {
                     <div key={o.id} className="now-orders__row">
                       <div>
                         <b>{summaryOf(o.id) || "Order"}</b>
-                        <span>{logTime(o.created_at)} · {price(o.total_cents)}</span>
+                        <span>{logTime(o.created_at, live.time_zone)} · {price(o.total_cents)}</span>
                       </div>
                       <Badge tone={b.tone}>{b.label}</Badge>
                     </div>

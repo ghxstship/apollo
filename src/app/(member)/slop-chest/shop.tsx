@@ -47,10 +47,16 @@ const ORDER_BADGE: Record<string, { tone: "gold" | "ink" | "positive" | "caution
 type CartLine = CrateLine & { name: string; priceCents: number };
 
 export function SlopChestShop({
+  zone,
   products,
   isGlobal,
   orders,
 }: {
+  /* A client component renders once on the server and again in the browser.
+     Without an explicit clock those two runs used different zones and the date
+     changed between first paint and hydration, with a React text mismatch
+     behind it. */
+  zone: string | null;
   products: ShopProduct[];
   isGlobal: boolean;
   orders: ShopOrderView[];
@@ -292,7 +298,7 @@ export function SlopChestShop({
                   <div>
                     <b>{o.summary || "Order"}</b>
                     <span>
-                      {logDate(o.created_at)} · {price(o.total_cents)}
+                      {logDate(o.created_at, zone)} · {price(o.total_cents)}
                       {o.discount_cents > 0 ? ` · GLOBAL −${price(o.discount_cents)}` : ""}
                     </span>
                   </div>

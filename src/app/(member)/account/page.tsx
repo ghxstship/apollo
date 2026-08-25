@@ -60,7 +60,7 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<{ joined?: string }>;
 }) {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, zone } = await getMember();
   const { joined } = await searchParams;
   const processorLive = stripeEnabled();
 
@@ -162,7 +162,7 @@ export default async function AccountPage({
             </p>
             {periodEnd ? (
               <p className="mbr-mono" style={{ marginTop: 6 }}>
-                {ending ? "ENDS" : "RENEWS"} {logDateYear(periodEnd)}
+                {ending ? "ENDS" : "RENEWS"} {logDateYear(periodEnd, zone)}
               </p>
             ) : null}
             {status === "past_due" ? (
@@ -258,7 +258,7 @@ export default async function AccountPage({
                   label: "Date",
                   mono: true,
                   width: 90,
-                  render: (r) => logDate(r.created_at),
+                  render: (r) => logDate(r.created_at, zone),
                 },
                 { key: "number", label: "Invoice", render: (r) => r.number ?? "—" },
                 {
@@ -322,7 +322,7 @@ export default async function AccountPage({
                 />
                 <p className="mbr-mono" style={{ marginTop: 8 }}>
                   {p.status === "active" && p.next_charge_at
-                    ? `NEXT DRAW ${logDateYear(p.next_charge_at)}`
+                    ? `NEXT DRAW ${logDateYear(p.next_charge_at, zone)}`
                     : p.status.toUpperCase()}
                 </p>
               </div>
@@ -355,7 +355,7 @@ export default async function AccountPage({
                   label: "Date",
                   mono: true,
                   width: 90,
-                  render: (r) => logDate(r.created_at),
+                  render: (r) => logDate(r.created_at, zone),
                 },
                 { key: "memo", label: "Entry", render: (r) => r.memo ?? (LEDGER_KIND[r.kind] ?? r.kind).toUpperCase() },
                 {

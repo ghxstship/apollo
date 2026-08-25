@@ -33,7 +33,7 @@ export default async function ContestPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { supabase, user, onHold } = await getMember();
+  const { supabase, user, onHold, zone } = await getMember();
 
   const { data: contest } = await supabase
     .from("contests")
@@ -106,7 +106,7 @@ export default async function ContestPage({
             : `Reach ${contest.target} ${CONTEST_METRIC[contest.metric] ?? contest.metric}`}
         </Badge>
         <Badge tone="outline">
-          {logDate(contest.starts_at)} — {logDate(contest.ends_at)} · {roman(new Date(contest.ends_at).getFullYear())}
+          {logDate(contest.starts_at, zone)} — {logDate(contest.ends_at, zone)} · {roman(new Date(contest.ends_at).getFullYear())}
         </Badge>
         {contest.knots_award > 0 ? (
           <Badge tone="outline">

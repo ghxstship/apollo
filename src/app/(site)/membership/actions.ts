@@ -1,6 +1,7 @@
 "use server";
 
 import { logDate, logTime } from "@/lib/format";
+import { CLUB_ZONE } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 import { CITIES, type ApplyState, type ApplyValues } from "./apply-shared";
 
@@ -51,6 +52,6 @@ export async function submitApplication(
     ok: true,
     errors: {},
     values,
-    meta: `Received · ${logDate(now)} · ${logTime(now)} · ${values.city}`,
+    meta: `Received · ${logDate(now, CLUB_ZONE)} · ${logTime(now, CLUB_ZONE)} · ${values.city}`,
   };
 }

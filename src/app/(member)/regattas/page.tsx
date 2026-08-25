@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: LOGBOOK.regattas };
    window, so nobody is permanently mid-table. */
 
 export default async function RegattasPage() {
-  const { supabase, user } = await getMember();
+  const { supabase, user, zone } = await getMember();
 
   const [contestsRes, entriesRes] = await Promise.all([
     supabase
@@ -85,7 +85,7 @@ export default async function RegattasPage() {
                 <ContestCard
                   shape={c.shape === "challenge" ? "challenge" : "regatta"}
                   name={c.title}
-                  window={c.settled_at ? logDate(c.settled_at) : logDate(c.ends_at)}
+                  window={c.settled_at ? logDate(c.settled_at, zone) : logDate(c.ends_at, zone)}
                   settled
                 >
                   {c.blurb ? (
