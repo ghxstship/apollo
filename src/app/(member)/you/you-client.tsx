@@ -263,7 +263,7 @@ export function ResumeBanner() {
               subscription — the only Stripe calls in the repo are the webhook,
               the portal and checkout — so the card kept drawing while the
               member believed it had stopped. Say what actually happens. */}
-          <p>Knots and tier keep. The manifest waits for you.</p>
+          <p>Knots and tier keep, and nothing is being taken. The manifest waits for you.</p>
           {error ? <p style={{ color: "var(--siren)" }}>{error}</p> : null}
         </div>
         <Button
@@ -275,6 +275,10 @@ export function ResumeBanner() {
             startTransition(async () => {
               const res = await resumeMembership();
               if (res.error) setError(res.error);
+              /* The dues half can fail while the standing succeeds. Saying so
+                 is the whole point — a member must never be left assuming
+                 their card changed when it did not. */
+              else if (res.note) setError(res.note);
             });
           }}
         >
@@ -304,13 +308,24 @@ export function Offboarding({ status }: { status: string }) {
         const res = await pauseMembership();
         if (res.error) setError(res.error);
         else {
-          setToast("Weather hold on. Resume with a word — no games either way.");
           setMode(null);
+          setToast(
+            res.note
+              ? `Weather hold on. ${res.note}`
+              : "Weather hold on. Resume with a word — no games either way."
+          );
         }
       } else {
         const res = await departClub();
-        /* On success departClub signs out and redirects home. */
+        /* On success departClub signs out and redirects home. It returns
+           instead — still signed in — when the standing closed but the dues
+           did not stop, because that is the one case where the member has
+           something left to do and needs to be told what. */
         if (res?.error) setError(res.error);
+        else if (res?.note) {
+          setMode(null);
+          setError(res.note);
+        }
       }
     });
   };
@@ -347,12 +362,12 @@ export function Offboarding({ status }: { status: string }) {
           </>
         }
       >
-        {/* Same correction: a hold pauses what you can DO, not what you are
-            charged. Dues are a conversation with Shoreside until the product
-            can actually stop them. */}
+        {/* Says exactly what @/lib/dues does. If these two ever drift, the
+            code is the thing that is right and this is the thing that lies. */}
         Knots and tier keep, and you can resume with a word — no games either
-        way. Dues keep running while the hold is on: Shoreside settles those,
-        and the portal is where the card lives.
+        way. Dues stop here: nothing more is taken while the hold stands, and
+        what you have already paid for is not refunded. Resuming starts them
+        again on the next cycle.
         {error && mode === "pause" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}
@@ -376,13 +391,11 @@ export function Offboarding({ status }: { status: string }) {
           </>
         }
       >
-        {/* "Unused months credit back" was not true — no credit is posted
-            anywhere and no subscription is cancelled. Departing while believing
-            the card had stopped is the worst version of this. */}
+        {/* This used to promise "unused months credit back", which nothing
+            anywhere delivered. What it says now is what @/lib/dues does. */}
         No exit surveys, no retention calls; the manifest remembers you kindly.
-        Departing closes your place here — it does NOT cancel your dues on its
-        own. Square that with Shoreside, or cancel in the billing portal, so
-        nothing keeps drawing.
+        Your dues end when the period you have already paid for runs out —
+        nothing further is taken, and that period stays yours.
         {error && mode === "depart" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}

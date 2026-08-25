@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { voiceWith } from "@/lib/errors";
+import { duesNote, endDuesAtPeriodEnd, pauseDues, resumeDues } from "@/lib/dues";
 import { createClient } from "@/lib/supabase/server";
 import { BIO_MAX, INTERESTS } from "./interests";
 
@@ -89,10 +90,15 @@ export async function saveNotificationPrefs(
   return { saved: true };
 }
 
-/* — Offboarding: pause, resume, depart — */
-export type StatusResult = { error?: string };
+/* — Offboarding: pause, resume, depart —
 
-async function setStatus(status: "active" | "paused" | "departed"): Promise<StatusResult> {
+   Standing and dues are two things, and until now only one of them moved. The
+   dues half lives in @/lib/dues, which states the rules once; these three
+   functions apply the standing, then the dues, then report BOTH — because the
+   member needs to know if one happened and the other did not. */
+export type StatusResult = { error?: string; note?: string | null };
+
+async function setStatus(status: "active" | "paused" | "departed"): Promise<StatusResult & { userId?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -103,28 +109,52 @@ async function setStatus(status: "active" | "paused" | "departed"): Promise<Stat
      set_own_standing is the one door, and it only opens for your own row. */
   const { error } = await supabase.rpc("set_own_standing", { p_status: status });
   if (error) return { error: await voiceWith(supabase, error) };
-  return {};
+  return { userId: user.id };
 }
 
 export async function pauseMembership(): Promise<StatusResult> {
   const res = await setStatus("paused");
-  if (res.error) return res;
+  if (res.error || !res.userId) return res;
+  /* The standing is already set. If this fails the hold still stands and the
+     note says the card did not change — which is the true thing to say. */
+  const note = duesNote(await pauseDues(res.userId), "held");
   revalidatePath("/you");
   revalidatePath("/home");
-  return {};
+  revalidatePath("/account");
+  return { note };
 }
 
 export async function resumeMembership(): Promise<StatusResult> {
   const res = await setStatus("active");
-  if (res.error) return res;
+  if (res.error || !res.userId) return res;
+  const note = duesNote(await resumeDues(res.userId), "resumed");
   revalidatePath("/you");
   revalidatePath("/home");
-  return {};
+  revalidatePath("/account");
+  return { note };
 }
 
 export async function departClub(): Promise<StatusResult> {
   const res = await setStatus("departed");
-  if (res.error) return res;
+  if (res.error || !res.userId) return res;
+
+  /* Ends at period end — they paid for this month and this month is theirs.
+     Done BEFORE the sign-out, because afterwards there is no session to act
+     with. */
+  const outcome = await endDuesAtPeriodEnd(res.userId);
+
+  if (outcome.kind === "failed" || outcome.kind === "not-wired") {
+    /* Their place is closed either way — set_own_standing has already run. But
+       the card was NOT stopped, and signing them straight out would leave them
+       on a marketing page with no way to learn that and nothing to press. They
+       stay signed in, holding the one sentence that matters and the portal
+       link on their account page. Departed members can sign in regardless, so
+       staying put costs nothing. */
+    revalidatePath("/you");
+    revalidatePath("/account");
+    return { note: duesNote(outcome, "departed") };
+  }
+
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/");
