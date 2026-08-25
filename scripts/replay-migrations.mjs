@@ -21,7 +21,7 @@
 
    Requires Docker and the Supabase CLI. Exits 0 only if the corpus replays
    clean; anything else prints the migration that failed. */
-import { mkdirSync, writeFileSync, cpSync, rmSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, cpSync, rmSync } from "node:fs";
 import { execFileSync, spawnSync } from "node:child_process";
 import { join } from "node:path";
 
