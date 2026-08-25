@@ -157,7 +157,14 @@ async function postDues(admin: Admin, profileId: string, invoice: Stripe.Invoice
   ]);
   /* 23505 is the unique index doing its job: this invoice has already been
      posted. That is the desired outcome, not a failure. */
-  if (error && error.code !== "23505") throw error;
+  /* Never the provider's error object. A PostgrestError carries `details`,
+     which for a failing insert is "Failing row contains (…)" — here that row
+     holds a checkout-session id and a profile_id, and this throw is uncaught,
+     so it lands in whatever log sink the host provides. The code is enough to
+     debug with; the row is not ours to print. */
+  if (error && error.code !== "23505") {
+    throw new Error(`dues ledger insert failed (${error.code ?? "unknown"})`);
+  }
 }
 
 async function syncInvoice(admin: Admin, invoice: Stripe.Invoice) {
@@ -224,7 +231,7 @@ async function postSettlement(admin: Admin, session: Stripe.Checkout.Session) {
      more, and do not tell the member their payment arrived a second time. */
   if (error) {
     if (error.code === "23505") return;
-    throw error;
+    throw new Error(`settlement ledger insert failed (${error.code ?? "unknown"})`);
   }
   await admin.from("notifications").insert({
     profile_id: profileId,

@@ -34,6 +34,17 @@ const nextConfig: NextConfig = {
   /* The version of the framework is not the visitor's business. */
   poweredByHeader: false,
 
+  /* Skew handling in Next 16 is entirely gated on this being set: with it,
+     assets carry ?dpl= and navigations carry x-deployment-id, and a mismatch
+     forces a hard reload. Without it the documented failure modes are missing
+     assets, Server Function mismatches — a client posting an action id the new
+     build no longer knows — and failed navigations. A member with a tab open
+     across a deploy hits all three.
+
+     Read from the host rather than hardcoded; undefined when it is absent, so
+     a local build behaves exactly as it did. */
+  deploymentId: process.env.VERCEL_DEPLOYMENT_ID || undefined,
+
   async headers() {
     return [
       {

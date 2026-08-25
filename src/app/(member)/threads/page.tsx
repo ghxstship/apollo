@@ -40,11 +40,18 @@ export default async function ThreadsPage() {
     const [threadsRes, rosterRes, messagesRes] = await Promise.all([
       supabase.from("threads").select("*").in("id", ids),
       supabase.from("thread_members").select("thread_id,profile_id").in("thread_id", ids),
+      /* Bounded. This selected EVERY message in every thread the reader belongs
+         to, unpaginated, to render a two-line preview per row — so the cost of
+         opening the list grew with the whole history, and PostgREST's 1000-row
+         cap meant that past a thousand messages the "latest" preview silently
+         became the latest of an arbitrary page. A preview needs the newest few,
+         and 200 covers a roster far larger than this club has. */
       supabase
         .from("messages")
         .select("thread_id,body,created_at,author_id")
         .in("thread_id", ids)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(200),
     ]);
     threads = threadsRes.data ?? [];
     roster = rosterRes.data ?? [];

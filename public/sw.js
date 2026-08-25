@@ -86,7 +86,12 @@ self.addEventListener("fetch", (event) => {
           return res;
         })
         .catch(async () => {
-          const hit = priv ? null : (await caches.match(request)) || (await caches.match("/"));
+          /* Only the page that was asked for. Falling back to caches.match("/")
+             rendered the HOMEPAGE under the requested URL — a member offline on
+             /charters/some-slug got the front page wearing that address, which
+             reads as "this sailing is the homepage" rather than as "you are
+             offline". A wrong page is worse than an honest card. */
+          const hit = priv ? null : await caches.match(request);
           return (
             hit || new Response(OFFLINE_HTML, { headers: { "Content-Type": "text/html" } })
           );
