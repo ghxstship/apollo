@@ -152,10 +152,21 @@ export function NotificationPrefsForm({
     <form action={formAction}>
       <div className="you-row">
         <div>
-          <b>Weather holds</b>
-          <p>Called by 18:00 the night before.</p>
+          {/* A weather hold is a SAILING held for conditions, and nothing
+              else. The membership pause used to borrow the phrase — this
+              switch sat a few hundred pixels from a banner reading "Membership
+              on weather hold", and nothing said which was which — so the
+              metaphor is off the membership entirely and this label says what
+              it is actually about. */}
+          <b>Weather holds on your sailings</b>
+          <p>When a charter is held for conditions. Called by 18:00 the night before.</p>
         </div>
-        <Switch name="weather" defaultChecked={weather} label="" aria-label="Weather hold notices" />
+        <Switch
+          name="weather"
+          defaultChecked={weather}
+          label=""
+          aria-label="Notices when a sailing is held for weather"
+        />
       </div>
       <div className="you-row">
         <div>
@@ -258,7 +269,7 @@ export function ResumeBanner() {
     >
       <div className="you-row">
         <div>
-          <b>Membership on weather hold</b>
+          <b>Your membership is held</b>
           {/* This used to say "Dues paused". Nothing in this path touches the
               subscription — the only Stripe calls in the repo are the webhook,
               the portal and checkout — so the card kept drawing while the
@@ -311,8 +322,8 @@ export function Offboarding({ status }: { status: string }) {
           setMode(null);
           setToast(
             res.note
-              ? `Weather hold on. ${res.note}`
-              : "Weather hold on. Resume with a word — no games either way."
+              ? `Membership held. ${res.note}`
+              : "Membership held. Resume with a word — no games either way."
           );
         }
       } else {
@@ -350,14 +361,14 @@ export function Offboarding({ status }: { status: string }) {
         onClose={() => setMode(null)}
         width={360}
         eyebrow="The gangway out"
-        title="Weather hold?"
+        title="Hold your membership?"
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
               Stay aboard
             </Button>
             <Button variant="outline" size="sm" disabled={pending} onClick={confirm}>
-              Hold my pass
+              Hold my membership
             </Button>
           </>
         }

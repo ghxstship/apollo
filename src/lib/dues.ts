@@ -11,13 +11,26 @@ import { createClient } from "@/lib/supabase/server";
    or departed changed what they could do and nothing whatsoever about what
    they were charged — while both dialogs told them otherwise.
 
+   A NOTE ON THE WORD "HOLD". A WEATHER HOLD is a SAILING paused for conditions
+   (voyages.status = 'weather_hold'), called by 18:00 the night before, and it
+   is what the `weather` notification preference governs. Nothing in this file
+   has anything to do with it.
+
+   Every "held" below is a MEMBERSHIP held — profiles.status = 'paused', set by
+   the member through set_own_standing. The membership state used to be dressed
+   in the weather-hold metaphor across the app; it no longer is, because the two
+   share no column, no trigger and no preference, and putting both on one screen
+   under one phrase told members nothing.
+
    The rules, stated once here so the copy and the code cannot drift:
 
-     HOLD     collection pauses. Nothing is refunded for the period already
-              paid — they simply are not billed again while the hold stands.
-     RESUME   collection restarts on the next cycle.
-     DEPART   the subscription cancels AT PERIOD END. They keep what they have
-              already paid for until it lapses, and nothing further is taken.
+     MEMBERSHIP HELD    collection pauses. Nothing is refunded for the period
+                        already paid — they are simply not billed again while
+                        the membership is held.
+     RESUMED            collection restarts on the next cycle.
+     DEPARTED           the subscription cancels AT PERIOD END. They keep what
+                        they have already paid for until it lapses, and nothing
+                        further is taken.
 
    No refund is issued by any of these. "Unused months credit back" — which the
    depart dialog used to promise — is outward money movement fired by a
@@ -74,9 +87,10 @@ async function act(
   }
 }
 
-/* Stop billing while the hold stands. `void` rather than `keep_as_draft`: a
-   paused member should not come back to a stack of invoices that all fall due
-   at once, which is the opposite of what a weather hold is for. */
+/* Stop billing while the MEMBERSHIP is held. `void` rather than
+   `keep_as_draft`: a member coming back should not walk into a stack of
+   invoices that all fall due at once, which is the opposite of what holding a
+   membership is for. */
 export async function pauseDues(userId: string): Promise<DuesOutcome> {
   return act(userId, (id) =>
     getStripe().subscriptions.update(id, { pause_collection: { behavior: "void" } })
@@ -106,7 +120,7 @@ export function duesNote(outcome: DuesOutcome, act: "held" | "resumed" | "depart
   switch (outcome.kind) {
     case "changed":
       return act === "held"
-        ? "Dues stop here — nothing more is taken while the hold stands."
+        ? "Dues stop here — nothing more is taken while your membership is held."
         : act === "resumed"
           ? "Dues start again on your next cycle."
           : "Your dues end when the period you have paid for runs out. Nothing further is taken.";
