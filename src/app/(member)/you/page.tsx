@@ -147,7 +147,7 @@ export default async function YouPage() {
             <div>
               <b>{TIER_LABEL[tier]} tier</b>
               <p className="mbr-mono" style={{ marginTop: 4 }}>
-                {status === "paused" ? "HELD · " : ""}
+                {status === "paused" ? "PAUSED · " : ""}
                 {balanceCents < 0 ? (
                   <span style={{ color: "var(--siren)" }}>
                     ACCOUNT — ${(Math.abs(balanceCents) / 100).toFixed(2)} DUE

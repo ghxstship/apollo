@@ -123,7 +123,7 @@ export default async function ContestPage({
 
       {open && !closed && onHold ? (
         <p style={{ marginTop: 22, fontSize: 13, color: "var(--text-2)" }}>
-          Entries wait while your membership is on hold. Resume it on your page
+          Entries wait while your membership is paused. Resume it on your page
           and this contest opens back up.
         </p>
       ) : open && !closed ? (

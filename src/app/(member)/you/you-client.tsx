@@ -243,9 +243,9 @@ export function ClubHoldNotice() {
     <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep, #966E22)" }} role="status">
       <div className="you-row">
         <div>
-          <b>Membership on hold</b>
+          <b>Your membership is paused</b>
           <p>
-            The club placed this one, so it lifts from their side rather than
+            The club paused this one, so it lifts from their side rather than
             yours. Your log, your ledger and what you owe stay open.
           </p>
         </div>
@@ -269,7 +269,7 @@ export function ResumeBanner() {
     >
       <div className="you-row">
         <div>
-          <b>Your membership is held</b>
+          <b>Your membership is paused</b>
           {/* This used to say "Dues paused". Nothing in this path touches the
               subscription — the only Stripe calls in the repo are the webhook,
               the portal and checkout — so the card kept drawing while the
@@ -322,8 +322,8 @@ export function Offboarding({ status }: { status: string }) {
           setMode(null);
           setToast(
             res.note
-              ? `Membership held. ${res.note}`
-              : "Membership held. Resume with a word — no games either way."
+              ? `Membership paused. ${res.note}`
+              : "Membership paused. Resume with a word — no games either way."
           );
         }
       } else {
@@ -361,14 +361,14 @@ export function Offboarding({ status }: { status: string }) {
         onClose={() => setMode(null)}
         width={360}
         eyebrow="The gangway out"
-        title="Hold your membership?"
+        title="Pause your membership?"
         footer={
           <>
             <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
               Stay aboard
             </Button>
             <Button variant="outline" size="sm" disabled={pending} onClick={confirm}>
-              Hold my membership
+              Pause my membership
             </Button>
           </>
         }

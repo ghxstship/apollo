@@ -356,7 +356,7 @@ export default async function VoyagesPage() {
                       locked={locked}
                       lockedNote={
                         onHold
-                          ? "Your membership is on hold. Resume it on your page to claim a pass."
+                          ? "Your membership is paused. Resume it on your page to claim a pass."
                           : overClass
                             ? `This sailing runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`
                             : `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.`

@@ -31,12 +31,12 @@ export default async function MemberLayout({
       {onHold ? (
         <div className="mbr-hold" role="status">
           <span className="mbr-hold__eyebrow">
-            {departed ? "YOUR PLACE IS CLOSED" : "MEMBERSHIP ON HOLD"}
+            {departed ? "YOUR PLACE IS CLOSED" : "MEMBERSHIP PAUSED"}
           </span>
           <p>
             {departed
               ? "Your log and your ledger stay as they were. Coming back is a conversation — Shoreside opens it again."
-              : "Your log, your ledger and what you owe stay open. Booking, posting and contests wait until the hold lifts."}
+              : "Your log, your ledger and what you owe stay open. Booking, posting and contests wait until it resumes."}
           </p>
           <a href="/you" className="mbr-hold__link">
             Your page

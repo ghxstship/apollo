@@ -71,7 +71,7 @@ export function Composer({
           color: "var(--text-2)",
         }}
       >
-        The deck is closed while your membership is on hold. Resume it on your
+        The deck is closed while your membership is paused. Resume it on your
         page and the composer opens back up.
       </div>
     );

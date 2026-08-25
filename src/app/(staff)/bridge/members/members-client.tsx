@@ -464,8 +464,8 @@ export function MembersClient({
                 {detail.status === "departed"
                   ? "Bring them back"
                   : detail.status === "paused"
-                    ? "Lift the hold"
-                    : "Place on hold"}
+                    ? "Resume membership"
+                    : "Pause membership"}
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => setAdjusting(true)}>
                 Correct knots
@@ -493,8 +493,8 @@ export function MembersClient({
           detail?.status === "departed"
             ? "Bring this member back aboard?"
             : detail?.status === "paused"
-              ? "Lift the hold?"
-              : "Place this membership on hold?"
+              ? "Resume this membership?"
+              : "Pause this membership?"
         }
         footer={
           <>
@@ -507,7 +507,7 @@ export function MembersClient({
               onClick={() => {
                 const row = openRow;
                 /* A departed member used to leave the operator only one
-                   button, labelled "Place on hold", which wrote `paused` — and
+                   button, labelled "Pause membership", which wrote `paused` — and
                    then stamped the operator as the one who placed it, so the
                    member could not lift it themselves either. Reinstating
                    somebody required first recording a hold that never happened,
@@ -522,15 +522,15 @@ export function MembersClient({
                   else {
                     setDetail((d) => (d ? { ...d, status: next } : d));
                     show({
-                      msg: next === "paused" ? "On hold. The member has the word." : "Running again.",
-                      meta: `${row.name.toUpperCase()} · ${next === "paused" ? "HELD" : "ACTIVE"}`,
+                      msg: next === "paused" ? "Paused. The member has the word." : "Running again.",
+                      meta: `${row.name.toUpperCase()} · ${next === "paused" ? "PAUSED" : "ACTIVE"}`,
                       tone: next === "paused" ? "caution" : "positive",
                     });
                   }
                 });
               }}
             >
-              {detail?.status === "paused" ? "Lift it" : "Hold it"}
+              {detail?.status === "paused" ? "Resume it" : "Pause it"}
             </Button>
           </>
         }
@@ -538,7 +538,7 @@ export function MembersClient({
         <p style={{ fontSize: 13, lineHeight: 1.6 }}>
           {detail?.status === "paused"
             ? "Booking, posting and contests open back up, and the member is told."
-            : "Their log and ledger stay open; booking, posting and contests stop until the hold lifts. The member is told, with no guessing."}
+            : "Their log and ledger stay open; booking, posting and contests stop until it resumes. The member is told, with no guessing."}
         </p>
       </Dialog>
 

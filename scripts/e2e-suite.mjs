@@ -2037,7 +2037,10 @@ async function businessRules(p) {
 
   // Paused member blocked from boarding
   const pauTry = await pau.post("rsvps", { voyage_id: vid, profile_id: uid(p.paused), status: "aboard" });
-  note("paused", "membership hold blocks boarding", pauTry.status >= 400 && /hold/i.test(JSON.stringify(pauTry.data)), `got ${pauTry.status}`);
+  /* The refusal must NAME the reason, not merely refuse — a paused member who
+     is told only "no" goes looking for a bug in their pass. */
+  note("paused", "a paused membership blocks boarding, and says so",
+    pauTry.status >= 400 && /paused/i.test(JSON.stringify(pauTry.data)), `got ${pauTry.status}`);
 
   // Guest passes: national with guests rejected, global capped at 2
   const natGuest = await nat.post("rsvps", { voyage_id: vid, profile_id: uid(p.national), status: "aboard", guests: 1 });

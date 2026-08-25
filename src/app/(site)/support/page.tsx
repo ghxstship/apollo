@@ -35,7 +35,7 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
       ],
       [
         "Can I pause my membership?",
-        "Hold it from the member app. Dues stop, knots and league keep, and nothing is refunded for the stretch you have already paid for. Resume with a word.",
+        "Pause it from the member app. Dues stop, knots and league keep, and nothing is refunded for the stretch you have already paid for. Resume with a word.",
       ],
       [
         "What are knots worth?",
