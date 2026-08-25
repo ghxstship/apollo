@@ -1,0 +1,32 @@
+-- Realtime applies RLS to INSERT and UPDATE per subscriber — verified, both
+-- the positive and the negative case: a member subscribed to `messages` with no
+-- filter received an insert into a thread they belong to and did NOT receive
+-- one into a thread they do not, and an anonymous socket received neither.
+--
+-- DELETE IS NOT FILTERED, AND CANNOT BE. The row is gone by the time the event
+-- is emitted, so there is nothing left to evaluate a policy against; Realtime
+-- broadcasts the replica identity — the primary key — to every subscriber on
+-- the channel, including ones that never authenticated. Captured from a socket
+-- holding nothing but the public anon key:
+--
+--   {"ev":"DELETE","old":{"thread_id":"fcd0cbfc-…","profile_id":"7ecde4fb-…"}}
+--
+-- thread_members is PRIMARY KEY (thread_id, profile_id) and wardroom_hails is
+-- PRIMARY KEY (post_id, profile_id), so for those two tables the old-record key
+-- IS the private fact. A passive listener needing no account and no invitation
+-- builds a live map of which member was in which private thread, with timing —
+-- against a club whose entire premise is that membership is private. messages
+-- and notifications leak row ids and timing only, which is weaker but still an
+-- activity side-channel on named people.
+--
+-- The app never reads a DELETE payload. Two of its four subscriptions already
+-- name INSERT and UPDATE explicitly, and the third — Open Deck — passes
+-- event:"*" but ignores the payload entirely and only calls router.refresh().
+-- So the whole cost of this is that an un-hail no longer nudges another
+-- member's feed until its next event or navigation, and the whole benefit is
+-- that the club's roster stops being public.
+--
+-- truncate goes too. Nothing truncates these tables, and a truncate event would
+-- broadcast just as indiscriminately.
+alter publication supabase_realtime set (publish = 'insert,update');
+;

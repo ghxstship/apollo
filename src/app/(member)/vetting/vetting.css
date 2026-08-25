@@ -1,0 +1,194 @@
+/* Vetting surfaces, built from templates/vetting-kit.
+
+   Every value here is a token from src/styles/tokens.css. The kit's artboard is
+   inline-styled with raw hex (#0D0D0D, #F94A94, #3EC317) and a raw ladder, and
+   copying those would fork the palette: the artboard is a dark specimen, and
+   these surfaces render on a paper-first ground in both themes. So the kit's
+   STRUCTURE is reproduced exactly — rule-separated rows, fixed label columns,
+   3px left-rule alert strips, right-aligned mono status tokens — and its colour
+   is re-expressed as --positive / --caution / --danger and the greyscale.
+
+   brand-architecture.md: the division hues are reserved for identity, and
+   operational state — Five-A phase, run-of-show position, procurement status —
+   is carried on the noir/ivory greyscale, never in a division hue. Nothing in
+   this file reaches for --brand-hinged; segment fullness and background state
+   are status, not identity, and status colours are the one sanctioned override.
+
+   Cited by filename rather than by section number: the handoff's readme was
+   renumbered and renamed under this module mid-build, and a comment pointing at
+   "README §4" now points at nothing. */
+
+.vet-panel {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.vet-eyebrow {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.vet-title {
+  font: var(--type-heading);
+  color: var(--text-body);
+  margin: 0;
+}
+
+/* The kit's caption idiom: grey body copy under a card, explaining why the
+   design behaves the way it does. Kept because these are member-facing rules
+   (six hours, no upsell, never shown to another guest) and a member who is
+   refused deserves to have read the rule before it applies to them. */
+.vet-note {
+  font: var(--type-caption);
+  color: var(--text-faint);
+  margin: 0;
+  max-width: 56ch;
+}
+
+/* Rule-separated row. Fixed first column, flexible middle, right-aligned token
+   — never space-between, which the handoff states for every kit and the show
+   kit repeats in its own words: a tabular row whose columns move with the
+   content cannot be scanned down. */
+.vet-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.vet-row:last-child { border-bottom: 1px solid var(--border-subtle); }
+
+.vet-row__label {
+  width: 132px;
+  flex: none;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  color: var(--text-body);
+  text-transform: uppercase;
+}
+.vet-row__value { flex: 1; font: var(--type-caption); color: var(--text-muted); }
+.vet-row__token {
+  flex: none;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+}
+
+/* The alert strip: a state or a refusal. Radius-sm and a 3px rule on the
+   leading edge, which is the kit's one visual difference between "something
+   happened" and "something is being asked of you" (a radius-md bordered card). */
+.vet-strip {
+  background: var(--surface-sunken);
+  border-inline-start: 3px solid var(--caution);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.vet-strip--refusal { border-inline-start-color: var(--caution); }
+.vet-strip--queue { border-inline-start-color: var(--text-faint); }
+.vet-strip__badge {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--caution);
+}
+.vet-strip--queue .vet-strip__badge { color: var(--text-muted); }
+.vet-strip__title { font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+.vet-strip__body { font: var(--type-caption); color: var(--text-muted); margin: 0; max-width: 52ch; }
+
+/* The four background states, as the kit draws them: a stack of left-rule
+   strips, the rule carrying the state and nothing else coloured. The member's
+   own state is the only one at full contrast — the other three are context, and
+   dimming them is what stops the stack reading as a progress bar the member is
+   losing at. */
+.vet-states { display: flex; flex-direction: column; gap: var(--space-2); }
+.vet-state {
+  background: var(--surface-sunken);
+  border-inline-start: 3px solid var(--text-faint);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  opacity: .45;
+}
+.vet-state--mine { opacity: 1; }
+.vet-state__name {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+}
+.vet-state__line { font: 400 var(--text-xs)/1.4 var(--font-body); color: var(--text-muted); }
+
+/* The funnel. Six bars sharing one baseline and one scale, and only the seated
+   stage accented — "the funnel is a filter, not a scoreboard". */
+.vet-funnel { display: flex; flex-direction: column; gap: var(--space-2); }
+.vet-funnel__head {
+  display: flex;
+  justify-content: space-between;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.vet-funnel__bar { height: 14px; background: var(--surface-sunken); }
+.vet-funnel__bar--seated { background: var(--accent); }
+
+.vet-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+/* A selectable chip. The selected state is a border and a weight change, never
+   a fill — a filled chip at 12px in the accent is a button, and these are
+   answers. */
+.vet-chip {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-muted);
+  padding: 7px 13px;
+  font: 500 var(--text-xs)/1 var(--font-body);
+  cursor: pointer;
+}
+.vet-chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--text-body);
+  font-weight: 700;
+}
+.vet-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+.vet-grid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
+}
+
+.vet-stack { display: flex; flex-direction: column; gap: var(--space-5); }
+
+/* The stance control: three radio-shaped buttons in a row, the chosen one
+   carrying its own tone. Not a select — a boundary is read at a glance by the
+   person setting it and by the crew reading it back. */
+.vet-stances { display: flex; gap: var(--space-1); flex: none; }
+.vet-stance {
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  padding: 5px 9px;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.vet-stance[aria-pressed="true"] { border-color: currentColor; }
+.vet-stance:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+.vet-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; }

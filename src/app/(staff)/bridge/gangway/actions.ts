@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, boardingError } from "../../staff";
 import { logDateYear } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 
 /* Onsite check-in by boarding code. The scanner types the code and hits
    Enter; we stamp checked_in_at/by and hand back what the door needs. */
@@ -186,7 +187,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
 
   const base: ScanResult = {
     name: profile?.full_name ?? "Unknown sailor",
-    memberNo: profile?.member_no ?? "GUEST",
+    memberNo: memberMark(profile?.member_no) || "GUEST",
     vessel: vesselName,
     guestNames: rsvp.guest_names ?? [],
     otherVoyage,

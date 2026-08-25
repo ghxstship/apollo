@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Wordmark } from "@/components/ds";
 import { SURFACES } from "@/lib/brand";
+import { memberMark } from "@/lib/membership";
 import { getOperator } from "./data";
 import { HmClock, HmTabs } from "./nav";
 import "./bridge.css";
@@ -35,7 +36,7 @@ export default async function StaffLayout({
           <div className="hm-top__op">
             <span className="hm-mono">
               {(profile.full_name ?? "Operator").toUpperCase()}
-              {profile.member_no ? ` · ${profile.member_no}` : ""}
+              {profile.member_no ? ` · ${memberMark(profile.member_no)}` : ""}
             </span>
             <Link className="hm-top__back" href="/home">
               Back to Home

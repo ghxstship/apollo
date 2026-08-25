@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { voice } from "@/lib/errors";
+import { memberMark } from "@/lib/membership";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 /* The filter set is stored verbatim as the segment's jsonb — one shape, so a
@@ -127,7 +128,7 @@ export async function loadMember(
   return {
     detail: {
       name: profile.full_name ?? "Unnamed member",
-      memberNo: profile.member_no ?? "—",
+      memberNo: memberMark(profile.member_no) || "—",
       email: profile.email ?? "—",
       phone: profile.phone ?? "—",
       handle: profile.handle ?? "—",

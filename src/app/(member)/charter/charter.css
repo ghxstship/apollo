@@ -1,0 +1,65 @@
+/* Charter — the [UN] Limited standard, on paper-first greyscale.
+
+   The kit renders cobalt on ink. Page surfaces here stay greyscale per README
+   §4 and the cobalt lands on keylines only; the one place colour carries
+   meaning is the weather hold, and status colours override a division accent
+   wherever both apply, which is exactly this case. Caution amber, never danger
+   red: a leg that moved is not an emergency, and a red notice on a boat means
+   something else. */
+
+.cht-lede{max-width:62ch;font:var(--type-body);color:var(--text-muted);margin:var(--space-3) 0 0}
+.cht-empty{margin-top:var(--space-6);padding:var(--space-5);border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-card);max-width:62ch;font:var(--type-body);color:var(--text-muted)}
+
+/* — the itinerary one-pager — */
+.cht-legs{margin-top:var(--space-4);border-top:1px solid var(--border-subtle)}
+.cht-leg{display:flex;gap:var(--space-4);padding:var(--space-3) 0;border-bottom:1px solid var(--border-subtle)}
+.cht-leg__day{flex:none;width:74px;font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--brand-limited-deep)}
+.cht-leg__body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:var(--space-1)}
+.cht-leg__port{font:var(--type-caption);color:var(--text-body)}
+.cht-leg__port b{font-weight:700}
+.cht-leg__posted{font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint)}
+.cht-legs__foot{margin-top:var(--space-3);font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint);line-height:1.7}
+
+/* — weather hold — reason, then the new plan, then what is unchanged — */
+.cht-hold{margin-top:var(--space-2);padding:var(--space-3) var(--space-4);background:var(--surface-sunken);border-inline-start:3px solid var(--caution);border-radius:var(--radius-sm);display:flex;flex-direction:column;gap:var(--space-1)}
+.cht-hold__eyebrow{font:var(--type-label);letter-spacing:var(--tracking-strap);color:var(--caution)}
+.cht-hold__reason{font:var(--type-heading);color:var(--text-body)}
+.cht-hold__plan{font:var(--type-caption);color:var(--text-muted)}
+.cht-hold__same{font:var(--type-caption);color:var(--text-body)}
+
+/* — the cabin card, which is a door plate and a record — */
+.cht-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--space-4);margin-top:var(--space-4)}
+.cht-card{padding:var(--space-4);border:1px solid var(--border-subtle);border-inline-start:2px solid var(--brand-limited);border-radius:var(--radius-md);background:var(--surface-card);display:flex;flex-direction:column;gap:var(--space-2)}
+.cht-card__head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3)}
+.cht-card__name{font:var(--type-title);text-transform:uppercase}
+.cht-card__where{font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-muted)}
+.cht-card__facts{display:flex;gap:var(--space-6);font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint)}
+.cht-card__facts b{display:block;margin-top:var(--space-1);color:var(--text-body)}
+.cht-card__note{font:var(--type-caption);color:var(--text-muted)}
+
+/* — port guide card, 4×6 — */
+.cht-stops{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--space-4);margin-top:var(--space-4)}
+.cht-stop{aspect-ratio:3/2;position:relative;overflow:hidden;border-radius:var(--radius-sm);background:var(--scene-night);color:var(--text-on-media);padding:var(--space-4);display:flex;flex-direction:column;justify-content:flex-end;gap:var(--space-2)}
+.cht-stop__no{position:absolute;top:var(--space-4);inset-inline-start:var(--space-4);font:var(--type-label);letter-spacing:var(--tracking-strap);color:var(--text-on-media)}
+.cht-stop__what{font:var(--type-title);text-transform:uppercase}
+.cht-stop__when{font:var(--type-label);letter-spacing:var(--tracking-label);opacity:.72}
+
+/* — the cabin plan and the 72-hour hold — */
+.cht-plan{margin-top:var(--space-4);border-top:1px solid var(--border-subtle)}
+.cht-plan__row{display:flex;align-items:center;gap:var(--space-4);padding:var(--space-3) 0;border-bottom:1px solid var(--border-subtle)}
+.cht-plan__name{flex:none;width:160px;font:var(--type-caption);color:var(--text-body)}
+.cht-plan__count{flex:none;width:120px;font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint)}
+.cht-plan__act{flex:1 1 auto;display:flex;justify-content:flex-end;align-items:center;gap:var(--space-3)}
+.cht-plan__note{margin:var(--space-3) 0 0;font:var(--type-caption);color:var(--text-muted)}
+.cht-plan__err{margin:var(--space-3) 0 0;font:var(--type-caption);color:var(--danger)}
+
+/* — the four charter states — */
+.cht-states{display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-4);max-width:420px}
+.cht-state{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--surface-card);border-inline-start:3px solid var(--cht-state,var(--text-faint));border-radius:var(--radius-sm)}
+.cht-state__name{flex:none;width:96px;font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-body)}
+.cht-state__line{font:var(--type-caption);color:var(--text-muted)}
+
+@media (max-width:600px){
+  .cht-plan__name{width:110px}
+  .cht-plan__count{width:96px}
+}

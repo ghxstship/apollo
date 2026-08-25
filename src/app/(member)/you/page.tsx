@@ -7,6 +7,7 @@ import { TIER_LABEL, roman } from "@/lib/format";
 import { PushControls } from "@/components/push-controls";
 import { PhoneField } from "@/components/phone-field";
 import { stripeEnabled } from "@/lib/stripe";
+import { memberMark } from "@/lib/membership";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
 import {
@@ -80,7 +81,7 @@ export default async function YouPage() {
                 </p>
               ) : null}
               <p className="mbr-mono" style={{ marginTop: 4 }}>
-                {profile?.member_no ?? "SYR-0000"} · MEMBER SINCE {roman(joinedYear)}
+                {memberMark(profile?.member_no) || "UNISSUED"} · MEMBER SINCE {roman(joinedYear)}
               </p>
             </div>
           </div>

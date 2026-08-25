@@ -1,0 +1,195 @@
+/* Show surfaces, built from templates/show-kit. Crew screens.
+
+   Tokens only. The kit's artboard is inline-styled dark with raw hex; these
+   render on the same paper-first ground as every other surface, in both themes.
+
+   Two rules from brand-architecture.md do most of the work here and both are
+   about colour: operational state — Five-A phase, run-of-show position,
+   procurement status — is numerals on the greyscale and never a division hue;
+   and --positive / --caution / --danger are the one exception that overrides an
+   accent. So the
+   phase band is a greyscale ramp, the flags are ink and bone geometry, and the
+   only colour on these screens is a safety state or a critical-path mark. */
+
+.shw-stack { display: flex; flex-direction: column; gap: var(--space-8); }
+
+.shw-panel {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.shw-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.shw-h2 {
+  font: var(--type-title);
+  text-transform: uppercase;
+  color: var(--text-body);
+  margin: 0;
+}
+.shw-strap {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  line-height: 1.8;
+}
+.shw-note { font: var(--type-caption); color: var(--text-faint); margin: 0; max-width: 72ch; }
+
+.shw-card {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+
+/* The bridge board. Fixed column widths, never space-between — the kit's own
+   note says why: "the board is read at a glance on a wet deck", and a row whose
+   columns move with the content cannot be scanned down. Horizontal scroll is
+   confined to this element so the page body never scrolls sideways on a phone. */
+.shw-board { overflow-x: auto; }
+.shw-board__row {
+  display: flex;
+  gap: var(--space-3);
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--border-subtle);
+  min-width: 760px;
+}
+.shw-board__row:last-child { border-bottom: 1px solid var(--border-subtle); }
+.shw-board__row--head {
+  border-top: 0;
+  padding: var(--space-2) 0;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.shw-c-window { width: 104px; flex: none; font: 400 var(--text-xs)/1.4 var(--font-mono); color: var(--text-body); }
+.shw-c-stage  { width: 150px; flex: none; font: 700 var(--text-xs)/1.4 var(--font-body); color: var(--text-body); }
+.shw-c-cue    { flex: 1; min-width: 200px; font: 400 var(--text-xs)/1.4 var(--font-body); color: var(--text-muted); }
+.shw-c-lead   { width: 150px; flex: none; font: 400 var(--text-xs)/1.4 var(--font-body); color: var(--text-muted); }
+.shw-c-sound  { width: 132px; flex: none; font: 400 var(--text-xs)/1.4 var(--font-mono); color: var(--text-muted); }
+.shw-c-cp     { width: 44px;  flex: none; font: var(--type-label); letter-spacing: var(--tracking-dense); color: var(--text-faint); }
+.shw-c-cp--yes { color: var(--text-accent); }
+
+/* Signal flags. Geometry carries the meaning: a centred square, a horizontal
+   band, a downward triangle, a diagonal band. There is no hue prop on the
+   component and no accent in this block, so a well-meaning edit cannot make
+   ANCHORED magenta. STAND BY takes --caution because it is a safety state, the
+   one override brand-architecture.md sanctions. */
+.shw-flags { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.shw-flag { display: flex; flex-direction: column; gap: var(--space-2); width: 150px; }
+.shw-flag__field {
+  position: relative;
+  height: 100px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+.shw-flag--inverse .shw-flag__field { background: var(--noir-900); }
+.shw-flag--caution .shw-flag__field { background: var(--caution); }
+.shw-flag__mark { position: absolute; background: var(--noir-900); }
+.shw-flag--inverse .shw-flag__mark { background: var(--ivory-100); }
+.shw-flag__mark--square { inset: 0; margin: auto; width: 44px; height: 44px; }
+.shw-flag__mark--band { left: 0; right: 0; top: 38px; height: 24px; }
+.shw-flag__mark--triangle {
+  background: none;
+  left: 50%;
+  top: 31px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 22px solid transparent;
+  border-right: 22px solid transparent;
+  border-bottom: 38px solid var(--noir-900);
+}
+.shw-flag__mark--diagonal { left: -30px; top: -30px; width: 160px; height: 70px; transform: rotate(-32deg); }
+.shw-flag__name {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-body);
+}
+.shw-flag__says { font: 400 var(--text-xs)/1.4 var(--font-body); color: var(--text-faint); }
+.shw-flag--flying .shw-flag__field { box-shadow: var(--focus-ring); }
+
+.shw-flagbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: start;
+  cursor: pointer;
+  color: inherit;
+  display: contents;
+}
+
+/* The Five-A arc. A greyscale ramp in arc order, numbered — the kit's own
+   caption calls it a legend and not a timeline, so the segments are equal and
+   the real times live in the table's window column. */
+.shw-arc { display: flex; height: 34px; border: 1px solid var(--border-subtle); min-width: 560px; }
+.shw-arc__seg {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+}
+
+/* The pod queue. Index, name, state, and the two flags as separate tokens —
+   blur is not a queue state, and folding it into one would make a guest who
+   asked for anonymity unable to also be recording. */
+.shw-queue { display: flex; flex-direction: column; max-width: 420px; }
+.shw-queue__row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.shw-queue__row:last-child { border-bottom: 1px solid var(--border-subtle); }
+.shw-queue__n { width: 26px; flex: none; font: 400 var(--text-xs)/1 var(--font-mono); color: var(--text-faint); }
+.shw-queue__who { flex: 1; font: 400 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+.shw-queue__tok {
+  flex: none;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+}
+
+.shw-grid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+}
+
+.shw-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.shw-row:last-child { border-bottom: 1px solid var(--border-subtle); }
+.shw-row__label {
+  width: 150px;
+  flex: none;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+}
+.shw-row__body { flex: 1; font: 400 var(--text-xs)/1.5 var(--font-body); color: var(--text-muted); }
+
+.shw-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; }

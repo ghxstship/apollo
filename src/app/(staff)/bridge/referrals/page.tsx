@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Stat, Table } from "@/components/ds";
 import { knots } from "@/lib/brand";
 import { logDate } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
 
@@ -56,7 +57,7 @@ export default async function ReferralsPage() {
     const profile = joined.get(r.email.toLowerCase());
     const name = profile?.full_name ?? r.email;
     const list = camebyCode.get(code) ?? [];
-    list.push(profile?.member_no ? `${name} · ${profile.member_no}` : name);
+    list.push(profile?.member_no ? `${name} · ${memberMark(profile.member_no)}` : name);
     camebyCode.set(code, list);
   }
 
@@ -71,7 +72,7 @@ export default async function ReferralsPage() {
     return {
       code: i.code,
       sponsor: sponsor?.full_name
-        ? `${sponsor.full_name}${sponsor.member_no ? ` · ${sponsor.member_no}` : ""}`
+        ? `${sponsor.full_name}${sponsor.member_no ? ` · ${memberMark(sponsor.member_no)}` : ""}`
         : "Sponsor off the roll",
       uses: `${i.uses}/${i.max_uses}`,
       aboard: came.length ? came.join(" · ") : "—",

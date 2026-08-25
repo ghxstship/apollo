@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, IconButton, Wordmark } from "@/components/ds";
 import { LOGBOOK, SURFACES } from "@/lib/brand";
+import { memberMark } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/client";
 import { SignOutForm } from "@/components/sign-out-form";
 
@@ -12,16 +13,21 @@ const LINKS = [
   ["/home", "Home"],
   ["/live", SURFACES.gateway],
   ["/manifest", "Voyages"],
+  ["/activity", "Activity"],
+  ["/charter", "Charter"],
   ["/open-deck", SURFACES.openDeck],
   ["/directory", "Directory"],
   ["/tables", "Tonight"],
   ["/matches", "Matches"],
+  ["/vetting", "Vetting"],
+  ["/radar", "Radar"],
   ["/regattas", LOGBOOK.regattas],
   ["/threads", "Threads"],
   ["/shop", SURFACES.shop],
   ["/portal", "Portal"],
   ["/account", "Account"],
   ["/card", SURFACES.passbook],
+  ["/membership/standing", "Standing"],
   ["/agreements", "Agreements"],
   ["/inbox", "Word"],
   ["/you", "You"],
@@ -207,9 +213,26 @@ export function MemberTopBar({
               Bridge
             </Link>
           ) : null}
+          {/* The run-of-show board. Crew-only like the Bridge, and conditioned
+              the same way — it lives in the member route group by file layout,
+              so without this it had no way in from any navigation at all and was
+              reachable only by typing the address. */}
+          {isStaff ? (
+            <Link
+              href="/show"
+              aria-current={isCurrent(pathname, "/show") ? "page" : undefined}
+            >
+              Show
+            </Link>
+          ) : null}
         </nav>
         <div className="mbr-top__meta">
-          {memberNo ? <span className="mbr-top__no">{memberNo}</span> : null}
+          {/* The number, set the way the member card sets it: a mark and digits,
+              and no retired prefix. Every number in the database was minted with
+              the old brand's letters in front of it, that string is in
+              BANNED_TERMS, and this one line put it on all sixteen member
+              surfaces. The column is not touched — it is on their papers. */}
+          {memberNo ? <span className="mbr-top__no">{memberMark(memberNo)}</span> : null}
           <SignOutForm style={{ display: "inline-flex" }}>
             <IconButton label="Sign out" variant="ghost" size="sm" type="submit">
               <Icon name="LogOut" size={16} />

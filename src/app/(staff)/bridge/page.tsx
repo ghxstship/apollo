@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Table } from "@/components/ds";
 import { TIER_LABEL, logDateTime } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 import { getOperator } from "../data";
 import { AppsClient, type AppRow } from "./apps-client";
 import { must } from "../staff";
@@ -98,7 +99,7 @@ export default async function ApplicationsPage() {
                 label: "Status",
                 render: (r: RollRow) =>
                   r.memberNo ? (
-                    <Badge tone="positive">Joined · {r.memberNo}</Badge>
+                    <Badge tone="positive">Joined · {memberMark(r.memberNo)}</Badge>
                   ) : (
                     <Badge tone="outline">Awaiting sign-in</Badge>
                   ),

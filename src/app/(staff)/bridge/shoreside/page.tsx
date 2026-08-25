@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { memberMark } from "@/lib/membership";
 import { getOperator } from "../../data";
 import { ShoresideClient, type ThreadCard } from "./shoreside-client";
 import { must } from "../../staff";
@@ -71,7 +72,7 @@ export default async function ShoresidePage() {
       id: t.id,
       title: t.title ?? "Shoreside",
       member: member?.full_name ?? "Unknown member",
-      memberNo: member?.member_no ?? "—",
+      memberNo: memberMark(member?.member_no) || "—",
       closed: !!t.closed_at,
       lastAt: last?.createdAt ?? t.created_at,
       lastLine: last?.body ?? "No word yet.",

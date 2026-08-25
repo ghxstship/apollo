@@ -1,6 +1,6 @@
 /* REFERENCE ONLY — the prop contract for the Wordmark primitive. */
 
-/** Type-set brand lockup (no logo asset exists). Two systems: the bare bracketed [UN] parent anchor (suffix={null}), and [UN] {Suffix} sub-brand lockups. Anton bracket + Space Mono suffix. */
+/** Type-set brand lockup (no logo asset exists). Two systems: the bare bracketed [UN] parent anchor (suffix={null}), and [UN] {Suffix} sub-brand lockups. Anton bracket + Space Mono suffix at 1.27× the bracket size (cap-height matched). */
 export interface WordmarkProps{
   /** sm 16 / md 20 / lg 36, or a px number. */
   size?:'sm'|'md'|'lg'|number;

@@ -188,9 +188,21 @@ export function Table<R extends Record<string, unknown>>({
    breaks the lockup at nav sizes. */
 const WM_SIZES = { sm: 16, md: 20, lg: 36 } as const;
 
-/* Space Mono runs wider and shorter than Anton; .77 optically matches cap
-   height. This is a measured value from the package, not a round number. */
-const WM_SFX_SCALE = 0.77;
+/* Anton's cap height is 0.859em, Space Mono's is 0.676em, so the suffix must
+   scale UP to sit level with the bracket caps: 0.859 / 0.676 = 1.27.
+
+   This shipped as 0.77 — that ratio INVERTED — because the reference the
+   foundation was built from carried the inverted number and the comment beside
+   it asserted the opposite of what the arithmetic says. Space Mono is shorter,
+   so shrinking it further drives the suffix away from the caps it is supposed
+   to match. At size="md" the suffix rendered 15px where it should render 25px:
+   a lockup whose second half looked like a footnote, on every division mark in
+   the product.
+
+   The updated reference states the measurement explicitly — "Anton cap 0.859em,
+   Space Mono cap 0.676em — 1.27 makes the suffix caps match the bracket caps.
+   Measured, not eyeballed." Taken as measured. */
+const WM_SFX_SCALE = 1.27;
 
 const WM_ACCENTS: Record<DivisionId | "shop", string> = { ...DIVISION_ACCENT, shop: COMMERCE.shop.accent };
 

@@ -5,6 +5,7 @@ import { Badge, Wordmark } from "@/components/ds";
 import { SITE_DOMAIN, SURFACES } from "@/lib/brand";
 import { TIER_LABEL, roman } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
+import { memberMark } from "@/lib/membership";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../data";
 import { PrintButton } from "./print-button";
@@ -24,12 +25,17 @@ export default async function MemberCardPage() {
   const balanceCents = account?.balance_cents ?? 0;
 
   const name = profile?.full_name ?? "A member";
-  const memberNo = profile?.member_no ?? "SYR-0000";
+  /* The number as the card sets it — "Nº 0047" — and the raw column only
+     inside the QR, which is a scanner payload and not something a reader
+     sees. Printed cards in wallets still carry the retired prefix, so the
+     gate has to keep matching it; what changes is what is legible. */
+  const memberNo = profile?.member_no ?? "";
+  const shownNo = memberMark(memberNo) || "Unissued";
   const tier = TIER_LABEL[profile?.tier ?? "regional"] ?? "Regional";
   const joinedYear = profile?.joined_at
     ? new Date(profile.joined_at).getFullYear()
     : new Date().getFullYear();
-  const qr = await qrDataUrl(memberNo);
+  const qr = await qrDataUrl(memberNo || "unissued");
 
   /* Season feed — public by secret, so the address is the whole key. */
   const head = await headers();
@@ -47,12 +53,12 @@ export default async function MemberCardPage() {
           <Wordmark size="md" suffix={null} inverse />
           <div className="crd-name">{name}</div>
           <div className="crd-meta">
-            {memberNo} · {tier}
+            {shownNo} · {tier}
           </div>
           {/* The card carries the club's founding, not a harbour the member
               may never have set. */}
           <div className="crd-est">EST. {roman(joinedYear)}</div>
-          <div className="crd-code" aria-label={`Boarding code ${memberNo}`}>
+          <div className="crd-code" aria-label={`Boarding code ${shownNo}`}>
             {/* eslint-disable-next-line @next/next/no-img-element -- data URI QR, no next/image benefit */}
             <img
               src={qr}
@@ -65,7 +71,7 @@ export default async function MemberCardPage() {
               className="mbr-mono"
               style={{ color: "var(--text-inverse-2)", letterSpacing: ".18em", marginTop: 10 }}
             >
-              {memberNo}
+              {shownNo}
             </div>
           </div>
           {balanceCents < 0 ? (

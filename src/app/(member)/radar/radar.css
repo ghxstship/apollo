@@ -1,0 +1,199 @@
+/* Radar surfaces, built from templates/radar-kit.
+
+   Tokens only, same reasoning as vetting.css: the kit's artboard is a dark
+   specimen with raw hex, and these surfaces render on a paper-first ground in
+   both themes.
+
+   The kit's colourway is "ORCHID ON INK" — #4361EE, which is --grid-500, which
+   is what brand.ts assigns to --brand-scripted. So the token is referenced and
+   the hex never is, which is what keeps this correct through a rename: the kit
+   called the same hue "FLARE ON INK" one revision ago, and the current readme
+   calls [UN] Scripted "flare pink" while tokens.css and both kits agree it is
+   blue. A file full of #4361EE would have had to be edited three times and
+   would be wrong now.
+
+   This is the one place a division hue belongs on these screens — Radar IS
+   Scripted, so the accent is identity, not operational state. Slot states, by
+   contrast, are drawn in the greyscale and a dashed rule, exactly as the
+   handoff's colour invariant requires. */
+
+.rdr-stack { display: flex; flex-direction: column; gap: var(--space-6); }
+
+.rdr-grid {
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
+}
+
+.rdr-panel {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.rdr-panel--live { border-color: var(--brand-scripted); }
+
+.rdr-eyebrow {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rdr-eyebrow--live { color: var(--brand-scripted-deep); }
+
+.rdr-note { font: var(--type-caption); color: var(--text-faint); margin: 0; max-width: 56ch; }
+
+/* The plot. Three concentric rings and a centre dot for self, with the pins
+   arranged around the circle. The rings carry no data — there is no distance
+   and no ranking in this product — so they are drawn at fixed radii and the pins
+   are placed at even angles. A radius that meant something would be a rank. */
+.rdr-plot {
+  position: relative;
+  height: 250px;
+  display: grid;
+  place-items: center;
+}
+.rdr-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+}
+.rdr-ring--1 { width: 240px; height: 240px; }
+.rdr-ring--2 { width: 164px; height: 164px; }
+.rdr-ring--3 { width: 88px; height: 88px; border-color: var(--border-strong); }
+.rdr-self {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--brand-scripted);
+}
+
+.rdr-pin {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+.rdr-pin:disabled { cursor: default; }
+.rdr-pin:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-pill); }
+.rdr-pin__dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  font: 400 var(--text-2xs)/1 var(--font-mono);
+  color: var(--text-muted);
+  background: var(--surface-raised);
+}
+.rdr-pin--plotted .rdr-pin__dot {
+  border-color: var(--brand-scripted);
+  color: var(--brand-scripted-deep);
+}
+.rdr-pin__name {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.rdr-meter { display: flex; flex-direction: column; gap: var(--space-2); }
+.rdr-meter__head {
+  display: flex;
+  justify-content: space-between;
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rdr-meter__track { height: 2px; background: var(--surface-sunken); }
+.rdr-meter__fill { height: 2px; background: var(--brand-scripted); }
+
+/* Slots. Filled takes a solid rule in the division accent; open takes a dashed
+   greyscale rule; locked takes a flat hairline. "Three is the ceiling, not a
+   target" — so an open slot is set at the same weight as the others and never
+   as a call to action. */
+.rdr-slots { display: flex; flex-direction: column; gap: var(--space-2); }
+.rdr-slot {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.rdr-slot--filled { border-color: var(--brand-scripted); }
+.rdr-slot--open { border-style: dashed; }
+.rdr-slot--locked { background: var(--surface-card); }
+.rdr-slot__n {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  width: 72px;
+  flex: none;
+}
+.rdr-slot--filled .rdr-slot__n { color: var(--brand-scripted-deep); }
+.rdr-slot__who { flex: 1; font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+.rdr-slot__who--empty { font-weight: 400; color: var(--text-faint); }
+
+/* The anchor list and its countdown. Precise, because there is no extension and
+   no reminder — "about a day" is not enough to decide with. */
+.rdr-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 9px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.rdr-row:last-child { border-bottom: 1px solid var(--border-subtle); }
+.rdr-row__name { flex: 1; font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+.rdr-row__clock {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-dense);
+  color: var(--brand-scripted-deep);
+}
+
+/* The strip idiom, as in the vetting kit: a state or a refusal, never an input. */
+.rdr-strip {
+  background: var(--surface-sunken);
+  border-inline-start: 3px solid var(--text-faint);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.rdr-strip--credit { border-inline-start-color: var(--positive); }
+.rdr-strip__badge {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rdr-strip--credit .rdr-strip__badge { color: var(--positive); }
+.rdr-strip__title { font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+.rdr-strip__body { font: var(--type-caption); color: var(--text-muted); margin: 0; max-width: 52ch; }
+
+.rdr-rules { display: flex; flex-direction: column; max-width: 42ch; }
+.rdr-rule {
+  font: var(--type-caption);
+  color: var(--text-muted);
+  padding: 9px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.rdr-rule:last-child { border-bottom: 1px solid var(--border-subtle); }
+
+.rdr-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: flex-end; }
