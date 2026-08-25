@@ -331,6 +331,54 @@ function internalLinks(html) {
     .filter((h) => !h.startsWith("//") && !/\.(css|js|svg|png|jpg|ico|zip|webmanifest|xml|txt)$/.test(h));
 }
 
+/* PROVE THE PAGE IS THERE.
+
+   The signed-out redirect check above cannot do it: middleware bounces every
+   /bridge/* path to the gangway before routing, so a route that does not exist
+   is indistinguishable from one that does. This signs in and asks the page to
+   render.
+
+   It needs a password, and the audit is otherwise credential-free, so when
+   E2E_PASSWORD is absent this reports a SKIP rather than a pass. A check that
+   silently turns into a green tick when its credentials are missing is worse
+   than no check — that is precisely how six screens scored twelve ticks while
+   the build contained none of them. */
+async function renderCheck(pages) {
+  const password = process.env.E2E_PASSWORD;
+  if (!password) {
+    console.log("\n  protected pages NOT proven to render — set E2E_PASSWORD to check\n");
+    note("(all protected pages)", "proven to render", false, "E2E_PASSWORD not set");
+    return;
+  }
+  const signIn = async (email) => {
+    const r = await fetch(`${SUPA_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    return r.json();
+  };
+  const staff = await signIn("e2e-staff@syrius.social");
+  if (!staff.access_token) {
+    note("(all protected pages)", "proven to render", false, "staff sign-in failed");
+    return;
+  }
+  const ref = new URL(SUPA_URL).hostname.split(".")[0];
+  const cookie = `sb-${ref}-auth-token=base64-${Buffer.from(JSON.stringify(staff)).toString("base64")}`;
+
+  /* The negative control. If an invented path renders too, this whole check is
+     measuring something other than what it claims to. */
+  const invented = await fetch(`${BASE}/bridge/utterly-invented-${Date.now().toString(36)}`, {
+    headers: { cookie }, redirect: "manual",
+  });
+  note("(control)", "an invented protected path does NOT render", invented.status === 404, `got ${invented.status}`);
+
+  for (const { path } of pages) {
+    const res = await fetch(BASE + path, { headers: { cookie }, redirect: "manual" });
+    note(path, "renders for someone allowed to see it", res.status === 200, `got ${res.status}`);
+  }
+}
+
 async function main() {
   console.log(`auditing ${BASE}\n`);
   sourceInvariants();
@@ -364,6 +412,9 @@ async function main() {
     note(r.path, "unknown slug returns 404", missing.status === 404, `got ${missing.status}`);
   }
 
+  await renderCheck(pages.filter((r) => r.access === "member" && !r.dynamic));
+
+
   const seenLinks = new Set();
 
   for (const { path, access } of pages) {
@@ -376,7 +427,13 @@ async function main() {
     }
 
     if (access === "member") {
-      // Signed out, every member surface must bounce to the gangway.
+      /* Signed out, every member surface must bounce to the gangway — AND THAT
+         ALONE PROVES NOTHING ABOUT THE PAGE. Middleware redirects before
+         routing, so a path that has never existed bounces identically:
+         /bridge/utterly-invented returns the same 307 as /bridge/members. On
+         the sibling branch six new screens scored twelve green ticks here
+         while the running build contained none of them. renderCheck() below
+         signs in and requires the page to actually render. */
       const ok = res.status >= 300 && res.status < 400 && (res.headers.get("location") || "").includes("/gangway");
       note(path, "redirects signed-out to /gangway", ok, `status ${res.status} → ${res.headers.get("location")}`);
       continue;
