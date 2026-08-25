@@ -1,7 +1,7 @@
-/* SYRIUS SOCIAL service worker — precache the shell, cache-first for brand
+/* [UN] service worker — precache the shell, cache-first for brand
    assets, network-first for pages, branded offline fallback. No workbox. */
 
-const CACHE = "syrius-sw-v2";
+const CACHE = "un-sw-v1"; /* Bumped with the rebrand on purpose. The previous cache holds the previous brand's offline page and favicon, and a returning member would have gone on being served them from it indefinitely — a service worker has no idea the brand changed. */
 const PRECACHE = ["/", "/icons/icon-192.png", "/logo/favicon.svg"];
 
 /* Nothing behind the gangway is written to disk. The navigation branch used to
@@ -13,7 +13,7 @@ const PRECACHE = ["/", "/icons/icon-192.png", "/logo/favicon.svg"];
 const PRIVATE = [
   "/home", "/card", "/manifest", "/portal", "/account", "/inbox", "/you",
   "/threads", "/open-deck", "/directory", "/matches", "/tables", "/live",
-  "/agreements", "/regattas", "/slop-chest", "/stub", "/sign", "/kiosk",
+  "/agreements", "/regattas", "/shop", "/stub", "/sign", "/kiosk",
   "/bridge", "/gangway", "/api",
 ];
 
@@ -23,15 +23,15 @@ function isPrivate(pathname) {
 
 const OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Offline · SYRIUS SOCIAL</title>
+<title>Offline · [UN]</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-background:#0B0B0C;color:#F2F2F4;font:400 14px/1.6 Georgia,serif;text-align:center}
+background:#141414;color:#F1F1ED;font:400 14px/1.6 Archivo,'Helvetica Neue',sans-serif;text-align:center}
 main{padding:32px;max-width:34ch}h1{font-weight:400;font-size:26px;margin:0 0 10px}
-p{color:#9A9AA3;margin:0}
-span{display:block;margin-top:22px;font:600 9px monospace;letter-spacing:.2em;color:#5C5C66}</style>
+p{color:#8A8A85;margin:0}
+span{display:block;margin-top:22px;font:600 9px monospace;letter-spacing:.2em;color:#6E6E69}</style>
 </head><body><main><h1>No signal past the breakwater.</h1>
 <p>You're offline. What you've loaded keeps working; the rest returns with the signal.</p>
-<span>SYRIUS SOCIAL · EST. MMXXIV</span></main></body></html>`;
+<span>[UN] · EST. MMXXIV</span></main></body></html>`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -102,7 +102,7 @@ self.addEventListener("fetch", (event) => {
 /* Signing out clears what was kept. The route only ends the Supabase session;
    Cache Storage is the worker's, so the worker has to be told. */
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SYRIUS_SIGNED_OUT") {
+  if (event.data && event.data.type === "UN_SIGNED_OUT") {
     event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
   }
 });
@@ -117,7 +117,7 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const title = payload.title || "SYRIUS SOCIAL";
+  const title = payload.title || "[UN]";
   const url = payload.url || "/inbox";
 
   event.waitUntil(

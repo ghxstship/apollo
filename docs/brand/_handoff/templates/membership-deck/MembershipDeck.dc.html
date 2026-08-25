@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Decks · Membership Deck" description="How it works, tiers, season calendar, how to apply — member-facing pitch" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<x-import component-from-global-scope="deck-stage" from="../deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+<section data-label="Title" style="width:1920px;height:1080px;background:var(--scene-noir,#3A3A36);position:relative;font-family:var(--font-body,sans-serif);color:#F1F1ED;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px">
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,13,.3) 0%,rgba(13,13,13,.88) 100%)"></div>
+<div style="position:relative;font:700 28px/1 var(--font-mono,monospace);letter-spacing:.3em;color:#F94A94;white-space:nowrap">MEMBERSHIP · SEASON I</div>
+<div style="position:relative;font:400 64px/1.1 var(--font-display,sans-serif);max-width:1500px;text-align:center;text-transform:uppercase">Twelve cabins. Two hundred applicants.</div>
+<div style="position:relative;font:400 28px/1.5 var(--font-body,sans-serif);color:rgba(241,241,237,.85)">Scarcity is the product. Here is how to get aboard.</div>
+</section>
+<section data-label="How it works" style="width:1920px;height:1080px;background:#141414;font-family:var(--font-body,sans-serif);color:#F1F1ED;display:flex;flex-direction:column;justify-content:center;padding:0 160px;gap:60px;box-sizing:border-box">
+<div style="font:700 28px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#F94A94;white-space:nowrap">HOW IT WORKS</div>
+<div style="display:flex;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:24px;border-top:2px solid rgba(249,74,148,.45);padding-top:32px"><div style="font:700 22px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#F94A94;white-space:nowrap">01 · APPLY</div><div style="font:400 48px/1.2 var(--font-display,sans-serif);text-transform:uppercase">No résumés</div><div style="font:400 28px/1.5 var(--font-body,sans-serif);color:#A6A6A0">A handle, a story, and consent to the cameras. We cast for chemistry.</div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px;border-top:2px solid rgba(249,74,148,.45);padding-top:32px"><div style="font:700 22px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#F94A94;white-space:nowrap">02 · BOARD</div><div style="font:400 48px/1.2 var(--font-display,sans-serif);text-transform:uppercase">Phones in the drawer</div><div style="font:400 28px/1.5 var(--font-body,sans-serif);color:#A6A6A0">Meet at the gangway, never before. The crew handles everything else.</div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px;border-top:2px solid rgba(249,74,148,.45);padding-top:32px"><div style="font:700 22px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#F94A94;white-space:nowrap">03 · SEE</div><div style="font:400 48px/1.2 var(--font-display,sans-serif);text-transform:uppercase">What happens, airs</div><div style="font:400 28px/1.5 var(--font-body,sans-serif);color:#A6A6A0">No scripts, no second takes. Episodes drop Fridays for members.</div></div>
+</div>
+</section>
+<section data-label="Tiers" style="width:1920px;height:1080px;background:#0D0D0D;font-family:var(--font-body,sans-serif);color:#F1F1ED;display:flex;flex-direction:column;justify-content:center;padding:0 160px;gap:56px;box-sizing:border-box">
+<div style="font:700 28px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#F94A94;white-space:nowrap">TIERS · ACCESS IS GEOGRAPHY</div>
+<div style="display:flex;gap:32px;align-items:stretch">
+<div style="flex:1;background:#1C1C1C;border:1px solid rgba(241,241,237,.10);border-radius:8px;padding:52px;display:flex;flex-direction:column;gap:24px"><div style="font:400 48px/1.1 var(--font-display,sans-serif);text-transform:uppercase">Local</div><div style="font:700 22px/1 var(--font-mono,monospace);letter-spacing:.18em;color:#A6A6A0;white-space:nowrap">HOME CITY</div><div style="font:400 28px/1.55 var(--font-body,sans-serif);color:#A6A6A0">Thursday tables and salons in your harbor. Waitlist priority for charters.</div><div style="margin-top:auto;font:700 28px/1 var(--font-mono,monospace)">$ TK / MO</div></div>
+<div style="flex:1;background:#1C1C1C;border:1px solid rgba(249,74,148,.45);border-radius:8px;padding:52px;display:flex;flex-direction:column;gap:24px;box-shadow:0 0 24px rgba(249,74,148,.15)"><div style="font:400 48px/1.1 var(--font-display,sans-serif);color:#F94A94;text-transform:uppercase">Coastal</div><div style="font:700 22px/1 var(--font-mono,monospace);letter-spacing:.18em;color:#F94A94;white-space:nowrap">ALL US HARBORS</div><div style="font:400 28px/1.55 var(--font-body,sans-serif);color:#A6A6A0">Every city, every table. One guaranteed charter cabin per season.</div><div style="margin-top:auto;font:700 28px/1 var(--font-mono,monospace);color:#F94A94">$ TK / MO</div></div>
+<div style="flex:1;background:#1C1C1C;border:1px solid rgba(241,241,237,.10);border-radius:8px;padding:52px;display:flex;flex-direction:column;gap:24px"><div style="font:400 48px/1.1 var(--font-display,sans-serif);text-transform:uppercase">Global</div><div style="font:700 22px/1 var(--font-mono,monospace);letter-spacing:.18em;color:#A6A6A0;white-space:nowrap">ALL-ACCESS</div><div style="font:400 28px/1.55 var(--font-body,sans-serif);color:#A6A6A0">International charters, founding-berth priority in new harbors, cast eligibility.</div><div style="margin-top:auto;font:700 28px/1 var(--font-mono,monospace)">$ TK / MO</div></div>
+</div>
+</section>
+<section data-label="Season" style="width:1920px;height:1080px;background:#141414;font-family:var(--font-body,sans-serif);color:#F1F1ED;display:flex;flex-direction:column;justify-content:center;padding:0 200px;gap:56px;box-sizing:border-box">
+<div style="font:700 28px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#F94A94;white-space:nowrap">SEASON I CALENDAR</div>
+<div style="display:flex;flex-direction:column">
+<div style="display:flex;gap:48px;padding:34px 0;border-top:1px solid rgba(241,241,237,.10);align-items:baseline"><div style="width:300px;flex:none;font:700 28px/1 var(--font-mono,monospace);letter-spacing:.14em;color:#F94A94;white-space:nowrap">AUG 07–13</div><div style="width:520px;flex:none;font:400 36px/1.2 var(--font-display,sans-serif);text-transform:uppercase">Mallorca charter</div><div style="font:400 28px/1.5 var(--font-body,sans-serif);color:#A6A6A0">12 cabins · 26 NM/day · filmed</div></div>
+<div style="display:flex;gap:48px;padding:34px 0;border-top:1px solid rgba(241,241,237,.10);align-items:baseline"><div style="width:300px;flex:none;font:700 28px/1 var(--font-mono,monospace);letter-spacing:.14em;color:#F94A94;white-space:nowrap">THURSDAYS</div><div style="width:520px;flex:none;font:400 36px/1.2 var(--font-display,sans-serif);text-transform:uppercase">Blind tables for six</div><div style="font:400 28px/1.5 var(--font-body,sans-serif);color:#A6A6A0">Weekly, every harbor · Dating members</div></div>
+<div style="display:flex;gap:48px;padding:34px 0;border-top:1px solid rgba(241,241,237,.10);border-bottom:1px solid rgba(241,241,237,.10);align-items:baseline"><div style="width:300px;flex:none;font:700 28px/1 var(--font-mono,monospace);letter-spacing:.14em;color:#F94A94;white-space:nowrap">SEP 04–10</div><div style="width:520px;flex:none;font:400 36px/1.2 var(--font-display,sans-serif);text-transform:uppercase">Ibiza charter</div><div style="font:400 28px/1.5 var(--font-body,sans-serif);color:#A6A6A0">Night passages · morning coves</div></div>
+</div>
+</section>
+<section data-label="Apply" style="width:1920px;height:1080px;background:var(--scene-night,#0B1E2A);position:relative;font-family:var(--font-body,sans-serif);color:#F1F1ED;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px">
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,13,.3) 0%,rgba(13,13,13,.9) 100%)"></div>
+<div style="position:relative;font:400 64px/1.1 var(--font-display,sans-serif);text-align:center;max-width:1400px;text-transform:uppercase">Apply. Board. See what happens.</div>
+<div style="position:relative;display:inline-flex;align-items:center;height:76px;padding:0 54px;border-radius:999px;background:linear-gradient(120deg,#8FE55A,#3EC317);color:#141414;font:500 28px/1 var(--font-body,sans-serif)">Request an invite</div>
+<div style="position:relative;font:400 22px/1 var(--font-mono,monospace);letter-spacing:.2em;color:rgba(241,241,237,.55);white-space:nowrap">UNHINGED.SOCIAL/APPLY · CASTING CLOSES JUL 31</div>
+</section>
+</x-import>
+</x-dc>
+</body>
+</html>

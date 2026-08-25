@@ -1,0 +1,20 @@
+:root{
+--font-display:'Anton','Arial Narrow Bold',sans-serif;/* ALL CAPS, ≥22px only; below 22px titles use Archivo 700 */
+--font-editorial:'Instrument Serif',Georgia,serif;/* 90s editorial serif — headline italics and suffix lockups, ≥22px, sentence case */
+--font-body:'Archivo','Helvetica Neue',sans-serif;/* 400 body · 500 UI/buttons · 700 headings; sentence case, never Title Case */
+--font-mono:'Space Mono',ui-monospace,monospace;/* 700 labels ALL CAPS · 400 data */
+/* type scale — canonical steps; no off-scale sizes */
+--text-3xs:9px;--text-2xs:10px;--text-xs:12px;--text-sm:14px;--text-md:16px;--text-lg:18px;--text-xl:22px;--text-2xl:28px;--text-3xl:36px;--text-4xl:48px;--text-5xl:64px;
+/* leading */
+--leading-tight:1.05;--leading-snug:1.25;--leading-body:1.55;
+/* tracking — dense mono 9px · labels 10px+ · display straps */
+--tracking-display:.01em;--tracking-body:0;--tracking-dense:.12em;--tracking-label:.16em;--tracking-strap:.24em;
+/* semantic — Anton registers as weight 400 */
+--type-display:400 var(--text-4xl)/var(--leading-tight) var(--font-display);/* ALL CAPS */
+--type-title:400 var(--text-2xl)/var(--leading-snug) var(--font-display);/* ALL CAPS */
+--type-editorial:400 var(--text-2xl)/var(--leading-snug) var(--font-editorial);/* sentence case, italic for emphasis */
+--type-heading:700 var(--text-lg)/var(--leading-snug) var(--font-body);/* sentence case */
+--type-body:400 var(--text-md)/var(--leading-body) var(--font-body);
+--type-caption:400 var(--text-sm)/var(--leading-snug) var(--font-body);
+--type-label:700 var(--text-2xs)/1 var(--font-mono);/* ALL CAPS + --tracking-label */
+}

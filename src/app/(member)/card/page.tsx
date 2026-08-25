@@ -44,7 +44,7 @@ export default async function MemberCardPage() {
       <div className="crd-card">
         <div className="crd-seam"></div>
         <div className="crd-in">
-          <Wordmark size="md" inverse />
+          <Wordmark size="md" suffix={null} inverse />
           <div className="crd-name">{name}</div>
           <div className="crd-meta">
             {memberNo} · {tier}
@@ -162,7 +162,7 @@ export default async function MemberCardPage() {
             width: 100% !important;
             max-width: 480px !important;
             margin-inline: auto !important;
-            border-color: #0B0E12 !important;
+            border-color: #0D0D0D !important; /* --noir-950; print has no cascade to resolve a var against on some engines */
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }

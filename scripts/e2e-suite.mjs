@@ -1065,10 +1065,10 @@ async function enforcementRules(p) {
   await stf.del("email_outbox?template=eq.season-card&status=eq.skipped");
 }
 
-/* ---------- M. Syrius: cabins, consent, tables, matches ----------
+/* ---------- M. [UN]: cabins, consent, tables, matches ----------
    The rebrand's new objects. Dating privacy is the sharp edge: a pick is
    private even from seatmates, and only mutuality surfaces anything. */
-async function syriusRules(p) {
+async function clubRules(p) {
   const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), stf = rest(p.staff), anon = rest(null);
 
   /* --- filming consent --- */
@@ -2180,7 +2180,7 @@ async function main() {
   await moderationRules(personas);
   await documentRules(personas);
   await enforcementRules(personas);
-  await syriusRules(personas);
+  await clubRules(personas);
   await hardeningRules(personas);
   await roundTwoRules(personas);
   await roundThreeRules(personas);

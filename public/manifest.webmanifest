@@ -1,11 +1,11 @@
 {
-  "name": "SYRIUS SOCIAL",
-  "short_name": "SYRIUS",
-  "description": "The Unscripted Social Experiment. Cast only.",
+  "name": "[UN]",
+  "short_name": "[UN]",
+  "description": "A global nautical social club. Members only.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#101418",
-  "theme_color": "#101418",
+  "background_color": "#EDEDEA",
+  "theme_color": "#EDEDEA",
   "icons": [
     {
       "src": "/icons/icon-192.png",

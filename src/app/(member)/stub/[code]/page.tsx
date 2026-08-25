@@ -185,7 +185,7 @@ export default async function StubPage({
             style={{
               fontFamily: "var(--font-display)",
               fontSize: 24,
-              color: "var(--bone, #F4EFE6)",
+              color: "var(--bone)",
               marginTop: 14,
             }}
           >
@@ -259,7 +259,7 @@ export default async function StubPage({
             width: 100% !important;
             max-width: 480px !important;
             margin-inline: auto !important;
-            border-color: #0B0E12 !important;
+            border-color: #0D0D0D !important; /* --noir-950; print has no cascade to resolve a var against on some engines */
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }

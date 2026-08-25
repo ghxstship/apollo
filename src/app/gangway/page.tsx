@@ -1,4 +1,5 @@
 import { safeNext } from "@/lib/safe-next";
+import { ANCHOR } from "@/lib/brand";
 import type { Metadata } from "next";
 import { ThemeToggle, Wordmark } from "@/components/ds";
 import { GangwayPanel } from "./panel";
@@ -6,7 +7,7 @@ import "./gangway.css";
 
 export const metadata: Metadata = {
   title: "The gangway",
-  description: "Passwordless sign-in for the SYRIUS SOCIAL cast.",
+  description: `Passwordless sign-in for the ${ANCHOR} cast.`,
 };
 
 export default async function GangwayPage({
@@ -22,7 +23,7 @@ export default async function GangwayPage({
     <div className="gw">
       <aside className="gw-side">
         <span className="gw-side__wm">
-          <Wordmark size="md" inverse />
+          <Wordmark size="md" suffix={null} inverse />
         </span>
         <div>
           <div className="gw-side__big">Welcome back to the water.</div>

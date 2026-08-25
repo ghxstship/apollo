@@ -1,5 +1,6 @@
 import React from "react";
 import { Icon } from "./icon";
+import { ANCHOR, COMMERCE, DIVISION_ACCENT, lockupSuffix, type DivisionId, type LockupForm } from "@/lib/brand";
 
 /* — Card — */
 const SEAS: Record<string, string> = {
@@ -151,18 +152,126 @@ export function Table<R extends Record<string, unknown>>({
   );
 }
 
-/* — Wordmark — */
-const WM_SIZES: Record<string, number> = { sm: 15, md: 20, lg: 34 };
+/* — Wordmark —
+   The brand has no logo asset. The mark is type-set, and this is the only place
+   it is set, so that the invariants in docs/brand/brand-architecture.md hold by
+   construction rather than by review:
+
+   - The brackets are part of the mark. `[UN]` is a literal in the JSX below and
+     there is no prop that removes, restyles, recolours, or spaces them out.
+   - Never a suffix without the anchor: the anchor renders unconditionally.
+   - Never two suffixes in one lockup: `suffix` is one optional value, not a
+     list, so a second one is not expressible.
+   - `[UN]` is always caps and the suffix is always sentence case, except for
+     the two sanctioned variants. Whatever case the caller passes is normalised
+     — a suffix arriving as "HINGED" from a database column does not silently
+     become the physical-goods setting.
+   - Plain-sans lowercase is never permitted. The only lowercase path is
+     `editorial`, which forces the serif italic with it. Lowercase is earned by
+     the serif, never by the sans — there is no prop combination that yields
+     lowercase in the mono.
+   - The anchor is always ink (or ivory when inverted). Only the sub line
+     carries accent, which is why `accent` types as a sub-line colour and the
+     anchor's colour is not a prop at all.
+
+   What the type system cannot carry, and what a reviewer still has to check:
+   `caps` is a LARGE PHYSICAL GOODS setting — screen print, embroidered cap
+   backs, yacht flags — and is wrong on every screen. `editorial` is for
+   campaign headlines and deck openers and is banned in UI and navigation. Both
+   are perfectly legal TypeScript in a nav bar.
+
+   Suffix spacing: .3em, per the lockup rules in brand-architecture.md and the
+   reference implementation. The handoff README quotes .61em in its §1 summary,
+   which is the TAGLINE lockup's space — "one full character space … .61em of
+   the tagline size, which is one Space Mono advance" — and not the division
+   suffix's word space. Two sources against one, and the wider value visibly
+   breaks the lockup at nav sizes. */
+const WM_SIZES = { sm: 16, md: 20, lg: 36 } as const;
+
+/* Space Mono runs wider and shorter than Anton; .77 optically matches cap
+   height. This is a measured value from the package, not a round number. */
+const WM_SFX_SCALE = 0.77;
+
+const WM_ACCENTS: Record<DivisionId | "shop", string> = { ...DIVISION_ACCENT, shop: COMMERCE.shop.accent };
+
+/** The five sanctioned suffixes. Tighter than the package's .d.ts, which unions
+    the five literals with bare `string` and so accepts anything at all — the
+    five divisions are the whole set, and a sixth is a brand decision, not a
+    prop value. */
+export type DivisionSuffix = "Hinged" | "Bound" | "Limited" | "Scripted" | "Cut";
+
+interface WordmarkBase {
+  /** sm 16 / md 20 / lg 36, or a px number. The lockup is one of the four
+      documented exemptions from the Anton ≥22px floor. */
+  size?: "sm" | "md" | "lg" | number;
+  /** Division suffix, sentence case. Pass null for the bare [UN] parent anchor
+      (System A) — used on avatars, app icons, passes, wayfinding, and anywhere
+      the umbrella is speaking rather than a division. */
+  suffix?: DivisionSuffix | null;
+  /** Optional mono sub line under the lockup, e.g. "SINGLES SOCIAL CLUB". */
+  sub?: React.ReactNode;
+  /** Sub-line colour. Defaults to the division's own accent. */
+  accent?: DivisionId | "shop";
+  inverse?: boolean;
+  className?: string;
+  style?: React.CSSProperties;
+}
+
+/* editorial and caps are the two sanctioned variants of one setting — the
+   casing matrix has three rows, not four and a combination. Modelled as a union
+   so that passing both is a compile error rather than a silent precedence rule
+   nobody can see from the call site. */
+export type WordmarkProps = WordmarkBase &
+  (
+    | { editorial?: false; caps?: false }
+    /** Serif italic lowercase — campaign headlines and deck openers only. */
+    | { editorial: true; caps?: false }
+    /** Mono ALL CAPS +.06em — large physical goods only. Never on screen. */
+    | { editorial?: false; caps: true }
+  );
 
 export function Wordmark({
-  size = "md", sub, seam = false, inverse = false, className = "", style,
-}: { size?: "sm" | "md" | "lg" | number; sub?: React.ReactNode; seam?: boolean; inverse?: boolean; className?: string; style?: React.CSSProperties }) {
-  const px = typeof size === "number" ? size : WM_SIZES[size] || 20;
+  size = "md", suffix = "Hinged", sub, accent, inverse = false,
+  editorial = false, caps = false, className = "", style,
+}: WordmarkProps) {
+  const px = typeof size === "number" ? size : WM_SIZES[size] ?? 20;
+  const sfxPx = Math.round(px * WM_SFX_SCALE);
+  const form: LockupForm = editorial ? "editorial" : caps ? "caps" : "standard";
+  const word = suffix ? lockupSuffix(suffix, form) : null;
+  /* Falls back to the suffix's own division, then to hinged for the bare
+     anchor — the sub line under a parent lockup still needs a colour. */
+  const tone: DivisionId | "shop" =
+    accent ?? ((suffix ? (suffix.toLowerCase() as DivisionId) : "hinged"));
+  const ink = inverse ? "var(--ivory-100)" : "var(--text-body)";
+  const sfxStyle: React.CSSProperties = editorial
+    ? { font: `400 ${px}px/1 var(--font-editorial)`, fontStyle: "italic", marginLeft: ".14em" }
+    : { font: `700 ${sfxPx}px/1 var(--font-mono)`, letterSpacing: caps ? ".06em" : "-.01em", marginLeft: ".3em" };
   return (
-    <span className={["ls-wm", inverse ? "ls-wm--inverse" : "", className].filter(Boolean).join(" ")} style={{ fontSize: px, ...style }}>
-      <span className="ls-wm__t" style={{ fontSize: px }}>SYRIUS SOCIAL</span>
-      {sub ? <span className="ls-wm__sub" style={{ fontSize: Math.max(8, px * 0.42) }}>{sub}</span> : null}
-      {seam ? <span className="ls-wm__seam"></span> : null}
+    <span
+      className={["ls-wm", inverse ? "ls-wm--inverse" : "", className].filter(Boolean).join(" ")}
+      style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", lineHeight: 1, ...style }}
+    >
+      <span style={{ display: "inline-flex", alignItems: "baseline", color: ink }}>
+        <span style={{ font: `400 ${px}px/1 var(--font-display)`, letterSpacing: ".02em" }}>{ANCHOR}</span>
+        {word ? <span style={sfxStyle}>{word}</span> : null}
+      </span>
+      {sub ? (
+        <span
+          style={{
+            /* 9px is --text-3xs, the bottom of the ladder — the sub line stops
+               shrinking with the lockup rather than going off-scale. */
+            font: `700 ${Math.max(9, Math.round(px * 0.34))}px/1 var(--font-mono)`,
+            letterSpacing: ".42em",
+            marginTop: Math.round(px * 0.28),
+            /* Optical centring: .42em of tracking is applied after the last
+               glyph too, so the block sits half a step left without this. */
+            marginLeft: ".42em",
+            color: inverse ? "rgba(241,241,237,.8)" : WM_ACCENTS[tone] ?? WM_ACCENTS.hinged,
+          }}
+        >
+          {sub}
+        </span>
+      ) : null}
     </span>
   );
 }

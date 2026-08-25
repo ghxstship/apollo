@@ -12,7 +12,7 @@
     "/inbox",
     "/you",
     "/live",
-    "/slop-chest",
+    "/shop",
     "/stub",
     "/regattas",
     "/tables",
@@ -458,19 +458,19 @@
       }
     },
     {
+      "path": "/shop",
+      "file": "src/app/(member)/shop/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/sign/[token]",
       "file": "src/app/sign/[token]/page.tsx",
       "type": "page",
       "dynamic": true,
       "access": "public",
       "credential": true
-    },
-    {
-      "path": "/slop-chest",
-      "file": "src/app/(member)/slop-chest/page.tsx",
-      "type": "page",
-      "dynamic": false,
-      "access": "member"
     },
     {
       "path": "/stub/[code]",

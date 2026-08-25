@@ -1,4 +1,4 @@
-/* feed — the Open Deck group from the Syrius kit, ported 1:1.
+/* feed — the Open Deck group from the design system, ported 1:1.
    Hail is the single reaction (no like counts); moderation is flag → the
    Bridge's queue → remove or leave up. The confession-booth motif lives in the
    composer's voice, not the surface's name. */

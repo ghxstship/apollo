@@ -1,5 +1,5 @@
 // send-outbox — drains public.email_outbox and delivers via Resend.
-// Syrius email system: ivory canvas, gold rule, producer voice.
+// [UN] email system: paper canvas, acid rule, producer voice.
 // No dependencies beyond fetch; talks to PostgREST directly with the service role key.
 
 type OutboxRow = {
@@ -21,10 +21,15 @@ let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
 /* Fallback only — the real sender is the OUTBOX_FROM row in Supabase Vault.
    Sending sits on atlvs.pro because Resend verifies one domain per plan and
-   syrius.social is not registered yet. Moving it is one Vault update. */
-const DEFAULT_FROM = "SYRIUS SOCIAL — Shoreside <shore@atlvs.pro>";
+   unhingedsocial.us is not registered yet. Moving it is one Vault update.
+
+   The display name is QUOTED. RFC 5322 lists [ and ] as specials, so `[UN] —
+   Shoreside <shore@…>` is not a valid From header — some relays reject it and
+   others silently mangle the name. The brackets are part of the mark and are
+   not coming off, so they get quoted instead. */
+const DEFAULT_FROM = '"[UN] — Shoreside" <shore@atlvs.pro>';
 /* Member-app origin for email deep links; overridable the same way as FROM. */
-const APP_URL = Deno.env.get("APP_URL") || "https://syrius.social";
+const APP_URL = Deno.env.get("APP_URL") || "https://unhingedsocial.us";
 /* Derived from the sender rather than hard-coded, so the unsubscribe mailbox
    is always one that actually receives mail for the domain we send from. */
 function shoresideAddress(): string {
@@ -107,7 +112,10 @@ function when(v: unknown): string {
   });
 }
 
-const SERIF = `'Marcellus', Georgia, 'Times New Roman', serif`;
+/* Mail has no webfonts worth relying on, so this is the token stack's own
+   fallback chain and nothing more: Instrument Serif if the reader happens to
+   have it, Georgia otherwise — which is the fallback --font-editorial names. */
+const SERIF = `'Instrument Serif', Georgia, 'Times New Roman', serif`;
 const MONO = `'Space Mono', 'Courier New', monospace`;
 
 /* Who the footer is talking to. The first two emails a stranger ever gets —
@@ -118,15 +126,15 @@ type Audience = "member" | "applicant";
 function shell(bodyHtml: string, inverse = false, audience: Audience = "member"): string {
   /* Kit email system: ivory canvas #E9E2D2, warm noir ink, a gold rule, mono
      strap footer. Email-safe stack — Georgia serif, Courier mono. */
-  const ink = inverse ? "#F4EFE6" : "#161B21";
-  const paper = inverse ? "#101418" : "#E9E2D2";
-  const card = inverse ? "#161B21" : "#F4EFE6";
-  const rule = inverse ? "#3C2F1A" : "#B98A2F";
-  const muted = inverse ? "#9AA3AD" : "#6B6B70";
+  const ink = inverse ? "#F1F1ED" : "#141414";
+  const paper = inverse ? "#0D0D0D" : "#EDEDEA";
+  const card = inverse ? "#1C1C1C" : "#F7F7F4";
+  const rule = inverse ? "#2F9410" : "#3EC317";
+  const muted = inverse ? "#A6A6A0" : "#4F4F4C";
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper};padding:32px 0;">
 <tr><td align="center">
 <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:${card};color:${ink};font-family:${SERIF};">
-<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">SYRIUS SOCIAL</td></tr>
+<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">[UN]</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:2px solid ${rule};"></div></td></tr>
 <tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>
@@ -259,7 +267,7 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
        the payload prints as 0. */
     const fig = (value: unknown, label: string) =>
       `<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);padding:14px 0;">` +
-      `<div style="font-family:${MONO};font-size:22px;color:#101418;font-weight:700;">${
+      `<div style="font-family:${MONO};font-size:22px;color:#141414;font-weight:700;">${
         value === undefined || value === null ? "&mdash;" : esc(value)
       }</div>` +
       `<div style="font-family:${MONO};font-size:9px;letter-spacing:2px;color:#7E8894;padding-top:5px;">${esc(label)}</div></td>`;
@@ -268,8 +276,8 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
     return {
       subject: `Your season — ${String(p["season"] ?? "the log")}`,
       html: shell(
-        `<div style="font-family:${MONO};font-size:11px;letter-spacing:2px;color:#966E22;text-transform:uppercase;">${esc(p["season"] ?? "The season")} · THE RECORD</div>
-<div style="font-family:${SERIF};font-size:30px;line-height:1.2;color:#101418;padding:14px 0 6px;">Your season, on the record.</div>
+        `<div style="font-family:${MONO};font-size:11px;letter-spacing:2px;color:#2F9410;text-transform:uppercase;">${esc(p["season"] ?? "The season")} · THE RECORD</div>
+<div style="font-family:${SERIF};font-size:30px;line-height:1.2;color:#141414;padding:14px 0 6px;">Your season, on the record.</div>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A5560;">The season is closed. This is what the log holds. No scripts. No second takes.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
 <tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["sailings"], "SAILINGS")}${fig(p["harbors"], "HARBORS")}</tr>
@@ -280,18 +288,18 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
               marks
                 .map(
                   (m) =>
-                    `<div style="font-family:${SERIF};font-size:17px;color:#101418;padding:8px 0 2px;">${esc(m)}</div>`,
+                    `<div style="font-family:${SERIF};font-size:17px;color:#141414;padding:8px 0 2px;">${esc(m)}</div>`,
                 )
                 .join("")
             : "") +
           (p["longest_title"]
             ? strap("LONGEST SAILING") +
-              `<div style="font-family:${SERIF};font-size:17px;color:#101418;padding:8px 0 2px;">${esc(p["longest_title"])}${
+              `<div style="font-family:${SERIF};font-size:17px;color:#141414;padding:8px 0 2px;">${esc(p["longest_title"])}${
                 p["longest_nm"] ? ` — ${esc(p["longest_nm"])} NM` : ""
               }</div>`
             : "") +
           `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px;"><tr>
-<td style="border-radius:999px;background:#966E22;"><a href="${APP_URL}/card" style="display:inline-block;padding:13px 30px;font-size:14px;color:#F4EFE6;text-decoration:none;border-radius:999px;font-family:${SERIF};">Open your logbook</a></td>
+<td style="border-radius:999px;background:#3EC317;"><a href="${APP_URL}/card" style="display:inline-block;padding:13px 30px;font-size:14px;color:#0D0D0D;text-decoration:none;border-radius:999px;font-family:${SERIF};">Open your logbook</a></td>
 </tr></table>
 <p style="margin:14px 0 0;font-size:14px;color:#4A5560;">The log carries. Next season opens shortly.</p>`,
       ),

@@ -1,10 +1,10 @@
 import { ImageResponse } from "next/og";
-import { CLUB_ZONE, SURFACES } from "@/lib/brand";
+import { ANCHOR, CLUB_ZONE, SURFACES } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
 
-export const alt = "An episode from SYRIUS SOCIAL.";
+export const alt = `An episode from ${ANCHOR}.`;
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 

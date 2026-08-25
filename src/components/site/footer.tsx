@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/ds";
-import { CITY_CODES, EST_YEAR_ROMAN } from "@/lib/brand";
+import { ANCHOR, CITY_CODES, EST_YEAR_ROMAN } from "@/lib/brand";
 import { roman } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -17,7 +17,9 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
         <div className="ws-footer__rule"></div>
         <div className="ws-footer__in">
           <div>
-            <Wordmark size="lg" seam inverse />
+            {/* System A: the umbrella is speaking in a footer, and the parent anchor
+                compounds recognition across every division instead of splitting it. */}
+            <Wordmark size="lg" suffix={null} inverse />
             <p className="ws-footer__blurb">
               A membership club for experiential connection, at sea and ashore.
             </p>
@@ -53,7 +55,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
           </div>
         </div>
         <div className="ws-footer__base">
-          <span>© MMXXVI Syrius Social</span>
+          <span>© MMXXVI {ANCHOR}</span>
           <span>Est. {EST_YEAR_ROMAN} · Marina del Rey</span>
         </div>
       </div>

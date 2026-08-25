@@ -28,7 +28,7 @@ export default async function StaffLayout({
       <header className="hm-top">
         <div className="hm-top__in">
           <div>
-            <Wordmark size="sm" />
+            <Wordmark size="sm" suffix={null} />
             <span className="hm-top__sub">{SURFACES.bridge} — {harbor}</span>
           </div>
           <HmClock />

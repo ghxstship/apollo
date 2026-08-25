@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { Avatar } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import { getMember } from "../data";
+import { lockup } from "@/lib/brand";
 import { SendAWord } from "@/components/member/send-a-word";
 
 export const metadata: Metadata = { title: "Matches" };
 
-/* Syrius Dating — Matches. Every one came from a shared table and a mutual
+/* [UN] Scripted — Matches. Every one came from a shared table and a mutual
    pick; there is nothing here to browse. Messaging reuses direct threads — a
    match is an introduction, not another inbox. */
 
@@ -35,7 +36,7 @@ export default async function MatchesPage() {
 
   return (
     <div className="ls-fade" data-theme="shore">
-      <span className="mbr-eyebrow">Syrius Dating</span>
+      <span className="mbr-eyebrow">{lockup("scripted")}</span>
       <h1 className="mbr-h1">Matches.</h1>
       <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "56ch" }}>
         Everyone here shared a table with you and said your name back. That is

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Relations · Data Kit" description="Reporting styles: season report cover, accent-on-ink chart rules, KPI tables, stat blocks" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<div style="background:#0D0D0D;min-height:100vh;padding:48px;font-family:var(--font-body,sans-serif);color:#F1F1ED;display:flex;flex-direction:column;gap:36px">
+<div style="font:700 11px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#6E6E69">DATA KIT · ACID ON INK · ONE METRIC PER CHART · MONO AXES, DISPLAY HEADLINES, NO GRIDLINE HEAVIER THAN 10% IVORY</div>
+<div style="display:flex;gap:36px;flex-wrap:wrap;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">SEASON REPORT COVER · LETTER · SHOWN 40%</div>
+<div style="width:340px;height:440px;background:#141414;border:1px solid rgba(241,241,237,.14);padding:30px;box-sizing:border-box;display:flex;flex-direction:column;box-shadow:0 12px 36px rgba(0,0,0,.45)">
+<div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:5px"><span style="font:400 18px/1 var(--font-display,sans-serif);letter-spacing:.06em;text-transform:uppercase">[UN] Hinged</span><span style="font:700 6px/1 var(--font-mono,monospace);letter-spacing:.4em;color:#F94A94;white-space:nowrap">SOCIAL</span></div><span style="font:700 6px/1.7 var(--font-mono,monospace);letter-spacing:.14em;color:#6E6E69;text-align:right;white-space:nowrap">CONFIDENTIAL<br>BOARD + CREW ONLY</span></div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:12px">
+<span style="width:34px;height:2px;background:linear-gradient(120deg,#8FE55A,#3EC317)"></span>
+<span style="font:400 26px/1.15 var(--font-display,sans-serif);text-transform:uppercase">Season I.<br>The numbers.</span>
+<span style="font:700 6.5px/1.8 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">AUG–OCT MMXXVI · 2 CHARTERS · 14 TABLES<br>PREPARED BY THE BRIDGE · NOV 01</span>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">BAR CHART · VALUES AT BAR ENDS, NO Y-AXIS</div>
+<div style="width:380px;background:#1C1C1C;border:1px solid rgba(241,241,237,.1);border-radius:6px;padding:20px 22px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+<span style="font:400 15px/1.2 var(--font-display,sans-serif);text-transform:uppercase">Applicants by harbor</span>
+<div style="display:flex;flex-direction:column;gap:9px;font:400 9px/1 var(--font-mono,monospace)">
+<div style="display:flex;align-items:center;gap:10px"><span style="width:44px;color:#A6A6A0;letter-spacing:.1em">MIA</span><span style="height:12px;width:200px;background:linear-gradient(120deg,#8FE55A,#3EC317);border-radius:2px"></span><span style="color:#F1F1ED;font-weight:700">112</span></div>
+<div style="display:flex;align-items:center;gap:10px"><span style="width:44px;color:#A6A6A0;letter-spacing:.1em">LA</span><span style="height:12px;width:118px;background:linear-gradient(120deg,#8FE55A,#3EC317);border-radius:2px;opacity:.75"></span><span style="color:#F1F1ED;font-weight:700">66</span></div>
+<div style="display:flex;align-items:center;gap:10px"><span style="width:44px;color:#A6A6A0;letter-spacing:.1em">NYC</span><span style="height:12px;width:39px;background:linear-gradient(120deg,#8FE55A,#3EC317);border-radius:2px;opacity:.55"></span><span style="color:#F1F1ED;font-weight:700">22</span></div>
+</div>
+<span style="font:700 6px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#6E6E69;white-space:nowrap">SEASON I CASTING WINDOW · N=200</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">TREND · SPARK BARS, CURRENT PERIOD ACCENT</div>
+<div style="width:380px;background:#1C1C1C;border:1px solid rgba(241,241,237,.1);border-radius:6px;padding:20px 22px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:400 15px/1.2 var(--font-display,sans-serif);text-transform:uppercase">Waitlist, weekly</span><span style="font:700 13px/1 var(--font-mono,monospace);color:#F94A94">41 ↑</span></div>
+<div style="display:flex;align-items:flex-end;gap:6px;height:52px">
+<span style="flex:1;height:22%;background:rgba(241,241,237,.18);border-radius:2px 2px 0 0"></span><span style="flex:1;height:30%;background:rgba(241,241,237,.18);border-radius:2px 2px 0 0"></span><span style="flex:1;height:26%;background:rgba(241,241,237,.18);border-radius:2px 2px 0 0"></span><span style="flex:1;height:44%;background:rgba(241,241,237,.18);border-radius:2px 2px 0 0"></span><span style="flex:1;height:58%;background:rgba(241,241,237,.18);border-radius:2px 2px 0 0"></span><span style="flex:1;height:70%;background:rgba(241,241,237,.18);border-radius:2px 2px 0 0"></span><span style="flex:1;height:100%;background:linear-gradient(180deg,#8FE55A,#3EC317);border-radius:2px 2px 0 0"></span>
+</div>
+<div style="display:flex;justify-content:space-between;font:700 6px/1 var(--font-mono,monospace);letter-spacing:.12em;color:#6E6E69"><span>W27</span><span>W33 · CURRENT</span></div>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">KPI TABLE · MONO NUMERALS, DELTA IN SEMANTICS</div>
+<div style="width:360px;display:flex;flex-direction:column">
+<div style="display:flex;gap:16px;padding:9px 0;border-top:1px solid rgba(241,241,237,.22);font:700 8px/1 var(--font-mono,monospace);letter-spacing:.14em;color:#6E6E69"><span style="flex:1">METRIC</span><span style="width:70px;text-align:right">SEASON I</span><span style="width:60px;text-align:right">Δ PLAN</span></div>
+<div style="display:flex;gap:16px;padding:10px 0;border-top:1px solid rgba(241,241,237,.1);align-items:baseline"><span style="flex:1;font:400 13px/1.3 var(--font-body,sans-serif)">Applications</span><span style="width:70px;text-align:right;font:700 12px/1 var(--font-mono,monospace)">200</span><span style="width:60px;text-align:right;font:700 10px/1 var(--font-mono,monospace);color:#7FBF8E">+18%</span></div>
+<div style="display:flex;gap:16px;padding:10px 0;border-top:1px solid rgba(241,241,237,.1);align-items:baseline"><span style="flex:1;font:400 13px/1.3 var(--font-body,sans-serif)">Cabin fill</span><span style="width:70px;text-align:right;font:700 12px/1 var(--font-mono,monospace)">100%</span><span style="width:60px;text-align:right;font:700 10px/1 var(--font-mono,monospace);color:#7FBF8E">ON</span></div>
+<div style="display:flex;gap:16px;padding:10px 0;border-top:1px solid rgba(241,241,237,.1);align-items:baseline"><span style="flex:1;font:400 13px/1.3 var(--font-body,sans-serif)">Table no-shows</span><span style="width:70px;text-align:right;font:700 12px/1 var(--font-mono,monospace)">6</span><span style="width:60px;text-align:right;font:700 10px/1 var(--font-mono,monospace);color:#E0331F">−2 OVER</span></div>
+<div style="display:flex;gap:16px;padding:10px 0;border-top:1px solid rgba(241,241,237,.1);border-bottom:1px solid rgba(241,241,237,.22);align-items:baseline"><span style="flex:1;font:400 13px/1.3 var(--font-body,sans-serif)">Episode watch-through</span><span style="width:70px;text-align:right;font:700 12px/1 var(--font-mono,monospace)">TK</span><span style="width:60px;text-align:right;font:700 10px/1 var(--font-mono,monospace);color:#A6A6A0">—</span></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">STAT BLOCKS · SERIF NUMERAL + MONO LABEL</div>
+<div style="display:flex;gap:36px">
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:400 44px/1 var(--font-display,sans-serif);text-transform:uppercase">200</span><span style="font:700 7px/1 var(--font-mono,monospace);letter-spacing:.18em;color:#A6A6A0;white-space:nowrap">APPLICANTS</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:400 44px/1 var(--font-display,sans-serif);text-transform:uppercase">12</span><span style="font:700 7px/1 var(--font-mono,monospace);letter-spacing:.18em;color:#A6A6A0;white-space:nowrap">CABINS</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font:400 44px/1 var(--font-display,sans-serif);color:#F94A94;text-transform:uppercase">41</span><span style="font:700 7px/1 var(--font-mono,monospace);letter-spacing:.18em;color:#F94A94;white-space:nowrap">WAITLIST · HERO STAT</span></div>
+</div>
+<span style="font:400 12px/1.6 var(--font-body,sans-serif);color:#6E6E69;max-width:360px">One accent hero stat per view; the rest ivory. Percentages get the % sign, counts never get decoration. TK marks unmeasured — never fake a number.</span>
+</div>
+</div>
+</div>
+<div style="border-top:1px solid rgba(241,241,237,.1);padding-top:28px;display:flex;flex-direction:column;gap:18px"><div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><span style="font:400 22px/1 var(--font-display,sans-serif);text-transform:uppercase">Episode scorecard</span><span style="font:700 9px/1.8 var(--font-mono,monospace);letter-spacing:.12em;color:#6E6E69">ONE PER EPISODE · SAME SIX MEASURES EVERY TIME · TK MEANS UNMEASURED, NEVER ESTIMATED</span></div><div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:10px"><div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">SCORECARD · SEASON REPORT PAGE</div>
+<div style="width:440px;background:#141414;border:1px solid rgba(241,241,237,.1);border-radius:6px;padding:20px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:700 9px/1 var(--font-mono,monospace);letter-spacing:.2em;color:#F94A94">EPISODE 04 · MALLORCA</span><span style="font:700 9px/1 var(--font-mono,monospace);color:#6E6E69">AUG 07</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+<span style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 var(--font-display,sans-serif);color:#F94A94;text-transform:uppercase">128k</span><span style="font:700 9px/1.4 var(--font-mono,monospace);letter-spacing:.12em;color:#A6A6A0">VIEWS · 7 DAY</span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 var(--font-display,sans-serif);text-transform:uppercase">61%</span><span style="font:700 9px/1.4 var(--font-mono,monospace);letter-spacing:.12em;color:#A6A6A0">COMPLETION</span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 var(--font-display,sans-serif);text-transform:uppercase">2,410</span><span style="font:700 9px/1.4 var(--font-mono,monospace);letter-spacing:.12em;color:#A6A6A0">APPLICATIONS</span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 var(--font-display,sans-serif);text-transform:uppercase">318</span><span style="font:700 9px/1.4 var(--font-mono,monospace);letter-spacing:.12em;color:#A6A6A0">TABLES BOOKED</span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 var(--font-display,sans-serif);text-transform:uppercase">$41k</span><span style="font:700 9px/1.4 var(--font-mono,monospace);letter-spacing:.12em;color:#A6A6A0">SHOP REVENUE</span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="font:400 36px/1 var(--font-display,sans-serif);color:#6E6E69;text-transform:uppercase">TK</span><span style="font:700 9px/1.4 var(--font-mono,monospace);letter-spacing:.12em;color:#A6A6A0">BRAND LIFT</span></span>
+</div>
+</div>
+<span style="font:400 12px/1.6 var(--font-body,sans-serif);color:#6E6E69;max-width:440px">Six measures, three columns, one accent stat. The same six every episode — no swapping in whichever number looked good.</span></div>
+</div></div><div style="border-top:1px solid rgba(241,241,237,.1);padding-top:28px;display:flex;flex-direction:column;gap:18px"><div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><span style="font:400 22px/1 var(--font-display,sans-serif);text-transform:uppercase">Funnel &amp; geography</span><span style="font:700 9px/1.8 var(--font-mono,monospace);letter-spacing:.12em;color:#6E6E69">FUNNEL BARS ARE FLAT INK WITH ONE ACCENT STAGE · MAPS ARE GREYSCALE WITH ACCENT PORTS, NEVER SATELLITE IMAGERY</span></div><div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+<div style="display:flex;flex-direction:column;gap:10px"><div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">APPLICATION FUNNEL</div>
+<div style="width:340px;background:#141414;border:1px solid rgba(241,241,237,.1);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px">
+<span style="display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;font:700 9px/1 var(--font-mono,monospace);letter-spacing:.12em"><span>APPLIED</span><span style="color:#A6A6A0">2,410</span></span><span style="height:14px;background:#333333;width:100%"></span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;font:700 9px/1 var(--font-mono,monospace);letter-spacing:.12em"><span>SCREENED</span><span style="color:#A6A6A0">640</span></span><span style="height:14px;background:#333333;width:27%"></span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;font:700 9px/1 var(--font-mono,monospace);letter-spacing:.12em"><span>MET</span><span style="color:#A6A6A0">96</span></span><span style="height:14px;background:#333333;width:9%"></span></span>
+<span style="display:flex;flex-direction:column;gap:4px"><span style="display:flex;justify-content:space-between;font:700 9px/1 var(--font-mono,monospace);letter-spacing:.12em"><span style="color:#F94A94">CAST</span><span style="color:#F94A94">12</span></span><span style="height:14px;background:#3EC317;width:3%;min-width:10px"></span></span>
+</div>
+<span style="font:400 12px/1.6 var(--font-body,sans-serif);color:#6E6E69;max-width:340px">Bars share one baseline and one scale. The outcome stage is the only accent — never color every stage.</span></div>
+<div style="display:flex;flex-direction:column;gap:10px"><div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">ROUTE MAP STYLE · SCHEMATIC, NOT CARTOGRAPHIC</div>
+<div style="width:320px;height:190px;background:#141414;border:1px solid rgba(241,241,237,.1);position:relative;overflow:hidden">
+<span style="position:absolute;left:34px;top:120px;width:10px;height:10px;border-radius:50%;background:#F94A94"></span><span style="position:absolute;left:30px;top:136px;font:700 8px/1 var(--font-mono,monospace);letter-spacing:.12em;color:#F94A94">PALMA</span>
+<span style="position:absolute;left:150px;top:70px;width:8px;height:8px;border-radius:50%;background:#A6A6A0"></span><span style="position:absolute;left:140px;top:52px;font:700 8px/1 var(--font-mono,monospace);letter-spacing:.12em;color:#A6A6A0">CABRERA</span>
+<span style="position:absolute;left:250px;top:140px;width:10px;height:10px;border-radius:50%;background:#F94A94"></span><span style="position:absolute;left:238px;top:156px;font:700 8px/1 var(--font-mono,monospace);letter-spacing:.12em;color:#F94A94">IBIZA</span>
+<span style="position:absolute;left:44px;top:80px;width:112px;height:46px;border-top:2px dashed rgba(241,241,237,.3);border-right:2px dashed rgba(241,241,237,.3);border-radius:0 40px 0 0"></span>
+<span style="position:absolute;left:158px;top:78px;width:96px;height:66px;border-bottom:2px dashed rgba(249,74,148,.5);border-right:2px dashed rgba(249,74,148,.5);border-radius:0 0 40px 0"></span>
+<span style="position:absolute;right:12px;top:12px;font:700 8px/1.5 var(--font-mono,monospace);letter-spacing:.14em;color:#6E6E69;text-align:right">PASSAGE 04<br>212 NM</span>
+</div>
+<span style="font:400 12px/1.6 var(--font-body,sans-serif);color:#6E6E69;max-width:320px">Ports are dots, legs are dashed rules, distances in nautical miles. Start and end ports get the accent; waypoints stay grey.</span></div>
+</div></div>
+<div style="border-top:1px solid rgba(241,241,237,.1);padding-top:28px;display:flex;flex-direction:column;gap:18px"><div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap"><span style="font:400 22px/1 var(--font-display,sans-serif);text-transform:uppercase">Per-sailing economics</span><span style="font:700 9px/1.8 var(--font-mono,monospace);letter-spacing:.12em;color:#6E6E69">ONE SAILING, 40 PASSENGERS · 90-DAY TOTALS ACROSS 12 SAILINGS · TK MEANS UNMEASURED, NEVER ESTIMATED</span></div><div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:10px"><div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">P&amp;L · PER SAILING AND 90-DAY</div>
+<div style="width:620px;background:#141414;border:1px solid rgba(241,241,237,.1);border-radius:6px;padding:16px;display:flex;flex-direction:column;font:400 12px/1.4 var(--font-body,sans-serif);color:#A6A6A0">
+<span style="display:flex;gap:12px;padding:8px 0;border-top:1px solid rgba(241,241,237,.1);font:700 9px/1.5 var(--font-mono,monospace);letter-spacing:.1em;color:#6E6E69"><span style="flex:1">LINE</span><span style="width:96px;flex:none;text-align:right">SETUP</span><span style="width:96px;flex:none;text-align:right">PER EVENT</span><span style="width:110px;flex:none;text-align:right">90-DAY</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><span style="flex:1">Gross ticket &amp; pass revenue</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">0</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">$14,000</span><span style="width:110px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">$168,000</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><span style="flex:1">Sponsorship revenue</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">0</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">$3,500</span><span style="width:110px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">$42,000</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><span style="flex:1">VIP upgrades &amp; merch</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">0</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">$1,000</span><span style="width:110px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace)">$12,000</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><b style="flex:1;color:#F1F1ED">Gross revenue</b><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace);color:#F1F1ED">0</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace);color:#8FE55A">$18,500</span><span style="width:110px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace);color:#8FE55A">$222,000</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1);border-bottom:1px solid rgba(241,241,237,.1)"><b style="flex:1;color:#F1F1ED">Net margin</b><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace);color:#6E6E69">&mdash;</span><span style="width:96px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace);color:#F1F1ED">~40%</span><span style="width:110px;flex:none;text-align:right;font:700 10px/1.4 var(--font-mono,monospace);color:#F1F1ED">~$89,000</span></span>
+</div>
+<span style="font:400 12px/1.6 var(--font-body,sans-serif);color:#6E6E69;max-width:620px">Revenue splits three ways every sailing: passes, sponsorship retainer, and onboard upgrades. Charter and crew are the fixed cost; everything else scales with heads. Never present a projection without the setup column.</span></div>
+<div style="display:flex;flex-direction:column;gap:10px"><div style="font:700 10px/1 var(--font-mono,monospace);letter-spacing:.16em;color:#A6A6A0;white-space:nowrap">SEASON CALENDAR · 14 WEEKS, 12 SAILINGS</div>
+<div style="width:340px;background:#141414;border:1px solid rgba(241,241,237,.1);border-radius:6px;padding:16px;display:flex;flex-direction:column;font:400 12px/1.4 var(--font-body,sans-serif);color:#A6A6A0">
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><b style="font:700 9px/1.5 var(--font-mono,monospace);letter-spacing:.1em;color:#FF8C00;width:70px;flex:none">W1–W2</b><span style="flex:1">Launch and vetting</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><b style="font:700 9px/1.5 var(--font-mono,monospace);letter-spacing:.1em;color:#FF8C00;width:70px;flex:none">W3</b><span style="flex:1">Premiere sailing</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><b style="font:700 9px/1.5 var(--font-mono,monospace);letter-spacing:.1em;color:#F72585;width:70px;flex:none">W4–W5</b><span style="flex:1">Content engine, sponsor activation</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><b style="font:700 9px/1.5 var(--font-mono,monospace);letter-spacing:.1em;color:#F72585;width:70px;flex:none">W6–W7</b><span style="flex:1">Creator seeding, testimonials</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1)"><b style="font:700 9px/1.5 var(--font-mono,monospace);letter-spacing:.1em;color:#4361EE;width:70px;flex:none">W8</b><span style="flex:1">Mid-season recap, quarterly membership launch</span></span>
+<span style="display:flex;gap:12px;padding:9px 0;border-top:1px solid rgba(241,241,237,.1);border-bottom:1px solid rgba(241,241,237,.1)"><b style="font:700 9px/1.5 var(--font-mono,monospace);letter-spacing:.1em;color:#4361EE;width:70px;flex:none">W9–W14</b><span style="flex:1">Sellout cadence, season close</span></span>
+</div>
+<span style="font:400 12px/1.6 var(--font-body,sans-serif);color:#6E6E69;max-width:340px">One named KPI per week — 100% ticket conversion, zero incidents, 250k+ organic impressions, two inbound sponsor retainers, 15% application lift, 15+ match stories, 15 memberships, sellout under 24 hours.</span></div>
+</div></div></div>
+</div>
+</x-dc>
+</body>
+</html>

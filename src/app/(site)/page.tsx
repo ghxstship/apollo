@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { SectionHeader } from "@/components/site/section-header";
-import { CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
+import { ANCHOR, CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -16,7 +16,9 @@ import { fleetByVoyage } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
-  title: "SYRIUS SOCIAL — The Unscripted Social Experiment.",
+  /* absolute, or the root template appends the anchor to a title that already
+     opens with it — "[UN] anything goes here · [UN]" shipped once. */
+  title: { absolute: `${ANCHOR} ${TAGLINE}` },
 };
 
 const STEPS: Array<[string, string]> = [

@@ -1,6 +1,6 @@
 /* Minimal base — element defaults so consumers start on-brand. */
 *,*:before,*:after{box-sizing:border-box}
-body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var(--font-sans);font-size:var(--text-body);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var(--font-sans);font-size:var(--text-md);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0}
 p{margin:0;text-wrap:pretty}
 a{color:var(--text-link);text-decoration:none;transition:color var(--dur-1) var(--ease-swell)}
@@ -25,7 +25,7 @@ img{max-width:100%;height:auto}
    stacking context, and anything inside it with a z-index was clamped to the
    wrapper's place in root order. That is why the confirm dialog rendered
    behind the tab bar, why a toast at z-index 1100 sat under a bar at 300, and
-   why .chd-drawer at 950 works only because /slop-chest happens to have no
+   why .chd-drawer at 950 works only because /shop happens to have no
    .ls-fade on it — luck, not design.
 
    Both keyframes end at the element's own natural state (opacity 1, transform

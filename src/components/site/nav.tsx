@@ -1,6 +1,6 @@
 "use client";
 
-import { EST_YEAR_ROMAN } from "@/lib/brand";
+import { ANCHOR, EST_YEAR_ROMAN } from "@/lib/brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -37,7 +37,7 @@ export function SiteNav() {
   return (
     <nav className="ws-nav">
       <div className="ls-container ws-nav__in">
-        <Link href="/" className="ws-nav__logo" aria-label="SYRIUS SOCIAL — home">
+        <Link href="/" className="ws-nav__logo" aria-label={`${ANCHOR} — home`}>
           <LockupHorizontal height={34} />
         </Link>
         <div className="ws-nav__links">
@@ -74,7 +74,7 @@ export function SiteNav() {
       {open ? (
         <div className="ws-menu" role="dialog" aria-modal="true" aria-label="Menu" ref={menuRef} tabIndex={-1}>
           <div className="ws-menu__top">
-            <Link href="/" className="ws-nav__logo" aria-label="SYRIUS SOCIAL — home" onClick={close}>
+            <Link href="/" className="ws-nav__logo" aria-label={`${ANCHOR} — home`} onClick={close}>
               <LockupHorizontal height={30} />
             </Link>
             <IconButton label="Close menu" variant="ghost" inverse onClick={close}>

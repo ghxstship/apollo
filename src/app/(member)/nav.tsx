@@ -18,7 +18,7 @@ const LINKS = [
   ["/matches", "Matches"],
   ["/regattas", LOGBOOK.regattas],
   ["/threads", "Threads"],
-  ["/slop-chest", "Slop Chest"],
+  ["/shop", SURFACES.shop],
   ["/portal", "Portal"],
   ["/account", "Account"],
   ["/card", SURFACES.passbook],
@@ -185,7 +185,7 @@ export function MemberTopBar({
     <header className="mbr-top">
       <div className="mbr-top__in">
         <Link href="/home" className="mbr-top__wm" aria-label="Home — home">
-          <Wordmark size="sm" />
+          <Wordmark size="sm" suffix={null} />
         </Link>
         <nav className="mbr-nav" aria-label="Member navigation">
           {LINKS.map(([href, label]) => (

@@ -4,7 +4,7 @@ import type { VoyageRow } from "@/lib/supabase/types";
 /* iCalendar plumbing — RFC 5545 to the letter the calendars actually read:
    CRLF endings, escaped text, UTC stamps, 75-octet folding. */
 
-const PRODID = "-//SYRIUS SOCIAL//Signal//EN";
+const PRODID = "-//UNHINGED SOCIAL//Signal//EN";
 const DEFAULT_HOURS = 3;
 
 export function escapeText(value: string): string {

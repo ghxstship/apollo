@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { Icon } from "./icon";
+import { THEME_STORAGE_KEY } from "@/lib/brand";
 
 /* — Button — */
 export function Button({
@@ -25,25 +26,30 @@ export function IconButton({
 }
 
 /* — ThemeToggle — */
-const THEME_KEY = "syrius-theme";
 type ThemeMode = "dark" | "light" | "system";
 
+/* Polarity inverted with the rebrand. tokens.css is paper-first — :root is the
+   paper palette and [data-theme="dark"] is the ink one — where the previous
+   system was dark-first and stamped data-theme="light". So "light" is now the
+   absent attribute and "dark" is the present one, and the media query the
+   system mode asks is prefers-color-scheme: dark. Left as it was, every reader
+   on the default would have been served ink tokens over a paper ground. */
 function resolveTheme(mode: ThemeMode): "dark" | "light" {
   return mode === "system"
-    ? (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+    ? (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
     : mode;
 }
 
 export function applyTheme(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   const actual = resolveTheme(mode);
-  if (actual === "light") document.documentElement.setAttribute("data-theme", "light");
+  if (actual === "dark") document.documentElement.setAttribute("data-theme", "dark");
   else document.documentElement.removeAttribute("data-theme");
 }
 
 /* The persisted mode lives in localStorage — read it as an external store so
-   SSR renders "dark" and the client syncs without a hydration mismatch. */
-const THEME_EVENT = "syrius-theme-change";
+   SSR renders "light" and the client syncs without a hydration mismatch. */
+const THEME_EVENT = "un-theme-change";
 
 function subscribeTheme(cb: () => void) {
   window.addEventListener("storage", cb);
@@ -55,15 +61,15 @@ function subscribeTheme(cb: () => void) {
 }
 
 export function ThemeToggle({
-  storageKey = THEME_KEY, darkLabel = "Dark theme", lightLabel = "Light theme", systemLabel = "Follow system",
+  storageKey = THEME_STORAGE_KEY, darkLabel = "Dark theme", lightLabel = "Light theme", systemLabel = "Follow system",
   className = "", style,
 }: { storageKey?: string; darkLabel?: string; lightLabel?: string; systemLabel?: string; className?: string; style?: React.CSSProperties }) {
   const mode = React.useSyncExternalStore<ThemeMode>(
     subscribeTheme,
     () => {
-      try { return (localStorage.getItem(storageKey) as ThemeMode) || "dark"; } catch { return "dark"; }
+      try { return (localStorage.getItem(storageKey) as ThemeMode) || "light"; } catch { return "light"; }
     },
-    () => "dark"
+    () => "light"
   );
   const setMode = (next: ThemeMode) => {
     try { localStorage.setItem(storageKey, next); } catch { /* private mode */ }
@@ -73,7 +79,7 @@ export function ThemeToggle({
   React.useEffect(() => {
     applyTheme(mode);
     if (mode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: light)");
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const on = () => applyTheme("system");
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);

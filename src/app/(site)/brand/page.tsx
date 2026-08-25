@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Badge, Tag, Icon } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { CITY_CODES, CLASS_CODES, CURRENCY, FAMILY_LABEL, LEAGUES, MAILBOX, SUB_BRANDS, SUB_CLASSES, SURFACES, TAGLINE, WORDMARK, EST_YEAR_ROMAN } from "@/lib/brand";
+import { ANCHOR, CITY_CODES, CLASS_CODES, CURRENCY, DIVISION_IDS, DIVISIONS, FAMILY_LABEL, HANDLE, LEAGUES, MAILBOX, SUB_CLASSES, SURFACES, TAGLINE, EST_YEAR_ROMAN, lockup } from "@/lib/brand";
+import { Wordmark } from "@/components/ds";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
 
@@ -13,43 +14,60 @@ export const metadata: Metadata = {
 };
 
 const BOILER =
-  "SYRIUS SOCIAL is the unscripted social experiment — a reality-format social club running Charters on the water and Tables ashore, cameras from boarding to docking. Real people, real chemistry, filmed and unfiltered, wrapped in charter-grade luxury. Two sub-brands sail under the umbrella: Syrius Dating and Syrius Yacht Club. Casting is by application or invitation.";
+  "[UN] is a global nautical social club. The anchor experience is a weekly seven-hour sailing out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Five divisions share one anchor and swap the accent only: [UN] Hinged, [UN] Bound, [UN] Limited, [UN] Scripted and [UN] Cut. Membership is by application or invitation.";
 
 const SEAS: Record<string, string> = {
-  dawn: "var(--scene-gold)",
-  day: "var(--scene-night)",
-  dusk: "var(--scene-rose)",
+  dawn: "var(--scene-golden)",
+  day: "var(--scene-biscayne)",
+  dusk: "var(--scene-crimson)",
 };
 
+/* Hexes, not tokens: a swatch that paints with var(--noir-900) shows the reader
+   the colour but has nothing to put on the clipboard, and the whole point of
+   this grid is that it copies. Every value below is transcribed from
+   src/styles/tokens.css and has to be re-transcribed when that file moves —
+   this page is the one place in src permitted to hold a second copy. */
 const NOIRS: Array<[string, string, string, boolean]> = [
-  ["Noir 950", "#0B0E12", "sunken fields", true],
-  ["Noir 900", "#101418", "the page", true],
-  ["Noir 800", "#161B21", "cards", true],
-  ["Noir 700", "#1E252D", "raised", true],
+  ["Noir 950", "#0D0D0D", "sunken fields", true],
+  ["Noir 900", "#141414", "ink page, body text", true],
+  ["Noir 800", "#1C1C1C", "cards on ink", true],
+  ["Noir 700", "#262626", "raised", true],
 ];
 const IVORIES: Array<[string, string, string, boolean]> = [
-  ["Ivory 50", "#FAF7F0", "paper cards", false],
-  ["Ivory 100", "#F4EFE6", "text, paper page", false],
-  ["Ivory 500", "#C9C0AC", "secondary", false],
-  ["Muted", "#9AA3AD", "muted text", false],
+  ["Page", "#EDEDEA", "the paper page", false],
+  ["Ivory 50", "#F7F7F4", "paper cards", false],
+  ["Ivory 100", "#F1F1ED", "type on ink", false],
+  ["Ivory 500", "#BCBCB3", "secondary", false],
 ];
-const METALS: Array<[string, string, string, boolean]> = [
-  ["Gold 500", "#B98A2F", "the accent", false],
-  ["Gold 400", "#D3B15E", "hover, focus, live", false],
-  ["Rose 500", "#FF5C7A", "Syrius Dating", true],
-  ["Riviera 500", "#2E9BB5", "Syrius Yacht Club", true],
+/* The house accent, then the five division hues. Division hues name a club and
+   nothing else: operational state — Five-A phase, run-of-show position,
+   procurement status — is set in numerals on the greyscale, never in one of
+   these. Status colours are the only exception and override them. */
+const ACCENTS: Array<[string, string, string, boolean]> = [
+  ["Acid 500", "#3EC317", "the house accent — one per view", false],
+  ["Acid 400", "#58D621", "hover, focus, live", false],
+  ["Acid 600", "#2F9410", "press, and small type on paper", true],
+  ["Shop", "#C06A3E", "commerce — not a division", true],
+];
+const DIVISION_SWATCHES: Array<[string, string, string, boolean]> = [
+  ["Hinged", "#F72585", "electric magenta — singles social", true],
+  ["Bound", "#7209B7", "deep orchid — couples", true],
+  ["Limited", "#FF8C00", "outrun amber — premium", false],
+  ["Scripted", "#4361EE", "grid cobalt — content series", true],
+  ["Cut", "#B5179E", "laser fuchsia — the ungraded channel", true],
 ];
 const GRADIENTS: Array<[string, string, string]> = [
-  ["Gold", "linear-gradient(120deg,#E3C983,#B98A2F)", "hero rules and small fills"],
-  ["Scene gold", "linear-gradient(165deg,#E3C983 0%,#B98A2F 35%,#3C2F1A 75%,#101418 100%)", "imagery TK — golden hour"],
-  ["Scene night", "linear-gradient(165deg,#2E9BB5 0%,#173B4E 45%,#0B0E12 100%)", "imagery TK — on the water"],
-  ["Scene rose", "linear-gradient(165deg,#FF7D95 0%,#8E2E4C 45%,#14090F 100%)", "imagery TK — after sunset"],
+  ["Outrun", "linear-gradient(180deg,#FF8C00 0%,#F72585 45%,#7209B7 78%,#0A0915 100%)", "the canonical hero ground"],
+  ["Scene golden", "linear-gradient(180deg,#FFB454 0%,#FF8C00 26%,#F72585 62%,#0A0915 100%)", "imagery TK — golden hour"],
+  ["Scene biscayne", "linear-gradient(180deg,#7B93F4 0%,#4361EE 34%,#7209B7 70%,#0A0915 100%)", "imagery TK — on the water"],
+  ["Scene noir", "linear-gradient(165deg,#D6D6D0 0%,#8A8A85 38%,#333333 75%,#141414 100%)", "type-led surfaces — stubs, documents, notices"],
 ];
 
 const TYPE_VOICES: Array<[string, string, string, string, string]> = [
-  ["var(--font-display)", "Marcellus", "Display and headlines. Single weight — never bold, never italic. Cinematic, like a title card.", "https://fonts.google.com/specimen/Marcellus", "FONTS.GOOGLE.COM/MARCELLUS"],
-  ["var(--font-sans)", "Jost", "Body and UI, 300–600. Sentence case everywhere — the producer speaks plainly.", "https://fonts.google.com/specimen/Jost", "FONTS.GOOGLE.COM/JOST"],
-  ["var(--font-mono)", "Space Mono", "The call sheet: coordinates, times, cabin counts. Data is decoration.", "https://fonts.google.com/specimen/Space+Mono", "FONTS.GOOGLE.COM/SPACE+MONO"],
+  ["var(--font-display)", "Anton", "Display and headlines, 22px and up only, set to caps by text-transform so the copy stays editable and translatable. Below 22px a heading is Archivo 700.", "https://fonts.google.com/specimen/Anton", "FONTS.GOOGLE.COM/ANTON"],
+  ["var(--font-body)", "Archivo", "Body and UI. Three weights, 400 · 500 · 700, and no others. Sentence case everywhere.", "https://fonts.google.com/specimen/Archivo", "FONTS.GOOGLE.COM/ARCHIVO"],
+  ["var(--font-mono)", "Space Mono", "Labels, data, and the division suffix at 0.77 of the bracket size. Coordinates, times, counts.", "https://fonts.google.com/specimen/Space+Mono", "FONTS.GOOGLE.COM/SPACE+MONO"],
+  ["var(--font-editorial)", "Instrument Serif", "Editorial only — campaign headlines and deck openers, italic, sentence case. Never in UI, never in navigation.", "https://fonts.google.com/specimen/Instrument+Serif", "FONTS.GOOGLE.COM/INSTRUMENT+SERIF"],
 ];
 
 /* The rooms of the house — names from brand.ts, roles annotated here. */
@@ -62,7 +80,7 @@ const ROOMS: Array<[keyof typeof SURFACES, string]> = [
   ["magazine", "What the cameras kept, published"],
   ["agent", "Confirm-first assistant — it proposes, you confirm; money always asks"],
   ["gangway", "Arrivals — sign-in and casting"],
-  ["chandlery", "The shop"],
+  ["shop", "Merch and drops — carries the hosting division\u2019s mark"],
   ["galley", "Food and drink, aboard and ashore"],
 ];
 
@@ -73,8 +91,9 @@ const IMAGERY: Array<[string, string]> = [
 ];
 
 const FACTS: Array<[string, string]> = [
-  ["Founded", `${EST_YEAR_ROMAN} · MARINA DEL REY, CALIFORNIA`],
-  ["Home harbor", "33.9803° N — 118.4517° W"],
+  ["Founded", `${EST_YEAR_ROMAN} · MIAMI, FLORIDA`],
+  ["Home harbor", "HAULOVER SANDBAR · MIAMI, FLORIDA"],
+  ["Handle", HANDLE.toUpperCase()],
   ["What we run", "CHARTERS ABOARD · TABLES ASHORE · CAMERAS ON"],
   ["Casting", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY APPLICATION OR INVITATION"],
   ["Cadence", "EPISODES, SUNDAYS · SEASON I — CASTING NOW"],
@@ -104,46 +123,52 @@ export default function BrandKitPage() {
           <SectionHeader eyebrow="01 — The wordmark" title="Type only. There is no logo." />
           <div className="bk-lockups">
             <div className="bk-lock" style={{ background: "var(--surface-card)" }}>
-              <span className="bk-wm">{WORDMARK}</span>
-              <span className="cap">INLINE · MARCELLUS · TRACK .14EM · GOLD RULE BENEATH</span>
+              <Wordmark size={36} suffix={null} />
+              <span className="cap">SYSTEM A · PARENT ANCHOR · ANTON · BRACKETS ARE THE MARK</span>
             </div>
             <div className="bk-lock bk-lock--ink">
-              <div className="bk-stack">
-                <div className="a">SYRIUS</div>
-                <div className="b">Social</div>
-              </div>
-              <span className="cap">STACKED · MONOGRAM STANDARD · NOIR ONLY</span>
+              <Wordmark size={36} suffix="Hinged" sub="SINGLES SOCIAL CLUB" inverse />
+              <span className="cap">SYSTEM B · SUFFIX SPACE MONO 700 AT 0.77 OF THE BRACKET · SUB LINE MONO, .42EM</span>
             </div>
           </div>
           <ul className="bk-rules">
             <li><b>No logo exists.</b> The wordmark is set in plain type. Never draw, generate, or commission a mark.</li>
-            <li><b>Clearspace:</b> one cap-height on all sides; nothing enters it.</li>
-            <li><b>Colors:</b> ivory on noir, noir on ivory. Gold for the rule beneath, nothing else.</li>
-            <li><b>Never</b> bold, italicize, outline, gradient, or arc the letters.</li>
+            <li><b>The brackets are part of the mark.</b> Never dropped, restyled, recoloured, or spaced out. The one bracketless setting is embroidery below 8 mm.</li>
+            <li><b>Case:</b> {ANCHOR} always caps; the suffix always sentence case. Two sanctioned variants only — serif italic lowercase for campaigns, mono all caps for large physical goods. Plain-sans lowercase is never permitted.</li>
+            <li><b>Never a suffix without the anchor,</b> and never two suffixes in one lockup.</li>
+            <li><b>Clearspace:</b> one cap-height of the U on all sides, measured from the outer bracket edge; nothing enters it.</li>
+            <li><b>Colours:</b> the anchor is always ink or ivory. Only the sub line and the rule carry accent.</li>
+            <li><b>Minimum size:</b> 16px digital, 8 mm embroidered. Below that the mark reduces to {ANCHOR} alone.</li>
           </ul>
         </section>
 
         <section className="bk-sec">
           <SectionHeader
             eyebrow="02 — Color"
-            title="Noir by default; one metal per view."
+            title="Paper by default; one accent per view."
             aside={<span className="ls-mono-data" style={{ color: "var(--text-3)" }}>CLICK ANY SWATCH TO COPY</span>}
           />
-          <div className="bk-swlbl">The noir</div>
+          <div className="bk-swlbl">The noir — the ink theme and every knockout ground</div>
           <div className="bk-swgrid">
             {NOIRS.map(([nm, hex, use, inv]) => (
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
             ))}
           </div>
-          <div className="bk-swlbl">Ivory &amp; smoke — never pure white; it blooms on camera</div>
+          <div className="bk-swlbl">Paper &amp; ivory — page surfaces stay greyscale</div>
           <div className="bk-swgrid">
             {IVORIES.map(([nm, hex, use, inv]) => (
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
             ))}
           </div>
-          <div className="bk-swlbl">The metals</div>
+          <div className="bk-swlbl">The house accent</div>
           <div className="bk-swgrid">
-            {METALS.map(([nm, hex, use, inv]) => (
+            {ACCENTS.map(([nm, hex, use, inv]) => (
+              <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
+            ))}
+          </div>
+          <div className="bk-swlbl">The division hues — identity only, never state</div>
+          <div className="bk-swgrid">
+            {DIVISION_SWATCHES.map(([nm, hex, use, inv]) => (
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
             ))}
           </div>
@@ -158,19 +183,20 @@ export default function BrandKitPage() {
             ))}
           </div>
           <p className="bk-note">
-            The umbrella brand is noir and antique gold — one metallic accent per
-            view, hover lightens, press darkens, never shrinks. Sub-brands swap
-            the accent only: Syrius Dating runs rose, Syrius Yacht Club runs
-            riviera — never their own type or surfaces. One stage, different
-            spotlights. A paper light theme ships via{" "}
-            <b>data-theme=&quot;light&quot;</b>, where every metal deepens for
-            contrast. Scene gradients stand in wherever photography belongs,
-            always labeled IMAGERY TK.
+            Page surfaces are paper-first greyscale with one acid-green accent
+            per view — hover lightens, press darkens, never shrinks. Divisions
+            swap the accent and nothing else: never their own type, never their
+            own surfaces. One stage, different spotlights. The division hues are
+            reserved for identity and never encode operational state; only
+            positive, caution and danger override them. The synthwave palette
+            supplies accents and gradient grounds, not page backgrounds. An ink
+            theme ships via <b>data-theme=&quot;dark&quot;</b>. Scene gradients
+            stand in wherever photography belongs, always labeled IMAGERY TK.
           </p>
         </section>
 
         <section className="bk-sec">
-          <SectionHeader eyebrow="03 — Type" title="Three voices, one show." />
+          <SectionHeader eyebrow="03 — Type" title="Four voices, one stage." />
           <div className="bk-typegrid">
             {TYPE_VOICES.map(([family, name, use, href, label]) => (
               <div className="bk-type" key={name}>
@@ -215,17 +241,18 @@ export default function BrandKitPage() {
         <section className="bk-sec bk-rooms">
           <SectionHeader eyebrow="05 — One stage, different spotlights" title="The umbrella and its rooms." />
           <p className="bk-note" style={{ marginTop: 0 }}>
-            Sub-brands never get their own logos, colors beyond the accent, or
+            Divisions never get their own logos, colours beyond the accent, or
             type — they are spotlights on one stage. Rooms are spoken with the
             definite article and lowercase in prose. The only marks that exist
-            are type-set: the wordmark and the Episodes masthead.
+            are type-set: the wordmark and the Episodes masthead. One handle
+            covers every division: {HANDLE}.
           </p>
-          <div className="bk-swlbl">The sub-brands</div>
+          <div className="bk-swlbl">The five divisions</div>
           <div className="bk-facts">
-            {Object.values(SUB_BRANDS).map((b) => (
-              <div className="row" key={b.handle}>
-                <span className="k">{b.name}</span>
-                <span className="bk-rooms__role">{b.handle} · accent: {b.accent}</span>
+            {DIVISION_IDS.map((id) => (
+              <div className="row" key={id}>
+                <span className="k">{lockup(id)}</span>
+                <span className="bk-rooms__role">{DIVISIONS[id].what} · {DIVISIONS[id].categories.join(" · ")}</span>
               </div>
             ))}
           </div>
@@ -269,8 +296,8 @@ export default function BrandKitPage() {
                 </span>
                 <span className="bk-rooms__role">
                   {fam === "sea"
-                    ? "Aboard — Syrius Yacht Club, riviera accent"
-                    : "Ashore — Syrius Dating's Thursday format, rose accent"}
+                    ? `Aboard — ${lockup("limited")}, amber accent`
+                    : `Ashore — ${lockup("scripted")}, cobalt accent`}
                 </span>
               </div>
             ))}
@@ -359,7 +386,7 @@ export default function BrandKitPage() {
             </div>
           </div>
           <div className="bk-dl__list">
-            <a className="ls-btn ls-btn--gold ls-btn--md ls-btn--full" href="/brand/syrius-social-tokens.css" download>
+            <a className="ls-btn ls-btn--gold ls-btn--md ls-btn--full" href="/brand/un-tokens.css" download>
               <Icon name="Download" size={15} />
               Color &amp; type tokens · CSS
             </a>

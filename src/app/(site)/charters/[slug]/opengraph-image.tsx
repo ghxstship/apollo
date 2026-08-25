@@ -1,10 +1,10 @@
 import { ImageResponse } from "next/og";
-import { CITY_CODES, FAMILY_LABEL, SUB_CLASSES } from "@/lib/brand";
+import { ANCHOR, CITY_CODES, FAMILY_LABEL, SUB_CLASSES } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
 
-export const alt = "A charter on the SYRIUS SOCIAL manifest.";
+export const alt = `A charter on the ${ANCHOR} manifest.`;
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 

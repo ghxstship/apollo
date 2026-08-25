@@ -43,7 +43,7 @@ export default async function GuestSignPage({
   return (
     <main id="main" className="gsn">
       <header className="gsn-head">
-        <Wordmark size="sm" />
+        <Wordmark size="sm" suffix={null} />
         <h1 className="gsn-lede">
           {/* In the harbour's clock, with the year and the hour. A guest has no
               app and no manifest to check this against, and the server's zone

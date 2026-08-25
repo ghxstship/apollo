@@ -1,4 +1,4 @@
-/* SYRIUS SOCIAL — marketing site chrome + page styles.
+/* [UN] — marketing site chrome + page styles.
    Ported from ui_kits/website; tokens do all the color work. */
 
 /* ————— chrome: nav ————— */
@@ -223,7 +223,7 @@
 
 /* ————— LORE ————— */
 .dp-head{padding:72px 0 40px;border-bottom:1px solid var(--line-strong);position:relative}
-/* the masthead — Marcellus, tracked wide; type-only, the magazine's one mark */
+/* the masthead — Anton, tracked wide; type-only, the magazine's one mark */
 .dp-mast{font-family:var(--font-display);font-size:var(--text-display-l);letter-spacing:.3em;margin-right:-.3em;text-transform:uppercase}
 .dp-mast__sub{font-size:var(--text-body-l);color:var(--text-2);margin-top:12px}
 .dp-head:after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid var(--line-strong)}

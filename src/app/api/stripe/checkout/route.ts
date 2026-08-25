@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { ANCHOR } from "@/lib/brand";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency: "usd",
           unit_amount: -balanceCents,
-          product_data: { name: "SYRIUS SOCIAL — member account settlement" },
+          product_data: { name: `${ANCHOR} — member account settlement` },
         },
       },
     ],

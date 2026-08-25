@@ -43,7 +43,7 @@ export function SignOutForm({
             }
           }
           clearCachedRosters();
-          navigator.serviceWorker?.controller?.postMessage({ type: "SYRIUS_SIGNED_OUT" });
+          navigator.serviceWorker?.controller?.postMessage({ type: "UN_SIGNED_OUT" });
           if (typeof caches !== "undefined") {
             void caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))));
           }

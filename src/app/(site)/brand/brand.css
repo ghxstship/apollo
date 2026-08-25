@@ -2,7 +2,7 @@
 .bk-head{padding:72px 0 0}
 .bk-head h1{font-size:var(--text-display-l)}
 .bk-boiler{margin-top:24px;padding:24px;background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);display:flex;gap:24px;align-items:flex-start}
-.bk-boiler p{font-size:var(--text-body);color:var(--text-2);max-width:70ch}
+.bk-boiler p{font-size:var(--text-md);color:var(--text-2);max-width:70ch}
 .bk-sec{padding:72px 0 0}
 .bk-lockups{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 .bk-lock{border:1px solid var(--line-faint);border-radius:var(--radius-sharp);min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative}

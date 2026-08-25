@@ -1,13 +1,41 @@
-/* SYRIUS SOCIAL webfonts.
+/* Webfont bridge — the one place next/font meets the verbatim type tokens.
 
-   This file used to carry a remote @import of Google Fonts. Nested inside
-   globals.css's own @import chain, the build dropped it: no `googleapis` and no
-   @font-face survived into any built stylesheet, so Marcellus, Jost and Space
-   Mono silently fell back to Times, Helvetica and Courier — the whole brand
-   rendered in system faces and nothing said so.
+   tokens.css declares the four families by their real names, e.g.
+   `--font-display:'Anton','Arial Narrow Bold',sans-serif`. Those names are part
+   of the handoff package and must not be edited there.
 
-   The faces are now loaded through next/font in src/app/layout.tsx, which
-   self-hosts them at build time. That fixes the drop AND keeps the CSP closed:
-   no fonts.googleapis.com in style-src, no fonts.gstatic.com in font-src, no
-   third-party request from a member's browser. The families are bound to the
-   same CSS variables typography.css already reads. */
+   next/font at this version does register the self-hosted face under its real
+   name — the build emits `@font-face{font-family:Anton}` — so the token stack
+   alone would in fact resolve to it. What it would MISS is the second face
+   emitted beside it: `@font-face{font-family:Anton Fallback}`, a local system
+   face carrying size-adjust, ascent-override and descent-override computed to
+   match Anton's metrics. That one is reachable ONLY through the variable
+   next/font hands back (`--font-anton: "Anton", "Anton Fallback"`). Fall
+   through to plain `Arial Narrow Bold` instead and every headline reflows when
+   the real face arrives — the layout shift next/font exists to remove.
+
+   So the bridge is additive, not a rewrite: prepend next/font's variable to the
+   stack the token already declares, keeping every fallback after it in its
+   original order. The token's value is extended, never replaced or reordered.
+   It is also the seam that absorbs the other direction: next/font has shipped
+   hashed generated family names (`__Anton_1a2b3c`) in the past, under which the
+   bare `'Anton'` in the token would have matched nothing the build produced and
+   the whole brand would have rendered in system faces with no error anywhere.
+
+   Why not the package's own `@import url(fonts.googleapis.com/css2?…)`:
+   - Nested inside another stylesheet's @import chain the build drops it
+     silently — that is how the previous brand lost its faces.
+   - It opens style-src to fonts.googleapis.com and font-src to
+     fonts.gstatic.com, and makes every member's browser announce itself to
+     Google on each page load.
+   Why not a hand-written @font-face pinned at a gstatic URL: a hardcoded v4 URL
+   404'd the day Google moved to v5, and there is nothing in a pinned path that
+   can survive that. next/font asks the Google Fonts CSS API for whatever the
+   current revision is AT BUILD TIME and self-hosts the result, so the URL is
+   never in our source to go stale. See src/app/layout.tsx for the loaders. */
+:root{
+--font-display:var(--font-anton),'Anton','Arial Narrow Bold',sans-serif;
+--font-editorial:var(--font-instrument-serif),'Instrument Serif',Georgia,serif;
+--font-body:var(--font-archivo),'Archivo','Helvetica Neue',sans-serif;
+--font-mono:var(--font-space-mono),'Space Mono',ui-monospace,monospace;
+}

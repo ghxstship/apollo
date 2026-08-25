@@ -9,9 +9,9 @@
    is the exact threat the service worker's PRIVATE list was written to close,
    left open one storage API along. */
 
-export const GANGWAY_QUEUE_KEY = "syrius-gangway-queue";
-export const GANGWAY_ROSTER_PREFIX = "syrius-gangway-roster:";
-export const GALLEY_QUEUE_KEY = "syrius-galley-queue";
+export const GANGWAY_QUEUE_KEY = "un-gangway-queue";
+export const GANGWAY_ROSTER_PREFIX = "un-gangway-roster:";
+export const GALLEY_QUEUE_KEY = "un-galley-queue";
 
 /* Rosters are pure copies of server data and are rebuilt on the next load, so
    they go without ceremony. */

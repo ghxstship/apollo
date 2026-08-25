@@ -1,0 +1,23 @@
+:root{
+--radius-xs:0px;--radius-sm:2px;--radius-md:6px;--radius-lg:10px;--radius-pill:999px;
+--shadow-card:0 1px 0 rgba(20,20,20,.04),0 6px 20px rgba(20,20,20,.10);
+--shadow-raised:0 18px 48px rgba(20,20,20,.20);
+--shadow-glow-accent:0 0 24px rgba(62,195,23,.35);
+--blur-glass:blur(14px);/* @kind other */
+--gradient-protect:linear-gradient(180deg,rgba(13,13,13,0) 0%,rgba(13,13,13,.85) 100%);/* @kind other */
+--gradient-accent:linear-gradient(120deg,var(--acid-400),var(--acid-500));/* @kind other */
+/* vintage grain — tiling film-grain texture; layer over scenes, hero grounds, and large flat fills */
+--texture-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");/* @kind other */
+/* Synthwave illustration grounds: anything showing scene, sky, or horizon.
+   Grain stays layered over every one — outrun sky, vintage film stock. */
+--scene-golden:var(--texture-grain),linear-gradient(180deg,#FFB454 0%,#FF8C00 26%,#F72585 62%,#0A0915 100%);/* @kind other */
+--scene-biscayne:var(--texture-grain),linear-gradient(180deg,#7B93F4 0%,#4361EE 34%,#7209B7 70%,#0A0915 100%);/* @kind other */
+--scene-crimson:var(--texture-grain),linear-gradient(180deg,#FB6FAB 0%,#B5179E 42%,#560790 74%,#0A0915 100%);/* @kind other */
+/* The outrun ground — canonical three-stop for hero backgrounds and motion. */
+--gradient-outrun:linear-gradient(180deg,#FF8C00 0%,#F72585 45%,#7209B7 78%,#0A0915 100%);/* @kind other */
+/* Greyscale-engraving treatment grounds: type-led surfaces with no scene —
+   tickets, stubs, documents, packing slips, legal notices, mono lockups. */
+--scene-noir:var(--texture-grain),linear-gradient(165deg,#D6D6D0 0%,#8A8A85 38%,#333333 75%,#141414 100%);/* @kind other */
+--scene-night:var(--texture-grain),linear-gradient(180deg,#4361EE 0%,#2C46C4 40%,#0A0915 100%);/* @kind other */
+--scene-rose:var(--texture-grain),linear-gradient(180deg,#F72585 0%,#8D0F7A 44%,#0A0915 100%);/* @kind other */
+}

@@ -13,7 +13,7 @@ export function SwRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch((err) => {
-      console.warn("[syrius] the offline shell did not register:", err);
+      console.warn("[UN] the offline shell did not register:", err);
     });
   }, []);
   return null;
