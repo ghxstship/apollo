@@ -1287,26 +1287,47 @@ async function roundTwoRules(p) {
     await stf.del(`account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
     await stf.del(`fathoms_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
 
-    const folio = async () => {
-      const rows = await reg.get(`account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}&select=delta_cents`);
-      return (rows.data || []).reduce((n, r) => n + r.delta_cents, 0);
+    /* Bounded by TIME, not by clearing history first — the same correction this
+       file already made for notifications, which needed making here too and did
+       not get it.
+
+       account_ledger has no DELETE policy (it is the club's record), so the
+       `stf.del(account_ledger...)` calls in this suite have always been silent
+       no-ops and the rows accumulate forever: this persona had 511 berth/credit
+       pairs on one voyage. PostgREST caps a response at 1000 rows whatever
+       limit you ask for, so this helper was summing the first PAGE of the
+       ledger and calling it the balance. Every assertion built on it went
+       quietly wrong the moment the pair passed a thousand rows — reporting a
+       free pass where the member had in fact been charged correctly.
+
+       A marker makes the window small, exact, and independent of how much
+       history is behind it. */
+    const folio = async (since) => {
+      const rows = await reg.get(
+        `account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}&created_at=gt.${since}&select=delta_cents`
+      );
+      const list = rows.data || [];
+      if (list.length >= 1000) throw new Error("folio window is too wide to trust — narrow the marker");
+      return list.reduce((n, r) => n + r.delta_cents, 0);
     };
     const claim = () => reg.post("rsvps", { voyage_id: v.id, profile_id: me, status: "aboard" });
 
-    const before = await folio();
+    /* Everything below is measured from here. */
+    const mark = new Date().toISOString();
+    const before = await folio(mark);
     const first = await claim();
-    const afterFirst = await folio();
+    const afterFirst = await folio(mark);
     note("regional", "claiming a pass charges for it", afterFirst - before === -v.price_cents,
       `moved ${afterFirst - before}, price ${-v.price_cents}`);
 
     const rid = first.data?.[0]?.id;
     if (rid) await reg.del(`rsvps?id=eq.${rid}`);
-    const afterRelease = await folio();
+    const afterRelease = await folio(mark);
     note("regional", "releasing 48h+ out credits the charge", afterRelease === before,
       `moved ${afterRelease - before}`);
 
     const again = await claim();
-    const afterSecond = await folio();
+    const afterSecond = await folio(mark);
     note("regional", "re-claiming a credited pass is charged again",
       afterSecond - afterRelease === -v.price_cents,
       `moved ${afterSecond - afterRelease} — a free pass if this is 0`);
@@ -1559,22 +1580,42 @@ async function roundThreeRules(p) {
       await stf.del(`rsvps?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
       await stf.del(`fathoms_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}`);
     };
-    const folio = async () => {
-      const rows = await reg.get(`account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}&select=delta_cents`);
-      return (rows.data || []).reduce((n, r) => n + r.delta_cents, 0);
+    /* Bounded by TIME, not by clearing history first — the same correction this
+       file already made for notifications, which needed making here too and did
+       not get it.
+
+       account_ledger has no DELETE policy (it is the club's record), so the
+       `stf.del(account_ledger...)` calls in this suite have always been silent
+       no-ops and the rows accumulate forever: this persona had 511 berth/credit
+       pairs on one voyage. PostgREST caps a response at 1000 rows whatever
+       limit you ask for, so this helper was summing the first PAGE of the
+       ledger and calling it the balance. Every assertion built on it went
+       quietly wrong the moment the pair passed a thousand rows — reporting a
+       free pass where the member had in fact been charged correctly.
+
+       A marker makes the window small, exact, and independent of how much
+       history is behind it. */
+    const folio = async (since) => {
+      const rows = await reg.get(
+        `account_ledger?profile_id=eq.${me}&voyage_id=eq.${v.id}&created_at=gt.${since}&select=delta_cents`
+      );
+      const list = rows.data || [];
+      if (list.length >= 1000) throw new Error("folio window is too wide to trust — narrow the marker");
+      return list.reduce((n, r) => n + r.delta_cents, 0);
     };
     const claim = () => reg.post("rsvps", { voyage_id: v.id, profile_id: me, status: "aboard" });
 
     for (const [label, away] of [["not_going", "not_going"], ["waitlist", "waitlist"]]) {
       await wipe();
-      const start = await folio();
+      const mark = new Date().toISOString();
+      const start = await folio(mark);
       const first = await claim();
       const rid = first.data?.[0]?.id;
       if (rid) {
         await reg.patch(`rsvps?id=eq.${rid}`, { status: away });
-        const released = await folio();
+        const released = await folio(mark);
         await reg.patch(`rsvps?id=eq.${rid}`, { status: "aboard" });
-        const f = await folio();
+        const f = await folio(mark);
         note("regional", `a pass released via ${label} is charged again`,
           f - released === -v.price_cents,
           `moved ${f - released} on re-claim (start ${start}) — a free pass if this is 0`);
@@ -1583,13 +1624,14 @@ async function roundThreeRules(p) {
 
     // An ordinary edit while aboard must not charge twice.
     await wipe();
-    const editStart = await folio();
+    const editMark = new Date().toISOString();
+    const editStart = await folio(editMark);
     const held = await claim();
     const hid = held.data?.[0]?.id;
     if (hid) {
-      const charged = await folio();
+      const charged = await folio(editMark);
       await reg.patch(`rsvps?id=eq.${hid}`, { show_on_manifest: false });
-      const f = await folio();
+      const f = await folio(editMark);
       note("regional", "editing a pass you hold does not charge again", f === charged,
         `moved ${f - charged} on an edit (charge was ${charged - editStart})`);
       await reg.patch(`rsvps?id=eq.${hid}`, { show_on_manifest: true });
