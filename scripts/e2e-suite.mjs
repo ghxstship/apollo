@@ -1964,6 +1964,22 @@ async function parityRules(p) {
      any member could open a conversation with any other. List the recipient for
      the duration, and check the refusal on someone who is not.
      See "a direct message is something the other person can refuse". */
+  /* Clear the pair first. open_direct_thread returns an EXISTING thread without
+     re-checking entitlement — deliberately, since you may keep talking to
+     someone you already have a conversation with — so a thread this test opened
+     on a previous run made every later run return 200 and report the gate
+     broken. The residue, not the gate, was the failure. */
+  {
+    const gone = await stf.get(
+      `direct_thread_pairs?select=thread_id&lo=eq.${[uid(p.global), uid(p.paused)].sort()[0]}` +
+        `&hi=eq.${[uid(p.global), uid(p.paused)].sort()[1]}`
+    );
+    for (const row of gone.data || []) {
+      await stf.del(`direct_thread_pairs?thread_id=eq.${row.thread_id}`);
+      await stf.del(`thread_members?thread_id=eq.${row.thread_id}`);
+      await stf.del(`threads?id=eq.${row.thread_id}`);
+    }
+  }
   const strangerDm = await glo.rpc("open_direct_thread", { p_other: uid(p.paused) });
   note("global", "cannot DM a member they have not sailed with or found listed",
     strangerDm.status >= 400, `got ${strangerDm.status}`);
