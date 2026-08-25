@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CLUB_ZONE } from "@/lib/brand";
+import { endOfDay, startOfDay } from "@/lib/format";
 import type { ClauseCategory } from "@/lib/supabase/types";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
@@ -254,9 +256,14 @@ export async function sendSeasonCards(
   if (!from || !to) return { error: "A season needs both dates." };
   if (new Date(to) <= new Date(from)) return { error: "A season runs forwards." };
 
+  /* Both ends came from <input type="date"> and became UTC midnight, and the
+     RPC filters `starts_at < p_to`. So a season entered as closing DEC 31
+     excluded every sailing on Dec 31 — and a member whose only completed
+     sailing was the closing-night sail got no card at all. A season named
+     through a day includes that day. */
   const { data, error } = await supabase.rpc("send_season_cards", {
-    p_from: new Date(from).toISOString(),
-    p_to: new Date(to).toISOString(),
+    p_from: startOfDay(from, CLUB_ZONE),
+    p_to: endOfDay(to, CLUB_ZONE),
     p_season: label.trim() || null,
   });
   if (error) return { error: ERR_LAND };

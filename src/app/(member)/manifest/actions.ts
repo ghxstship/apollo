@@ -154,8 +154,17 @@ async function splitIntoDraws(
      to do, and nothing to apologise for — the split they asked for exists. */
   if (creditError) return creditError.code === "23505" ? null : creditError.message;
 
-  const next = new Date();
-  next.setMonth(next.getMonth() + 1);
+  /* "Monthly" means the same date next month, and the last day of the month
+     where that date does not exist. `setMonth(getMonth() + 1)` does neither: a
+     pass split on Jan 31 draws next on MAR 3, skipping February entirely. The
+     database step uses `+ interval '1 month'`, which clamps correctly; this
+     matches it rather than inventing a second cadence. */
+  const now = new Date();
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  const d = now.getUTCDate();
+  const lastOfNextMonth = new Date(Date.UTC(y, m + 2, 0)).getUTCDate();
+  const next = new Date(Date.UTC(y, m + 1, Math.min(d, lastOfNextMonth)));
   const { error: planError } = await admin.from("installment_plans").insert({
     profile_id: userId,
     rsvp_id: rsvpId,

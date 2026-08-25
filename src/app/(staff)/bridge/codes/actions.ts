@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CLUB_ZONE } from "@/lib/brand";
+import { endOfDay } from "@/lib/format";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 export type CodeKind = "percent" | "amount" | "comp";
@@ -36,7 +38,15 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
     value: input.kind === "comp" ? 0 : Math.round(input.value),
     voyage_id: input.voyageId || null,
     max_uses: Math.max(1, Math.round(input.maxUses)),
-    expires_at: input.expiresAt ? new Date(input.expiresAt).toISOString() : null,
+    /* The form is <input type="date">, so this used to become UTC midnight:
+       a code an operator cut as "expires Sep 1" died at Aug 31, 20:00 EDT —
+       dead for the whole of the day it names, while the badge read it back to
+       them as AUG 31, a day they never typed. Anyone redeeming on the 1st pays
+       list price instead of the comp they were promised.
+
+       An expiry date means the END of that day. Start of the next day on the
+       club's clock, which is the last instant the code is still good. */
+    expires_at: input.expiresAt ? endOfDay(input.expiresAt, CLUB_ZONE) : null,
     note: input.note.trim() || null,
     active: true,
     created_by: staffId,

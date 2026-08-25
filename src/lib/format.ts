@@ -173,3 +173,30 @@ export function eveningBefore(iso: string, zone: Zone, hour = 18): number {
     zone
   );
 }
+
+
+/* The instant a calendar day ENDS in a zone — i.e. the start of the next day.
+
+   An <input type="date"> gives "2026-09-01" and `new Date()` reads that as UTC
+   midnight, which is the START of the day in UTC and some hours into the day
+   BEFORE in every harbour this club sails from. A code cut as "expires Sep 1"
+   therefore died on Aug 31. When somebody names a day as a deadline they mean
+   the end of it. */
+export function endOfDay(yyyyMmDd: string, zone: Zone): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(yyyyMmDd);
+  if (!m) return new Date(yyyyMmDd).toISOString();
+  const next = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + 1));
+  return new Date(
+    wallClockInZone(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate(), 0, 0, zone)
+  ).toISOString();
+}
+
+/* The instant a calendar day BEGINS in a zone. Pairs with endOfDay so a range
+   named by two dates covers both of them entirely. */
+export function startOfDay(yyyyMmDd: string, zone: Zone): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(yyyyMmDd);
+  if (!m) return new Date(yyyyMmDd).toISOString();
+  return new Date(
+    wallClockInZone(Number(m[1]), Number(m[2]), Number(m[3]), 0, 0, zone)
+  ).toISOString();
+}

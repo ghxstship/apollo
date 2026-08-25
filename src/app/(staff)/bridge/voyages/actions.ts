@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { EventClass, MembershipTier, VoyageStatus } from "@/lib/supabase/types";
+import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 
 function done(): ActionResult {
@@ -107,7 +108,35 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
   const title = input.title.trim();
   if (!slug || !title) return { error: "A voyage needs a slug and a title." };
   if (!input.startsAt) return { error: "Set a departure time." };
-  const startsAt = new Date(input.startsAt);
+  if (!input.harborId) return { error: "Pick a harbor — the departure time is read on its clock." };
+
+  /* The form's <input type="datetime-local"> yields "2027-05-15T19:00" with NO
+     OFFSET, so `new Date()` resolves it in the NODE SERVER'S zone — while the
+     Harbor select sits in the same row of the same form, and a trigger stamps
+     the voyage with that harbour's zone milliseconds later. Every surface then
+     renders the instant on the harbour's clock.
+
+     On a UTC production host an operator scheduling Chicago 19:00 stored 19:00Z
+     and the product published it as 14:00 CDT: five hours early, on the public
+     charter page, the ICS feed, the manifest, the boarding code's MMDD, and
+     every 48h/window/18:00 boundary derived from it. The harbour's zone is
+     known at the moment of authoring; it just was not consulted. */
+  const { data: harbor } = await supabase
+    .from("harbors")
+    .select("time_zone")
+    .eq("id", input.harborId)
+    .maybeSingle();
+  if (!harbor) return { error: "That harbor is not on the chart." };
+
+  const local = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(input.startsAt);
+  if (!local) return { error: "That departure time doesn't parse." };
+  const startsAt = new Date(
+    wallClockInZone(
+      Number(local[1]), Number(local[2]), Number(local[3]),
+      Number(local[4]), Number(local[5]),
+      harbor.time_zone
+    )
+  );
   if (Number.isNaN(startsAt.getTime())) return { error: "That departure time doesn't parse." };
 
   /* Itinerary rows: minutes from cast off, a title, an optional note. */
