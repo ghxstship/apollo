@@ -34,14 +34,29 @@ export default async function CharterPage() {
   /* The passage in front of you. One at a time, because the itinerary
      one-pager, the cabin card and the port guide are all artefacts OF a
      passage — a list of them is a manifest, which is a different page. */
-  const { data: booked } = await db
+  /* `voyages!inner(...)` was ambiguous and the whole module went dark.
+     radar_picks arrived carrying picker_rsvp → rsvps, picked_rsvp → rsvps AND
+     voyage_id → voyages, which manufactures two more rsvps↔voyages paths
+     alongside the real one. PostgREST refuses an embed it cannot resolve —
+     PGRST201, "more than one relationship was found" — so this returned
+     nothing and the page fell to its "No passage ahead" empty state for every
+     member with a booking. Naming the constraint pins it to the pass's own
+     voyage and no future foreign key can make it ambiguous again.
+
+     `error` is destructured now too. It was not, so a refused query was
+     indistinguishable from an empty result: nothing reached the browser, the
+     console, the server log, or the member. Silent is worse than ugly. */
+  const { data: booked, error: bookedError } = await db
     .from("rsvps")
-    .select("id,voyage_id,cabin_id,boarding_code,status,voyages!inner(id,slug,title,starts_at,ends_at,status,time_zone,muster,distance_nm)")
+    .select("id,voyage_id,cabin_id,boarding_code,status,voyages!rsvps_voyage_id_fkey!inner(id,slug,title,starts_at,ends_at,status,time_zone,muster,distance_nm)")
     .eq("profile_id", user.id)
     .eq("status", "aboard")
     .gte("voyages.starts_at", new Date().toISOString())
     .order("starts_at", { foreignTable: "voyages", ascending: true })
     .limit(1);
+
+  /* A refused query is not an empty manifest, and must never render as one. */
+  if (bookedError) throw new Error(`the passage could not be read: ${bookedError.message}`);
 
   /* PostgREST types an embedded relation as an array even when the join is
      to-one, which `!inner` on a single foreign key always is. Through unknown,

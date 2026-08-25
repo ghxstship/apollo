@@ -59,7 +59,16 @@ export default async function StandingPage() {
   const { supabase, user, profile } = await getMember();
   const db = moduleTables(supabase);
 
-  const [{ data: productRows }, { data: pauseDays }, credential] = await Promise.all([
+  /* The third one was NOT destructured to `.data`. The first two are, a line
+     apart, which is exactly why it read as correct. `credential` was the whole
+     PostgrestResponse, so Array.isArray was false, `first.token` was undefined,
+     and initialQr was ALWAYS null — the member held up a phone at the gangway
+     and showed a blank square. Not an error, not a fallback with words in it:
+     `std-cred__blank` is an empty aria-hidden div, so it was invisible to a
+     screen reader too. It recovered only if they thought to press "New code",
+     or waited out the 55-second rotation interval, which does not fire at
+     mount. */
+  const [{ data: productRows }, { data: pauseDays }, { data: credential }] = await Promise.all([
     db.from("club_products").select("*").eq("active", true).order("position"),
     db.rpc("membership_pause_days_used", { p_profile: user.id }),
     db.rpc("issue_member_qr"),

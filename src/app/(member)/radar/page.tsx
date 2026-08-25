@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { lockup } from "@/lib/brand";
 import {
-  GUARANTEE_PAID_LINE,
+  GUARANTEE_OWED_LINE,
   GUARANTEE_UNEARNED_LINE,
   anchorCountdown,
   guaranteeOwed,
@@ -196,11 +196,11 @@ export default async function RadarPage() {
         {phase === "unlocked" && mine.length === 0 ? (
           <div className={`rdr-strip${guaranteeOwed(picksPlotted, mine.length) ? " rdr-strip--credit" : ""}`}>
             <span className="rdr-strip__badge">
-              {guaranteeOwed(picksPlotted, mine.length) ? "$150 credit applied" : "Match Guarantee"}
+              {guaranteeOwed(picksPlotted, mine.length) ? "$150 credit owed" : "Match Guarantee"}
             </span>
             <span className="rdr-strip__title">No anchors this time.</span>
             <p className="rdr-strip__body">
-              {guaranteeOwed(picksPlotted, mine.length) ? GUARANTEE_PAID_LINE : GUARANTEE_UNEARNED_LINE}
+              {guaranteeOwed(picksPlotted, mine.length) ? GUARANTEE_OWED_LINE : GUARANTEE_UNEARNED_LINE}
             </p>
           </div>
         ) : null}

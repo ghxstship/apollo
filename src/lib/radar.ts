@@ -146,8 +146,14 @@ export function otherSide(anchor: SharedAnchorRow, mine: string): string {
    settle_the_match_guarantee and this constant becomes dead. */
 export const MATCH_GUARANTEE_CENTS = 15_000;
 
-export const GUARANTEE_PAID_LINE =
-  "That happens, and it is on us. A $150 credit is already on your next sailing — no form, no request.";
+/* Was "A $150 credit is already on your next sailing" — past tense, on a
+   surface that has never read account_ledger and cannot. The credit is posted
+   by settle_the_match_guarantee when the sailing is marked completed, which is
+   after this page is ever seen. Saying "already" told a member money had moved
+   at a moment when, by construction, it had not. Owed is the true tense, and
+   it is no less generous. */
+export const GUARANTEE_OWED_LINE =
+  "That happens, and it is on us. A $150 credit goes on your account when this sailing closes — no form, no request.";
 
 export const GUARANTEE_UNEARNED_LINE =
   "The guarantee covers a course plotted and not returned. You left all three slots open, which is a real choice and costs nothing — but there is nothing for it to cover.";
