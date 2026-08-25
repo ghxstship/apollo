@@ -424,6 +424,7 @@ type NewVoyageForm = {
   kind: string;
   harborId: string;
   startsAt: string;
+  endsAt: string;
   distance: string;
   berths: number;
   price: string;
@@ -441,6 +442,7 @@ const BLANK: NewVoyageForm = {
   kind: "sea_day",
   harborId: "",
   startsAt: "",
+  endsAt: "",
   distance: "",
   berths: 24,
   price: "",
@@ -507,6 +509,7 @@ function NewVoyageDialog({
         kind: f.kind,
         harborId: f.harborId || null,
         startsAt: f.startsAt,
+        endsAt: f.endsAt,
         distanceNm: f.distance.trim() ? Number(f.distance) : null,
         berths: f.berths,
         priceCents: f.price.trim() ? Math.round(Number(f.price) * 100) : 0,
@@ -534,7 +537,7 @@ function NewVoyageDialog({
           <Button variant="ghost" onClick={onClose}>
             Not yet
           </Button>
-          <Button variant="gold" disabled={pending || !f.title || !f.startsAt} onClick={submit}>
+          <Button variant="gold" disabled={pending || !f.title || !f.startsAt || !f.endsAt} onClick={submit}>
             Set the voyage
           </Button>
         </>
@@ -574,6 +577,18 @@ function NewVoyageDialog({
             onChange={(e) => set("harborId", e.target.value)}
           />
           <Input label="Departs" type="datetime-local" value={f.startsAt} onChange={(e) => set("startsAt", e.target.value)} />
+        </div>
+        {/* Both times are read on the harbour's clock, and both are needed: a
+            sailing with no return time cannot round long-passage or
+            night-reckoning, because those are counted in hours aboard. */}
+        <div className="hm-form__row">
+          <Input
+            label="Returns"
+            type="datetime-local"
+            hint="Read on the same harbor clock as the departure. Hours aboard decide two marks."
+            value={f.endsAt}
+            onChange={(e) => set("endsAt", e.target.value)}
+          />
         </div>
         <div className="hm-form__row">
           <Input label="Distance (NM)" type="number" min={0} placeholder="26" value={f.distance} onChange={(e) => set("distance", e.target.value)} />

@@ -45,12 +45,36 @@ const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
    the shore office" on every load, past both gates. */
 function bannedTerms() {
   try {
-    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8");
-    const block = src.match(/export const BANNED_TERMS = \[([\s\S]*?)\]/);
-    if (!block) return [];
-    return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-  } catch {
-    return [];
+    /* Comments stripped BEFORE the array is located, for two reasons that both
+       end with a gate reporting clean while enforcing nothing:
+
+       the terminator was `\]` non-greedy, so it stopped at the FIRST close
+       bracket — and a section comment reading "the retired [UN] drafts" inside
+       the array truncated the list to seven entries with no error anywhere; and
+
+       every double-quoted string in range became a banned term, so quoting an
+       example in a comment silently banned it.
+
+       Anchored on the real terminator as well, and a zero-length result is a
+       hard failure rather than an empty list, because "no banned terms" and
+       "could not read the banned terms" must never look the same. */
+    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+    const block = src.match(/export const BANNED_TERMS[^=]*=\s*\[([\s\S]*?)\n\];/);
+    if (!block) {
+      console.error("could not read BANNED_TERMS from src/lib/brand.ts — the lexicon gate would pass on everything");
+      process.exit(2);
+    }
+    const terms = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    if (terms.length === 0) {
+      console.error("BANNED_TERMS parsed as empty — refusing to run a lexicon gate that bans nothing");
+      process.exit(2);
+    }
+    return terms;
+  } catch (e) {
+    console.error("BANNED_TERMS could not be read:", String(e));
+    process.exit(2);
   }
 }
 const BANNED = bannedTerms();

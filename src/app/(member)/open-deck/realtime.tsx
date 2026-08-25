@@ -22,7 +22,20 @@ export function OpenDeckRealtime() {
     for (const table of TABLES) {
       channel = channel.on(
         "postgres_changes",
-        { event: "*", schema: "public", table },
+        /* INSERT and UPDATE named rather than "*", because DELETE is no longer
+           published at all: Realtime cannot apply RLS to a row that is gone, so
+           it was broadcasting deleted primary keys to every subscriber
+           including unauthenticated ones — and wardroom_hails is PRIMARY KEY
+           (post_id, profile_id), which makes the key the private fact. This
+           handler never read the payload, so the only thing lost is that an
+           un-hail no longer nudges another member's feed until its next event
+           or navigation. */
+        { event: "INSERT", schema: "public", table },
+        refresh
+      );
+      channel = channel.on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table },
         refresh
       );
     }

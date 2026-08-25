@@ -41,12 +41,36 @@ loadEnvLocal();
    the audit reported a clean lexicon. */
 function bannedTerms() {
   try {
-    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8");
-    const block = src.match(/export const BANNED_TERMS = \[([\s\S]*?)\]/);
-    if (!block) return [];
-    return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-  } catch {
-    return [];
+    /* Comments stripped BEFORE the array is located, for two reasons that both
+       end with a gate reporting clean while enforcing nothing:
+
+       the terminator was `\]` non-greedy, so it stopped at the FIRST close
+       bracket — and a section comment reading "the retired [UN] drafts" inside
+       the array truncated the list to seven entries with no error anywhere; and
+
+       every double-quoted string in range became a banned term, so quoting an
+       example in a comment silently banned it.
+
+       Anchored on the real terminator as well, and a zero-length result is a
+       hard failure rather than an empty list, because "no banned terms" and
+       "could not read the banned terms" must never look the same. */
+    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+    const block = src.match(/export const BANNED_TERMS[^=]*=\s*\[([\s\S]*?)\n\];/);
+    if (!block) {
+      console.error("could not read BANNED_TERMS from src/lib/brand.ts — the lexicon gate would pass on everything");
+      process.exit(2);
+    }
+    const terms = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    if (terms.length === 0) {
+      console.error("BANNED_TERMS parsed as empty — refusing to run a lexicon gate that bans nothing");
+      process.exit(2);
+    }
+    return terms;
+  } catch (e) {
+    console.error("BANNED_TERMS could not be read:", String(e));
+    process.exit(2);
   }
 }
 const BANNED = bannedTerms();
@@ -56,6 +80,16 @@ const PASSWORD = process.env.E2E_PASSWORD;
 if (!PASSWORD) { console.error("E2E_PASSWORD not set — provision personas and pass their password."); process.exit(2); }
 
 const REF = new URL(SUPA).hostname.split(".")[0];
+/* A NOTE ON CHECKS THAT LIE.
+   A broken comparator fails IDENTICALLY every time, so its output is confident
+   and uniform — and uniformity reads as signal rather than as smoke. Three
+   checks written against this database in one day reported, in turn, six of six
+   renderings drifted, every snapshot stale, and realtime broken for members.
+   All three were the checker: a wrong RPC parameter name, a key-order-sensitive
+   comparison, and an insert that had been refused. A scatter of odd results
+   makes you suspicious; a clean sweep makes you believe. Before trusting a red
+   run, break the thing on purpose and watch it go red for the reason you
+   expect. */
 const results = [];
 const failures = [];
 const note = (persona, check, ok, detail = "") => {
@@ -1544,20 +1578,33 @@ async function roundFiveRules(p) {
   note("regional", "cannot withdraw a frame that is not theirs",
     strangerDel.status >= 400 || (strangerDel.data || []).length === 0, `got ${strangerDel.status}`);
 
+  /* Where the FILE is now, which is no longer where it was uploaded. Taking a
+     frame back off the water moves the object under `withdrawn/` — a signed URL
+     names a path, so moving it is the only way to revoke links already minted,
+     and links to a withdrawn frame are exactly the ones that must die. The
+     sweep list records the object's real location; asserting the original path
+     would assert the file had NOT been moved, which is the opposite of what
+     this block is now testing. */
+  const resting = await stf.get(`voyage_media?id=eq.${fid}&select=storage_path`);
+  const restingPath = (resting.data || [])[0]?.storage_path ?? path;
+  note("staff", "a withdrawn frame no longer sits at the path it was signed under",
+    restingPath !== path && restingPath.startsWith("withdrawn/"),
+    `still at ${restingPath}`);
+
   const own = await glo.del(`voyage_media?id=eq.${fid}`);
   note("global", "withdraws their own frame entirely",
     own.status < 400 && (own.data || []).length === 1, `got ${own.status}`);
 
   /* Storage will not delete from SQL, so a withdrawn row records its path for
      a sweep rather than leaving the file unnoticed. */
-  const noted = await stf.get(`orphaned_media?select=storage_path&storage_path=eq.${path}`);
+  const noted = await stf.get(`orphaned_media?select=storage_path&storage_path=eq.${restingPath}`);
   note("staff", "a withdrawn frame leaves its file on the sweep list",
     (noted.data || []).length === 1, `got ${noted.status} ${JSON.stringify(noted.data).slice(0, 80)}`);
 
   await fetch(`${SUPA}/storage/v1/object/voyage-media`, {
     method: "DELETE",
     headers: { apikey: ANON, Authorization: `Bearer ${p.staff.access_token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ prefixes: [path] }),
+    body: JSON.stringify({ prefixes: [path, restingPath] }),
   });
   await stf.patch(`orphaned_media?storage_path=eq.${path}`, { cleared_at: new Date().toISOString() });
 }
@@ -2143,11 +2190,195 @@ async function businessRules(p) {
   note("staff", "removes fixture voyage", rm.status === 200 || rm.status === 204, `got ${rm.status}`);
 }
 
-/* Read through staff so a paused persona's own read policy cannot skew it. */
-async function knotsFor(person, staffSession) {
+/* Read through staff so a paused persona's own read policy cannot skew it, and
+   bounded by TIME for the same reason folio() is.
+
+   This summed an unbounded select and called the result a balance. PostgREST
+   caps a response at 1000 rows whatever you ask for, and this persona's ledger
+   is at 1043 — so it was summing an arbitrary PAGE, and which thousand you get
+   shifts as rows are added. That is why the footprint check reported 75, then
+   400, then 275 across three runs with no code between them: not leaked state,
+   which accumulates monotonically, but a comparator measuring a moving window
+   of somebody else's arithmetic.
+
+   I had already found and fixed exactly this in folio(), in this file, earlier
+   today — and wrote knotsFor a few hours before that without applying the same
+   reasoning. Bounding by the run's own marker makes the window small, exact,
+   and independent of how much history is behind it. */
+async function knotsFor(person, staffSession, since) {
   const s = rest(staffSession);
-  const res = await s.get(`fathoms_ledger?profile_id=eq.${uid(person)}&select=delta`);
-  return (res.data || []).reduce((t, r) => t + Number(r.delta || 0), 0);
+  const res = await s.get(
+    `fathoms_ledger?profile_id=eq.${uid(person)}&created_at=gt.${since}&select=delta`
+  );
+  const rows = res.data || [];
+  if (rows.length >= 1000) throw new Error("knots window is too wide to trust — narrow the marker");
+  return rows.reduce((t, r) => t + Number(r.delta || 0), 0);
+}
+
+/* — The frozen legal copy still says what the database says —
+
+   src/app/preview/documents/snapshot.json is a FROZEN COPY OF BINDING LEGAL
+   TEXT. The preview page reads live only when SUPABASE_SERVICE_ROLE_KEY is
+   set, which is not the normal case, so it almost always serves the snapshot.
+   Its banner honestly says "Snapshot · <date>" — and nothing compared that
+   snapshot to the clause library. The one page whose whole purpose is letting
+   a reviewer read the binding copy would quietly show them the wrong binding
+   copy, under a date they have no reason to distrust.
+
+   It is accurate today. That is the problem: accurate because nobody has
+   edited a clause, not because anything would notice.
+
+   FOUR THINGS THIS GETS RIGHT THAT THE OBVIOUS VERSION GETS WRONG.
+
+   1. It resolves through published_version(), not by reading document_versions
+      for a published row. Those are different ANSWERS, not two routes to one:
+      published_version() filters on documents.active, and two inactive
+      documents (r3-paper, e2e-r2-paper) still carry published versions. A
+      direct read resolves both and compares against renderings no member can
+      ever see — green on documents that, to the club, do not exist.
+
+   2. It drives off LIVE contexts and asserts the COUNT. data.ts collapses two
+      contexts that assemble identically and, because CONTEXTS is
+      ["sea","shore"], the survivor is always sea. So a shore-only clause added
+      to a document that currently collapses leaves live sea untouched, makes
+      live shore diverge, and the snapshot still holds one rendering labelled
+      "sea". Bodies alone pass, while the page shows one rendering where two
+      exist and the missing one is the Port Day — the exact thing data.ts:44
+      forbids: "a reviewer who reads one rendering has not read the document."
+
+   3. It hashes THE WHOLE SHAPE, not the wording. Only clause_versions is
+      immutable. `clauses`, `documents` and `document_requirements` carry no
+      trigger at all — deliberately, since clauses.active is how a clause is
+      retired. But that same mutability covers clauses.title, clauses.category,
+      documents.validity_months and every requirement row, and the page renders
+      all of them. Rename a clause, recategorise it, add a gate, or move
+      validity_months from 12 to 24, and every body is byte-identical, the
+      context count is unchanged, the document set is unchanged — and the page
+      keeps showing the old manifest and the old renewal period. "Renews every
+      12 months" is not decoration; it is a claim about how often a member must
+      sign again.
+
+      The database is deliberately NOT made rigid to spare this file. Staff
+      correcting a typo in a clause title should not mint a new clause version
+      — that would change what every future signature hashes, for a label
+      nobody signed. The snapshot tracks the mutable thing instead.
+
+   4. It checks the SHAPE of every response before trusting it. PostgREST
+      answers an unnamed-parameter mistake with a 404 BODY rather than
+      throwing, so an unguarded probe carries an error object forward as data.
+      Written naively, this reported all six renderings as drifted —
+      confidently, uniformly, and entirely fictionally — because it passed
+      `p_code` where the function wants `p_document_code`. */
+async function legalSnapshotRules(p) {
+  const stf = rest(p.staff);
+  let snap;
+  try {
+    snap = JSON.parse(readFileSync(join(root, "src/app/preview/documents/snapshot.json"), "utf8"));
+  } catch (e) {
+    note("staff", "the document snapshot is readable", false, String(e));
+    return;
+  }
+
+  const live = await stf.get("documents?select=code&active=is.true&order=code");
+  const activeCodes = (live.data || []).map((d) => d.code).sort();
+  const frozenCodes = snap.documents.map((d) => d.code).sort();
+  note("staff", "the snapshot covers exactly the active documents",
+    JSON.stringify(activeCodes) === JSON.stringify(frozenCodes),
+    `live [${activeCodes.join(", ")}] vs snapshot [${frozenCodes.join(", ")}]`);
+
+  /* Sorted, because document_requirements has no ordering and PostgREST will
+     not promise one — an unsorted comparison would flap. */
+  const shapeOf = (o) => JSON.stringify(o);
+  const CONTEXTS = ["sea", "shore"];
+  let compared = 0;
+
+  for (const doc of snap.documents) {
+    const vid = await stf.rpc("published_version", { p_document_code: doc.code });
+    if (typeof vid.data !== "string") {
+      note("staff", `a published version resolves for ${doc.code}`, false,
+        `got ${vid.status} ${JSON.stringify(vid.data).slice(0, 90)}`);
+      continue;
+    }
+
+    /* The metadata the page prints above the body, none of which lives in an
+       immutable table. */
+    const [ver, reqs] = await Promise.all([
+      stf.get(`document_versions?id=eq.${vid.data}&select=version`),
+      stf.get(`document_requirements?document_code=eq.${doc.code}&select=gate`),
+    ]);
+    const docRow = await stf.get(`documents?code=eq.${doc.code}&select=validity_months`);
+    const liveMeta = {
+      version: ver.data?.[0]?.version ?? null,
+      validity_months: docRow.data?.[0]?.validity_months ?? null,
+      gates: (reqs.data || []).map((r) => r.gate).sort(),
+    };
+    const frozenMeta = {
+      version: doc.version ?? null,
+      validity_months: doc.validity_months ?? null,
+      gates: [...(doc.gates || [])].sort(),
+    };
+    /* Names the field rather than printing two blobs. A reviewer told only
+       that "the header moved" diffs three things to find one, and the renewal
+       period is the one most worth pointing at directly: "renews every 12
+       months" is a claim about how often a member must sign again. */
+    const movedFields = Object.keys(frozenMeta).filter(
+      (k) => shapeOf(liveMeta[k]) !== shapeOf(frozenMeta[k])
+    );
+    note("staff", `${doc.code} — the frozen header matches the live record`,
+      movedFields.length === 0,
+      movedFields
+        .map((k) => `${k}: snapshot ${shapeOf(frozenMeta[k])} vs live ${shapeOf(liveMeta[k])}`)
+        .join(" · "));
+
+    /* Assembled exactly the way the page assembles it, de-duplication and all,
+       so the count is comparable rather than merely the bodies. */
+    const rendered = [];
+    for (const cls of CONTEXTS) {
+      const body = await stf.rpc("render_document", {
+        p_document_version_id: vid.data,
+        p_context: { class: cls },
+      });
+      if (typeof body.data !== "string" || !body.data) continue;
+      if (rendered.some((r) => r.body === body.data)) continue;
+      const cl = await stf.get(
+        `document_clauses?document_version_id=eq.${vid.data}&select=position,condition,clause_versions(version,clause_code,clauses(title,category))&order=position`
+      );
+      const clauses = (cl.data || [])
+        .map((row) => ({
+          clause_code: row.clause_versions?.clause_code ?? "",
+          title: row.clause_versions?.clauses?.title ?? "",
+          category: row.clause_versions?.clauses?.category ?? "",
+          version: row.clause_versions?.version ?? 0,
+          position: row.position,
+          condition: row.condition ?? {},
+        }))
+        .filter((c) => {
+          const keys = Object.keys(c.condition);
+          if (keys.length === 0) return true;
+          return keys.every((k) => c.condition[k] === (k === "class" ? cls : undefined));
+        });
+      rendered.push({ class: cls, body: body.data, clauses });
+    }
+
+    note("staff", `${doc.code} renders as many contexts as the snapshot holds`,
+      rendered.length === (doc.renderings || []).length,
+      `live ${rendered.length} [${rendered.map((r) => r.class).join("+")}] vs snapshot ${(doc.renderings || []).length} [${(doc.renderings || []).map((r) => r.class).join("+")}]`);
+
+    for (const r of rendered) {
+      const frozen = (doc.renderings || []).find((x) => x.class === r.class);
+      compared += 1;
+      const same = !!frozen && shapeOf({ body: r.body, clauses: r.clauses }) ===
+        shapeOf({ body: frozen.body, clauses: frozen.clauses });
+      note("staff", `${doc.code}/${r.class} — the frozen copy matches the binding copy`, same,
+        frozen
+          ? frozen.body === r.body
+            ? "the wording matches but the clause manifest moved — regenerate the snapshot"
+            : `wording drifted: snapshot ${frozen.body.length} chars vs live ${r.body.length}`
+          : "the snapshot holds no rendering for this context");
+    }
+  }
+
+  note("staff", "every binding rendering was compared", compared > 0, `compared ${compared}`);
 }
 
 async function main() {
@@ -2162,9 +2393,11 @@ async function main() {
   ]) {
     personas[name] = await login(email);
   }
+  /* Everything the run does to the ledger is measured from here. */
+  const runMark = new Date().toISOString();
   const knotsAtStart = {};
   for (const name of ["regional", "national", "global", "paused"]) {
-    knotsAtStart[name] = await knotsFor(personas[name], personas.staff);
+    knotsAtStart[name] = await knotsFor(personas[name], personas.staff, runMark);
   }
 
   await sweep(personas);
@@ -2185,6 +2418,7 @@ async function main() {
   await roundTwoRules(personas);
   await roundThreeRules(personas);
   await roundFiveRules(personas);
+  await legalSnapshotRules(personas);
   await sweep(personas);
 
   /* THE SUITE'S LEDGER FOOTPRINT, pinned.
@@ -2202,11 +2436,19 @@ async function main() {
      became ambiguous and cost an hour to explain. */
   const EXPECTED_KNOTS_DRIFT = { regional: 0, national: 0, global: 150, paused: 0 };
   for (const [name, before] of Object.entries(knotsAtStart)) {
-    const after = await knotsFor(personas[name], personas.staff);
+    const after = await knotsFor(personas[name], personas.staff, runMark);
     const moved = after - before;
     const want = EXPECTED_KNOTS_DRIFT[name] ?? 0;
+    /* This check CANNOT distinguish its own footprint from a second copy of
+       itself running against the same database, because both write the same
+       reasons for the same personas in the same window. Observed at 75 on one
+       run and 400 on the next with no code change between them, which is not
+       what leaked state looks like — leaked state accumulates monotonically.
+       So the message names concurrency first: it is the likelier explanation
+       and the cheaper one to rule out. */
     note(name, "the suite's knots footprint is the one it declares", moved === want,
-      `moved ${moved}, declared ${want}`);
+      `moved ${moved}, declared ${want} — if another run of this suite was live against ` +
+        `the same project, that alone produces this; re-run alone before hunting a leak`);
   }
 
   const passed = results.filter((r) => r.ok).length;

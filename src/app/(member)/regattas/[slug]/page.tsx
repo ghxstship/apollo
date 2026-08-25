@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, Button, Icon, StandingsTable, type StandingRow } from "@/components/ds";
+import { Badge, Icon, StandingsTable, type StandingRow } from "@/components/ds";
 import { CONTEST_METRIC, knots, LOGBOOK } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
 import { getMember } from "../../data";
-import { enterContest, withdrawFromContest } from "../actions";
+import { ContestEntry } from "./entry-control";
 
 export async function generateMetadata({
   params,
@@ -58,6 +58,36 @@ export default async function ContestPage({
   const standing = Array.isArray(standingRes.data) ? standingRes.data : [];
   const entered = Boolean(entryRes.data);
   const open = contest.status === "open";
+
+  /* A crew-scoped contest belongs to one sailing, and contest_entries' INSERT
+     policy says so: scope 'crew' requires an aboard pass on contest.voyage_id.
+     This page never asked. A member with no pass on that sailing was shown
+     Enter, pressed it, and the insert was refused by RLS — and the action threw
+     the refusal away, so the page came back identical with no entry on it. Twice
+     over, the product offered something it had already decided to say no to.
+
+     A contest scoped to the crew with no sailing named is enterable by nobody,
+     which is a Bridge mistake rather than a member's; it reads the same way from
+     here — the control stays off. Someone already entered who has since come off
+     the pass keeps the control, because withdrawing is still allowed. */
+  const crewOnly = contest.scope === "crew";
+  let aboard = false;
+  let sailing: { title: string; slug: string } | null = null;
+  if (crewOnly && contest.voyage_id) {
+    const [passRes, voyageRes] = await Promise.all([
+      supabase
+        .from("rsvps")
+        .select("id")
+        .eq("voyage_id", contest.voyage_id)
+        .eq("profile_id", user.id)
+        .eq("status", "aboard")
+        .maybeSingle(),
+      supabase.from("voyages").select("title, slug").eq("id", contest.voyage_id).maybeSingle(),
+    ]);
+    aboard = Boolean(passRes.data);
+    sailing = voyageRes.data ?? null;
+  }
+  const mayEnter = !crewOnly || aboard;
   /* Server-rendered per request, so "now" is request time. */
   const closed = new Date(contest.ends_at).getTime() <= new Date().getTime();
   const isRegatta = contest.shape === "regatta";
@@ -126,15 +156,21 @@ export default async function ContestPage({
           Entries wait while your membership is paused. Resume it on your page
           and this contest opens back up.
         </p>
+      ) : open && !closed && !mayEnter && !entered ? (
+        <p style={{ marginTop: 22, fontSize: 13, color: "var(--text-2)" }}>
+          This one is the crew&rsquo;s — it counts{" "}
+          {sailing ? (
+            <Link href={`/charters/${sailing.slug}`} className="mbr-plain">
+              {sailing.title}
+            </Link>
+          ) : (
+            "one sailing"
+          )}
+          , and entry opens with a pass on it.
+        </p>
       ) : open && !closed ? (
         <div style={{ marginTop: 22 }}>
-          <form action={entered ? withdrawFromContest : enterContest}>
-            <input type="hidden" name="contest" value={contest.id} />
-            <input type="hidden" name="slug" value={contest.slug} />
-            <Button type="submit" variant={entered ? "ghost" : "gold"}>
-              {entered ? "Withdraw" : "Enter"}
-            </Button>
-          </form>
+          <ContestEntry contestId={contest.id} slug={contest.slug} entered={entered} />
           {!entered ? (
             <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-3)" }}>
               Entering counts only the sailings inside the window. Nothing before it.

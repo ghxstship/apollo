@@ -8,6 +8,7 @@ import { qrDataUrl } from "@/lib/commerce-qr";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../data";
 import { PrintButton } from "./print-button";
+import { RotateFeed } from "./rotate-feed";
 
 export const metadata: Metadata = { title: SURFACES.passbook };
 
@@ -143,6 +144,16 @@ export default async function MemberCardPage() {
           <p className="mbr-mono" style={{ marginTop: 12 }}>
             THIS ADDRESS IS YOURS ALONE — ANYONE HOLDING IT READS YOUR SEASON
           </p>
+          {/* The warning above is only worth saying if it comes with a way out:
+              the feed answers on the secret alone, so a member who has let one
+              slip needs to be able to kill it, not just be told they should not
+              have shared it. */}
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 12 }}>
+            <RotateFeed />
+            <span style={{ fontSize: 12, color: "var(--text-3)" }}>
+              Shared it by mistake? A new address takes the old one out of service.
+            </span>
+          </div>
         </section>
       ) : null}
       <div style={{ width: "min(680px, 100%)" }}>

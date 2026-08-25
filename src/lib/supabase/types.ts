@@ -528,8 +528,21 @@ export type Database = {
         }>
       }
       settle_contest: { Args: { p_contest_id: string }; Returns: number }
-      place_shop_order: { Args: { p_lines: Json }; Returns: string }
+      place_shop_order: {
+        Args: {
+          p_lines: Json
+          /* Minted once per crate by the client and re-sent unchanged on every
+             retry, so a crate that was charged and answered into a dead
+             connection is recognised rather than charged again. */
+          p_idem_key?: string
+        }
+        Returns: string
+      }
       set_own_standing: { Args: { p_status: string }; Returns: null }
+      /* Issues the caller a new season-feed token and kills the old address —
+         the only path past the calendar_token guard. Returns the new token; the
+         page re-reads the profile anyway. */
+      rotate_calendar_token: { Args: Record<string, never>; Returns: string }
       shared_voyages: { Args: { p_other: string }; Returns: Array<{ voyage_id: string }> }
       adjust_knots: {
         Args: { p_profile: string; p_delta: number; p_reason: string }

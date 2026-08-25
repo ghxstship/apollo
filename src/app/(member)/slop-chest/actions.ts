@@ -11,7 +11,15 @@ export type SlopChestResult = { error?: string };
    catalogue and writes the order and its items in one transaction, so nothing
    a member sends can decide what they are charged — the client sends a crate,
    never a price. Global tier's 15% comes off the tier on the record. */
-export async function placeShopOrder(lines: CrateLine[]): Promise<SlopChestResult> {
+export async function placeShopOrder(
+  lines: CrateLine[],
+  /* Minted once per crate and re-sent unchanged on every retry. An order is a
+     charge — charge_shop_order posts the debit on AFTER INSERT — so a request
+     that was charged and whose answer never came back used to cost the member
+     twice when they sent the crate again. The key is how the database tells a
+     resend from a second order. */
+  idemKey?: string
+): Promise<SlopChestResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,7 +35,10 @@ export async function placeShopOrder(lines: CrateLine[]): Promise<SlopChestResul
     .filter((l) => l.productId && l.qty > 0 && l.qty <= 12);
   if (clean.length === 0) return { error: "The crate is empty." };
 
-  const { error } = await supabase.rpc("place_shop_order", { p_lines: clean });
+  const { error } = await supabase.rpc("place_shop_order", {
+    p_lines: clean,
+    ...(idemKey ? { p_idem_key: idemKey } : {}),
+  });
   if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/slop-chest");

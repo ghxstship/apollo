@@ -46,6 +46,14 @@ const ORDER_BADGE: Record<string, { tone: "gold" | "ink" | "positive" | "caution
 
 type CartLine = CrateLine & { name: string; priceCents: number };
 
+function mintKey(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 export function SlopChestShop({
   zone,
   products,
@@ -71,6 +79,11 @@ export function SlopChestShop({
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
+  /* One key for the crate, minted at the first attempt and spent only when an
+     order actually lands. Minting one per attempt would dedupe nothing: the
+     case this exists for is the SECOND attempt at a crate whose first attempt
+     reached the club, was charged, and whose answer never came back. */
+  const crateKey = React.useRef<string | null>(null);
   /* The crate is behind a full veil, so it is a modal in every way except the
      four things it owed the keyboard. */
   const drawerRef = useModal(drawer, () => setDrawer(false));
@@ -125,18 +138,34 @@ export function SlopChestShop({
   const total = subtotal - discount;
 
   const checkout = async () => {
+    if (pending) return;
     setPending(true);
     setError(null);
-    const res = await placeShopOrder(cart.map(({ productId, qty: q, size: s }) => ({ productId, qty: q, size: s })));
-    setPending(false);
-    if (res.error) {
-      setError(res.error);
-      return;
+    if (!crateKey.current) crateKey.current = mintKey();
+    try {
+      const res = await placeShopOrder(
+        cart.map(({ productId, qty: q, size: s }) => ({ productId, qty: q, size: s })),
+        crateKey.current
+      );
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      crateKey.current = null;
+      setCart([]);
+      setDrawer(false);
+      setToast("Charged to your account — collect at the harbor or the next Port Day.");
+      router.refresh();
+    } catch {
+      /* The request never came back, which says nothing about whether it
+         landed. Retrying was the honest advice and the dangerous one, until
+         the key: the same crate now settles once however many times it is
+         sent. Without this branch the failure was silent and the button stayed
+         dead. */
+      setError("That didn't come back. Send it again — the same crate is charged once.");
+    } finally {
+      setPending(false);
     }
-    setCart([]);
-    setDrawer(false);
-    setToast("Charged to your account — collect at the harbor or the next Port Day.");
-    router.refresh();
   };
 
   const refund = async (orderId: string) => {
