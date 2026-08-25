@@ -1,8 +1,9 @@
--- With comp staff-only, the remaining trust was promo_code: the trigger skipped
--- pricing entirely and left the charge to the booking action, so a member who
--- set the column without going through checkout was never billed. The trigger
--- prices the pass itself now — full price, or the promo price the club computes
--- from its own code table — and the action no longer posts a berth charge.
+-- With comp now staff-only, the remaining trust was promo_code: the trigger
+-- skipped pricing entirely and left the charge to the booking action, so a
+-- member who set the column without going through checkout was never billed.
+-- The trigger prices the pass itself now — full price, or the promo price the
+-- club computes from its own code table — and the action no longer posts a
+-- berth charge at all.
 create or replace function public.handle_rsvp_aboard()
 returns trigger
 language plpgsql
@@ -10,8 +11,12 @@ security definer
 set search_path to 'public'
 as $function$
 declare
-  v record; m text; v_first_time boolean;
-  v_charged int; v_credited int; v_due int;
+  v record;
+  m text;
+  v_first_time boolean;
+  v_charged int;
+  v_credited int;
+  v_due int;
 begin
   if new.status = 'aboard' then
     select * into v from public.voyages where id = new.voyage_id;
@@ -26,7 +31,8 @@ begin
     v_first_time := not exists (
       select 1 from public.fathoms_ledger
       where profile_id = new.profile_id and voyage_id = new.voyage_id
-        and reason in ('Berth confirmed','Pass confirmed'));
+        and reason in ('Berth confirmed','Pass confirmed')
+    );
 
     if v_first_time then
       insert into public.fathoms_ledger (profile_id, delta, reason, voyage_id)
@@ -71,4 +77,4 @@ begin
     end if;
   end if;
   return new;
-end $function$;
+end $function$;;
