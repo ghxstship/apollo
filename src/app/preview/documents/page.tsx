@@ -34,7 +34,10 @@ export default async function DocumentPreviewPage() {
   const { documents, live, generatedAt } = await readLibrary();
 
   return (
-    <div className="lg-wrap">
+    /* Standalone route — no layout supplies a <main>, and the root layout's
+       "Skip to content" link targets #main. Without this the link landed
+       nowhere on this page, which is the one the reviewer reads longest. */
+    <main id="main" className="lg-wrap">
       <span className="ls-eyebrow" style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}>
         Development only
       </span>
@@ -94,7 +97,7 @@ export default async function DocumentPreviewPage() {
           Signing lives at /agreements/[code] and /sign/[token] · both need a session
         </p>
       </section>
-    </div>
+    </main>
   );
 }
 
