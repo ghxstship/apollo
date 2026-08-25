@@ -521,11 +521,23 @@ export function MembersClient({
                   if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setDetail((d) => (d ? { ...d, status: next } : d));
-                    show({
-                      msg: next === "paused" ? "Paused. The member has the word." : "Running again.",
-                      meta: `${row.name.toUpperCase()} · ${next === "paused" ? "PAUSED" : "ACTIVE"}`,
-                      tone: next === "paused" ? "caution" : "positive",
-                    });
+                    /* The standing landed either way. `note` means the dues did
+                       NOT move with it, and the operator is the only person who
+                       can put that right — so it replaces the cheerful line
+                       rather than appearing beside it. */
+                    show(
+                      res.note
+                        ? {
+                            msg: res.note,
+                            meta: `${row.name.toUpperCase()} · ${next === "paused" ? "PAUSED" : "ACTIVE"} · DUES UNCHANGED`,
+                            tone: "caution",
+                          }
+                        : {
+                            msg: next === "paused" ? "Paused. The member has the word." : "Running again.",
+                            meta: `${row.name.toUpperCase()} · ${next === "paused" ? "PAUSED" : "ACTIVE"}`,
+                            tone: next === "paused" ? "caution" : "positive",
+                          }
+                    );
                   }
                 });
               }}

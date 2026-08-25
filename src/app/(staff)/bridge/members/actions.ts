@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { voice } from "@/lib/errors";
+import { logDate } from "@/lib/format";
+import { CLUB_ZONE } from "@/lib/brand";
+import { pauseDues, resumeDues, duesNote, liveSubscription } from "@/lib/dues";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 /* The filter set is stored verbatim as the segment's jsonb — one shape, so a
@@ -83,13 +86,11 @@ export async function loadMember(
       .eq("profile_id", profileId)
       .order("created_at", { ascending: false })
       .limit(6),
-    supabase
-      .from("subscriptions")
-      .select("status, interval, current_period_end, cancel_at_period_end, plan_id")
-      .eq("profile_id", profileId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    /* Was "newest by created_at, any status", which could hand the drawer a
+       CANCELED row while Pause and Depart acted on a live one. One reader now,
+       shared with @/lib/dues, so the operator sees the record their own button
+       would move. */
+    liveSubscription(supabase, profileId),
   ]);
 
   const profile = profileRes.data;
@@ -101,7 +102,7 @@ export async function loadMember(
     : { data: [] as Array<{ id: string; title: string; starts_at: string; time_zone: string }> };
   const voyages = new Map((voyagesData ?? []).map((v) => [v.id, v]));
 
-  const planId = subRes.data?.plan_id ?? profile.plan_id;
+  const planId = subRes?.plan_id ?? profile.plan_id;
   const { data: plan } = planId
     ? await supabase
         .from("membership_plans")
@@ -110,13 +111,18 @@ export async function loadMember(
         .maybeSingle()
     : { data: null };
 
-  const sub = subRes.data;
+  const sub = subRes;
   const duesLine = sub
     ? [
         sub.status.replace("_", " "),
         sub.interval === "year" ? "annual" : "monthly",
+        /* Was .toISOString() — UTC. Any period end between 16:00 and midnight
+           Pacific rendered to Shoreside as the NEXT day, so a member ringing
+           up about "ENDS SEP 14" was looked up against a record that said
+           "renews 2026-09-15". The member's own page has always read this in
+           the club's zone; the Bridge now reads the same clock. */
         sub.current_period_end
-          ? `renews ${new Date(sub.current_period_end).toISOString().slice(0, 10)}`
+          ? `renews ${logDate(sub.current_period_end, CLUB_ZONE)}`
           : null,
         sub.cancel_at_period_end ? "ends at period close" : null,
       ]
@@ -173,10 +179,22 @@ export async function setMemberStatus(
   /* The member is told by the handle_profile_status trigger, which fires on
      the status change itself — so a member who pauses themselves and one the
      Bridge pauses hear the same single thing. Sending a second word from here
-     produced two notifications 114ms apart that disagreed about dues. */
+     produced two notifications 114ms apart that disagreed about dues.
+
+     But that word says the dues pause, and until now this action changed only
+     the standing: a Bridge pause never touched Stripe, so the member read
+     "dues pause" while the card kept drawing every period — and, before the
+     accompanying migration, could neither resume nor leave. The member-side
+     buttons have always moved the dues; the Bridge has to as well, or the two
+     doors into the same state mean different things. */
+  const dues = status === "paused" ? await pauseDues(profileId) : await resumeDues(profileId);
+  const note = duesNote(dues, status === "paused" ? "paused" : "resumed");
 
   revalidatePath("/bridge/members");
-  return {};
+  /* Handed back so the operator sees it, because they are the one who can act
+     on it. A failure here must not undo the standing change — the member is
+     paused either way, and Shoreside needs to know the card was not. */
+  return note && (dues.kind === "not-wired" || dues.kind === "failed") ? { note } : {};
 }
 
 export async function adjustKnots(

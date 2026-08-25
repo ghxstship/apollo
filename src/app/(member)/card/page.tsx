@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { CopyLink } from "@/components/copy-link";
 import { Badge, Wordmark } from "@/components/ds";
-import { SITE_DOMAIN, SURFACES } from "@/lib/brand";
-import { TIER_LABEL, roman } from "@/lib/format";
+import { CLUB_ZONE, SITE_DOMAIN, SURFACES } from "@/lib/brand";
+import { TIER_LABEL, roman, yearIn } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../data";
@@ -28,7 +28,7 @@ export default async function MemberCardPage() {
   const memberNo = profile?.member_no ?? "SYR-0000";
   const tier = TIER_LABEL[profile?.tier ?? "regional"] ?? "Regional";
   const joinedYear = profile?.joined_at
-    ? new Date(profile.joined_at).getFullYear()
+    ? yearIn(profile.joined_at, CLUB_ZONE)
     : new Date().getFullYear();
   const qr = await qrDataUrl(memberNo);
 

@@ -3,7 +3,8 @@ import { CameraConsent } from "./camera-consent";
 import { ManifestConsent } from "./manifest-consent";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
-import { TIER_LABEL, roman } from "@/lib/format";
+import { CLUB_ZONE } from "@/lib/brand";
+import { TIER_LABEL, roman, yearIn } from "@/lib/format";
 import { PushControls } from "@/components/push-controls";
 import { PhoneField } from "@/components/phone-field";
 import { stripeEnabled } from "@/lib/stripe";
@@ -35,7 +36,7 @@ export default async function YouPage() {
   const heldByTheClub = status === "paused" && profile?.status_set_by !== profile?.id;
   const balanceCents = account?.balance_cents ?? 0;
   const joinedYear = profile?.joined_at
-    ? new Date(profile.joined_at).getFullYear()
+    ? yearIn(profile.joined_at, CLUB_ZONE)
     : new Date().getFullYear();
 
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;

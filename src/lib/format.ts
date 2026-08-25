@@ -52,6 +52,16 @@ export function logDate(iso: string, zone: Zone): string {
   return `${MONTHS[m] ?? "—"} ${String(Number(p.day)).padStart(2, "0")}`;
 }
 
+/* The year alone, on a stated clock. "MEMBER SINCE MMXXVI" was computed as
+   `new Date(joined_at).getFullYear()` on five screens — the render machine's
+   zone, which is the exact class of defect this module was rewritten to make
+   impossible. A member who joined between 16:00 Pacific on Dec 31 and midnight
+   UTC was shown a founding year one too high on a UTC host, on their own card. */
+export function yearIn(iso: string, zone: Zone): number {
+  const year = partsIn(iso, zone).year;
+  return year ? Number(year) : new Date(iso).getFullYear();
+}
+
 /* "AUG 23 · 2027" — the ship's-log date carrying its year. logDate alone drops
    it, which made a waiver signed today and valid for a year read
    "AUG 23 · UNTIL AUG 23": expiring the day it was signed. */

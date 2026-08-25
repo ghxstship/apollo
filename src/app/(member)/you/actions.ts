@@ -117,7 +117,7 @@ export async function pauseMembership(): Promise<StatusResult> {
   if (res.error || !res.userId) return res;
   /* The standing is already set. If this fails the hold still stands and the
      note says the card did not change — which is the true thing to say. */
-  const note = duesNote(await pauseDues(res.userId), "held");
+  const note = duesNote(await pauseDues(res.userId), "paused");
   revalidatePath("/you");
   revalidatePath("/home");
   revalidatePath("/account");
@@ -127,9 +127,24 @@ export async function pauseMembership(): Promise<StatusResult> {
 export async function resumeMembership(): Promise<StatusResult> {
   const res = await setStatus("active");
   if (res.error || !res.userId) return res;
-  const note = duesNote(await resumeDues(res.userId), "resumed");
-  revalidatePath("/you");
-  revalidatePath("/home");
+  const outcome = await resumeDues(res.userId);
+  const note = duesNote(outcome, "resumed");
+
+  /* Revalidating /you re-renders it as an ACTIVE member, which unmounts the
+     paused banner — and the banner is what holds the note. Measured: the one
+     sentence saying the card was not changed survived 570ms before the flush
+     took it off screen.
+
+     So when there is something the member must act on, leave the page alone.
+     The standing is already changed in the database; the only cost is that
+     this tab shows the old banner until they navigate, and that is a far
+     smaller price than never learning their dues did not restart. Good news
+     revalidates as before. */
+  const mustBeRead = outcome.kind === "not-wired" || outcome.kind === "failed";
+  if (!mustBeRead) {
+    revalidatePath("/you");
+    revalidatePath("/home");
+  }
   revalidatePath("/account");
   return { note };
 }

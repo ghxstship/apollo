@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, Icon, Stat, Tag } from "@/components/ds";
-import { CITY_CODES, CURRENCY, FAMILY_LABEL, knots } from "@/lib/brand";
-import { logDate, roman } from "@/lib/format";
+import { CLUB_ZONE, CITY_CODES, CURRENCY, FAMILY_LABEL, knots } from "@/lib/brand";
+import { logDate, roman, yearIn } from "@/lib/format";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
 import { SendAWord } from "@/components/member/send-a-word";
@@ -78,7 +78,7 @@ export default async function MemberPage({
   const passes = engagementRes.data?.passes ?? 0;
   const shared = affinityRes.data?.shared ?? 0;
   const joinedYear = member.joined_at
-    ? new Date(member.joined_at).getFullYear()
+    ? yearIn(member.joined_at, CLUB_ZONE)
     : new Date().getFullYear();
 
   /* Voyages both were aboard for — the affinity count, made concrete. */

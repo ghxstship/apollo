@@ -1854,6 +1854,44 @@ async function routeMatrix(personas) {
    Everything here is derived or definer-written, so the checks are mostly about
    what a member CANNOT do — confer their own marks, read a draft contest, enter
    on someone else's behalf, or see a standing that has not been published. */
+/* THE ONE THING A MEMBER DOES TO THEIR OWN MEMBERSHIP, and the suite did not
+   test it. set_own_standing was rewritten and shipped with the transaction-local
+   flag `app.set_standing` missing — the flag guard_privileged_profile_columns
+   requires before it will let a non-staff caller move `status`. Every pause,
+   resume and departure raised "membership standing moves from the Bridge, not
+   from here", and this suite reported 1111/1111 green over the top of it,
+   because nothing here had ever pressed the button.
+
+   Runs on `paused`, whose whole purpose is this state, and puts it back exactly
+   as found. The last two assertions are the negative controls: a nonsense
+   standing must be refused, and an anonymous caller must be refused, or a
+   function that accepted everything would pass the first three. */
+async function standingRules(p) {
+  const me = rest(p.paused), anon = rest(null);
+  const back = async (to) => me.rpc("set_own_standing", { p_status: to });
+
+  const resumed = await back("active");
+  const afterResume = await me.get(`profiles?select=status&id=eq.${uid(p.paused)}`);
+  note("paused", "a member can resume their own membership",
+    resumed.status < 400 && afterResume.data?.[0]?.status === "active",
+    `rpc ${resumed.status}, status ${afterResume.data?.[0]?.status}`);
+
+  const paused = await back("paused");
+  const afterPause = await me.get(`profiles?select=status&id=eq.${uid(p.paused)}`);
+  note("paused", "a member can pause their own membership",
+    paused.status < 400 && afterPause.data?.[0]?.status === "paused",
+    `rpc ${paused.status}, status ${afterPause.data?.[0]?.status}`);
+
+  const raw = await me.patch(`profiles?id=eq.${uid(p.paused)}`, { status: "active" });
+  note("paused", "standing does not move by a bare update", raw.status >= 400, `got ${raw.status}`);
+
+  const nonsense = await back("becalmed");
+  note("paused", "a standing that is not a standing is refused", nonsense.status >= 400, `got ${nonsense.status}`);
+
+  const bySea = await anon.rpc("set_own_standing", { p_status: "active" });
+  note("anon", "the open water cannot set a standing", bySea.status >= 400, `got ${bySea.status}`);
+}
+
 async function logbookRules(p) {
   const reg = rest(p.regional), stf = rest(p.staff);
 
@@ -2442,6 +2480,7 @@ async function main() {
   await businessRules(personas);
   await parityRules(personas);
   await logbookRules(personas);
+  await standingRules(personas);
   await schemaInvariants(personas);
   await anonSurface();
   await isolationRules(personas);

@@ -270,11 +270,21 @@ export function ResumeBanner() {
       <div className="you-row">
         <div>
           <b>Your membership is paused</b>
-          {/* This used to say "Dues paused". Nothing in this path touches the
-              subscription — the only Stripe calls in the repo are the webhook,
-              the portal and checkout — so the card kept drawing while the
-              member believed it had stopped. Say what actually happens. */}
-          <p>Knots and tier keep, and nothing is being taken. The manifest waits for you.</p>
+          {/* This said "nothing is being taken" — an unconditional statement of
+              present fact, on a banner that knows nothing about the dues. When
+              Stripe is not wired or the call failed, the card is still drawing
+              and this sentence was the only thing left on the page saying
+              otherwise: the corrective note lives in a toast that clears after
+              four seconds, and this banner then repeats the false half on every
+              visit, permanently.
+
+              What is certain from `status` alone is the standing. What happens
+              to the money is on /account, which reads the subscription. Say
+              only the part this component can actually know. */}
+          <p>Knots and tier keep. The manifest waits for you.</p>
+          <p style={{ opacity: 0.75 }}>
+            Your dues are on your <a href="/account">account page</a>.
+          </p>
           {error ? <p style={{ color: "var(--siren)" }}>{error}</p> : null}
         </div>
         <Button
@@ -306,11 +316,16 @@ export function Offboarding({ status }: { status: string }) {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
+  /* `sticky` marks a toast the member has to act on — the dues did not move
+     with the standing. Those must not evaporate: the four-second dismissal
+     took the only true sentence off the screen and left the page asserting the
+     opposite. Good news still clears itself. */
+  const [sticky, setSticky] = React.useState(false);
   React.useEffect(() => {
-    if (!toast) return;
+    if (!toast || sticky) return;
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
-  }, [toast]);
+  }, [toast, sticky]);
 
   const confirm = () => {
     setError(null);
@@ -320,6 +335,7 @@ export function Offboarding({ status }: { status: string }) {
         if (res.error) setError(res.error);
         else {
           setMode(null);
+          setSticky(Boolean(res.note));
           setToast(
             res.note
               ? `Membership paused. ${res.note}`
@@ -334,7 +350,13 @@ export function Offboarding({ status }: { status: string }) {
            something left to do and needs to be told what. */
         if (res?.error) setError(res.error);
         else if (res?.note) {
-          setMode(null);
+          /* Do NOT clear `mode` here. The note is rendered inside
+             {error && mode === "depart"}, and setMode(null) batches with
+             setError, so clearing it made the sentence unreachable by
+             construction — the one case where the member's card is still
+             drawing was the one case they were told nothing at all. Leaving
+             the dialog open is also the right shape: they read what happened
+             and close it themselves. */
           setError(res.note);
         }
       }
@@ -403,17 +425,35 @@ export function Offboarding({ status }: { status: string }) {
         }
       >
         {/* This used to promise "unused months credit back", which nothing
-            anywhere delivered. What it says now is what @/lib/dues does. */}
+            anywhere delivered. What it says now is what @/lib/dues does.
+
+            It also used to end "and that period stays yours", which read as a
+            promise of access and was not one: set_own_standing('departed')
+            makes is_active() false the moment it commits, and RLS then refuses
+            booking, posting, invites, the waitlist, contests and pass
+            transfers. The dues sentence was true and the access sentence was
+            not, sitting in the same breath — so a member agreed to one thing
+            and got another. Both halves are now stated separately, because
+            they genuinely differ, and someone deciding whether to leave today
+            or at the end of the month needs to know which is which. */}
         No exit surveys, no retention calls; the manifest remembers you kindly.
-        Your dues end when the period you have already paid for runs out —
-        nothing further is taken, and that period stays yours.
+        Your dues end when the period you have already paid for runs out, and
+        nothing further is taken. Booking, posting and the rest close as soon as
+        you confirm — so if there is a sailing you still want, take it first.
         {error && mode === "depart" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}
           </p>
         ) : null}
       </Dialog>
-      {toast ? <Toast fixed message={toast} onDismiss={() => setToast(null)} /> : null}
+      {toast ? (
+        <Toast
+          fixed
+          message={toast}
+          tone={sticky ? "caution" : undefined}
+          onDismiss={() => setToast(null)}
+        />
+      ) : null}
     </>
   );
 }

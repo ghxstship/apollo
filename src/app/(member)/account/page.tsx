@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Badge, Progress, StateBlock, Table } from "@/components/ds";
 import { TIER_LABEL, logDate, price, logDateYear } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
+import { subscriptionToShow } from "@/lib/dues";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
 import { JoinedNotice, ManageBillingButton, StandingControls } from "./billing-client";
@@ -66,13 +67,11 @@ export default async function AccountPage({
 
   const [subRes, invoicesRes, cardsRes, accountRes, accountBalRes, installmentsRes] =
     await Promise.all([
-      supabase
-        .from("subscriptions")
-        .select("*")
-        .eq("profile_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      /* Was "newest by created_at, any status". A superseded CANCELED row is
+         newer than the live one it replaced, so this screen could say "Closed"
+         while Pause and Depart moved a different, live subscription. Shared
+         reader now — see @/lib/dues. */
+      subscriptionToShow(supabase, user.id),
       supabase
         .from("invoices")
         .select("*")
@@ -97,7 +96,7 @@ export default async function AccountPage({
         .order("created_at", { ascending: false }),
     ]);
 
-  const subscription = subRes.data ?? null;
+  const subscription = subRes ?? null;
   const planId = subscription?.plan_id ?? profile?.plan_id ?? null;
   const { data: plan } = planId
     ? await supabase.from("membership_plans").select("*").eq("id", planId).maybeSingle()

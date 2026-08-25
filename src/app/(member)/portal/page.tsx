@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Progress, Stat, StateBlock, Table, type LedgerEntry } from "@/components/ds";
-import { CURRENCY, knots, LEAGUES, LEDGER_KIND } from "@/lib/brand";
-import { logDate, roman } from "@/lib/format";
+import { CLUB_ZONE, CURRENCY, knots, LEAGUES, LEDGER_KIND } from "@/lib/brand";
+import { logDate, roman, yearIn } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { CopyCode } from "./copy-code";
@@ -87,7 +87,7 @@ export default async function PortalPage({
   const leagueNo = leagueRes.data?.league ?? 1;
   const leagueName = leagueRes.data?.league_name ?? LEAGUES[0].name;
   const joinedYear = profile?.joined_at
-    ? new Date(profile.joined_at).getFullYear()
+    ? yearIn(profile.joined_at, CLUB_ZONE)
     : new Date().getFullYear();
 
   const nextReward =

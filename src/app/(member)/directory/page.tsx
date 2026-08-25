@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { CITY_CODES } from "@/lib/brand";
-import { roman } from "@/lib/format";
+import { CLUB_ZONE, CITY_CODES } from "@/lib/brand";
+import { roman, yearIn } from "@/lib/format";
 import { getMember } from "../data";
 import { DirectoryList, type DirectoryMember, type HarborOption } from "./roster";
 
@@ -48,7 +48,7 @@ export default async function DirectoryPage() {
 
   const members: DirectoryMember[] = (profilesRes.data ?? []).map((p) => {
     const harbor = p.home_harbor ? harborById.get(p.home_harbor) : null;
-    const joinedYear = p.joined_at ? new Date(p.joined_at).getFullYear() : new Date().getFullYear();
+    const joinedYear = p.joined_at ? yearIn(p.joined_at, CLUB_ZONE) : yearIn(new Date().toISOString(), CLUB_ZONE);
     return {
       id: p.id,
       name: p.full_name ?? "A member",

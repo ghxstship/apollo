@@ -3,7 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 /* Server-action guard — defense in depth on top of RLS. Every write path
    re-verifies the operator before touching the record. */
 
-export type ActionResult = { error?: string };
+/* `note` is not an error. It carries something the operator must know but that
+   did not stop the action — a standing change that landed while the dues call
+   did not. Kept separate so a screen cannot render it in the failure colour. */
+export type ActionResult = { error?: string; note?: string };
 
 /* Defined in @/lib/staff-errors so client screens can recognise them without
    importing this module, which reaches for the server client. Imported and
