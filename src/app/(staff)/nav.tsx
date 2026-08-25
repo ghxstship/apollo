@@ -4,23 +4,32 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/* Seventeen sections is too many for one undifferentiated row, so the nav is
-   grouped: the sailing itself, the people, the money, then the instruments.
-   Hairlines mark the seams; labels stay one word wherever they can. */
+/* Too many sections for one undifferentiated row, so the nav is grouped: the
+   sailing itself, the people, the evening as it runs, the money, then the
+   instruments. Hairlines mark the seams; labels stay one word wherever they
+   can. */
 const GROUPS = [
   [
     ["/bridge", "Applications"],
     ["/bridge/gangway", "Gangway"],
     ["/bridge/manifests", "Manifests"],
     ["/bridge/voyages", "Voyages"],
+    ["/bridge/itinerary", "Itinerary"],
+    ["/bridge/composition", "Composition"],
   ],
   [
     ["/bridge/members", "Members"],
+    ["/bridge/vetting", "Vetting"],
     ["/bridge/shoreside", "Shoreside"],
     ["/bridge/moderation", "Moderation"],
     ["/bridge/media", "Media"],
     ["/bridge/crew", "Crew"],
     ["/bridge/regattas", "Regattas"],
+  ],
+  [
+    ["/bridge/radar", "Radar"],
+    ["/bridge/envelopes", "Envelopes"],
+    ["/bridge/elements", "Elements"],
   ],
   [
     ["/bridge/orders", "Orders"],

@@ -98,5 +98,10 @@ export async function issueTheEnvelopes(voyageId: string): Promise<ShowResult> {
   const { error } = await db.rpc("issue_the_envelopes", { p_voyage: voyageId });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/show");
+  /* The Bridge's Envelopes screen is the surface that can actually READ the
+     tokens back and put them on paper — this returns only a count, and for a
+     while a count was the whole product: the crew pressed a button, got a
+     number, and had no way to obtain the thing they were supposed to print. */
+  revalidatePath("/bridge/envelopes");
   return { ok: true };
 }

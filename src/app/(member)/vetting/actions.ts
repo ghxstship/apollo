@@ -196,5 +196,11 @@ export async function offerTheNextPlace(voyageId: string, segment: string): Prom
   const { error } = await db.rpc("offer_the_next_place", { p_voyage: voyageId, p_segment: segment });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/vetting");
+  /* The Bridge's Composition screen calls this same function against a sailing
+     the member page may not be showing — /vetting only ever renders the SOONEST
+     gated sailing, so a crew member working the line for a later one could
+     offer a seat and watch the queue in front of them not move. One offer
+     function, both surfaces revalidated. */
+  revalidatePath("/bridge/composition");
   return { ok: true };
 }

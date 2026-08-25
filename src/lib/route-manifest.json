@@ -193,6 +193,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/composition",
+      "file": "src/app/(staff)/bridge/composition/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/crew",
       "file": "src/app/(staff)/bridge/crew/page.tsx",
       "type": "page",
@@ -207,6 +214,20 @@
       "access": "member"
     },
     {
+      "path": "/bridge/elements",
+      "file": "src/app/(staff)/bridge/elements/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/envelopes",
+      "file": "src/app/(staff)/bridge/envelopes/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/galley",
       "file": "src/app/(staff)/bridge/galley/page.tsx",
       "type": "page",
@@ -216,6 +237,13 @@
     {
       "path": "/bridge/gangway",
       "file": "src/app/(staff)/bridge/gangway/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/itinerary",
+      "file": "src/app/(staff)/bridge/itinerary/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -263,6 +291,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/radar",
+      "file": "src/app/(staff)/bridge/radar/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/referrals",
       "file": "src/app/(staff)/bridge/referrals/page.tsx",
       "type": "page",
@@ -286,6 +321,13 @@
     {
       "path": "/bridge/shoreside",
       "file": "src/app/(staff)/bridge/shoreside/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/vetting",
+      "file": "src/app/(staff)/bridge/vetting/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"

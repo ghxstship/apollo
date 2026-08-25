@@ -1,0 +1,212 @@
+"use client";
+
+import React from "react";
+import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
+import { Badge, Button, Select, Stat, StateBlock, Table, Toast } from "@/components/ds";
+import { issueTheEnvelopes } from "../../../(member)/show/actions";
+import { useToast } from "../../ui";
+
+/* The sealed envelope, made printable.
+
+   issue_the_envelopes mints one token per aboard pass and returns a COUNT. The
+   table is staff-only at the policy and nothing read it, so the crew could
+   press the button, be told "40", and have no way to get the forty tokens they
+   are supposed to print on forty gold-foil cards. The member's side of this
+   asks them to type a token off a physical envelope — an object the product
+   could not produce.
+
+   The token is a bearer secret for one member's own anchors: whoever holds it
+   opens that guest's Captain's Log. It appears on this screen and on the paper,
+   and nowhere else. */
+
+export type EnvelopeRow = {
+  rsvpId: string;
+  name: string;
+  memberNo: string;
+  boardingCode: string;
+  token: string;
+  opened: string | null;
+  [key: string]: unknown;
+};
+
+export function VoyagePicker({
+  options,
+  value,
+}: {
+  options: Array<{ value: string; label: string }>;
+  value: string;
+}) {
+  const router = useRouter();
+  return (
+    <Select
+      label="Sailing"
+      options={options}
+      value={value}
+      onChange={(e) => router.replace(`/bridge/envelopes?voyage=${e.target.value}`)}
+      style={{ maxWidth: 420 }}
+    />
+  );
+}
+
+export function EnvelopesClient({
+  voyageId,
+  voyageTitle,
+  departs,
+  aboard,
+  radarOpen,
+  rows,
+}: {
+  voyageId: string;
+  voyageTitle: string;
+  departs: string;
+  aboard: number;
+  /** Whether this sailing carries a radar clock. Without one the tokens are
+      inert: open_the_captains_log refuses with "radar does not run on this
+      sailing" whatever is printed on the card. */
+  radarOpen: boolean;
+  rows: EnvelopeRow[];
+}) {
+  const [pending, startTransition] = React.useTransition();
+  const { toast, show, clear } = useToast();
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+
+  const opened = rows.filter((r) => r.opened).length;
+  const outstanding = Math.max(aboard - rows.length, 0);
+
+  const issue = () =>
+    startTransition(async () => {
+      const res = await issueTheEnvelopes(voyageId);
+      if (res.error) show({ msg: res.error, tone: "danger" });
+      else
+        show({
+          msg:
+            outstanding === 0
+              ? "Every aboard pass already had one. Nothing was minted."
+              : `${outstanding} envelope${outstanding === 1 ? "" : "s"} minted. They are on the sheet below.`,
+          meta: voyageTitle.replace(/\.+$/, "").toUpperCase(),
+        });
+    });
+
+  const columns = [
+    {
+      key: "name",
+      label: "Guest",
+      render: (r: EnvelopeRow) => (
+        <span>
+          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.memberNo}</span>
+        </span>
+      ),
+    },
+    { key: "boardingCode", label: "Pass", width: 110, mono: true },
+    {
+      key: "token",
+      label: "Token",
+      render: (r: EnvelopeRow) => <span className="hm-secret">{r.token}</span>,
+    },
+    {
+      key: "opened",
+      label: "Opened",
+      width: 130,
+      render: (r: EnvelopeRow) =>
+        r.opened ? <Badge tone="positive">{r.opened}</Badge> : <span className="hm-mono">SEALED</span>,
+    },
+  ];
+
+  return (
+    <>
+      <div className="hm-row">
+        <Stat size="sm" label="Aboard" value={aboard} sub={departs.toUpperCase()} />
+        <Stat
+          size="sm"
+          label="Issued"
+          value={`${rows.length} / ${aboard}`}
+          sub={outstanding ? `${outstanding} STILL TO MINT` : "EVERY PASS HAS ONE"}
+        />
+        <Stat size="sm" label="Opened" value={opened} sub="AT 19:00, BY THE GUEST" />
+      </div>
+
+      {!radarOpen ? (
+        <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
+          Radar has never been opened on this sailing, so a printed token opens
+          nothing — the log refuses with &ldquo;radar does not run on this
+          sailing&rdquo;. Set the clock on the Radar tab before these go on
+          paper.
+        </p>
+      ) : null}
+
+      <section className="hm-sec">
+        <div className="hm-head">
+          <h2>The sheet.</h2>
+          <span className="hm-acts">
+            <Button variant="gold" size="sm" disabled={pending || aboard === 0} onClick={issue}>
+              {rows.length === 0 ? "Issue the envelopes" : "Issue any missing"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={rows.length === 0}
+              onClick={() => window.print()}
+            >
+              Print the envelope sheet
+            </Button>
+          </span>
+        </div>
+        <p className="hm-note">
+          One token per aboard pass, minted once and never re-minted — issuing
+          again mints only what is missing. The token is the whole of the
+          envelope: whoever holds the card opens that guest&apos;s log at 19:00.
+        </p>
+
+        {rows.length === 0 ? (
+          <StateBlock
+            status="empty"
+            icon="Mail"
+            title={aboard === 0 ? "Nobody aboard." : "Nothing minted yet."}
+            detail={
+              aboard === 0
+                ? "Envelopes are minted against aboard passes. When the manifest fills, the sheet fills with it."
+                : "Issue them and the tokens appear here, ready to print onto the cards."
+            }
+          />
+        ) : (
+          <>
+            <Table columns={columns} rows={rows} rowKey={(r) => r.rsvpId} />
+            <span className="hm-count">
+              {rows.length} envelope{rows.length === 1 ? "" : "s"} · {opened} opened
+            </span>
+          </>
+        )}
+      </section>
+
+      {mounted && rows.length
+        ? createPortal(
+            <div className="hm-envelopes" aria-hidden="true">
+              <h1>Captain&apos;s Log envelopes — {voyageTitle.replace(/\.+$/, "")}</h1>
+              <p>
+                {departs} · {rows.length} envelopes · one card per guest · the log opens at 19:00
+              </p>
+              <div className="hm-envelopes__grid">
+                {rows.map((r) => (
+                  <div className="hm-envelopes__card" key={r.rsvpId}>
+                    <b>{r.name}</b>
+                    <span>{r.memberNo}{r.boardingCode ? ` · ${r.boardingCode}` : ""}</span>
+                    <code>{r.token}</code>
+                    <em>Open your log at 19:00. Twenty-four hours, then the contacts are gone on both sides.</em>
+                  </div>
+                ))}
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
+
+      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+    </>
+  );
+}

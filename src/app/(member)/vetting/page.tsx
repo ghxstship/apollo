@@ -200,7 +200,12 @@ export default async function VettingPage() {
 
       {profile?.is_staff && sailing && rows.length ? (
         <section className="mbr-sec">
-          <QueuePanel voyageId={sailing.id} rows={(queue ?? []) as QueueRow[]} capacity={rows} />
+          <QueuePanel
+            voyageId={sailing.id}
+            rows={(queue ?? []) as QueueRow[]}
+            capacity={rows}
+            asOf={new Date().getTime()}
+          />
         </section>
       ) : null}
 
