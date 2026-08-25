@@ -160,11 +160,28 @@ function rest(session) {
 }
 const uid = (s) => s.user.id;
 
+/* Every fixture this RUN creates carries this token, and the sweep only removes
+   fixtures older than an hour or bearing this token.
+
+   Two suites now run against one Supabase project — this one and the rebrand
+   branch's — and both swept `voyages?slug=like.e2e-*`, which is every fixture
+   BOTH of them have ever made. So a sweep at the start of one run deleted the
+   other run's LIVE rows mid-flight, and each side saw the other's tests fail
+   for reasons that were nowhere in its own code. Three runs were corrupted
+   before anyone worked out why.
+
+   An hour is the amnesty: long enough that nothing in flight is touched, short
+   enough that a run which died halfway still gets cleaned up by the next one.
+   That was the original point of sweeping before as well as after, and it is
+   preserved. */
+const RUN_TOKEN = `r${Date.now().toString(36)}`;
+const STALE_BEFORE = () => new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
 /* ---------- housekeeping ----------
    The suite writes real rows against a real database, so it sweeps its own
-   leavings — before as well as after, because a run that dies halfway would
-   otherwise poison the next one. Everything the suite creates is namespaced
-   e2e-* / E2E* so the sweep can be exact rather than broad. */
+   leavings — before as well as after. Everything it creates is namespaced
+   e2e-* / E2E* so the sweep can be exact rather than broad, and scoped by run
+   token and age so it is exact about WHOSE. */
 async function sweep(p) {
   const stf = rest(p.staff);
   await stf.del("applications?email=like.e2e-anon-*");
@@ -173,8 +190,11 @@ async function sweep(p) {
   await stf.del("webhooks?url=like.*example.com/e2e*");
   await stf.del("wardroom_flags?reason=eq.E2E");
   await stf.del("wardroom_posts?body=like.E2E*");
-  await stf.del("contests?slug=like.e2e-*");
-  await stf.del("voyages?slug=like.e2e-*");
+  /* Mine, or abandoned. Never somebody else's live fixture. */
+  for (const rel of ["contests", "voyages"]) {
+    await stf.del(`${rel}?slug=like.e2e-*${RUN_TOKEN}*`);
+    await stf.del(`${rel}?slug=like.e2e-*&created_at=lt.${STALE_BEFORE()}`);
+  }
   /* Orders are cleaned by id in the test, but a run that died before its
      cleanup leaves one behind; the personas place no other orders. */
   for (const who of ["regional", "national", "global", "paused"]) {
@@ -199,7 +219,8 @@ async function sweep(p) {
   await stf.del("account_ledger?memo=like.E2E*");
   await stf.del("notifications?title=eq.A match, from your table");
   await stf.del("dating_tables?number=eq.99");
-  await stf.del("voyages?slug=like.e2e-table-night-*");
+  await stf.del(`voyages?slug=like.e2e-table-night-*${RUN_TOKEN}*`);
+  await stf.del(`voyages?slug=like.e2e-table-night-*&created_at=lt.${STALE_BEFORE()}`);
 }
 
 /* ---------- E. schema invariants ----------
@@ -323,7 +344,7 @@ async function anonSurface() {
   }
 
   // Writes: the two public funnels take an INSERT, nothing else takes anything.
-  const stamp = Date.now().toString(36);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
   const apply = await anon.postMinimal("applications", {
     email: `e2e-anon-${stamp}@example.com`, full_name: "E2E Anon Applicant",
   });
@@ -440,7 +461,7 @@ async function isolationRules(p) {
 
   /* Billing takeover: the portal opens whatever customer sits on the profile,
      so claiming an id another member already holds must be refused. */
-  const stamp0 = Date.now().toString(36);
+  const stamp0 = `${Date.now().toString(36)}${RUN_TOKEN}`;
   const customer = `cus_e2e_${stamp0}`;
   // Start from a known-clear state; only staff can clear it, by design.
   await stf.patch(`profiles?id=in.(${uid(p.regional)},${uid(p.global)})`, { stripe_customer_id: null });
@@ -579,7 +600,7 @@ async function opsRules(p) {
   note("regional", "cannot register a webhook", hook.status >= 400, `got ${hook.status}`);
 
   // Staff can, which is what makes the above meaningful.
-  const stamp = Date.now().toString(36);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
   const staffKey = await stf.post("api_keys", { label: `E2E ${stamp}`, key_hash: `h${stamp}`, prefix: `e2e${stamp}`.slice(0, 8) });
   note("staff", "staff mint an API key", staffKey.status < 400, `got ${staffKey.status}`);
   if (staffKey.data?.[0]?.id) await stf.del(`api_keys?id=eq.${staffKey.data[0].id}`);
@@ -882,7 +903,7 @@ async function documentRules(p) {
    binds both sides, and rules that actually fire. */
 async function enforcementRules(p) {
   const reg = rest(p.regional), stf = rest(p.staff), anon = rest(null);
-  const stamp = Date.now().toString(36);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
 
   /* --- the gangway gate --- */
   const vres = await stf.get("voyages?select=id,class&status=eq.scheduled&class=eq.shore&limit=1");
@@ -1134,7 +1155,7 @@ async function syriusRules(p) {
   note("staff", "crew reach the kiosk", kioskStaff.status === 200, `got ${kioskStaff.status}`);
 
   /* --- tables: hold, race, blindness --- */
-  const stamp = Date.now().toString(36);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
   const night = await stf.post("voyages", {
     slug: `e2e-table-night-${stamp}`, title: "E2E table night.", class: "shore", kind: "port_day",
     starts_at: new Date(Date.now() + 3 * 864e5).toISOString(),
@@ -2450,7 +2471,17 @@ async function main() {
      update them — or the suite has started leaving something behind, which is
      how the balances quietly climbed until an audit of a real member's knots
      became ambiguous and cost an hour to explain. */
-  const EXPECTED_KNOTS_DRIFT = { regional: 0, national: 0, global: 150, paused: 0 };
+  /* 150 → 100 because `removing_a_sailing_does_not_mint_knots` landed. The
+     suite completes a fixture sailing (+100 "Miles banked") and seats two
+     passes (+25 each); deleting the voyage used to leave all three standing,
+     because the ledger rows lost their voyage_id before the reversal trigger
+     could find them. The two pass awards now reverse. Miles banked does not —
+     it is not in the reversal's reason list, and a completed sailing that
+     really happened is not undone by tidying up the fixture.
+
+     A number moving because a bug was fixed is the check doing its job. It
+     should be updated with a reason, never widened to stop asking. */
+  const EXPECTED_KNOTS_DRIFT = { regional: 0, national: 0, global: 100, paused: 0 };
   for (const [name, before] of Object.entries(knotsAtStart)) {
     const after = await knotsFor(personas[name], personas.staff, runMark);
     const moved = after - before;
