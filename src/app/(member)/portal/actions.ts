@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { voice } from "@/lib/errors";
+import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type PortalResult = { error?: string };
@@ -14,7 +14,7 @@ export async function redeemReward(rewardId: string): Promise<PortalResult> {
   if (!user) return { error: "Sign in first." };
 
   const { error } = await supabase.rpc("redeem_reward", { p_reward: rewardId });
-  if (error) return { error: voice(error) };
+  if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/portal");
   revalidatePath("/home");
@@ -45,7 +45,7 @@ export async function mintInvite(): Promise<PortalResult> {
       return {};
     }
     /* 23505: the code is taken — roll again. Anything else, surface it. */
-    if (error.code !== "23505") return { error: voice(error) };
+    if (error.code !== "23505") return { error: await voiceWith(supabase, error) };
   }
   return { error: "The mint jammed. Try once more." };
 }

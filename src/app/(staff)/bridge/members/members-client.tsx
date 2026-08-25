@@ -461,7 +461,11 @@ export function MembersClient({
                 disabled={pending}
                 onClick={() => setHolding(true)}
               >
-                {detail.status === "paused" ? "Lift the hold" : "Place on hold"}
+                {detail.status === "departed"
+                  ? "Bring them back"
+                  : detail.status === "paused"
+                    ? "Lift the hold"
+                    : "Place on hold"}
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => setAdjusting(true)}>
                 Correct knots
@@ -485,7 +489,13 @@ export function MembersClient({
         onClose={() => setHolding(false)}
         width={420}
         eyebrow={detail ? detail.name : ""}
-        title={detail?.status === "paused" ? "Lift the hold?" : "Place this membership on hold?"}
+        title={
+          detail?.status === "departed"
+            ? "Bring this member back aboard?"
+            : detail?.status === "paused"
+              ? "Lift the hold?"
+              : "Place this membership on hold?"
+        }
         footer={
           <>
             <Button variant="ghost" onClick={() => setHolding(false)}>
@@ -496,7 +506,14 @@ export function MembersClient({
               disabled={pending}
               onClick={() => {
                 const row = openRow;
-                const next = detail?.status === "paused" ? "active" : "paused";
+                /* A departed member used to leave the operator only one
+                   button, labelled "Place on hold", which wrote `paused` — and
+                   then stamped the operator as the one who placed it, so the
+                   member could not lift it themselves either. Reinstating
+                   somebody required first recording a hold that never happened,
+                   and then lifting it. Departed goes straight to active. */
+                const next =
+                  detail?.status === "departed" || detail?.status === "paused" ? "active" : "paused";
                 if (!row) return;
                 setHolding(false);
                 startTransition(async () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { MAILBOX } from "@/lib/brand";
 import { Button, Checkbox, Dialog, Input, Select, Switch, Textarea, Toast } from "@/components/ds";
 import { BIO_MAX, INTERESTS } from "./interests";
 import {
@@ -198,6 +199,53 @@ export function NotificationPrefsForm({
 }
 
 /* — Paused banner: resume with a word — */
+/* A departed member was shown nothing here at all, while the banner in the
+   member layout told them "booking, posting and contests wait until you resume
+   — that happens on your page". They arrived at this page and there was no
+   resume. The one correct sentence in the whole flow lived in a database
+   exception the interface never surfaced.
+
+   And a hold the CLUB placed cannot be lifted by the member either, so the
+   Resume button was there for them to press and be refused. */
+export function ClosedPlaceNotice() {
+  return (
+    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--line-strong)" }} role="status">
+      <div className="you-row">
+        <div>
+          <b>Your place is closed</b>
+          <p>
+            You departed the club. Your log and your ledger stay as they were.
+            Coming back is a conversation, not a switch — hail Shoreside and
+            they will open it again.
+          </p>
+        </div>
+        <a className="ls-btn ls-btn--outline ls-btn--sm" href={`mailto:${MAILBOX.shore}?subject=Coming%20back%20aboard`}>
+          Hail Shoreside
+        </a>
+      </div>
+    </div>
+  );
+}
+
+export function ClubHoldNotice() {
+  return (
+    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep, #966E22)" }} role="status">
+      <div className="you-row">
+        <div>
+          <b>Membership on hold</b>
+          <p>
+            The club placed this one, so it lifts from their side rather than
+            yours. Your log, your ledger and what you owe stay open.
+          </p>
+        </div>
+        <a className="ls-btn ls-btn--outline ls-btn--sm" href={`mailto:${MAILBOX.shore}?subject=Lifting%20the%20hold`}>
+          Hail Shoreside
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export function ResumeBanner() {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);

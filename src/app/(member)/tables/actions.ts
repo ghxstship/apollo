@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { voiceWith } from "@/lib/errors";
+import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 
 /* Syrius Dating. A seat is claimed through the RPC — the fifteen-minute hold
    and the capacity race live at the database, so two people reaching for the
@@ -48,11 +48,16 @@ export async function releaseSeat(tableId: string): Promise<SeatResult> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  await supabase
+  /* The result was discarded entirely. Today the DELETE policy is a plain
+     ownership check with no trigger, so it works — but a swallowed error means
+     the day that policy is tightened, this reports success while the seat stays
+     taken, and the member finds out at the door. */
+  const { error } = await supabase
     .from("table_seats")
     .delete()
     .eq("table_id", tableId)
     .eq("profile_id", user.id);
+  if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/tables");
   return {};
 }
@@ -72,7 +77,17 @@ export async function pickFromTable(tableId: string, picked: string): Promise<Se
     .insert({ table_id: tableId, picker: user.id, picked });
   if (error) {
     if (/duplicate/i.test(error.message)) return {};
-    return { error: "Picks open once the night has started, from a confirmed seat." };
+    /* This returned that one sentence for EVERY error, including an RLS refusal
+       on a held membership — the confidently-wrong message lib/errors.ts exists
+       to eliminate. The specific line is still right when it is right, so it
+       stays as the fallback rather than the answer. */
+    const said = await voiceWith(supabase, error);
+    return {
+      error:
+        said === REFUSED_MESSAGE
+          ? "Picks open once the night has started, from a confirmed seat."
+          : said,
+    };
   }
   revalidatePath("/tables");
   revalidatePath("/matches");

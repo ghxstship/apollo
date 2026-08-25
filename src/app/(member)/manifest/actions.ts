@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { eveningBefore } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { voice } from "@/lib/errors";
+import { voiceWith } from "@/lib/errors";
 
 export type RsvpResult = { error?: string; full?: boolean };
 
@@ -26,8 +26,21 @@ async function member() {
    screen they use most, along with the table's name. voice() is the shared
    launderer that already knew what to say — this file simply was not calling
    it. It still passes a real guard message through untouched. */
-function guardMessage(raw: string | null | undefined, code?: string | null): string {
-  return voice({ message: raw, code });
+/* Now async, because voice() ASSERTS a hold from an RLS refusal and this file
+   has seventeen callers that reach the member on the screen they use most.
+   rsvps' UPDATE policy is `profile_id = auth.uid()` with `is_active()` only in
+   the WITH CHECK, so a member the club held AFTER they booked cannot change
+   guests, pick a cabin, hand the pass on or set auto-claim — and was told only
+   that "the club's records don't allow that just now", which is the confidently
+   vague line lib/errors.ts was written to eliminate. voiceWith asks whether the
+   membership is actually on hold before saying so. A real guard message still
+   passes through untouched. */
+async function guardMessage(
+  supabase: Supa,
+  raw: string | null | undefined,
+  code?: string | null
+): Promise<string> {
+  return voiceWith(supabase, { message: raw, code });
 }
 
 function isFullMessage(raw: string | null | undefined): boolean {
@@ -88,7 +101,7 @@ export async function setRsvpStatus(
       { voyage_id: voyageId, profile_id: userId, status },
       { onConflict: "voyage_id,profile_id" }
     );
-  if (error) return { error: guardMessage(error.message, error.code), full: isFullMessage(error.message) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code), full: isFullMessage(error.message) };
   return done();
 }
 
@@ -216,7 +229,7 @@ export async function confirmBerth(
       },
       { onConflict: "voyage_id,profile_id" }
     );
-  if (error) return { error: guardMessage(error.message, error.code), full: isFullMessage(error.message) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code), full: isFullMessage(error.message) };
 
   if (promo || addonIds.length > 0 || split) {
     const { data: rsvp } = await supabase
@@ -235,12 +248,12 @@ export async function confirmBerth(
         addonIds,
         1 + (rsvp.guests ?? 0)
       );
-      if (failed) return { error: guardMessage(failed) };
+      if (failed) return { error: await guardMessage(supabase, failed) };
     }
     /* Last, so the split is drawn against every charge on the pass. */
     if (rsvp && split) {
       const failed = await splitIntoDraws(supabase, userId, voyageId, rsvp.id, split);
-      if (failed) return { error: guardMessage(failed) };
+      if (failed) return { error: await guardMessage(supabase, failed) };
     }
   }
 
@@ -289,7 +302,7 @@ export async function improvePass(voyageId: string, addonIds: string[]): Promise
     addonIds,
     1 + (rsvp.guests ?? 0)
   );
-  if (failed) return { error: guardMessage(failed) };
+  if (failed) return { error: await guardMessage(supabase, failed) };
 
   revalidatePath("/portal");
   return done();
@@ -334,7 +347,7 @@ export async function setGuests(
     .update({ guests: clamped, guest_names: cleanNames(guestNames, clamped) })
     .eq("voyage_id", voyageId)
     .eq("profile_id", userId);
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   return done();
 }
 
@@ -346,7 +359,7 @@ export async function releaseBerth(voyageId: string): Promise<RsvpResult> {
     .delete()
     .eq("voyage_id", voyageId)
     .eq("profile_id", userId);
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   revalidatePath("/portal");
   return done();
 }
@@ -365,7 +378,7 @@ export async function setAutoClaim(voyageId: string, on: boolean): Promise<RsvpR
     .update({ auto_claim: on })
     .eq("voyage_id", voyageId)
     .eq("profile_id", userId);
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   return done();
 }
 
@@ -391,7 +404,7 @@ export async function offerPass(rsvpId: string, toProfile: string): Promise<Rsvp
   const { error } = await supabase
     .from("pass_transfers")
     .insert({ rsvp_id: rsvpId, from_profile: userId, to_profile: toProfile, status: "offered" });
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   return done();
 }
 
@@ -404,7 +417,7 @@ export async function withdrawOffer(transferId: string): Promise<RsvpResult> {
     .eq("id", transferId)
     .eq("from_profile", userId)
     .eq("status", "offered");
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   return done();
 }
 
@@ -414,7 +427,7 @@ export async function acceptOffer(transferId: string): Promise<RsvpResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
   const { error } = await supabase.rpc("accept_pass_transfer", { p_id: transferId });
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   revalidatePath("/portal");
   return done();
 }
@@ -428,7 +441,7 @@ export async function declineOffer(transferId: string): Promise<RsvpResult> {
     .eq("id", transferId)
     .eq("to_profile", userId)
     .eq("status", "offered");
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   return done();
 }
 
@@ -463,7 +476,7 @@ async function validatePromo(
     p_code: code,
     p_voyage: voyageId,
   });
-  if (error) return { reason: guardMessage(error.message, error.code) };
+  if (error) return { reason: await guardMessage(supabase, error.message, error.code) };
   const answer = (data ?? {}) as { ok?: boolean; kind?: string; value?: number; reason?: string };
   if (!answer.ok) return { reason: answer.reason ?? "No such code." };
   const kind: PromoKind =
@@ -506,7 +519,7 @@ export async function postCrewRequest(voyageId: string, note: string): Promise<R
       { voyage_id: voyageId, profile_id: userId, note: note.trim() || null, open: true },
       { onConflict: "voyage_id,profile_id" }
     );
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   return done();
 }
 
@@ -518,7 +531,7 @@ export async function withdrawCrewRequest(voyageId: string): Promise<RsvpResult>
     .delete()
     .eq("voyage_id", voyageId)
     .eq("profile_id", userId);
-  if (error) return { error: guardMessage(error.message, error.code) };
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   return done();
 }
 
@@ -543,7 +556,7 @@ export async function chooseCabin(voyageId: string, cabinId: string | null): Pro
        cabin's berth count in vocabulary the lexicon retired. Everything else
        the guard says reaches the member as written. */
     if (/spoken for/i.test(error.message)) return { error: "That cabin just went. Pick another." };
-    return { error: guardMessage(error.message, error.code) };
+    return { error: await guardMessage(supabase, error.message, error.code) };
   }
   revalidatePath("/manifest");
   return {};

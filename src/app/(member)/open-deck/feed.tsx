@@ -214,16 +214,34 @@ function FeedEntry({ post }: { post: FeedPost }) {
   const [flagged, setFlagged] = React.useState(false);
   const [toasting, setToasting] = React.useState(false);
 
-  const hail = () => startTransition(async () => void (await toggleHail(post.id, post.myHail)));
+  /* Three of the four actions on a post threw their result away. RLS on
+     wardroom_hails, wardroom_comments and wardroom_flags all carry is_active(),
+     so a member on hold pressed HAIL and nothing happened; opened REPLY, typed,
+     pressed Reply, and the post still read "No words yet." with their text
+     sitting in the box and no explanation anywhere — while the composer three
+     inches above said "The deck is closed while your membership is on hold."
+     The app knew. It just did not say. */
+  const [actionError, setActionError] = React.useState<string | null>(null);
+
+  const hail = () =>
+    startTransition(async () => {
+      setActionError(null);
+      const res = await toggleHail(post.id, post.myHail);
+      if (res?.error) setActionError(res.error);
+    });
   const remove = () =>
     startTransition(async () => {
-      await deletePost(post.id);
+      setActionError(null);
+      const res = await deletePost(post.id);
       setConfirming(false);
+      if (res?.error) setActionError(res.error);
     });
   const comment = () =>
     startTransition(async () => {
+      setActionError(null);
       const res = await addComment(post.id, draft);
-      if (!res.error) setDraft("");
+      if (res.error) setActionError(res.error);
+      else setDraft("");
     });
   const report = () =>
     startTransition(async () => {
@@ -289,6 +307,14 @@ function FeedEntry({ post }: { post: FeedPost }) {
               <FlagButton flagged={flagged} onFlag={() => setReporting(true)} />
             )}
           </span>
+          {actionError ? (
+            <span
+              role="alert"
+              style={{ display: "block", marginTop: 8, fontSize: 12.5, color: "var(--siren)" }}
+            >
+              {actionError}
+            </span>
+          ) : null}
         </>
       }
     >

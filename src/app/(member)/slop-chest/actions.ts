@@ -41,13 +41,30 @@ export async function requestRefund(orderId: string): Promise<SlopChestResult> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  const { error } = await supabase
+  /* Narrowed on status, so zero rows matched is the ordinary outcome for a
+     stale page — and zero rows was returning {}, which the client toasts as
+     "Refund requested — the Bridge reviews it." Nobody was reviewing anything.
+     A refusal that reads as success is the worst of the three outcomes. */
+  const { data: asked, error } = await supabase
     .from("shop_orders")
     .update({ status: "refund_requested" })
     .eq("id", orderId)
     .eq("profile_id", user.id)
-    .in("status", ["placed", "fulfilled"]);
+    .in("status", ["placed", "fulfilled"])
+    .select("status");
   if (error) return { error: await voiceWith(supabase, error) };
+  if (!asked || asked.length === 0) {
+    const { data: row } = await supabase
+      .from("shop_orders")
+      .select("status")
+      .eq("id", orderId)
+      .eq("profile_id", user.id)
+      .maybeSingle();
+    if (!row) return { error: "That order is not on your account." };
+    if (row.status === "refund_requested") return { error: "That refund is already with the Bridge." };
+    if (row.status === "refunded") return { error: "That one is already refunded." };
+    return { error: "That order is past the point where it can be sent back." };
+  }
 
   revalidatePath("/slop-chest");
   return {};

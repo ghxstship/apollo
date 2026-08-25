@@ -20,6 +20,9 @@ export type ProfileRow = {
   on_camera: boolean; on_manifest: boolean; camera_withdrawn_at: string | null
   /* The clock this member reads their own account on. */
   time_zone: string | null
+  /* Who placed the current hold. A member may lift their own and not the
+     club's, so the interface has to know which it is looking at. */
+  status_set_by: string | null
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }

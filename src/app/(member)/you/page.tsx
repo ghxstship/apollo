@@ -9,7 +9,14 @@ import { PhoneField } from "@/components/phone-field";
 import { stripeEnabled } from "@/lib/stripe";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
-import { NotificationPrefsForm, Offboarding, ProfileForm, ResumeBanner } from "./you-client";
+import {
+  ClosedPlaceNotice,
+  ClubHoldNotice,
+  NotificationPrefsForm,
+  Offboarding,
+  ProfileForm,
+  ResumeBanner,
+} from "./you-client";
 import { SignOutForm } from "@/components/sign-out-form";
 
 export const metadata: Metadata = { title: "You" };
@@ -23,6 +30,9 @@ export default async function YouPage() {
 
   const tier = profile?.tier ?? "regional";
   const status = profile?.status ?? "active";
+  /* set_own_standing refuses a member who tries to lift a hold they did not
+     place. The interface should not offer them the button. */
+  const heldByTheClub = status === "paused" && profile?.status_set_by !== profile?.id;
   const balanceCents = account?.balance_cents ?? 0;
   const joinedYear = profile?.joined_at
     ? new Date(profile.joined_at).getFullYear()
@@ -41,7 +51,15 @@ export default async function YouPage() {
         </h1>
       </div>
 
-      {status === "paused" ? <ResumeBanner /> : null}
+      {/* Three different states, three different exits. A departed member used
+          to see none of these while the layout banner told them to resume here,
+          and a member the club had held could see a Resume button that would
+          only ever refuse them. */}
+      {status === "departed" ? (
+        <ClosedPlaceNotice />
+      ) : status === "paused" ? (
+        heldByTheClub ? <ClubHoldNotice /> : <ResumeBanner />
+      ) : null}
 
       <div className="you-sec" style={{ marginTop: 0 }}>
         <div className="you-row">
