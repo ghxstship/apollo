@@ -80,6 +80,15 @@ export default async function EnvelopesPage({
   );
   const people = new Map((must(profilesRes)).map((p) => [p.id, p]));
 
+  /* clockRes was consumed as !!clockRes.data with no check, alone on a page
+     where every other read goes through must(). A failed read is not an absent
+     clock, and it rendered as the confident falsehood "Radar has never been
+     opened on this sailing, so a printed token opens nothing." It is a
+     maybeSingle, so must() (which expects a list) does not fit; the error is
+     raised directly instead. */
+  if (clockRes.error) throw new Error(`the radar clock could not be read: ${clockRes.error.message}`);
+  const radarOpen = !!clockRes.data;
+
   const rows: EnvelopeRow[] = passes
     .map((p) => {
       const env = envelopes.get(p.id);
@@ -124,7 +133,7 @@ export default async function EnvelopesPage({
         voyageTitle={voyage.title}
         departs={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`}
         aboard={passes.length}
-        radarOpen={!!clockRes.data}
+        radarOpen={radarOpen}
         rows={rows}
       />
     </div>

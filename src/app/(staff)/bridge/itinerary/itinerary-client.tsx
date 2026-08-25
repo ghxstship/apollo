@@ -84,6 +84,10 @@ export function ItineraryClient({
   const [holdFor, setHoldFor] = React.useState<LegRow | null>(null);
   const [hold, setHold] = React.useState(BLANK_HOLD);
   const [confirmLeg, setConfirmLeg] = React.useState<LegRow | null>(null);
+  /* removeStop fired straight off the click — the only destructive control on
+     this screen without a confirmation, next to a Remove button for legs that
+     has one. A stop is a paragraph of the port guide every pass-holder reads. */
+  const [confirmStop, setConfirmStop] = React.useState<StopRow | null>(null);
 
   const legOptions = [
     { value: "", label: "Not filed under a leg" },
@@ -276,7 +280,7 @@ export function ItineraryClient({
                     size="sm"
                     variant="ghost"
                     disabled={pending}
-                    onClick={() => run(() => removeStop(stop.id), "Stop removed from the guide.")}
+                    onClick={() => setConfirmStop(stop)}
                   >
                     Remove
                   </Button>
@@ -535,6 +539,37 @@ export function ItineraryClient({
           {confirmLeg?.stops
             ? ` Its ${confirmLeg.stops} port-guide stop${confirmLeg.stops === 1 ? "" : "s"} go with it.`
             : ""}
+        </p>
+      </Dialog>
+
+      {/* — removing a stop — */}
+      <Dialog
+        open={!!confirmStop}
+        onClose={() => setConfirmStop(null)}
+        eyebrow="Port guide"
+        title="Remove this stop?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmStop(null)}>
+              Keep it
+            </Button>
+            <Button
+              variant="gold"
+              disabled={pending}
+              onClick={() =>
+                confirmStop &&
+                run(() => removeStop(confirmStop.id), "Stop removed from the guide.", () =>
+                  setConfirmStop(null)
+                )
+              }
+            >
+              Remove it
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+          {confirmStop?.name} comes off the port guide every pass-holder reads.
         </p>
       </Dialog>
 

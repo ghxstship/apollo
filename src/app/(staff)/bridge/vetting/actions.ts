@@ -114,13 +114,28 @@ export async function advanceTheFile(fileId: string, patch: FilePatch): Promise<
     interviewAt = when.toISOString();
   }
 
+  /* Read the moment identity was verified before writing it back, so an
+     unrelated edit cannot move it to today. */
+  const { data: current } = await db
+    .from("vetting_files")
+    .select("id_verified_at")
+    .eq("id", fileId)
+    .maybeSingle();
+  const nowIso = new Date().toISOString();
+
   const { error } = await db
     .from("vetting_files")
     .update({
       /* The record is a timestamp, not a flag: the purge sweep clears the
          timestamp thirty days after the member's last sailing, and a boolean
-         would have nothing to clear. */
-      id_verified_at: patch.idVerified ? new Date().toISOString() : null,
+         would have nothing to clear.
+
+         Which is exactly why it must not be re-stamped on every save. This
+         wrote new Date() whenever the box was ticked, so editing an interview
+         time — or anything else on the form — moved the date identity was
+         actually verified to today, and the retention clock with it. Keep the
+         original moment; stamp only on the transition into verified. */
+      id_verified_at: patch.idVerified ? (current?.id_verified_at ?? nowIso) : null,
       age_ok: patch.ageOk,
       background_state: patch.backgroundState,
       interview_at: interviewAt,

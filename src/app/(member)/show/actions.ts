@@ -18,7 +18,7 @@ import { DECK_STATES, POD_MAX_SECONDS, POD_STATES, type DeckState, type PodState
    it. A guest can raise it by telling the crew — advancePod carries a raise-only
    flag — and nothing lowers it. */
 
-export type ShowResult = { error?: string; ok?: true };
+export type ShowResult = { error?: string; ok?: true; minted?: number };
 
 async function crew() {
   const supabase = await createClient();
@@ -95,7 +95,12 @@ export async function issueTheEnvelopes(voyageId: string): Promise<ShowResult> {
   const { supabase, db, user } = await crew();
   if (!user) return { error: "Sign in first." };
 
-  const { error } = await db.rpc("issue_the_envelopes", { p_voyage: voyageId });
+  /* The RPC returns how many it actually minted. That number used to be thrown
+     away, and the screen then announced a figure it had computed from props
+     captured before the click — so a second operator pressing the button was
+     told "3 envelopes minted" when nothing was. Same shape as the "$150 credit
+     applied" defect: a number asserted rather than read. */
+  const { data: minted, error } = await db.rpc("issue_the_envelopes", { p_voyage: voyageId });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/show");
   /* The Bridge's Envelopes screen is the surface that can actually READ the
@@ -103,5 +108,5 @@ export async function issueTheEnvelopes(voyageId: string): Promise<ShowResult> {
      while a count was the whole product: the crew pressed a button, got a
      number, and had no way to obtain the thing they were supposed to print. */
   revalidatePath("/bridge/envelopes");
-  return { ok: true };
+  return { ok: true, minted: typeof minted === "number" ? minted : undefined };
 }

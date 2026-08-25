@@ -63,28 +63,39 @@ export async function setTheComposition(
 
 /* Removing every cap row un-gates the sailing: guard_the_ratio and
    guard_the_vetting both return early when a sailing carries no composition, so
-   this is a real change to who may board and not a tidy-up. Confirmed at the
-   surface, and refused outright while anyone is standing in the line, because
-   the line is only meaningful against a ceiling. */
+   this is a real change to who may board and not a tidy-up.
+
+   This used to refuse outright while anyone stood in the line — "serve them or
+   let them go" — and NEITHER was reachable. The Offer button renders only when
+   a segment has room, so a full segment (the only kind that grows a queue) can
+   never serve anyone; and the sole delete path, leaveTheLine, is scoped to the
+   member's own row, so no crew surface could let them go. A sailing with a full
+   segment and one person waiting could never have its composition lifted again.
+   The RLS policy always permitted staff to release them; the control was simply
+   missing.
+
+   So lifting now releases the line as part of the same act, which is what
+   lifting means: the ceilings are gone, and a queue against a ceiling that no
+   longer exists is not a queue. The count is returned so the surface can say
+   plainly how many people were let go rather than doing it silently. */
 export async function liftTheComposition(voyageId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const db = moduleTables(supabase);
 
-  const { data: waiting, error: readError } = await db
+  const { data: released, error: releaseError } = await db
     .from("waitlist_entries")
-    .select("id")
+    .update({ released_at: new Date().toISOString() })
     .eq("voyage_id", voyageId)
     .is("claimed_at", null)
-    .is("released_at", null);
-  if (readError) return { error: voice(readError) };
-  if ((waiting ?? []).length > 0) {
-    return {
-      error: `${(waiting ?? []).length} in the line for this sailing. Serve them or let them go before you lift the composition.`,
-    };
-  }
+    .is("released_at", null)
+    .select("id");
+  if (releaseError) return { error: voice(releaseError) };
 
   const { error } = await db.from("voyage_segment_caps").delete().eq("voyage_id", voyageId);
   if (error) return { error: voice(error) };
-  return done();
+  const letGo = (released ?? []).length;
+  return letGo > 0
+    ? { ...done(), note: `${letGo} released from the line — the ceilings they were waiting on are gone.` }
+    : done();
 }

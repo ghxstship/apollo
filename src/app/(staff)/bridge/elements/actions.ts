@@ -183,10 +183,27 @@ export async function saveElement(
   const context = input.substitute.trim();
 
   if (elementRowId) {
-    /* Existing element: the substitute goes in FIRST. The constraint trigger is
-       deferred and scans the whole table at commit, so an element updated into
-       Active/activity/indoor_only before its substitute row exists is refused —
-       and the refusal names the element, not the missing row. */
+    /* ORDER MATTERS, AND IT DEPENDS ON WHICH WAY THE REQUIREMENT IS MOVING.
+       Each of these is a separate PostgREST request and therefore its OWN
+       transaction — the constraint being DEFERRABLE buys nothing across two of
+       them, because each one commits alone.
+
+       Taking the requirement ON  (-> activity + indoor_only): the substitute
+       must exist before the element row demands it.
+       Taking the requirement OFF (-> all_weather, or off activity): the element
+       must stop demanding it before the substitute goes.
+
+       This only did the first. Clearing a substitute and moving to all_weather
+       in one save deleted the row while the element was still
+       Active/activity/indoor_only, so that delete's own commit was refused —
+       with a check violation that `voice()` maps to "check the numbers and try
+       again", on a form where no number was wrong. The operator's workaround
+       was to save twice. */
+    if (!needsSubstitute(input)) {
+      const { error } = await db.from("elements").update(row).eq("id", elementRowId);
+      if (error) return { error: dressed(error) };
+    }
+
     if (context) {
       const { error } = await db
         .from("element_substitutes")
@@ -206,8 +223,11 @@ export async function saveElement(
       if (error) return { error: voice(error) };
     }
 
-    const { error } = await db.from("elements").update(row).eq("id", elementRowId);
-    if (error) return { error: dressed(error) };
+    /* Already written above when the requirement was being taken off. */
+    if (needsSubstitute(input)) {
+      const { error } = await db.from("elements").update(row).eq("id", elementRowId);
+      if (error) return { error: dressed(error) };
+    }
     return done();
   }
 

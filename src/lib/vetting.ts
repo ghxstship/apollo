@@ -133,6 +133,13 @@ export interface SegmentCapacityRow {
   cap: number;
   units: number;
   remaining: number;
+  /* Aboard passes on this sailing that state NO segment — the same figure on
+     every row of a voyage. Every pass sold before a sailing was gated has a
+     null segment, so `units` alone reported "0 SOLD" on a boat with people on
+     it, and the first ceilings were always set against a number that was not
+     the truth. The hull check counts them, so the overflow surfaced at a
+     member's checkout instead. */
+  unsegmented_aboard: number;
 }
 
 export interface VettingStateRow {

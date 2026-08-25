@@ -16,9 +16,14 @@ import { useToast } from "../../ui";
    asks them to type a token off a physical envelope — an object the product
    could not produce.
 
-   The token is a bearer secret for one member's own anchors: whoever holds it
-   opens that guest's Captain's Log. It appears on this screen and on the paper,
-   and nowhere else. */
+   The token is NOT a bearer secret, and this comment used to say it was.
+   open_the_captains_log refuses when env.profile_id <> auth.uid() — "that
+   envelope belongs to another guest" — so a token in the wrong hands opens
+   nothing. The posture is stronger than the copy claimed, which is its own
+   kind of defect: anyone reasoning about the blast radius of a dropped
+   envelope was reasoning from a false premise. It is a claim ticket for one
+   named member, and it appears on this screen and on the paper, nowhere
+   else. */
 
 export type EnvelopeRow = {
   rsvpId: string;
@@ -84,10 +89,15 @@ export function EnvelopesClient({
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
+          /* Both halves now come from res.minted — what the database actually
+             wrote. This read `outstanding`, computed from props captured before
+             the click, so a second operator pressing the button was told "3
+             envelopes minted" when nothing had been. Same shape as the "$150
+             credit applied" defect: a number asserted rather than read. */
           msg:
-            outstanding === 0
+            res.minted === 0
               ? "Every aboard pass already had one. Nothing was minted."
-              : `${outstanding} envelope${outstanding === 1 ? "" : "s"} minted. They are on the sheet below.`,
+              : `${res.minted ?? 0} envelope${res.minted === 1 ? "" : "s"} minted. They are on the sheet below.`,
           meta: voyageTitle.replace(/\.+$/, "").toUpperCase(),
         });
     });
@@ -159,8 +169,9 @@ export function EnvelopesClient({
         </div>
         <p className="hm-note">
           One token per aboard pass, minted once and never re-minted — issuing
-          again mints only what is missing. The token is the whole of the
-          envelope: whoever holds the card opens that guest&apos;s log at 19:00.
+          again mints only what is missing. A token opens the log of the member
+          it was minted for and nobody else&apos;s, so a card handed to the
+          wrong guest opens nothing.
         </p>
 
         {rows.length === 0 ? (

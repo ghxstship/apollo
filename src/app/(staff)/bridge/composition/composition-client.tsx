@@ -77,7 +77,14 @@ export function CompositionPanel({
 
   const gated = rows.length > 0;
   const draftHeads = SEGMENTS.reduce((n, s) => n + draft[s] * SEGMENT_HEADS[s], 0);
-  const seatedHeads = rows.reduce((n, r) => n + r.units * SEGMENT_HEADS[r.segment], 0);
+  /* Passes booked before this sailing was gated carry no segment and so appear
+     in no cap row. They are aboard, they occupy the hull, and the ratio gate
+     counts them — leaving them out of the figure the operator sets ceilings
+     against is how a "Seated 0 / 32" is shown for a boat with two people on
+     it. One head each: an unsegmented pass cannot be a couple. */
+  const unsegmented = rows[0]?.unsegmented_aboard ?? 0;
+  const seatedHeads =
+    rows.reduce((n, r) => n + r.units * SEGMENT_HEADS[r.segment], 0) + unsegmented;
   const overHull = hull > 0 && draftHeads > hull;
   const dirty = SEGMENTS.some((s) => draft[s] !== capOf(s));
   /* A ceiling below the seats already sold does not unseat anybody — the
@@ -104,7 +111,16 @@ export function CompositionPanel({
     startTransition(async () => {
       const res = await liftTheComposition(voyageId);
       if (res.error) show({ msg: res.error, tone: "danger" });
-      else show({ msg: "Composition lifted. The ratio gate and the vetting gate no longer run on this sailing." });
+      else
+        /* res.note names anyone released from the line. Lifting the ceilings
+           dissolves the queue that was waiting on them, and the operator should
+           be told that happened rather than discovering it later. */
+        show({
+          msg:
+            "Composition lifted. The ratio gate and the vetting gate no longer run on this sailing." +
+            (res.note ? ` ${res.note}` : ""),
+          tone: res.note ? "caution" : undefined,
+        });
       setConfirmLift(false);
     });
 
@@ -130,7 +146,16 @@ export function CompositionPanel({
           value={gated ? "Running" : "Off"}
           sub={gated ? "RATIO AND VETTING ENFORCED" : "NO COMPOSITION ON THIS SAILING"}
         />
-        <Stat size="sm" label="Seated" value={`${seatedHeads} / ${hull || "—"}`} sub="HEADS, COUPLES COUNT TWO" />
+        <Stat
+          size="sm"
+          label="Seated"
+          value={`${seatedHeads} / ${hull || "—"}`}
+          sub={
+            unsegmented > 0
+              ? `HEADS · ${unsegmented} BOOKED BEFORE GATING`
+              : "HEADS, COUPLES COUNT TWO"
+          }
+        />
         <Stat
           size="sm"
           label="Composition"

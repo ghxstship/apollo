@@ -328,7 +328,18 @@ export function VettingClient({
               <div className="hm-item__meta">
                 <span>{open.fastTrack ? "FAST-TRACK · MEMBERSHIP" : "NO FAST-TRACK"}</span>
                 <span>{open.clearedUntil ? `CLEARED TO ${open.clearedUntil}` : "NOT CLEARED"}</span>
-                <span>{open.purgeDue ? `ID PURGE DUE ${open.purgeDue}` : "NO PURGE DUE"}</span>
+                {/* "NO PURGE DUE" read as reassurance and meant the opposite.
+                    purge_spent_identity_records derives a due date only from a
+                    COMPLETED aboard sailing, so a member who is verified and
+                    never sails is scheduled for nothing and their identity
+                    record is kept indefinitely. Say which of the two this is. */}
+                <span>
+                  {open.purgeDue
+                    ? `ID PURGE DUE ${open.purgeDue}`
+                    : open.idVerified
+                      ? "ID HELD — NO PURGE SCHEDULED (NO COMPLETED SAILING)"
+                      : "NO ID ON FILE"}
+                </span>
               </div>
               <p className="hm-item__body">
                 Fast-track follows the membership and is never set here. Twelve
