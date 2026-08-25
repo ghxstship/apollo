@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { voiceWith } from "@/lib/errors";
+import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
 export type LookupResult = {
   error?: string;
@@ -37,7 +38,10 @@ export type TicketLine = { itemId: string; qty: number; priceCents: number };
 export async function settleTicket(
   profileId: string,
   lines: TicketLine[],
-  tender: "account" | "till"
+  tender: "account" | "till",
+  /* Minted by the POS per ticket. A double-tap at a bar with a queue behind it
+     should not ring twice. */
+  idemKey?: string
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
@@ -45,35 +49,22 @@ export async function settleTicket(
   const clean = lines.filter((l) => l.qty > 0 && l.itemId);
   if (!clean.length) return { error: "Ring the first item — the order is empty." };
 
-  const total = clean.reduce((t, l) => t + l.priceCents * l.qty, 0);
+  /* One RPC, one transaction. This used to be three separate writes with the
+     CHARGE landing on the first — the ledger trigger fires on the order insert
+     — so a failure on the lines left the member charged for an empty ticket,
+     and a failure on the till offset left them charged for drinks they had just
+     paid cash for. Both told the operator "That didn't land. Try again.", and
+     re-ringing charged again.
 
-  const { data: order, error: orderError } = await supabase
-    .from("galley_orders")
-    .insert({ profile_id: profileId, source: "pos", total_cents: total })
-    .select("id")
-    .single();
-  if (orderError || !order) return { error: ERR_LAND };
-
-  const { error: itemsError } = await supabase.from("galley_order_items").insert(
-    clean.map((l) => ({
-      order_id: order.id,
-      item_id: l.itemId,
-      qty: l.qty,
-      price_cents: l.priceCents,
-    }))
-  );
-  if (itemsError) return { error: ERR_LAND };
-
-  if (tender === "till") {
-    const { error: offsetError } = await supabase.from("account_ledger").insert({
-      profile_id: profileId,
-      delta_cents: total,
-      kind: "payment",
-      memo: "Paid at the till",
-      created_by: staffId,
-    });
-    if (offsetError) return { error: ERR_LAND };
-  }
+     The prices go with the line ids and are read from the catalogue inside the
+     function; the POS no longer states what anything costs. */
+  const { error } = await supabase.rpc("settle_galley_ticket", {
+    p_profile: profileId,
+    p_lines: clean.map((l) => ({ itemId: l.itemId, qty: l.qty })),
+    p_tender: tender,
+    ...(idemKey ? { p_idem_key: idemKey } : {}),
+  });
+  if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/bridge/galley");
   revalidatePath("/bridge/orders");

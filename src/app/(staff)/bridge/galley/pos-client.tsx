@@ -80,9 +80,19 @@ export function PosClient({ items }: { items: PosItem[] }) {
     }));
     const settledTotal = total;
     const settledCount = itemCount;
+    /* One key per ticket, minted before the attempt. A tap that the operator
+       repeats because the bar is loud and nothing visibly happened rings the
+       same ticket, not a second one. */
+    const key = (() => {
+      try {
+        return crypto.randomUUID();
+      } catch {
+        return `${m.id}-${settledTotal}-${settledCount}-${Date.now()}`;
+      }
+    })();
     setTender(null);
     startTransition(async () => {
-      const res = await settleTicket(m.id, ticket, how);
+      const res = await settleTicket(m.id, ticket, how, key);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         show({

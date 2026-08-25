@@ -259,7 +259,11 @@ export function ResumeBanner() {
       <div className="you-row">
         <div>
           <b>Membership on weather hold</b>
-          <p>Dues paused; knots and tier keep. The manifest waits for you.</p>
+          {/* This used to say "Dues paused". Nothing in this path touches the
+              subscription — the only Stripe calls in the repo are the webhook,
+              the portal and checkout — so the card kept drawing while the
+              member believed it had stopped. Say what actually happens. */}
+          <p>Knots and tier keep. The manifest waits for you.</p>
           {error ? <p style={{ color: "var(--siren)" }}>{error}</p> : null}
         </div>
         <Button
@@ -343,7 +347,12 @@ export function Offboarding({ status }: { status: string }) {
           </>
         }
       >
-        Dues pause; knots and tier keep. Resume with a word — no games either way.
+        {/* Same correction: a hold pauses what you can DO, not what you are
+            charged. Dues are a conversation with Shoreside until the product
+            can actually stop them. */}
+        Knots and tier keep, and you can resume with a word — no games either
+        way. Dues keep running while the hold is on: Shoreside settles those,
+        and the portal is where the card lives.
         {error && mode === "pause" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}
@@ -367,8 +376,13 @@ export function Offboarding({ status }: { status: string }) {
           </>
         }
       >
-        Unused months credit back. No exit surveys, no retention calls. The
-        manifest remembers you kindly.
+        {/* "Unused months credit back" was not true — no credit is posted
+            anywhere and no subscription is cancelled. Departing while believing
+            the card had stopped is the worst version of this. */}
+        No exit surveys, no retention calls; the manifest remembers you kindly.
+        Departing closes your place here — it does NOT cancel your dues on its
+        own. Square that with Shoreside, or cancel in the billing portal, so
+        nothing keeps drawing.
         {error && mode === "depart" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}

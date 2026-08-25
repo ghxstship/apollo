@@ -481,6 +481,15 @@ export type Database = {
       take_a_producer_turn: { Args: Record<string, never>; Returns: number }
       email_may_board: { Args: { p_email: string; p_fingerprint?: string | null }; Returns: boolean }
       set_manifest_visibility: { Args: { p_on: boolean }; Returns: undefined }
+      settle_galley_ticket: {
+        Args: {
+          p_profile: string
+          p_lines: Array<{ itemId: string; qty: number }>
+          p_tender: "account" | "till"
+          p_idem_key?: string
+        }
+        Returns: string
+      }
       validate_invite: { Args: { p_code: string }; Returns: boolean }
       attach_addons: {
         Args: { p_rsvp: string; p_addons: string[]; p_qty: number }
