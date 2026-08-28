@@ -44,7 +44,14 @@ export const BRAND_PLAIN = "UNHINGED";
 
 /* The parent slogan, set as a mark. The blank is the brand, so the blank gets
    set like one — lowercase, always, in mono. It is not a sentence and takes no
-   full stop. */
+   full stop.
+
+   Every handoff template used to carry "The Unscripted Social Experiment for
+   Singles" instead, which is a RETIRED tagline and is banned below — so the
+   design-system document the branch was built from would have failed this
+   repo's own brand audit. Confirmed by the owner 2026-08-25: the tagline is
+   this one, and the retired phrase stays banned. The templates were corrected
+   to match; the ban was not lifted. */
 export const TAGLINE = "anything goes here";
 
 /* One handle everywhere. A division that wants its own is asking to split the
@@ -228,8 +235,11 @@ export const SITE_DOMAIN = "unhingedsocial.us";
 export const THEME_STORAGE_KEY = "un-theme";
 
 /* The founding year, in one place. The press kit's "for the record" table and
-   the footer used to disagree — MMXXVI against MMXXIV — on the same page. */
-export const EST_YEAR_ROMAN = "MMXXIV";
+   the footer used to disagree on the same page, and this constant then settled
+   it the wrong way: the club was founded in 2026, and every design-system
+   handoff template said MMXXVI while this said MMXXIV. Confirmed by the owner
+   2026-08-25 — 2026, so MMXXVI, and the templates were right all along. */
+export const EST_YEAR_ROMAN = "MMXXVI";
 
 /* The club's own clock, for surfaces that belong to the club rather than to a
    sailing or a member: staff screens, the public site, anything ashore. Named

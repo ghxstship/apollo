@@ -30,13 +30,28 @@ const UPCOMING_STATUSES: Array<"scheduled" | "live" | "weather_hold"> = [
 ];
 
 /* Boarding codes were matched with .ilike(), and % and _ are WILDCARDS there.
-   A QR encoding `SYR-NIGH-0823-003%` matched whatever it resolved to and
+   A QR encoding `UN-NIGH-0823-003%` matched whatever it resolved to and
    boarded that person — a scanned value is untrusted input, and this is the
    one place the club turns a scanned value into a person walking aboard.
    Codes are fixed-shape and case-insensitive, so upper() + eq() answers the
    real question and leaves no pattern syntax in play. */
+/* Codes minted before the rebrand begin SYR-; the records were rewritten to
+   UN- on 2026-08-25. The cards did not change — a member holding one printed
+   last season presents SYR-NIGH-0823-003 at the gangway, and an exact match on
+   the rewritten row would turn them away at the dock, which is the worst place
+   in the product to discover a rename.
+
+   A pure prefix swap, so the digits identify the same pass either way. Retired
+   prefixes are listed rather than pattern-matched: this runs on a scanned
+   value, and a rule loose enough to be clever here is a rule that boards the
+   wrong person. */
+const RETIRED_CODE_PREFIXES = ["SYR-", "LS-", "LYR-"];
+const CODE_PREFIX = "UN-";
+
 function literalCode(raw: string): string {
-  return raw.trim().toUpperCase();
+  const code = raw.trim().toUpperCase();
+  const retired = RETIRED_CODE_PREFIXES.find((p) => code.startsWith(p));
+  return retired ? CODE_PREFIX + code.slice(retired.length) : code;
 }
 
 function upcomingCutoff(): string {

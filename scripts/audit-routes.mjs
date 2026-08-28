@@ -334,7 +334,7 @@ async function renderCheck(pages) {
     });
     return r.json();
   };
-  const staff = await signIn("e2e-staff@syrius.social");
+  const staff = await signIn("e2e-staff@fixtures.invalid");
   if (!staff.access_token) {
     note("(all protected pages)", "proven to render", false, "staff sign-in failed");
     return;

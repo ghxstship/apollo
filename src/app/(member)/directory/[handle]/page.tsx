@@ -120,7 +120,7 @@ export default async function MemberPage({
             {harborCode ? <span className="dir-row__code">{harborCode}</span> : null}
           </p>
           <p className="mbr-mono dir-head__no">
-            {member.member_no ?? "SYR-0000"} · member since {roman(joinedYear)}
+            {member.member_no ?? "UN-0000"} · member since {roman(joinedYear)}
           </p>
         </div>
         {!own ? (

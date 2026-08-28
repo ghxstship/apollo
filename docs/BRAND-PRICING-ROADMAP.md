@@ -1,4 +1,4 @@
-# LYRE Social — pricing architecture & brand unification roadmap
+# [UN] Social — pricing architecture & brand unification roadmap
 
 Incorporates the 2026-07-24 planning sheet: memberships (Access / Regional /
 National / Global / Guest, three price tiers each), event taxonomy (two
@@ -65,8 +65,8 @@ Structural recommendations:
 
 ## 2 · Branded-surface inventory (as built today)
 
-**Master brand:** LYRE SOCIAL — Neon Brutalist v4, Marcellus/Archivo/Space
-Mono, lava gradients, lyre mark.
+**Master brand:** [UN] SOCIAL — Neon Brutalist v4, Marcellus/Archivo/Space
+Mono, lava gradients, [UN] mark.
 
 | # | Surface | Micro-brand carried | Where |
 | --- | --- | --- | --- |
@@ -99,7 +99,7 @@ Manifest · the Dispatch/LORE · Crew wanted.
    with the definite article, lowercase in prose ("the Wardroom", "the
    Purser") and UPPERCASE only via CSS. Micro-brands never get their own
    logos, colors, or type — they are rooms in one house. The only marks that
-   exist: the lyre, the wordmark, and **LORE**'s masthead (type-only).
+   exist: the wordmark, and **LORE**'s masthead (type-only).
 2. **LORE Magazine absorbs the Dispatch.** One editorial masthead: **LORE**
    (Marcellus, tracked wide) as the publication; "a dispatch" survives as
    the unit ("File a dispatch — LORE reads everything"). Route `/lore` with

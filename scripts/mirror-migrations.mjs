@@ -39,7 +39,7 @@ const dir = join(process.cwd(), "supabase/migrations");
 
 const s = await (await fetch(`${url}/auth/v1/token?grant_type=password`, {
   method: "POST", headers: { apikey: anon, "Content-Type": "application/json" },
-  body: JSON.stringify({ email: "e2e-staff@syrius.social", password: "e2e-lyre-2026" }),
+  body: JSON.stringify({ email: "e2e-staff@fixtures.invalid", password: "e2e-un-2026" }),
 })).json();
 
 const res = await fetch(`${url}/rest/v1/rpc/ledger_since`, {

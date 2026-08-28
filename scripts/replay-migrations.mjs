@@ -26,8 +26,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { join } from "node:path";
 
 const REPO = process.cwd();
-const WORK = join(process.env.TMPDIR ?? "/tmp", "syrius-replay");
-const PROJECT = "syriusreplay";
+const WORK = join(process.env.TMPDIR ?? "/tmp", "un-replay");
+const PROJECT = "unreplay";
 const DB_PORT = 55322;
 
 const run = (cmd, args, opts = {}) =>

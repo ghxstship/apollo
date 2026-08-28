@@ -3,7 +3,7 @@
 
    READ THIS BEFORE ADDING ANYTHING HERE. This file exists for exactly one
    reason: ~200 surface files still reference the old vocabulary (--gold-deep,
-   --line-faint, --text-1, --lava-loop), and rebuilding those surfaces is step 6
+   --line-faint, --text-1, --lava), and rebuilding those surfaces is step 6
    of the handoff, which is a separate piece of work with its own data models.
    Deleting the names would leave every one of those files painting with an
    invalid value — CSS fails silently, so the build stays green and the pages go
@@ -163,11 +163,11 @@
 --grain-card:.25; /* @kind other */
 --scrim:var(--gradient-protect); /* @kind color */
 
-/* — the animated seam. Three stops on --lava-loop, not two: the seam scrolls
-     its own background at 200% width on a six-second loop, and a two-stop
-     gradient visibly snaps at the wrap. — */
+/* — the accent seam. --lava-loop is gone with the scroll it existed for: its
+     third stop was only there so a background animated across 200% width did
+     not snap at the wrap, and §Motion sanctions no such animation. The seam is
+     --gradient-accent, held still. — */
 --lava:var(--gradient-accent); /* @kind color */
---lava-loop:linear-gradient(120deg,var(--acid-400),var(--acid-500),var(--acid-400)); /* @kind color */
 
 /* — placeholder media. Photography is still TK; these are the package's
      synthwave illustration grounds, which carry the grain layer already. — */

@@ -1,15 +1,15 @@
 # [UN] — Design System
 
-**Umbrella brand:** [UN] — the parent · **Tagline:** *The Unscripted Social Experiment for Singles*
+**Umbrella brand:** [UN] — the parent · **Tagline:** *Anything goes here*
 **Divisions:** [UN] Hinged (Singles Social Club) · [UN] Bound (Alternative Lifestyle Social Club) · [UN] Limited (Premium Social Club) · [UN] Scripted (pop-up dating, matchmaking, mixers) · [UN] Cut (members-only media) — one handle and domain: **@unhingedsocial.us**
 **Anchor:** `[UN]` — a static bracketed parent mark plus a sentence-case suffix. See `brand-architecture.md`.
 
 A global nautical social club. The anchor product is a weekly 7-hour sailing out of Miami — Trident 512 pontoon, 40 vetted guests, Haulover Sandbar, Shore Leave afterparty — wired to a vetting app and a media engine. Primary audience is vetted singles 25–45; open-minded and alternative-lifestyle couples are a first-class second audience. Operational spec: `operations.md`. Production element taxonomy: `element-schema.md`.
 
 ## Sources
-- **Lyre Social design system** (uploaded copy at `uploads/Lyre Social Design System/`; original: https://claude.ai/design/p/104a67a5-5850-4b00-8def-10dec7d5f9ec) — used as the scope template: its full component inventory is recreated here.
-- **GitHub — ghxstship/apollo** (`main`; the Lyre production codebase, more current than the DS) — component APIs mirror `src/components/ds/`; see `github.md`.
-No UNHINGED logo, fonts, photography, or Figma were provided. **No logo exists**: the wordmark is set in plain type (`Wordmark` component). Fonts are Google Fonts substitutions. Lyre's visual style was NOT copied — UNHINGED has its own identity: contemporary greyscale, vintage grain, bold acid-green accent, brutalist type; only component inventory and API contracts carry over (tones mapped: brass→acid, laurel→positive, clay→caution, siren→danger).
+- **[UN] Social design system** (uploaded copy at `uploads/[UN] Social Design System/`; original: https://claude.ai/design/p/104a67a5-5850-4b00-8def-10dec7d5f9ec) — used as the scope template: its full component inventory is recreated here.
+- **GitHub — ghxstship/apollo** (`main`; the [UN] production codebase, more current than the DS) — component APIs mirror `src/components/ds/`; see `github.md`.
+No UNHINGED logo, fonts, photography, or Figma were provided. **No logo exists**: the wordmark is set in plain type (`Wordmark` component). Fonts are Google Fonts substitutions. [UN]'s visual style was NOT copied — UNHINGED has its own identity: contemporary greyscale, vintage grain, bold acid-green accent, brutalist type; only component inventory and API contracts carry over (tones mapped: brass→acid, laurel→positive, clay→caution, siren→danger).
 
 ## Brand architecture
 `[UN]` is the parent. Five divisions carry the anchor plus a sentence-case suffix; each swaps the accent only — never type, never surfaces.
@@ -99,7 +99,7 @@ No icon assets were provided. The system uses **Lucide** (CDN, 1.5px stroke at 1
 ## Intentional additions
 - `Icon` — Lucide CDN wrapper (no proprietary glyph set; hand-drawn SVGs banned).
 - **Wordmark** — type-set bracketed lockup standing in for the missing logo. `[UN]` is always caps; the suffix is always sentence case — the one documented exception to the all-caps display rule.
-- The Producer (`agent/`) — UNHINGED counterpart to Lyre's Purser / apollo's Aurora: same confirm-first action model.
+- The Producer (`agent/`) — UNHINGED counterpart to [UN]'s Purser / apollo's Aurora: same confirm-first action model.
 - Component tone keys keep their legacy names (`gold`, `rose`, `sea`) for apollo API compatibility — they now resolve to acid green, flare pink, and cobalt. `shop` (sun orange) is a new key for the Shop.
 
 

@@ -1,5 +1,5 @@
 /* Ship's-log formatting — mono caps data per the design system.
-   "JUL 26 · 06:00 · 26 NM", "33.9803° N — 118.4517° W", EST. MMXXIV.
+   "JUL 26 · 06:00 · 26 NM", "33.9803° N — 118.4517° W", EST. MMXXVI.
 
    A sailing happens on its harbor's clock, a member reads their account on
    theirs, and the club keeps its own ashore. `zone` is REQUIRED — it used to be

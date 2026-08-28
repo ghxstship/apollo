@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { adoptLegacyDeviceStorage } from "@/lib/device-storage";
 
 /* Registers the offline shell — the PWA's only service worker.
 
@@ -11,6 +12,9 @@ import { useEffect } from "react";
    leaves a trace an operator can find. */
 export function SwRegister() {
   useEffect(() => {
+    /* Carries over unsent gangway stamps and galley orders from the retired
+       key names, and drops stranded rosters — which still hold boarding codes. */
+    adoptLegacyDeviceStorage();
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch((err) => {
       console.warn("[UN] the offline shell did not register:", err);

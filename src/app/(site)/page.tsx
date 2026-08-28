@@ -92,7 +92,7 @@ export default async function HomePage() {
 
       {live.length > 0 ? (
         <>
-          <div className="ws-liveseam ls-lava-flow"></div>
+          <div className="ws-liveseam"></div>
           <div className="ws-livestrip">
             <div className="ls-container ws-livestrip__in">
               <span className="ls-live">Live now</span>
