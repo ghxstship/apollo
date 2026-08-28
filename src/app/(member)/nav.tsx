@@ -18,7 +18,7 @@ const LINKS = [
   ["/matches", "Matches"],
   ["/regattas", LOGBOOK.regattas],
   ["/threads", "Threads"],
-  ["/slop-chest", "Slop Chest"],
+  ["/shop", "The Shop"],
   ["/portal", "Portal"],
   ["/account", "Account"],
   ["/card", SURFACES.passbook],

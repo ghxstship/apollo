@@ -1,4 +1,4 @@
-/* SYRIUS SOCIAL has no logo — the kit is explicit: the wordmark is set in
+/* [UN] has no logo — the kit is explicit: the wordmark is set in
    plain type, and a mark is never drawn or generated. This lockup is Marcellus
    with a hairline gold rule, nothing else. */
 import { WORDMARK } from "@/lib/brand";

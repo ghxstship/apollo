@@ -5,7 +5,7 @@ import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
 
 export type CrateLine = { productId: string; qty: number; size: string | null };
-export type SlopChestResult = { error?: string };
+export type ShopResult = { error?: string };
 
 /* Checkout runs in the database. place_shop_order prices the crate from the
    catalogue and writes the order and its items in one transaction, so nothing
@@ -19,7 +19,7 @@ export async function placeShopOrder(
      twice when they sent the crate again. The key is how the database tells a
      resend from a second order. */
   idemKey?: string
-): Promise<SlopChestResult> {
+): Promise<ShopResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -41,11 +41,11 @@ export async function placeShopOrder(
   });
   if (error) return { error: await voiceWith(supabase, error) };
 
-  revalidatePath("/slop-chest");
+  revalidatePath("/shop");
   return {};
 }
 
-export async function requestRefund(orderId: string): Promise<SlopChestResult> {
+export async function requestRefund(orderId: string): Promise<ShopResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -77,6 +77,6 @@ export async function requestRefund(orderId: string): Promise<SlopChestResult> {
     return { error: "That order is past the point where it can be sent back." };
   }
 
-  revalidatePath("/slop-chest");
+  revalidatePath("/shop");
   return {};
 }

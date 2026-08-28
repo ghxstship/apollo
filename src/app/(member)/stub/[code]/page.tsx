@@ -154,7 +154,7 @@ export default async function StubPage({
   const berthsTotal = capRes.data?.berths_total ?? voyage.berths_total;
   const qr = await qrDataUrl(code);
   const name = host?.full_name ?? "A member";
-  const memberNo = host?.member_no ?? "SYR-0000";
+  const memberNo = host?.member_no ?? "UN-0000";
   const tier = TIER_LABEL[host?.tier ?? "regional"] ?? "Regional";
 
   return (

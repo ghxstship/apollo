@@ -4,7 +4,7 @@ import { logDate, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
 
-export const alt = "An episode from SYRIUS SOCIAL.";
+export const alt = "An episode from [UN].";
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 

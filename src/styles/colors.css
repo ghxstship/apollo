@@ -1,9 +1,9 @@
-/* SYRIUS SOCIAL color tokens — noir & antique gold.
+/* [UN] color tokens — noir & antique gold.
    MASTER: dark-first. Page noir #101418, cards #161B21, ivory text #F4EFE6 —
    never pure white, it blooms on camera. ONE metallic accent per view: antique
    gold #B98A2F (hover lightens, press darkens, never shrinks).
-   SUB-BRANDS swap accent only — Dating rose #FF5C7A, Yacht Club riviera #2E9BB5
-   — carried by the event themes below (sea = Yacht Club, shore = Dating).
+   SUB-BRANDS swap accent only — Dating rose #FF5C7A, [UN] Limited riviera #2E9BB5
+   — carried by the event themes below (sea = [UN] Limited, shore = Dating).
    LIGHT THEME: data-theme="light" is the paper theme; metallics deepen for
    contrast (gold #966E22, rose #D82B4E, riviera #1F7A91). */
 :root{
@@ -180,7 +180,7 @@
 --text-on-media:rgba(244,239,230,.85);
 --sea-day:linear-gradient(165deg,#6FC5D6 0%,#2E9BB5 60%,#173B4E 100%); /* @kind color */
 }
-/* — SUB-BRAND THEME: Sea = Syrius Yacht Club (riviera) — accent swap only — */
+/* — SUB-BRAND THEME: Sea = [UN] Limited (riviera) — accent swap only — */
 [data-theme="sea"]{
 --lava:linear-gradient(120deg,#6FC5D6,#2E9BB5); /* @kind color */
 --lava-loop:linear-gradient(120deg,#6FC5D6,#2E9BB5,#6FC5D6); /* @kind color */
@@ -200,7 +200,7 @@
 --sea-dusk:linear-gradient(165deg,#48AEC4 0%,#173B4E 55%,#0B0E12 100%); /* @kind color */
 --sea-dawn:linear-gradient(165deg,#6FC5D6 0%,#2E9BB5 60%,#161B21 100%); /* @kind color */
 }
-/* — SUB-BRAND THEME: Shore = Syrius Dating (neon rose) — accent swap only — */
+/* — SUB-BRAND THEME: Shore = [UN] Scripted (neon rose) — accent swap only — */
 [data-theme="shore"]{
 --lava:linear-gradient(120deg,#FF7D95,#FF5C7A); /* @kind color */
 --lava-loop:linear-gradient(120deg,#FF7D95,#FF5C7A,#FF7D95); /* @kind color */

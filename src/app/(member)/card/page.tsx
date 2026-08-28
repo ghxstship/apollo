@@ -25,7 +25,7 @@ export default async function MemberCardPage() {
   const balanceCents = account?.balance_cents ?? 0;
 
   const name = profile?.full_name ?? "A member";
-  const memberNo = profile?.member_no ?? "SYR-0000";
+  const memberNo = profile?.member_no ?? "UN-0000";
   const tier = TIER_LABEL[profile?.tier ?? "regional"] ?? "Regional";
   const joinedYear = profile?.joined_at
     ? yearIn(profile.joined_at, CLUB_ZONE)

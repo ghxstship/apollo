@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { getMember } from "../data";
-import { SlopChestShop, type ShopOrderView, type ShopProduct } from "./shop";
+import { ShopFront, type ShopOrderView, type ShopProduct } from "./shop";
 
-export const metadata: Metadata = { title: "The Slop Chest" };
+export const metadata: Metadata = { title: "The Shop" };
 
-export default async function SlopChestPage() {
+export default async function ShopPage() {
   const { supabase, user, profile, zone } = await getMember();
 
   const [productsRes, ordersRes] = await Promise.all([
@@ -53,14 +53,14 @@ export default async function SlopChestPage() {
     <div>
       <span className="mbr-eyebrow">Ship&rsquo;s stores</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        The Slop Chest.
+        The Shop.
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
         Kit worth its salt. Charged to your member account; collect at the
         harbor or the next Port Day.
       </p>
       <div className="mbr-sec">
-        <SlopChestShop zone={zone}
+        <ShopFront zone={zone}
           products={products}
           isGlobal={profile?.tier === "global"}
           orders={orderViews}

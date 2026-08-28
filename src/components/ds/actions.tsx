@@ -25,7 +25,7 @@ export function IconButton({
 }
 
 /* — ThemeToggle — */
-const THEME_KEY = "syrius-theme";
+const THEME_KEY = "un-theme";
 type ThemeMode = "dark" | "light" | "system";
 
 function resolveTheme(mode: ThemeMode): "dark" | "light" {
@@ -43,7 +43,7 @@ export function applyTheme(mode: ThemeMode) {
 
 /* The persisted mode lives in localStorage — read it as an external store so
    SSR renders "dark" and the client syncs without a hydration mismatch. */
-const THEME_EVENT = "syrius-theme-change";
+const THEME_EVENT = "un-theme-change";
 
 function subscribeTheme(cb: () => void) {
   window.addEventListener("storage", cb);

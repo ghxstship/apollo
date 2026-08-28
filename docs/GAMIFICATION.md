@@ -1,6 +1,6 @@
 # The logbook
 
-Gamification for LYRE SOCIAL, built to the club's register rather than against it.
+Gamification for [UN] SOCIAL, built to the club's register rather than against it.
 
 ## The rule
 

@@ -1,33 +1,43 @@
-/* SYRIUS SOCIAL — the brand, as code. Single source for names, taxonomy, and
+/* [UN] — the brand, as code. Single source for names, taxonomy, and
    lexicon. Every surface imports from here; the /brand page renders from it;
    the route audit greps rendered HTML for BANNED terms and for exclamation
    marks — the producer never shouts.
 
-   Naming decisions (2026-08, Syrius rebrand):
-   - Umbrella = Syrius Social · sub-brands = Syrius Dating, Syrius Yacht Club.
+   Naming decisions (2026-08, [UN] rebrand — Syrius retired):
+   - Umbrella = [UN] · divisions = [UN] Hinged, [UN] Scripted, [UN] Limited.
      Sub-brands swap the accent only (rose / riviera) — never type or surfaces.
    - Ops console = the Bridge · live mode = Live · feed = Open Deck
      (the confession-booth motif lives in the composer voice, per the kit)
    - Credential = Member Card · shop = the Slop Chest · editorial = Episodes
    - Agent = the Producer (confirm-first; money always asks). The engine is
-     Aurora, the shared ATLVS intelligence — the Producer is its Syrius face;
+     Aurora, the shared ATLVS intelligence — the Producer is its [UN] face;
      Aurora is never named in member-facing copy (see BANNED_TERMS).
    - Events: Charters (aboard, Yacht Club) and Tables (ashore, Dating).
-   - Carried over, kit coverage pending (docs/SYRIUS-KIT-REQUEST.md):
+   - Carried over, kit coverage pending (docs/UN-KIT-REQUEST.md):
      Knots · Leagues · Marks · Regattas · the Passage Log · Shoreside.
    - Internal DB names (voyages, fathoms_ledger, wardroom_*, rsvps…) are legacy
      plumbing; display names come from here. */
 
-export const BRAND = "Syrius Social";
-export const WORDMARK = "SYRIUS SOCIAL";
-export const TAGLINE = "The Unscripted Social Experiment.";
+/* [UN] — the parent mark. Syrius is retired, and so is the tagline that went
+   with it; both are in BANNED_TERMS below. This comment deliberately does not
+   spell the old tagline out — the source-level lexicon gate reads comments too,
+   and quoting a banned phrase to explain that it is banned still fails. */
+export const ANCHOR = "[UN]";
+export const BRAND = ANCHOR;
+export const WORDMARK = ANCHOR;
+export const TAGLINE = "anything goes here";
 
-/* One stage, different spotlights. Sub-brands ride the event-theme system:
-   data-theme="sea" is the Yacht Club's riviera, "shore" is Dating's rose. */
+/* One stage, different spotlights. Divisions ride the event-theme system:
+   data-theme="sea" is the premium club's riviera, "shore" is the rose.
+
+   ONE HANDLE across every division — @unhingedsocial.us. The Syrius model gave
+   each sub-brand its own handle, which split the recognition three ways; the
+   keys below stay as they are because triggers and columns all over the schema
+   reference them, and renaming a key is not a brand decision. */
 export const SUB_BRANDS = {
-  social: { name: "Syrius Social", handle: "@syrius.social", accent: "gold" },
-  dating: { name: "Syrius Dating", handle: "@syrius.dating", accent: "rose", theme: "shore" },
-  yacht: { name: "Syrius Yacht Club", handle: "@syrius.yachts", accent: "riviera", theme: "sea" },
+  social: { name: "[UN] Hinged", handle: "@unhingedsocial.us", accent: "gold" },
+  dating: { name: "[UN] Scripted", handle: "@unhingedsocial.us", accent: "rose", theme: "shore" },
+  yacht: { name: "[UN] Limited", handle: "@unhingedsocial.us", accent: "riviera", theme: "sea" },
 } as const;
 
 export const SURFACES = {
@@ -40,13 +50,16 @@ export const SURFACES = {
   magazine: "Episodes",
   agent: "The Producer",
   gangway: "The Gangway",
-  chandlery: "The Slop Chest",
+  /* The key stays `chandlery` — account_ledger.kind is written with it by
+     triggers all over the schema, and a key is not copy. What a member reads
+     is the value, and the Slop Chest is retired with the rest of the era. */
+  chandlery: "The Shop",
   galley: "The Galley",
 } as const;
 
 /* Mail and web domain, in one place. The show's addresses read at MAIL_DOMAIN;
    the Resend sender lives in Supabase Vault (OUTBOX_FROM) and stays on
-   atlvs.pro until syrius.social is registered and verified. */
+   atlvs.pro until unhingedsocial.us is registered and verified. */
 /* account_ledger.kind keeps its legacy values (berth, chandlery) because the
    column is written by triggers all over the schema. What a member or an
    operator reads is this. */
@@ -55,18 +68,21 @@ export const LEDGER_KIND: Record<string, string> = {
   deposit: "Deposit",
   addon: "Add-on",
   galley: "Galley",
-  chandlery: "Slop Chest",
+  chandlery: "The Shop",
   credit: "Credit",
   refund: "Refund",
   payment: "Payment",
 };
 
-export const MAIL_DOMAIN = "syrius.social";
-export const SITE_DOMAIN = "syrius.social";
+export const MAIL_DOMAIN = "unhingedsocial.us";
+export const SITE_DOMAIN = "unhingedsocial.us";
 
 /* The founding year, in one place. The press kit's "for the record" table and
-   the footer used to disagree — MMXXVI against MMXXIV — on the same page. */
-export const EST_YEAR_ROMAN = "MMXXIV";
+   the footer used to disagree on the same page, and this constant then settled
+   it the wrong way: the club was founded in 2026, and every design-system
+   handoff template said MMXXVI while this said MMXXIV. Confirmed by the owner
+   2026-08-25 — 2026, so MMXXVI, and the templates were right all along. */
+export const EST_YEAR_ROMAN = "MMXXVI";
 
 /* The club's own clock, for surfaces that belong to the club rather than to a
    sailing or a member: staff screens, the public site, anything ashore. Named
@@ -139,8 +155,8 @@ export const CITY_CODES: Record<string, string> = {
   ibiza: "IBZ",
 };
 
-/* Event taxonomy — two families: a Charter (aboard, Syrius Yacht Club) and a
-   Table (ashore, Syrius Dating's Thursday format). Both run the same class
+/* Event taxonomy — two families: a Charter (aboard, [UN] Limited) and a
+   Table (ashore, [UN] Scripted's Thursday format). Both run the same class
    ladder by duration. The sky visual theme survives as styling only. */
 export const CLASS_CODES: Record<string, string> = { sea: "CHT", shore: "TBL", sky: "TBL" };
 export const FAMILY_LABEL: Record<string, string> = { sea: "Charter", shore: "Table", sky: "Table" };
@@ -158,7 +174,24 @@ export function knots(n: number): string {
    raw-HTML match). The Lyre era is fully retired; the producer never shouts,
    so the audit also scans visible text for exclamation marks and emoji. */
 export const BANNED_TERMS = [
-  // the retired brand, wholesale
+  /* The Syrius era, wholesale. This list banned Lyre and not Syrius, because
+     Syrius was the brand these gates were defending. It is retired now, so it
+     joins the list it used to enforce.
+
+     NOTE for whoever edits this array: no comment inside it may contain a
+     closing square bracket, and none may contain a double-quoted phrase. Both
+     gates lift this list out of the file with a non-greedy regex that stops at
+     the first closing bracket, and they lift every double-quoted string they
+     find — comments included. A bracket here once truncated the list to its
+     first seven entries while both suites went on reporting a clean lexicon. */
+  "Syrius",
+  "SYRIUS",
+  "syrius.social",
+  "SYR-",
+  "Yacht Club",
+  "Slop Chest",
+  "Unscripted Social Experiment",
+  // the Lyre era
   "Lyre",
   "LYRE",
   "lyre.social",

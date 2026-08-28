@@ -112,7 +112,7 @@ export async function refundShopOrder(orderId: string): Promise<ActionResult> {
     profile_id: order.profile_id,
     delta_cents: refundCents,
     kind: "refund",
-    memo: `Slop Chest order ${orderId.slice(0, 8).toUpperCase()} refunded`,
+    memo: `The Shop order ${orderId.slice(0, 8).toUpperCase()} refunded`,
     created_by: staffId,
   });
   if (ledgerError) return { error: ERR_LAND };

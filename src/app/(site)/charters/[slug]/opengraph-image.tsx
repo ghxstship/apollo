@@ -4,7 +4,7 @@ import { logDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
 
-export const alt = "A charter on the SYRIUS SOCIAL manifest.";
+export const alt = "A charter on the [UN] manifest.";
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 

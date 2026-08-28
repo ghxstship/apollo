@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 const BOILER =
-  "SYRIUS SOCIAL is the unscripted social experiment — a reality-format social club running Charters on the water and Tables ashore, cameras from boarding to docking. Real people, real chemistry, filmed and unfiltered, wrapped in charter-grade luxury. Two sub-brands sail under the umbrella: Syrius Dating and Syrius Yacht Club. Casting is by application or invitation.";
+  "[UN] is a reality-format social club running Charters on the water and Tables ashore, cameras from boarding to docking. Real people, real chemistry, filmed and unfiltered, wrapped in charter-grade luxury. Two sub-brands sail under the umbrella: [UN] Scripted and [UN] Limited. Casting is by application or invitation.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--scene-gold)",
@@ -36,8 +36,8 @@ const IVORIES: Array<[string, string, string, boolean]> = [
 const METALS: Array<[string, string, string, boolean]> = [
   ["Gold 500", "#B98A2F", "the accent", false],
   ["Gold 400", "#D3B15E", "hover, focus, live", false],
-  ["Rose 500", "#FF5C7A", "Syrius Dating", true],
-  ["Riviera 500", "#2E9BB5", "Syrius Yacht Club", true],
+  ["Rose 500", "#FF5C7A", "[UN] Scripted", true],
+  ["Riviera 500", "#2E9BB5", "[UN] Limited", true],
 ];
 const GRADIENTS: Array<[string, string, string]> = [
   ["Gold", "linear-gradient(120deg,#E3C983,#B98A2F)", "hero rules and small fills"],
@@ -109,7 +109,7 @@ export default function BrandKitPage() {
             </div>
             <div className="bk-lock bk-lock--ink">
               <div className="bk-stack">
-                <div className="a">SYRIUS</div>
+                <div className="a">[UN]</div>
                 <div className="b">Social</div>
               </div>
               <span className="cap">STACKED · MONOGRAM STANDARD · NOIR ONLY</span>
@@ -160,7 +160,7 @@ export default function BrandKitPage() {
           <p className="bk-note">
             The umbrella brand is noir and antique gold — one metallic accent per
             view, hover lightens, press darkens, never shrinks. Sub-brands swap
-            the accent only: Syrius Dating runs rose, Syrius Yacht Club runs
+            the accent only: [UN] Scripted runs rose, [UN] Limited runs
             riviera — never their own type or surfaces. One stage, different
             spotlights. A paper light theme ships via{" "}
             <b>data-theme=&quot;light&quot;</b>, where every metal deepens for
@@ -269,8 +269,8 @@ export default function BrandKitPage() {
                 </span>
                 <span className="bk-rooms__role">
                   {fam === "sea"
-                    ? "Aboard — Syrius Yacht Club, riviera accent"
-                    : "Ashore — Syrius Dating's Thursday format, rose accent"}
+                    ? "Aboard — [UN] Limited, riviera accent"
+                    : "Ashore — [UN] Scripted's Thursday format, rose accent"}
                 </span>
               </div>
             ))}
@@ -359,7 +359,7 @@ export default function BrandKitPage() {
             </div>
           </div>
           <div className="bk-dl__list">
-            <a className="ls-btn ls-btn--gold ls-btn--md ls-btn--full" href="/brand/syrius-social-tokens.css" download>
+            <a className="ls-btn ls-btn--gold ls-btn--md ls-btn--full" href="/brand/un-tokens.css" download>
               <Icon name="Download" size={15} />
               Color &amp; type tokens · CSS
             </a>

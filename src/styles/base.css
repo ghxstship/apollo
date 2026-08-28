@@ -25,7 +25,7 @@ img{max-width:100%;height:auto}
    stacking context, and anything inside it with a z-index was clamped to the
    wrapper's place in root order. That is why the confirm dialog rendered
    behind the tab bar, why a toast at z-index 1100 sat under a bar at 300, and
-   why .chd-drawer at 950 works only because /slop-chest happens to have no
+   why .chd-drawer at 950 works only because /shop happens to have no
    .ls-fade on it — luck, not design.
 
    Both keyframes end at the element's own natural state (opacity 1, transform

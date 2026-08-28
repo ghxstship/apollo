@@ -171,7 +171,7 @@ export default async function VoyagesPage() {
   );
   const members: MemberOption[] = roll.map((p) => ({
     id: p.id,
-    label: `${p.full_name ?? "A member"} · ${p.member_no ?? "SYR-0000"}`,
+    label: `${p.full_name ?? "A member"} · ${p.member_no ?? "UN-0000"}`,
   }));
 
   /* Hand-offs: what you've offered, and what's been offered to you. */

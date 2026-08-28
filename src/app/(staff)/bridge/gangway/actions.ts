@@ -29,7 +29,7 @@ const UPCOMING_STATUSES: Array<"scheduled" | "live" | "weather_hold"> = [
 ];
 
 /* Boarding codes were matched with .ilike(), and % and _ are WILDCARDS there.
-   A QR encoding `SYR-NIGH-0823-003%` matched whatever it resolved to and
+   A QR encoding `UN-NIGH-0823-003%` matched whatever it resolved to and
    boarded that person — a scanned value is untrusted input, and this is the
    one place the club turns a scanned value into a person walking aboard.
    Codes are fixed-shape and case-insensitive, so upper() + eq() answers the

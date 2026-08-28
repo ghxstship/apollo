@@ -84,7 +84,7 @@ export function MintInvite() {
 }
 
 /* — The kit's KnotsLedger, wired to redeem_reward. Balance, the running
-   ledger, and the Slop Chest rewards in the kit's single arrangement. — */
+   ledger, and the The Shop rewards in the kit's single arrangement. — */
 export function KnotsPanel({
   balance,
   entries,

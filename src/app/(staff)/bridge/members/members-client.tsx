@@ -161,7 +161,7 @@ export function MembersClient({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `syrius-members-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `un-members-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     show({ msg: "File written.", meta: `${filtered.length} ROWS · CSV` });

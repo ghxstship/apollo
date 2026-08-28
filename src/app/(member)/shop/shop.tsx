@@ -54,7 +54,7 @@ function mintKey(): string {
   }
 }
 
-export function SlopChestShop({
+export function ShopFront({
   zone,
   products,
   isGlobal,
@@ -223,7 +223,7 @@ export function SlopChestShop({
         open={!!open}
         onClose={() => setOpen(null)}
         width={420}
-        eyebrow="The Slop Chest"
+        eyebrow="The Shop"
         title={open?.name}
         footer={
           <>

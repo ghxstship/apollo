@@ -124,7 +124,7 @@ const cookieFor = (session) => {
 async function page(session, path) {
   return fetch(BASE + path, {
     redirect: "manual",
-    headers: { cookie: session ? cookieFor(session) : "", "user-agent": "lyre-e2e" },
+    headers: { cookie: session ? cookieFor(session) : "", "user-agent": "un-e2e" },
   });
 }
 function rest(session) {
@@ -452,7 +452,7 @@ async function isolationRules(p) {
     ["make yourself staff", { is_staff: true }],
     ["raise your own tier", { tier: "global" }],
     ["put yourself on hold", { status: "paused" }],
-    ["issue yourself a member number", { member_no: "SYR-0001" }],
+    ["issue yourself a member number", { member_no: "UN-0001" }],
     ["set your own billing account", { stripe_customer_id: "cus_e2e_takeover" }],
   ]) {
     const res = await reg.patch(`profiles?id=eq.${uid(p.regional)}`, patch);
@@ -704,7 +704,7 @@ async function documentRules(p) {
   const signed = await reg.rpc("sign_document", {
     p_document_code: "member-waiver", p_context: { class: "sea" }, p_consent: true,
     p_consent_text: "E2E consent", p_signature_kind: "typed", p_signature_data: "E2e Regional",
-    p_signer_name: "E2e Regional", p_user_agent: "lyre-e2e",
+    p_signer_name: "E2e Regional", p_user_agent: "un-e2e",
   });
   note("regional", "may sign the member waiver", signed.status < 400, `got ${signed.status}`);
   const again = await reg.rpc("sign_document", {
@@ -846,7 +846,7 @@ async function documentRules(p) {
     await anon.rpc("sign_document_as_guest", {
       p_token: gTok, p_document_code: "guest-waiver", p_consent: true,
       p_consent_text: "E2E consent", p_signature_kind: "typed",
-      p_signature_data: "E2E Redaction Guest", p_user_agent: "lyre-e2e",
+      p_signature_data: "E2E Redaction Guest", p_user_agent: "un-e2e",
     });
     const fresh = await stf.get(`signatures?select=id,rendered_hash&guest_id=eq.${gId}`);
     const rid = fresh.data?.[0]?.id;
@@ -1100,7 +1100,7 @@ async function enforcementRules(p) {
      minutes, so the ONLY thing between this run and real mail to a made-up
      address is the queue-boundary guard. Every card this suite just queued to
      a fixture must be skipped, never pending. The guard used to miss anything
-     that was not e2e-/@demo./@lyre.social — an audit account left on the
+     that was not e2e-/@demo./@fixtures.invalid — an audit account left on the
      club's own domain queued for real and stopped at the provider's quota. */
   const addressed = await stf.get(
     `email_outbox?select=to_email,status&template=eq.season-card&created_at=gt.${mailSince}&limit=500`
@@ -1108,7 +1108,7 @@ async function enforcementRules(p) {
   const fixtures = (addressed.data || []).filter((e) =>
     /^(e2e|test|probe|audit|fixture|smoke|viewport|qa)[-.]/i.test(e.to_email || "") ||
     /@(demo\.|example\.)/i.test(e.to_email || "") ||
-    /@lyre\.social$/i.test(e.to_email || "")
+    /@fixtures\.invalid$/i.test(e.to_email || "")
   );
   note("staff", "the suite queued at least one fixture card to check the guard",
     fixtures.length > 0, "no fixture address in the season run");
@@ -1120,10 +1120,10 @@ async function enforcementRules(p) {
   await stf.del("email_outbox?template=eq.season-card&status=eq.skipped");
 }
 
-/* ---------- M. Syrius: cabins, consent, tables, matches ----------
+/* ---------- M. [UN]: cabins, consent, tables, matches ----------
    The rebrand's new objects. Dating privacy is the sharp edge: a pick is
    private even from seatmates, and only mutuality surfaces anything. */
-async function syriusRules(p) {
+async function unRules(p) {
   const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), stf = rest(p.staff), anon = rest(null);
 
   /* --- filming consent --- */
@@ -1427,7 +1427,7 @@ async function roundTwoRules(p) {
 
   // — An invite code names nobody, and validate_invite tells nobody —
   const codes = await stf.get("invites?select=code&limit=50");
-  const named = (codes.data || []).filter((c) => !/^SYR-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(c.code));
+  const named = (codes.data || []).filter((c) => !/^UN-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(c.code));
   note("staff", "no invite code carries a member's name", named.length === 0,
     named.map((c) => c.code).join(", "));
   const anyCode = codes.data?.[0]?.code;
@@ -1440,7 +1440,7 @@ async function roundTwoRules(p) {
   // — An applicant does not decide their own application —
   for (const [label, body] of [
     ["a self-signed waiver", { full_name: "E2E Probe", email: "e2e-anon-probe@example.com", waiver_swim: true }],
-    ["a borrowed invite code", { full_name: "E2E Probe", email: "e2e-anon-probe@example.com", invite_code: "SYR-AAAA-BBBB" }],
+    ["a borrowed invite code", { full_name: "E2E Probe", email: "e2e-anon-probe@example.com", invite_code: "UN-AAAA-BBBB" }],
     ["an unbounded city", { full_name: "E2E Probe", email: "e2e-anon-probe@example.com", city: "C".repeat(500) }],
   ]) {
     const r = await rest(null).post("applications", body);
@@ -2082,7 +2082,7 @@ async function parityRules(p) {
   const guests = await stf.get(
     "rsvp_guests?select=name,boarding_code&boarding_code=not.is.null&name=not.like.E2E*&limit=3"
   );
-  const coded = (guests.data || []).every((g) => /^SYR-/.test(g.boarding_code || ""));
+  const coded = (guests.data || []).every((g) => /^UN-/.test(g.boarding_code || ""));
   note("staff", "guests carry their own codes", (guests.data || []).length > 0 && coded, JSON.stringify(guests.data).slice(0, 120));
 
   /* A guest's sign_token is a bearer credential — it opens and signs that
@@ -2174,7 +2174,7 @@ async function businessRules(p) {
   const natLedger = await nat.get(`account_ledger?voyage_id=eq.${vid}&kind=eq.berth&select=delta_cents`);
   note("national", "berth charge posts to house account", natLedger.data?.[0]?.delta_cents === -1000, JSON.stringify(natLedger.data));
   const natCode = await nat.get(`rsvps?voyage_id=eq.${vid}&profile_id=eq.${uid(p.national)}&select=boarding_code`);
-  note("national", "boarding code issued", /^SYR-/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
+  note("national", "boarding code issued", /^UN-/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
 
   // Capacity: global bounced to full manifest
   const gloTry = await glo.post("rsvps", { voyage_id: vid, profile_id: uid(p.global), status: "aboard" });
@@ -2460,11 +2460,11 @@ async function main() {
   console.log(`e2e against ${BASE}\n`);
   const personas = {};
   for (const [name, email] of [
-    ["regional", "e2e-regional@syrius.social"],
-    ["national", "e2e-national@syrius.social"],
-    ["global", "e2e-global@syrius.social"],
-    ["paused", "e2e-paused@syrius.social"],
-    ["staff", "e2e-staff@syrius.social"],
+    ["regional", "e2e-regional@fixtures.invalid"],
+    ["national", "e2e-national@fixtures.invalid"],
+    ["global", "e2e-global@fixtures.invalid"],
+    ["paused", "e2e-paused@fixtures.invalid"],
+    ["staff", "e2e-staff@fixtures.invalid"],
   ]) {
     personas[name] = await login(email);
   }
@@ -2489,7 +2489,7 @@ async function main() {
   await moderationRules(personas);
   await documentRules(personas);
   await enforcementRules(personas);
-  await syriusRules(personas);
+  await unRules(personas);
   await hardeningRules(personas);
   await roundTwoRules(personas);
   await roundThreeRules(personas);

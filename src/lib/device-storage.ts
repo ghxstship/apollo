@@ -9,9 +9,57 @@
    is the exact threat the service worker's PRIVATE list was written to close,
    left open one storage API along. */
 
-export const GANGWAY_QUEUE_KEY = "syrius-gangway-queue";
-export const GANGWAY_ROSTER_PREFIX = "syrius-gangway-roster:";
-export const GALLEY_QUEUE_KEY = "syrius-galley-queue";
+export const GANGWAY_QUEUE_KEY = "un-gangway-queue";
+export const GANGWAY_ROSTER_PREFIX = "un-gangway-roster:";
+export const GALLEY_QUEUE_KEY = "un-galley-queue";
+
+/* The Syrius-era names. A storage key is not copy, but it is also not free to
+   rename: whatever is already under the old key stays on the device until
+   something goes and gets it.
+
+   Two different reasons, both of which bite:
+
+   ROSTERS hold member names, member numbers and LIVE BOARDING CODES, and
+   clearCachedRosters at sign-out is the only thing that removes them. Renaming
+   the prefix without clearing the old one would strand that data on a handed-on
+   crew phone for ever — reopening precisely the hole the comment above says was
+   left open one storage API along.
+
+   QUEUES are the only record that somebody walked aboard, or asked for
+   something at the galley. Renaming without carrying them over would discard
+   unsent work at the moment of a deploy, silently. */
+const LEGACY_GANGWAY_QUEUE_KEY = "syrius-gangway-queue";
+const LEGACY_GANGWAY_ROSTER_PREFIX = "syrius-gangway-roster:";
+const LEGACY_GALLEY_QUEUE_KEY = "syrius-galley-queue";
+
+/* Move anything left under the old names, once, before either key is read.
+   Appends rather than overwrites: a device that has already written under the
+   new name must not lose those entries to a stale legacy blob. */
+export function adoptLegacyDeviceStorage(): void {
+  try {
+    for (const [legacy, current] of [
+      [LEGACY_GANGWAY_QUEUE_KEY, GANGWAY_QUEUE_KEY],
+      [LEGACY_GALLEY_QUEUE_KEY, GALLEY_QUEUE_KEY],
+    ] as const) {
+      const raw = localStorage.getItem(legacy);
+      if (raw === null) continue;
+      const old = JSON.parse(raw);
+      if (Array.isArray(old) && old.length) {
+        const rawNow = localStorage.getItem(current);
+        const now = rawNow ? JSON.parse(rawNow) : [];
+        localStorage.setItem(current, JSON.stringify((Array.isArray(now) ? now : []).concat(old)));
+      }
+      localStorage.removeItem(legacy);
+    }
+    /* Rosters rebuild from the server, so they are dropped rather than moved —
+       but they ARE dropped, because nothing else would ever remove them. */
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith(LEGACY_GANGWAY_ROSTER_PREFIX)) localStorage.removeItem(key);
+    }
+  } catch {
+    /* storage blocked or a malformed blob — never let this stop a page loading */
+  }
+}
 
 /* Rosters are pure copies of server data and are rebuilt on the next load, so
    they go without ceremony. */
@@ -19,7 +67,10 @@ export function clearCachedRosters(): number {
   let removed = 0;
   try {
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(GANGWAY_ROSTER_PREFIX)) {
+      /* Both names. A phone that has not loaded since the rename still holds
+         boarding codes under the old prefix, and sign-out is what removes
+         them. */
+      if (key.startsWith(GANGWAY_ROSTER_PREFIX) || key.startsWith(LEGACY_GANGWAY_ROSTER_PREFIX)) {
         localStorage.removeItem(key);
         removed++;
       }
@@ -42,7 +93,15 @@ export function clearCachedRosters(): number {
 export function unflushedCount(): number {
   let n = 0;
   try {
-    for (const key of [GANGWAY_QUEUE_KEY, GALLEY_QUEUE_KEY]) {
+    for (const key of [
+      GANGWAY_QUEUE_KEY,
+      GALLEY_QUEUE_KEY,
+      /* Counted too: a device that has not yet run the adoption still has its
+         unsent stamps under the old name, and reporting zero would tell an
+         operator it was safe to end the session. */
+      LEGACY_GANGWAY_QUEUE_KEY,
+      LEGACY_GALLEY_QUEUE_KEY,
+    ]) {
       const raw = localStorage.getItem(key);
       const parsed = raw ? JSON.parse(raw) : [];
       if (Array.isArray(parsed)) n += parsed.length;

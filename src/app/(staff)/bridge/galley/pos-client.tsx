@@ -145,7 +145,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
               <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
                 <Input
                   label="Member"
-                  placeholder="SYR-0214"
+                  placeholder="UN-0214"
                   value={lookup}
                   onChange={(e) => setLookup(e.target.value)}
                   onKeyDown={(e) => {

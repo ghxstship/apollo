@@ -33,8 +33,8 @@ export const metadata: Metadata = {
      a link shared from production previews as http://localhost:3000/... */
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`),
   title: {
-    default: "SYRIUS SOCIAL — The Unscripted Social Experiment.",
-    template: "%s · SYRIUS SOCIAL",
+    default: "[UN] — anything goes here",
+    template: "%s · [UN]",
   },
   description:
     "Twelve strangers. One yacht. Cameras from boarding to docking. No scripts, no second takes — whatever happens after sunset is the show.",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SYRIUS",
+    title: "[UN]",
   },
 };
 
@@ -58,7 +58,7 @@ export const viewport: Viewport = {
 
 /* Applies the persisted theme before first paint — dark is the default;
    only "light" sets an attribute. Runs from <head>, so it targets <html>. */
-const themeInit = `try{var m=localStorage.getItem("syrius-theme")||"dark";var l=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;if(l==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}`;
+const themeInit = `try{var m=localStorage.getItem("un-theme")||"dark";var l=m==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):m;if(l==="light")document.documentElement.setAttribute("data-theme","light")}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -78,7 +78,7 @@ export default function RootLayout({
             app raises is a receipt for something that already happened
             (an order placed, a pass held), so it announces through here. */}
         <div id="ls-announcer" role="status" aria-live="polite" aria-atomic="true" className="ls-visually-hidden" />
-        <Script id="syrius-theme-init" strategy="beforeInteractive">{themeInit}</Script>
+        <Script id="un-theme-init" strategy="beforeInteractive">{themeInit}</Script>
         <SwRegister />
         {children}
       </body>

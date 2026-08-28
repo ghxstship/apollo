@@ -168,7 +168,7 @@ export function OrdersClient({
       </div>
 
       <section className="hm-sec">
-        <h2>Slop Chest orders.</h2>
+        <h2>The Shop orders.</h2>
         <p className="hm-note">Refund requests wait here — approval credits the member account and emails the receipt.</p>
         <div className="hm-panel">
           <Table
@@ -198,7 +198,7 @@ export function OrdersClient({
           />
           {shopOrders.length === 0 ? (
             <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
-              No Slop Chest orders on the books.
+              No The Shop orders on the books.
             </p>
           ) : null}
         </div>

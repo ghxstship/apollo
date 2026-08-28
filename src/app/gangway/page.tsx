@@ -6,7 +6,7 @@ import "./gangway.css";
 
 export const metadata: Metadata = {
   title: "The gangway",
-  description: "Passwordless sign-in for the SYRIUS SOCIAL cast.",
+  description: "Passwordless sign-in for the [UN] cast.",
 };
 
 export default async function GangwayPage({

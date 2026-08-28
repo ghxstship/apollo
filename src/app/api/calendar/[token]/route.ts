@@ -61,5 +61,5 @@ export async function GET(
 
   /* No name on the feed: the token is unauthenticated, so it carries the
      season and nothing that identifies whose season it is. */
-  return icsResponse(buildCalendar("SYRIUS SOCIAL — your season", events), "syrius-social.ics");
+  return icsResponse(buildCalendar("[UN] — your season", events), "un-season.ics");
 }

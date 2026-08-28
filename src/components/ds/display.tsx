@@ -160,7 +160,7 @@ export function Wordmark({
   const px = typeof size === "number" ? size : WM_SIZES[size] || 20;
   return (
     <span className={["ls-wm", inverse ? "ls-wm--inverse" : "", className].filter(Boolean).join(" ")} style={{ fontSize: px, ...style }}>
-      <span className="ls-wm__t" style={{ fontSize: px }}>SYRIUS SOCIAL</span>
+      <span className="ls-wm__t" style={{ fontSize: px }}>[UN]</span>
       {sub ? <span className="ls-wm__sub" style={{ fontSize: Math.max(8, px * 0.42) }}>{sub}</span> : null}
       {seam ? <span className="ls-wm__seam"></span> : null}
     </span>

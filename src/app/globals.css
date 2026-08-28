@@ -1,4 +1,4 @@
-/* SYRIUS SOCIAL — global entry. Tokens first, then element defaults, then components. */
+/* [UN] — global entry. Tokens first, then element defaults, then components. */
 @import "../styles/fonts.css";
 @import "../styles/colors.css";
 @import "../styles/typography.css";

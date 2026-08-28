@@ -38,7 +38,7 @@ export async function mintInvite(): Promise<PortalResult> {
     const bytes = new Uint8Array(8);
     crypto.getRandomValues(bytes);
     const body = Array.from(bytes, (b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
-    const code = `SYR-${body.slice(0, 4)}-${body.slice(4, 8)}`;
+    const code = `UN-${body.slice(0, 4)}-${body.slice(4, 8)}`;
     const { error } = await supabase.from("invites").insert({ code, inviter_id: user.id });
     if (!error) {
       revalidatePath("/portal");

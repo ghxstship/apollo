@@ -5,7 +5,7 @@ import { SITE_DOMAIN } from "@/lib/brand";
 /* Never localhost as the fallback: these two files are what search engines
    and social cards read, and a production deploy without the env var was
    publishing http://localhost:3000 URLs while og:image on the same page said
-   https://syrius.social. */
+   https://unhingedsocial.us. */
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`;
 
 export default function robots(): MetadataRoute.Robots {

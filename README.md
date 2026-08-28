@@ -1,6 +1,6 @@
-# SYRIUS SOCIAL
+# [UN]
 
-A membership club for experiential connection at sea and ashore — Sea Days aboard, Port Days ashore, and the people worth crossing water for. Full-stack build of the Syrius Social design system: marketing website, member web app, and installable mobile PWA in one Next.js codebase, backed by Supabase.
+A membership club for experiential connection at sea and ashore — Sea Days aboard, Port Days ashore, and the people worth crossing water for. Full-stack build of the [UN] design system: marketing website, member web app, and installable mobile PWA in one Next.js codebase, backed by Supabase.
 
 ## Stack
 

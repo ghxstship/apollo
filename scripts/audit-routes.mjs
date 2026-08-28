@@ -265,7 +265,7 @@ const note = (route, check, ok, detail = "") => {
 };
 
 async function get(path, redirect = "manual") {
-  const res = await fetch(BASE + path, { redirect, headers: { "user-agent": "lyre-route-audit" } });
+  const res = await fetch(BASE + path, { redirect, headers: { "user-agent": "un-route-audit" } });
   return res;
 }
 
@@ -358,7 +358,7 @@ async function renderCheck(pages) {
     });
     return r.json();
   };
-  const staff = await signIn("e2e-staff@syrius.social");
+  const staff = await signIn("e2e-staff@fixtures.invalid");
   if (!staff.access_token) {
     note("(all protected pages)", "proven to render", false, "staff sign-in failed");
     return;

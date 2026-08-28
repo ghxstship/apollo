@@ -53,7 +53,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
           </div>
         </div>
         <div className="ws-footer__base">
-          <span>© MMXXVI Syrius Social</span>
+          <span>© MMXXVI [UN]</span>
           <span>Est. {EST_YEAR_ROMAN} · Marina del Rey</span>
         </div>
       </div>

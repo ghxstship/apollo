@@ -39,7 +39,7 @@ for (const line of existsSync(join(root, ".env.local"))
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const email = process.env.E2E_EMAIL || "e2e-staff@syrius.social";
+const email = process.env.E2E_EMAIL || "e2e-staff@fixtures.invalid";
 const password = process.env.E2E_PASSWORD;
 
 if (!url || !anon) die("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set");

@@ -31,7 +31,7 @@ try {
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SENT_KEY = process.env.SENT_API_KEY;
-const STAFF_EMAIL = process.env.STAFF_EMAIL || "skipper@syrius.social";
+const STAFF_EMAIL = process.env.STAFF_EMAIL || "skipper@fixtures.invalid";
 const STAFF_PASSWORD = process.env.STAFF_PASSWORD;
 const DRY = process.argv.includes("--dry");
 const SUBMIT = process.argv.includes("--submit");

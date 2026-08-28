@@ -1,10 +1,10 @@
-/* logbook — the gamification group from the Syrius kit, ported 1:1.
+/* logbook — the gamification group from the [UN] kit, ported 1:1.
    A logbook, never a leaderboard: figures accumulate, marks are permanent,
    contests are windowed and settle once. Values are the kit's own.
 
    One kit erratum corrected here: the kit's KnotsLedger labels its rewards
-   section "The chandlery", which contradicts the kit's own shop ("the Slop
-   Chest") and this brand's ban list. The heading reads The Slop Chest. */
+   section "The chandlery", which contradicts the kit's own shop ("the
+   Chest") and this brand's ban list. The heading reads The Shop. */
 import React from "react";
 
 const MONO = "var(--font-mono)";
@@ -424,7 +424,7 @@ export function KnotsLedger({
       ) : null}
       {rewards.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <span style={label}>The Slop Chest</span>
+          <span style={label}>The Shop</span>
           {rewards.map((r) => (
             <div
               key={r.name}
