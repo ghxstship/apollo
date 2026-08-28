@@ -87,7 +87,7 @@ export function PostCard({
               position: "absolute",
               right: 10,
               bottom: 8,
-              font: `700 8px/1 ${MONO}`,
+              font: `700 var(--text-3xs)/1 ${MONO}`,
               letterSpacing: ".14em",
               color: "rgba(244,239,230,.7)",
             }}
@@ -365,7 +365,7 @@ export function FlagQueue({
                   <span style={{ color: "var(--text-2)" }}>{it.excerpt}</span>
                 </td>
                 <td style={{ ...td, font: `400 12px/1 ${MONO}` }}>{it.flaggedBy}</td>
-                <td style={{ ...td, font: `400 11px/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>{it.when}</td>
+                <td style={{ ...td, font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>{it.when}</td>
                 <td style={{ ...td, textAlign: "right" }}>
                   <Button variant="outline" size="sm" onClick={() => setPick(it)}>
                     Resolve

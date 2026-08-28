@@ -26,7 +26,7 @@ export function PassageLog({
 }) {
   if (!figures.length)
     return (
-      <div style={{ padding: "22px 0", font: `400 13px/1.5 ${BODY}`, color: "var(--text-3)", ...style }}>
+      <div style={{ padding: "22px 0", font: `400 var(--text-sm)/1.5 ${BODY}`, color: "var(--text-3)", ...style }}>
         {emptyLabel}
       </div>
     );
@@ -54,7 +54,7 @@ export function PassageLog({
               background: "var(--surface-card)",
             }}
           >
-            <span style={{ font: `700 20px/1 ${MONO}`, color: "var(--text-1)" }}>{f.value}</span>
+            <span style={{ font: `700 var(--text-xl)/1 ${MONO}`, color: "var(--text-1)" }}>{f.value}</span>
             <span
               style={{
                 font: `700 9px/1.3 ${MONO}`,
@@ -264,7 +264,7 @@ export function ContestCard({
             all: "unset",
             cursor: "pointer",
             alignSelf: "flex-start",
-            font: `500 13px/1 ${BODY}`,
+            font: `500 var(--text-sm)/1 ${BODY}`,
             color: "var(--text-gold)",
             padding: "8px 0",
           }}
@@ -400,7 +400,7 @@ export function KnotsLedger({
       {balance != null ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={label}>Knots</span>
-          <span style={{ font: `400 38px/1.05 ${DISPLAY}`, color: "var(--text-gold)" }}>{balance}</span>
+          <span style={{ font: `400 var(--text-3xl)/1.05 ${DISPLAY}`, color: "var(--text-gold)" }}>{balance}</span>
         </div>
       ) : null}
       {entries.length > 0 ? (
@@ -439,7 +439,7 @@ export function KnotsLedger({
               }}
             >
               <span style={{ fontSize: 14, flex: 1 }}>{r.name}</span>
-              <span style={{ font: `700 11px/1 ${MONO}`, color: "var(--text-gold)", whiteSpace: "nowrap" }}>{r.cost}</span>
+              <span style={{ font: `700 var(--text-2xs)/1 ${MONO}`, color: "var(--text-gold)", whiteSpace: "nowrap" }}>{r.cost}</span>
               {onRedeem ? (
                 <button
       className="ls-bare"

@@ -73,7 +73,13 @@
 --void-black:var(--noir-950);
 --abyss:var(--noir-950);
 --ink:var(--noir-900);
---sea:var(--noir-600);
+/* The component tone key, not a greyscale rung. readme §103: the legacy tone
+   names (gold, rose, sea) are kept for apollo API compatibility and "now
+   resolve to acid green, flare pink, and cobalt". This one resolved to
+   --noir-600 (#333333), so an avatar toned `sea` rendered dark grey — the one
+   tone key of the three that had not been repointed. Cobalt is --grid-500.
+   Single consumer: .ls-avatar--sea. */
+--sea:var(--grid-500);
 --paper:var(--ivory-100);
 --bone:var(--ivory-100);
 --sail:var(--ivory-50);

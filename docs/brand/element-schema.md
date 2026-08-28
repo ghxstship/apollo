@@ -12,6 +12,7 @@ Every produced element — signage, swag, print, equipment, credential — is ca
 | `department` | enum | See below |
 | `discipline` | string | e.g. Signage & Wayfinding, Scenic Fabrication, Guest Amenities & Merch |
 | `category` | string | Free label within discipline (Entry & Dock Signage, Match Envelopes) |
+| `weather_substitute` | string | **Required** when `five_a` is `activity` and `weather` is `indoor_only` — a non-empty description, not a boolean. "Yes we thought about it" is not a substitution plan, and the Show Kit prints this string on the weather-hold card. Enforced at runtime and by a deferred constraint. |
 | `kind` | enum | `equipment` · `uniform` · `consumable` · `credential` |
 | `tier` | enum | `04 Physical` · `05 Experiential` |
 | `phase` | enum | `Install` · `Operate` · `Strike` |
