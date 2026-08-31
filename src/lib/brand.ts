@@ -8,7 +8,7 @@
      Sub-brands swap the accent only (rose / riviera) — never type or surfaces.
    - Ops console = the Bridge · live mode = Live · feed = Open Deck
      (the confession-booth motif lives in the composer voice, per the kit)
-   - Credential = Member Card · shop = the Slop Chest · editorial = Episodes
+   - Credential = Member Card · shop = the Shop · editorial = Episodes
    - Agent = the Producer (confirm-first; money always asks). The engine is
      Aurora, the shared ATLVS intelligence — the Producer is its [UN] face;
      Aurora is never named in member-facing copy (see BANNED_TERMS).

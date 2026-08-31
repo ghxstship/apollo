@@ -17,7 +17,7 @@ A membership club for experiential connection at sea and ashore — Sea Days abo
 | Member app | `/home-port` · `/gateway` (live) · `/manifest` (passes) · `/open-deck` (feed) · `/directory` · `/regattas` (contests) · `/agreements` (waivers) · `/threads` · `/portal` (knots + leagues) · `/account` (dues) · `/passbook` (+ the Passage Log and Marks) · `/word` · `/you` |
 | Mobile | Same member routes; under 960px the shell becomes a 6-tab bottom bar. Installable PWA (`/manifest.webmanifest`, standalone, starts at `/home-port`) with a service worker, offline shell, and web push |
 | Signing | `/sign/[token]` — a guest signs their waiver by bearer link, no account. `noindex`, and marked credential-bearing so the audit never enumerates real tokens |
-| Commerce | `/chandlery` (shop) · `/stub/[code]` (pass and guest stubs + QR) · house-account ledger; Stripe settles balances and runs recurring dues |
+| Commerce | `/shop` (shop) · `/stub/[code]` (pass and guest stubs + QR) · house-account ledger; Stripe settles balances and runs recurring dues |
 | Staff | `/bridge` (requires `profiles.is_staff`): applications, gangway check-in, manifests + flotilla, voyage ops, orders & refunds, members CRM, codes, media, moderation, regattas, documents, reports, galley POS, crew ATS, automations, keys, Shoreside |
 
 ## Setup

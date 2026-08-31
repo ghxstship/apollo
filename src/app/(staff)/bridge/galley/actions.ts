@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { memberNumberFilter, memberNumberTail } from "@/lib/membership";
 import { voiceWith } from "@/lib/errors";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
@@ -14,10 +15,20 @@ export async function lookupMember(memberNo: string): Promise<LookupResult> {
   if (!staffId) return { error: ERR_STAFF };
   const code = memberNo.trim().toUpperCase();
   if (!code) return { error: "Key the number first." };
+  /* The tail is the member number; the letters in front are whatever the club
+     was called when the card was printed. This matched the typed string whole,
+     so a crew member keying SYR-0034 off a wallet card — or the bare 0034 the
+     card face shows — found nobody once the column was rewritten to UN-.
+
+     ilike also put operator-typed text into a pattern position, where % and _
+     are wildcards. That is the hazard the gangway closed by moving to eq() and
+     the till never got; memberNumberTail refuses anything outside [A-Z0-9]. */
+  const tail = memberNumberTail(code);
+  if (!tail) return { error: "No member under that number." };
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, full_name, member_no, tier")
-    .ilike("member_no", code)
+    .or(memberNumberFilter(tail))
     .maybeSingle();
   if (!profile) return { error: "No member under that number." };
   return {

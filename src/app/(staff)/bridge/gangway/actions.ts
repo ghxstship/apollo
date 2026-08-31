@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { literalCode } from "@/lib/boarding-code";
 import { staffContext, ERR_STAFF, ERR_LAND, boardingError } from "../../staff";
 import { logDateYear } from "@/lib/format";
 
@@ -34,9 +35,8 @@ const UPCOMING_STATUSES: Array<"scheduled" | "live" | "weather_hold"> = [
    one place the club turns a scanned value into a person walking aboard.
    Codes are fixed-shape and case-insensitive, so upper() + eq() answers the
    real question and leaves no pattern syntax in play. */
-function literalCode(raw: string): string {
-  return raw.trim().toUpperCase();
-}
+
+
 
 function upcomingCutoff(): string {
   return new Date(Date.now() - 24 * 3600 * 1000).toISOString();
@@ -93,6 +93,37 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       .select("*")
       .eq("boarding_code", code)
       .maybeSingle();
+
+    /* SCOPE THE GUEST TO ITS SAILING. The member path above searches the
+       selected voyage and then only sailings still ahead, so a pass for a
+       voyage that has gone is refused by name. The guest path looked a stub up
+       by code alone — so a guest stub for a sailing that departed weeks ago
+       still boarded at today's gangway and stamped checked_in_at, the column
+       the guest waiver gate hangs off. A guest is admitted to a sailing, not to
+       the dock in general. */
+    if (guest) {
+      const { data: host } = await supabase
+        .from("rsvps")
+        .select("voyage_id")
+        .eq("id", guest.rsvp_id)
+        .maybeSingle();
+      const { data: gv } = host
+        ? await supabase
+            .from("voyages")
+            .select("title, starts_at, time_zone, status")
+            .eq("id", host.voyage_id)
+            .maybeSingle()
+        : { data: null };
+      const sailed =
+        !gv ||
+        !UPCOMING_STATUSES.includes(gv.status as (typeof UPCOMING_STATUSES)[number]) ||
+        gv.starts_at < upcomingCutoff();
+      if (sailed) {
+        return gv
+          ? { error: `That guest pass is for ${gv.title}, which sailed on ${logDateYear(gv.starts_at, gv.time_zone)}.` }
+          : { outcome: "not_found" as const };
+      }
+    }
 
     if (!guest) {
       /* Before calling it a forgery: the fallback above only searches sailings

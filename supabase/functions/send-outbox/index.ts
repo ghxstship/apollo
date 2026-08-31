@@ -21,10 +21,15 @@ let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
 /* Fallback only — the real sender is the OUTBOX_FROM row in Supabase Vault.
    Sending sits on atlvs.pro because Resend verifies one domain per plan and
-   syrius.social is not registered yet. Moving it is one Vault update. */
-const DEFAULT_FROM = "SYRIUS SOCIAL — Shoreside <shore@atlvs.pro>";
+   unhingedsocial.us is not registered yet. Moving it is one Vault update.
+
+   The display name is QUOTED. RFC 5322 lists [ and ] as specials, so `[UN] —
+   Shoreside <shore@…>` is not a valid From header — some relays reject it and
+   others silently mangle the name. The brackets are part of the mark and are
+   not coming off, so they get quoted instead. */
+const DEFAULT_FROM = '"[UN] — Shoreside" <shore@atlvs.pro>';
 /* Member-app origin for email deep links; overridable the same way as FROM. */
-const APP_URL = Deno.env.get("APP_URL") || "https://syrius.social";
+const APP_URL = Deno.env.get("APP_URL") || "https://unhingedsocial.us";
 /* Derived from the sender rather than hard-coded, so the unsubscribe mailbox
    is always one that actually receives mail for the domain we send from. */
 function shoresideAddress(): string {
@@ -126,7 +131,7 @@ function shell(bodyHtml: string, inverse = false, audience: Audience = "member")
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper};padding:32px 0;">
 <tr><td align="center">
 <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:${card};color:${ink};font-family:${SERIF};">
-<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">SYRIUS SOCIAL</td></tr>
+<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">[UN]</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:2px solid ${rule};"></div></td></tr>
 <tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>

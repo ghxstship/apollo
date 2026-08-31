@@ -106,7 +106,15 @@ const nextConfig: NextConfig = {
       { source: "/gateway", destination: "/live", permanent: true },
       { source: "/booth", destination: "/open-deck", permanent: true },
       { source: "/passbook", destination: "/card", permanent: true },
-      { source: "/chandlery", destination: "/slop-chest", permanent: true },
+      /* Two dead names for the shop, and BOTH have to be answered.
+         /chandlery was pointed at /slop-chest, and then /slop-chest was renamed
+         to /shop — so the redirect landed on a 404. Worse, `permanent: true`
+         emits a 308 that browsers may cache indefinitely, so everyone who has
+         already followed /chandlery has "/chandlery -> /slop-chest" pinned
+         locally: repointing /chandlery alone does not reach them. Only a
+         /slop-chest entry does. */
+      { source: "/chandlery", destination: "/shop", permanent: true },
+      { source: "/slop-chest", destination: "/shop", permanent: true },
       { source: "/word", destination: "/inbox", permanent: true },
       { source: "/voyages", destination: "/charters", permanent: true },
       { source: "/voyages/:path*", destination: "/charters/:path*", permanent: true },

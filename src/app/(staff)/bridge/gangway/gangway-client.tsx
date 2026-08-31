@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { literalCode } from "@/lib/boarding-code";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Button, Input, Select, Stat, StateBlock } from "@/components/ds";
@@ -241,7 +242,6 @@ export function GangwayConsole({
 
   /* Offline path — resolve against the cached roster and queue the stamp. */
   const localScan = (raw: string): Scan => {
-    const needle = raw.toLowerCase();
     let pool = rows;
     try {
       const cached = localStorage.getItem(ROSTER_KEY + voyageId);
@@ -255,7 +255,11 @@ export function GangwayConsole({
     } catch {
       /* fall back to in-memory rows */
     }
-    const hit = pool.find((r) => r.code && r.code.toLowerCase() === needle);
+    /* Map before comparing. A card printed SYR- must find its UN- row here
+         too — this is the path that runs past the breakwater, and it is the one
+         branch that queues nothing when it misses. */
+      const scanned = literalCode(raw);
+      const hit = pool.find((r) => r.code && literalCode(r.code) === scanned);
     if (!hit) return { kind: "unsure", queued: true };
     const base = {
       name: hit.name,
@@ -329,7 +333,10 @@ export function GangwayConsole({
             };
             setScan(s);
             if (res.outcome === "aboard" && !res.otherVoyage) {
-              const hit = rows.find((r) => r.code.toLowerCase() === raw.toLowerCase());
+              /* Same mapping as the action that just succeeded, or a legacy card
+                 scans green while its roster row stays ashore and the counter
+                 does not move. */
+              const hit = rows.find((r) => literalCode(r.code) === literalCode(raw));
               if (hit) markRow(hit.rsvpId, res.checkedInAt ?? new Date().toISOString());
             }
           }

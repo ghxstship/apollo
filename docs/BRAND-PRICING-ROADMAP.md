@@ -78,7 +78,7 @@ Mono, lava gradients, lyre mark.
 | 6 | Portal (loyalty) | **Fathoms** currency | `/portal` |
 | 7 | Member card + boarding stub | master (credential) | `/card`, `/stub/*` |
 | 8 | Now (underway) + galley self-order | **The Galley** | `/now` |
-| 9 | The Chandlery (shop) | **The Chandlery** | `/chandlery` |
+| 9 | The Chandlery (shop) | **The Chandlery** | `/shop` |
 | 10 | The Purser (agent) | **The Purser** | panel, `/api/purser` |
 | 11 | Harbormaster console (8 tabs) | **Harbormaster** | `/harbormaster` |
 | 12 | Galley POS (register) | The Galley | `/harbormaster/galley` |

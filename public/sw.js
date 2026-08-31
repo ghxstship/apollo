@@ -107,7 +107,7 @@ self.addEventListener("fetch", (event) => {
 /* Signing out clears what was kept. The route only ends the Supabase session;
    Cache Storage is the worker's, so the worker has to be told. */
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "[UN]_SIGNED_OUT") {
+  if (event.data && event.data.type === "UN_SIGNED_OUT") {
     event.waitUntil(caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))));
   }
 });
