@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The design-system handoff is specification, not app code. Kit v2's
+    // operations-kit ships its template's own runtime scripts (ds-base.js,
+    // policy-doc.js, support.js) which target the Claude Design canvas, not
+    // this app — linting them holds artwork to app rules.
+    "docs/brand/_handoff/**",
   ]),
 ]);
 

@@ -12,15 +12,16 @@ A global nautical social club. The anchor product is a weekly 7-hour sailing out
 No UNHINGED logo, fonts, photography, or Figma were provided. **No logo exists**: the wordmark is set in plain type (`Wordmark` component). Fonts are Google Fonts substitutions. [UN]'s visual style was NOT copied — UNHINGED has its own identity: contemporary greyscale, vintage grain, bold acid-green accent, brutalist type; only component inventory and API contracts carry over (tones mapped: brass→acid, laurel→positive, clay→caution, siren→danger).
 
 ## Brand architecture
-`[UN]` is the parent. Five divisions carry the anchor plus a sentence-case suffix; each swaps the accent only — never type, never surfaces.
+`[UN]` is the parent. Six divisions carry the anchor plus a sentence-case suffix; each swaps the accent only — never type, never surfaces.
 
 - **[UN] Hinged** — Singles Social Club. Acid green `--brand-hinged`. Sea and Port formats.
 - **[UN] Bound** — Open and alternative lifestyle couples social. Violet `--brand-bound`. Port and Premium formats.
 - **[UN] Limited** — Premium experiences. Champagne `--brand-limited`. Private charters, VIP, member gatherings.
 - **[UN] Scripted** — Social content series: pop-up dating, matchmaking, mixers. Flare pink `--brand-scripted`.
 - **[UN] Cut** — BTS and founder-led content series. Bone `--brand-cut` — no hue; ivory on ink, ink on paper, so it inverts rather than tints.
+- **[UN] Brand** — Nautical lifestyle, fashion, and gear. No accent and no token — ink on paper, ivory on ink; the products speak for themselves.
 
-**Shop** carries merch and drops in sun orange (`--brand-shop`) under whichever division's mark the drop belongs to — never a mark of its own.
+**Shop** carries merch and drops in sun orange (`--brand-shop`) — the sales channel, not the maker. Products carry the **[UN] Brand** mark; event and season drops may carry their division's mark instead.
 
 Activity categories (**Sea** · **Port** · **Premium**) determine which division and accent an experience carries. Full rules: `brand-architecture.md`.
 

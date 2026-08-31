@@ -206,11 +206,12 @@ const WM_SFX_SCALE = 1.27;
 
 const WM_ACCENTS: Record<DivisionId | "shop", string> = { ...DIVISION_ACCENT, shop: COMMERCE.shop.accent };
 
-/** The five sanctioned suffixes. Tighter than the package's .d.ts, which unions
-    the five literals with bare `string` and so accepts anything at all — the
-    five divisions are the whole set, and a sixth is a brand decision, not a
-    prop value. */
-export type DivisionSuffix = "Hinged" | "Bound" | "Limited" | "Scripted" | "Cut";
+/** The six sanctioned suffixes. Tighter than the package's .d.ts, which unions
+    the literals with bare `string` and so accepts anything at all — the six
+    divisions are the whole set, and a seventh is a brand decision, not a prop
+    value. "Brand" landed with kit v2 (2026-08): [UN] Brand, nautical lifestyle,
+    fashion, and gear — no accent, its sub line renders in ink. */
+export type DivisionSuffix = "Hinged" | "Bound" | "Limited" | "Scripted" | "Cut" | "Brand";
 
 interface WordmarkBase {
   /** sm 16 / md 20 / lg 36, or a px number. The lockup is one of the four

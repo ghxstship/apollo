@@ -2,8 +2,8 @@
 
 import React from 'react';
 const SIZES={sm:16,md:20,lg:36};/* brand lockup — exempt from the Anton ≥22px floor */
-const ACCENTS={hinged:'var(--brand-hinged)',bound:'var(--brand-bound)',limited:'var(--brand-limited)',scripted:'var(--brand-scripted)',cut:'var(--brand-cut)',shop:'var(--brand-shop)',gold:'var(--brand-hinged)',rose:'var(--brand-scripted)',sea:'var(--brand-limited)'};
-const DIVISIONS={HINGED:'hinged',BOUND:'bound',LIMITED:'limited',SCRIPTED:'scripted',CUT:'cut'};
+const ACCENTS={hinged:'var(--brand-hinged)',bound:'var(--brand-bound)',limited:'var(--brand-limited)',scripted:'var(--brand-scripted)',cut:'var(--brand-cut)',shop:'var(--brand-shop)',brand:'var(--text-body)',gold:'var(--brand-hinged)',rose:'var(--brand-scripted)',sea:'var(--brand-limited)'};
+const DIVISIONS={HINGED:'hinged',BOUND:'bound',LIMITED:'limited',SCRIPTED:'scripted',CUT:'cut',BRAND:'brand'};
 const SFX_SCALE=1.27;/* Anton cap 0.859em, Space Mono cap 0.676em — 1.27 makes the suffix caps match the bracket caps. Measured, not eyeballed. */
 const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():s;
 export function Wordmark({size='md',suffix='Hinged',sub=null,accent,inverse=false,editorial=false,caps=false,style}){

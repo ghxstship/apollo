@@ -13,10 +13,12 @@ Two systems share one anchor.
 ```
 [UN]  Suffix
  |      |
- |      └─ Space Mono 700 at 0.77 of the bracket size, sentence case
- |         one word space after the closing bracket
+ |      └─ Space Mono 700 at 1.27 of the bracket size, sentence case
+ |         one word space (.3em) after the closing bracket
  └─ Anton, always caps, brackets are part of the mark and never dropped
 ```
+
+**The 1.27 ratio is cap-height matched, not size matched.** Anton's cap height is 0.859 em; Space Mono's is 0.676 em. Setting both faces at the same px size renders the suffix caps at 79% of the bracket caps, and the previously documented 0.77 ratio rendered them at 61% — visibly two different sizes. Multiply the bracket size by 1.27 and the capitals align. The suffix's px number is therefore *larger* than the bracket's; that is correct and expected.
 
 The faces are deliberately unalike: Anton is tight and condensed, Space Mono is wide and even. The pairing reads as a manifest rather than a logo — a counterpart to the bracket, not an echo of it. A second condensed sans (Bebas Neue and its relatives) is rejected: it echoes Anton, and it has no true lowercase, which makes sentence case impossible.
 
@@ -24,21 +26,22 @@ The faces are deliberately unalike: Anton is tight and condensed, Space Mono is 
 
 Never a suffix without the anchor. Never two suffixes in one lockup.
 
-## The five divisions
+## The six divisions
 
 | Mark | What it is | Domain | Accent |
 | --- | --- | --- | --- |
-| **[UN] Hinged** | Singles Social Club | Sea · Port | Acid green `#F72585` |
-| **[UN] Bound** | Open / alternative lifestyle couples social | Port · Premium | Violet `#7209B7` |
-| **[UN] Limited** | Premium experiences | Premium | Champagne `#FF8C00` |
-| **[UN] Scripted** | Social content series — pop-up dating, matchmaking, mixers | Dating | Flare pink `#4361EE` |
-| **[UN] Cut** | BTS and founder-led content series | Media | Bone `#B5179E` |
+| **[UN] Hinged** | Singles Social Club | Sea · Port | Electric magenta `#F72585` |
+| **[UN] Bound** | Open / alternative lifestyle couples social | Port · Premium | Deep orchid `#7209B7` |
+| **[UN] Limited** | Premium experiences | Premium | Outrun amber `#FF8C00` |
+| **[UN] Scripted** | Social content series — pop-up dating, matchmaking, mixers | Dating | Grid cobalt `#4361EE` |
+| **[UN] Cut** | BTS and founder-led content series | Media | Laser fuchsia `#B5179E` |
+| **[UN] Brand** | Nautical lifestyle, fashion, and gear | Retail | None — ink on paper, ivory on ink |
 
 Divisions never get their own type or surfaces — only their accent swap. One stage, different spotlights.
 
 **The division hues are reserved for identity.** They name a club and nothing else. Operational state — Five-A phase, run-of-show position, procurement status — is encoded in numerals on the noir/ivory greyscale, never in a division hue. This matters most on physical objects: a magenta flag on a mast means [UN] Hinged is sailing, and it can never also mean a phase of the day. Status colours (`--positive` / `--caution` / `--danger`) are the one exception, and they override a division accent wherever both apply.
 
-The five hues sit 60°+ apart so no two divisions read as the same brand in a schedule, directory, or ticket list — more precisely, four hues plus one neutral. Tokens: `--brand-hinged`, `--brand-bound`, `--brand-limited`, `--brand-scripted`, `--brand-cut`, each with a `-lift` step for small type on ink. **[UN] Cut carries no hue** — ivory on ink, ink on paper. It is the ungraded channel, so it inverts rather than tints: it never appears as a tinted ground beside the other four. Fuchsia holds on both grounds so it holds on either ground — `--fuchsia-600` on paper, `--fuchsia-400` on ink; every other division uses a single 500 step.
+The five hues sit 60°+ apart so no two divisions read as the same brand in a schedule, directory, or ticket list — more precisely, four hues plus one neutral. Tokens: `--brand-hinged`, `--brand-bound`, `--brand-limited`, `--brand-scripted`, `--brand-cut`, each with a `-lift` step for small type on ink. **[UN] Cut carries no hue** — ivory on ink, ink on paper. It is the ungraded channel, so it inverts rather than tints: it never appears as a tinted ground beside the other four. Fuchsia holds on both grounds so it holds on either ground — `--fuchsia-600` on paper, `--fuchsia-400` on ink; every other division uses a single 500 step. **[UN] Brand carries no hue at all and no token** — the products speak for themselves, so the mark runs ink on paper and ivory on ink, and never tints a ground, a flag, or a rule.
 
 ## Activity categories
 
@@ -50,7 +53,7 @@ Every experience is filed under one category, which determines its division and 
 
 ## Commerce and media
 
-- **Shop** — merch and drops. Sun orange accent. Carries whichever division's mark the drop belongs to; never a mark of its own.
+- **Shop** — merch and drops. Sun orange accent — the sales channel, not the maker. Lifestyle, fashion, and gear products carry the **[UN] Brand** mark; event and season drops may carry their division's mark instead.
 - **[UN] Cut** — the media arm. Publishes across all divisions under the parent voice.
 
 ## Tagline lockup — `[UN] anything goes here`
@@ -62,6 +65,34 @@ The parent slogan, set as a mark. The blank is the brand, so the blank gets set 
 **Option 3 — Active Cursor (digital and motion).** `[UN]`, then a thin vertical rule at 50% opacity in Golden Sand `#E6C687` spanning the text block with `.61em` of the tagline size on each side, then `anything goes here` in Space Mono lowercase at `.05em`, stacked two lines so the block sits square beside the anchor — a single line is too wide for mobile and video. In motion the pipe blinks on a 0.8 s loop at terminal speed, then the phrase auto-deletes and types a division name. Video overlays, Posh headers, wallet pass sub-headers, nav hover and loading states, marina signage. Avoid apparel embroidery (the pipe reads as a seam flaw), laser-engraved metal (vertical lines etch like scratches), and print billboards.
 
 Neither replaces a division lockup: the tagline states the philosophy, the suffix names the club.
+
+## Cross-surface visual rules
+
+These three rules unify the flyers, the app, and every kit. They are the difference between a system and a set of separate designs.
+
+### The dominance ratio
+
+One element per surface carries the message, and the next tier is set at **58%** of it — a third tier, where present, at **38%**. This is what makes the flyers read as posters rather than lists, and it applies to app heroes, email headers, deck openers, and signage alike. Two elements at the same size on one surface is the failure mode: it turns a statement into an inventory.
+
+### The editorial moment
+
+Instrument Serif italic, lowercase, **one line per surface, never two**. It is the only place the system speaks softly, so it is reserved for the moment that asks something of the guest or gives them something — an acceptance, an invitation, an empty state, a match ceremony. A surface with two serif lines has no editorial moment; it has a serif paragraph.
+
+### Scrim discipline
+
+The protection scrim is **never part of the grade**. Grade layers set the colour; the scrim sets legibility. Keeping them separate means a designer can strengthen type contrast on a busy photograph without altering the treatment, and it means the same grade is verifiable across every surface regardless of how much scrim each one needs.
+
+### Where imagery goes, and where it does not
+
+| Surface class | Treatment | Why |
+| --- | --- | --- |
+| Sales, acquisition, announcement | Graded | The place or the moment is the product |
+| Product in use, off-palette frames, multi-division weeks | Mono | Colour would misrepresent or collide |
+| Operational — manifests, run of show, weather holds, receipts | None | Atmosphere obstructs a guest reading a time |
+| Failure — declines, errors, voids | None | Photography on bad news reads as mockery |
+| Chrome — avatars, icons, favicons | Mono at most | A grade at 40 px is a colour cast, not a treatment |
+
+At most **two graded surfaces per session or per campaign step**. A grade that appears everywhere stops marking anything.
 
 ## Casing matrix
 

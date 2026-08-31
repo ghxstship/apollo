@@ -8,13 +8,17 @@
      mark and are never dropped, restyled, recoloured, or spaced out. There is no
      bracketless setting above 8 mm embroidery, which is not a thing software
      renders — so in this codebase there is no bracketless setting at all.
-   - Five divisions add a sentence-case suffix one word space after the closing
-     bracket: Hinged · Bound · Limited · Scripted · Cut. A division swaps the
-     accent and nothing else — never type, never surfaces. One stage, different
-     spotlights.
-   - Shop is commerce, not a division. It carries whichever division's mark the
-     drop belongs to and has no mark of its own, which is why it lives in
-     COMMERCE below and not in DIVISIONS.
+   - Six divisions add a sentence-case suffix one word space after the closing
+     bracket: Hinged · Bound · Limited · Scripted · Cut · Brand. A division
+     swaps the accent and nothing else — never type, never surfaces. One stage,
+     different spotlights. [UN] Brand (kit v2, 2026-08) carries no accent and no
+     token at all — ink on paper, ivory on ink; it never tints a ground, a flag,
+     or a rule, which is why its accent fields hold var(--text-body) rather than
+     a --brand-* token: text-body IS "ink that inverts with the theme".
+   - Shop is commerce, not a division — the sales channel, not the maker
+     (kit v2). Lifestyle, fashion, and gear products carry the [UN] Brand mark;
+     event and season drops may carry their division's mark instead. Shop keeps
+     its sun-orange accent and lives in COMMERCE below, not in DIVISIONS.
    - One handle across every division: @unhingedsocial.us. Divisions do not hold
      separate handles, so there is one HANDLE constant and no per-division field.
    - Retired wholesale: Syrius, SYNC, UN__, UNMOORED, Yacht Club, and the
@@ -62,7 +66,7 @@ export const HANDLE = "@unhingedsocial.us";
    The tuple is the enum. Deriving DivisionId from it means a new division
    cannot be added to one map and forgotten in the next — Record<DivisionId, …>
    fails the build until every map covers it. */
-export const DIVISION_IDS = ["hinged", "bound", "limited", "scripted", "cut"] as const;
+export const DIVISION_IDS = ["hinged", "bound", "limited", "scripted", "cut", "brand"] as const;
 export type DivisionId = (typeof DIVISION_IDS)[number];
 
 /* Activity categories. Every experience is filed under one, and the category
@@ -126,6 +130,20 @@ export const DIVISIONS: Record<DivisionId, Division> = {
     accentDeep: "var(--brand-cut-deep)",
     categories: ["premium"],
   },
+  /* [UN] Brand carries no hue at all and no token (brand-architecture.md, kit
+     v2) — the products speak for themselves. var(--text-body) renders ink on
+     paper and ivory on ink by construction, and the empty categories list keeps
+     it out of every hosting map: retail hosts no experiences, so
+     CATEGORY_DIVISIONS never offers it and an experience can never be filed
+     under it. */
+  brand: {
+    suffix: "Brand",
+    what: "Nautical lifestyle, fashion, and gear",
+    accent: "var(--text-body)",
+    accentLift: "var(--text-body)",
+    accentDeep: "var(--text-body)",
+    categories: [],
+  },
 };
 
 /* Flat accent map, for the common case where a component has an id and wants a
@@ -135,9 +153,10 @@ export const DIVISION_ACCENT = Object.fromEntries(
   DIVISION_IDS.map((id) => [id, DIVISIONS[id].accent]),
 ) as Record<DivisionId, string>;
 
-/* Commerce and the sixth accent. Deliberately NOT in DIVISIONS: a Shop drop
-   carries the mark of the division it belongs to, so anything iterating the
-   divisions to render marks must not pick this up. */
+/* Commerce. Deliberately NOT in DIVISIONS: the Shop is the sales channel, not
+   the maker (kit v2) — products carry the [UN] Brand mark, and an event or
+   season drop may carry its division's mark instead, so anything iterating the
+   divisions to render marks must not pick this up as a seventh. */
 export const COMMERCE = {
   shop: { label: "Shop", accent: "var(--brand-shop)" },
 } as const;

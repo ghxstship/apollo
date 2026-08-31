@@ -4,7 +4,7 @@
 export interface WordmarkProps{
   /** sm 16 / md 20 / lg 36, or a px number. */
   size?:'sm'|'md'|'lg'|number;
-  /** Division suffix in Space Mono, sentence case: 'Hinged' (default), 'Bound', 'Limited', 'Scripted', 'Cut'. Pass null for the bare [UN] parent anchor (System A). */
+  /** Division suffix in Space Mono, sentence case: 'Hinged' (default), 'Bound', 'Limited', 'Scripted', 'Cut', 'Brand'. Pass null for the bare [UN] parent anchor (System A). */
   suffix?:'Hinged'|'Bound'|'Limited'|'Scripted'|'Cut'|string|null;
   /** Optional mono sub line under the lockup (e.g. 'SINGLES SOCIAL CLUB'). Null by default. */
   sub?:string|null;

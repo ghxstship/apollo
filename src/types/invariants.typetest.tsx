@@ -9,7 +9,7 @@
 
    What is proved:
    - editorial and caps are two variants of ONE setting, not a combination
-   - the suffix is one of the five divisions and Shop is not among them
+   - the suffix is one of the six divisions and Shop is not among them
    - there is no prop that takes the brackets off the anchor
    - an indoor_only element in the activity phase must name its substitute
 
@@ -28,9 +28,10 @@ export const ok1 = <Wordmark suffix="Hinged" />;
 export const ok2 = <Wordmark suffix={null} />;
 export const ok3 = <Wordmark suffix="Bound" editorial />;
 export const ok4 = <Wordmark suffix="Cut" caps />;
+export const ok5 = <Wordmark suffix="Brand" />;
 // @ts-expect-error editorial and caps are the two variants of ONE setting
 export const bad1 = <Wordmark suffix="Hinged" editorial caps />;
-// @ts-expect-error a sixth division is not a prop value
+// @ts-expect-error Shop is commerce, not a division — a seventh suffix is a brand decision
 export const bad2 = <Wordmark suffix="Shop" />;
 // @ts-expect-error the anchor has no prop that removes it, and no `bare` escape
 export const bad3 = <Wordmark anchor={false} />;

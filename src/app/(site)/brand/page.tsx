@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 const BOILER =
-  "[UN] is a global nautical social club. The anchor experience is a weekly seven-hour sailing out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Five divisions share one anchor and swap the accent only: [UN] Hinged, [UN] Bound, [UN] Limited, [UN] Scripted and [UN] Cut. Membership is by application or invitation.";
+  "[UN] is a global nautical social club. The anchor experience is a weekly seven-hour sailing out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Six divisions share one anchor and swap the accent only: [UN] Hinged, [UN] Bound, [UN] Limited, [UN] Scripted, [UN] Cut and [UN] Brand. Membership is by application or invitation.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--scene-golden)",
@@ -39,7 +39,8 @@ const IVORIES: Array<[string, string, string, boolean]> = [
   ["Ivory 100", "#F1F1ED", "type on ink", false],
   ["Ivory 500", "#BCBCB3", "secondary", false],
 ];
-/* The house accent, then the five division hues. Division hues name a club and
+/* The house accent, then the division hues — five of them: [UN] Brand carries
+   no hue and no token, so it has no swatch to copy. Division hues name a club and
    nothing else: operational state — Five-A phase, run-of-show position,
    procurement status — is set in numerals on the greyscale, never in one of
    these. Status colours are the only exception and override them. */
@@ -75,7 +76,7 @@ const GRADIENTS: Array<[string, string, string]> = [
 const TYPE_VOICES: Array<[string, string, string, string, string]> = [
   ["var(--font-display)", "Anton", "Display and headlines, 22px and up only, set to caps by text-transform so the copy stays editable and translatable. Below 22px a heading is Archivo 700.", "https://fonts.google.com/specimen/Anton", "FONTS.GOOGLE.COM/ANTON"],
   ["var(--font-body)", "Archivo", "Body and UI. Three weights, 400 · 500 · 700, and no others. Sentence case everywhere.", "https://fonts.google.com/specimen/Archivo", "FONTS.GOOGLE.COM/ARCHIVO"],
-  ["var(--font-mono)", "Space Mono", "Labels, data, and the division suffix at 0.77 of the bracket size. Coordinates, times, counts.", "https://fonts.google.com/specimen/Space+Mono", "FONTS.GOOGLE.COM/SPACE+MONO"],
+  ["var(--font-mono)", "Space Mono", "Labels, data, and the division suffix at 1.27 of the bracket size — cap-height matched to the Anton brackets. Coordinates, times, counts.", "https://fonts.google.com/specimen/Space+Mono", "FONTS.GOOGLE.COM/SPACE+MONO"],
   ["var(--font-editorial)", "Instrument Serif", "Editorial only — campaign headlines and deck openers, italic, sentence case. Never in UI, never in navigation.", "https://fonts.google.com/specimen/Instrument+Serif", "FONTS.GOOGLE.COM/INSTRUMENT+SERIF"],
 ];
 
@@ -137,7 +138,7 @@ export default function BrandKitPage() {
             </div>
             <div className="bk-lock bk-lock--ink">
               <Wordmark size={36} suffix="Hinged" sub="SINGLES SOCIAL CLUB" inverse />
-              <span className="cap">SYSTEM B · SUFFIX SPACE MONO 700 AT 0.77 OF THE BRACKET · SUB LINE MONO, .42EM</span>
+              <span className="cap">SYSTEM B · SUFFIX SPACE MONO 700 AT 1.27 OF THE BRACKET, CAP-HEIGHT MATCHED · SUB LINE MONO, .42EM</span>
             </div>
           </div>
           <ul className="bk-rules">
@@ -256,12 +257,18 @@ export default function BrandKitPage() {
             are type-set: the wordmark and the Episodes masthead. One handle
             covers every division: {HANDLE}.
           </p>
-          <div className="bk-swlbl">The five divisions</div>
+          <div className="bk-swlbl">The six divisions</div>
           <div className="bk-facts">
             {DIVISION_IDS.map((id) => (
               <div className="row" key={id}>
                 <span className="k">{lockup(id)}</span>
-                <span className="bk-rooms__role">{DIVISIONS[id].what} · {DIVISIONS[id].categories.join(" · ")}</span>
+                <span className="bk-rooms__role">
+                  {/* [UN] Brand hosts no experiences — no categories to list,
+                      and a dangling separator is a word for a missing value. */}
+                  {DIVISIONS[id].categories.length > 0
+                    ? `${DIVISIONS[id].what} · ${DIVISIONS[id].categories.join(" · ")}`
+                    : DIVISIONS[id].what}
+                </span>
               </div>
             ))}
           </div>
