@@ -46,10 +46,8 @@
 /* — body and label scale — */
 --text-body-l:var(--text-lg);
 --text-body-s:var(--text-sm);
---text-eyebrow:var(--text-xs);
---text-eyebrow-s:var(--text-2xs);
---track-eyebrow:var(--tracking-label);
---track-button:var(--tracking-label);
+/* The eyebrow text/track pair and the button track alias are retired — no
+   surface read them any more, which is this file's definition of done. */
 --text-data:var(--text-xs);
 --text-data-s:var(--text-2xs);
 /* EXCEPTION 1: mono data tracking. The ladder's nearest step is --tracking-dense
@@ -145,7 +143,9 @@
 --action-primary-hover:var(--noir-950);
 --action-on-primary:var(--ivory-50);
 --action-accent:var(--gradient-accent); /* @kind color */
---action-accent-hover:var(--gradient-accent); /* @kind color */
+/* The accent action's hover alias is retired — nothing read it, and its value
+   was wrong anyway (the same gradient as rest, a hover that changed nothing).
+   The gold button hovers on the accent hover step and presses one step darker. */
 --action-on-accent:var(--on-accent);
 
 /* — washes — */
@@ -160,10 +160,9 @@
 --shadow-float:var(--shadow-card);
 --glow-cyan:var(--shadow-glow-accent); /* @kind shadow */
 --veil:var(--surface-overlay);
-/* EXCEPTION 2: consumed as a bare length by `filter:blur(var(--blur-veil))`.
-   tokens.css only ships --blur-glass, which is a complete blur() function and
-   cannot be nested inside another one. */
---blur-veil:14px;
+/* EXCEPTION 2 retired: the veil now consumes var(--blur-glass) whole
+   (backdrop-filter takes a filter list, so the complete blur() function drops
+   in directly) — the bare-length twin --blur-veil came out with it. */
 --grain:var(--texture-grain); /* @kind other */
 --grain-hero:.5; /* @kind other */
 --grain-card:.25; /* @kind other */

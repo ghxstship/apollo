@@ -65,7 +65,11 @@ const DIVISION_SWATCHES: Array<[string, string, string, boolean]> = [
    worse than no reference. Night and rose are shown too; they were defined,
    documented in readme as imagery placeholders, and rendered nowhere. */
 const GRADIENTS: Array<[string, string, string]> = [
-  ["Outrun", "var(--gradient-accent)", "the canonical hero ground"],
+  /* Two different tokens, and the row used to conflate them: --gradient-accent
+     is the acid pair for hero rules and small fills; --gradient-outrun is the
+     amber→magenta→orchid→void synthwave scene, the canonical hero ground. */
+  ["Outrun", "var(--gradient-outrun)", "the canonical hero ground"],
+  ["Accent", "var(--gradient-accent)", "hero rules and small fills only"],
   ["Scene golden", "var(--scene-golden)", "imagery TK — golden hour"],
   ["Scene biscayne", "var(--scene-biscayne)", "imagery TK — on the water"],
   ["Scene noir", "var(--scene-noir)", "type-led surfaces — stubs, documents, notices"],

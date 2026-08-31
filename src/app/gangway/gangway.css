@@ -17,7 +17,7 @@
 .gw-theme .ls-themetog:hover,.gw-theme .ls-themetog:focus-within{border-color:var(--line);background:var(--surface-card)}
 .gw-theme .ls-themetog button.on{background:var(--wash-ink-2);color:var(--text-1)}
 .gw-panel{max-width:400px;width:100%;margin:auto}
-.gw-h{font-family:var(--font-display);font-size:var(--text-display-s)}
+.gw-h{font-family:var(--font-display);font-size:var(--text-display-s);text-transform:uppercase}
 .gw-sub{font-size:var(--text-sm);color:var(--text-2);margin-top:8px}
 .gw-stack{display:flex;flex-direction:column;gap:16px;margin-top:28px}
 .gw-sent{border:1px solid var(--line-faint);background:var(--surface-card);padding:22px;margin-top:28px}

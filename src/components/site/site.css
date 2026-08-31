@@ -167,7 +167,7 @@
 .ev-fleet{margin-top:48px}
 .ev-fleet__row{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:baseline;padding:14px 0;border-top:1px solid var(--line-faint)}
 .ev-fleet__row:last-of-type{border-bottom:1px solid var(--line-faint)}
-.ev-fleet__name{font-family:var(--font-display);font-size:var(--text-lg)}
+.ev-fleet__name{font-family:var(--font-sans);font-weight:700;font-size:var(--text-lg)}
 .ev-fleet__spec{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
 @media (max-width:640px){.ev-fleet__row{grid-template-columns:1fr;gap:4px}}
 .ev-frames{margin-top:48px}
@@ -250,7 +250,7 @@
 .gl-tile__bg:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply}
 .gl-tile:after{content:"";position:absolute;inset:0;background:var(--scrim);opacity:.85}
 .gl-tile__cap{position:absolute;left:14px;right:14px;bottom:12px;z-index:1;color:var(--bone)}
-.gl-tile__cap b{display:block;font-family:var(--font-display);font-weight:400;font-size:16px}
+.gl-tile__cap b{display:block;font-family:var(--font-sans);font-weight:700;font-size:16px}
 .gl-tile__cap span{font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--text-on-media);text-transform:uppercase}
 .gl-tile__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .gl-tile--frame:after{opacity:.45}

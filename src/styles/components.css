@@ -14,6 +14,7 @@
 .ls-btn--primary.ls-btn--inverse:hover{background:var(--sail)}
 .ls-btn--gold{background:var(--action-accent);color:var(--action-on-accent);box-shadow:var(--shadow-glow-accent)}
 .ls-btn--gold:hover{background:var(--accent-hover)}
+.ls-btn--gold:active{background:var(--accent-press)}/* §Hover/Press: "Press: darken one step" */
 .ls-btn--outline{background:transparent;color:var(--text-1);border-color:var(--line-strong)}
 .ls-btn--outline:hover{border-color:var(--ink);background:var(--wash-ink)}
 .ls-btn--outline.ls-btn--inverse{color:var(--text-inverse-1);border-color:var(--line-inverse-strong)}
@@ -283,7 +284,7 @@
 /* — Dialog — */
 /* overflow-y:auto so a tall dialog on a short phone can still be scrolled
    to its own footer, rather than the footer being unreachable. */
-.ls-dialog-veil{position:fixed;inset:0;background:var(--veil);backdrop-filter:blur(var(--blur-veil));-webkit-backdrop-filter:blur(var(--blur-veil));display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;z-index:1000;animation:ls-veil-in var(--dur-2) var(--ease-swell)}
+.ls-dialog-veil{position:fixed;inset:0;background:var(--veil);backdrop-filter:var(--blur-glass);-webkit-backdrop-filter:var(--blur-glass);display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;z-index:1000;animation:ls-veil-in var(--dur-2) var(--ease-swell)}
 .ls-dialog{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);box-shadow:var(--shadow-overlay);width:100%;display:flex;flex-direction:column;animation:ls-dialog-in var(--dur-2) var(--ease-out);font-family:var(--font-sans);max-height:85vh;overflow:auto}
 @keyframes ls-veil-in{from{opacity:0}to{opacity:1}}
 @keyframes ls-dialog-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}

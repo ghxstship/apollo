@@ -119,7 +119,8 @@ export default async function RadarPage() {
           <p className="rdr-note">
             Radar is live aboard only, and dark everywhere else. It is not
             something you scroll at home. It opens at 17:15 on the sailing, on
-            open water, and closes at 17:30.
+            open water, and closes at 17:30. The Match of the Day is called at
+            sunset, on deck.
           </p>
         </div>
       </div>

@@ -11,7 +11,7 @@
 .pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:950;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--line);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column}
 .pr-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-faint)}
-.pr-head b{font-family:var(--font-display);font-weight:400;font-size:var(--text-md)}
+.pr-head b{font-family:var(--font-sans);font-weight:700;font-size:var(--text-md)}
 .pr-head span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3)}
 .pr-seam{height:3px;background:var(--lava);flex:none}
 .pr-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
@@ -24,7 +24,7 @@
 .pr-card{align-self:flex-start;width:100%;border:1px solid var(--line);background:var(--surface-page)}
 .pr-card__seam{height:4px;background:var(--lava)}
 .pr-card__in{padding:14px 16px}
-.pr-card__t{font-family:var(--font-display);font-size:var(--text-md)}
+.pr-card__t{font-family:var(--font-sans);font-weight:700;font-size:var(--text-md)}
 .pr-card__m{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);margin-top:6px}
 .pr-card__acts{display:flex;gap:8px;margin-top:12px}
 .pr-typing{align-self:flex-start;display:inline-flex;gap:4px;padding:12px 14px;background:var(--surface-tint)}

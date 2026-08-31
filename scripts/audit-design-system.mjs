@@ -146,19 +146,77 @@ function checkScale() {
 /* ── check: display family floor + caps ───────────────────────────────────── */
 /* §Type: "Anton for display ≥22px, ALL CAPS always (via text-transform) …
    below 22px headings are Archivo 700, sentence case."
-   §Capitalization: "Set uppercase with text-transform, not typed caps." */
+   §Capitalization: "Set uppercase with text-transform, not typed caps."
+
+   The size may arrive as a TOKEN, not a literal — `font-size:var(--text-md)`
+   set --font-display at 16px and the literal-px reading passed it, the same
+   under-report that made the previous checker (check-type-system.mjs) miss a
+   36px Anton heading and say clean. So sizes resolve through the declared
+   custom properties, following aliases ACROSS stylesheets (--text-display-m
+   lives in compat.css as var(--text-3xl), whose px lives in tokens.css). A
+   font-size this resolver cannot bottom out is FLAGGED, not skipped: an
+   unresolvable size is exactly where the next off-ladder value will hide. */
+
+/* --name -> px, resolved across every stylesheet with alias-following.
+   Where a name is declared more than once (themes, compat), the SMALLEST px
+   wins — the floor check cares about the lowest size a rule can render. */
+function buildPxResolver() {
+  const decls = new Map(); /* name -> [raw values] */
+  for (const p of CSS) {
+    for (const line of lines(p)) {
+      for (const m of line.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;}]+)/gi)) {
+        if (!decls.has(m[1])) decls.set(m[1], []);
+        decls.get(m[1]).push(m[2].trim());
+      }
+    }
+  }
+  const resolve = (name, depth = 0) => {
+    if (depth > 4 || !decls.has(name)) return null;
+    let min = null;
+    for (const raw of decls.get(name)) {
+      let px = null;
+      const lit = raw.match(/^([\d.]+)px$/);
+      const alias = raw.match(/^var\(\s*(--[a-z0-9-]+)\s*\)$/);
+      if (lit) px = Number(lit[1]);
+      else if (alias) px = resolve(alias[1], depth + 1);
+      if (px !== null && (min === null || px < min)) min = px;
+    }
+    return min;
+  };
+  return resolve;
+}
 
 function checkDisplay() {
   const below = [], nocaps = [];
+  const px = buildPxResolver();
   for (const p of APP_CSS) {
     lines(p).forEach((line, i) => {
       if (!/font-family:\s*var\(--font-display\)|font:[^;}]*var\(--font-display\)/.test(line)) return;
       const why = exempt(line);
       const rec = { file: rel(p), line: i + 1, exempt: why, text: line.trim().slice(0, 120) };
-      const px = [...line.matchAll(/font-size:\s*(?:clamp\([^)]*\)|[^;}]*?)([\d.]+)px/g)].map((m) => Number(m[1]));
-      const clampLow = line.match(/font-size:\s*clamp\(\s*([\d.]+)px/);
-      const floor = clampLow ? Number(clampLow[1]) : (px.length ? Math.min(...px) : null);
-      if (floor !== null && floor < ANTON_FLOOR) below.push({ ...rec, size: floor });
+      /* every font-size the line sets: longhand, or the size slot of the
+         `font:` shorthand (before the optional /line-height) */
+      const sizeExprs = [
+        ...[...line.matchAll(/font-size:\s*([^;}]+)/g)].map((m) => m[1]),
+        ...[...line.matchAll(/(?:^|[;{\s])font:\s*(?:italic\s+)?(?:\d{3}\s+)?(clamp\([^)]*\)|var\(--[a-z0-9-]+\)|[\d.]+px)/g)].map((m) => m[1]),
+      ];
+      for (const expr of sizeExprs) {
+        const sizes = [];
+        let unresolved = null;
+        for (const m of expr.matchAll(/([\d.]+)px/g)) sizes.push(Number(m[1]));
+        for (const m of expr.matchAll(/var\(\s*(--[a-z0-9-]+)\s*\)/g)) {
+          const v = px(m[1]);
+          if (v === null) unresolved = m[1];
+          else sizes.push(v);
+        }
+        if (unresolved && !sizes.length) {
+          below.push({ ...rec, size: `unresolvable ${unresolved}` });
+          continue;
+        }
+        if (!sizes.length) continue;
+        const floor = Math.min(...sizes);
+        if (floor < ANTON_FLOOR) below.push({ ...rec, size: floor });
+      }
       if (!/text-transform:\s*uppercase/.test(line)) nocaps.push(rec);
     });
   }
@@ -206,12 +264,43 @@ function checkMotion() {
 
 /* ── check: token consumers ───────────────────────────────────────────────── */
 /* A published custom property with no reader is either unwired UI or dead
-   vocabulary. Either way the owner should know which. */
+   vocabulary. Either way the owner should know which.
+
+   Some declared names are VOCABULARY the handoff publishes on purpose, and an
+   app consumer is not expected — for the physical-goods accents one would be a
+   violation in itself. Each entry below quotes the clause that sanctions it, in
+   the same spirit as ds-exempt: a documented decision, echoed in the report,
+   never a silent skip. Anything not matched here that has no reader is still a
+   finding. */
+const TOKEN_VOCABULARY = [
+  { match: /^--(noir|ivory|acid|magenta|orchid|amber|grid|fuchsia|terracotta)-\d+$/,
+    clause: "§Color publishes full ramps; the app reads steps through the semantic aliases (--accent-*, --brand-*, --text-*, --surface-*), and the kit's artwork reads the rest" },
+  { match: /^--(rose|sea|sun)-\d+$|^--brand-(social|dating|yacht)$/,
+    clause: "readme §Index: 'legacy ramps · retained for apollo API compatibility' / 'legacy aliases'" },
+  { match: /^--(golden-sand|crimson-deck|saltwater-blue|deep-offshore|sunbleached-oxford)$/,
+    clause: "§Color: 'sanctioned for made objects only … never for screen UI' — a src consumer would itself be the violation" },
+  { match: /^--(void|neon-canvas)$/,
+    clause: "tokens/colors.css: 'synthwave grounds — for gradient scenes and motion only; page surfaces stay paper-first greyscale'" },
+  { match: /^--(space-20|radius-xs|radius-lg|dur-slow)$/,
+    clause: "§Spacing/§Borders/§Motion publish complete scales — an unconsumed step is published range, not debt" },
+  { match: /^--type-(display|editorial)$/,
+    clause: "composite presets the kit's own templates set; app surfaces compose longhand from the ladder" },
+  { match: /^--text-inverse$/,
+    clause: "counterpart of --text-body, correct only on grounds that flip with the theme — every current ink ground is FIXED ink and correctly reads the ivory ramp instead" },
+];
 
 function checkTokens() {
   const declared = new Map(); /* name -> file */
   for (const p of CSS.filter(isTokenFile).concat(CSS.filter((f) => /compat\.css$/.test(f)))) {
-    lines(p).forEach((line, i) => {
+    /* Strip block comments BEFORE scanning for declarations, preserving line
+       breaks so reported line numbers stay true — a comment that says
+       "--track-button: retired" is prose about a token, not a declaration of
+       one, and a checker that fires on the explanation invites the fix of
+       rewording the explanation. (Consumer scanning below stays unstripped on
+       purpose: a var() in a comment can only under-report an orphan, never
+       invent one, and the strings scan in TSX has no comment grammar at all.) */
+    const stripped = readFileSync(p, "utf8").replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+    stripped.split("\n").forEach((line, i) => {
       for (const m of line.matchAll(/(--[a-z0-9-]+)\s*:/gi)) {
         if (!declared.has(m[1])) declared.set(m[1], `${rel(p)}:${i + 1}`);
       }
@@ -224,9 +313,12 @@ function checkTokens() {
     /* a token referenced by name from JS/TSX (style objects, getComputedStyle) */
     for (const m of src.matchAll(/["'`](--[a-z0-9-]+)["'`]/gi)) used.add(m[1]);
   }
-  const orphans = [...declared].filter(([n]) => !used.has(n)).map(([n, where]) => ({ token: n, declaredAt: where }));
+  const orphans = [...declared].filter(([n]) => !used.has(n)).map(([n, where]) => {
+    const vocab = TOKEN_VOCABULARY.find((v) => v.match.test(n));
+    return { token: n, declaredAt: where, exempt: vocab ? vocab.clause : null };
+  });
   return { name: "tokens", rule: "every declared custom property has at least one var() consumer",
-    total: declared.size, hits: orphans, exempted: [] };
+    total: declared.size, hits: orphans.filter((o) => !o.exempt), exempted: orphans.filter((o) => o.exempt) };
 }
 
 /* ── check: named vocabulary ──────────────────────────────────────────────── */
@@ -262,7 +354,7 @@ if (process.argv.includes("--json")) {
     console.log(`        ${c.rule}`);
     for (const h of c.hits.slice(0, 40)) {
       const where = h.file ? `${h.file}:${h.line}` : h.token || h.term;
-      const detail = h.weight ?? (h.sizes ? h.sizes.join(",") + "px" : "") ;
+      const detail = h.weight ?? (h.sizes ? h.sizes.join(",") + "px" : h.size !== undefined ? `${h.size}${typeof h.size === "number" ? "px" : ""}` : "");
       console.log(`        · ${where}${detail ? ` — ${detail}` : ""}${h.why ? ` — ${h.why}` : ""}${h.declaredAt ? ` — declared ${h.declaredAt}` : ""}`);
     }
     if (c.hits.length > 40) console.log(`        … and ${c.hits.length - 40} more`);

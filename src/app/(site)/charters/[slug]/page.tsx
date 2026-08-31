@@ -22,6 +22,10 @@ const FAQS: Record<string, Array<[string, string]>> = {
       "Sunscreen, shoes that grip, and a layer for the wind. Life vests, wool layers on the cold runs, and coffee below deck are the club's doing.",
     ],
     [
+      "What do I wear?",
+      "Riviera Chic — linen over logos, salt-fade colours, nothing that fears spray. Shoes come off at the gangway; the deck decides the rest.",
+    ],
+    [
       "What if the weather turns?",
       "Holds are called by 18:00 the night before — a word, not an apology. Your pass carries forward in full.",
     ],
