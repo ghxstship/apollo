@@ -14,7 +14,8 @@
     "e2e": "node scripts/e2e-suite.mjs",
     "sms:register": "node scripts/register-sms-templates.mjs",
     "migrations:mirror": "node scripts/mirror-migrations.mjs",
-    "migrations:replay": "node scripts/replay-migrations.mjs"
+    "migrations:replay": "node scripts/replay-migrations.mjs",
+    "check:type": "node scripts/check-type-system.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.114.0",

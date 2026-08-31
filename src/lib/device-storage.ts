@@ -28,9 +28,23 @@ export const GALLEY_QUEUE_KEY = "un-galley-queue";
    QUEUES are the only record that somebody walked aboard, or asked for
    something at the galley. Renaming without carrying them over would discard
    unsent work at the moment of a deploy, silently. */
-const LEGACY_GANGWAY_QUEUE_KEY = "syrius-gangway-queue";
-const LEGACY_GANGWAY_ROSTER_PREFIX = "syrius-gangway-roster:";
-const LEGACY_GALLEY_QUEUE_KEY = "syrius-galley-queue";
+/* THREE generations, not two. Keys were `lyre-*`, then `syrius-*`, now `un-*`,
+   and naming only the middle one left a Lyre-era phone invisible to every
+   function here: unflushedCount returned 0 while unsent check-ins sat on the
+   device, so the sign-out dialog never appeared and an operator was told it was
+   safe to end a session that held the only record a person walked aboard. Its
+   rosters — names, member numbers, boarding codes — survived sign-out for the
+   same reason, and because literalCode maps LS- onto the current prefix those
+   stranded codes still open the gangway today. The leak is live, not
+   historical.
+
+   The gangway acknowledges three brand eras of codes. Device storage now
+   acknowledges the same three. */
+const LEGACY_QUEUE_KEYS = {
+  gangway: ["syrius-gangway-queue", "lyre-gangway-queue"],
+  galley: ["syrius-galley-queue", "lyre-galley-queue"],
+} as const;
+const LEGACY_ROSTER_PREFIXES = ["syrius-gangway-roster:", "lyre-gangway-roster:"] as const;
 
 /* Move anything left under the old names, once, before either key is read.
    Appends rather than overwrites: a device that has already written under the
@@ -38,9 +52,9 @@ const LEGACY_GALLEY_QUEUE_KEY = "syrius-galley-queue";
 export function adoptLegacyDeviceStorage(): void {
   try {
     for (const [legacy, current] of [
-      [LEGACY_GANGWAY_QUEUE_KEY, GANGWAY_QUEUE_KEY],
-      [LEGACY_GALLEY_QUEUE_KEY, GALLEY_QUEUE_KEY],
-    ] as const) {
+      ...LEGACY_QUEUE_KEYS.gangway.map((k) => [k, GANGWAY_QUEUE_KEY] as const),
+      ...LEGACY_QUEUE_KEYS.galley.map((k) => [k, GALLEY_QUEUE_KEY] as const),
+    ]) {
       const raw = localStorage.getItem(legacy);
       if (raw === null) continue;
       const old = JSON.parse(raw);
@@ -54,7 +68,7 @@ export function adoptLegacyDeviceStorage(): void {
     /* Rosters rebuild from the server, so they are dropped rather than moved —
        but they ARE dropped, because nothing else would ever remove them. */
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(LEGACY_GANGWAY_ROSTER_PREFIX)) localStorage.removeItem(key);
+      if (LEGACY_ROSTER_PREFIXES.some((p) => key.startsWith(p))) localStorage.removeItem(key);
     }
   } catch {
     /* storage blocked or a malformed blob — never let this stop a page loading */
@@ -71,7 +85,7 @@ export function clearCachedRosters(): number {
       /* Both names. A phone that has not loaded since the rename still holds
          boarding codes under the old prefix, and sign-out is what removes
          them. */
-      if (key.startsWith(GANGWAY_ROSTER_PREFIX) || key.startsWith(LEGACY_GANGWAY_ROSTER_PREFIX)) {
+      if (key.startsWith(GANGWAY_ROSTER_PREFIX) || LEGACY_ROSTER_PREFIXES.some((p) => key.startsWith(p))) {
         localStorage.removeItem(key);
         removed++;
       }
@@ -100,8 +114,8 @@ export function unflushedCount(): number {
       /* Counted too: a device that has not run the adoption still has unsent
          stamps under the old name, and reporting zero would tell an operator
          it was safe to end the session. */
-      LEGACY_GANGWAY_QUEUE_KEY,
-      LEGACY_GALLEY_QUEUE_KEY,
+      ...LEGACY_QUEUE_KEYS.gangway,
+      ...LEGACY_QUEUE_KEYS.galley,
     ]) {
       const raw = localStorage.getItem(key);
       const parsed = raw ? JSON.parse(raw) : [];

@@ -24,7 +24,7 @@
 .ws-menu{position:fixed;inset:0;z-index:920;background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px}
 .ws-menu__top{display:flex;align-items:center;justify-content:space-between}
 .ws-menu__links{display:flex;flex-direction:column;gap:4px;margin-top:48px}
-.ws-menu__links a{font-family:var(--font-display);font-size:var(--text-3xl);color:var(--bone);padding:10px 0;border-bottom:1px solid var(--line-inverse-faint)}
+.ws-menu__links a{font-family:var(--font-display);font-size:var(--text-3xl);color:var(--bone);padding:10px 0;border-bottom:1px solid var(--line-inverse-faint);text-transform:uppercase}
 .ws-menu__links a:hover{color:var(--bone);text-decoration:none}
 .ws-menu__base{margin-top:auto;display:flex;flex-direction:column;gap:20px}
 .ws-menu__coords{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3);text-transform:uppercase}
@@ -73,10 +73,10 @@
 .ws-phead .ls-eyebrow{color:var(--gold-deep);margin-bottom:16px;display:block}
 .ws-phead__sub{color:var(--text-2);margin-top:16px;max-width:52ch}
 /* the tagline is lockup-adjacent only — it is the view's single accent */
-.ws-phead__tag{font-family:var(--font-display);font-size:22px;margin-top:14px;background:var(--lava);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
+.ws-phead__tag{font-family:var(--font-display);font-size:22px;margin-top:14px;background:var(--lava);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content;text-transform:uppercase}
 .ws-ledger-row{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:22px 0;border-top:1px solid var(--line-faint)}
 .ws-ledger-row:last-of-type{border-bottom:1px solid var(--line-faint)}
-.ws-ledger-row__t{font-family:var(--font-display);font-size:var(--text-xl)}
+.ws-ledger-row__t{font-family:var(--font-display);font-size:var(--text-xl);text-transform:uppercase}
 .ws-ledger-row__m{display:flex;gap:8px;margin-top:6px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);flex-wrap:wrap;text-transform:uppercase}
 .ws-ledger-row__body{font-size:var(--text-xs);color:var(--text-2);margin-top:8px;max-width:64ch}
 @media (max-width:640px){.ws-ledger-row{grid-template-columns:1fr}}
@@ -112,7 +112,7 @@
 .ws-dp-row{display:grid;grid-template-columns:110px 1fr auto;gap:24px;padding:22px 0;border-bottom:1px solid var(--line-faint);align-items:baseline}
 .ws-dp-row:first-of-type{border-top:1px solid var(--line-faint)}
 .ws-dp-row__d{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
-.ws-dp-row__t{font-family:var(--font-display);font-size:22px;transition:color var(--dur-1) var(--ease-swell)}
+.ws-dp-row__t{font-family:var(--font-display);font-size:22px;transition:color var(--dur-1) var(--ease-swell);text-transform:uppercase}
 .ws-dp-row:hover .ws-dp-row__t{color:var(--aegean)}
 .ws-dp-row__dek{font-size:var(--text-xs);color:var(--text-2);margin-top:4px;max-width:60ch}
 @media (max-width:640px){.ws-dp-row{grid-template-columns:1fr;gap:6px}}
@@ -130,7 +130,7 @@
 .ws-vrow:last-of-type{border-bottom:1px solid var(--line-faint)}
 .ws-vrow__date{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase}
 .ws-vrow__date b{display:block;font-size:var(--text-sm);font-weight:400;color:var(--text-1)}
-.ws-vrow__title{font-family:var(--font-display);font-size:var(--text-2xl);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:color var(--dur-1) var(--ease-swell)}
+.ws-vrow__title{font-family:var(--font-display);font-size:var(--text-2xl);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:color var(--dur-1) var(--ease-swell);text-transform:uppercase}
 .ws-vrow:hover .ws-vrow__title{color:var(--aegean)}
 .ws-vrow__eyebrow{color:var(--gold-deep);display:block;margin-bottom:6px}
 .ws-vrow__meta{display:flex;gap:8px;margin-top:8px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);flex-wrap:wrap;text-transform:uppercase}
@@ -206,7 +206,7 @@
 .ws-plans__cell--span{grid-column:2 / -1}
 .ws-plans__row--head{padding:16px 0 10px;border-bottom:1px solid var(--line-strong)}
 .ws-plans__th{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
-.ws-plans__label b{font-family:var(--font-display);font-weight:400;font-size:22px;display:inline-block;margin-right:10px}
+.ws-plans__label b{font-family:var(--font-display);font-weight:400;font-size:22px;display:inline-block;margin-right:10px;text-transform:uppercase}
 .ws-plans__label span{display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:4px;max-width:22ch}
 .ws-plans__cell{display:flex;flex-direction:column;gap:5px}
 .ws-plans__tier{display:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}

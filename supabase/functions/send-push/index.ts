@@ -76,7 +76,7 @@ Deno.serve(async (req: Request) => {
       const payload = JSON.stringify({
         title: row.title,
         body: row.body ?? "",
-        url: row.url ?? "/word",
+        url: row.url ?? "/inbox",
       });
       let ok = false;
       for (const s of subs) {

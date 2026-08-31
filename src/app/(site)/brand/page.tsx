@@ -56,11 +56,20 @@ const DIVISION_SWATCHES: Array<[string, string, string, boolean]> = [
   ["Scripted", "#4361EE", "grid cobalt — content series", true],
   ["Cut", "#B5179E", "laser fuchsia — the ungraded channel", true],
 ];
+/* The swatches read the TOKENS rather than restating their values. They used to
+   carry the gradient inline, which meant this page — the reference for what a
+   scene looks like — showed something the token does not produce: every
+   --scene-* is layered over var(--texture-grain), and the literals here had no
+   grain in them. A reference that can drift from the thing it documents is
+   worse than no reference. Night and rose are shown too; they were defined,
+   documented in readme as imagery placeholders, and rendered nowhere. */
 const GRADIENTS: Array<[string, string, string]> = [
-  ["Outrun", "linear-gradient(180deg,#FF8C00 0%,#F72585 45%,#7209B7 78%,#0A0915 100%)", "the canonical hero ground"],
-  ["Scene golden", "linear-gradient(180deg,#FFB454 0%,#FF8C00 26%,#F72585 62%,#0A0915 100%)", "imagery TK — golden hour"],
-  ["Scene biscayne", "linear-gradient(180deg,#7B93F4 0%,#4361EE 34%,#7209B7 70%,#0A0915 100%)", "imagery TK — on the water"],
-  ["Scene noir", "linear-gradient(165deg,#D6D6D0 0%,#8A8A85 38%,#333333 75%,#141414 100%)", "type-led surfaces — stubs, documents, notices"],
+  ["Outrun", "var(--gradient-accent)", "the canonical hero ground"],
+  ["Scene golden", "var(--scene-golden)", "imagery TK — golden hour"],
+  ["Scene biscayne", "var(--scene-biscayne)", "imagery TK — on the water"],
+  ["Scene noir", "var(--scene-noir)", "type-led surfaces — stubs, documents, notices"],
+  ["Scene night", "var(--scene-night)", "imagery TK — after dark"],
+  ["Scene rose", "var(--scene-rose)", "imagery TK — the shore rooms"],
 ];
 
 const TYPE_VOICES: Array<[string, string, string, string, string]> = [

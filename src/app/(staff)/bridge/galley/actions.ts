@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { voiceWith } from "@/lib/errors";
-import { memberMark, memberNumberCandidates } from "@/lib/membership";
+import { memberMark, memberNumberFilter, memberNumberTail } from "@/lib/membership";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
 export type LookupResult = {
@@ -15,16 +15,18 @@ export async function lookupMember(memberNo: string): Promise<LookupResult> {
   if (!staffId) return { error: ERR_STAFF };
   const code = memberNo.trim().toUpperCase();
   if (!code) return { error: "Key the number first." };
-  /* The card now reads "Nº 0047" and the column still says the retired prefix
-     plus the digits, so what a crew member types no longer matches what is
-     stored. Both forms are tried — the bare digits as a suffix match — or the
-     till stops finding members the moment the card face changed. */
-  const [literal, suffix] = memberNumberCandidates(code);
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, member_no, tier")
-    .or(`member_no.ilike.${literal},member_no.ilike.${suffix}`)
-    .maybeSingle();
+    /* The tail is the member number; the letters in front are whatever the club
+       was called when the card was printed. Both worktrees were wrong about
+       where the prefix lives, because one rewrote profiles.member_no in the
+       shared database after the other had decided not to. Matching the tail
+       makes the question stop mattering. */
+    const tail = memberNumberTail(code);
+    if (!tail) return { error: "No member under that number." };
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, full_name, member_no, tier")
+      .or(memberNumberFilter(tail))
+      .maybeSingle();
   if (!profile) return { error: "No member under that number." };
   return {
     member: {
