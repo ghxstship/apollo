@@ -10,6 +10,7 @@ import type { Json } from "@/lib/supabase/types";
 import { getMember, type Voyage } from "../data";
 import { readLegs, readStops, type VoyageLeg, type VoyageStop } from "../charter/data";
 import { Countdown } from "./countdown";
+import { FrameUpload } from "./frame-upload";
 import { GalleyOrderForm, type GalleyItem } from "./galley";
 
 export const metadata: Metadata = { title: SURFACES.gateway };
@@ -425,6 +426,16 @@ export default async function LivePage() {
               </div>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {aboard ? (
+        <div className="now-panel ls-rise-1">
+          <h3>A frame for the log</h3>
+          <p className="mbr-mono" style={{ marginBottom: 10 }}>
+            FROM THE WATER · CLEARED BY THE BRIDGE BEFORE THE GALLERY
+          </p>
+          <FrameUpload voyageId={live.id} />
         </div>
       ) : null}
 

@@ -54,3 +54,55 @@ export async function placeGalleyOrder(
   revalidatePath("/live");
   return {};
 }
+
+/* A frame from the water, into the Bridge's queue.
+
+   The policies invited this write from the start — storage's "aboard members
+   upload voyage media" (path must open with the member's own id) and
+   voyage_media's "aboard members upload" (own row, aboard that sailing,
+   approved false) — and no product surface ever called them: the gallery's
+   member half was fed by staff uploads alone. The file goes first; a row
+   that fails after leaves nothing fetchable, and the object is removed so
+   the bucket holds no frame the record doesn't know about. */
+export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  const voyageId = String(formData.get("voyage_id") ?? "");
+  const caption = String(formData.get("caption") ?? "").trim().slice(0, 200) || null;
+  const file = formData.get("frame");
+  if (!voyageId || !(file instanceof File) || file.size === 0)
+    return { error: "Pick a frame first." };
+  if (!file.type.startsWith("image/"))
+    return { error: "Frames are photographs — the log takes images only." };
+  if (file.size > 12 * 1024 * 1024)
+    return { error: "That frame is over 12MB — send a smaller cut." };
+
+  const ext = (file.type.split("/")[1] ?? "jpg").replace(/[^a-z0-9]/gi, "").slice(0, 8) || "jpg";
+  const path = `${user.id}/${voyageId}/${crypto.randomUUID()}.${ext}`;
+
+  const { error: fileError } = await supabase.storage
+    .from("voyage-media")
+    .upload(path, file, { contentType: file.type });
+  if (fileError)
+    return {
+      error: /policy|security/i.test(fileError.message)
+        ? "Frames are for the crew on the water — board first, then send it."
+        : "The frame didn't land. Try again; if it holds, hail Shoreside.",
+    };
+
+  const { error } = await supabase
+    .from("voyage_media")
+    .insert({ voyage_id: voyageId, storage_path: path, caption, uploaded_by: user.id });
+  if (error) {
+    await supabase.storage.from("voyage-media").remove([path]);
+    return { error: await voiceWith(supabase, error) };
+  }
+
+  revalidatePath("/live");
+  revalidatePath("/gallery");
+  return {};
+}

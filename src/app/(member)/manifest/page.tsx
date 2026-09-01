@@ -373,7 +373,7 @@ export default async function VoyagesPage() {
                       boardingCode={r?.status === "aboard" ? r.boarding_code : null}
                       rsvpId={r?.id ?? null}
                       waitlistPosition={positionByVoyage.get(v.id) ?? null}
-                      autoClaim={r?.auto_claim ?? false}
+                      autoClaim={r?.auto_claim ?? true}
                       members={members}
                       standingOffer={r ? offeredByRsvp.get(r.id) ?? null : null}
                       guestStubs={r ? guestsByRsvp.get(r.id) ?? [] : []}

@@ -2847,9 +2847,20 @@ async function remediationRules(p) {
   const offer = await nat.post("pass_transfers", { rsvp_id: aRsvp, from_profile: uid(p.national), to_profile: uid(p.global) });
   const offerId = offer.data?.[0]?.id;
   note("national", "offers the pass on", offer.status === 201, `got ${offer.status} ${JSON.stringify(offer.data).slice(0, 120)}`);
-  const forged = await glo.patch(`pass_transfers?id=eq.${offerId}`, { status: "accepted" });
+  // A no is a full answer: the offer marks declined, cannot be accepted after,
+  // and the pass never moves.
+  const spurn = await glo.patch(`pass_transfers?id=eq.${offerId}`, { status: "declined", responded_at: new Date().toISOString() });
+  note("global", "declines the offer", spurn.status < 300, `got ${spurn.status} ${JSON.stringify(spurn.data).slice(0, 120)}`);
+  const spurned = await glo.rpc("accept_pass_transfer", { p_id: offerId });
+  note("global", "a declined offer cannot be accepted after", spurned.status >= 400, `got ${spurned.status} ${JSON.stringify(spurned.data).slice(0, 120)}`);
+  const stays = await nat.get(`rsvps?id=eq.${aRsvp}&select=profile_id`);
+  note("national", "a declined pass stays put", stays.data?.[0]?.profile_id === uid(p.national), JSON.stringify(stays.data).slice(0, 120));
+  // A fresh offer for the hand that answers yes.
+  const offer2 = await nat.post("pass_transfers", { rsvp_id: aRsvp, from_profile: uid(p.national), to_profile: uid(p.global) });
+  const offer2Id = offer2.data?.[0]?.id;
+  const forged = await glo.patch(`pass_transfers?id=eq.${offer2Id}`, { status: "accepted" });
   note("global", "an acceptance cannot be hand-written", forged.status >= 400 || (await glo.get(`rsvps?id=eq.${aRsvp}&select=profile_id`)).data?.[0]?.profile_id === uid(p.national), `got ${forged.status}`);
-  const accept = await glo.rpc("accept_pass_transfer", { p_id: offerId });
+  const accept = await glo.rpc("accept_pass_transfer", { p_id: offer2Id });
   note("global", "accepts the offered pass", accept.status < 300, `got ${accept.status} ${JSON.stringify(accept.data).slice(0, 160)}`);
   const handed = await glo.get(`rsvps?id=eq.${aRsvp}&select=profile_id,boarding_code`);
   note("global", "the pass changes hands", handed.data?.[0]?.profile_id === uid(p.global), JSON.stringify(handed.data).slice(0, 120));
@@ -2942,25 +2953,78 @@ async function remediationRules(p) {
   const adel = await stf.del(`voyages?id=eq.${avid}`);
   note("staff", "the add-on fixture is struck", adel.status < 300, `got ${adel.status} ${JSON.stringify(adel.data).slice(0,120)}`);
 
+  // — one crate, however many times the button lands —
+  const shelfProd = await reg.get("products?select=id&active=eq.true&limit=1");
+  if (shelfProd.data?.[0]?.id) {
+    const before = (await stf.get(`shop_orders?profile_id=eq.${uid(p.regional)}&select=id`)).data?.length ?? 0;
+    const idem = `e2e-idem-${stamp}`;
+    const first = await reg.rpc("place_shop_order", { p_lines: [{ productId: shelfProd.data[0].id, qty: 1 }], p_idem_key: idem });
+    const again = await reg.rpc("place_shop_order", { p_lines: [{ productId: shelfProd.data[0].id, qty: 1 }], p_idem_key: idem });
+    const crates = await stf.get(`shop_orders?profile_id=eq.${uid(p.regional)}&select=id`);
+    note("regional", "a replayed crate is one order, one charge", first.status < 400 && (crates.data ?? []).length === before + 1,
+      `${first.status}/${again.status} orders ${before}→${(crates.data ?? []).length}`);
+    for (const row of (crates.data ?? [])) {
+      await stf.del(`shop_order_items?order_id=eq.${row.id}`);
+      await stf.del(`shop_orders?id=eq.${row.id}`);
+    }
+  }
+
+  // — a cancellation is one push, whichever door it uses —
+  await glo.patch(`profiles?id=eq.${uid(p.global)}`, { notification_prefs: { weather: true, berths: true, fathoms: true, digest: true } });
+  const pushmk = await stf.post("voyages", {
+    slug: `e2e-onepush-${stamp}`, title: `E2E one-push ${stamp}`, class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 4, status: "scheduled", price_cents: 0,
+  });
+  const pushvid = pushmk.data?.[0]?.id;
+  await glo.post("rsvps", { voyage_id: pushvid, profile_id: uid(p.global), status: "aboard" });
+  // The member half of the gallery, invited by policy since the start and
+  // only now given a writer: an aboard member files a frame, unapproved, and
+  // may withdraw their own.
+  const frame = await glo.post("voyage_media", {
+    voyage_id: pushvid, storage_path: `${uid(p.global)}/${pushvid}/e2e-frame.jpg`,
+    caption: "E2E frame", uploaded_by: uid(p.global),
+  });
+  note("global", "an aboard member's frame lands in the queue",
+    frame.status === 201 && frame.data?.[0]?.approved === false,
+    `got ${frame.status} ${JSON.stringify(frame.data).slice(0, 100)}`);
+  const fdel2 = await glo.del(`voyage_media?id=eq.${frame.data?.[0]?.id}`);
+  note("global", "and may withdraw it", fdel2.status < 300, `got ${fdel2.status} ${JSON.stringify(fdel2.data).slice(0, 80)}`);
+  await stf.patch(`voyages?id=eq.${pushvid}`, { status: "cancelled" });
+  const pushes = await stf.get(`push_outbox?profile_id=eq.${uid(p.global)}&title=eq.${encodeURIComponent(`Cancelled: E2E one-push ${stamp}`)}&select=id`);
+  note("global", "a cancellation is one push, not two", (pushes.data ?? []).length === 1, JSON.stringify(pushes.data).slice(0, 120));
+  const pushdel = await stf.del(`voyages?id=eq.${pushvid}`);
+  note("staff", "the one-push fixture is struck", pushdel.status < 300, `got ${pushdel.status} ${JSON.stringify(pushdel.data).slice(0,120)}`);
+
+  // — the front door refuses a dead code out loud —
+  const anonDoor = rest(null);
+  const deadCode = await anonDoor.rpc("apply_with_invite", {
+    p_full_name: "E2E Anon", p_email: `e2e-anon-${stamp}@fixtures.invalid`,
+    p_city: "Miami", p_note: "", p_code: "UN-DEAD-0000",
+  });
+  note("anon", "a dead invite code is refused, not pocketed",
+    deadCode.status >= 400 && /answer|code/i.test(JSON.stringify(deadCode.data ?? "")),
+    `got ${deadCode.status} ${JSON.stringify(deadCode.data).slice(0, 120)}`);
+
   // — forty souls is the ceiling —
-  const cmk = await stf.post("voyages", {
+  const opmk = await stf.post("voyages", {
     slug: `e2e-forty-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
     starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
     time_zone: "America/New_York", berths_total: 40, status: "scheduled", price_cents: 0,
   });
-  const cvid = cmk.data?.[0]?.id;
+  const opvid = opmk.data?.[0]?.id;
   const overCap = await stf.post("voyage_segment_caps", [
-    { voyage_id: cvid, segment: "single_man", cap: 20 },
-    { voyage_id: cvid, segment: "single_woman", cap: 20 },
-    { voyage_id: cvid, segment: "couple", cap: 1 },
+    { voyage_id: opvid, segment: "single_man", cap: 20 },
+    { voyage_id: opvid, segment: "single_woman", cap: 20 },
+    { voyage_id: opvid, segment: "couple", cap: 1 },
   ]);
   note("staff", "forty-two heads are refused", overCap.status >= 400 && /forty/.test(JSON.stringify(overCap.data)), `got ${overCap.status}`);
   const atCap = await stf.post("voyage_segment_caps", [
-    { voyage_id: cvid, segment: "single_man", cap: 20 },
-    { voyage_id: cvid, segment: "single_woman", cap: 20 },
+    { voyage_id: opvid, segment: "single_man", cap: 20 },
+    { voyage_id: opvid, segment: "single_woman", cap: 20 },
   ]);
   note("staff", "the twenty-twenty composition stands", atCap.status === 201, `got ${atCap.status} ${JSON.stringify(atCap.data).slice(0, 120)}`);
-  await stf.del(`voyages?id=eq.${cvid}`);
+  await stf.del(`voyages?id=eq.${opvid}`);
 
   // — the vetting door asks for the sheet —
   // regional's file is cleared by earlier sections; take the sheet away and
@@ -3018,8 +3082,10 @@ async function remediationRules(p) {
   note("staff", "the day-of SMS rides past the letter switches", (sms.data ?? []).length >= 1, JSON.stringify(sms.data));
   note("staff", "and the fictional number is suppressed, not sent", sms.data?.[0]?.status === "skipped", JSON.stringify(sms.data));
   await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { notification_prefs: { weather: true, berths: true, fathoms: true, digest: true } });
-  await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { phone_verified: false, phone: null });
-  note("regional", "may always lower their own flag", true, "");
+  const lower = await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { phone_verified: false, phone: null });
+  const lowered = await reg.get(`profiles?id=eq.${uid(p.regional)}&select=phone_verified`);
+  note("regional", "may always lower their own flag", lower.status < 300 && lowered.data?.[0]?.phone_verified === false,
+    `got ${lower.status} ${JSON.stringify(lowered.data).slice(0, 80)}`);
   const hdel = await stf.del(`voyages?id=eq.${hvid2}`);
   note("staff", "the hold fixture is struck", hdel.status < 300, `got ${hdel.status} ${JSON.stringify(hdel.data).slice(0,120)}`);
 
@@ -3040,6 +3106,14 @@ async function remediationRules(p) {
   await stf.del(`wardroom_posts?id=eq.${postId}`);
   const orphanFlag = await stf.get(`wardroom_flags?id=eq.${flagId}&select=post_id`);
   note("staff", "the flag outlives the post it raised", (orphanFlag.data ?? []).length === 1 && orphanFlag.data[0].post_id === null, JSON.stringify(orphanFlag.data));
+  // And the resolution is a write, not a wish: the Bridge leaves it up.
+  const resFlagRow = await stf.get(`wardroom_flags?reason=eq.${encodeURIComponent("conduct — e2e")}&select=id,status&limit=1`);
+  const resFlagId = resFlagRow.data?.[0]?.id;
+  const resSettle = resFlagId ? await stf.patch(`wardroom_flags?id=eq.${resFlagId}`, { status: "left_up" }) : { status: 999 };
+  const resSettled = resFlagId ? await stf.get(`wardroom_flags?id=eq.${resFlagId}&select=status`) : { data: [] };
+  note("staff", "a flag can be resolved and stays resolved", resSettle.status < 300 && resSettled.data?.[0]?.status === "left_up",
+    `got ${resSettle.status} ${JSON.stringify(resSettled.data).slice(0, 100)}`);
+  if (resFlagId) await stf.del(`wardroom_flags?id=eq.${resFlagId}`);
   await stf.del(`wardroom_flags?id=eq.${flagId}`);
 
   // — the clock and the brooms exist, sealed to the API —

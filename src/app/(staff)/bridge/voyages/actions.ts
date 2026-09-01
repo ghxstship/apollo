@@ -36,7 +36,13 @@ export async function setBerthsTotal(voyageId: string, berths: number): Promise<
     .from("voyages")
     .update({ berths_total: clamped })
     .eq("id", voyageId);
-  if (error) return { error: ERR_LAND };
+  if (error) {
+    /* The holds CHECK is the one refusal an operator can act on from here —
+       hand them the arithmetic, not "that didn't land". */
+    if (/holds_fit_the_hull|held_passes/.test(error.message ?? ""))
+      return { error: "The hull cannot shrink under its holds — release held passes first, then lower the berths." };
+    return { error: ERR_LAND };
+  }
   return done();
 }
 
