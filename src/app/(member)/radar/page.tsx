@@ -20,7 +20,7 @@ export const metadata: Metadata = { title: "Radar" };
 
 /* Radar — live aboard only, and dark everywhere else.
 
-   The eyebrow is [UN] Scripted, which the current kit now says too — the
+   The eyebrow is [un] Scripted, which the current kit now says too — the
    revision this page was first built against read "UNHINGED DATING", a retired
    string the lexicon guard catches.
 

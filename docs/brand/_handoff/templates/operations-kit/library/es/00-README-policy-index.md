@@ -1,5 +1,5 @@
 # BIBLIOTECA DE POLÍTICAS — ÍNDICE
-## [UN] Hinged Social · M/V Sea Charm II (Trident 4512) · Serie de eventos del club social
+## [un] Hinged Social · M/V Sea Charm II (Trident 4512) · Serie de eventos del club social
 
 **Versión de la biblioteca:** 1.0 · **Vigencia:** `[DATE]` · **Responsable:** `[POLICY OWNER]`
 

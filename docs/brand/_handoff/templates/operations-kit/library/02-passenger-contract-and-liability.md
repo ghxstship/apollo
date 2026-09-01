@@ -1,5 +1,5 @@
 # PASSENGER CONTRACT & LIABILITY
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 > **ATTORNEY REVIEW REQUIRED BEFORE USE.** This file contains contract and release language. It is a structured draft reflecting standard practice in the passenger vessel trade, not vetted legal instrument text. Florida enforces releases narrowly and construes ambiguity against the drafter. Have a Florida-licensed maritime attorney and your insurance carrier both review before this reaches a single guest.
 
@@ -10,7 +10,7 @@
 
 **The passenger contract for travel aboard M/V Sea Charm II**
 
-By booking, boarding, or accepting a berth aboard M/V Sea Charm II, you enter into a contract with [UN] Hinged Social, a `[STATE OF FORMATION]` limited liability company ("the Company"). Read it. It governs your rights.
+By booking, boarding, or accepting a berth aboard M/V Sea Charm II, you enter into a contract with [un] Hinged Social, a `[STATE OF FORMATION]` limited liability company ("the Company"). Read it. It governs your rights.
 
 ## 1.1 What you're buying
 
@@ -101,7 +101,7 @@ Completing a booking constitutes acceptance of these Terms of Carriage.
 
 ## 2.1 Activity
 
-Participation in a scheduled social club sailing aboard M/V Sea Charm II operated by [UN] Hinged Social, including transit on the waters of Biscayne Bay, the Atlantic Intracoastal Waterway, and adjacent coastal waters of Miami-Dade and Broward Counties, and where offered, swimming and water recreation at authorized anchorages.
+Participation in a scheduled social club sailing aboard M/V Sea Charm II operated by [un] Hinged Social, including transit on the waters of Biscayne Bay, the Atlantic Intracoastal Waterway, and adjacent coastal waters of Miami-Dade and Broward Counties, and where offered, swimming and water recreation at authorized anchorages.
 
 ## 2.2 I understand the risks
 
@@ -139,7 +139,7 @@ I have read and agree to the Code of Conduct, Prohibited Items list, Zero Tolera
 
 `ATTORNEY — operative release language to be drafted by counsel.`
 
-To the fullest extent permitted by law, I release, waive, and discharge [UN] Hinged Social, the vessel M/V Sea Charm II, and their owners, officers, members, employees, crew, agents, and contractors from liability for any injury, illness, death, or property loss arising out of my participation, **excluding gross negligence, willful misconduct, and any liability that may not lawfully be released under Florida or federal law.**
+To the fullest extent permitted by law, I release, waive, and discharge [un] Hinged Social, the vessel M/V Sea Charm II, and their owners, officers, members, employees, crew, agents, and contractors from liability for any injury, illness, death, or property loss arising out of my participation, **excluding gross negligence, willful misconduct, and any liability that may not lawfully be released under Florida or federal law.**
 
 ## 2.6 Medical authorization
 
@@ -257,7 +257,7 @@ ID is inspected visually. The Company does not photograph, scan, or retain copie
 
 ## 5.2 Liability
 
-[UN] Hinged Social is not responsible for loss, theft, damage, or overboard loss of any personal property brought aboard or left at the dock facility, including phones, jewelry, sunglasses, watches, cameras, keys, wallets, and clothing. Property is carried entirely at the owner's risk.
+[un] Hinged Social is not responsible for loss, theft, damage, or overboard loss of any personal property brought aboard or left at the dock facility, including phones, jewelry, sunglasses, watches, cameras, keys, wallets, and clothing. Property is carried entirely at the owner's risk.
 
 ## 5.3 What we recommend
 

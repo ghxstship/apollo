@@ -1,10 +1,10 @@
 /* REFERENCE ONLY — the prop contract for the Wordmark primitive. */
 
-/** Type-set brand lockup (no logo asset exists). Two systems: the bare bracketed [UN] parent anchor (suffix={null}), and [UN] {Suffix} sub-brand lockups. Anton bracket + Space Mono suffix at 1.27× the bracket size (cap-height matched). */
+/** Type-set brand lockup (no logo asset exists). Two systems: the bare bracketed [un] parent anchor (suffix={null}), and [un] {Suffix} sub-brand lockups. Anton bracket + Space Mono suffix at 1.27× the bracket size (cap-height matched). */
 export interface WordmarkProps{
   /** sm 16 / md 20 / lg 36, or a px number. */
   size?:'sm'|'md'|'lg'|number;
-  /** Division suffix in Space Mono, sentence case: 'Hinged' (default), 'Bound', 'Limited', 'Scripted', 'Cut', 'Brand'. Pass null for the bare [UN] parent anchor (System A). */
+  /** Division suffix in Space Mono, sentence case: 'Hinged' (default), 'Bound', 'Limited', 'Scripted', 'Cut', 'Brand'. Pass null for the bare [un] parent anchor (System A). */
   suffix?:'Hinged'|'Bound'|'Limited'|'Scripted'|'Cut'|string|null;
   /** Optional mono sub line under the lockup (e.g. 'SINGLES SOCIAL CLUB'). Null by default. */
   sub?:string|null;

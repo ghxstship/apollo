@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* [UN] design-system conformance linter.
+/* [un] design-system conformance linter.
 
    Measures the app's CSS and TSX against `docs/brand/_handoff/`. Every rule
    here quotes the handoff clause it enforces, so a disagreement is settled by

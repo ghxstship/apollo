@@ -1,5 +1,5 @@
 # POLÍTICAS DE SEGURIDAD Y CUMPLIMIENTO
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 ### Interno y para tripulación. No para distribución pública.
 
 ---

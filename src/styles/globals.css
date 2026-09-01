@@ -1,4 +1,4 @@
-/* [UN] — global entry. This is the handoff package's styles.css, resolved
+/* [un] — global entry. This is the handoff package's styles.css, resolved
    against this repository: the package imports its six token files individually
    from a tokens/ directory, and §2 of the handoff maps that whole directory onto
    one concatenated src/styles/tokens.css. So the six lines collapse to one, and

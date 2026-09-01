@@ -32,6 +32,19 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const args = process.argv.slice(2);
 const reconcile = args.includes("--reconcile");
+/* --adopt writes ledger rows that have no file, which is how a migration
+   applied through the API reaches the corpus at all — the hint below always
+   said "run to adopt" and no code path ever wrote one. Opt-in, because on an
+   unmerged branch a missing file legitimately belongs to a sibling; adopting
+   there would smuggle another branch's migration into this corpus. */
+const adopt = args.includes("--adopt");
+/* Ledger rows deliberately NOT in the corpus, each with its reason — adopt
+   must not resurrect them. 20260825195540 is the brand check the rebuild gate
+   caught (commit 44d463d): its assert runs at a position where replayed seeds
+   still carry the retired brands the 20260828132337 repair only later removes,
+   so it passes in the live timeline and fails every fresh replay. Its
+   self-asserting replacement is 20260828132337. */
+const ADOPT_NEVER = new Set(["20260825195540_the_last_of_the_retired_brands_leaves_the_records.sql"]);
 // Default to the whole ledger. Passing a `since` is what hid 28 applied
 // migrations from the set-equality check for a week.
 const since = args.find((a) => !a.startsWith("--")) ?? "0";
@@ -63,7 +76,11 @@ for (const r of rows) {
   const name = `${r.version}_${r.name}.sql`;
   const file = join(dir, name);
   onDisk.delete(name);
-  if (!existsSync(file)) { missing.push(name); continue; }
+  if (!existsSync(file)) {
+    if (adopt && !ADOPT_NEVER.has(name)) { writeFileSync(file, canonical(r)); wrote.push(name); }
+    else if (!ADOPT_NEVER.has(name)) missing.push(name);
+    continue;
+  }
   const want = canonical(r), have = readFileSync(file, "utf8");
   if (want === have) { exact++; continue; }
   if (reconcile) { writeFileSync(file, want); reconciled.push(name); continue; }

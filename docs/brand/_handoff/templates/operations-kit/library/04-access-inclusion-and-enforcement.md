@@ -1,12 +1,12 @@
 # ACCESS, INCLUSION & ENFORCEMENT POLICIES
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 ---
 ---
 
 # 1 · ACCESSIBILITY & ADA POLICY
 
-Passenger vessel operators are places of public accommodation under Title III of the Americans with Disabilities Act. [UN] Hinged Social is committed to access, and equally committed to being honest about what a 45-foot pontoon can and cannot do — because a guest who arrives to a surprise is worse served than one who was told the truth in advance.
+Passenger vessel operators are places of public accommodation under Title III of the Americans with Disabilities Act. [un] Hinged Social is committed to access, and equally committed to being honest about what a 45-foot pontoon can and cannot do — because a guest who arrives to a surprise is worse served than one who was told the truth in advance.
 
 ## 1.1 What is accessible
 
@@ -111,7 +111,7 @@ Allergy or fear of dogs is not grounds for excluding a service animal. Where pos
 
 ## 3.1 Commitment
 
-[UN] Hinged Social does not discriminate against any member, guest, applicant, employee, crew member, contractor, or vendor on the basis of race, color, national origin, ethnicity, ancestry, religion, sex, pregnancy, sexual orientation, gender identity or expression, age, disability, genetic information, marital or familial status, military or veteran status, or any other characteristic protected by federal, Florida, Miami-Dade County, or Broward County law.
+[un] Hinged Social does not discriminate against any member, guest, applicant, employee, crew member, contractor, or vendor on the basis of race, color, national origin, ethnicity, ancestry, religion, sex, pregnancy, sexual orientation, gender identity or expression, age, disability, genetic information, marital or familial status, military or veteran status, or any other characteristic protected by federal, Florida, Miami-Dade County, or Broward County law.
 
 Miami-Dade and Broward County human rights ordinances both extend protections beyond the federal baseline, including on sexual orientation and gender identity. We apply the broadest applicable standard.
 

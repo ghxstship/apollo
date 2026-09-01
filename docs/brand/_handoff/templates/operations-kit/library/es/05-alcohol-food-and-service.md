@@ -1,5 +1,5 @@
 # POLÍTICAS DE ALCOHOL, ALIMENTOS Y SERVICIO
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 ---
 ---

@@ -121,19 +121,19 @@ La ley federal (MARPOL Anexo V) y la ley de Florida prohíben descargar plástic
 - Pintura corporal, henna y cosméticos que manchan la fibra de vidrio, el vinilo o el aluminio
 - Identificación ilegal, falsificada o alterada
 - Equipos profesionales de cámara externos, trípodes, gimbals de más de 24" y equipo de grabación comercial sin autorización de medios previa por escrito
-- Venta, muestreo o mercancía promocional no autorizada por [UN] Hinged Social
+- Venta, muestreo o mercancía promocional no autorizada por [un] Hinged Social
 - Contenedores o paquetes sellados que usted transporta en nombre de otra persona
 
 ## Inspección y rechazo
 
-Todos los bolsos están sujetos a inspección en la pasarela antes de embarcar. No estamos obligados a declarar una razón para rechazar un artículo. Los artículos rechazados no pueden almacenarse a bordo, y [UN] Hinged Social no los guardará, transportará ni devolverá — planifique en consecuencia. Rechazar la inspección significa rechazar el embarque.
+Todos los bolsos están sujetos a inspección en la pasarela antes de embarcar. No estamos obligados a declarar una razón para rechazar un artículo. Los artículos rechazados no pueden almacenarse a bordo, y [un] Hinged Social no los guardará, transportará ni devolverá — planifique en consecuencia. Rechazar la inspección significa rechazar el embarque.
 
 ---
 ---
 
 # DOCUMENTO 3 — CÓDIGO DE CONDUCTA
 
-**M/V Sea Charm II · Serie de eventos de [UN] Hinged Social**
+**M/V Sea Charm II · Serie de eventos de [un] Hinged Social**
 
 Este es un club social en una embarcación comercial en funciones. Esos dos hechos conviven cómodamente mientras todos a bordo entiendan el segundo. Este Código aplica desde el momento en que usted llega a `[HOMEPORT / DOCK]` hasta que deja la propiedad — incluidos el muelle, el área de estacionamiento y la caminata a su auto.
 
@@ -186,7 +186,7 @@ Nadar se permite **solo** cuando el Capitán anuncia una llamada a nadar autoriz
 
 ## 7. Fotografía y contenido
 
-[UN] Hinged Social puede fotografiar y grabar a bordo con fines promocionales — esto se divulga al reservar y está cubierto por nuestra Autorización de Foto y Video. Los huéspedes que prefieran no aparecer deben avisar al personal en el check-in y se les entregará un marcador visual de exclusión.
+[un] Hinged Social puede fotografiar y grabar a bordo con fines promocionales — esto se divulga al reservar y está cubierto por nuestra Autorización de Foto y Video. Los huéspedes que prefieran no aparecer deben avisar al personal en el check-in y se les entregará un marcador visual de exclusión.
 
 La fotografía de huéspedes es bienvenida para uso personal. No es bienvenida cuando apunta a personas que han declinado, por debajo de faldas o hacia áreas de cambio de ropa, o se usa para grabar a la tripulación, otros huéspedes o incidentes con fines de acoso. No publique imágenes identificables de otros huéspedes sin su acuerdo.
 
@@ -230,7 +230,7 @@ Si algo pasa a bordo — a usted o a alguien más — avise a cualquier tripulan
 
 # DOCUMENTO 4 — POLÍTICAS DE TOLERANCIA CERO
 
-**M/V Sea Charm II · [UN] Hinged Social**
+**M/V Sea Charm II · [un] Hinged Social**
 
 La mayoría de nuestras reglas vienen con espacio para una conversación. Estas no.
 
@@ -409,14 +409,14 @@ Los conteos se toman al embarcar, antes y después de cada llamada a nadar, y an
 | En el agua — todas las embarcaciones y agencias | **Canal VHF 16** |
 | Emergencia con riesgo de vida en tierra | **911** |
 | Centro de Comando del Sector Miami de la Guardia Costera | `[VERIFY CURRENT NUMBER]` |
-| Línea de emergencia 24 horas de [UN] Hinged Social | `[CLUB PHONE]` |
+| Línea de emergencia 24 horas de [un] Hinged Social | `[CLUB PHONE]` |
 | Contacto en tierra / coordinación con familiares | `[CLUB EMAIL]` |
 
 **Nunca haga una llamada de socorro usted mismo.** El Capitán controla toda la comunicación por radio. Las llamadas de socorro falsas o duplicadas desvían recursos de rescate de emergencias reales y conllevan sanciones penales federales.
 
 ## Después de cualquier incidente
 
-Reporte toda lesión, por menor que sea, a la tripulación antes de desembarcar. Es por su beneficio — las lesiones sin documentar se convierten en lesiones en disputa. [UN] Hinged Social presenta reportes de siniestros marítimos ante la Guardia Costera de EE. UU. según lo requiere 46 CFR Parte 4.
+Reporte toda lesión, por menor que sea, a la tripulación antes de desembarcar. Es por su beneficio — las lesiones sin documentar se convierten en lesiones en disputa. [un] Hinged Social presenta reportes de siniestros marítimos ante la Guardia Costera de EE. UU. según lo requiere 46 CFR Parte 4.
 
 ---
 ---

@@ -18,7 +18,7 @@ import { fleetByVoyage } from "@/components/site/voyage-data";
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
   /* absolute, or the root template appends the anchor to a title that already
-     opens with it — "[UN] anything goes here · [UN]" shipped once. */
+     opens with it — "[un] anything goes here · [un]" shipped once. */
   title: { absolute: `${ANCHOR} ${TAGLINE}` },
 };
 

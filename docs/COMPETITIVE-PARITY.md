@@ -1,4 +1,4 @@
-# Competitive parity audit — [UN] SOCIAL
+# Competitive parity audit — [un] SOCIAL
 
 > **Built 2026-08.** Every tier below is implemented except where noted.
 > Shipped: recurring dues + installments + `/account`; member directory with
@@ -67,7 +67,7 @@ the set. We have a ledger; we have no receipts and no card management.
 
 **4. Member directory + real profiles.**
 Circle's is a headline feature ("searchable member directory"); for Dorsia and
-the house clubs, the roster *is* the product. [UN] has **no directory at all** —
+the house clubs, the roster *is* the product. [un] has **no directory at all** —
 you cannot see who is in the club you joined. For a club whose entire thesis is
 "the people worth crossing water for," this is the most conspicuous hole in the
 member experience. Consent-gated, filterable by harbor/league, with "sailed
@@ -173,7 +173,7 @@ filters on /voyages (matters at four harbors) · 19. Per-event OG images ·
 | Fee-on-top checkout | Eventbrite, most | The house account is the model — members settle a balance, not a cart. |
 | Open self-serve signup | Circle, Luma, Bubble | Antithetical. Sign-in is DB-enforced invited-only. |
 
-## Where [UN] already leads the comparison set
+## Where [un] already leads the comparison set
 
 - **House-account / folio billing.** Charges, comps, credits, refunds, staff
   postings and Stripe settlement against a running member balance. Dorsia has

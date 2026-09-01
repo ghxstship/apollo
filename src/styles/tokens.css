@@ -1,4 +1,4 @@
-/* [UN] design tokens — the six files of the handoff package's tokens/ directory,
+/* [un] design tokens — the six files of the handoff package's tokens/ directory,
    concatenated in the @import order styles.css declares. This file is the single
    source of truth for every downstream value; the property names and values are
    copied verbatim from the package and MUST NOT be renamed, re-scaled, or

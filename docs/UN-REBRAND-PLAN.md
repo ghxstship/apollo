@@ -1,13 +1,13 @@
-# [UN] — rebrand and enrichment plan
+# [un] — rebrand and enrichment plan
 
-[UN] SOCIAL becomes **[UN]** (@unhingedsocial.us), *The Unscripted Social
+[un] SOCIAL becomes **[un]** (@unhingedsocial.us), *The Unscripted Social
 Experiment* — a reality-format social club (Yacht Week × Thursday Dating × Below
-Deck) with two sub-brands: **[UN] Scripted** (@unhingedsocial.us.dating) and **[UN] Yacht
+Deck) with two sub-brands: **[un] Scripted** (@unhingedsocial.us.dating) and **[un] Yacht
 Club** (@unhingedsocial.us.yachts).
 
-Source: `[UN] Design System.zip` — 152 files: tokens, 28 component
+Source: `[un] Design System.zip` — 152 files: tokens, 28 component
 contracts, 12 product UI kits, 8 transactional emails, 17 template kits, brand
-guide. The kit was explicitly scoped from [UN]'s component inventory and its
+guide. The kit was explicitly scoped from [un]'s component inventory and its
 APIs mirror this repo's `src/components/ds/` by design — the kit's own docs name
 `ghxstship/apollo` as the natural home. That is the central fact of this plan:
 **the component surface ports nearly 1:1; the identity, voice, and concept do
@@ -17,7 +17,7 @@ not.**
 
 Three changes stacked, each a different size:
 
-1. **Identity swap** (mechanical, large surface). Neon Brutalist dies. [UN] is
+1. **Identity swap** (mechanical, large surface). Neon Brutalist dies. [un] is
    dark-first noir `#101418` with one antique-gold accent `#B98A2F` per view,
    ivory text `#F4EFE6` (never pure white — "blooms on camera"), Marcellus /
    **Jost** (replacing Archivo) / Space Mono, paper light theme via
@@ -40,9 +40,9 @@ Three changes stacked, each a different size:
 
 ## Naming migration
 
-| [UN] | [UN] | Notes |
+| [un] | [un] | Notes |
 | --- | --- | --- |
-| [UN] SOCIAL | [UN] | wordmark is type-set; no logo exists, never draw one |
+| [un] SOCIAL | [un] | wordmark is type-set; no logo exists, never draw one |
 | "Strike a chord." | "anything goes here" | hero confirmed in kit |
 | Sea Day / Port Day / voyages | **charters** (+ **tables** for Dating) | tickets kit: charter → cabin & add-ons → review → boarding stub |
 | LORE (magazine) | **Episodes** | `episode-digest` email replaces `lore-digest` |
@@ -56,9 +56,9 @@ Three changes stacked, each a different size:
 | the Galley / Galley POS | unchanged | POS kit keeps house/card tender, member attach |
 | passes | **cabins** (sea) / **seats** (tables) | "berth" stays banned |
 | unhingedsocial.us | unhingedsocial.us | one-constant change: `MAIL_DOMAIN`/`SITE_DOMAIN` in brand.ts + the `OUTBOX_FROM` Vault row — this is why they were centralized |
-| SMS prefix "[UN] SOCIAL:" | "[UN]:" | all 14 drafts re-voiced; `un_*` provider names → `un_*` (free — none created at sent.dm yet) |
+| SMS prefix "[un] SOCIAL:" | "[un]:" | all 14 drafts re-voiced; `un_*` provider names → `un_*` (free — none created at sent.dm yet) |
 
-**Not present in the [UN] kit — decisions needed (Phase 0):**
+**Not present in the [un] kit — decisions needed (Phase 0):**
 
 - **Knots / Leagues / Marks / Regattas** (the gamification layer). Recommend:
   carry over re-voiced — the logbook concept fits a show ("what you did on
@@ -84,7 +84,7 @@ timing (Phase 5 standalone vs deferred). Nothing below starts ambiguous.
   scene gradients, paper theme block. Dark becomes the **default** theme;
   ThemeToggle persists dark/light/system (flip of today's order).
 - Rewrite `brand.ts`: names, tagline, SUB_BRANDS map (accent-only, enforced),
-  MAIL_DOMAIN→unhingedsocial.us, voice constants. BANNED_TERMS gains: "[UN]",
+  MAIL_DOMAIN→unhingedsocial.us, voice constants. BANNED_TERMS gains: "[un]",
   "un", "Chandlery", "LORE", "Aurora", "Strike a chord", `!` in rendered copy
   (exclamation scan), emoji ranges. Keeps: berth, salon, ticket, leaderboard.
 - Remap DS tones (brass→gold etc.) with a compatibility alias for one commit,
@@ -120,13 +120,13 @@ refund-posted, season-card, voyage-cancelled restyled to match).
 - **Kiosk** route (`/kiosk`): full-screen check-in — scan (reuses the QR
   scanner), confirm, help; 48px targets; staff-gated device mode.
 
-### Phase 4 — [UN] Limited (sub-brand one)
+### Phase 4 — [un] Limited (sub-brand one)
 Charter site section under teal accent: charter grid, booking, public manifest.
 Mostly a reskin of voyages with the accent-swap architecture proving itself.
 Accent switching = a `data-brand` attribute per route group; sub-brands never
 get their own type or surfaces (kit rule).
 
-### Phase 5 — [UN] Scripted (sub-brand two, standalone scope)
+### Phase 5 — [un] Scripted (sub-brand two, standalone scope)
 New product: **tables, not swiping** — Thursday blind tables for six, matches
 created only from shared tables, seat-hold flow ("Seat held for 15 minutes"),
 Tonight / Matches / You. New tables: `tables`, `table_seats`, `matches`,
@@ -134,7 +134,7 @@ match-scoped threads (reuse messaging). Rose accent. This is the largest net-new
 build and can ship after 1–4 without blocking them.
 
 ### Phase 6 — collateral, comms, ops
-SMS drafts re-voiced under "[UN]:" with `un_*` names; sent.dm registration
+SMS drafts re-voiced under "[un]:" with `un_*` names; sent.dm registration
 re-run post-onboarding; OG images, PWA manifest/icons, favicon; README + docs
 sweep; season card → episode-season framing; memory update; `.mcp.json` note.
 
@@ -160,7 +160,7 @@ review question into a build failure.
   not law — same caveat as the waivers; the library makes lawyer edits cheap.
 - **Voice is the long pole**, not CSS. Hundreds of strings across 60 routes,
   11 emails, 14 SMS drafts, notification triggers in SQL. Budget accordingly.
-- **Existing signatures** name [UN]. Correct behavior: leave them; publish v2
+- **Existing signatures** name [un]. Correct behavior: leave them; publish v2
   documents. Anyone current on v1 shows "out of date" and re-signs — which is
   the honest state after a rebrand.
 - **Dark-first flip** inverts every `inverse` prop assumption in the codebase;

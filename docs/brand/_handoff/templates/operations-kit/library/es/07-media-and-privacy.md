@@ -1,5 +1,5 @@
 # POLÍTICAS DE MEDIOS Y PRIVACIDAD
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 > **REVISIÓN DE ABOGADO REQUERIDA.** El lenguaje de autorización y las divulgaciones de privacidad conllevan consecuencia legal. El estatuto de derecho de publicidad de Florida (Fla. Stat. § 540.08) restringe el uso comercial de la imagen de una persona sin consentimiento, y la Florida Digital Bill of Rights impone obligaciones a ciertos controladores. Haga que su abogado confirme tanto la redacción de la autorización como si la Compañía cae dentro de los umbrales de aplicabilidad de la FDBR.
 
@@ -10,13 +10,13 @@
 
 ## 1.1 Qué capturamos, y por qué
 
-[UN] Hinged Social fotografía y graba a bordo del M/V Sea Charm II y en eventos asociados. El material se usa para `[social media, website, marketing, membership recruitment, partner and sponsor reporting, and archival]`.
+[un] Hinged Social fotografía y graba a bordo del M/V Sea Charm II y en eventos asociados. El material se usa para `[social media, website, marketing, membership recruitment, partner and sponsor reporting, and archival]`.
 
 Se lo decimos al reservar, se lo repetimos en el check-in, y hacemos que optar por no aparecer sea fácil — porque un club de miembros funciona sobre la comodidad de la gente, y ser fotografiado sin aviso es la manera más rápida de perderla.
 
 ## 1.2 La autorización
 
-Al reservar y embarcar, usted otorga a [UN] Hinged Social una licencia `[non-exclusive, worldwide, royalty-free, perpetual]` para fotografiarlo, filmarlo y grabarlo, y para reproducir, editar, publicar y distribuir ese material en cualquier medio para los fines descritos arriba.
+Al reservar y embarcar, usted otorga a [un] Hinged Social una licencia `[non-exclusive, worldwide, royalty-free, perpetual]` para fotografiarlo, filmarlo y grabarlo, y para reproducir, editar, publicar y distribuir ese material en cualquier medio para los fines descritos arriba.
 
 Usted renuncia a cualquier derecho de inspeccionar o aprobar el material terminado, y a cualquier reclamo de compensación. Usted reconoce que el material publicado en línea no puede retirarse por completo.
 
@@ -79,7 +79,7 @@ Los huéspedes pueden etiquetar `[HANDLES]`. Cuando reposteamos contenido de hu�
 
 ## 2.1 Quiénes somos
 
-[UN] Hinged Social, una compañía de responsabilidad limitada de `[STATE]`. Contacto: `[CLUB EMAIL]` · `[CLUB PHONE]` · `[ADDRESS]`. Contacto de privacidad: `[PRIVACY CONTACT]`.
+[un] Hinged Social, una compañía de responsabilidad limitada de `[STATE]`. Contacto: `[CLUB EMAIL]` · `[CLUB PHONE]` · `[ADDRESS]`. Contacto de privacidad: `[PRIVACY CONTACT]`.
 
 ## 2.2 Qué recopilamos
 

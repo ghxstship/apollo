@@ -1,4 +1,4 @@
-/* [UN] — marketing site chrome + page styles.
+/* [un] — marketing site chrome + page styles.
    Ported from ui_kits/website; tokens do all the color work. */
 
 /* ————— chrome: nav ————— */
@@ -79,7 +79,7 @@
    is load-bearing: base.css uppercases h1–h4, and the tagline is the one
    string the brand never capitalises. */
 .ws-tagline{text-transform:none;display:inline-flex;align-items:baseline;flex-wrap:wrap}
-.ws-tagline__anchor{font-family:var(--font-display);letter-spacing:.02em;text-transform:uppercase}
+.ws-tagline__anchor{font-family:var(--font-display);letter-spacing:.02em;text-transform:none}/* the anchor's case is part of the mark — typed lowercase, never transformed (owner ruling 2026-08-31); ds-exempt: the wordmark/tagline lockup types its own case */
 .ws-tagline__line{font:400 .65em/1.2 var(--font-mono);letter-spacing:normal;margin-left:.61em;border-bottom:1.5pt solid var(--accent);padding-bottom:.06em;text-transform:lowercase}
 /* Was Anton + uppercase + a lava gradient on {TAGLINE} — three violations in
    one rule (the tagline is lowercase-always and in mono, and decorative

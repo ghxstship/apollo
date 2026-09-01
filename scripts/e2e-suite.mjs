@@ -1138,7 +1138,7 @@ async function enforcementRules(p) {
   await stf.del("email_outbox?template=eq.season-card&status=eq.skipped");
 }
 
-/* ---------- M. [UN]: cabins, consent, tables, matches ----------
+/* ---------- M. [un]: cabins, consent, tables, matches ----------
    The rebrand's new objects. Dating privacy is the sharp edge: a pick is
    private even from seatmates, and only mutuality surfaces anything. */
 async function clubRules(p) {

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
 import { voiceWith } from "@/lib/errors";
 
-/* [UN] Limited — the OPTION hold.
+/* [un] Limited — the OPTION hold.
 
    Both verbs go through SECURITY DEFINER functions and neither writes a row
    from here. That is not ceremony: the 72 hours and the capacity count are the

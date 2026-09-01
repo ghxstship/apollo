@@ -1,6 +1,6 @@
-# Design-kit request — components missing from the [UN] kit
+# Design-kit request — components missing from the [un] kit
 
-Two working product areas exist in the codebase that the [UN] Design
+Two working product areas exist in the codebase that the [un] Design
 System does not cover. Both are carried over and interim-rebranded (noir/gold,
 producer voice); this document is the request to Claude Design / Claude Code for
 proper kit coverage in the next update. Component APIs should mirror
@@ -41,7 +41,7 @@ once coverage lands.
 
 ## Interim treatment (already in hand)
 
-Until kit coverage lands, both areas ship re-skinned with the [UN] tokens and
+Until kit coverage lands, both areas ship re-skinned with the [un] tokens and
 re-voiced, using existing DS primitives only. Regattas keep their name
 (charter-native). The feed runs under the interim name **the Booth** and moves
 back to **Open Deck** when the kit's components arrive — the confession-booth

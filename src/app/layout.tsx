@@ -4,7 +4,7 @@ import Script from "next/script";
 import { SwRegister } from "@/components/sw-register";
 import { ANCHOR, SITE_DOMAIN, TAGLINE, THEME_STORAGE_KEY } from "@/lib/brand";
 
-/* The four [UN] families, self-hosted at build time. next/font resolves each
+/* The four [un] families, self-hosted at build time. next/font resolves each
    one against the Google Fonts CSS API when the build runs and copies the files
    into the deployment, so nothing here pins a gstatic URL — the last hardcoded
    one was a v4 path that 404'd the day Google moved to v5, taking the display
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
      a link shared from production previews as http://localhost:3000/... */
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`),
   /* The tagline lockup takes no punctuation between the anchor and the phrase —
-     "[UN] anything goes here" is the mark, and a dash makes it a sentence. */
+     "[un] anything goes here" is the mark, and a dash makes it a sentence. */
   title: {
     default: `${ANCHOR} ${TAGLINE}`,
     template: `%s · ${ANCHOR}`,

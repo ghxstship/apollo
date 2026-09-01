@@ -1,22 +1,22 @@
-/* [UN] — the brand, as code. Single source for names, taxonomy, and lexicon.
+/* [un] — the brand, as code. Single source for names, taxonomy, and lexicon.
    Every surface imports from here; the /brand page renders from it; the route
    audit and the e2e suite both read BANNED_TERMS out of this file by regex and
    grep rendered HTML for them, plus exclamation marks and emoji.
 
-   Naming decisions (2026-08, [UN] rebrand — see docs/brand/brand-architecture.md):
-   - `[UN]` is the parent brand: a bracketed anchor. The brackets are part of the
+   Naming decisions (2026-08, [un] rebrand — see docs/brand/brand-architecture.md):
+   - `[un]` is the parent brand: a bracketed anchor. The brackets are part of the
      mark and are never dropped, restyled, recoloured, or spaced out. There is no
      bracketless setting above 8 mm embroidery, which is not a thing software
      renders — so in this codebase there is no bracketless setting at all.
    - Six divisions add a sentence-case suffix one word space after the closing
      bracket: Hinged · Bound · Limited · Scripted · Cut · Brand. A division
      swaps the accent and nothing else — never type, never surfaces. One stage,
-     different spotlights. [UN] Brand (kit v2, 2026-08) carries no accent and no
+     different spotlights. [un] Brand (kit v2, 2026-08) carries no accent and no
      token at all — ink on paper, ivory on ink; it never tints a ground, a flag,
      or a rule, which is why its accent fields hold var(--text-body) rather than
      a --brand-* token: text-body IS "ink that inverts with the theme".
    - Shop is commerce, not a division — the sales channel, not the maker
-     (kit v2). Lifestyle, fashion, and gear products carry the [UN] Brand mark;
+     (kit v2). Lifestyle, fashion, and gear products carry the [un] Brand mark;
      event and season drops may carry their division's mark instead. Shop keeps
      its sun-orange accent and lives in COMMERCE below, not in DIVISIONS.
    - One handle across every division: @unhingedsocial.us. Divisions do not hold
@@ -26,7 +26,7 @@
    - Ops console = the Bridge · live mode = Live · feed = Open Deck
    - Credential = Member Card · commerce = the Shop · editorial = Episodes
    - Agent = the Producer (confirm-first; money always asks). The engine is
-     Aurora, the shared ATLVS intelligence — the Producer is its [UN] face;
+     Aurora, the shared ATLVS intelligence — the Producer is its [un] face;
      Aurora is never named in member-facing copy (see BANNED_TERMS).
    - Internal DB names (voyages, fathoms_ledger, wardroom_*, rsvps…) are legacy
      plumbing; display names come from here. */
@@ -35,7 +35,7 @@
    Exported as a constant rather than typed at each call site so that "drop the
    brackets" is not a thing anyone can do by accident — there is no string
    literal "UN" anywhere for a well-meaning edit to land on. */
-export const ANCHOR = "[UN]";
+export const ANCHOR = "[un]";
 export const BRAND = ANCHOR;
 export const WORDMARK = ANCHOR;
 
@@ -130,7 +130,7 @@ export const DIVISIONS: Record<DivisionId, Division> = {
     accentDeep: "var(--brand-cut-deep)",
     categories: ["premium"],
   },
-  /* [UN] Brand carries no hue at all and no token (brand-architecture.md, kit
+  /* [un] Brand carries no hue at all and no token (brand-architecture.md, kit
      v2) — the products speak for themselves. var(--text-body) renders ink on
      paper and ivory on ink by construction, and the empty categories list keeps
      it out of every hosting map: retail hosts no experiences, so
@@ -154,7 +154,7 @@ export const DIVISION_ACCENT = Object.fromEntries(
 ) as Record<DivisionId, string>;
 
 /* Commerce. Deliberately NOT in DIVISIONS: the Shop is the sales channel, not
-   the maker (kit v2) — products carry the [UN] Brand mark, and an event or
+   the maker (kit v2) — products carry the [un] Brand mark, and an event or
    season drop may carry its division's mark instead, so anything iterating the
    divisions to render marks must not pick this up as a seventh. */
 export const COMMERCE = {

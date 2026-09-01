@@ -1,5 +1,5 @@
 # MEDIA & PRIVACY POLICIES
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 > **ATTORNEY REVIEW REQUIRED.** Release language and privacy disclosures both carry legal consequence. Florida's right of publicity statute (Fla. Stat. § 540.08) restricts commercial use of a person's likeness without consent, and the Florida Digital Bill of Rights imposes obligations on certain controllers. Have counsel confirm both the release wording and whether the Company falls within the FDBR's applicability thresholds.
 
@@ -10,13 +10,13 @@
 
 ## 1.1 What we capture, and why
 
-[UN] Hinged Social photographs and records aboard M/V Sea Charm II and at associated events. The material is used for `[social media, website, marketing, membership recruitment, partner and sponsor reporting, and archival]`.
+[un] Hinged Social photographs and records aboard M/V Sea Charm II and at associated events. The material is used for `[social media, website, marketing, membership recruitment, partner and sponsor reporting, and archival]`.
 
 We tell you this at booking, we tell you again at check-in, and we make opting out easy — because a members' club runs on people feeling comfortable, and being photographed without warning is the fastest way to lose that.
 
 ## 1.2 The release
 
-By booking and boarding, you grant [UN] Hinged Social a `[non-exclusive, worldwide, royalty-free, perpetual]` license to photograph, film, and record you, and to reproduce, edit, publish, and distribute that material in any medium for the purposes described above.
+By booking and boarding, you grant [un] Hinged Social a `[non-exclusive, worldwide, royalty-free, perpetual]` license to photograph, film, and record you, and to reproduce, edit, publish, and distribute that material in any medium for the purposes described above.
 
 You waive any right to inspect or approve the finished material, and any claim for compensation. You acknowledge that material published online cannot be fully recalled.
 
@@ -79,7 +79,7 @@ Guests are welcome to tag `[HANDLES]`. When we repost guest content we credit th
 
 ## 2.1 Who we are
 
-[UN] Hinged Social, a `[STATE]` limited liability company. Contact: `[CLUB EMAIL]` · `[CLUB PHONE]` · `[ADDRESS]`. Privacy contact: `[PRIVACY CONTACT]`.
+[un] Hinged Social, a `[STATE]` limited liability company. Contact: `[CLUB EMAIL]` · `[CLUB PHONE]` · `[ADDRESS]`. Privacy contact: `[PRIVACY CONTACT]`.
 
 ## 2.2 What we collect
 

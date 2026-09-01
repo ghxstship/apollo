@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 
-/* [UN] Scripted. A seat is claimed through the RPC — the fifteen-minute hold
+/* [un] Scripted. A seat is claimed through the RPC — the fifteen-minute hold
    and the capacity race live at the database, so two people reaching for the
    last chair resolves honestly. Picks are plain inserts; RLS is the whole rule:
    your own chair, a confirmed seatmate, and only after the night has started. */

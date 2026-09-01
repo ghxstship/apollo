@@ -49,7 +49,7 @@ function bannedTerms() {
        end with a gate reporting clean while enforcing nothing:
 
        the terminator was `\]` non-greedy, so it stopped at the FIRST close
-       bracket — and a section comment reading "the retired [UN] drafts" inside
+       bracket — and a section comment reading "the retired [un] drafts" inside
        the array truncated the list to seven entries with no error anywhere; and
 
        every double-quoted string in range became a banned term, so quoting an

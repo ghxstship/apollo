@@ -1,5 +1,5 @@
 # GUEST EXPERIENCE POLICIES
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 *Public-facing. These are the documents that make the operation feel considered rather than merely compliant.*
 

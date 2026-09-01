@@ -1,5 +1,5 @@
 # BOOKING & OPERATIONS POLICIES
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 ---
 ---

@@ -1,5 +1,5 @@
 # CONTRATO DE PASAJERO Y RESPONSABILIDAD
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 > **REVISIÓN DE ABOGADO REQUERIDA ANTES DE USAR.** Este archivo contiene lenguaje de contrato y de exención. Es un borrador estructurado que refleja la práctica estándar del gremio de embarcaciones de pasajeros, no texto de instrumento legal validado. Florida hace exigibles las exenciones de forma restrictiva e interpreta la ambigüedad en contra del redactor. Haga que un abogado marítimo con licencia de Florida y su aseguradora revisen ambos antes de que esto llegue a un solo huésped.
 
@@ -10,7 +10,7 @@
 
 **El contrato de pasajero para viajar a bordo del M/V Sea Charm II**
 
-Al reservar, embarcar o aceptar una plaza a bordo del M/V Sea Charm II, usted celebra un contrato con [UN] Hinged Social, una compañía de responsabilidad limitada de `[STATE OF FORMATION]` ("la Compañía"). Léalo. Rige sus derechos.
+Al reservar, embarcar o aceptar una plaza a bordo del M/V Sea Charm II, usted celebra un contrato con [un] Hinged Social, una compañía de responsabilidad limitada de `[STATE OF FORMATION]` ("la Compañía"). Léalo. Rige sus derechos.
 
 ## 1.1 Qué está comprando
 
@@ -101,7 +101,7 @@ Completar una reserva constituye la aceptación de estas Condiciones de Transpor
 
 ## 2.1 Actividad
 
-Participación en una salida social programada del club a bordo del M/V Sea Charm II operado por [UN] Hinged Social, incluido el tránsito por las aguas de la Bahía de Biscayne, la Vía Navegable Intracostera del Atlántico y las aguas costeras adyacentes de los condados de Miami-Dade y Broward, y donde se ofrezca, natación y recreación acuática en fondeaderos autorizados.
+Participación en una salida social programada del club a bordo del M/V Sea Charm II operado por [un] Hinged Social, incluido el tránsito por las aguas de la Bahía de Biscayne, la Vía Navegable Intracostera del Atlántico y las aguas costeras adyacentes de los condados de Miami-Dade y Broward, y donde se ofrezca, natación y recreación acuática en fondeaderos autorizados.
 
 ## 2.2 Entiendo los riesgos
 
@@ -139,7 +139,7 @@ He leído y acepto el Código de conducta, la lista de Artículos prohibidos, la
 
 `ATTORNEY — el lenguaje operativo de liberación debe ser redactado por el abogado.`
 
-En la máxima medida permitida por la ley, libero, eximo y descargo a [UN] Hinged Social, a la embarcación M/V Sea Charm II y a sus propietarios, directivos, miembros, empleados, tripulación, agentes y contratistas de responsabilidad por cualquier lesión, enfermedad, muerte o pérdida de propiedad derivada de mi participación, **excluyendo la negligencia grave, la conducta dolosa y cualquier responsabilidad que no pueda liberarse legalmente bajo la ley de Florida o federal.**
+En la máxima medida permitida por la ley, libero, eximo y descargo a [un] Hinged Social, a la embarcación M/V Sea Charm II y a sus propietarios, directivos, miembros, empleados, tripulación, agentes y contratistas de responsabilidad por cualquier lesión, enfermedad, muerte o pérdida de propiedad derivada de mi participación, **excluyendo la negligencia grave, la conducta dolosa y cualquier responsabilidad que no pueda liberarse legalmente bajo la ley de Florida o federal.**
 
 ## 2.6 Autorización médica
 
@@ -257,7 +257,7 @@ La identificación se inspecciona visualmente. La Compañía no fotografía, esc
 
 ## 5.2 Responsabilidad
 
-[UN] Hinged Social no es responsable por pérdida, robo, daño o caída por la borda de ninguna propiedad personal traída a bordo o dejada en la instalación del muelle, incluidos teléfonos, joyas, gafas de sol, relojes, cámaras, llaves, billeteras y ropa. La propiedad se transporta enteramente bajo el riesgo de su dueño.
+[un] Hinged Social no es responsable por pérdida, robo, daño o caída por la borda de ninguna propiedad personal traída a bordo o dejada en la instalación del muelle, incluidos teléfonos, joyas, gafas de sol, relojes, cámaras, llaves, billeteras y ropa. La propiedad se transporta enteramente bajo el riesgo de su dueño.
 
 ## 5.3 Lo que recomendamos
 

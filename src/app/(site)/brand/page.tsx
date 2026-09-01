@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 const BOILER =
-  "[UN] is a global nautical social club. The anchor experience is a weekly seven-hour sailing out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Six divisions share one anchor and swap the accent only: [UN] Hinged, [UN] Bound, [UN] Limited, [UN] Scripted, [UN] Cut and [UN] Brand. Membership is by application or invitation.";
+  "[un] is a global nautical social club. The anchor experience is a weekly seven-hour sailing out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Six divisions share one anchor and swap the accent only: [un] Hinged, [un] Bound, [un] Limited, [un] Scripted, [un] Cut and [un] Brand. Membership is by application or invitation.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--scene-golden)",
@@ -39,7 +39,7 @@ const IVORIES: Array<[string, string, string, boolean]> = [
   ["Ivory 100", "#F1F1ED", "type on ink", false],
   ["Ivory 500", "#BCBCB3", "secondary", false],
 ];
-/* The house accent, then the division hues — five of them: [UN] Brand carries
+/* The house accent, then the division hues — five of them: [un] Brand carries
    no hue and no token, so it has no swatch to copy. Division hues name a club and
    nothing else: operational state — Five-A phase, run-of-show position,
    procurement status — is set in numerals on the greyscale, never in one of
@@ -148,7 +148,7 @@ export default function BrandKitPage() {
           <ul className="bk-rules">
             <li><b>No logo exists.</b> The wordmark is set in plain type. Never draw, generate, or commission a mark.</li>
             <li><b>The brackets are part of the mark.</b> Never dropped, restyled, recoloured, or spaced out. The one bracketless setting is embroidery below 8 mm.</li>
-            <li><b>Case:</b> {ANCHOR} always caps; the suffix always sentence case. Two sanctioned variants only — serif italic lowercase for campaigns, mono all caps for large physical goods. Plain-sans lowercase is never permitted.</li>
+            <li><b>Case:</b> {ANCHOR} is typed lowercase, always — the case is part of the mark. The suffix is sentence case. Two sanctioned suffix variants only — serif italic lowercase for campaigns, mono all caps for large physical goods; the anchor never changes with them. Plain-sans lowercase is never permitted for the suffix.</li>
             <li><b>Never a suffix without the anchor,</b> and never two suffixes in one lockup.</li>
             <li><b>Clearspace:</b> one cap-height of the U on all sides, measured from the outer bracket edge; nothing enters it.</li>
             <li><b>Colours:</b> the anchor is always ink or ivory. Only the sub line and the rule carry accent.</li>
@@ -267,7 +267,7 @@ export default function BrandKitPage() {
               <div className="row" key={id}>
                 <span className="k">{lockup(id)}</span>
                 <span className="bk-rooms__role">
-                  {/* [UN] Brand hosts no experiences — no categories to list,
+                  {/* [un] Brand hosts no experiences — no categories to list,
                       and a dangling separator is a word for a missing value. */}
                   {DIVISIONS[id].categories.length > 0
                     ? `${DIVISIONS[id].what} · ${DIVISIONS[id].categories.join(" · ")}`

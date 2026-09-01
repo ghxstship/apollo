@@ -1,5 +1,5 @@
 # SAFETY & COMPLIANCE POLICIES
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 ### Internal and crew-facing. Not for public distribution.
 
 ---

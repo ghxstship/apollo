@@ -1,5 +1,5 @@
 # MEMBERSHIP & PARTNERS
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 ---
 ---
@@ -74,7 +74,7 @@ A member may not offer open invitations, post guest availability publicly, or se
 
 ## 2.1 Purpose and structure
 
-[UN] Hinged Social is a membership program operated by `[ENTITY]`, a `[STATE]` limited liability company. **Members hold participation privileges, not ownership, equity, voting rights in the Company, or any interest in the vessel.**
+[un] Hinged Social is a membership program operated by `[ENTITY]`, a `[STATE]` limited liability company. **Members hold participation privileges, not ownership, equity, voting rights in the Company, or any interest in the vessel.**
 
 ## 2.2 Membership tiers
 
@@ -212,7 +212,7 @@ Professional at all times. No harassment, no pursuit of guests, no soliciting pe
 | General liability | `[$1,000,000]` per occurrence |
 | `[Professional / equipment / auto]` | `[  ]` |
 | Workers' compensation | As required by Florida law |
-| Additional insured | **[UN] Hinged Social and `[VESSEL OWNER]` named as additional insureds** |
+| Additional insured | **[un] Hinged Social and `[VESSEL OWNER]` named as additional insureds** |
 | Certificate | Delivered `[14]` days before the engagement |
 
 `Confirm requirements with your carrier and broker — marine exposure changes the analysis, and many standard GL policies contain watercraft exclusions that would leave a vendor effectively uninsured aboard.`

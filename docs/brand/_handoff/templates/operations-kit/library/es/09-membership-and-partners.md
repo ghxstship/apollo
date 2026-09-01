@@ -1,5 +1,5 @@
 # MEMBRESÍA Y SOCIOS
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 ---
 ---
@@ -74,7 +74,7 @@ Un miembro no puede ofrecer invitaciones abiertas, publicar disponibilidad de in
 
 ## 2.1 Propósito y estructura
 
-[UN] Hinged Social es un programa de membresía operado por `[ENTITY]`, una compañía de responsabilidad limitada de `[STATE]`. **Los miembros poseen privilegios de participación, no propiedad, capital, derechos de voto en la Compañía, ni interés alguno en la embarcación.**
+[un] Hinged Social es un programa de membresía operado por `[ENTITY]`, una compañía de responsabilidad limitada de `[STATE]`. **Los miembros poseen privilegios de participación, no propiedad, capital, derechos de voto en la Compañía, ni interés alguno en la embarcación.**
 
 ## 2.2 Niveles de membresía
 
@@ -212,7 +212,7 @@ Profesional en todo momento. Sin acoso, sin perseguir a huéspedes, sin solicita
 | Responsabilidad general | `[$1,000,000]` por ocurrencia |
 | `[Professional / equipment / auto]` | `[  ]` |
 | Compensación laboral | Según lo exija la ley de Florida |
-| Asegurado adicional | **[UN] Hinged Social y `[VESSEL OWNER]` nombrados como asegurados adicionales** |
+| Asegurado adicional | **[un] Hinged Social y `[VESSEL OWNER]` nombrados como asegurados adicionales** |
 | Certificado | Entregado `[14]` días antes del contrato |
 
 `Confirme los requisitos con su aseguradora y su corredor — la exposición marina cambia el análisis, y muchas pólizas GL estándar contienen exclusiones de embarcaciones que dejarían a un proveedor efectivamente sin seguro a bordo.`

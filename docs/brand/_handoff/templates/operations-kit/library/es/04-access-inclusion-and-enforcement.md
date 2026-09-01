@@ -1,12 +1,12 @@
 # POLÍTICAS DE ACCESO, INCLUSIÓN Y CUMPLIMIENTO
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 ---
 ---
 
 # 1 · POLÍTICA DE ACCESIBILIDAD Y ADA
 
-Los operadores de embarcaciones de pasajeros son lugares de acomodación pública bajo el Título III de la Ley de Estadounidenses con Discapacidades (ADA). [UN] Hinged Social está comprometido con el acceso, e igualmente comprometido con ser honesto sobre lo que un pontón de 45 pies puede y no puede hacer — porque un huésped que llega a una sorpresa está peor servido que uno a quien se le dijo la verdad por adelantado.
+Los operadores de embarcaciones de pasajeros son lugares de acomodación pública bajo el Título III de la Ley de Estadounidenses con Discapacidades (ADA). [un] Hinged Social está comprometido con el acceso, e igualmente comprometido con ser honesto sobre lo que un pontón de 45 pies puede y no puede hacer — porque un huésped que llega a una sorpresa está peor servido que uno a quien se le dijo la verdad por adelantado.
 
 ## 1.1 Qué es accesible
 
@@ -111,7 +111,7 @@ La alergia o el miedo a los perros no son causal para excluir a un animal de ser
 
 ## 3.1 Compromiso
 
-[UN] Hinged Social no discrimina a ningún miembro, huésped, solicitante, empleado, tripulante, contratista o proveedor por motivos de raza, color, origen nacional, etnia, ascendencia, religión, sexo, embarazo, orientación sexual, identidad o expresión de género, edad, discapacidad, información genética, estado civil o familiar, condición militar o de veterano, o cualquier otra característica protegida por la ley federal, de Florida, del condado de Miami-Dade o del condado de Broward.
+[un] Hinged Social no discrimina a ningún miembro, huésped, solicitante, empleado, tripulante, contratista o proveedor por motivos de raza, color, origen nacional, etnia, ascendencia, religión, sexo, embarazo, orientación sexual, identidad o expresión de género, edad, discapacidad, información genética, estado civil o familiar, condición militar o de veterano, o cualquier otra característica protegida por la ley federal, de Florida, del condado de Miami-Dade o del condado de Broward.
 
 Las ordenanzas de derechos humanos de Miami-Dade y Broward extienden las protecciones más allá de la base federal, incluidas la orientación sexual y la identidad de género. Aplicamos el estándar más amplio que corresponda.
 

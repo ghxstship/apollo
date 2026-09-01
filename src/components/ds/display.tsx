@@ -157,13 +157,15 @@ export function Table<R extends Record<string, unknown>>({
    it is set, so that the invariants in docs/brand/brand-architecture.md hold by
    construction rather than by review:
 
-   - The brackets are part of the mark. `[UN]` is a literal in the JSX below and
+   - The brackets are part of the mark. `[un]` is a literal in the JSX below and
      there is no prop that removes, restyles, recolours, or spaces them out.
    - Never a suffix without the anchor: the anchor renders unconditionally.
    - Never two suffixes in one lockup: `suffix` is one optional value, not a
      list, so a second one is not expressible.
-   - `[UN]` is always caps and the suffix is always sentence case, except for
-     the two sanctioned variants. Whatever case the caller passes is normalised
+   - `[un]` is typed lowercase — the case is part of the mark (owner ruling
+     2026-08-31, matching the kit's specimens) — and the suffix is sentence
+     case, except for the two sanctioned variants. Whatever case the caller
+     passes is normalised
      — a suffix arriving as "HINGED" from a database column does not silently
      become the physical-goods setting.
    - Plain-sans lowercase is never permitted. The only lowercase path is
@@ -209,7 +211,7 @@ const WM_ACCENTS: Record<DivisionId | "shop", string> = { ...DIVISION_ACCENT, sh
 /** The six sanctioned suffixes. Tighter than the package's .d.ts, which unions
     the literals with bare `string` and so accepts anything at all — the six
     divisions are the whole set, and a seventh is a brand decision, not a prop
-    value. "Brand" landed with kit v2 (2026-08): [UN] Brand, nautical lifestyle,
+    value. "Brand" landed with kit v2 (2026-08): [un] Brand, nautical lifestyle,
     fashion, and gear — no accent, its sub line renders in ink. */
 export type DivisionSuffix = "Hinged" | "Bound" | "Limited" | "Scripted" | "Cut" | "Brand";
 
@@ -217,7 +219,7 @@ interface WordmarkBase {
   /** sm 16 / md 20 / lg 36, or a px number. The lockup is one of the four
       documented exemptions from the Anton ≥22px floor. */
   size?: "sm" | "md" | "lg" | number;
-  /** Division suffix, sentence case. Pass null for the bare [UN] parent anchor
+  /** Division suffix, sentence case. Pass null for the bare [un] parent anchor
       (System A) — used on avatars, app icons, passes, wayfinding, and anywhere
       the umbrella is speaking rather than a division. */
   suffix?: DivisionSuffix | null;

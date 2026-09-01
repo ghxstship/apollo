@@ -17,7 +17,7 @@ export function Wordmark({size='md',suffix='Hinged',sub=null,accent,inverse=fals
     :{font:'700 '+sPx+'px/1 var(--font-mono)',letterSpacing:caps?'.06em':'-.01em',marginLeft:'.3em'};
   return <span style={{display:'inline-flex',flexDirection:'column',alignItems:'center',lineHeight:1,...style}}>
     <span style={{display:'inline-flex',alignItems:'baseline',color:ink}}>
-      <span style={{font:'400 '+px+'px/1 var(--font-display)',letterSpacing:'.02em'}}>[UN]</span>
+      <span style={{font:'400 '+px+'px/1 var(--font-display)',letterSpacing:'.02em'}}>[un]</span>
       {word&&<span style={sfxStyle}>{editorial?String(suffix).toLowerCase():word}</span>}
     </span>
     {sub&&<span style={{font:'700 '+Math.max(9,Math.round(px*.34))+'px/1 var(--font-mono)',letterSpacing:'.42em',marginTop:Math.round(px*.28),marginLeft:'.42em',color:inverse?'rgba(241,241,237,.8)':(ACCENTS[tone]||ACCENTS.hinged)}}>{sub}</span>}

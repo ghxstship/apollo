@@ -1,6 +1,6 @@
 # PACKAGE MANIFEST
 
-**Package:** [UN] Hinged Social Guest & Operations Policy Library
+**Package:** [un] Hinged Social Guest & Operations Policy Library
 **Vessel:** M/V Sea Charm II — Trident 4512, 45' × 12' commercial aluminum pontoon
 **Regulatory frame:** USCG Subchapter T inspected small passenger vessel (46 CFR Parts 175–187) · Miami-Dade and Broward Counties, Florida
 **Version:** 1.0 · **Packaged:** August 28, 2026 · **Format:** Markdown (UTF-8)
@@ -53,7 +53,7 @@
 
 ## Standard placeholders
 
-[UN] Hinged Social Sea Charm II `[COI CAPACITY]` `[HOMEPORT / DOCK]` `[MARINA]` `[CLUB PHONE]` `[CLUB EMAIL]` `[SAFETY OFFICER]` `[POLICY OWNER]` `[REVIEWING BODY]` `[PRIVACY CONTACT]` `[MEDIA CONTACT]` `[SHORESIDE CONTACT]` `[DATE]` `[STATE OF FORMATION]` `[ALCOHOL MODEL]`
+[un] Hinged Social Sea Charm II `[COI CAPACITY]` `[HOMEPORT / DOCK]` `[MARINA]` `[CLUB PHONE]` `[CLUB EMAIL]` `[SAFETY OFFICER]` `[POLICY OWNER]` `[REVIEWING BODY]` `[PRIVACY CONTACT]` `[MEDIA CONTACT]` `[SHORESIDE CONTACT]` `[DATE]` `[STATE OF FORMATION]` `[ALCOHOL MODEL]`
 
 Grep for `[` and `ATTORNEY` to find everything still open.
 

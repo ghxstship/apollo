@@ -1,7 +1,7 @@
 import "server-only";
 import { moduleTables } from "@/lib/module-tables";
 
-/* Charter — the [UN] Limited standard, read.
+/* Charter — the [un] Limited standard, read.
 
    Almost everything the charter kit draws already exists here under another
    name, and where that is true this module renames rather than rebuilds:

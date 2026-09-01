@@ -79,7 +79,7 @@ export default async function CharterPage() {
   if (!row) {
     return (
       <div className="cht">
-        <span className="mbr-eyebrow">Charter · [UN] Limited</span>
+        <span className="mbr-eyebrow">Charter · [un] Limited</span>
         <h1 className="mbr-h1">No passage ahead</h1>
         <p className="cht-empty">
           The itinerary, the cabin card and the port guide are artefacts of a

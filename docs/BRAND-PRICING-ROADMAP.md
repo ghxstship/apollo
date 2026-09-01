@@ -1,4 +1,4 @@
-# [UN] Social — pricing architecture & brand unification roadmap
+# [un] Social — pricing architecture & brand unification roadmap
 
 Incorporates the 2026-07-24 planning sheet: memberships (Access / Regional /
 National / Global / Guest, three price tiers each), event taxonomy (two
@@ -65,8 +65,8 @@ Structural recommendations:
 
 ## 2 · Branded-surface inventory (as built today)
 
-**Master brand:** [UN] SOCIAL — Neon Brutalist v4, Marcellus/Archivo/Space
-Mono, lava gradients, [UN] mark.
+**Master brand:** [un] SOCIAL — Neon Brutalist v4, Marcellus/Archivo/Space
+Mono, lava gradients, [un] mark.
 
 | # | Surface | Micro-brand carried | Where |
 | --- | --- | --- | --- |

@@ -10,12 +10,12 @@ Three tiers under one umbrella, plus a commercial fourth:
 
 | Tier | Brand | Role |
 | --- | --- | --- |
-| IRL experiences | **[UN] Limited** | Nautical lifestyle experiences — the anchor product |
-| App / vetting engine | **[UN] Scripted** | Screening, Radar, matching |
-| Media & community | **[UN]** | Content, episodes, community — also the umbrella |
+| IRL experiences | **[un] Limited** | Nautical lifestyle experiences — the anchor product |
+| App / vetting engine | **[un] Scripted** | Screening, Radar, matching |
+| Media & community | **[un]** | Content, episodes, community — also the umbrella |
 | Commerce | **the Shop** | Merch, drops, onboard retail |
 
-Activations use the `[UN]` bracketed anchor plus a sentence-case suffix (see `brand-architecture.md`): [UN] Hinged (sandbar socials), [UN] Limited (charters), [UN] Bound (lifestyle mixers), [UN] Scripted (dating pop-ups), [UN] Cut (members-only media).
+Activations use the `[un]` bracketed anchor plus a sentence-case suffix (see `brand-architecture.md`): [un] Hinged (sandbar socials), [un] Limited (charters), [un] Bound (lifestyle mixers), [un] Scripted (dating pop-ups), [un] Cut (members-only media).
 
 **Audience:** vetted singles aged 25–45, primary; open-minded and alternative-lifestyle couples, first-class secondary. Copy addresses both — never singles-only phrasing on shared surfaces.
 

@@ -7,7 +7,7 @@ import { SendAWord } from "@/components/member/send-a-word";
 
 export const metadata: Metadata = { title: "Matches" };
 
-/* [UN] Scripted — Matches. Every one came from a shared table and a mutual
+/* [un] Scripted — Matches. Every one came from a shared table and a mutual
    pick; there is nothing here to browse. Messaging reuses direct threads — a
    match is an introduction, not another inbox. */
 

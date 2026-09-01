@@ -28,7 +28,9 @@ export function LockupHorizontal({ height = 34 }: { height?: number }) {
    the master form for web headlines. Like the Wordmark, it is set in exactly
    one place so the invariants hold by construction rather than by review:
 
-   - [UN] in Anton caps; the phrase in Space Mono LOWERCASE at .65 of the
+   - [un] in Anton, typed lowercase — the case is part of the mark (owner
+     ruling 2026-08-31: the anchor is lowercase everywhere, matching the kit's
+     specimens); the phrase in Space Mono LOWERCASE at .65 of the
      bracket size — "lowercase, always, in mono. It is not a sentence and
      takes no full stop." The lowercase is enforced in ws-tagline__line's CSS
      transform, so the phrase stays lowercase even inside the uppercased

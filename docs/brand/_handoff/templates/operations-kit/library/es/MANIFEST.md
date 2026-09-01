@@ -1,6 +1,6 @@
 # MANIFIESTO DEL PAQUETE
 
-**Paquete:** Biblioteca de políticas de huéspedes y operaciones de [UN] Hinged Social
+**Paquete:** Biblioteca de políticas de huéspedes y operaciones de [un] Hinged Social
 **Embarcación:** M/V Sea Charm II — Trident 4512, pontón comercial de aluminio de 45' × 12'
 **Marco regulatorio:** Embarcación de pasajeros pequeña inspeccionada por la USCG, Subcapítulo T (46 CFR Partes 175–187) · Condados de Miami-Dade y Broward, Florida
 **Versión:** 1.0 · **Empaquetado:** 28 de agosto de 2026 · **Formato:** Markdown (UTF-8)

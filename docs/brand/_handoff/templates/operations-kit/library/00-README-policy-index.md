@@ -1,5 +1,5 @@
 # POLICY LIBRARY — INDEX
-## [UN] Hinged Social · M/V Sea Charm II (Trident 4512) · Social Club Event Series
+## [un] Hinged Social · M/V Sea Charm II (Trident 4512) · Social Club Event Series
 
 **Library version:** 1.0 · **Effective:** `[DATE]` · **Owner:** `[POLICY OWNER]`
 
@@ -35,7 +35,7 @@
 
 ## Standard placeholders
 
-[UN] Hinged Social Sea Charm II `[COI CAPACITY]` `[HOMEPORT / DOCK]` `[CLUB PHONE]` `[CLUB EMAIL]` `[SAFETY OFFICER]` `[POLICY OWNER]` `[REVIEWING BODY]` `[DATE]` `[STATE OF FORMATION]`
+[un] Hinged Social Sea Charm II `[COI CAPACITY]` `[HOMEPORT / DOCK]` `[CLUB PHONE]` `[CLUB EMAIL]` `[SAFETY OFFICER]` `[POLICY OWNER]` `[REVIEWING BODY]` `[DATE]` `[STATE OF FORMATION]`
 
 ---
 

@@ -8,7 +8,7 @@
    is what brand.ts assigns to --brand-scripted. So the token is referenced and
    the hex never is, which is what keeps this correct through a rename: the kit
    called the same hue "FLARE ON INK" one revision ago, and the current readme
-   calls [UN] Scripted "flare pink" while tokens.css and both kits agree it is
+   calls [un] Scripted "flare pink" while tokens.css and both kits agree it is
    blue. A file full of #4361EE would have had to be edited three times and
    would be wrong now.
 

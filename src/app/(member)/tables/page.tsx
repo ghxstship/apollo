@@ -6,7 +6,7 @@ import { TableCard, type TableView } from "./table-card";
 
 export const metadata: Metadata = { title: "Tonight" };
 
-/* [UN] Scripted — Tonight. Blind tables for six on the next Table night.
+/* [un] Scripted — Tonight. Blind tables for six on the next Table night.
    Matches come from tables, not swiping: you sit, and afterwards you privately
    say who you'd meet again. Rose accent rides data-theme="shore". */
 

@@ -35,7 +35,7 @@ export const metadata: Metadata = { title: "Vetting" };
    the applicants is exactly that implication. A member sees their own six gates;
    the aggregate belongs on a crew surface.
 
-   The eyebrow is [UN] Scripted, which is now the kit's own word for it: the
+   The eyebrow is [un] Scripted, which is now the kit's own word for it: the
    revision of this kit that this page was first built against read "UNHINGED
    DATING" in the header strip, a string the lexicon guard catches because the
    rebrand retired it. Twenty-one sibling kits in templates/ still carry the old

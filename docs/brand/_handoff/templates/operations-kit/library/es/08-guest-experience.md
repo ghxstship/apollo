@@ -1,5 +1,5 @@
 # POLÍTICAS DE EXPERIENCIA DEL HUÉSPED
-## [UN] Hinged Social · M/V Sea Charm II
+## [un] Hinged Social · M/V Sea Charm II
 
 *De cara al público. Estos son los documentos que hacen que la operación se sienta considerada y no meramente conforme.*
 

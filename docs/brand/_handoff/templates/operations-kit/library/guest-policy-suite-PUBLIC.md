@@ -121,19 +121,19 @@ Federal law (MARPOL Annex V) and Florida law prohibit discharging plastics and r
 - Body paint, henna, and cosmetics that stain fiberglass, vinyl, or aluminum
 - Illegal, counterfeit, or altered identification
 - Outside professional camera crews, tripods, gimbals over 24", and commercial recording equipment without prior written media authorization
-- Vending, sampling, or promotional merchandise not authorized by [UN] Hinged Social
+- Vending, sampling, or promotional merchandise not authorized by [un] Hinged Social
 - Sealed containers or packages you are transporting on someone else's behalf
 
 ## Screening and refusal
 
-All bags are subject to inspection at the gangway before boarding. We are not required to state a reason for refusing an item. Refused items may not be stored aboard, and [UN] Hinged Social will not hold, transport, or return them — plan accordingly. Refusing inspection means refusing boarding.
+All bags are subject to inspection at the gangway before boarding. We are not required to state a reason for refusing an item. Refused items may not be stored aboard, and [un] Hinged Social will not hold, transport, or return them — plan accordingly. Refusing inspection means refusing boarding.
 
 ---
 ---
 
 # DOCUMENT 3 — CODE OF CONDUCT
 
-**M/V Sea Charm II · [UN] Hinged Social Event Series**
+**M/V Sea Charm II · [un] Hinged Social Event Series**
 
 This is a social club on a working commercial vessel. Those two facts sit together comfortably as long as everyone aboard understands the second one. This Code applies from the moment you arrive at `[HOMEPORT / DOCK]` until you leave the property — including the dock, the parking area, and the walk to your car.
 
@@ -186,7 +186,7 @@ Swimming is permitted **only** when the Captain announces an authorized swim cal
 
 ## 7. Photography and content
 
-[UN] Hinged Social may photograph and record aboard for promotional use — this is disclosed at booking and covered by our Photo & Video Release. Guests who prefer not to appear should notify staff at check-in and will be issued a visual opt-out marker.
+[un] Hinged Social may photograph and record aboard for promotional use — this is disclosed at booking and covered by our Photo & Video Release. Guests who prefer not to appear should notify staff at check-in and will be issued a visual opt-out marker.
 
 Guest photography is welcome for personal use. It is not welcome when it is aimed at people who have declined, taken up skirts or into changing areas, or used to record crew, other guests, or incidents for the purpose of harassment. Do not post identifiable images of other guests without their agreement.
 
@@ -230,7 +230,7 @@ If something happens aboard — to you or to someone else — tell any crew memb
 
 # DOCUMENT 4 — ZERO TOLERANCE POLICIES
 
-**M/V Sea Charm II · [UN] Hinged Social**
+**M/V Sea Charm II · [un] Hinged Social**
 
 Most of our rules come with room for a conversation. These do not.
 
@@ -409,14 +409,14 @@ Head counts are taken at boarding, before and after every swim call, and before 
 | On the water — all vessels and agencies | **VHF Channel 16** |
 | Life-threatening emergency ashore | **911** |
 | U.S. Coast Guard Sector Miami Command Center | `[VERIFY CURRENT NUMBER]` |
-| [UN] Hinged Social 24-hour emergency line | `[CLUB PHONE]` |
+| [un] Hinged Social 24-hour emergency line | `[CLUB PHONE]` |
 | Shoreside contact / next-of-kin coordination | `[CLUB EMAIL]` |
 
 **Never make a distress call yourself.** The Captain controls all radio communication. False or duplicate distress calls divert rescue resources from real emergencies and carry federal criminal penalties.
 
 ## After any incident
 
-Report every injury, however minor, to the crew before you disembark. This is for your benefit — undocumented injuries become disputed injuries. [UN] Hinged Social files marine casualty reports with the U.S. Coast Guard as required under 46 CFR Part 4.
+Report every injury, however minor, to the crew before you disembark. This is for your benefit — undocumented injuries become disputed injuries. [un] Hinged Social files marine casualty reports with the U.S. Coast Guard as required under 46 CFR Part 4.
 
 ---
 ---
