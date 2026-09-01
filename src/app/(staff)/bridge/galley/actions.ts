@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { memberNumberFilter, memberNumberTail } from "@/lib/membership";
 import { voiceWith } from "@/lib/errors";
+import { memberMark, memberNumberFilter, memberNumberTail } from "@/lib/membership";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
 export type LookupResult = {
@@ -15,27 +15,35 @@ export async function lookupMember(memberNo: string): Promise<LookupResult> {
   if (!staffId) return { error: ERR_STAFF };
   const code = memberNo.trim().toUpperCase();
   if (!code) return { error: "Key the number first." };
-  /* The tail is the member number; the letters in front are whatever the club
-     was called when the card was printed. This matched the typed string whole,
-     so a crew member keying SYR-0034 off a wallet card — or the bare 0034 the
-     card face shows — found nobody once the column was rewritten to UN-.
-
-     ilike also put operator-typed text into a pattern position, where % and _
-     are wildcards. That is the hazard the gangway closed by moving to eq() and
-     the till never got; memberNumberTail refuses anything outside [A-Z0-9]. */
-  const tail = memberNumberTail(code);
-  if (!tail) return { error: "No member under that number." };
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, member_no, tier")
-    .or(memberNumberFilter(tail))
-    .maybeSingle();
-  if (!profile) return { error: "No member under that number." };
+    /* The tail is the member number; the letters in front are whatever the club
+       was called when the card was printed. Both worktrees were wrong about
+       where the prefix lives, because one rewrote profiles.member_no in the
+       shared database after the other had decided not to. Matching the tail
+       makes the question stop mattering. */
+    const tail = memberNumberTail(code);
+    if (!tail) return { error: "No member under that number." };
+    const { data: profile, error: lookupError } = await supabase
+      .from("profiles")
+      .select("id, full_name, member_no, tier")
+      .or(memberNumberFilter(tail))
+      .maybeSingle();
+    /* maybeSingle() does NOT throw when more than one row matches — it returns
+       data:null with PGRST116. Discarding that meant two members sharing a tail
+       rendered as "No member under that number", the sentence that means THIS
+       PERSON IS NOT A MEMBER, and the operator would turn away somebody who is
+       one. Unreachable today (member_no is unique and every number carries one
+       prefix) and reachable the moment a second prefix or a bare number is
+       written — which is precisely what matching on the tail exists to
+       tolerate. */
+    if (lookupError?.code === "PGRST116")
+      return { error: "More than one member matches that number — key the full number." };
+    if (lookupError) return { error: ERR_LAND };
+    if (!profile) return { error: "No member under that number." };
   return {
     member: {
       id: profile.id,
       name: profile.full_name ?? "Unnamed",
-      memberNo: profile.member_no ?? code,
+      memberNo: memberMark(profile.member_no) || code,
       tier: profile.tier,
     },
   };

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SURFACES } from "@/lib/brand";
+import { memberMark } from "@/lib/membership";
 import { getMember, type DirectoryMember } from "../data";
 import { relTime } from "../relative";
 import { Composer, FeedList, type FeedPost, type VoyageOption } from "./feed";
@@ -67,7 +68,7 @@ export default async function OpenDeckPage() {
     const author = p.author_id ? byId.get(p.author_id) : null;
     const who = author?.full_name ?? p.author_name ?? "A member";
     const meta = [
-      author?.member_no,
+      memberMark(author?.member_no) || null,
       /* Not the paid tier. The directory deliberately shows League — tenure —
          rather than what someone spends, and this was the one surface
          broadcasting a member's plan level beside everything they wrote. */

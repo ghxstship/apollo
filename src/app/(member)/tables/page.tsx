@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { logDate, logTime } from "@/lib/format";
 import { getMember } from "../data";
+import { lockup } from "@/lib/brand";
 import { TableCard, type TableView } from "./table-card";
 
 export const metadata: Metadata = { title: "Tonight" };
@@ -78,7 +79,7 @@ export default async function TablesPage() {
 
   return (
     <div className="ls-fade" data-theme="shore">
-      <span className="mbr-eyebrow">[UN] Scripted</span>
+      <span className="mbr-eyebrow">{lockup("scripted")}</span>
       <h1 className="mbr-h1">Tonight.</h1>
       <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "56ch" }}>
         Blind tables for six. Matches come from tables, not swiping — take a

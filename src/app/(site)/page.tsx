@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { SectionHeader } from "@/components/site/section-header";
-import { CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
+import { ANCHOR, CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -16,7 +16,9 @@ import { fleetByVoyage } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
-  title: "[UN] — anything goes here",
+  /* absolute, or the root template appends the anchor to a title that already
+     opens with it — "[UN] anything goes here · [UN]" shipped once. */
+  title: { absolute: `${ANCHOR} ${TAGLINE}` },
 };
 
 const STEPS: Array<[string, string]> = [
@@ -90,7 +92,7 @@ export default async function HomePage() {
 
       {live.length > 0 ? (
         <>
-          <div className="ws-liveseam ls-lava-flow"></div>
+          <div className="ws-liveseam"></div>
           <div className="ws-livestrip">
             <div className="ls-container ws-livestrip__in">
               <span className="ls-live">Live now</span>

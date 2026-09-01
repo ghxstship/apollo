@@ -1,0 +1,25 @@
+/* REFERENCE ONLY — not compiled. Rebuild as a TSX primitive in apollo. */
+
+import React from 'react';
+const SIZES={sm:16,md:20,lg:36};/* brand lockup — exempt from the Anton ≥22px floor */
+const ACCENTS={hinged:'var(--brand-hinged)',bound:'var(--brand-bound)',limited:'var(--brand-limited)',scripted:'var(--brand-scripted)',cut:'var(--brand-cut)',shop:'var(--brand-shop)',brand:'var(--text-body)',gold:'var(--brand-hinged)',rose:'var(--brand-scripted)',sea:'var(--brand-limited)'};
+const DIVISIONS={HINGED:'hinged',BOUND:'bound',LIMITED:'limited',SCRIPTED:'scripted',CUT:'cut',BRAND:'brand'};
+const SFX_SCALE=1.27;/* Anton cap 0.859em, Space Mono cap 0.676em — 1.27 makes the suffix caps match the bracket caps. Measured, not eyeballed. */
+const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():s;
+export function Wordmark({size='md',suffix='Hinged',sub=null,accent,inverse=false,editorial=false,caps=false,style}){
+  const px=typeof size==='number'?size:SIZES[size]||20;
+  const tone=accent||DIVISIONS[String(suffix||'').toUpperCase()]||'hinged';
+  const ink=inverse?'#F1F1ED':'var(--text-body)';
+  const sPx=Math.round(px*SFX_SCALE);
+  const word=suffix?(caps?String(suffix).toUpperCase():cap(suffix)):null;
+  const sfxStyle=editorial
+    ?{font:'400 '+px+'px/1 var(--font-editorial)',fontStyle:'italic',marginLeft:'.14em'}
+    :{font:'700 '+sPx+'px/1 var(--font-mono)',letterSpacing:caps?'.06em':'-.01em',marginLeft:'.3em'};
+  return <span style={{display:'inline-flex',flexDirection:'column',alignItems:'center',lineHeight:1,...style}}>
+    <span style={{display:'inline-flex',alignItems:'baseline',color:ink}}>
+      <span style={{font:'400 '+px+'px/1 var(--font-display)',letterSpacing:'.02em'}}>[UN]</span>
+      {word&&<span style={sfxStyle}>{editorial?String(suffix).toLowerCase():word}</span>}
+    </span>
+    {sub&&<span style={{font:'700 '+Math.max(9,Math.round(px*.34))+'px/1 var(--font-mono)',letterSpacing:'.42em',marginTop:Math.round(px*.28),marginLeft:'.42em',color:inverse?'rgba(241,241,237,.8)':(ACCENTS[tone]||ACCENTS.hinged)}}>{sub}</span>}
+  </span>;
+}

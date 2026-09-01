@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { getMember } from "../data";
-import { ShopFront, type ShopOrderView, type ShopProduct } from "./shop";
+import { SURFACES } from "@/lib/brand";
+import { Shop, type ShopOrderView, type ShopProduct } from "./shop";
 
-export const metadata: Metadata = { title: "The Shop" };
+export const metadata: Metadata = { title: SURFACES.shop };
 
 export default async function ShopPage() {
   const { supabase, user, profile, zone } = await getMember();
@@ -60,7 +61,7 @@ export default async function ShopPage() {
         harbor or the next Port Day.
       </p>
       <div className="mbr-sec">
-        <ShopFront zone={zone}
+        <Shop zone={zone}
           products={products}
           isGlobal={profile?.tier === "global"}
           orders={orderViews}

@@ -387,7 +387,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
         <div className="hm-form">
           <Input
             label="Destination URL"
-            placeholder="https://example.com/un"
+            placeholder="https://example.com/hook"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
           />

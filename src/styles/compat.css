@@ -1,0 +1,217 @@
+/* Compatibility layer — every token name the previous brand invented, repointed
+   at the [UN] palette in tokens.css.
+
+   READ THIS BEFORE ADDING ANYTHING HERE. This file exists for exactly one
+   reason: ~200 surface files still reference the old vocabulary (--gold-deep,
+   --line-faint, --text-1, --lava), and rebuilding those surfaces is step 6
+   of the handoff, which is a separate piece of work with its own data models.
+   Deleting the names would leave every one of those files painting with an
+   invalid value — CSS fails silently, so the build stays green and the pages go
+   blank-on-blank. Repointing them means the surfaces keep working and start
+   wearing the new palette on the same commit.
+
+   Rules for this file:
+   - Nothing here may redeclare a name tokens.css owns. tokens.css is the source
+     of truth; a second declaration downstream is how a "verbatim" token quietly
+     stops being the value the design system published. Where the old vocabulary
+     collided with a new token name (--space-5..10, --text-body, --void, --rose-*),
+     the CONSUMERS were moved onto the new name instead. Do not add them back.
+   - Every entry is an alias onto a tokens.css value. No literal hex, no literal
+     size that is not on the canonical ladder. The two exceptions are marked.
+   - Every name in this file is step-6 debt. When a surface is rebuilt against
+     its kit, its aliases come out of here. The file is done when it is empty.
+
+   Theme polarity inverted with the rebrand: the previous system was dark-first
+   (:root = noir, [data-theme="light"] = paper). tokens.css is paper-first
+   (:root = paper, [data-theme="dark"] = ink), so this file follows that
+   polarity and the theme bootstrap in layout.tsx was inverted to match. A
+   compat layer on the opposite polarity to its tokens would hand every surface
+   ink text on an ink ground in exactly one of the two themes. */
+:root{
+/* — type families — */
+--font-sans:var(--font-body);
+
+/* — display scale — pinned to the canonical ladder. These were fluid clamps
+     (46–76px, 36–56px, …) which put running headline sizes anywhere between the
+     steps; §4 permits no off-scale size at or below 64px and grants the Wordmark
+     lockup, poster scale, scaled artboards and logo specimens as the only
+     exemptions. A clamp is none of those, so the fluidity goes. — */
+--text-display-xl:var(--text-5xl);
+--text-display-l:var(--text-4xl);
+--text-display-m:var(--text-3xl);
+--text-display-s:var(--text-2xl);
+--text-display-xs:var(--text-xl);
+--leading-display:var(--leading-tight);
+--track-display:var(--tracking-display);
+/* — body and label scale — */
+--text-body-l:var(--text-lg);
+--text-body-s:var(--text-sm);
+/* The eyebrow text/track pair and the button track alias are retired — no
+   surface read them any more, which is this file's definition of done. */
+--text-data:var(--text-xs);
+--text-data-s:var(--text-2xs);
+/* EXCEPTION 1: mono data tracking. The ladder's nearest step is --tracking-dense
+   at .12em, which is a label setting — applied to a column of figures it opens
+   the digits until a phone number stops reading as one number. .04em is the
+   figure setting the tables were built on and there is no token for it. */
+--track-data:.04em;
+/* Legacy no-op: the old sans was loaded with a width axis that Archivo does not
+   have. Kept at 100% so the 39 call sites stay valid until they are rewritten. */
+--stretch-wide:100%;
+--measure:62ch;
+--container:var(--container-max);
+--space-7:var(--space-10);
+
+/* — surfaces — */
+--surface-tint:var(--surface-sunken);
+--surface-deep:var(--noir-800);
+--surface-abyss:var(--noir-950);
+--carbon:var(--noir-900);
+--graphite:var(--noir-700);
+--void-black:var(--noir-950);
+--abyss:var(--noir-950);
+--ink:var(--noir-900);
+/* The component tone key, not a greyscale rung. readme §103: the legacy tone
+   names (gold, rose, sea) are kept for apollo API compatibility and "now
+   resolve to acid green, flare pink, and cobalt". This one resolved to
+   --noir-600 (#333333), so an avatar toned `sea` rendered dark grey — the one
+   tone key of the three that had not been repointed. Cobalt is --grid-500.
+   Single consumer: .ls-avatar--sea. */
+--sea:var(--grid-500);
+--paper:var(--ivory-100);
+--bone:var(--ivory-100);
+--sail:var(--ivory-50);
+--sand:var(--ivory-500);
+
+/* — text — */
+--text-1:var(--text-body);
+--text-2:var(--text-muted);
+--text-3:var(--text-faint);
+--text-inverse-1:var(--ivory-100);
+--text-inverse-2:var(--ivory-300);
+--text-inverse-3:var(--ivory-500);
+--text-link:var(--text-accent);
+/* --text-gold and --clay were referenced by ~13 call sites and declared by
+   nothing — held balances, hail counts and the agreements note have been
+   painting in whatever colour they inherited. Declared here so the rebrand does
+   not carry a silent inheritance bug forward. */
+--text-gold:var(--text-accent);
+--clay:var(--text-muted);
+
+/* — the metallic channel is retired. Antique gold, brass and gilt were one
+     accent under eleven names; the house accent is now acid green and the
+     division hues are reserved for identity, never for state. Every one of
+     these lands on an acid step: the -deep step on paper (small type needs it
+     to clear AA on #EDEDEA), the 400 step on ink. — */
+--gold:var(--accent);
+--gold-400:var(--acid-400);
+--gold-bright:var(--acid-400);
+--gold-deep:var(--text-accent);
+--gilt-bright:var(--acid-400);
+--brass:var(--accent);
+--brass-bright:var(--acid-400);
+--brass-deep:var(--text-accent);
+--aegean:var(--accent);
+--neon-cyan:var(--accent);
+--neon-violet:var(--acid-600);
+/* Commerce, not a division — the Shop carries whichever division's mark the
+   drop belongs to and has no mark of its own, so it gets the one commerce hue. */
+--terracotta:var(--brand-shop);
+
+/* — status. The one channel permitted to override a division accent. — */
+--ok:var(--positive);
+--laurel:var(--positive);
+--warn:var(--caution);
+--siren:var(--danger);
+
+/* — lines and focus — */
+--line-faint:var(--border-subtle);
+--line:var(--border-strong);
+--line-strong:var(--border-strong);
+--line-inverse-faint:rgba(241,241,237,.12);
+--line-inverse:rgba(241,241,237,.26);
+--line-inverse-strong:rgba(241,241,237,.5);
+--border-gold:var(--border-accent);
+--focus:var(--acid-600);
+/* Painted on surfaces that stay dark in BOTH themes (the mobile tab bar, the
+   toast). The paper-safe focus green is 2.4:1 there — under the 3:1 that WCAG
+   1.4.11 asks of a focus indicator — so those surfaces get the ink step. */
+--focus-on-dark:var(--acid-400);
+
+/* — actions — */
+--action-primary:var(--noir-900);
+--action-primary-hover:var(--noir-950);
+--action-on-primary:var(--ivory-50);
+--action-accent:var(--gradient-accent); /* @kind color */
+/* The accent action's hover alias is retired — nothing read it, and its value
+   was wrong anyway (the same gradient as rest, a hover that changed nothing).
+   The gold button hovers on the accent hover step and presses one step darker. */
+--action-on-accent:var(--on-accent);
+
+/* — washes — */
+--wash-ink:rgba(20,20,20,.06);
+--wash-ink-2:rgba(20,20,20,.10);
+--wash-bone:rgba(62,195,23,.08);
+--wash-gold:rgba(62,195,23,.16);
+
+/* — effects — */
+--radius-sharp:var(--radius-sm);
+--shadow-overlay:var(--shadow-raised);
+--shadow-float:var(--shadow-card);
+--glow-cyan:var(--shadow-glow-accent); /* @kind shadow */
+--veil:var(--surface-overlay);
+/* EXCEPTION 2 retired: the veil now consumes var(--blur-glass) whole
+   (backdrop-filter takes a filter list, so the complete blur() function drops
+   in directly) — the bare-length twin --blur-veil came out with it. */
+--grain:var(--texture-grain); /* @kind other */
+--grain-hero:.5; /* @kind other */
+--grain-card:.25; /* @kind other */
+--scrim:var(--gradient-protect); /* @kind color */
+
+/* — the accent seam. --lava-loop is gone with the scroll it existed for: its
+     third stop was only there so a background animated across 200% width did
+     not snap at the wrap, and §Motion sanctions no such animation. The seam is
+     --gradient-accent, held still. — */
+--lava:var(--gradient-accent); /* @kind color */
+
+/* — placeholder media. Photography is still TK; these are the package's
+     synthwave illustration grounds, which carry the grain layer already. — */
+--sea-day:var(--scene-biscayne); /* @kind color */
+--sea-dusk:var(--scene-crimson); /* @kind color */
+--sea-dawn:var(--scene-golden); /* @kind color */
+
+/* — motion — */
+--dur-1:var(--dur-fast);
+--dur-2:var(--dur-base);
+--dur-3:var(--dur-cine);
+--ease-swell:var(--ease-out); /* @kind other */
+}
+
+/* Ink theme. Only the aliases whose ground flips need restating — everything
+   else resolves through a tokens.css value that already flipped.
+
+   Note what is NOT here, and why the omissions are the load-bearing part.
+
+   --paper, --bone and --sail read like surfaces and are not: every call site
+   uses them as knockout TYPE on a ground that is dark in both themes (the hero
+   headline, the member card's name and code, the inverse button). Flip them
+   with the theme and that type becomes the colour of the thing it sits on.
+
+   The --text-inverse-* and --line-inverse-* ramps are the same trap by a worse
+   name. "Inverse" here never meant "the opposite of the current theme" — the
+   old palette declared them ivory at :root and did NOT redeclare them in the
+   paper theme, because they exist for the surfaces that stay ink in both: the
+   marketing nav, the Bridge, the member card, the toast. Both ramps stay ivory
+   in both themes for exactly that reason. */
+[data-theme="dark"]{
+--gold-deep:var(--acid-400);
+--brass-deep:var(--acid-400);
+--focus:var(--acid-400);
+--action-primary:var(--ivory-100);
+--action-primary-hover:var(--ivory-50);
+--action-on-primary:var(--noir-950);
+--wash-ink:rgba(241,241,237,.07);
+--wash-ink-2:rgba(241,241,237,.12);
+--wash-bone:rgba(88,214,33,.10);
+--wash-gold:rgba(88,214,33,.16);
+}

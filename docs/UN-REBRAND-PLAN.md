@@ -56,7 +56,7 @@ Three changes stacked, each a different size:
 | the Galley / Galley POS | unchanged | POS kit keeps house/card tender, member attach |
 | passes | **cabins** (sea) / **seats** (tables) | "berth" stays banned |
 | unhingedsocial.us | unhingedsocial.us | one-constant change: `MAIL_DOMAIN`/`SITE_DOMAIN` in brand.ts + the `OUTBOX_FROM` Vault row — this is why they were centralized |
-| SMS prefix "[UN] SOCIAL:" | "[UN]:" | all 14 drafts re-voiced; `lyre_*` provider names → `un_*` (free — none created at sent.dm yet) |
+| SMS prefix "[UN] SOCIAL:" | "[UN]:" | all 14 drafts re-voiced; `un_*` provider names → `un_*` (free — none created at sent.dm yet) |
 
 **Not present in the [UN] kit — decisions needed (Phase 0):**
 
@@ -67,7 +67,7 @@ Three changes stacked, each a different size:
 - **Open Deck** (the feed). Closest kit concept is the confession booth.
   Recommend keeping the feed, renamed **the Booth**, member-only as now.
 - **Directory / threads / agreements** — no kit coverage; keep, reskin, re-voice.
-- **Repo/project naming**: `lyre-social/` directory, Supabase project name,
+- **Repo/project naming**: `un-social/` directory, Supabase project name,
   Vercel project. Recommend renaming the app directory `un-social/` in one
   dedicated commit; DB legacy names stay (established pattern: plumbing keeps
   old names, display comes from brand.ts).
@@ -85,7 +85,7 @@ timing (Phase 5 standalone vs deferred). Nothing below starts ambiguous.
   ThemeToggle persists dark/light/system (flip of today's order).
 - Rewrite `brand.ts`: names, tagline, SUB_BRANDS map (accent-only, enforced),
   MAIL_DOMAIN→unhingedsocial.us, voice constants. BANNED_TERMS gains: "[UN]",
-  "lyre", "Chandlery", "LORE", "Aurora", "Strike a chord", `!` in rendered copy
+  "un", "Chandlery", "LORE", "Aurora", "Strike a chord", `!` in rendered copy
   (exclamation scan), emoji ranges. Keeps: berth, salon, ticket, leaderboard.
 - Remap DS tones (brass→gold etc.) with a compatibility alias for one commit,
   then sweep call sites. Update Wordmark, Button glow (single primary CTA only),

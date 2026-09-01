@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CITY_CODES } from "@/lib/brand";
 import { TIER_LABEL } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 import { getOperator } from "../../data";
 import type { SegmentFilters } from "./actions";
 import { MembersClient, type MemberRow, type SegmentOption } from "./members-client";
@@ -95,7 +96,7 @@ export default async function MembersPage() {
     return {
       id: p.id,
       name: p.full_name ?? "Unnamed member",
-      memberNo: p.member_no ?? "—",
+      memberNo: memberMark(p.member_no) || "—",
       email: p.email ?? "",
       tier: p.tier,
       tierLabel: TIER_LABEL[p.tier] ?? p.tier,

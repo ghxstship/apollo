@@ -1,4 +1,4 @@
-import { SITE_DOMAIN } from "@/lib/brand";
+import { ANCHOR, SITE_DOMAIN } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildCalendar,
@@ -61,5 +61,5 @@ export async function GET(
 
   /* No name on the feed: the token is unauthenticated, so it carries the
      season and nothing that identifies whose season it is. */
-  return icsResponse(buildCalendar("[UN] — your season", events), "un-season.ics");
+  return icsResponse(buildCalendar(`${ANCHOR} — your season`, events), "unhinged-social.ics");
 }

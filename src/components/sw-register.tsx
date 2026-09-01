@@ -12,13 +12,12 @@ import { adoptLegacyDeviceStorage } from "@/lib/device-storage";
    leaves a trace an operator can find. */
 export function SwRegister() {
   useEffect(() => {
-    /* Runs before anything reads a queue. The device keys were renamed off the
-       retired brand, and this carries over unsent gangway stamps and galley
-       orders and drops stranded rosters — which still hold boarding codes. */
+    /* Carries over unsent gangway stamps and galley orders from the retired
+       key names, and drops stranded rosters — which still hold boarding codes. */
     adoptLegacyDeviceStorage();
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.register("/sw.js").catch((err) => {
-      console.warn("[un] the offline shell did not register:", err);
+      console.warn("[UN] the offline shell did not register:", err);
     });
   }, []);
   return null;

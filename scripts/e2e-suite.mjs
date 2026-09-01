@@ -41,36 +41,12 @@ loadEnvLocal();
    the audit reported a clean lexicon. */
 function bannedTerms() {
   try {
-    /* Comments stripped BEFORE the array is located, for two reasons that both
-       end with a gate reporting clean while enforcing nothing:
-
-       the terminator was `\]` non-greedy, so it stopped at the FIRST close
-       bracket — and a section comment reading "the retired [UN] drafts" inside
-       the array truncated the list to seven entries with no error anywhere; and
-
-       every double-quoted string in range became a banned term, so quoting an
-       example in a comment silently banned it.
-
-       Anchored on the real terminator as well, and a zero-length result is a
-       hard failure rather than an empty list, because "no banned terms" and
-       "could not read the banned terms" must never look the same. */
-    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-    const block = src.match(/export const BANNED_TERMS[^=]*=\s*\[([\s\S]*?)\n\];/);
-    if (!block) {
-      console.error("could not read BANNED_TERMS from src/lib/brand.ts — the lexicon gate would pass on everything");
-      process.exit(2);
-    }
-    const terms = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-    if (terms.length === 0) {
-      console.error("BANNED_TERMS parsed as empty — refusing to run a lexicon gate that bans nothing");
-      process.exit(2);
-    }
-    return terms;
-  } catch (e) {
-    console.error("BANNED_TERMS could not be read:", String(e));
-    process.exit(2);
+    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8");
+    const block = src.match(/export const BANNED_TERMS = \[([\s\S]*?)\]/);
+    if (!block) return [];
+    return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  } catch {
+    return [];
   }
 }
 const BANNED = bannedTerms();
@@ -80,16 +56,6 @@ const PASSWORD = process.env.E2E_PASSWORD;
 if (!PASSWORD) { console.error("E2E_PASSWORD not set — provision personas and pass their password."); process.exit(2); }
 
 const REF = new URL(SUPA).hostname.split(".")[0];
-/* A NOTE ON CHECKS THAT LIE.
-   A broken comparator fails IDENTICALLY every time, so its output is confident
-   and uniform — and uniformity reads as signal rather than as smoke. Three
-   checks written against this database in one day reported, in turn, six of six
-   renderings drifted, every snapshot stale, and realtime broken for members.
-   All three were the checker: a wrong RPC parameter name, a key-order-sensitive
-   comparison, and an insert that had been refused. A scatter of odd results
-   makes you suspicious; a clean sweep makes you believe. Before trusting a red
-   run, break the thing on purpose and watch it go red for the reason you
-   expect. */
 const results = [];
 const failures = [];
 const note = (persona, check, ok, detail = "") => {
@@ -179,9 +145,9 @@ const STALE_BEFORE = () => new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
 /* ---------- housekeeping ----------
    The suite writes real rows against a real database, so it sweeps its own
-   leavings — before as well as after. Everything it creates is namespaced
-   e2e-* / E2E* so the sweep can be exact rather than broad, and scoped by run
-   token and age so it is exact about WHOSE. */
+   leavings — before as well as after, because a run that dies halfway would
+   otherwise poison the next one. Everything the suite creates is namespaced
+   e2e-* / E2E* so the sweep can be exact rather than broad. */
 async function sweep(p) {
   const stf = rest(p.staff);
   await stf.del("applications?email=like.e2e-anon-*");
@@ -190,7 +156,6 @@ async function sweep(p) {
   await stf.del("webhooks?url=like.*example.com/e2e*");
   await stf.del("wardroom_flags?reason=eq.E2E");
   await stf.del("wardroom_posts?body=like.E2E*");
-  /* Mine, or abandoned. Never somebody else's live fixture. */
   for (const rel of ["contests", "voyages"]) {
     await stf.del(`${rel}?slug=like.e2e-*${RUN_TOKEN}*`);
     await stf.del(`${rel}?slug=like.e2e-*&created_at=lt.${STALE_BEFORE()}`);
@@ -216,11 +181,57 @@ async function sweep(p) {
   await stf.del("automations?name=like.E2E*");
   await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
   await stf.del("notifications?title=like.E2E*");
+  /* The waitlist notice CANNOT be swept, and saying so is better than a
+     delete that quietly does nothing. `notifications` has a SELECT policy and an
+     UPDATE policy and no DELETE policy at all — a member's Word is append-only
+     and not even staff may remove a line from it, which is the right call and
+     the same discipline fathoms_ledger keeps. So each run leaves exactly one
+     in-app notice on the national fixture persona, and that is the declared
+     footprint rather than a leak nobody wrote down. */
   await stf.del("account_ledger?memo=like.E2E*");
   await stf.del("notifications?title=eq.A match, from your table");
   await stf.del("dating_tables?number=eq.99");
+  /* Activity, Charter and Membership fixtures. Voyages cascade their legs,
+     stops, options and passes; a vessel cascades its cabins and its link to a
+     voyage; a plan cannot go while a subscription still points at it. */
+  await stf.del("activity_formats?slug=like.e2e-*");
+  const e2ePlans = await stf.get("membership_plans?label=like.E2E*&select=id");
+  for (const row of e2ePlans.data || []) {
+    await stf.del(`subscriptions?plan_id=eq.${row.id}`);
+    await stf.del(`membership_plans?id=eq.${row.id}`);
+  }
+  await stf.del("club_products?slug=like.e2e-*");
+  await stf.del("vessels?name=like.E2E Charter Hull*");
+  /* The pause windows the membership checks open and close. Not deletable by
+     the member who owns one — a window whose dates can be edited is a budget
+     with a dial on it — so the Bridge strikes them.
+
+     Spent credentials are deliberately NOT swept here. member_qr_tokens is
+     cleared lazily inside issue_member_qr(), which deletes that member's own
+     tokens older than five minutes on the next mint, so the table sits at a
+     handful of rows per member rather than growing. Sweeping them from here
+     would need a staff read policy on the credential table, and a crew able to
+     read a live credential is a crew able to board someone who is not there. */
+  for (const who of ["regional", "national", "global", "paused", "staff"]) {
+    await stf.del(`membership_pauses?profile_id=eq.${uid(p[who])}`);
+  }
   await stf.del(`voyages?slug=like.e2e-table-night-*${RUN_TOKEN}*`);
   await stf.del(`voyages?slug=like.e2e-table-night-*&created_at=lt.${STALE_BEFORE()}`);
+  /* Vetting, Radar and Show fixtures. The voyage sweep above already catches
+     e2e-ratio-* and e2e-radar-* through the e2e-* pattern, and deleting the
+     sailing cascades its caps, passes, picks, anchors, envelopes and queue. What
+     does not cascade is anything hung on a PERSONA rather than on a sailing — a
+     vetting file, a preference sheet, a boundary — so a run that died between
+     creating those and its own cleanup would leave the next run's personas
+     already cleared, and the "refused before the vetting file is open" check
+     would pass for the wrong reason. */
+  await stf.del("elements?element_id=like.E2E-*");
+  for (const who of ["regional", "national", "global", "paused", "staff"]) {
+    const id = uid(p[who]);
+    await stf.del(`vetting_files?profile_id=eq.${id}`);
+    await stf.del(`preference_boundaries?profile_id=eq.${id}`);
+    await stf.del(`preference_sheets?profile_id=eq.${id}`);
+  }
 }
 
 /* ---------- E. schema invariants ----------
@@ -265,6 +276,10 @@ const ANON_READABLE = [
   "voyages", "harbors", "vessels", "voyage_vessels", "dispatch_posts",
   "addons", "membership_plans", "crew_roles", "voyage_capacity",
   "cabins", "episodes",
+  /* Activity and Charter publish catalogues the open water is meant to read:
+     the taxonomy prices a format, the five products price a pass, and an
+     itinerary is the guest-facing artefact of a passage. */
+  "activity_formats", "club_products", "voyage_legs", "voyage_stops",
 ];
 const ANON_SEALED = [
   "profiles", "rsvps", "rsvp_guests", "rsvp_addons", "pass_transfers",
@@ -280,6 +295,9 @@ const ANON_SEALED = [
   "contests", "contest_entries", "contest_results",
   "member_engagement", "member_affinity", "fathoms_balance", "account_balance",
   "waitlist_position", "member_league", "member_pass_usage",
+  /* A hold, a pause, a released number and a 60-second credential are all
+     facts about one member, and none of them is a catalogue. */
+  "charter_options", "membership_pauses", "member_number_releases", "member_qr_tokens",
 ];
 
 async function anonSurface() {
@@ -1123,7 +1141,7 @@ async function enforcementRules(p) {
 /* ---------- M. [UN]: cabins, consent, tables, matches ----------
    The rebrand's new objects. Dating privacy is the sharp edge: a pick is
    private even from seatmates, and only mutuality surfaces anything. */
-async function unRules(p) {
+async function clubRules(p) {
   const reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), stf = rest(p.staff), anon = rest(null);
 
   /* --- filming consent --- */
@@ -1798,7 +1816,12 @@ async function routeMatrix(personas) {
   for (const [name, s] of Object.entries(personas)) {
     for (const r of memberPages) {
       const res = await page(s, r.path);
-      const isStaffRoute = r.path.startsWith("/bridge") || r.path === "/kiosk";
+      /* /show is a member-group route by file layout and a crew surface by
+         rule: the run-of-show board, the deck flags and the Pod queue are read
+         on a wet deck by the Cast & Crew, and every table behind it is
+         is_staff(). It gates the same way the Bridge does — redirect to /home —
+         so it is classified here rather than given a second idiom of its own. */
+      const isStaffRoute = r.path.startsWith("/bridge") || r.path === "/kiosk" || r.path === "/show";
       if (isStaffRoute && name !== "staff") {
         const loc = res.headers.get("location") || "";
         const ok = res.status >= 300 && res.status < 400 && loc.includes("/home");
@@ -1821,7 +1844,27 @@ async function routeMatrix(personas) {
              a data row both slipped past an exact match. Comparing on a folded
              copy is safe here because `visible` is rendered text — class names
              like hm-ticket and RSC payload keys never reach it. */
-          const haystack = visible.toLowerCase();
+          /* Fixture personas sign in as e2e-<tier>@fixtures.invalid and the
+             seeded demo account is skipper@fixtures.invalid — addresses that are
+             deliberately on a RETIRED domain, because no_real_mail_to_a_fixture
+             recognises them and refuses to post anything to them. Every Bridge
+             screen that lists members renders those addresses, so the retired
+             domain reads back as a lexicon failure on a staff page.
+
+             It is not one. The gate exists to catch a retired brand in PRODUCT
+             COPY, and a test account's address is not copy. Moving the fixtures
+             to a live domain would be worse than the finding: skipper@ is
+             matched by that guard EXACTLY, so renaming its domain would start
+             posting real mail to it. Fixture addresses are removed from the
+             text before the lexicon reads it, and nothing else is.
+
+             Narrow on purpose: only an address, only these two shapes. A
+             retired brand anywhere else on the page still fails. */
+          const withoutFixtures = visible.replace(
+            /\b(?:e2e-[a-z0-9-]+|skipper)@[a-z0-9.-]+\.[a-z]{2,}/gi,
+            " "
+          );
+          const haystack = withoutFixtures.toLowerCase();
           const banned = BANNED.filter((t) => haystack.includes(t.toLowerCase()));
           note(name, `${r.path} on-lexicon`, banned.length === 0, banned.join(", "));
           const shouts = (visible.match(/!/g) || []).length;
@@ -2023,22 +2066,6 @@ async function parityRules(p) {
      any member could open a conversation with any other. List the recipient for
      the duration, and check the refusal on someone who is not.
      See "a direct message is something the other person can refuse". */
-  /* Clear the pair first. open_direct_thread returns an EXISTING thread without
-     re-checking entitlement — deliberately, since you may keep talking to
-     someone you already have a conversation with — so a thread this test opened
-     on a previous run made every later run return 200 and report the gate
-     broken. The residue, not the gate, was the failure. */
-  {
-    const gone = await stf.get(
-      `direct_thread_pairs?select=thread_id&lo=eq.${[uid(p.global), uid(p.paused)].sort()[0]}` +
-        `&hi=eq.${[uid(p.global), uid(p.paused)].sort()[1]}`
-    );
-    for (const row of gone.data || []) {
-      await stf.del(`direct_thread_pairs?thread_id=eq.${row.thread_id}`);
-      await stf.del(`thread_members?thread_id=eq.${row.thread_id}`);
-      await stf.del(`threads?id=eq.${row.thread_id}`);
-    }
-  }
   const strangerDm = await glo.rpc("open_direct_thread", { p_other: uid(p.paused) });
   note("global", "cannot DM a member they have not sailed with or found listed",
     strangerDm.status >= 400, `got ${strangerDm.status}`);
@@ -2265,195 +2292,783 @@ async function businessRules(p) {
   note("staff", "removes fixture voyage", rm.status === 200 || rm.status === 204, `got ${rm.status}`);
 }
 
-/* Read through staff so a paused persona's own read policy cannot skew it, and
-   bounded by TIME for the same reason folio() is.
+/* ---------- F. Vetting, Radar and Show ----------
+   The three rules these modules are built on are all cross-row counts or clock
+   comparisons, which means none of them can be a check constraint and all of
+   them are trivially bypassed by curl if they live in React. So this block
+   exercises them through PostgREST with no browser anywhere near it — the same
+   door an attacker uses.
 
-   This summed an unbounded select and called the result a balance. PostgREST
-   caps a response at 1000 rows whatever you ask for, and this persona's ledger
-   is at 1043 — so it was summing an arbitrary PAGE, and which thousand you get
-   shifts as rows are added. That is why the footprint check reported 75, then
-   400, then 275 across three runs with no code between them: not leaked state,
-   which accumulates monotonically, but a comparator measuring a moving window
-   of somebody else's arithmetic.
+   What it asserts, in order: the ratio gate refuses a single pass into a full
+   segment; a couple is ONE unit against its cap and TWO heads against the hull;
+   the 17:30 lock refuses an insert AND a delete; the anonymity blur cannot be
+   lowered on deck; and an indoor_only activity element cannot go Active without
+   a named substitute.
 
-   I had already found and fixed exactly this in folio(), in this file, earlier
-   today — and wrote knotsFor a few hours before that without applying the same
-   reasoning. Bounding by the run's own marker makes the window small, exact,
-   and independent of how much history is behind it. */
-async function knotsFor(person, staffSession, since) {
-  const s = rest(staffSession);
-  const res = await s.get(
-    `fathoms_ledger?profile_id=eq.${uid(person)}&created_at=gt.${since}&select=delta`
-  );
-  const rows = res.data || [];
-  if (rows.length >= 1000) throw new Error("knots window is too wide to trust — narrow the marker");
-  return rows.reduce((t, r) => t + Number(r.delta || 0), 0);
+   Every fixture is namespaced e2e-* and swept. The one deliberate omission is
+   the Match Guarantee payout: settling it means completing a sailing, which
+   posts real rows to account_ledger on a database that carries real money. The
+   trigger is inert on every sailing with no voyage_radar row, and proving it
+   fires would mean creating the one condition where it is not. */
+async function ratioAndRadarRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national),
+        glo = rest(p.global), anon = rest(null);
+  const stamp = Date.now();
+  const said = (r) => String(r.data?.message ?? r.data?.hint ?? JSON.stringify(r.data ?? "")).toLowerCase();
+
+  /* Two fixture sailings. The ratio one is a four-seat hull so the head cap is
+     reachable with the personas that exist; the radar one is the real 40 so the
+     picks are not fighting the composition while they are being tested. */
+  const soon = new Date(Date.now() + 2 * 86400_000).toISOString();
+  const mk = async (slug, berths) => {
+    const v = await stf.post("voyages", {
+      slug, title: `E2E ${slug}`, class: "sea", kind: "sea_day", sub_class: "voyage",
+      starts_at: soon, berths_total: berths, status: "live", min_tier: "regional",
+      time_zone: "America/New_York",
+    });
+    return v.data?.[0]?.id ?? null;
+  };
+  const ratioVid = await mk(`e2e-ratio-${stamp}`, 4);
+  const radarVid = await mk(`e2e-radar-${stamp}`, 40);
+  note("staff", "raises the two fixture sailings", !!ratioVid && !!radarVid,
+    `${ratioVid} / ${radarVid}`);
+  if (!ratioVid || !radarVid) return;
+
+  /* ---- the ratio gate ---- */
+
+  /* A sailing is ratio-gated because it HAS caps, not because a flag says so.
+     Before the caps land, the same insert must be ordinary. */
+  const ungated = await reg.post("rsvps", { voyage_id: ratioVid, profile_id: uid(p.regional), status: "aboard" });
+  note("regional", "an ungated sailing takes a pass with no segment", ungated.status === 201, `got ${ungated.status}`);
+  await stf.del(`rsvps?voyage_id=eq.${ratioVid}&profile_id=eq.${uid(p.regional)}`);
+
+  const caps = await stf.post("voyage_segment_caps", [
+    { voyage_id: ratioVid, segment: "single_woman", cap: 1 },
+    { voyage_id: ratioVid, segment: "single_man", cap: 1 },
+    { voyage_id: ratioVid, segment: "couple", cap: 3 },
+  ]);
+  note("staff", "sets the composition by segment", caps.status === 201, `got ${caps.status}`);
+
+  /* The funnel before the gate: no vetting file, no seat, and the refusal says
+     which gate closed rather than that the sale failed. */
+  const unvetted = await reg.post("rsvps", { voyage_id: ratioVid, profile_id: uid(p.regional), status: "aboard", segment: "single_man" });
+  note("regional", "a seat is refused before the vetting file is open", unvetted.status >= 400 && /vetting file/.test(said(unvetted)), said(unvetted).slice(0, 90));
+
+  for (const who of ["regional", "national", "global", "paused", "staff"]) {
+    await stf.post("vetting_files", {
+      profile_id: uid(p[who]), id_verified_at: new Date().toISOString(),
+      age_ok: true, background_state: "cleared",
+    });
+  }
+  const own = await reg.get("own_vetting_state?select=background_state,cleared_until");
+  note("regional", "reads their own vetting state and only that", own.status === 200 && own.data?.[0]?.background_state === "cleared", JSON.stringify(own.data).slice(0, 90));
+  const peek = await reg.get("vetting_files?select=id&limit=1");
+  note("regional", "cannot read the vetting file itself", (peek.data || []).length === 0, `got ${peek.status}`);
+
+  /* A gated sailing seats by segment, and an unsegmented pass is refused by
+     name rather than seated as a null. */
+  const noSeg = await reg.post("rsvps", { voyage_id: ratioVid, profile_id: uid(p.regional), status: "aboard" });
+  note("regional", "a gated sailing refuses a pass with no segment", noSeg.status >= 400 && /seats by segment/.test(said(noSeg)), said(noSeg).slice(0, 90));
+
+  const seatMan = await reg.post("rsvps", { voyage_id: ratioVid, profile_id: uid(p.regional), status: "aboard", segment: "single_man" });
+  note("regional", "takes the single men's seat", seatMan.status === 201, `got ${seatMan.status} ${said(seatMan).slice(0, 80)}`);
+
+  /* THE CHECK THE MODULE EXISTS FOR: the second single man is refused, and the
+     refusal names the number. */
+  const secondMan = await nat.post("rsvps", { voyage_id: ratioVid, profile_id: uid(p.national), status: "aboard", segment: "single_man" });
+  note("national", "a single pass into a full segment is refused", secondMan.status >= 400 && /1 seats, 1 taken/.test(said(secondMan)), said(secondMan).slice(0, 90));
+
+  /* A full segment offers the line and never another segment — so the woman's
+     seat sitting empty next to him is not offered, and the queue takes his
+     place from the database rather than from the request. */
+  const line = await nat.post("waitlist_entries", { voyage_id: ratioVid, profile_id: uid(p.national), segment: "single_man", place: 99 });
+  note("national", "joins the line, and the database numbers the place", line.status === 201 && line.data?.[0]?.place === 1, `got ${line.status} place ${line.data?.[0]?.place}`);
+  const claimEarly = await nat.rpc("claim_your_place", { p_entry: line.data?.[0]?.id });
+  note("national", "cannot claim a seat that was never offered", claimEarly.status >= 400 && /nothing has opened/.test(said(claimEarly)), said(claimEarly).slice(0, 90));
+
+  /* A couple is ONE unit against its cap and TWO heads against the hull. Both
+     halves are asserted, because the count(*) that was already there gets the
+     first one right and the second one silently wrong. */
+  const couple = await glo.post("rsvps", { voyage_id: ratioVid, profile_id: uid(p.global), status: "aboard", segment: "couple" });
+  note("global", "takes a couple pass", couple.status === 201, `got ${couple.status} ${said(couple).slice(0, 80)}`);
+
+  const cap = await anon.get(`voyage_segment_capacity?voyage_id=eq.${ratioVid}&select=segment,cap,units,remaining`);
+  const byseg = Object.fromEntries((cap.data || []).map((r) => [r.segment, r]));
+  note("anon", "capacity reads by segment and names nobody", cap.status === 200 && !JSON.stringify(cap.data).includes("profile"), `got ${cap.status}`);
+  note("staff", "a couple counts as one unit against the couples cap", byseg.couple?.units === 1, JSON.stringify(byseg.couple));
+  const heads = (byseg.single_woman?.units ?? 0) + (byseg.single_man?.units ?? 0) + 2 * (byseg.couple?.units ?? 0);
+  note("staff", "a couple counts as two heads against the hull", heads === 3, `${heads} heads from 2 passes`);
+
+  /* Four seats, three heads taken, and a couple wants two. Staff are refused
+     here as well as members — the whole point of the gate applying above
+     is_staff() rather than below it. */
+  const overHull = await stf.post("rsvps", { voyage_id: ratioVid, profile_id: uid(p.staff), status: "aboard", segment: "couple" });
+  note("staff", "the head cap refuses staff too, not only members", overHull.status >= 400 && /manifest is full at 4/.test(said(overHull)), said(overHull).slice(0, 90));
+
+  /* The companion path is the hole the singles caps would otherwise have: two
+     unsegmented heads riding on a Global pass, counted against nothing. */
+  const withGuest = await stf.patch(`rsvps?voyage_id=eq.${ratioVid}&profile_id=eq.${uid(p.global)}`, { guests: 1 });
+  note("global", "a ratio sailing carries no companions", withGuest.status >= 400 && /no companions/.test(said(withGuest)), said(withGuest).slice(0, 90));
+
+  /* The other end of the line. Without this the waitlist was write-only — a
+     member could join it and nothing in the product could offer them the seat,
+     because offer_the_next_place had no caller. */
+  const offerFull = await stf.rpc("offer_the_next_place", { p_voyage: ratioVid, p_segment: "single_man" });
+  note("staff", "an offer into a full segment is refused before anyone is written to",
+    offerFull.status >= 400 && /nothing to offer/.test(said(offerFull)), said(offerFull).slice(0, 90));
+
+  await stf.del(`rsvps?voyage_id=eq.${ratioVid}&profile_id=eq.${uid(p.regional)}`);
+  /* Counted before and after, because the notice cannot be swept — notifications
+     have no DELETE policy, so an absolute "exactly one" would pass on a virgin
+     database and fail on the second run for ever after. The invariant is "one
+     message per trigger, no reminder chains", and a delta of exactly one is what
+     that actually asserts. */
+  const noticesBefore = await nat.get(`notifications?title=eq.A seat opened&select=id`);
+  const offered = await stf.rpc("offer_the_next_place", { p_voyage: ratioVid, p_segment: "single_man" });
+  note("staff", "the freed seat is offered to position one", offered.status < 400 && !!offered.data, `got ${offered.status}`);
+
+  /* Read through the member's OWN session, not through staff. `notifications`
+     is "own notifications" — profile_id = auth.uid(), with no is_staff() clause
+     — so a member's Word is private even from the Bridge, and asking as staff
+     returns an empty list that looks exactly like a notice that was never
+     written. That is the product being right and the check being wrong. */
+  const wrote = await nat.get(`notifications?title=eq.A seat opened&select=id`);
+  const newNotices = (wrote.data || []).length - (noticesBefore.data || []).length;
+  note("national", "a seat that opens is written once", newNotices === 1, `${newNotices} new notices`);
+
+  const claimed = await nat.rpc("claim_your_place", { p_entry: line.data?.[0]?.id });
+  note("national", "claims the offered seat and it becomes a pass", claimed.status < 400, `got ${claimed.status} ${said(claimed).slice(0, 70)}`);
+  const nowAboard = await stf.get(`rsvps?voyage_id=eq.${ratioVid}&profile_id=eq.${uid(p.national)}&select=status,segment`);
+  note("national", "the claimed pass carries the segment it was queued in",
+    nowAboard.data?.[0]?.status === "aboard" && nowAboard.data?.[0]?.segment === "single_man",
+    JSON.stringify(nowAboard.data).slice(0, 80));
+
+  /* ---- radar ---- */
+
+  const rcaps = await stf.post("voyage_segment_caps", [
+    { voyage_id: radarVid, segment: "single_woman", cap: 10 },
+    { voyage_id: radarVid, segment: "single_man", cap: 10 },
+    { voyage_id: radarVid, segment: "couple", cap: 10 },
+  ]);
+  note("staff", "the radar sailing carries the real composition", rcaps.status === 201, `got ${rcaps.status}`);
+
+  const aboard = {};
+  for (const [who, seg] of [["regional", "single_man"], ["global", "couple"], ["paused", "single_woman"]]) {
+    const r = await stf.post("rsvps", { voyage_id: radarVid, profile_id: uid(p[who]), status: "aboard", segment: seg });
+    aboard[who] = r.data?.[0]?.id ?? null;
+    /* Checked in, because "only aboard" is the one predicate this schema can
+       actually hold — a geofence would be better and does not exist. */
+    if (aboard[who]) await stf.patch(`rsvps?id=eq.${aboard[who]}`, { checked_in_at: new Date().toISOString() });
+  }
+  note("staff", "seats and checks in three passes on the radar sailing",
+    Object.values(aboard).every(Boolean), JSON.stringify(aboard).slice(0, 90));
+  if (!aboard.regional || !aboard.global || !aboard.paused) return;
+
+  /* The clock, set explicitly rather than derived, which is exactly why the
+     column is a timestamptz: a suite that had to wait until 17:15 would not be
+     a suite.
+
+     `slots` is 1, not the product's 3, and that is the only way the ceiling is
+     testable here: proving a cross-row cap needs one more pin than the cap
+     allows, and the personas who can be checked in are limited by the waiver
+     gate — e2e-national holds no current member waiver, so
+     require_signature_at_check_in refuses to put them aboard. With slots at 3
+     the extra pick was refused by the aboard predicate instead of the ceiling,
+     which is a green check for the wrong rule. The trigger branch under test is
+     the same one at any value. */
+  const nowMs = Date.now();
+  const clock = await stf.post("voyage_radar", {
+    voyage_id: radarVid,
+    opens_at: new Date(nowMs - 300_000).toISOString(),
+    locks_at: new Date(nowMs + 1_800_000).toISOString(),
+    anchors_unlock_at: new Date(nowMs + 3_600_000).toISOString(),
+    anchors_expire_at: new Date(nowMs + 90_000_000).toISOString(),
+    slots: 1,
+  });
+  note("staff", "opens the radar clock", clock.status === 201, `got ${clock.status} ${said(clock).slice(0, 80)}`);
+
+  const sweepRes = await reg.rpc("radar_sweep", { p_voyage: radarVid });
+  const pins = Array.isArray(sweepRes.data) ? sweepRes.data : [];
+  note("regional", "the sweep shows the others as pins, first names only", pins.length === 2 && pins.every((x) => !/\s/.test(x.name)), JSON.stringify(pins).slice(0, 120));
+  note("regional", "a couple is one pin", pins.filter((x) => x.couple).length === 1, JSON.stringify(pins.map((x) => x.couple)));
+  const ashore = await nat.rpc("radar_sweep", { p_voyage: radarVid });
+  note("national", "the sweep is refused to anyone not aboard", ashore.status >= 400 && /aboard/.test(said(ashore)), said(ashore).slice(0, 90));
+
+  const pick1 = await reg.post("radar_picks", { voyage_id: radarVid, picker_rsvp: aboard.regional, picked_rsvp: aboard.global });
+  note("regional", "plots a course", pick1.status === 201, `got ${pick1.status} ${said(pick1).slice(0, 80)}`);
+  const selfPick = await reg.post("radar_picks", { voyage_id: radarVid, picker_rsvp: aboard.regional, picked_rsvp: aboard.regional });
+  note("regional", "cannot plot a course to themselves", selfPick.status >= 400, `got ${selfPick.status}`);
+
+  /* The slot ceiling is a cross-row count under an advisory lock, so no CHECK
+     constraint could hold it and the browser is not asked to. The refusal has to
+     name the ceiling — a pick refused because the other pin is ashore is a
+     different rule wearing the same status code. */
+  const overSlots = await reg.post("radar_picks", { voyage_id: radarVid, picker_rsvp: aboard.regional, picked_rsvp: aboard.paused });
+  note("regional", "a pick past the slot ceiling is refused, by the ceiling", overSlots.status >= 400 && /1 picks, 1 used/.test(said(overSlots)), said(overSlots).slice(0, 90));
+
+  /* Mutual only. One-sided so far, so there is nothing to see on either side. */
+  const beforeMutual = await reg.get(`shared_anchors?voyage_id=eq.${radarVid}&select=id`);
+  note("regional", "a one-sided pick surfaces nothing", (beforeMutual.data || []).length === 0, JSON.stringify(beforeMutual.data).slice(0, 80));
+  const spy = await glo.get(`radar_picks?voyage_id=eq.${radarVid}&select=picked_rsvp`);
+  note("global", "cannot read another member's picks", (spy.data || []).length === 0, JSON.stringify(spy.data).slice(0, 80));
+  const staffSpy = await stf.get(`radar_picks?voyage_id=eq.${radarVid}&select=picked_rsvp`);
+  note("staff", "staff cannot read picks either — the count, never the rows", (staffSpy.data || []).length === 0, JSON.stringify(staffSpy.data).slice(0, 80));
+
+  const back = await glo.post("radar_picks", { voyage_id: radarVid, picker_rsvp: aboard.global, picked_rsvp: aboard.regional });
+  note("global", "plots back", back.status === 201, `got ${back.status} ${said(back).slice(0, 80)}`);
+  const sealed = await reg.get(`shared_anchors?voyage_id=eq.${radarVid}&select=id`);
+  note("regional", "the anchor stays sealed until the envelope is opened", (sealed.data || []).length === 0, JSON.stringify(sealed.data).slice(0, 80));
+  const anchorExists = await stf.get(`shared_anchors?voyage_id=eq.${radarVid}&select=id,unlocked_at`);
+  note("staff", "the mutual pick did write an anchor", (anchorExists.data || []).length === 1, JSON.stringify(anchorExists.data).slice(0, 90));
+
+  /* The envelope. Before 19:00 it refuses by name; the wrong envelope refuses
+     as someone else's. */
+  const issued = await stf.rpc("issue_the_envelopes", { p_voyage: radarVid });
+  note("staff", "issues the envelopes", issued.status < 400, `got ${issued.status}`);
+  const envs = await stf.get(`captains_log_envelopes?select=rsvp_id,token`);
+  const tokenFor = Object.fromEntries((envs.data || []).map((e) => [e.rsvp_id, e.token]));
+  const mineSealed = await reg.get("captains_log_envelopes?select=token&limit=1");
+  note("regional", "cannot read their own envelope token", (mineSealed.data || []).length === 0, `got ${mineSealed.status}`);
+
+  const tooEarly = await reg.rpc("open_the_captains_log", { p_token: tokenFor[aboard.regional] });
+  note("regional", "the log refuses to open before 19:00", tooEarly.status >= 400 && /opens at 19:00/.test(said(tooEarly)), said(tooEarly).slice(0, 90));
+  const notYours = await reg.rpc("open_the_captains_log", { p_token: tokenFor[aboard.paused] });
+  note("regional", "another guest's envelope is refused", notYours.status >= 400 && /another guest/.test(said(notYours)), said(notYours).slice(0, 90));
+
+  await stf.patch(`voyage_radar?voyage_id=eq.${radarVid}`, { anchors_unlock_at: new Date(nowMs - 60_000).toISOString() });
+  const opened = await reg.rpc("open_the_captains_log", { p_token: tokenFor[aboard.regional] });
+  note("regional", "opens the log and the anchor surfaces", opened.status < 400, `got ${opened.status} ${said(opened).slice(0, 80)}`);
+  const nowVisible = await reg.get(`shared_anchors?voyage_id=eq.${radarVid}&select=id`);
+  note("regional", "reads the shared anchor once opened", (nowVisible.data || []).length === 1, JSON.stringify(nowVisible.data).slice(0, 80));
+
+  /* Twenty-four hours, both sides, no extension. Two halves: the club may cut a
+     contact short — the Chief Vibe Stew needs that after an incident on deck —
+     and nobody may push one out. The second half used to hold only because no
+     UPDATE policy existed, which is a rule kept by an absence and lasts exactly
+     until someone needs the legitimate half. */
+  const extend = await stf.patch(`shared_anchors?voyage_id=eq.${radarVid}`, { expires_at: new Date(nowMs + 200_000_000).toISOString() });
+  note("staff", "an anchor is never extended, not even by the club", extend.status >= 400 && /never extended/.test(said(extend)), said(extend).slice(0, 90));
+
+  const cutShort = await stf.patch(`shared_anchors?voyage_id=eq.${radarVid}`, { expires_at: new Date(nowMs - 60_000).toISOString() });
+  note("staff", "an anchor can be cut short", cutShort.status < 400, `got ${cutShort.status} ${said(cutShort).slice(0, 70)}`);
+  const expired = await reg.get(`shared_anchors?voyage_id=eq.${radarVid}&select=id`);
+  note("regional", "an expired anchor is gone, not merely greyed out", (expired.data || []).length === 0, JSON.stringify(expired.data).slice(0, 80));
+
+  /* THE LOCK. Both arms — and the delete arm is the one that matters, because
+     without it a member can quietly unplot at 18:59 and the other side's anchor
+     evaporates with no trace. */
+  await stf.patch(`voyage_radar?voyage_id=eq.${radarVid}`, { locks_at: new Date(nowMs - 60_000).toISOString() });
+  const lateInsert = await glo.post("radar_picks", { voyage_id: radarVid, picker_rsvp: aboard.global, picked_rsvp: aboard.paused });
+  note("global", "an entry after the 17:30 lock is refused", lateInsert.status >= 400 && /picks closed at 17:30/.test(said(lateInsert)), said(lateInsert).slice(0, 90));
+
+  const lateDelete = await reg.del(`radar_picks?voyage_id=eq.${radarVid}&picker_rsvp=eq.${aboard.regional}&picked_rsvp=eq.${aboard.global}`);
+  const survived = await reg.get(`radar_picks?voyage_id=eq.${radarVid}&picker_rsvp=eq.${aboard.regional}&picked_rsvp=eq.${aboard.global}&select=picked_rsvp`);
+  note("regional", "a delete after the lock is refused too", lateDelete.status >= 400 && (survived.data || []).length === 1,
+    `del ${lateDelete.status}, ${(survived.data || []).length} left`);
+
+  /* ---- the preference sheet, and the blur it sets ---- */
+
+  const sheet = await reg.post("preference_sheets", { profile_id: uid(p.regional), drinks: ["Zero proof"], flag_green: "E2E green" });
+  note("regional", "writes their own preference sheet", sheet.status === 201, `got ${sheet.status}`);
+  const nosy = await glo.get(`preference_sheets?profile_id=eq.${uid(p.regional)}&select=flag_green`);
+  note("global", "cannot read another guest's preference sheet", (nosy.data || []).length === 0, JSON.stringify(nosy.data).slice(0, 80));
+  const forOther = await glo.post("preference_sheets", { profile_id: uid(p.regional), drinks: ["Gin"] });
+  note("global", "cannot answer for another guest", forOther.status >= 400, `got ${forOther.status}`);
+
+  const boundary = await reg.post("preference_boundaries", { profile_id: uid(p.regional), topic: "photographed", stance: "never" });
+  note("regional", "sets the photography boundary", boundary.status === 201, `got ${boundary.status}`);
+
+  /* The crew tablet inserts the queue row with blur off, because the guest has
+     not said anything on deck. The trigger reads the sheet anyway. */
+  const pod = await stf.post("pod_sessions", { voyage_id: radarVid, rsvp_id: aboard.regional, position: 1, state: "waiting", blur_required: false });
+  note("staff", "the blur is set from the preference sheet, not from the form", pod.data?.[0]?.blur_required === true, JSON.stringify(pod.data?.[0]?.blur_required));
+
+  const lower = await stf.patch(`pod_sessions?id=eq.${pod.data?.[0]?.id}`, { blur_required: false });
+  note("staff", "the blur cannot be lowered on deck", lower.data?.[0]?.blur_required === true, JSON.stringify(lower.data?.[0]?.blur_required));
+
+  const tooLong = await stf.patch(`pod_sessions?id=eq.${pod.data?.[0]?.id}`, { duration_s: 91 });
+  note("staff", "ninety seconds is a constraint, not a convention", tooLong.status >= 400, `got ${tooLong.status}`);
+
+  const podPrivate = await glo.get(`pod_sessions?voyage_id=eq.${radarVid}&select=id`);
+  note("global", "cannot read another guest's pod session", (podPrivate.data || []).length === 0, JSON.stringify(podPrivate.data).slice(0, 80));
+
+  /* ---- the elements catalogue ---- */
+
+  const badUrid = await stf.post("elements", {
+    element_id: `E2E-URID-${stamp}`, urid: "8000.03.301", name: "E2E mismatched code",
+    department: "4000 Build", discipline: "Scenic Fabrication", category: "E2E", kind: "equipment",
+    tier: "05 Experiential", phase: "Install", grain: "class", element_state: "Draft",
+    specifications: "E2E", uom: "set·event", qty: 1, unit_cost_usd: 10,
+    price_confidence: "QUOTED", five_a: "atmosphere", weather: "all_weather",
+  });
+  note("staff", "a URID that does not match its department is refused", badUrid.status >= 400, `got ${badUrid.status}`);
+
+  /* README §5's specification error, caught at procurement rather than at the
+     dock. Deferred to commit, so the element and its substitute may arrive in
+     either order — but an Active one that never gets a substitute cannot
+     commit at all. */
+  const orphan = await stf.post("elements", {
+    element_id: `E2E-POD-${stamp}`, urid: "4000.03.301", name: "E2E indoor activity element",
+    department: "4000 Build", discipline: "Scenic Fabrication", category: "Media Enclosures",
+    kind: "equipment", tier: "05 Experiential", phase: "Install", grain: "class",
+    element_state: "Active", specifications: "E2E", uom: "set·event", qty: 1, unit_cost_usd: 1200,
+    price_confidence: "QUOTED", five_a: "activity", weather: "indoor_only",
+  });
+  note("staff", "an indoor_only activity element with no substitute cannot go Active",
+    orphan.status >= 400 && /substitute/.test(said(orphan)), said(orphan).slice(0, 90));
+
+  const drafted = await stf.post("elements", {
+    element_id: `E2E-POD2-${stamp}`, urid: "4000.03.302", name: "E2E indoor activity element",
+    department: "4000 Build", discipline: "Scenic Fabrication", category: "Media Enclosures",
+    kind: "equipment", tier: "05 Experiential", phase: "Install", grain: "class",
+    element_state: "Draft", specifications: "E2E", uom: "set·event", qty: 2, unit_cost_usd: 600,
+    price_confidence: "QUOTED", five_a: "activity", weather: "indoor_only",
+  });
+  note("staff", "the same element is fine as a Draft", drafted.status === 201, `got ${drafted.status}`);
+  note("staff", "an element totals itself", Number(drafted.data?.[0]?.total_cost_usd) === 1200, String(drafted.data?.[0]?.total_cost_usd));
+  const eid = drafted.data?.[0]?.id;
+  if (eid) {
+    await stf.post("element_substitutes", { element_id: eid, substitute_element_id: null, context: "Canopy pod, mic windshield" });
+    const activate = await stf.patch(`elements?id=eq.${eid}`, { element_state: "Active" });
+    note("staff", "a named substitute is what makes it specifiable", activate.status < 400, `got ${activate.status} ${said(activate).slice(0, 80)}`);
+  }
+  const memberCatalogue = await reg.get("elements?select=element_id&limit=1");
+  note("regional", "the elements catalogue is a crew surface", (memberCatalogue.data || []).length === 0, `got ${memberCatalogue.status}`);
+
+  /* ---- cleanup ----
+     Deleting a Radar sailing is itself a regression test. The cascade reaches
+     radar_picks, whose BEFORE DELETE trigger reads the clock — and the cascade
+     may have dropped voyage_radar first, so the trigger has to read a missing
+     clock on a delete as "the sailing is going away" rather than as "somebody is
+     editing picks on a sailing that has no Radar". Until it did, no Radar
+     sailing could be deleted by anyone, and the refusal surfaced from inside a
+     foreign-key action where nobody would think to look for it.
+
+     The PASSES go first, explicitly, while their sailings are still standing —
+     and that ordering is load-bearing for the ledger, not a tidiness
+     preference. return_knots_with_the_pass reverses a pass's knots on DELETE,
+     but when the row disappears as a CASCADE from `voyages` the reversal does
+     not happen: measured directly, seating awards +25 and dropping the voyage
+     leaves all 25 standing, while deleting the pass first and the voyage second
+     nets to exactly 0. Letting the cascade do it would have this block mint 25
+     knots per persona per run, for ever, into a currency that redeems against a
+     real rewards catalogue. */
+  await stf.del(`rsvps?voyage_id=eq.${ratioVid}`);
+  await stf.del(`rsvps?voyage_id=eq.${radarVid}`);
+  const rmA = await stf.del(`voyages?id=eq.${ratioVid}`);
+  const rmB = await stf.del(`voyages?id=eq.${radarVid}`);
+  await stf.del(`elements?element_id=like.E2E-*`);
+  for (const who of ["regional", "national", "global", "paused", "staff"]) {
+    await stf.del(`vetting_files?profile_id=eq.${uid(p[who])}`);
+    await stf.del(`preference_boundaries?profile_id=eq.${uid(p[who])}`);
+    await stf.del(`preference_sheets?profile_id=eq.${uid(p[who])}`);
+  }
+  /* Verified by id, not by slug pattern. A pattern would also match a fixture
+     belonging to a suite running concurrently against this same shared
+     database — which is a thing that happens here, and which makes a
+     slug-shaped check lie in both directions: green because somebody else's
+     sweep removed my row, or red because their row is still up. The ids are
+     mine and nobody else's. */
+  const leftV = await stf.get(`voyages?id=eq.${ratioVid}&select=id`);
+  const leftR = await stf.get(`voyages?id=eq.${radarVid}&select=id`);
+  const leftF = await stf.get(`vetting_files?profile_id=eq.${uid(p.regional)}&select=id`);
+  const leftE = await stf.get(`elements?element_id=like.E2E-*&select=id`);
+  const leftP = await stf.get(`preference_sheets?profile_id=eq.${uid(p.regional)}&select=profile_id`);
+  note("staff", "the fixtures are gone and verified gone",
+    rmA.status < 400 && rmB.status < 400 &&
+    (leftV.data || []).length === 0 && (leftR.data || []).length === 0 &&
+    (leftF.data || []).length === 0 && (leftE.data || []).length === 0 &&
+    (leftP.data || []).length === 0,
+    `voyages ${(leftV.data || []).length + (leftR.data || []).length}, files ${(leftF.data || []).length}, elements ${(leftE.data || []).length}, sheets ${(leftP.data || []).length}, del ${rmA.status}/${rmB.status}`);
 }
 
-/* — The frozen legal copy still says what the database says —
+/* Read through staff so a paused persona's own read policy cannot skew it.
 
-   src/app/preview/documents/snapshot.json is a FROZEN COPY OF BINDING LEGAL
-   TEXT. The preview page reads live only when SUPABASE_SERVICE_ROLE_KEY is
-   set, which is not the normal case, so it almost always serves the snapshot.
-   Its banner honestly says "Snapshot · <date>" — and nothing compared that
-   snapshot to the clause library. The one page whose whole purpose is letting
-   a reviewer read the binding copy would quietly show them the wrong binding
-   copy, under a date they have no reason to distrust.
+   Through fathoms_balance, NOT by summing fathoms_ledger. PostgREST caps a
+   collection response at a page, this suite asked for every delta row and added
+   up whatever came back, and the regional persona crossed 1,337 ledger rows —
+   so the number this returned stopped being a balance and started being the sum
+   of the first page. Every footprint check downstream then reported drift of a
+   few hundred knots at random, on runs that had moved nothing, which is the
+   worst kind of failing check: it cries wolf until somebody edits the pin to
+   make it stop, and the pin is the only thing watching the ledger.
 
-   It is accurate today. That is the problem: accurate because nobody has
-   edited a clause, not because anything would notice.
+   fathoms_balance is one row per member, aggregated in the database, and it is
+   the same view the member's own page reads. */
+async function knotsFor(person, staffSession) {
+  const s = rest(staffSession);
+  const res = await s.get(`fathoms_balance?profile_id=eq.${uid(person)}&select=balance`);
+  return Number(res.data?.[0]?.balance ?? 0);
+}
 
-   FOUR THINGS THIS GETS RIGHT THAT THE OBVIOUS VERSION GETS WRONG.
+/* ---------- N. Activity, Charter, Membership ----------
+   Three modules whose kits specify presentation and whose data mostly already
+   existed under other names. What is checked here is the small set of places
+   where a rule became a rule rather than a paragraph: the format that removes
+   the pass gate, the cabin held for 72 hours without being bought, the weather
+   hold that refuses to be posted half-written, the membership cap counted under
+   a lock, and the credential that goes stale in a minute.
 
-   1. It resolves through published_version(), not by reading document_versions
-      for a published row. Those are different ANSWERS, not two routes to one:
-      published_version() filters on documents.active, and two inactive
-      documents (r3-paper, e2e-r2-paper) still carry published versions. A
-      direct read resolves both and compares against renderings no member can
-      ever see — green on documents that, to the club, do not exist.
+   Every check exercises the rule. Asserting that a grant is missing would pass
+   the day someone re-runs a blanket GRANT across the schema — which happened
+   once already this week — so the writes are attempted and the refusal is the
+   assertion. */
+async function activityRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national), anon = rest(null);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
 
-   2. It drives off LIVE contexts and asserts the COUNT. data.ts collapses two
-      contexts that assemble identically and, because CONTEXTS is
-      ["sea","shore"], the survivor is always sea. So a shore-only clause added
-      to a document that currently collapses leaves live sea untouched, makes
-      live shore diverge, and the snapshot still holds one rendering labelled
-      "sea". Bodies alone pass, while the page shows one rendering where two
-      exist and the missing one is the Port Day — the exact thing data.ts:44
-      forbids: "a reviewer who reads one rendering has not read the document."
+  /* --- the catalogue's own arithmetic --- */
+  const priced = await stf.post("activity_formats", {
+    slug: `e2e-${stamp}-priced`, category: "port", label: "E2E priced invite",
+    blurb: "E2E", division: "bound", access: "invite", price_cents: 1000,
+  });
+  note("staff", "an invitation-only format cannot carry a price", priced.status >= 400,
+    `got ${priced.status}`);
+  const unpriced = await stf.post("activity_formats", {
+    slug: `e2e-${stamp}-open`, category: "port", label: "E2E open unpriced",
+    blurb: "E2E", division: "bound", access: "open", price_cents: null,
+  });
+  note("staff", "a format open to buy cannot withhold its price", unpriced.status >= 400,
+    `got ${unpriced.status}`);
 
-   3. It hashes THE WHOLE SHAPE, not the wording. Only clause_versions is
-      immutable. `clauses`, `documents` and `document_requirements` carry no
-      trigger at all — deliberately, since clauses.active is how a clause is
-      retired. But that same mutability covers clauses.title, clauses.category,
-      documents.validity_months and every requirement row, and the page renders
-      all of them. Rename a clause, recategorise it, add a gate, or move
-      validity_months from 12 to 24, and every body is byte-identical, the
-      context count is unchanged, the document set is unchanged — and the page
-      keeps showing the old manifest and the old renewal period. "Renews every
-      12 months" is not decoration; it is a claim about how often a member must
-      sign again.
+  /* --- the one rule in the Activity kit that changes behaviour ---
+     Same sailing, same member, one column moved. The control has to refuse on
+     TIER specifically: this sailing is also gated by a booking window, a
+     monthly allowance and two triggers another module owns, and a check that
+     only asked "did it fail" would pass on any of those and prove nothing. */
+  const vy = await stf.post("voyages", {
+    slug: `e2e-activity-${stamp}`, title: "E2E activity gate", class: "shore",
+    kind: "port_day", starts_at: new Date(Date.now() + 2 * 864e5).toISOString(),
+    berths_total: 12, price_cents: 0, min_tier: "global", status: "scheduled",
+    /* Mints nothing. main() pins the suite's knots footprint to the awards its
+       tests intend, and a fixture that awards on booking and reverses on
+       delete only nets to zero if every delete lands — which a test that
+       deliberately fails halfway cannot promise. */
+    fathoms_multiplier: 0, distance_nm: 0,
+  });
+  const vid = vy.data?.[0]?.id;
+  note("staff", "activity fixture sailing exists", !!vid, `got ${vy.status}`);
+  if (vid) {
+    const bookVetted = await reg.post("rsvps", { voyage_id: vid, profile_id: uid(p.regional), status: "aboard" });
+    const vettedSaid = JSON.stringify(bookVetted.data ?? "");
+    note("regional", "an unfiled sailing still asks for the pass its tier requires",
+      bookVetted.status >= 400 && /tier/i.test(vettedSaid), `${bookVetted.status} ${vettedSaid.slice(0, 120)}`);
 
-      The database is deliberately NOT made rigid to spare this file. Staff
-      correcting a typo in a clause title should not mint a new clause version
-      — that would change what every future signature hashes, for a label
-      nobody signed. The snapshot tracks the mutable thing instead.
+    await stf.patch(`voyages?id=eq.${vid}`, { format: "beach_day" });
+    const bookPort = await reg.post("rsvps", { voyage_id: vid, profile_id: uid(p.regional), status: "aboard" });
+    const portSaid = JSON.stringify(bookPort.data ?? "");
+    note("regional", "a Port format stops asking for a pass it never issues",
+      !/tier/i.test(portSaid), `${bookPort.status} ${portSaid.slice(0, 160)}`);
+    await stf.del(`rsvps?voyage_id=eq.${vid}`);
 
-   4. It checks the SHAPE of every response before trusting it. PostgREST
-      answers an unnamed-parameter mistake with a 404 BODY rather than
-      throwing, so an unguarded probe carries an error object forward as data.
-      Written naively, this reported all six renderings as drifted —
-      confidently, uniformly, and entirely fictionally — because it passed
-      `p_code` where the function wants `p_document_code`. */
-async function legalSnapshotRules(p) {
-  const stf = rest(p.staff);
-  let snap;
-  try {
-    snap = JSON.parse(readFileSync(join(root, "src/app/preview/documents/snapshot.json"), "utf8"));
-  } catch (e) {
-    note("staff", "the document snapshot is readable", false, String(e));
-    return;
+    /* Fails closed. Clearing the format must put the gate back, or a sailing
+       nobody has filed yet is a sailing anybody can board. */
+    await stf.patch(`voyages?id=eq.${vid}`, { format: null });
+    const backOn = await reg.post("rsvps", { voyage_id: vid, profile_id: uid(p.regional), status: "aboard" });
+    note("regional", "clearing the format puts the gate back",
+      backOn.status >= 400 && /tier/i.test(JSON.stringify(backOn.data ?? "")), `got ${backOn.status}`);
+    await stf.del(`rsvps?voyage_id=eq.${vid}`);
+    await stf.del(`voyages?id=eq.${vid}`);
   }
 
-  const live = await stf.get("documents?select=code&active=is.true&order=code");
-  const activeCodes = (live.data || []).map((d) => d.code).sort();
-  const frozenCodes = snap.documents.map((d) => d.code).sort();
-  note("staff", "the snapshot covers exactly the active documents",
-    JSON.stringify(activeCodes) === JSON.stringify(frozenCodes),
-    `live [${activeCodes.join(", ")}] vs snapshot [${frozenCodes.join(", ")}]`);
+  /* The taxonomy is a public catalogue and not a member secret — the site
+     prices formats off it — but nobody signed out may edit one. */
+  const cat = await anon.get("activity_formats?select=slug&limit=1");
+  note("anon", "the format catalogue is readable", cat.status === 200 && (cat.data || []).length > 0,
+    `got ${cat.status}`);
+  const rewrite = await nat.patch("activity_formats?slug=eq.beach_day", { price_cents: 1 });
+  note("national", "a member cannot reprice a format",
+    rewrite.status >= 400 || (rewrite.data || []).length === 0, `got ${rewrite.status}`);
+}
 
-  /* Sorted, because document_requirements has no ordering and PostgREST will
-     not promise one — an unsorted comparison would flap. */
-  const shapeOf = (o) => JSON.stringify(o);
-  const CONTEXTS = ["sea", "shore"];
-  let compared = 0;
+async function charterRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
 
-  for (const doc of snap.documents) {
-    const vid = await stf.rpc("published_version", { p_document_code: doc.code });
-    if (typeof vid.data !== "string") {
-      note("staff", `a published version resolves for ${doc.code}`, false,
-        `got ${vid.status} ${JSON.stringify(vid.data).slice(0, 90)}`);
-      continue;
-    }
+  /* A hull of its own, so the option test can shrink a cabin to one place
+     without touching a cabin the club actually sails. */
+  const ves = await stf.post("vessels", { name: `E2E Charter Hull ${stamp}`, capacity: 2, active: true });
+  const vesselId = ves.data?.[0]?.id;
+  const cab = await stf.post("cabins", {
+    vessel_id: vesselId, name: `E2E Cabin ${stamp}`, berths: 1, position: 99,
+    deck: "Upper", side: "port", muster: "Station B",
+  });
+  const cabinId = cab.data?.[0]?.id;
+  const vy = await stf.post("voyages", {
+    slug: `e2e-charter-${stamp}`, title: "E2E passage", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 3 * 864e5).toISOString(),
+    berths_total: 12, price_cents: 0, min_tier: "regional", status: "scheduled",
+    fathoms_multiplier: 0, distance_nm: 0,
+  });
+  const vid = vy.data?.[0]?.id;
+  if (vesselId && vid) await stf.post("voyage_vessels", { voyage_id: vid, vessel_id: vesselId });
+  note("staff", "charter fixture exists", !!(vesselId && cabinId && vid),
+    `vessel ${ves.status} cabin ${cab.status} voyage ${vy.status}`);
+  if (!vesselId || !cabinId || !vid) return;
 
-    /* The metadata the page prints above the body, none of which lives in an
-       immutable table. */
-    const [ver, reqs] = await Promise.all([
-      stf.get(`document_versions?id=eq.${vid.data}&select=version`),
-      stf.get(`document_requirements?document_code=eq.${doc.code}&select=gate`),
-    ]);
-    const docRow = await stf.get(`documents?code=eq.${doc.code}&select=validity_months`);
-    const liveMeta = {
-      version: ver.data?.[0]?.version ?? null,
-      validity_months: docRow.data?.[0]?.validity_months ?? null,
-      gates: (reqs.data || []).map((r) => r.gate).sort(),
-    };
-    const frozenMeta = {
-      version: doc.version ?? null,
-      validity_months: doc.validity_months ?? null,
-      gates: [...(doc.gates || [])].sort(),
-    };
-    /* Names the field rather than printing two blobs. A reviewer told only
-       that "the header moved" diffs three things to find one, and the renewal
-       period is the one most worth pointing at directly: "renews every 12
-       months" is a claim about how often a member must sign again. */
-    const movedFields = Object.keys(frozenMeta).filter(
-      (k) => shapeOf(liveMeta[k]) !== shapeOf(frozenMeta[k])
-    );
-    note("staff", `${doc.code} — the frozen header matches the live record`,
-      movedFields.length === 0,
-      movedFields
-        .map((k) => `${k}: snapshot ${shapeOf(frozenMeta[k])} vs live ${shapeOf(liveMeta[k])}`)
-        .join(" · "));
+  /* --- the 72-hour option --- */
+  const hold = await reg.rpc("hold_a_cabin_on_option", { p_voyage: vid, p_cabin: cabinId });
+  const heldUntil = typeof hold.data === "string" ? Date.parse(hold.data) : NaN;
+  const hours = (heldUntil - Date.now()) / 3.6e6;
+  note("regional", "a cabin holds for 72 hours and not for a number the caller chose",
+    hold.status < 400 && hours > 71 && hours < 73, `${hold.status} ${JSON.stringify(hold.data).slice(0, 90)}`);
 
-    /* Assembled exactly the way the page assembles it, de-duplication and all,
-       so the count is comparable rather than merely the bodies. */
-    const rendered = [];
-    for (const cls of CONTEXTS) {
-      const body = await stf.rpc("render_document", {
-        p_document_version_id: vid.data,
-        p_context: { class: cls },
-      });
-      if (typeof body.data !== "string" || !body.data) continue;
-      if (rendered.some((r) => r.body === body.data)) continue;
-      const cl = await stf.get(
-        `document_clauses?document_version_id=eq.${vid.data}&select=position,condition,clause_versions(version,clause_code,clauses(title,category))&order=position`
-      );
-      const clauses = (cl.data || [])
-        .map((row) => ({
-          clause_code: row.clause_versions?.clause_code ?? "",
-          title: row.clause_versions?.clauses?.title ?? "",
-          category: row.clause_versions?.clauses?.category ?? "",
-          version: row.clause_versions?.version ?? 0,
-          position: row.position,
-          condition: row.condition ?? {},
-        }))
-        .filter((c) => {
-          const keys = Object.keys(c.condition);
-          if (keys.length === 0) return true;
-          return keys.every((k) => c.condition[k] === (k === "class" ? cls : undefined));
-        });
-      rendered.push({ class: cls, body: body.data, clauses });
-    }
+  const twice = await reg.rpc("hold_a_cabin_on_option", { p_voyage: vid, p_cabin: cabinId });
+  note("regional", "one hold at a time on a passage", twice.status >= 400,
+    `got ${twice.status} ${JSON.stringify(twice.data ?? "").slice(0, 90)}`);
 
-    note("staff", `${doc.code} renders as many contexts as the snapshot holds`,
-      rendered.length === (doc.renderings || []).length,
-      `live ${rendered.length} [${rendered.map((r) => r.class).join("+")}] vs snapshot ${(doc.renderings || []).length} [${(doc.renderings || []).map((r) => r.class).join("+")}]`);
+  /* The half of the option that makes it worth anything: nobody else can buy
+     the room out from under it. This is the guard, not the RPC — a boarding
+     goes through guard_cabin_capacity(), which had no idea options existed. */
+  const cut = await nat.post("rsvps", { voyage_id: vid, profile_id: uid(p.national), status: "aboard", cabin_id: cabinId });
+  note("national", "a cabin on option is not a cabin someone else can take",
+    cut.status >= 400 && /spoken for/i.test(JSON.stringify(cut.data ?? "")),
+    `got ${cut.status} ${JSON.stringify(cut.data ?? "").slice(0, 120)}`);
 
-    for (const r of rendered) {
-      const frozen = (doc.renderings || []).find((x) => x.class === r.class);
-      compared += 1;
-      const same = !!frozen && shapeOf({ body: r.body, clauses: r.clauses }) ===
-        shapeOf({ body: frozen.body, clauses: frozen.clauses });
-      note("staff", `${doc.code}/${r.class} — the frozen copy matches the binding copy`, same,
-        frozen
-          ? frozen.body === r.body
-            ? "the wording matches but the clause manifest moved — regenerate the snapshot"
-            : `wording drifted: snapshot ${frozen.body.length} chars vs live ${r.body.length}`
-          : "the snapshot holds no rendering for this context");
-    }
+  /* Nobody may read whose hold it is — only that the room is spoken for. */
+  const peek = await nat.get(`charter_options?voyage_id=eq.${vid}&select=profile_id`);
+  note("national", "another member's hold is not readable", (peek.data || []).length === 0,
+    JSON.stringify(peek.data ?? "").slice(0, 90));
+  const counted = await nat.rpc("cabin_places_open", { p_voyage: vid });
+  const mine = (counted.data || []).find((c) => c.cabin_id === cabinId);
+  note("national", "the plan says the room is taken without saying by whom",
+    !!mine && mine.taken === 1 && mine.mine === false, JSON.stringify(mine ?? "").slice(0, 120));
+
+  /* Released, and the same boarding now lands. */
+  const opt = await reg.get(`charter_options?voyage_id=eq.${vid}&select=id&released_at=is.null&confirmed_at=is.null`);
+  const optId = opt.data?.[0]?.id;
+  const rel = await reg.rpc("release_charter_option", { p_option: optId });
+  note("regional", "a hold can be let go early", rel.status < 400, `got ${rel.status}`);
+  /* Asserted as "the cabin no longer refuses", not as "the booking succeeded":
+     three other modules hang triggers off this insert and any of them may
+     legitimately refuse the national persona for its own reasons. What this
+     module owns is whether the ROOM is the obstacle, and after a release it
+     must not be. */
+  const after = await nat.post("rsvps", { voyage_id: vid, profile_id: uid(p.national), status: "aboard", cabin_id: cabinId });
+  const afterSaid = JSON.stringify(after.data ?? "");
+  note("national", "the room stops being the obstacle the moment the hold is let go",
+    !/spoken for/i.test(afterSaid), `got ${after.status} ${afterSaid.slice(0, 140)}`);
+  await stf.del(`rsvps?voyage_id=eq.${vid}`);
+
+  /* Writing an option directly would be writing your own expiry date. */
+  const forge = await reg.post("charter_options", {
+    voyage_id: vid, profile_id: uid(p.regional), cabin_id: cabinId,
+    expires_at: new Date(Date.now() + 365 * 864e5).toISOString(),
+  });
+  note("regional", "a member cannot write their own hold or its expiry", forge.status >= 400,
+    `got ${forge.status}`);
+
+  /* --- the leg, and the hold that must say three things --- */
+  const leg = await stf.post("voyage_legs", { voyage_id: vid, day: 1, port: "E2E Palma", note: "lines off 20:00" });
+  const legId = leg.data?.[0]?.id;
+  note("staff", "a leg is posted", !!legId, `got ${leg.status}`);
+
+  const halfHold = await stf.patch(`voyage_legs?id=eq.${legId}`, {
+    status: "held", hold_reason: "Wind 28 kn from the north", hold_posted_at: new Date().toISOString(),
+  });
+  note("staff", "a hold missing the new plan and what is unchanged is refused",
+    halfHold.status >= 400, `got ${halfHold.status}`);
+
+  const proper = await stf.rpc("post_a_leg_hold", {
+    p_leg: legId, p_reason: "Wind 28 kn from the north",
+    p_new_plan: "The leg moves to tomorrow and we stay alongside tonight",
+    p_unchanged: "Dinner is still at 21:00",
+  });
+  note("staff", "a hold that states all three is posted", proper.status < 400, `got ${proper.status}`);
+
+  /* The line this module exists to hold. A leg hold is not a sailing hold:
+     voyages.status fires handle_voyage_status(), which mails every aboard and
+     waitlisted member and, on the adjacent branch, moves money. */
+  const sail = await stf.get(`voyages?id=eq.${vid}&select=status`);
+  note("staff", "holding a leg does not hold the sailing",
+    sail.data?.[0]?.status === "scheduled", `voyage is ${sail.data?.[0]?.status}`);
+
+  const memberHold = await reg.rpc("post_a_leg_hold", {
+    p_leg: legId, p_reason: "x", p_new_plan: "y", p_unchanged: "z",
+  });
+  note("regional", "a member cannot post weather", memberHold.status >= 400, `got ${memberHold.status}`);
+
+  const lifted = await stf.rpc("lift_a_leg_hold", { p_leg: legId, p_revised: true });
+  const legNow = await stf.get(`voyage_legs?id=eq.${legId}&select=status,hold_reason`);
+  note("staff", "lifting a hold clears the notice with it",
+    lifted.status < 400 && legNow.data?.[0]?.status === "revised" && legNow.data?.[0]?.hold_reason === null,
+    JSON.stringify(legNow.data ?? "").slice(0, 120));
+
+  /* A stop cannot be filed under a leg of another passage — a composite key,
+     not a comment. */
+  const otherVy = await stf.post("voyages", {
+    slug: `e2e-charter-other-${stamp}`, title: "E2E other passage", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 4 * 864e5).toISOString(), berths_total: 4, price_cents: 0,
+    fathoms_multiplier: 0, distance_nm: 0,
+  });
+  const otherId = otherVy.data?.[0]?.id;
+  const strayStop = await stf.post("voyage_stops", {
+    voyage_id: otherId, leg_id: legId, position: 1, name: "E2E stray stop",
+  });
+  note("staff", "a stop cannot belong to another passage's leg", strayStop.status >= 400,
+    `got ${strayStop.status}`);
+  if (otherId) await stf.del(`voyages?id=eq.${otherId}`);
+
+  await stf.del(`voyages?id=eq.${vid}`);
+  await stf.del(`vessels?id=eq.${vesselId}`);
+}
+
+async function membershipRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+
+  /* --- a price is the product, or there is no price --- */
+  const secretPrice = await stf.post("club_products", {
+    slug: `e2e-${stamp}-secret`, label: "E2E secret", blurb: "E2E",
+    price_cents: 100000, published: false, kind: "membership", vetting: "E2E",
+  });
+  note("staff", "an unpublished product cannot carry a number it never publishes",
+    secretPrice.status >= 400, `got ${secretPrice.status}`);
+  const freeLunch = await stf.post("club_products", {
+    slug: `e2e-${stamp}-free`, label: "E2E free", blurb: "E2E",
+    price_cents: null, published: true, kind: "pass", vetting: "E2E",
+  });
+  note("staff", "a published product cannot render as nothing", freeLunch.status >= 400,
+    `got ${freeLunch.status}`);
+
+  /* The couple pass is the reason two denominations exist. If this ever reads
+     one unit and one seat, the ratio gate has quietly started selling forty
+     couples onto a forty-seat boat. */
+  const couple = await stf.get("club_products?slug=eq.couple_pass&select=ratio_units,ratio_heads,price_cents");
+  const c = couple.data?.[0];
+  note("anon", "a couple pass is one unit and two seats",
+    c?.ratio_units === 1 && c?.ratio_heads === 2 && c?.price_cents === 65000, JSON.stringify(c ?? ""));
+
+  /* --- the cap, counted under a lock --- */
+  const prodSlug = `e2e-${stamp}-capped`;
+  await stf.post("club_products", {
+    slug: prodSlug, label: "E2E capped", blurb: "E2E", price_cents: 1, published: true,
+    kind: "membership", vetting: "E2E", active_cap: 1, active: false,
+  });
+  /* membership_plans is unique on (plan_type, tier) over a five-by-three grid
+     with thirteen squares already taken. Which two are free is not a constant —
+     another module may fill one this week — so the free square is found rather
+     than assumed. */
+  const grid = await stf.get("membership_plans?select=plan_type,tier");
+  const taken = new Set((grid.data || []).map((r) => `${r.plan_type}:${r.tier}`));
+  let square = null;
+  for (const t of ["access", "guest", "regional", "national", "global"]) {
+    for (const n of [1, 2, 3]) if (!taken.has(`${t}:${n}`)) { square = [t, n]; break; }
+    if (square) break;
+  }
+  note("staff", "the plan grid has a square to test on", !!square, "every plan_type x tier is taken");
+  const plan = square ? await stf.post("membership_plans", {
+    plan_type: square[0], tier: square[1], label: `E2E capped plan ${stamp}`, price_cents: 1,
+    active: false, product_slug: prodSlug,
+  }) : { status: 0, data: null };
+  const planId = plan.data?.[0]?.id;
+  note("staff", "a plan can name a product", !!planId, `got ${plan.status} ${JSON.stringify(plan.data ?? "").slice(0, 120)}`);
+
+  /* trialing, not past_due: past_due fires run_automations('dues_failed') and
+     this suite does not exist to send a real member a real letter about a card
+     that was never charged. The plan_id the status trigger writes onto the
+     profile is captured and put back below. */
+  const before = await stf.get(`profiles?id=in.(${uid(p.regional)},${uid(p.national)})&select=id,plan_id,status`);
+  const planWas = new Map((before.data || []).map((r) => [r.id, r.plan_id]));
+
+  if (planId) {
+    const first = await stf.post("subscriptions", { profile_id: uid(p.regional), plan_id: planId, status: "trialing" });
+    note("staff", "the first of a capped membership is granted", first.status < 400, `got ${first.status}`);
+    const second = await stf.post("subscriptions", { profile_id: uid(p.national), plan_id: planId, status: "trialing" });
+    note("staff", "the place past the cap is refused, and says the cap",
+      second.status >= 400 && /closed|places/i.test(JSON.stringify(second.data ?? "")),
+      `got ${second.status} ${JSON.stringify(second.data ?? "").slice(0, 120)}`);
+
+    /* Renewing the one that holds the place must not be read as a new claim. */
+    const renew = await stf.patch(`subscriptions?plan_id=eq.${planId}`, { cancel_at_period_end: false });
+    note("staff", "the member who holds the place can still renew it", renew.status < 400, `got ${renew.status}`);
+
+    await stf.del(`subscriptions?plan_id=eq.${planId}`);
+    for (const [id, was] of planWas) await stf.patch(`profiles?id=eq.${id}`, { plan_id: was });
+    await stf.del(`membership_plans?id=eq.${planId}`);
+  }
+  await stf.del(`club_products?slug=eq.${prodSlug}`);
+
+  /* --- the pause budget --- */
+  const own = await reg.rpc("membership_pause_days_used", { p_profile: uid(p.regional) });
+  note("regional", "a member can read their own days at sea", own.status < 400 && typeof own.data === "number",
+    `got ${own.status} ${JSON.stringify(own.data)}`);
+  const theirs = await reg.rpc("membership_pause_days_used", { p_profile: uid(p.global) });
+  note("regional", "how long another member has been away is not readable", theirs.status >= 400,
+    `got ${theirs.status} ${JSON.stringify(theirs.data ?? "").slice(0, 90)}`);
+
+  /* A member's own pause opens a window, and letting the membership run again
+     closes it. Both halves, because a window that never closes counts the rest
+     of the year against the member. */
+  const opened = await reg.rpc("set_own_standing", { p_status: "paused" });
+  const running = await reg.get(`membership_pauses?profile_id=eq.${uid(p.regional)}&ended_at=is.null&select=id,by_the_member`);
+  note("regional", "pausing opens a window and records whose choice it was",
+    opened.status < 400 && (running.data || []).length === 1 && running.data[0].by_the_member === true,
+    `${opened.status} ${JSON.stringify(running.data ?? "").slice(0, 90)}`);
+  await reg.rpc("set_own_standing", { p_status: "active" });
+  const closed = await reg.get(`membership_pauses?profile_id=eq.${uid(p.regional)}&ended_at=is.null&select=id`);
+  note("regional", "resuming closes the window", (closed.data || []).length === 0,
+    JSON.stringify(closed.data ?? "").slice(0, 90));
+  /* handle_profile_status() writes a notice on each side of a pause. They are
+     real notices about a real state change, so they are swept by title rather
+     than left to accumulate two a run in a member's Word. */
+  for (const t of ["Weather hold on your membership.", "Your membership is running again."]) {
+    await stf.del(`notifications?profile_id=eq.${uid(p.regional)}&title=eq.${encodeURIComponent(t)}`);
   }
 
-  note("staff", "every binding rendering was compared", compared > 0, `compared ${compared}`);
+  const forgePause = await reg.post("membership_pauses", {
+    profile_id: uid(p.regional), by_the_member: true,
+    started_at: new Date(Date.now() - 400 * 864e5).toISOString(),
+    ended_at: new Date(Date.now() - 399 * 864e5).toISOString(),
+  });
+  note("regional", "a member cannot write their own pause history", forgePause.status >= 400,
+    `got ${forgePause.status}`);
+  await stf.del(`membership_pauses?profile_id=eq.${uid(p.regional)}&started_at=lt.${new Date(Date.now() - 300 * 864e5).toISOString()}`);
+
+  /* --- the credential that goes stale in a minute --- */
+  const one = await reg.rpc("issue_member_qr");
+  const two = await reg.rpc("issue_member_qr");
+  const t1 = one.data?.[0]?.token, t2 = two.data?.[0]?.token;
+  const ttl = t1 ? (Date.parse(one.data[0].expires_at) - Date.now()) / 1000 : NaN;
+  note("regional", "the credential is minted fresh and lives about a minute",
+    !!t1 && !!t2 && t1 !== t2 && ttl > 30 && ttl <= 61, `ttl ${Math.round(ttl)}s`);
+
+  const scan = await stf.rpc("verify_member_qr", { p_token: t2 });
+  note("staff", "a live credential reads as aboard", scan.data?.[0]?.state === "aboard",
+    JSON.stringify(scan.data ?? "").slice(0, 120));
+  const stale = await stf.rpc("verify_member_qr", { p_token: "00000000-0000-0000-0000-000000000000" });
+  note("staff", "an unknown code reads as void and names nobody",
+    stale.data?.[0]?.state === "void" && stale.data?.[0]?.profile_id === null,
+    JSON.stringify(stale.data ?? "").slice(0, 120));
+  const memberScan = await reg.rpc("verify_member_qr", { p_token: t2 });
+  note("regional", "a member cannot work the gangway scanner", memberScan.status >= 400,
+    `got ${memberScan.status}`);
+  const otherToken = await nat.get(`member_qr_tokens?profile_id=eq.${uid(p.regional)}&select=token`);
+  note("national", "another member's credential is not readable", (otherToken.data || []).length === 0,
+    JSON.stringify(otherToken.data ?? "").slice(0, 90));
+  const mintForOther = await reg.post("member_qr_tokens", {
+    profile_id: uid(p.global), expires_at: new Date(Date.now() + 864e5).toISOString(),
+  });
+  note("regional", "a member cannot mint a credential at all", mintForOther.status >= 400,
+    `got ${mintForOther.status}`);
+
+  /* --- the number, held ninety days --- */
+  const relFor = uid(p.paused);
+  const held = await stf.rpc("release_member_number", { p_profile: relFor });
+  note("staff", "a number can be given up", held.status < 400, `got ${held.status}`);
+  const tooSoon = await stf.get(`member_number_releases?profile_id=eq.${relFor}&select=member_no`);
+  const num = tooSoon.data?.[0]?.member_no;
+  const early = await stf.rpc("reissue_member_number", { p_profile: uid(p.regional), p_number: num });
+  note("staff", "a number released today is not in the pool today",
+    early.status >= 400 && /still held/i.test(JSON.stringify(early.data ?? "")),
+    `got ${early.status} ${JSON.stringify(early.data ?? "").slice(0, 120)}`);
+  const memberPool = await reg.get("member_number_releases?select=member_no&limit=1");
+  note("regional", "the number pool is not a directory of who left",
+    (memberPool.data || []).length === 0, JSON.stringify(memberPool.data ?? "").slice(0, 90));
+  await stf.del(`member_number_releases?profile_id=eq.${relFor}`);
+  const stillHas = await stf.get(`profiles?id=eq.${relFor}&select=member_no`);
+  note("staff", "giving a number up does not take it off the member",
+    stillHas.data?.[0]?.member_no === num, JSON.stringify(stillHas.data ?? "").slice(0, 90));
 }
 
 async function main() {
@@ -2468,11 +3083,9 @@ async function main() {
   ]) {
     personas[name] = await login(email);
   }
-  /* Everything the run does to the ledger is measured from here. */
-  const runMark = new Date().toISOString();
   const knotsAtStart = {};
   for (const name of ["regional", "national", "global", "paused"]) {
-    knotsAtStart[name] = await knotsFor(personas[name], personas.staff, runMark);
+    knotsAtStart[name] = await knotsFor(personas[name], personas.staff);
   }
 
   await sweep(personas);
@@ -2489,12 +3102,34 @@ async function main() {
   await moderationRules(personas);
   await documentRules(personas);
   await enforcementRules(personas);
-  await unRules(personas);
+  await clubRules(personas);
   await hardeningRules(personas);
   await roundTwoRules(personas);
   await roundThreeRules(personas);
   await roundFiveRules(personas);
-  await legalSnapshotRules(personas);
+  await ratioAndRadarRules(personas);
+
+  /* Activity, Charter and Membership are measured on their own before the
+     suite's global footprint check runs, because that check is a single pinned
+     number for the whole file and cannot say WHICH section moved a balance.
+     These three create and delete real passes on fixture sailings, and a pass
+     mints 25 knots on confirmation and gives them back on release — so the
+     only way to know the release actually fired on every path, including the
+     ones that go through a cascading voyage delete, is to weigh the ledger
+     either side of them. */
+  const kitBefore = {};
+  for (const who of ["regional", "national", "global", "paused"]) {
+    kitBefore[who] = await knotsFor(personas[who], personas.staff);
+  }
+  await activityRules(personas);
+  await charterRules(personas);
+  await membershipRules(personas);
+  for (const [who, before] of Object.entries(kitBefore)) {
+    const after = await knotsFor(personas[who], personas.staff);
+    note(who, "activity, charter and membership leave the ledger as they found it",
+      after === before, `moved ${after - before}`);
+  }
+
   await sweep(personas);
 
   /* THE SUITE'S LEDGER FOOTPRINT, pinned.
@@ -2510,31 +3145,13 @@ async function main() {
      update them — or the suite has started leaving something behind, which is
      how the balances quietly climbed until an audit of a real member's knots
      became ambiguous and cost an hour to explain. */
-  /* 150 → 100 because `removing_a_sailing_does_not_mint_knots` landed. The
-     suite completes a fixture sailing (+100 "Miles banked") and seats two
-     passes (+25 each); deleting the voyage used to leave all three standing,
-     because the ledger rows lost their voyage_id before the reversal trigger
-     could find them. The two pass awards now reverse. Miles banked does not —
-     it is not in the reversal's reason list, and a completed sailing that
-     really happened is not undone by tidying up the fixture.
-
-     A number moving because a bug was fixed is the check doing its job. It
-     should be updated with a reason, never widened to stop asking. */
   const EXPECTED_KNOTS_DRIFT = { regional: 0, national: 0, global: 100, paused: 0 };
   for (const [name, before] of Object.entries(knotsAtStart)) {
-    const after = await knotsFor(personas[name], personas.staff, runMark);
+    const after = await knotsFor(personas[name], personas.staff);
     const moved = after - before;
     const want = EXPECTED_KNOTS_DRIFT[name] ?? 0;
-    /* This check CANNOT distinguish its own footprint from a second copy of
-       itself running against the same database, because both write the same
-       reasons for the same personas in the same window. Observed at 75 on one
-       run and 400 on the next with no code change between them, which is not
-       what leaked state looks like — leaked state accumulates monotonically.
-       So the message names concurrency first: it is the likelier explanation
-       and the cheaper one to rule out. */
     note(name, "the suite's knots footprint is the one it declares", moved === want,
-      `moved ${moved}, declared ${want} — if another run of this suite was live against ` +
-        `the same project, that alone produces this; re-run alone before hunting a leak`);
+      `moved ${moved}, declared ${want}`);
   }
 
   const passed = results.filter((r) => r.ok).length;

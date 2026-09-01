@@ -1,0 +1,204 @@
+"use client";
+
+import React from "react";
+import { Badge, Button, Dialog, StateBlock, Table, Toast } from "@/components/ds";
+import { useToast } from "../../ui";
+import { openTheRadar } from "./actions";
+
+/* One row per sailing, with the state of its clock. The times are formatted on
+   the server against the SAILING'S zone and arrive here as strings — a client
+   that reformatted them would render the lock on the operator's clock, which is
+   the one number on this screen that must never be the operator's. */
+
+export type RadarOpsRow = {
+  id: string;
+  title: string;
+  departs: string;
+  status: string;
+  aboard: number;
+  /** Null when the radar has never been opened on this sailing. */
+  opens: string | null;
+  locks: string | null;
+  unlocks: string | null;
+  expires: string | null;
+  slots: number | null;
+  phase: "unopened" | "before" | "open" | "locked" | "unlocked" | "expired";
+  settled: boolean;
+  anchors: number;
+  [key: string]: unknown;
+};
+
+const PHASE_LABEL: Record<RadarOpsRow["phase"], string> = {
+  unopened: "Dark",
+  before: "Set",
+  open: "Sweeping",
+  locked: "Locked",
+  unlocked: "Log open",
+  expired: "Gone",
+};
+
+function phaseTone(p: RadarOpsRow["phase"]): "gold" | "positive" | "caution" | "outline" {
+  if (p === "open") return "positive";
+  if (p === "locked" || p === "unlocked") return "gold";
+  if (p === "unopened") return "outline";
+  return "caution";
+}
+
+export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
+  const [pending, startTransition] = React.useTransition();
+  const { toast, show, clear } = useToast();
+  /* Re-reading a clock that is already set moves a lock members have been told
+     about, so it asks first. The first open does not — there is nothing yet to
+     disagree with. */
+  const [confirmReopen, setConfirmReopen] = React.useState<RadarOpsRow | null>(null);
+
+  const run = (row: RadarOpsRow, said: string) =>
+    startTransition(async () => {
+      const res = await openTheRadar(row.id);
+      if (res.error) show({ msg: res.error, tone: "danger" });
+      else show({ msg: said, meta: row.title.replace(/\.+$/, "").toUpperCase() });
+      setConfirmReopen(null);
+    });
+
+  const columns = [
+    {
+      key: "title",
+      label: "Sailing",
+      render: (r: RadarOpsRow) => (
+        <span>
+          <b style={{ fontWeight: 600 }}>{r.title.replace(/\.+$/, "")}</b>
+          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.departs}</span>
+        </span>
+      ),
+    },
+    {
+      key: "phase",
+      label: "Radar",
+      width: 120,
+      render: (r: RadarOpsRow) => <Badge tone={phaseTone(r.phase)}>{PHASE_LABEL[r.phase]}</Badge>,
+    },
+    {
+      key: "clock",
+      label: "The clock",
+      width: 260,
+      render: (r: RadarOpsRow) =>
+        r.opens ? (
+          <span className="hm-mono" style={{ display: "block", lineHeight: 1.7 }}>
+            OPENS {r.opens} · LOCKS {r.locks}
+            <span style={{ display: "block" }}>
+              LOG {r.unlocks} · GONE {r.expires}
+            </span>
+          </span>
+        ) : (
+          <span className="hm-mono">NEVER OPENED</span>
+        ),
+    },
+    {
+      key: "aboard",
+      label: "Aboard",
+      width: 80,
+      mono: true,
+      render: (r: RadarOpsRow) => String(r.aboard),
+    },
+    {
+      key: "anchors",
+      label: "Anchors",
+      width: 90,
+      mono: true,
+      render: (r: RadarOpsRow) => (r.opens ? String(r.anchors) : "—"),
+    },
+    {
+      key: "settled",
+      label: "Guarantee",
+      width: 120,
+      render: (r: RadarOpsRow) =>
+        !r.opens ? (
+          <span className="hm-mono">UNREACHABLE</span>
+        ) : r.settled ? (
+          <Badge tone="positive">Settled</Badge>
+        ) : (
+          <span className="hm-mono">ON DOCKING</span>
+        ),
+    },
+    {
+      key: "act",
+      label: "",
+      width: 150,
+      render: (r: RadarOpsRow) =>
+        r.opens ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={pending}
+            onClick={() => setConfirmReopen(r)}
+          >
+            Re-read the clock
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant="gold"
+            disabled={pending}
+            onClick={() => run(r, "Radar is set. It opens at 17:15 on the sailing's own clock.")}
+          >
+            Open the radar
+          </Button>
+        ),
+    },
+  ];
+
+  return (
+    <>
+      {rows.length === 0 ? (
+        <StateBlock
+          status="empty"
+          icon="Radar"
+          title="Nothing to sweep."
+          detail="Radar runs on a sailing. Put one on the board from the Voyages tab and it shows here, dark, waiting to be set."
+        />
+      ) : (
+        <div className="hm-sec">
+          <Table columns={columns} rows={rows} rowKey={(r) => r.id} />
+          <span className="hm-count">
+            {rows.filter((r) => r.opens).length} of {rows.length} sailings carry a radar clock
+          </span>
+        </div>
+      )}
+
+      <Dialog
+        open={!!confirmReopen}
+        onClose={() => setConfirmReopen(null)}
+        eyebrow="Re-read the clock"
+        title="Move a lock members have been told about?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmReopen(null)}>
+              Leave it
+            </Button>
+            <Button
+              variant="gold"
+              disabled={pending}
+              onClick={() =>
+                confirmReopen && run(confirmReopen, "Clock re-read off the sailing's departure.")
+              }
+            >
+              Re-read it
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+          The four times are read off the sailing&apos;s departure date and its
+          harbour&apos;s zone. If the departure moved, this brings the clock with
+          it. If it did not, nothing changes.
+        </p>
+        <p style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 10 }}>
+          Picks already plotted and anchors already made are untouched, and a
+          guarantee already settled stays settled.
+        </p>
+      </Dialog>
+
+      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+    </>
+  );
+}

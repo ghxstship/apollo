@@ -1,6 +1,6 @@
 /* Minimal base — element defaults so consumers start on-brand. */
 *,*:before,*:after{box-sizing:border-box}
-body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var(--font-sans);font-size:var(--text-body);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var(--font-sans);font-size:var(--text-md);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0}
 p{margin:0;text-wrap:pretty}
 a{color:var(--text-link);text-decoration:none;transition:color var(--dur-1) var(--ease-swell)}
@@ -13,8 +13,13 @@ img{max-width:100%;height:auto}
    very thing the preference asks us not to do. */
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 ::selection{background:var(--neon-cyan);color:var(--carbon)}
-@keyframes ls-lava{from{background-position:0% 0}to{background-position:200% 0}}
-.ls-lava-flow{background-size:200% 100%!important;animation:ls-lava 6s linear infinite}
+/* The accent seam used to scroll its own background on a 6s `linear infinite`
+   loop. tokens/motion.css ships no linear curve and tops out at --dur-cine
+   560ms, and §Motion asks for "fades and small translates; no bounces, no
+   spins" — a perpetual ambient scroll is none of those. The seams keep the
+   accent gradient, which is what §Backgrounds reserves --gradient-accent for
+   ("hero rules and small fills"); they simply hold still. */
+@keyframes ls-shuttle{from{transform:translateX(-10%)}to{transform:translateX(210%)}}
 /* — microinteraction utilities — */
 @keyframes ls-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes ls-fade{from{opacity:0}to{opacity:1}}
@@ -38,13 +43,13 @@ img{max-width:100%;height:auto}
 .ls-rise-3{animation:ls-rise var(--dur-2) var(--ease-out) .18s backwards}
 .ls-fade{animation:ls-fade var(--dur-2) var(--ease-swell) backwards}
 .ls-live{display:inline-flex;align-items:center;gap:7px}
-.ls-eyebrow{font:600 11px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:var(--track-eyebrow);text-transform:uppercase}
+.ls-eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase}
 .ls-mono-data{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data)}
-.ls-live:before{content:"";width:7px;height:7px;border-radius:999px;background:var(--neon-cyan);box-shadow:var(--glow-cyan);animation:ls-pulse 1.6s var(--ease-swell) infinite}
+.ls-live:before{content:"";width:7px;height:7px;border-radius:999px;background:var(--neon-cyan);box-shadow:var(--glow-cyan);animation:ls-pulse 1.6s var(--ease-swell) infinite}/* ds-exempt: live indicator — §Shadows names the live indicator alongside the primary CTA as the one place --shadow-glow-accent belongs, so the system contemplates this element; the loop is an opacity fade and collapses under prefers-reduced-motion. */
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 code,pre,kbd{font-family:var(--font-mono)}
 
 /* Off-screen until focused, then pinned top-left above everything. */
 .ls-visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
-.ls-skip{position:fixed;top:8px;inset-inline-start:8px;z-index:1200;padding:10px 16px;background:var(--surface-card);color:var(--text-1);border:1px solid var(--line-strong);border-radius:var(--radius-sharp);font:600 13px var(--font-sans);text-decoration:none;transform:translateY(-200%)}
+.ls-skip{position:fixed;top:8px;inset-inline-start:8px;z-index:1200;padding:10px 16px;background:var(--surface-card);color:var(--text-1);border:1px solid var(--line-strong);border-radius:var(--radius-sharp);font:500 var(--text-xs) var(--font-sans);text-decoration:none;transform:translateY(-200%)}
 .ls-skip:focus{transform:none;outline:2px solid var(--focus);outline-offset:2px}

@@ -3,11 +3,11 @@ import { CameraConsent } from "./camera-consent";
 import { ManifestConsent } from "./manifest-consent";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
-import { CLUB_ZONE } from "@/lib/brand";
-import { TIER_LABEL, roman, yearIn } from "@/lib/format";
+import { TIER_LABEL, roman } from "@/lib/format";
 import { PushControls } from "@/components/push-controls";
 import { PhoneField } from "@/components/phone-field";
 import { stripeEnabled } from "@/lib/stripe";
+import { memberMark } from "@/lib/membership";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
 import {
@@ -36,7 +36,7 @@ export default async function YouPage() {
   const heldByTheClub = status === "paused" && profile?.status_set_by !== profile?.id;
   const balanceCents = account?.balance_cents ?? 0;
   const joinedYear = profile?.joined_at
-    ? yearIn(profile.joined_at, CLUB_ZONE)
+    ? new Date(profile.joined_at).getFullYear()
     : new Date().getFullYear();
 
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
@@ -81,7 +81,7 @@ export default async function YouPage() {
                 </p>
               ) : null}
               <p className="mbr-mono" style={{ marginTop: 4 }}>
-                {profile?.member_no ?? "UN-0000"} · MEMBER SINCE {roman(joinedYear)}
+                {memberMark(profile?.member_no) || "UNISSUED"} · MEMBER SINCE {roman(joinedYear)}
               </p>
             </div>
           </div>

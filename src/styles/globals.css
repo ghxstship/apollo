@@ -1,0 +1,22 @@
+/* [UN] — global entry. This is the handoff package's styles.css, resolved
+   against this repository: the package imports its six token files individually
+   from a tokens/ directory, and §2 of the handoff maps that whole directory onto
+   one concatenated src/styles/tokens.css. So the six lines collapse to one, and
+   the order they encoded is preserved inside that file.
+
+   Order is load-bearing, in both directions:
+     tokens      the design system's published values. Nothing above it.
+     fonts       binds the next/font faces onto the token stacks, additively.
+     compat      the previous brand's vocabulary, aliased onto tokens. Must come
+                 after tokens (it reads them) and before base/components (they
+                 read it). Deletes itself as step 6 rebuilds each surface.
+     base        element defaults.
+     components  the .ls-* component layer and the shared page primitives.
+
+   Anything that needs to win over a token belongs in a page-level stylesheet,
+   not here. */
+@import "./tokens.css";
+@import "./fonts.css";
+@import "./compat.css";
+@import "./base.css";
+@import "./components.css";

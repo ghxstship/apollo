@@ -1,39 +1,24 @@
-/* [UN] has no logo — the kit is explicit: the wordmark is set in
-   plain type, and a mark is never drawn or generated. This lockup is Marcellus
-   with a hairline gold rule, nothing else. */
-import { WORDMARK } from "@/lib/brand";
+/* The site nav's lockup. There is no logo asset and no drawn mark: the wordmark
+   is type-set, and it is set in exactly one place — the Wordmark primitive in
+   components/ds/display.tsx, which is where the bracket, casing and colour
+   invariants are enforced. This component is a placement, not a second setting;
+   anything it did on its own (its own display face, its own rule colour) would
+   be a mark the brand does not own. */
+import { Wordmark } from "@/components/ds";
 
 export function LockupHorizontal({ height = 34 }: { height?: number }) {
-  const fontSize = Math.round(height * 0.52);
   return (
-    <span
-      role="img"
-      aria-label={WORDMARK}
-      style={{
-        display: "inline-flex",
-        flexDirection: "column",
-        gap: Math.max(3, Math.round(height * 0.12)),
-        lineHeight: 1,
-      }}
-    >
-      <span
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize,
-          letterSpacing: ".14em",
-          /* Inherit: this sits inside an always-dark nav on a page whose --text-1
-             flips with the theme, so pinning it made the wordmark identical to
-             the nav background in light mode — invisible at 1.00:1. */
-          color: "inherit",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {WORDMARK}
-      </span>
-      <span
-        aria-hidden
-        style={{ height: 1, background: "var(--gold-500)", opacity: 0.8 }}
-      />
-    </span>
+    <Wordmark
+      /* System A. brand-architecture.md: the parent wins wherever both would
+         work, because it compounds recognition across every division instead
+         of splitting it five ways — and a site nav is the umbrella speaking. */
+      suffix={null}
+      size={Math.round(height * 0.52)}
+      /* .ws-nav paints --surface-deep in BOTH themes, so the anchor is set on
+         its knockout step rather than on --text-body. A wordmark that follows
+         the theme instead of its own ground is how this went to 1.00:1 against
+         the nav in light mode once already. */
+      inverse
+    />
   );
 }

@@ -4,5 +4,5 @@
 .gsn-head{padding-bottom:24px;border-bottom:1px solid var(--line-faint);margin-bottom:28px}
 /* The lede is the page's h1 — a standalone bearer link needs a top-level
    heading — so it pins the weight an h1 would otherwise bring with it. */
-.gsn-lede{margin:18px 0 0;font:400 15px/1.7 var(--font-sans);color:var(--text-2);max-width:56ch}
-.gsn-lede b{font-weight:600;color:var(--text-1)}
+.gsn-lede{margin:18px 0 0;font:400 var(--text-sm)/1.7 var(--font-sans);color:var(--text-2);max-width:56ch}
+.gsn-lede b{font-weight:700;color:var(--text-1)}

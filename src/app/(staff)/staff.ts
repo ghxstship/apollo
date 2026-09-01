@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
    re-verifies the operator before touching the record. */
 
 /* `note` is not an error. It carries something the operator must know but that
-   did not stop the action — a standing change that landed while the dues call
-   did not. Kept separate so a screen cannot render it in the failure colour. */
+   did not stop the action — people released from a line, or a standing change
+   whose dues call did not land. Kept separate so a screen cannot render it in
+   the failure colour. */
 export type ActionResult = { error?: string; note?: string };
 
 /* Defined in @/lib/staff-errors so client screens can recognise them without

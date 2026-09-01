@@ -23,11 +23,10 @@
   font-family:var(--font-mono);font-size:var(--text-data-s);
   letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3);
 }
-.pv-manifest li > span:nth-child(2){color:var(--text-2);text-transform:none;font-family:var(--font-sans);font-size:13px;letter-spacing:0}
+.pv-manifest li > span:nth-child(2){color:var(--text-2);text-transform:none;font-family:var(--font-sans);font-size:var(--text-xs);letter-spacing:0}
 .pv-clause{margin-top:24px}
-.pv-clause h4{
-  font:600 10px var(--font-sans);font-stretch:var(--stretch-wide);
-  letter-spacing:var(--track-eyebrow);text-transform:uppercase;
+.pv-clause h4{font:var(--type-label);
+  letter-spacing:var(--tracking-label);text-transform:uppercase;
   color:var(--brass-deep);margin:0 0 6px;
 }
 .pv-clause p{font-size:14px;line-height:1.7;color:var(--text-2);margin:0;max-width:var(--measure)}

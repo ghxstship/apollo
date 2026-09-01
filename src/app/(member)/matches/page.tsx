@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Avatar } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import { getMember } from "../data";
+import { lockup } from "@/lib/brand";
 import { SendAWord } from "@/components/member/send-a-word";
 
 export const metadata: Metadata = { title: "Matches" };
@@ -35,7 +36,7 @@ export default async function MatchesPage() {
 
   return (
     <div className="ls-fade" data-theme="shore">
-      <span className="mbr-eyebrow">[UN] Scripted</span>
+      <span className="mbr-eyebrow">{lockup("scripted")}</span>
       <h1 className="mbr-h1">Matches.</h1>
       <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "56ch" }}>
         Everyone here shared a table with you and said your name back. That is

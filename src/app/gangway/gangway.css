@@ -3,9 +3,9 @@
 .gw-side{background:var(--surface-abyss);position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:40px;overflow:hidden}
 .gw-side:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
 .gw-side__wm{position:relative}
-.gw-side__big{font-family:var(--font-display);font-size:clamp(40px,4.5vw,64px);line-height:1.02;color:var(--paper);max-width:14ch;position:relative}
+.gw-side__big{font-family:var(--font-display);font-size:var(--text-3xl);letter-spacing:var(--track-display);text-transform:uppercase;line-height:1.02;color:var(--paper);max-width:14ch;position:relative}
 .gw-side__log{position:relative;display:flex;gap:20px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-inverse-3)}
-.gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava-loop);background-size:200% 100%;animation:ls-lava 6s linear infinite;position:relative}
+.gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava);position:relative}
 .gw-main{padding:48px;display:flex;flex-direction:column;box-sizing:border-box}
 .gw-theme{display:flex;justify-content:flex-end;transform:scale(.82);transform-origin:bottom right;opacity:.55;transition:opacity var(--dur-1) var(--ease-swell)}
 /* On a touch device the scale turned a 44px target into 36px, and the
@@ -17,16 +17,16 @@
 .gw-theme .ls-themetog:hover,.gw-theme .ls-themetog:focus-within{border-color:var(--line);background:var(--surface-card)}
 .gw-theme .ls-themetog button.on{background:var(--wash-ink-2);color:var(--text-1)}
 .gw-panel{max-width:400px;width:100%;margin:auto}
-.gw-h{font-family:var(--font-display);font-size:var(--text-display-s)}
-.gw-sub{font-size:13.5px;color:var(--text-2);margin-top:8px}
+.gw-h{font-family:var(--font-display);font-size:var(--text-display-s);text-transform:uppercase}
+.gw-sub{font-size:var(--text-sm);color:var(--text-2);margin-top:8px}
 .gw-stack{display:flex;flex-direction:column;gap:16px;margin-top:28px}
 .gw-sent{border:1px solid var(--line-faint);background:var(--surface-card);padding:22px;margin-top:28px}
 .gw-sent p{font-size:14px;margin-top:12px}
 .gw-mono{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3)}
 .gw-mono button,.gw-mono a{all:unset;cursor:pointer;color:var(--text-link)}
 .gw-mono button:hover,.gw-mono a:hover{text-decoration:underline}
-.gw-alt{margin-top:24px;padding-top:18px;border-top:1px solid var(--line-faint);font-size:12.5px;color:var(--text-2)}
+.gw-alt{margin-top:24px;padding-top:18px;border-top:1px solid var(--line-faint);font-size:var(--text-xs);color:var(--text-2)}
 .gw-alt a{color:var(--text-link);text-decoration:none}
 .gw-alt a:hover{text-decoration:underline}
-.gw-stale{border:1px solid var(--line-faint);border-inline-start:2px solid var(--terracotta);background:var(--surface-card);padding:12px 16px;margin-top:20px;font-size:13px}
+.gw-stale{border:1px solid var(--line-faint);border-inline-start:2px solid var(--terracotta);background:var(--surface-card);padding:12px 16px;margin-top:20px;font-size:var(--text-xs)}
 @media (max-width:960px){.gw{grid-template-columns:1fr}.gw-side{min-height:220px}.gw-main{padding:32px 20px}}

@@ -56,7 +56,8 @@ export default function CrewPage() {
         <span className="ls-eyebrow">Crew wanted</span>
         <h1>Work the water.</h1>
         <p className="ws-phead__sub">
-          Small crew, high standard, good light. We hire people who&rsquo;d do the
+          {"The Cast & Crew"} run the water, the cameras, and the welcome —
+          marine safety, media, hospitality. We hire people who&rsquo;d do the
           job on their day off — and then we make sure they don&rsquo;t have to.
         </p>
       </div>

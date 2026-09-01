@@ -1,0 +1,167 @@
+/* [UN] design tokens — the six files of the handoff package's tokens/ directory,
+   concatenated in the @import order styles.css declares. This file is the single
+   source of truth for every downstream value; the property names and values are
+   copied verbatim from the package and MUST NOT be renamed, re-scaled, or
+   "tidied" here. Anything the app needs that this file does not define belongs in
+   compat.css, which sits downstream and is allowed to be wrong until the surface
+   that depends on it is rebuilt.
+
+   Concatenated rather than @import-chained on purpose: a nested @import inside
+   another @import is what silently dropped the webfont sheet from every built
+   stylesheet in the previous brand — no `googleapis`, no @font-face, and nothing
+   said so. One file cannot be dropped by a chain that no longer exists.
+
+   ── 1/6 · tokens/fonts.css ──────────────────────────────────────────────────
+   The package ships a single remote Google Fonts @import here:
+
+     @import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap');
+
+   It is deliberately NOT reproduced as live CSS. Two reasons, in order of harm:
+
+   1. Nested inside a stylesheet that is itself imported, the build drops it.
+      That is not theory — it happened to this repo's previous webfont sheet, and
+      the failure is silent: the four families fall back to Times/Helvetica/
+      Courier and the whole brand renders in system faces with no error anywhere.
+   2. It puts fonts.googleapis.com in style-src and fonts.gstatic.com in
+      font-src, and makes every member's browser announce itself to Google on
+      every page load.
+
+   The same four families are loaded through next/font/google in
+   src/app/layout.tsx, which resolves them from the Google Fonts CSS API at BUILD
+   time and self-hosts the files as static assets. That satisfies the package's
+   standing instruction not to pin an @font-face URL: next/font asks the API for
+   whatever the current revision is, so there is no hardcoded gstatic path to go
+   stale — the previously hardcoded v4 URL 404'd the day Google moved to v5, and
+   nothing in a pinned URL can survive that. The families bind to the
+   --font-display / --font-body / --font-editorial / --font-mono variables that
+   the typography block below already reads.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* ── 2/6 · tokens/colors.css ─────────────────────────────────────────────── */
+:root{
+/* base — noir scale (neutral ink greys) */
+--noir-950:#0D0D0D;--noir-900:#141414;--noir-800:#1C1C1C;--noir-700:#262626;--noir-600:#333333;--noir-500:#4B4B4B;
+/* base — ivory scale (warm paper greys) */
+--ivory-50:#F7F7F4;--ivory-100:#F1F1ED;--ivory-300:#DEDED8;--ivory-500:#BCBCB3;
+/* base — acid green (primary accent) */
+--acid-200:#C9F4AB;--acid-300:#8FE55A;--acid-400:#58D621;--acid-500:#3EC317;--acid-600:#2F9410;
+/* ── division accents · synthwave / outrun ── */
+/* base — electric magenta (UN Hinged · singles social; the outrun sun base) */
+--magenta-300:#FB6FAB;--magenta-400:#F94A94;--magenta-500:#F72585;--magenta-600:#C4106A;
+/* base — deep orchid (UN Bound · open and alternative lifestyle couples; twilight void) */
+--orchid-300:#A855E8;--orchid-400:#8B24D4;--orchid-500:#7209B7;--orchid-600:#560790;
+/* base — outrun amber (UN Limited · premium experiences; solar flare) */
+--amber-300:#FFB454;--amber-400:#FF9E24;--amber-500:#FF8C00;--amber-600:#CC6E00;
+/* base — grid cobalt (UN Scripted · social content series; wireframe horizon) */
+--grid-300:#7B93F4;--grid-400:#5C7AF1;--grid-500:#4361EE;--grid-600:#2C46C4;
+/* base — laser fuchsia (UN Cut · BTS and founder-led; uncensored glow) */
+--fuchsia-300:#DA5CC6;--fuchsia-400:#C734AF;--fuchsia-500:#B5179E;--fuchsia-600:#8D0F7A;
+/* synthwave grounds — for gradient scenes and motion only; page surfaces stay paper-first greyscale */
+--void:#0A0915;--neon-canvas:#F8F9FA;
+/* base — terracotta (Shop · commerce, not a division) */
+--terracotta-300:#DD9C74;--terracotta-400:#CE835A;--terracotta-500:#C06A3E;--terracotta-600:#96502D;
+/* ── legacy ramps · retained for apollo API compatibility ── */
+/* base — flare pink */
+--rose-300:#FF7AA8;--rose-400:#FB4A87;--rose-500:#F5256D;--rose-600:#CC1054;
+/* base — cobalt */
+--sea-300:#7AA3FA;--sea-400:#4A80F6;--sea-500:#1D62F0;--sea-600:#124BC4;
+/* base — sun orange */
+--sun-300:#FFAE5C;--sun-400:#FB8F2B;--sun-500:#F07405;--sun-600:#C25B02;
+/* physical-goods accents — embroidery, foil, flags, member cards, varsity trim.
+   Sanctioned by the brand guidelines for made objects; never for screen UI. */
+--golden-sand:#E6C687;--crimson-deck:#8B263E;--saltwater-blue:#BCE0FD;--deep-offshore:#0B1B2B;--sunbleached-oxford:#F7F4EF;
+/* semantic status */
+--positive:#2FA114;--caution:#E58A00;--danger:#E0331F;
+/* surfaces — paper-first */
+--surface-page:#EDEDEA;--surface-card:#F7F7F4;--surface-raised:#FFFFFF;--surface-sunken:#E1E1DC;--surface-overlay:rgba(237,237,234,.88);
+/* text */
+--text-body:#141414;--text-muted:#4F4F4C;--text-faint:#8A8A85;--text-inverse:#F1F1ED;--text-accent:#2C7C0F;--text-on-media:#F1F1ED;
+/* brand accents */
+--accent:var(--acid-500);--accent-hover:var(--acid-400);--accent-press:var(--acid-600);--on-accent:#0D0D0D;
+/* division accents — one per sub-brand, synthwave high-chroma */
+--brand-hinged:var(--magenta-500);--brand-bound:var(--orchid-500);--brand-limited:var(--amber-500);--brand-scripted:var(--grid-500);--brand-cut:var(--fuchsia-500);
+/* division accents — text-safe step for small type on ink */
+--brand-hinged-lift:var(--magenta-400);--brand-bound-lift:var(--orchid-300);--brand-limited-lift:var(--amber-400);--brand-scripted-lift:var(--grid-400);--brand-cut-lift:var(--fuchsia-300);
+/* division accents — paper-safe step for small type on paper grounds */
+--brand-hinged-deep:var(--magenta-600);--brand-bound-deep:var(--orchid-600);--brand-limited-deep:var(--amber-600);--brand-scripted-deep:var(--grid-600);--brand-cut-deep:var(--fuchsia-600);
+/* commerce */
+--brand-shop:var(--terracotta-500);
+/* legacy aliases — retained for apollo API compatibility */
+--brand-social:var(--acid-500);--brand-dating:var(--grid-500);--brand-yacht:var(--amber-500);
+/* lines + focus */
+--border-subtle:rgba(20,20,20,.14);--border-strong:rgba(20,20,20,.32);--border-accent:rgba(62,195,23,.55);
+--focus-ring:0 0 0 2px var(--surface-page),0 0 0 4px var(--acid-600);
+}
+/* ink dark theme — data-theme="dark" on <html> or a wrapper. Accent brightens for contrast. */
+[data-theme="dark"]{
+--surface-page:var(--noir-900);--surface-card:var(--noir-800);--surface-raised:var(--noir-700);--surface-sunken:var(--noir-950);--surface-overlay:rgba(13,13,13,.85);
+--text-body:var(--ivory-100);--text-muted:#A6A6A0;--text-faint:#6E6E69;--text-inverse:var(--noir-950);--text-accent:var(--acid-400);
+--accent:var(--acid-500);--accent-hover:var(--acid-400);--accent-press:var(--acid-600);--on-accent:var(--noir-950);
+--positive:#4CC42E;--caution:#F0A11C;--danger:#F04A34;
+--border-subtle:rgba(241,241,237,.12);--border-strong:rgba(241,241,237,.26);--border-accent:rgba(88,214,33,.5);
+--shadow-card:inset 0 1px 0 rgba(255,255,255,.04),0 8px 24px rgba(0,0,0,.4);--shadow-raised:0 16px 48px rgba(0,0,0,.55);--shadow-glow-accent:0 0 24px rgba(88,214,33,.3);
+--focus-ring:0 0 0 2px var(--surface-page),0 0 0 4px var(--acid-400);
+}
+
+/* ── 3/6 · tokens/typography.css ─────────────────────────────────────────── */
+:root{
+--font-display:'Anton','Arial Narrow Bold',sans-serif;/* ALL CAPS, ≥22px only; below 22px titles use Archivo 700 */
+--font-editorial:'Instrument Serif',Georgia,serif;/* 90s editorial serif — headline italics and suffix lockups, ≥22px, sentence case */
+--font-body:'Archivo','Helvetica Neue',sans-serif;/* 400 body · 500 UI/buttons · 700 headings; sentence case, never Title Case */
+--font-mono:'Space Mono',ui-monospace,monospace;/* 700 labels ALL CAPS · 400 data */
+/* type scale — canonical steps; no off-scale sizes */
+--text-3xs:9px;--text-2xs:10px;--text-xs:12px;--text-sm:14px;--text-md:16px;--text-lg:18px;--text-xl:22px;--text-2xl:28px;--text-3xl:36px;--text-4xl:48px;--text-5xl:64px;
+/* leading */
+--leading-tight:1.05;--leading-snug:1.25;--leading-body:1.55;
+/* tracking — dense mono 9px · labels 10px+ · display straps */
+--tracking-display:.01em;--tracking-body:0;--tracking-dense:.12em;--tracking-label:.16em;--tracking-strap:.24em;
+/* semantic — Anton registers as weight 400 */
+--type-display:400 var(--text-4xl)/var(--leading-tight) var(--font-display);/* ALL CAPS */
+--type-title:400 var(--text-2xl)/var(--leading-snug) var(--font-display);/* ALL CAPS */
+--type-editorial:400 var(--text-2xl)/var(--leading-snug) var(--font-editorial);/* sentence case, italic for emphasis */
+--type-heading:700 var(--text-lg)/var(--leading-snug) var(--font-body);/* sentence case */
+--type-body:400 var(--text-md)/var(--leading-body) var(--font-body);
+--type-caption:400 var(--text-sm)/var(--leading-snug) var(--font-body);
+--type-label:700 var(--text-2xs)/1 var(--font-mono);/* ALL CAPS + --tracking-label */
+}
+
+/* ── 4/6 · tokens/spacing.css ────────────────────────────────────────────── */
+:root{
+--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-14:56px;--space-20:80px;
+--container-max:1200px;--gutter:var(--space-6);
+}
+
+/* ── 5/6 · tokens/effects.css ────────────────────────────────────────────── */
+:root{
+--radius-xs:0px;--radius-sm:2px;--radius-md:6px;--radius-lg:10px;--radius-pill:999px;
+--shadow-card:0 1px 0 rgba(20,20,20,.04),0 6px 20px rgba(20,20,20,.10);
+--shadow-raised:0 18px 48px rgba(20,20,20,.20);
+--shadow-glow-accent:0 0 24px rgba(62,195,23,.35);
+--blur-glass:blur(14px);/* @kind other */
+--gradient-protect:linear-gradient(180deg,rgba(13,13,13,0) 0%,rgba(13,13,13,.85) 100%);/* @kind other */
+--gradient-accent:linear-gradient(120deg,var(--acid-400),var(--acid-500));/* @kind other */
+/* vintage grain — tiling film-grain texture; layer over scenes, hero grounds, and large flat fills */
+--texture-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");/* @kind other */
+/* Synthwave illustration grounds: anything showing scene, sky, or horizon.
+   Grain stays layered over every one — outrun sky, vintage film stock. */
+--scene-golden:var(--texture-grain),linear-gradient(180deg,#FFB454 0%,#FF8C00 26%,#F72585 62%,#0A0915 100%);/* @kind other */
+--scene-biscayne:var(--texture-grain),linear-gradient(180deg,#7B93F4 0%,#4361EE 34%,#7209B7 70%,#0A0915 100%);/* @kind other */
+--scene-crimson:var(--texture-grain),linear-gradient(180deg,#FB6FAB 0%,#B5179E 42%,#560790 74%,#0A0915 100%);/* @kind other */
+/* The outrun ground — canonical three-stop for hero backgrounds and motion. */
+--gradient-outrun:linear-gradient(180deg,#FF8C00 0%,#F72585 45%,#7209B7 78%,#0A0915 100%);/* @kind other */
+/* Greyscale-engraving treatment grounds: type-led surfaces with no scene —
+   tickets, stubs, documents, packing slips, legal notices, mono lockups. */
+--scene-noir:var(--texture-grain),linear-gradient(165deg,#D6D6D0 0%,#8A8A85 38%,#333333 75%,#141414 100%);/* @kind other */
+--scene-night:var(--texture-grain),linear-gradient(180deg,#4361EE 0%,#2C46C4 40%,#0A0915 100%);/* @kind other */
+--scene-rose:var(--texture-grain),linear-gradient(180deg,#F72585 0%,#8D0F7A 44%,#0A0915 100%);/* @kind other */
+}
+
+/* ── 6/6 · tokens/motion.css ─────────────────────────────────────────────── */
+:root{
+--ease-out:cubic-bezier(.22,.61,.36,1);/* @kind other */
+--ease-inout:cubic-bezier(.65,0,.35,1);/* @kind other */
+--dur-fast:120ms;/* @kind other */
+--dur-base:200ms;/* @kind other */
+--dur-slow:320ms;/* @kind other */
+--dur-cine:560ms;/* @kind other */
+}

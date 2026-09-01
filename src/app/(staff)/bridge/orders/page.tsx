@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CLUB_ZONE } from "@/lib/brand";
 import { logDateTime, price } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
 import {
@@ -69,7 +70,7 @@ export default async function OrdersPage() {
   }
 
   const nameOf = (id: string) => byId.get(id)?.full_name ?? "Unknown member";
-  const noOf = (id: string) => byId.get(id)?.member_no ?? "—";
+  const noOf = (id: string) => memberMark(byId.get(id)?.member_no) || "—";
 
   const entries: LedgerRow[] = ledger.map((l) => ({
     id: l.id,
@@ -93,7 +94,7 @@ export default async function OrdersPage() {
 
   const members: MemberOption[] = memberRows.map((m) => ({
     value: m.id,
-    label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` · ${m.member_no}` : ""}`,
+    label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` · ${memberMark(m.member_no)}` : ""}`,
   }));
 
   return (

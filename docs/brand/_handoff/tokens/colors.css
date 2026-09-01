@@ -1,0 +1,64 @@
+:root{
+/* base — noir scale (neutral ink greys) */
+--noir-950:#0D0D0D;--noir-900:#141414;--noir-800:#1C1C1C;--noir-700:#262626;--noir-600:#333333;--noir-500:#4B4B4B;
+/* base — ivory scale (warm paper greys) */
+--ivory-50:#F7F7F4;--ivory-100:#F1F1ED;--ivory-300:#DEDED8;--ivory-500:#BCBCB3;
+/* base — acid green (primary accent) */
+--acid-200:#C9F4AB;--acid-300:#8FE55A;--acid-400:#58D621;--acid-500:#3EC317;--acid-600:#2F9410;
+/* ── division accents · synthwave / outrun ── */
+/* base — electric magenta (UN Hinged · singles social; the outrun sun base) */
+--magenta-300:#FB6FAB;--magenta-400:#F94A94;--magenta-500:#F72585;--magenta-600:#C4106A;
+/* base — deep orchid (UN Bound · open and alternative lifestyle couples; twilight void) */
+--orchid-300:#A855E8;--orchid-400:#8B24D4;--orchid-500:#7209B7;--orchid-600:#560790;
+/* base — outrun amber (UN Limited · premium experiences; solar flare) */
+--amber-300:#FFB454;--amber-400:#FF9E24;--amber-500:#FF8C00;--amber-600:#CC6E00;
+/* base — grid cobalt (UN Scripted · social content series; wireframe horizon) */
+--grid-300:#7B93F4;--grid-400:#5C7AF1;--grid-500:#4361EE;--grid-600:#2C46C4;
+/* base — laser fuchsia (UN Cut · BTS and founder-led; uncensored glow) */
+--fuchsia-300:#DA5CC6;--fuchsia-400:#C734AF;--fuchsia-500:#B5179E;--fuchsia-600:#8D0F7A;
+/* synthwave grounds — for gradient scenes and motion only; page surfaces stay paper-first greyscale */
+--void:#0A0915;--neon-canvas:#F8F9FA;
+/* base — terracotta (Shop · commerce, not a division) */
+--terracotta-300:#DD9C74;--terracotta-400:#CE835A;--terracotta-500:#C06A3E;--terracotta-600:#96502D;
+/* ── legacy ramps · retained for apollo API compatibility ── */
+/* base — flare pink */
+--rose-300:#FF7AA8;--rose-400:#FB4A87;--rose-500:#F5256D;--rose-600:#CC1054;
+/* base — cobalt */
+--sea-300:#7AA3FA;--sea-400:#4A80F6;--sea-500:#1D62F0;--sea-600:#124BC4;
+/* base — sun orange */
+--sun-300:#FFAE5C;--sun-400:#FB8F2B;--sun-500:#F07405;--sun-600:#C25B02;
+/* physical-goods accents — embroidery, foil, flags, member cards, varsity trim.
+   Sanctioned by the brand guidelines for made objects; never for screen UI. */
+--golden-sand:#E6C687;--crimson-deck:#8B263E;--saltwater-blue:#BCE0FD;--deep-offshore:#0B1B2B;--sunbleached-oxford:#F7F4EF;
+/* semantic status */
+--positive:#2FA114;--caution:#E58A00;--danger:#E0331F;
+/* surfaces — paper-first */
+--surface-page:#EDEDEA;--surface-card:#F7F7F4;--surface-raised:#FFFFFF;--surface-sunken:#E1E1DC;--surface-overlay:rgba(237,237,234,.88);
+/* text */
+--text-body:#141414;--text-muted:#4F4F4C;--text-faint:#8A8A85;--text-inverse:#F1F1ED;--text-accent:#2C7C0F;--text-on-media:#F1F1ED;
+/* brand accents */
+--accent:var(--acid-500);--accent-hover:var(--acid-400);--accent-press:var(--acid-600);--on-accent:#0D0D0D;
+/* division accents — one per sub-brand, synthwave high-chroma */
+--brand-hinged:var(--magenta-500);--brand-bound:var(--orchid-500);--brand-limited:var(--amber-500);--brand-scripted:var(--grid-500);--brand-cut:var(--fuchsia-500);
+/* division accents — text-safe step for small type on ink */
+--brand-hinged-lift:var(--magenta-400);--brand-bound-lift:var(--orchid-300);--brand-limited-lift:var(--amber-400);--brand-scripted-lift:var(--grid-400);--brand-cut-lift:var(--fuchsia-300);
+/* division accents — paper-safe step for small type on paper grounds */
+--brand-hinged-deep:var(--magenta-600);--brand-bound-deep:var(--orchid-600);--brand-limited-deep:var(--amber-600);--brand-scripted-deep:var(--grid-600);--brand-cut-deep:var(--fuchsia-600);
+/* commerce */
+--brand-shop:var(--terracotta-500);
+/* legacy aliases — retained for apollo API compatibility */
+--brand-social:var(--acid-500);--brand-dating:var(--grid-500);--brand-yacht:var(--amber-500);
+/* lines + focus */
+--border-subtle:rgba(20,20,20,.14);--border-strong:rgba(20,20,20,.32);--border-accent:rgba(62,195,23,.55);
+--focus-ring:0 0 0 2px var(--surface-page),0 0 0 4px var(--acid-600);
+}
+/* ink dark theme — data-theme="dark" on <html> or a wrapper. Accent brightens for contrast. */
+[data-theme="dark"]{
+--surface-page:var(--noir-900);--surface-card:var(--noir-800);--surface-raised:var(--noir-700);--surface-sunken:var(--noir-950);--surface-overlay:rgba(13,13,13,.85);
+--text-body:var(--ivory-100);--text-muted:#A6A6A0;--text-faint:#6E6E69;--text-inverse:var(--noir-950);--text-accent:var(--acid-400);
+--accent:var(--acid-500);--accent-hover:var(--acid-400);--accent-press:var(--acid-600);--on-accent:var(--noir-950);
+--positive:#4CC42E;--caution:#F0A11C;--danger:#F04A34;
+--border-subtle:rgba(241,241,237,.12);--border-strong:rgba(241,241,237,.26);--border-accent:rgba(88,214,33,.5);
+--shadow-card:inset 0 1px 0 rgba(255,255,255,.04),0 8px 24px rgba(0,0,0,.4);--shadow-raised:0 16px 48px rgba(0,0,0,.55);--shadow-glow-accent:0 0 24px rgba(88,214,33,.3);
+--focus-ring:0 0 0 2px var(--surface-page),0 0 0 4px var(--acid-400);
+}

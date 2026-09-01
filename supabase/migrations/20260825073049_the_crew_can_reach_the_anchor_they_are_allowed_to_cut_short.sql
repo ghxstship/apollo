@@ -1,0 +1,13 @@
+-- A policy with no grant behind it is a rule nobody can exercise. The
+-- "staff may cut an anchor short" policy on shared_anchors was added minutes
+-- after a schema-wide sweep that removed every table grant no policy could use
+-- — correctly, at the time, because there was no UPDATE policy on this table
+-- then. The two changes crossed, and the result is a policy that permits a write
+-- the role cannot attempt: PostgREST returns a permission error, not a policy
+-- error, so the failure reads as "you are not staff" to somebody who is.
+--
+-- The grant is exactly as narrow as the policy: UPDATE only, authenticated only,
+-- and nothing for anon. INSERT stays off — an anchor is written by the mutual
+-- trigger and by nothing else — and the direction of an expiry is still held by
+-- an_anchor_is_never_extended, so widening the grant does not widen the rule.
+grant update on public.shared_anchors to authenticated;;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Stat, StateBlock } from "@/components/ds";
 import { logDate, logTime } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 import { conditionsLine, getOperator, readConditions } from "../../data";
 import { must } from "../../staff";
 import {
@@ -87,7 +88,7 @@ export default async function ManifestsPage({
     .order("full_name", { ascending: true });
   const memberOptions = (must(membersRes)).map((m) => ({
     value: m.id,
-    label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` — ${m.member_no}` : ""}`,
+    label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` — ${memberMark(m.member_no)}` : ""}`,
   }));
 
   /* The flotilla for this voyage — yachts in position order, fill from
@@ -145,7 +146,7 @@ export default async function ManifestsPage({
       rsvpId: r.id,
       name: p?.full_name ?? "Unknown sailor",
       tone: p?.avatar_tone ?? "sand",
-      memberNo: p?.member_no ?? "GUEST",
+      memberNo: memberMark(p?.member_no) || "GUEST",
       guests: r.guests,
       guestNames: r.guest_names ?? [],
       guestParty: guestsByRsvp.get(r.id) ?? [],

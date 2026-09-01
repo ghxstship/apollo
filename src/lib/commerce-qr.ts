@@ -5,6 +5,8 @@ import QRCode from "qrcode";
 export async function qrDataUrl(text: string): Promise<string> {
   return QRCode.toDataURL(text, {
     margin: 1,
-    color: { dark: "#F4EFE6", light: "#00000000" },
+    /* Literal, not a token: qrcode rasterises server-side with no document to
+       resolve var() against. --ivory-100, and it moves when that token moves. */
+    color: { dark: "#F1F1ED", light: "#00000000" },
   });
 }

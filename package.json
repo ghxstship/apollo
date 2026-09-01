@@ -1,5 +1,5 @@
 {
-  "name": "un-social",
+  "name": "unhinged-social",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,8 +14,9 @@
     "e2e": "node scripts/e2e-suite.mjs",
     "sms:register": "node scripts/register-sms-templates.mjs",
     "migrations:mirror": "node scripts/mirror-migrations.mjs",
-    "documents:snapshot": "node scripts/snapshot-documents.mjs",
-    "migrations:replay": "node scripts/replay-migrations.mjs"
+    "migrations:replay": "node scripts/replay-migrations.mjs",
+    "check:ds": "node scripts/audit-design-system.mjs",
+    "documents:snapshot": "node scripts/snapshot-documents.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.114.0",

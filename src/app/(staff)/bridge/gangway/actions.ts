@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { literalCode } from "@/lib/boarding-code";
 import { staffContext, ERR_STAFF, ERR_LAND, boardingError } from "../../staff";
 import { logDateYear } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 
 /* Onsite check-in by boarding code. The scanner types the code and hits
    Enter; we stamp checked_in_at/by and hand back what the door needs. */
@@ -35,7 +36,6 @@ const UPCOMING_STATUSES: Array<"scheduled" | "live" | "weather_hold"> = [
    one place the club turns a scanned value into a person walking aboard.
    Codes are fixed-shape and case-insensitive, so upper() + eq() answers the
    real question and leaves no pattern syntax in play. */
-
 
 
 function upcomingCutoff(): string {
@@ -217,7 +217,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
 
   const base: ScanResult = {
     name: profile?.full_name ?? "Unknown sailor",
-    memberNo: profile?.member_no ?? "GUEST",
+    memberNo: memberMark(profile?.member_no) || "GUEST",
     vessel: vesselName,
     guestNames: rsvp.guest_names ?? [],
     otherVoyage,

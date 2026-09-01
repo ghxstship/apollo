@@ -50,21 +50,36 @@ const LEGACY_ROSTER_PREFIXES = ["syrius-gangway-roster:", "lyre-gangway-roster:"
    Appends rather than overwrites: a device that has already written under the
    new name must not lose those entries to a stale legacy blob. */
 export function adoptLegacyDeviceStorage(): void {
-  try {
-    for (const [legacy, current] of [
-      ...LEGACY_QUEUE_KEYS.gangway.map((k) => [k, GANGWAY_QUEUE_KEY] as const),
-      ...LEGACY_QUEUE_KEYS.galley.map((k) => [k, GALLEY_QUEUE_KEY] as const),
-    ]) {
+  /* PER KEY, and the removal only where the copy actually happened.
+
+     One try around the whole thing meant a single malformed legacy blob threw
+     on the first key and skipped everything after it — the other queues were
+     never carried over and the legacy ROSTERS were never dropped, permanently,
+     because it failed identically on every subsequent load. And removeItem sat
+     outside the copy guard, so a legacy value that parsed but was not an array
+     was deleted without being carried anywhere: the one thing this module
+     exists to prevent. A blob we could not copy is now LEFT ALONE, where
+     unflushedCount will still see it and the operator will still be asked. */
+  for (const [legacy, current] of [
+    ...LEGACY_QUEUE_KEYS.gangway.map((k) => [k, GANGWAY_QUEUE_KEY] as const),
+    ...LEGACY_QUEUE_KEYS.galley.map((k) => [k, GALLEY_QUEUE_KEY] as const),
+  ]) {
+    try {
       const raw = localStorage.getItem(legacy);
       if (raw === null) continue;
       const old = JSON.parse(raw);
-      if (Array.isArray(old) && old.length) {
+      if (!Array.isArray(old)) continue;          // not ours to interpret; keep it
+      if (old.length) {
         const rawNow = localStorage.getItem(current);
         const now = rawNow ? JSON.parse(rawNow) : [];
         localStorage.setItem(current, JSON.stringify((Array.isArray(now) ? now : []).concat(old)));
       }
-      localStorage.removeItem(legacy);
+      localStorage.removeItem(legacy);            // only once it is safely copied
+    } catch {
+      /* leave this key exactly as it is and carry on to the next */
     }
+  }
+  try {
     /* Rosters rebuild from the server, so they are dropped rather than moved —
        but they ARE dropped, because nothing else would ever remove them. */
     for (const key of Object.keys(localStorage)) {
@@ -74,6 +89,7 @@ export function adoptLegacyDeviceStorage(): void {
     /* storage blocked or a malformed blob — never let this stop a page loading */
   }
 }
+
 
 /* Rosters are pure copies of server data and are rebuilt on the next load, so
    they go without ceremony. */
@@ -106,22 +122,34 @@ export function clearCachedRosters(): number {
    what an evacuation is read from. */
 export function unflushedCount(): number {
   let n = 0;
-  try {
-    for (const key of [
-      GANGWAY_QUEUE_KEY,
-      GALLEY_QUEUE_KEY,
-      /* Counted too: a device that has not yet run the adoption still has its
-         unsent stamps under the old name, and reporting zero would tell an
-         operator it was safe to end the session. */
-      ...LEGACY_QUEUE_KEYS.gangway,
-      ...LEGACY_QUEUE_KEYS.galley,
-    ]) {
+  for (const key of [
+    GANGWAY_QUEUE_KEY,
+    GALLEY_QUEUE_KEY,
+    /* Counted too: a device that has not run the adoption still has unsent
+       stamps under the old name, and reporting zero would tell an operator
+       it was safe to end the session. */
+    ...LEGACY_QUEUE_KEYS.gangway,
+    ...LEGACY_QUEUE_KEYS.galley,
+  ]) {
+    /* PER KEY. One try around the whole loop meant the FIRST unreadable blob
+       aborted the count and returned whatever had been tallied so far — and the
+       queue keys are read before the legacy ones, so a truncated `un-` blob
+       reported 0 while two legacy stamps sat on the device. The caller gates
+       sign-out on this number and reads 0 as "safe to end the session".
+
+       "Unreadable is not the same as non-empty" was the right instinct and the
+       wrong encoding: it was expressed as zero, which is the one value that
+       means "nothing to lose". A key that cannot be read now counts as 1 — the
+       operator is asked, which is the safe direction, and the alternative is
+       silently discarding the only record that somebody walked aboard. */
+    try {
       const raw = localStorage.getItem(key);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) n += parsed.length;
+      if (raw === null) continue;
+      const parsed = JSON.parse(raw);
+      n += Array.isArray(parsed) ? parsed.length : 1;
+    } catch {
+      n += 1;
     }
-  } catch {
-    /* unreadable is not the same as non-empty; say nothing rather than guess */
   }
   return n;
 }

@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"><defs><linearGradient id="lava" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#00E8FF"></stop><stop offset=".5" stop-color="#8B5CFF"></stop><stop offset="1" stop-color="#FF2EC4"></stop></linearGradient></defs><rect width="64" height="64" fill="#0B0B0C"></rect><g transform="translate(-1,-3) scale(0.118)" stroke="#F2F2F4" fill="#F2F2F4">
-<path d="M256,428 C140,418 100,330 126,244 C142,190 180,162 184,124 C188,86 132,78 136,114 C138,132 154,138 158,124" fill="none" stroke-linecap="round" stroke-width="44"></path>
-<path d="M256,428 C372,418 412,330 386,244 C370,190 332,162 328,124 C324,86 380,78 376,114 C374,132 358,138 354,124" fill="none" stroke-linecap="round" stroke-width="44"></path>
-<rect x="166" y="178" width="180" height="22" rx="4" stroke="none"></rect>
-<path d="M212,200 V386 M241,200 V396 M270,200 V396 M299,200 V386" stroke-width="15" fill="none"></path>
-<rect x="198" y="446" width="116" height="20" rx="10" stroke="none"></rect>
-</g><rect x="0" y="56" width="64" height="8" fill="url(#lava)"></rect></svg>

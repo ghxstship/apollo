@@ -436,6 +436,14 @@ async function main() {
          signs in and requires the page to actually render. */
       const ok = res.status >= 300 && res.status < 400 && (res.headers.get("location") || "").includes("/gangway");
       note(path, "redirects signed-out to /gangway", ok, `status ${res.status} → ${res.headers.get("location")}`);
+      /* AND THAT ALONE PROVES NOTHING ABOUT THE PAGE. Middleware redirects
+         /bridge/* before routing, so a path that has NEVER EXISTED bounces to
+         the gangway exactly like a real one — verified: /bridge/utterly-invented
+         returns the same 307. Six new Bridge screens once scored twelve green
+         ticks here while the running build contained none of them.
+
+         So the redirect is checked, and then the page is fetched with a real
+         session and required to render. See renderCheck() below. */
       continue;
     }
 
