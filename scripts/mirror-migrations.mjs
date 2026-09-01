@@ -44,7 +44,17 @@ const adopt = args.includes("--adopt");
    still carry the retired brands the 20260828132337 repair only later removes,
    so it passes in the live timeline and fails every fresh replay. Its
    self-asserting replacement is 20260828132337. */
-const ADOPT_NEVER = new Set(["20260825195540_the_last_of_the_retired_brands_leaves_the_records.sql"]);
+/* Was a quarantine holding 20260825195540, because adopting it turned the replay
+   red. That was the right diagnosis and the wrong remedy: excluding a ledger row
+   from the corpus for ever does not fix a migration that cannot replay, it hides
+   it from the one check that proves this repository can rebuild its own
+   database — the condition that check exists to find. The migration has been
+   corrected instead (its repair matched only the Syrius era while the seeds
+   write the Lyre one), so it adopts and replays like any other.
+
+   Kept as an empty set rather than deleted: if a row ever genuinely must not be
+   adopted, the reason belongs here in the open, next to this note. */
+const ADOPT_NEVER = new Set([]);
 // Default to the whole ledger. Passing a `since` is what hid 28 applied
 // migrations from the set-equality check for a week.
 const since = args.find((a) => !a.startsWith("--")) ?? "0";
