@@ -395,6 +395,12 @@ export const BANNED_TERMS = [
   "LYRE",
   "lyre.social",
   "LYR-",
+  /* The Lyre era minted boarding codes LS-, not LYR-. It is the prefix that was
+     actually in the records — 243 outbox payloads carried it — and it was the
+     one missing here, so a page could render LS-EESI-1005-0031 and both gates
+     reported all clear. Proven by injecting one and watching the audit stay
+     green at 533/533. */
+  "LS-",
   "Strike a chord",
   "Chandlery",
   "Passbook",
