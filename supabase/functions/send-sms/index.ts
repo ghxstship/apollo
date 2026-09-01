@@ -51,7 +51,7 @@ type Mapping = {
 };
 
 /* sent.dm resolves a template by name or by id. Name is preferred: the club
-   creates `lyre_weather_hold` in the dashboard and this finds it, with no UUID
+   creates `un_weather_hold` in the dashboard and this finds it, with no UUID
    to transcribe. The id pins an exact template when one is known. */
 function templateRef(m: Mapping): { name?: string; id?: string } | null {
   if (m.provider_template_name) return { name: m.provider_template_name };

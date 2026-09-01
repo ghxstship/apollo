@@ -1976,6 +1976,35 @@ async function rebrandRules(p) {
       note("staff", `the till resolves ${typed}`, (hit.data || []).length === 1, `${(hit.data || []).length} match(es)`);
     }
   }
+
+  /* The SMS registry — the one surface no gate has ever crawled. It is not a
+     rendered page, so the route audit walks past it and so does every check
+     above this one. That is how provider_template_name kept the retired brand
+     through TWO rebrands while the message bodies sitting beside it in the same
+     rows were rewritten twice: the bodies open "[un]:", the links point at
+     unhingedsocial.us, and the template was still named syrius_weather_hold.
+     These strings are not internal — variable_samples and draft_body are the
+     examples submitted to a carrier for approval under the club's name.
+
+     The count guard matters as much as the pattern: an empty read, or one RLS
+     refuses, would otherwise pass this test by having nothing to fail. */
+  const registry = await stf.get(
+    "sms_templates?select=code,provider_template_name,draft_body,note,variable_samples"
+  );
+  const RETIRED = /(syrius|lyre|slop chest|unscripted social experiment)/i;
+  const stale = (registry.data || []).filter((t) =>
+    RETIRED.test(
+      [t.provider_template_name, t.draft_body, t.note, JSON.stringify(t.variable_samples ?? null)].join(" ")
+    )
+  );
+  note(
+    "staff",
+    "the SMS registry carries no retired brand",
+    (registry.data || []).length > 0 && stale.length === 0,
+    stale.length
+      ? `retired brand in: ${stale.map((t) => t.code).join(", ")}`
+      : `${(registry.data || []).length} templates clean`
+  );
 }
 
 async function logbookRules(p) {
