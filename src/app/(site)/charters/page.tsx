@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { CITY_CODES, SUB_CLASSES } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { moduleTables } from "@/lib/module-tables";
 import {
   depositChip,
   durationChip,
   fleetChip,
+  onSaleChip,
   weekChip,
 } from "@/components/site/voyage-chips";
 import { fleetByVoyage } from "@/components/site/voyage-data";
@@ -20,7 +22,15 @@ export const metadata: Metadata = {
 
 export default async function VoyagesPage() {
   const supabase = await createClient();
-  const [{ data: voyages }, { data: capacity }, { data: harbors }] = await Promise.all([
+  const now = new Date();
+  const nowMs = now.getTime();
+  const [
+    { data: voyages },
+    { data: capacity },
+    { data: harbors },
+    { data: formatRows },
+    { data: seriesRows },
+  ] = await Promise.all([
     supabase
       .from("voyages")
       /* Joined titles ride along for the Season filter and the series chip —
@@ -31,22 +41,42 @@ export default async function VoyagesPage() {
       .in("status", ["scheduled", "live", "weather_hold"])
       /* A sailing that has cast off is not on offer, whatever its status
          still says — the detail page and the manifest already knew this. */
-      .gte("starts_at", new Date().toISOString())
+      .gte("starts_at", now.toISOString())
       .order("starts_at", { ascending: true }),
     supabase.from("voyage_capacity").select("*"),
     supabase.from("harbors").select("*").order("position", { ascending: true }),
+    /* A format's access decides whether a sailing is on offer at all. Invite
+       and on-request formats are refused at the booking guard, so listing them
+       as passes would be advertising a door that does not open. Another
+       module's table, reached through the moduleTables seam. */
+    moduleTables(supabase).from("activity_formats").select("slug, access"),
+    /* Series templates are the pattern a series is cut from, not sailings —
+       they carry a date because the cloner needs one to shift from. */
+    supabase.from("voyage_series").select("template_voyage_id"),
   ]);
+
+  const accessOf = new Map(
+    ((formatRows ?? []) as Array<{ slug: string; access: string }>).map((f) => [f.slug, f.access])
+  );
+  const templateIds = new Set((seriesRows ?? []).map((s) => s.template_voyage_id));
+  const listed = (voyages ?? []).filter((v) => {
+    if (templateIds.has(v.id)) return false;
+    const access = v.format ? accessOf.get(v.format) : null;
+    return access !== "invite" && access !== "on_request";
+  });
 
   const capacityById = new Map(
     (capacity ?? []).map((c) => [c.voyage_id, c] as const)
   );
   const harborById = new Map((harbors ?? []).map((h) => [h.id, h] as const));
-  const fleets = await fleetByVoyage((voyages ?? []).map((v) => v.id));
+  const fleets = await fleetByVoyage(listed.map((v) => v.id));
 
-  const items: ManifestItem[] = (voyages ?? []).map((v) => {
+  const items: ManifestItem[] = listed.map((v) => {
     const cap = capacityById.get(v.id);
     const harbor = v.harbor_id ? harborById.get(v.harbor_id) : null;
     const starts = new Date(v.starts_at);
+    /* Announced, not yet on offer: the hour stands where the pass count would. */
+    const notYetOnSale = !!v.sale_opens_at && Date.parse(v.sale_opens_at) > nowMs;
     return {
       id: v.id,
       slug: v.slug,
@@ -62,6 +92,7 @@ export default async function VoyagesPage() {
       price: price(v.price_cents),
       passesLeft: cap?.berths_left ?? null,
       seatsWord: "passes",
+      onSale: notYetOnSale && v.sale_opens_at ? onSaleChip(v.sale_opens_at, v.time_zone) : null,
       blurb: v.blurb,
       duration: durationChip(v.starts_at, v.ends_at),
       week: weekChip(v.starts_at),

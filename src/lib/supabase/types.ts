@@ -70,16 +70,32 @@ export type MemberEventProposalRow = {
   status: "submitted" | "considering" | "approved" | "declined"
   decided_by: string | null; decided_at: string | null; decision_note: string | null
   created_at: string
+  voyage_id: string | null
 }
 export type SponsorRow = {
   id: string; name: string
   tier: "presenting_partner" | "sandbar_hub" | "confessional_pod" | "shore_leave_partner"
   monthly_cents: number; contact_email: string | null
   starts_on: string | null; ends_on: string | null; notes: string | null
-  active: boolean; created_at: string
+  active: boolean; created_at: string; created_by: string | null
 }
 export type VoyageSponsorRow = {
   voyage_id: string; sponsor_id: string; placement: string | null; created_at: string
+}
+export type ClubSettingRow = { key: string; value_int: number; note: string | null }
+export type SegmentRow = { slug: string; label: string; heads: number }
+export type SponsorTierRow = { slug: string; label: string; position: number; rate_cents: number; assets: string[] }
+export type LeagueRow = { league: number; name: string; months: number }
+export type StripeEventRow = { id: string; type: string; created: string; received_at: string }
+export type AuditLogRow = {
+  id: number; table_name: string; row_id: string | null; action: "INSERT" | "UPDATE" | "DELETE"
+  actor_id: string | null; before: Json | null; after: Json | null; at: string
+}
+export type CharterRequestRow = {
+  id: string; profile_id: string; format: string | null; party_size: number | null
+  preferred_dates: string | null; note: string | null
+  status: "submitted" | "answered" | "declined"
+  decided_by: string | null; decided_at: string | null; decision_note: string | null; created_at: string
 }
 export type VoyageDaybedRow = {
   id: string; voyage_id: string; rsvp_id: string; profile_id: string; created_at: string
@@ -149,6 +165,9 @@ export type ApplicationRow = {
 export type NotificationRow = {
   id: string; profile_id: string; kind: string; title: string; body: string | null
   read: boolean; created_at: string
+  /* The sailing a Word is about, when it is about one — the idempotency key
+     for the day-of Words since series occurrences share a title. */
+  voyage_id: string | null
 }
 export type MemberRollRow = {
   email: string; tier: MembershipTier; home_harbor: string | null; source: string
@@ -178,6 +197,7 @@ export type EmailOutboxRow = {
      said could not exist, so no screen could be built to show one. */
   status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
   claimed_at: string | null
+  attempts: number | null; next_attempt_at: string | null; last_error: string | null
 }
 export type GalleyItemRow = {
   id: string; category: "bar" | "galley" | "merch"; name: string; price_cents: number; active: boolean
@@ -249,7 +269,7 @@ export type RsvpGuestRow = {
 }
 export type PassTransferRow = {
   id: string; rsvp_id: string; from_profile: string; to_profile: string
-  status: "offered" | "accepted" | "declined" | "cancelled"; created_at: string; responded_at: string | null
+  status: "offered" | "accepted" | "declined" | "cancelled" | "void"; created_at: string; responded_at: string | null
 }
 export type PromoCodeRow = {
   code: string; kind: "percent" | "amount" | "comp"; value: number; voyage_id: string | null
@@ -270,6 +290,7 @@ export type SmsOutboxRow = {
      said could not exist, so no screen could be built to show one. */
   status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
   claimed_at: string | null
+  attempts: number | null; next_attempt_at: string | null; last_error: string | null
 }
 export type PushOutboxRow = {
   id: string; profile_id: string; title: string; body: string | null; url: string | null
@@ -277,6 +298,9 @@ export type PushOutboxRow = {
      since the drains were written — a row in flight was a state the type system
      said could not exist, so no screen could be built to show one. */
   status: "pending" | "sending" | "sent" | "skipped" | "failed"; created_at: string; sent_at: string | null
+  /* The retry ledger the drains write: how many tries, when the next one is
+     due, when the row was claimed, and why it last gave up. */
+  attempts: number | null; next_attempt_at: string | null; claimed_at: string | null; last_error: string | null
 }
 export type SavedSegmentRow = {
   id: string; name: string; filters: Json; created_by: string | null; created_at: string
@@ -382,6 +406,13 @@ export type Database = {
       sponsors: Table<SponsorRow, Ins<SponsorRow, "name" | "tier" | "monthly_cents">>
       voyage_sponsors: Table<VoyageSponsorRow, Ins<VoyageSponsorRow, "voyage_id" | "sponsor_id">>
       voyage_daybeds: Table<VoyageDaybedRow, Ins<VoyageDaybedRow, "voyage_id" | "rsvp_id" | "profile_id">>
+      club_settings: Table<ClubSettingRow, Ins<ClubSettingRow, "key" | "value_int">>
+      segments: Table<SegmentRow, Ins<SegmentRow, "slug" | "label" | "heads">>
+      sponsor_tiers: Table<SponsorTierRow, Ins<SponsorTierRow, "slug" | "label" | "position" | "rate_cents">>
+      leagues: Table<LeagueRow, Ins<LeagueRow, "league" | "name" | "months">>
+      stripe_events: Table<StripeEventRow, Ins<StripeEventRow, "id" | "type" | "created">>
+      audit_log: Table<AuditLogRow, Ins<AuditLogRow, "table_name" | "action">>
+      charter_requests: Table<CharterRequestRow, Ins<CharterRequestRow, "profile_id">>
       rsvps: Table<RsvpRow, Ins<RsvpRow, "voyage_id" | "profile_id">>
       cabins: Table<CabinRow, Ins<CabinRow, "vessel_id" | "name">>
       episodes: Table<EpisodeRow, Ins<EpisodeRow, "number" | "slug" | "title">>
@@ -544,6 +575,11 @@ export type Database = {
         Returns: undefined
       }
       claim_a_daybed: { Args: { p_rsvp: string }; Returns: undefined }
+      export_my_data: { Args: Record<string, never>; Returns: Json }
+      requeue_outbox_row: { Args: { p_table: "email_outbox" | "sms_outbox" | "push_outbox"; p_id: string }; Returns: undefined }
+      assign_vessels_evenly: { Args: { p_voyage: string }; Returns: number }
+      club_setting: { Args: { p_key: string }; Returns: number }
+      passes_left: { Args: { p_voyage: string; p_except_rsvp?: string | null }; Returns: number }
       sponsor_credits: { Args: { p_voyage: string }; Returns: Array<{ name: string; tier: string }> }
       attach_addons: {
         Args: { p_rsvp: string; p_addons: string[]; p_qty: number }

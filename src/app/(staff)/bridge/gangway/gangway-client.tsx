@@ -25,6 +25,12 @@ export type GangwayRow = {
   guests: number;
   waiverSigned: boolean;
   checkedInAt: string | null;
+  /* What the pass holds on the sailing beyond a place aboard: a daybed claim,
+     a cabin and that cabin's own muster station. Optional for the same reason
+     guestList is — a roster cached before these existed still parses. */
+  daybed?: boolean;
+  cabin?: string | null;
+  cabinMuster?: string | null;
 };
 
 /* One rendering of a guest set, everywhere the roster speaks: aboard guests
@@ -34,6 +40,15 @@ function guestLine(r: GangwayRow): string {
     return r.guestList.map((g) => `${g.name} · ${g.aboard ? "ABOARD" : "ashore"}`).join("; ");
   }
   return r.guestNames.length ? r.guestNames.join("; ") : r.guests ? String(r.guests) : "—";
+}
+
+/* Same rule for what the pass holds — cabin with its muster, then the daybed
+   marker — so the screen, the CSV and the paper all say it one way. */
+function berthLine(r: GangwayRow): string {
+  const parts: string[] = [];
+  if (r.cabin) parts.push(r.cabinMuster ? `${r.cabin} · muster ${r.cabinMuster}` : r.cabin);
+  if (r.daybed) parts.push("DAYBED");
+  return parts.length ? parts.join(" · ") : "—";
 }
 
 type Scan = {
@@ -58,6 +73,9 @@ type Scan = {
   guestOf?: string;
   vessel?: string;
   guestNames?: string[];
+  /* berthLine() of the roster row the scan resolved to, when it is on this
+     roster — a daybed holder is told where to go at the door, not after. */
+  berth?: string;
   time?: string;
   otherVoyage?: string;
   queued?: boolean;
@@ -121,6 +139,7 @@ export function GangwayConsole({
   family,
   departs,
   timeZone,
+  muster,
   options,
   rows: serverRows,
 }: {
@@ -132,6 +151,9 @@ export function GangwayConsole({
      is a stamp on nobody's clock — and this screen is the audit record for who
      walked aboard and when. */
   timeZone: string | null;
+  /* Where the door musters — the venue and its address on a shore night, the
+     slip the voyage names otherwise. Printed on the door list's header. */
+  muster: string | null;
   options: Array<{ value: string; label: string }>;
   rows: GangwayRow[];
 }) {
@@ -275,11 +297,13 @@ export function GangwayConsole({
       const scanned = literalCode(raw);
       const hit = pool.find((r) => r.code && literalCode(r.code) === scanned);
     if (!hit) return { kind: "unsure", queued: true };
+    const held = berthLine(hit);
     const base = {
       name: hit.name,
       memberNo: hit.memberNo,
       vessel: hit.vessel || undefined,
       guestNames: hit.guestNames,
+      berth: held === "—" ? undefined : held,
     };
     if (hit.checkedInAt) return { kind: "already", ...base, time: hit.checkedInAt, queued: true };
     /* The roster we are scanning against carries waiverSigned, and this path
@@ -335,6 +359,11 @@ export function GangwayConsole({
           } else if (res.outcome === "not_found") {
             setScan({ kind: "not_found" });
           } else {
+            /* Same mapping as the action that just succeeded, or a legacy card
+               scans green while its roster row stays ashore and the counter
+               does not move. */
+            const hit = rows.find((r) => literalCode(r.code) === literalCode(raw));
+            const held = hit ? berthLine(hit) : "—";
             const s: Scan = {
               kind: res.outcome!,
               name: res.name,
@@ -342,16 +371,13 @@ export function GangwayConsole({
               vessel: res.vessel,
               guestNames: res.guestNames,
               guestOf: res.guestOf,
+              berth: hit && !res.otherVoyage && held !== "—" ? held : undefined,
               time: res.checkedInAt,
               otherVoyage: res.otherVoyage,
             };
             setScan(s);
-            if (res.outcome === "aboard" && !res.otherVoyage) {
-              /* Same mapping as the action that just succeeded, or a legacy card
-                 scans green while its roster row stays ashore and the counter
-                 does not move. */
-              const hit = rows.find((r) => literalCode(r.code) === literalCode(raw));
-              if (hit) markRow(hit.rsvpId, res.checkedInAt ?? new Date().toISOString());
+            if (res.outcome === "aboard" && !res.otherVoyage && hit) {
+              markRow(hit.rsvpId, res.checkedInAt ?? new Date().toISOString());
             }
           }
         } catch {
@@ -369,7 +395,7 @@ export function GangwayConsole({
   const checked = rows.filter((r) => r.checkedInAt).length;
 
   const downloadCsv = () => {
-    const header = ["Name", "Member no", "Code", "Vessel", "Guests", "Waiver"];
+    const header = ["Name", "Member no", "Code", "Vessel", "Holds", "Guests", "Waiver"];
     const lines = [
       header,
       ...rows.map((r) => [
@@ -377,10 +403,12 @@ export function GangwayConsole({
         r.memberNo,
         r.code || "—",
         r.vessel || "—",
+        berthLine(r),
         guestLine(r),
         r.waiverSigned ? "Signed" : "Missing",
       ]),
     ];
+    if (muster) lines.push([], ["Muster", muster]);
     const csv = lines.map((cols) => cols.map(csvCell).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -453,6 +481,7 @@ export function GangwayConsole({
                   {scan.guestOf ? ` · GUEST OF ${scan.guestOf.toUpperCase()}` : ""}
                   {scan.vessel ? ` · ${scan.vessel.toUpperCase()}` : ""}
                 </b>
+                {scan.berth ? <span>Holds: {scan.berth}</span> : null}
                 {guestsLine(scan) ? <span>{guestsLine(scan)}</span> : null}
                 {scan.otherVoyage ? (
                   <span>On another manifest — checked in for {scan.otherVoyage}.</span>
@@ -466,6 +495,7 @@ export function GangwayConsole({
                   {scan.guestOf ? ` · guest of ${scan.guestOf}` : ""}
                   {scan.vessel ? ` · ${scan.vessel}` : ""}
                 </span>
+                {scan.berth ? <span>Holds: {scan.berth}</span> : null}
                 {guestsLine(scan) ? <span>{guestsLine(scan)}</span> : null}
               </>
             ) : scan.kind === "refused" ? (
@@ -570,8 +600,9 @@ export function GangwayConsole({
           </span>
         </div>
         <p className="hm-note">
-          Name, member number, code, vessel, guests by name, and waiver status — the paper fallback
-          for a dead battery.
+          Name, member number, code, vessel, what the pass holds (cabin, daybed), guests by name,
+          and waiver status — the paper fallback for a dead battery.
+          {muster ? ` Muster: ${muster}.` : ""}
         </p>
       </section>
 
@@ -580,6 +611,7 @@ export function GangwayConsole({
             <div className="hm-doorlist" aria-hidden="true">
               <h1>Door list — {voyageTitle}</h1>
               <p>{departs} · {rows.length} passes · printed {logTime(new Date().toISOString(), timeZone)}</p>
+              {muster ? <p>Muster: {muster}</p> : null}
               <table>
                 <thead>
                   <tr>
@@ -587,6 +619,7 @@ export function GangwayConsole({
                     <th>Member no</th>
                     <th>Code</th>
                     <th>Vessel</th>
+                    <th>Holds</th>
                     <th>Guests</th>
                     <th>Waiver</th>
                   </tr>
@@ -598,6 +631,7 @@ export function GangwayConsole({
                       <td>{r.memberNo}</td>
                       <td>{r.code || "—"}</td>
                       <td>{r.vessel || "—"}</td>
+                      <td>{berthLine(r)}</td>
                       <td>{guestLine(r)}</td>
                       <td>{r.waiverSigned ? "Signed" : "Missing"}</td>
                     </tr>

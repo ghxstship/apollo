@@ -38,10 +38,12 @@ export async function setBerthsTotal(voyageId: string, berths: number): Promise<
     .eq("id", voyageId);
   if (error) {
     /* The holds CHECK is the one refusal an operator can act on from here —
-       hand them the arithmetic, not "that didn't land". */
+       hand them the arithmetic, not "that didn't land". The format trigger
+       also watches berths_total (a format seats so many), and speaks for
+       itself. */
     if (/holds_fit_the_hull|held_passes/.test(error.message ?? ""))
       return { error: "The hull cannot shrink under its holds — release held passes first, then lower the berths." };
-    return { error: ERR_LAND };
+    return { error: programRefusal(error) };
   }
   return done();
 }
@@ -124,7 +126,9 @@ export async function removeVessel(voyageId: string, vesselId: string): Promise<
     .delete()
     .eq("voyage_id", voyageId)
     .eq("vessel_id", vesselId);
-  if (error) return { error: ERR_LAND };
+  /* a_hull_with_claimed_cabins_stays refuses in the club's voice — "members
+     hold cabins on that hull — move them first" — and names the way out. */
+  if (error) return { error: programRefusal(error) };
   return done();
 }
 
@@ -164,11 +168,25 @@ function clampPresaleHours(n: number): number {
   return Math.max(0, Math.min(336, Math.round(Number(n) || 0)));
 }
 
+/* The two refusals the composer checks itself, worded once. The database
+   carries the same rules (a CHECK on each), but a CHECK's message is a
+   constraint name — the operator gets these words instead, before and after. */
+const ERR_DROP_AFTER_DEPARTURE = "The drop has to open before the boat leaves.";
+const ERR_DEPOSIT_CEILING = "A deposit is at most $1,000.";
+const DEPOSIT_CEILING_CENTS = 100_000;
+
 /* Guards at the database raise in the club's own voice (P0001) — those reach
-   the operator as written. RLS and constraint noise says nothing an operator
-   can act on, so it stays behind ERR_LAND. */
+   the operator as written. The two CHECKs on the composer's own fields (23514)
+   are translated into the words above. RLS and other constraint noise says
+   nothing an operator can act on, so it stays behind ERR_LAND. */
 function programRefusal(error: { message?: string | null; code?: string | null }): string {
-  return error.code === "P0001" && error.message ? error.message : ERR_LAND;
+  const message = error.message ?? "";
+  if (error.code === "P0001" && message) return message;
+  if (error.code === "23514") {
+    if (/deposit_cents/.test(message)) return ERR_DEPOSIT_CEILING;
+    if (/a_drop_opens_before_the_boat_leaves/.test(message)) return ERR_DROP_AFTER_DEPARTURE;
+  }
+  return ERR_LAND;
 }
 
 /* One <input type="datetime-local"> value, resolved on a named clock. Null when
@@ -241,7 +259,12 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
   if (input.saleOpensAt) {
     saleOpensAt = onHarbourClock(input.saleOpensAt, harbor.time_zone);
     if (!saleOpensAt) return { error: "That on-sale hour doesn't parse." };
+    /* A drop that opens after the boat has left is a sailing nobody can book. */
+    if (saleOpensAt.getTime() > startsAt.getTime()) return { error: ERR_DROP_AFTER_DEPARTURE };
   }
+
+  const depositCents = Math.max(0, Math.round(input.depositCents));
+  if (depositCents > DEPOSIT_CEILING_CENTS) return { error: ERR_DEPOSIT_CEILING };
 
   /* Itinerary rows: minutes from cast off, a title, an optional note. */
   const itinerary = (input.itinerary ?? [])
@@ -268,7 +291,7 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
     min_tier: input.minTier,
     media: input.media,
     deposit_required: input.depositRequired,
-    deposit_cents: Math.max(0, Math.round(input.depositCents)),
+    deposit_cents: depositCents,
     format: input.format || null,
     sale_opens_at: saleOpensAt ? saleOpensAt.toISOString() : null,
     presale_hours: clampPresaleHours(input.presaleHours),
@@ -303,7 +326,7 @@ export async function saveVoyageProgram(
      clock, exactly as the departure was when the voyage was set. */
   const { data: voyage } = await supabase
     .from("voyages")
-    .select("time_zone")
+    .select("time_zone, starts_at")
     .eq("id", voyageId)
     .maybeSingle();
   if (!voyage) return { error: "That voyage is not on the board." };
@@ -312,7 +335,12 @@ export async function saveVoyageProgram(
   if (program.saleOpensAt) {
     saleOpensAt = onHarbourClock(program.saleOpensAt, voyage.time_zone);
     if (!saleOpensAt) return { error: "That on-sale hour doesn't parse." };
+    if (saleOpensAt.getTime() > new Date(voyage.starts_at).getTime())
+      return { error: ERR_DROP_AFTER_DEPARTURE };
   }
+
+  const depositCents = Math.max(0, Math.round(program.depositCents));
+  if (depositCents > DEPOSIT_CEILING_CENTS) return { error: ERR_DEPOSIT_CEILING };
 
   const { error } = await supabase
     .from("voyages")
@@ -322,7 +350,7 @@ export async function saveVoyageProgram(
       venue_id: program.venueId || null,
       sale_opens_at: saleOpensAt ? saleOpensAt.toISOString() : null,
       presale_hours: clampPresaleHours(program.presaleHours),
-      deposit_cents: Math.max(0, Math.round(program.depositCents)),
+      deposit_cents: depositCents,
     })
     .eq("id", voyageId);
   if (error) return { error: programRefusal(error) };

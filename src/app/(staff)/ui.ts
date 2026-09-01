@@ -10,12 +10,49 @@ export type ToastMsg = {
   tone?: "ink" | "positive" | "caution" | "danger";
 };
 
+/* A receipt stands four seconds; a refusal six, because it is the one the
+   reader has to act on. Either holds still while the pointer is over it or
+   focus is inside it (WCAG 2.2.1 — a timed message must be pausable), and
+   the clock starts over when they leave. */
+const TOAST_MS = 4000;
+const DANGER_TOAST_MS = 6000;
+
 export function useToast() {
   const [toast, setToast] = React.useState<ToastMsg | null>(null);
   React.useEffect(() => {
     if (!toast) return;
-    const h = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(h);
+    const ms = toast.tone === "danger" ? DANGER_TOAST_MS : TOAST_MS;
+    let h: ReturnType<typeof setTimeout> | null = null;
+    const arm = () => {
+      if (h) clearTimeout(h);
+      h = setTimeout(() => setToast(null), ms);
+    };
+    const hold = () => {
+      if (h) clearTimeout(h);
+      h = null;
+    };
+    arm();
+    /* The Toast primitive owns its markup and portals it to <body>; this
+       hook owns the clock. It reaches the rendered toast by class rather than
+       by ref because Toast takes no ref and no event props — and every
+       console page renders its toast in the same commit this effect follows,
+       so the node is there by the time it looks. */
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".ls-toast--fixed"));
+    for (const n of nodes) {
+      n.addEventListener("mouseenter", hold);
+      n.addEventListener("mouseleave", arm);
+      n.addEventListener("focusin", hold);
+      n.addEventListener("focusout", arm);
+    }
+    return () => {
+      if (h) clearTimeout(h);
+      for (const n of nodes) {
+        n.removeEventListener("mouseenter", hold);
+        n.removeEventListener("mouseleave", arm);
+        n.removeEventListener("focusin", hold);
+        n.removeEventListener("focusout", arm);
+      }
+    };
   }, [toast]);
   const clear = React.useCallback(() => setToast(null), []);
   return { toast, show: setToast, clear };

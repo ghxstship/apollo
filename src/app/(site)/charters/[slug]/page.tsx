@@ -5,9 +5,11 @@ import { LinkButton } from "@/components/site/link-button";
 import { CLASS_CODES, SUB_CLASSES } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { vesselSpec } from "@/components/site/voyage-chips";
+import { moduleTables } from "@/lib/module-tables";
+import { onSaleChip, vesselSpec } from "@/components/site/voyage-chips";
 import { fleetFor, framesFor } from "@/components/site/voyage-data";
 import { readLegs, readStops } from "@/app/(member)/charter/data";
+import { Enquire } from "@/components/member/enquire";
 
 const SEAS: Record<string, string> = {
   day: "var(--sea-day)",
@@ -98,10 +100,26 @@ export default async function VoyagePage({
     .maybeSingle();
   if (!voyage) notFound();
 
-  const [{ data: cap }, { data: { user } }] = await Promise.all([
+  const [{ data: cap }, { data: { user } }, { data: formatRow }] = await Promise.all([
     supabase.from("voyage_capacity").select("*").eq("voyage_id", voyage.id).maybeSingle(),
     supabase.auth.getUser(),
+    /* The format decides the door. 'open' formats sell a pass; 'on_request'
+       ones take an enquiry; 'invite' ones take nothing from this page. Another
+       module's table, reached through the moduleTables seam and typed at the
+       boundary. */
+    voyage.format
+      ? moduleTables(supabase)
+          .from("activity_formats")
+          .select("slug, label, access, category")
+          .eq("slug", voyage.format)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const format = (formatRow ?? null) as
+    | { slug: string; label: string; access: string; category: string }
+    | null;
+  const onRequest = format?.access === "on_request";
+  const byInvitation = format?.access === "invite";
   /* A sailing is announced on its harbor's clock, which it carries itself. */
   const zone = voyage.time_zone;
 
@@ -173,6 +191,11 @@ export default async function VoyagePage({
     !cancelled &&
     (voyage.status === "completed" || new Date(voyage.starts_at).getTime() < nowMs);
   const closed = cancelled || sailed;
+  /* The drop hour. Before it the sailing is announced, not on offer — the
+     guard refuses the booking, so the page must not invite it. Deeper tiers
+     walk in presale_hours earlier per step; the public hour is the one shown. */
+  const notYetOnSale = !closed && !!voyage.sale_opens_at && Date.parse(voyage.sale_opens_at) > nowMs;
+  const onSaleLine = notYetOnSale && voyage.sale_opens_at ? onSaleChip(voyage.sale_opens_at, zone) : null;
 
   /* The plan — itinerary stops as offsets (minutes) from cast off. */
   const stops = (Array.isArray(voyage.itinerary) ? voyage.itinerary : []).flatMap((raw) => {
@@ -387,6 +410,12 @@ export default async function VoyagePage({
                 <Badge tone="caution">Weather hold</Badge>
               ) : voyage.status === "live" ? (
                 <span className="ls-live ws-live-label">Underway</span>
+              ) : onRequest ? (
+                <Badge tone="outline">On request</Badge>
+              ) : byInvitation ? (
+                <Badge tone="outline">By invitation</Badge>
+              ) : onSaleLine ? (
+                <Badge tone="outline">Not yet on sale</Badge>
               ) : full ? (
                 <Badge tone="caution">Sailing full</Badge>
               ) : (
@@ -412,6 +441,48 @@ export default async function VoyagePage({
                 This one is on the water. Follow along on the Open Deck, or find the
                 next sailing on the manifest.
               </p>
+            ) : onRequest ? (
+              /* No pass to reserve. A member asks from here; the shore is
+                 told where members ask from, and given the gangway. */
+              user ? (
+                <Enquire
+                  sailingTitle={voyage.title}
+                  formatSlug={format?.slug ?? null}
+                  formatLabel={format?.label ?? null}
+                />
+              ) : (
+                <>
+                  <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
+                    Members enquire from their manifest. Sign in and the form is here.
+                  </p>
+                  <LinkButton
+                    href={`/gangway?next=/charters/${voyage.slug}`}
+                    variant="outline"
+                    fullWidth
+                  >
+                    Sign in to enquire
+                  </LinkButton>
+                </>
+              )
+            ) : byInvitation ? (
+              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+                Passes for this one go out by invitation. When the Bridge has your
+                name, the word arrives with the pass.
+              </p>
+            ) : onSaleLine ? (
+              <>
+                <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
+                  Passes open on the harbour&rsquo;s clock at that hour. Deeper tiers
+                  walk in earlier — the manifest shows your own.
+                </p>
+                <LinkButton
+                  href={user ? "/manifest" : `/gangway?next=/charters/${voyage.slug}`}
+                  variant="outline"
+                  fullWidth
+                >
+                  {user ? "Watch it on the manifest" : "Sign in ahead of the hour"}
+                </LinkButton>
+              </>
             ) : full ? (
               <>
                 <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
@@ -439,8 +510,13 @@ export default async function VoyagePage({
                 Reserve a pass
               </LinkButton>
             )}
-            {closed ? null : (
+            {closed ? null : onRequest || byInvitation ? (
+              /* "On request" is a complete answer, never a placeholder — no
+                 price stands beside a door that is not a sale. */
+              <p className="ev-mono-note">{TIER_LABEL[voyage.min_tier]} tier and up</p>
+            ) : (
               <p className="ev-mono-note">
+                {onSaleLine ? <>{onSaleLine} · </> : null}
                 {price(voyage.price_cents)} · {TIER_LABEL[voyage.min_tier]} tier and up
               </p>
             )}
@@ -486,9 +562,11 @@ export default async function VoyagePage({
               <span>
                 {closed
                   ? `${aboard} ABOARD`
-                  : left != null
-                    ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT`
-                    : voyage.berths_total}
+                  : onSaleLine
+                    ? onSaleLine
+                    : left != null
+                      ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT`
+                      : voyage.berths_total}
               </span>
             </div>
             <div>

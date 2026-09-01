@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
 import { Card, StateBlock } from "@/components/ds";
-import { EVENT_CLASS_LABEL, TIER_LABEL, eveningBefore, logDate, logTime, price } from "@/lib/format";
+import {
+  EVENT_CLASS_LABEL,
+  TIER_LABEL,
+  eveningBefore,
+  logDate,
+  logDateTime,
+  logTime,
+  price,
+} from "@/lib/format";
+import { moduleTables } from "@/lib/module-tables";
 import { TIER_RANK, getMember, type Rsvp, type Voyage, type VoyageCapacity } from "../data";
-import { RsvpControls } from "./rsvp-controls";
+import { RsvpControls, type DaybedOffer } from "./rsvp-controls";
 import type { CrewSeeker, GuestStub, MemberOption, StandingOffer } from "./pass-extras";
 import { TransferInbox, type IncomingOffer } from "./transfer-inbox";
 
@@ -25,6 +34,10 @@ export default async function VoyagesPage() {
     transferRes,
     crewRes,
     rollRes,
+    daybedProductRes,
+    segmentCapRes,
+    formatRes,
+    creditHoursRes,
   ] = await Promise.all([
     supabase
       .from("voyages")
@@ -55,9 +68,49 @@ export default async function VoyagesPage() {
       .eq("in_directory", true)
       .neq("id", user.id)
       .order("full_name", { ascending: true }),
+    /* The bow daybed is a product with a price, a cap and a party size on its
+       own row — the card reads them rather than restating them. Another
+       module's table, reached through the moduleTables seam. */
+    moduleTables(supabase)
+      .from("club_products")
+      .select("price_cents, per_sailing_cap, party_size, published")
+      .eq("slug", "vip_daybed")
+      .maybeSingle(),
+    /* A sailing with segment caps is a composition sailing: its door is the
+       vetting page, and an rsvp written here without a segment would be
+       refused — or worse, seated outside the ratio. */
+    moduleTables(supabase).from("voyage_segment_caps").select("voyage_id"),
+    /* Category decides whether the daybed is even a thing on this water;
+       access decides whether a pass is on sale at all. */
+    moduleTables(supabase).from("activity_formats").select("slug, category, access"),
+    /* The release window is the club's own figure, read rather than retyped. */
+    supabase.rpc("club_setting", { p_key: "release_credit_hours" }),
   ]);
 
   const voyages: Voyage[] = voyagesRes.data ?? [];
+
+  const daybedRow = daybedProductRes.data as
+    | { price_cents: number | null; per_sailing_cap: number | null; party_size: number | null; published: boolean }
+    | null;
+  const daybedOffer: DaybedOffer | null =
+    daybedRow && daybedRow.published && daybedRow.price_cents != null
+      ? {
+          priceCents: daybedRow.price_cents,
+          cap: daybedRow.per_sailing_cap ?? 2,
+          party: daybedRow.party_size ?? 4,
+        }
+      : null;
+  const compositionIds = new Set(
+    ((segmentCapRes.data ?? []) as Array<{ voyage_id: string }>).map((r) => r.voyage_id)
+  );
+  const formatBySlug = new Map(
+    ((formatRes.data ?? []) as Array<{ slug: string; category: string; access: string }>).map(
+      (f) => [f.slug, f] as const
+    )
+  );
+  const creditHours =
+    typeof creditHoursRes.data === "number" && creditHoursRes.data > 0 ? creditHoursRes.data : 48;
+  const creditWindowMs = creditHours * 3600 * 1000;
   const addons = (addonsRes.data ?? []).map((a) => ({
     id: a.id,
     name: a.name,
@@ -255,6 +308,18 @@ export default async function VoyagesPage() {
     v.sub_class ? (CLASS_RANK[v.sub_class] ?? 0) > myCeiling : false;
 
   const myRank = TIER_RANK[profile?.tier ?? "regional"] ?? 0;
+  const myTier = profile?.tier ?? "regional";
+
+  /* The drop hour, on THIS member's clock: rsvp_guard refuses before
+     sale_opens_at less one presale step per tier above regional. NULL is the
+     old world — no drop, the plan's window alone. */
+  const tierOpensMs = (v: Voyage): number | null =>
+    v.sale_opens_at ? Date.parse(v.sale_opens_at) - myRank * v.presale_hours * 3600 * 1000 : null;
+  const formatOf = (v: Voyage) => (v.format ? formatBySlug.get(v.format) ?? null : null);
+  const sellsPasses = (v: Voyage) => {
+    const access = formatOf(v)?.access;
+    return access !== "invite" && access !== "on_request";
+  };
 
   /* Split draws are written shoreside — offered only when the club can. */
   const splitOffered = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -265,12 +330,16 @@ export default async function VoyagesPage() {
       const cap = capacity.get(v.id);
       const left = cap?.berths_left ?? v.berths_total;
       const r = mine.get(v.id);
+      const opens = tierOpensMs(v);
       return (
         v.status === "scheduled" &&
         (TIER_RANK[v.min_tier] ?? 0) <= myRank &&
         !pastMyClass(v) &&
         left > 0 &&
         nowMs >= new Date(v.starts_at).getTime() - earlyDays * 86400000 &&
+        (opens == null || nowMs >= opens) &&
+        !compositionIds.has(v.id) &&
+        sellsPasses(v) &&
         (!r || r.status === "not_going")
       );
     })?.id ?? null;
@@ -314,13 +383,34 @@ export default async function VoyagesPage() {
             /* Booking window: opens early_days ahead of departure, per plan. */
             const start = new Date(v.starts_at);
             const opensMs = start.getTime() - earlyDays * 86400000;
-            const windowNote =
+            const planNote =
               nowMs < opensMs
                 /* On the harbour's clock, because the database's refusal names
                    the harbour's day. These two disagreed: the banner said
                    "MAR 31" and the guard said "Apr 01" for the same sailing. */
                 ? `THE WINDOW OPENS ${logDate(new Date(opensMs).toISOString(), v.time_zone)} ON YOUR PLAN`
                 : null;
+            /* The drop hour, when the sailing has one and it is still ahead
+               for this tier. Both gates must pass; the later one is the note. */
+            const saleOpens = tierOpensMs(v);
+            const earlyHours = myRank * v.presale_hours;
+            const saleNote =
+              saleOpens != null && nowMs < saleOpens
+                ? `ON SALE ${logDateTime(new Date(saleOpens).toISOString(), v.time_zone)}${
+                    earlyHours > 0 ? ` · ${earlyHours}H EARLY ON ${TIER_LABEL[myTier].toUpperCase()}` : ""
+                  }`
+                : null;
+            const windowNote =
+              saleNote && planNote
+                ? (saleOpens as number) > opensMs
+                  ? saleNote
+                  : planNote
+                : (saleNote ?? planNote);
+            const format = formatOf(v);
+            /* The bow daybed rides on Sea formats. An unfiled sailing (no
+               format yet) falls back to its class, which is the same question
+               asked of an older column. */
+            const daybedWater = format ? format.category === "sea" : v.class === "sea";
             /* Add-on upsell stays open until 18:00 the night before. */
             /* 18:00 on the harbour's wall the night before — not 18:00 wherever
                this page happens to be rendered. */
@@ -375,7 +465,13 @@ export default async function VoyagesPage() {
                       attachedAddonIds={r ? attachedByRsvp.get(r.id) ?? [] : []}
                       addonWindowOpen={nowMs < addonCutoff.getTime()}
                       knotsOnCompletion={knotsOnCompletion}
-                      fullCredit={start.getTime() - nowMs > 48 * 3600 * 1000}
+                      fullCredit={start.getTime() - nowMs > creditWindowMs}
+                      creditHours={creditHours}
+                      paused={onHold}
+                      composition={compositionIds.has(v.id)}
+                      daybed={daybedWater ? daybedOffer : null}
+                      enquiryHref={format?.access === "on_request" ? `/charters/${v.slug}` : null}
+                      inviteOnly={format?.access === "invite"}
                       boardingCode={r?.status === "aboard" ? r.boarding_code : null}
                       rsvpId={r?.id ?? null}
                       waitlistPosition={positionByVoyage.get(v.id) ?? null}

@@ -1,11 +1,60 @@
 import type { Metadata } from "next";
 import { CLUB_ZONE } from "@/lib/brand";
 import { Stat, Table } from "@/components/ds";
-import { logDate, price } from "@/lib/format";
+import { logDate, logDateTime, price } from "@/lib/format";
+import { moduleTables } from "@/lib/module-tables";
+import type { Json } from "@/lib/supabase/types";
 import { getOperator } from "../../data";
 import { must, mustValue } from "../../staff";
+import { OutboxTable, type StrandedRow } from "./outbox-client";
 
 export const metadata: Metadata = { title: "Reports" };
+
+/* The outbox columns the retries added (attempts, next_attempt_at —
+   20260823151359) are not on the shared row types, so the three reads go
+   through the module seam and are typed here, at the boundary. */
+type EmailStranded = { id: string; to_email: string; template: string; last_error: string | null; attempts: number | null; created_at: string; status: string };
+type SmsStranded = { id: string; to_phone: string; template: string; last_error: string | null; attempts: number | null; created_at: string; status: string };
+type PushStranded = { id: string; profile_id: string; title: string; last_error: string | null; attempts: number | null; created_at: string; status: string };
+
+type ChangeRow = {
+  id: string;
+  table: string;
+  action: string;
+  what: string;
+  who: string;
+  at: string;
+  diff: string;
+  [key: string]: unknown;
+};
+
+/* One line for what a change touched. An update names the keys whose value
+   moved; an insert and a delete have no keys to compare, so they say what
+   they are. Compared as JSON so a nested value counts once, as one key. */
+function diffLine(action: string, before: Json | null, after: Json | null): string {
+  if (action === "INSERT") return "new row";
+  if (action === "DELETE") return "struck";
+  const b = (before && typeof before === "object" && !Array.isArray(before) ? before : {}) as Record<string, Json | undefined>;
+  const a = (after && typeof after === "object" && !Array.isArray(after) ? after : {}) as Record<string, Json | undefined>;
+  const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])].filter(
+    (k) => JSON.stringify(b[k] ?? null) !== JSON.stringify(a[k] ?? null)
+  );
+  if (keys.length === 0) return "no change";
+  return keys.length > 6 ? `${keys.slice(0, 6).join(", ")} +${keys.length - 6}` : keys.join(", ");
+}
+
+/* The row's own name, when it has one — a title, a name, a label, a key —
+   so the log reads "voyages · Night Sail" rather than a uuid. */
+function rowName(before: Json | null, after: Json | null, rowId: string | null): string {
+  const src = (after ?? before) as Record<string, Json | undefined> | null;
+  if (src && typeof src === "object" && !Array.isArray(src)) {
+    for (const k of ["title", "name", "label", "key", "slug"]) {
+      const v = src[k];
+      if (typeof v === "string" && v) return v;
+    }
+  }
+  return rowId ? rowId.slice(0, 8) : "—";
+}
 
 type FillRow = {
   id: string;
@@ -50,7 +99,10 @@ export default async function ReportsPage() {
     installmentsRes,
     transfersRes,
     compsRes,
-    strandedRes,
+    emailStrandedRes,
+    smsStrandedRes,
+    pushStrandedRes,
+    changesRes,
   ] = await Promise.all([
     supabase.from("profiles").select("status, joined_at"),
     supabase.from("voyages").select("id, title, distance_nm, kind, status, starts_at"),
@@ -91,13 +143,39 @@ export default async function ReportsPage() {
     /* A failed letter was a number and nothing else. `failed` is terminal — the
        drain reads only `pending` — so a row that gave up sat there with no
        address, no template and no reason on any screen, and the migration that
-       added the retries said "nothing surfaced that". Nothing still did. */
-    supabase
+       added the retries said "nothing surfaced that". Nothing still did.
+
+       All three channels now, failed AND skipped, each with a way back into
+       the queue. Skipped email excludes the fixture hold-back: there are well
+       over a thousand of those, correctly held, and they would bury the one
+       real member's letter this list exists to show. */
+    moduleTables(supabase)
       .from("email_outbox")
-      .select("id, to_email, template, last_error, created_at, status")
-      .in("status", ["failed", "sending"])
+      .select("id, to_email, template, last_error, attempts, created_at, status")
+      .in("status", ["failed", "skipped", "sending"])
+      /* A null last_error must survive: `not ilike` on null is null, which
+         excludes — and a row that gave up with no reason is the one to see. */
+      .or("last_error.is.null,last_error.not.ilike.%fixture%")
       .order("created_at", { ascending: false })
-      .limit(12),
+      .limit(20),
+    moduleTables(supabase)
+      .from("sms_outbox")
+      .select("id, to_phone, template, last_error, attempts, created_at, status")
+      .in("status", ["failed", "skipped", "sending"])
+      /* A null last_error must survive: `not ilike` on null is null, which
+         excludes — and a row that gave up with no reason is the one to see. */
+      .or("last_error.is.null,last_error.not.ilike.%fixture%")
+      .order("created_at", { ascending: false })
+      .limit(20),
+    moduleTables(supabase)
+      .from("push_outbox")
+      .select("id, profile_id, title, last_error, attempts, created_at, status")
+      .in("status", ["failed", "skipped", "sending"])
+      .order("created_at", { ascending: false })
+      .limit(20),
+    /* The record of who did what — record_the_change() writes it on the
+       tables the Bridge keeps; the Bridge reads it. */
+    supabase.from("audit_log").select("*").order("at", { ascending: false }).limit(50),
   ]);
 
   /* Members */
@@ -192,11 +270,76 @@ export default async function ReportsPage() {
     };
     return named[template] ?? template.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
   };
-  type Stranded = { id: string; to_email: string; template: string; last_error: string | null; created_at: string; status: string };
-  const stranded = mustValue<Stranded[]>(
-    strandedRes as { data: Stranded[] | null; error?: { message?: string } | null },
-    []
-  );
+  const emailStranded = must<EmailStranded>(emailStrandedRes as { data: EmailStranded[] | null; error?: { message?: string } | null });
+  const smsStranded = must<SmsStranded>(smsStrandedRes as { data: SmsStranded[] | null; error?: { message?: string } | null });
+  const pushStranded = must<PushStranded>(pushStrandedRes as { data: PushStranded[] | null; error?: { message?: string } | null });
+  const changes = must(changesRes);
+
+  /* Names for the people on the pushes and in the log, one read. */
+  const nameIds = [
+    ...new Set([
+      ...pushStranded.map((p) => p.profile_id),
+      ...changes.map((c) => c.actor_id).filter((id): id is string => !!id),
+    ]),
+  ];
+  const namesRes = nameIds.length
+    ? await supabase.from("profiles").select("id, full_name, member_no").in("id", nameIds)
+    : { data: [] };
+  const nameOf = new Map(must(namesRes).map((p) => [p.id, p.full_name ?? p.member_no ?? "A member"]));
+
+  const asState = (s: string): StrandedRow["status"] =>
+    s === "failed" || s === "skipped" ? s : "sending";
+  const stranded: StrandedRow[] = [
+    ...emailStranded.map((r) => ({
+      key: `email:${r.id}`,
+      table: "email_outbox" as const,
+      id: r.id,
+      channel: "Email" as const,
+      letter: letterName(r.template),
+      recipient: r.to_email,
+      status: asState(r.status),
+      lastError: r.last_error,
+      attempts: r.attempts ?? 0,
+      queued: logDate(r.created_at, CLUB_ZONE),
+      createdAt: r.created_at,
+    })),
+    ...smsStranded.map((r) => ({
+      key: `sms:${r.id}`,
+      table: "sms_outbox" as const,
+      id: r.id,
+      channel: "SMS" as const,
+      letter: letterName(r.template),
+      recipient: r.to_phone,
+      status: asState(r.status),
+      lastError: r.last_error,
+      attempts: r.attempts ?? 0,
+      queued: logDate(r.created_at, CLUB_ZONE),
+      createdAt: r.created_at,
+    })),
+    ...pushStranded.map((r) => ({
+      key: `push:${r.id}`,
+      table: "push_outbox" as const,
+      id: r.id,
+      channel: "Push" as const,
+      letter: r.title,
+      recipient: nameOf.get(r.profile_id) ?? "A member",
+      status: asState(r.status),
+      lastError: r.last_error,
+      attempts: r.attempts ?? 0,
+      queued: logDate(r.created_at, CLUB_ZONE),
+      createdAt: r.created_at,
+    })),
+  ].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+
+  const changeRows: ChangeRow[] = changes.map((c) => ({
+    id: String(c.id),
+    table: c.table_name,
+    action: c.action === "INSERT" ? "Added" : c.action === "DELETE" ? "Struck" : "Changed",
+    what: rowName(c.before, c.after, c.row_id),
+    who: c.actor_id ? (nameOf.get(c.actor_id) ?? "A member") : "The machine",
+    at: logDateTime(c.at, CLUB_ZONE),
+    diff: diffLine(c.action, c.before, c.after),
+  }));
 
   /* Dues that recur — a year's plan carries one twelfth of itself each month,
      so the two intervals can sit in the same number. */
@@ -328,35 +471,10 @@ export default async function ReportsPage() {
       <section className="hm-sec">
         <h2>What got through.</h2>
         <p className="hm-note">
-          Three channels, all drained on a schedule. Pending is the queue; failed is the one to
-          read.
+          Three channels, all drained on a schedule. Pending is the queue; failed and skipped are
+          the ones to read — Requeue puts a row back in the water for the next drain.
         </p>
-        {stranded.length > 0 ? (
-          <div className="ls-table-wrap" style={{ marginBottom: 16 }}>
-            <table className="ls-table ls-table--dense">
-              <thead>
-                <tr>
-                  <th scope="col">Letter</th>
-                  <th scope="col">To</th>
-                  <th scope="col">State</th>
-                  <th scope="col">What went wrong</th>
-                  <th scope="col">Queued</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stranded.map((row) => (
-                  <tr key={row.id}>
-                    <td>{letterName(row.template)}</td>
-                    <td className="num">{row.to_email}</td>
-                    <td>{row.status === "sending" ? "In flight" : "Gave up"}</td>
-                    <td>{row.last_error ?? "—"}</td>
-                    <td className="num">{logDate(row.created_at, CLUB_ZONE)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
+        {stranded.length > 0 ? <OutboxTable rows={stranded} /> : null}
         <div className="hm-row">
           <Stat
             size="sm"
@@ -407,6 +525,33 @@ export default async function ReportsPage() {
           {fillRows.length === 0 ? (
             <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
               No voyages on the books yet.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>Recent changes.</h2>
+        <p className="hm-note">
+          The last fifty writes to the tables the Bridge keeps — who, what, when, and which
+          fields moved. The machine is a cron or a definer acting on its own.
+        </p>
+        <div className="hm-panel">
+          <Table
+            rowKey={(r: ChangeRow) => r.id}
+            columns={[
+              { key: "at", label: "When", mono: true, width: 140 },
+              { key: "who", label: "Who", width: 160 },
+              { key: "action", label: "Did", width: 90 },
+              { key: "table", label: "Table", mono: true, width: 150 },
+              { key: "what", label: "Row" },
+              { key: "diff", label: "Fields moved", mono: true },
+            ]}
+            rows={changeRows}
+          />
+          {changeRows.length === 0 ? (
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+              Nothing recorded yet.
             </p>
           ) : null}
         </div>

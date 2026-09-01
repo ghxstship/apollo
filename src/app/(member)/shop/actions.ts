@@ -18,7 +18,7 @@ export async function placeShopOrder(
      that was charged and whose answer never came back used to cost the member
      twice when they sent the crate again. The key is how the database tells a
      resend from a second order. */
-  idemKey?: string
+  idemKey: string
 ): Promise<ShopResult> {
   const supabase = await createClient();
   const {
@@ -37,7 +37,7 @@ export async function placeShopOrder(
 
   const { error } = await supabase.rpc("place_shop_order", {
     p_lines: clean,
-    ...(idemKey ? { p_idem_key: idemKey } : {}),
+    p_idem_key: idemKey,
   });
   if (error) return { error: await voiceWith(supabase, error) };
 

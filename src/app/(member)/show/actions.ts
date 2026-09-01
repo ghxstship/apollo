@@ -23,6 +23,12 @@ export type ShowResult = { error?: string; ok?: true; minted?: number };
 async function crew() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  /* RLS is the authority; this is the backstop, so a single policy regression
+     cannot become a member driving the show from their own page. */
+  if (user) {
+    const { data: staff } = await supabase.rpc("is_staff");
+    if (!staff) return { supabase, db: moduleTables(supabase), user: null };
+  }
   return { supabase, db: moduleTables(supabase), user };
 }
 

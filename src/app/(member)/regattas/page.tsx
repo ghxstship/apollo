@@ -15,13 +15,17 @@ export const metadata: Metadata = { title: LOGBOOK.regattas };
 export default async function RegattasPage() {
   const { supabase, user, zone } = await getMember();
 
+  /* The fifty most recently closing contests — open ones are few and close
+     soonest-last, so they always sit inside the window; settled ones roll
+     off the bottom into history, which is where the page says they go. */
   const [contestsRes, entriesRes] = await Promise.all([
     supabase
       .from("contests")
-      .select("*")
+      .select("id,slug,title,shape,metric,target,knots_award,blurb,status,ends_at,settled_at")
       .in("status", ["open", "settled"])
-      .order("ends_at", { ascending: false }),
-    supabase.from("contest_entries").select("*").eq("profile_id", user.id),
+      .order("ends_at", { ascending: false })
+      .limit(50),
+    supabase.from("contest_entries").select("contest_id").eq("profile_id", user.id),
   ]);
 
   const entered = new Set((entriesRes.data ?? []).map((e) => e.contest_id));

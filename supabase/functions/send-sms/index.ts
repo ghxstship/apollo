@@ -22,6 +22,16 @@ const H = {
   "Content-Type": "application/json",
 };
 
+function sameSecret(given: string | null, expected: string): boolean {
+  if (!given) return false;
+  const a = new TextEncoder().encode(given);
+  const b = new TextEncoder().encode(expected);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 async function secret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
     method: "POST",
@@ -148,12 +158,13 @@ Deno.serve(async (req) => {
        did, in send-outbox, and in neither of the other two. Both answered a
        bare anon key with 200 for a week. The anon key is public; it proves
        nothing about who is calling. */
+    /* Fail CLOSED: an empty key used to skip the check entirely. */
     const cronKey = Deno.env.get("CRON_SECRET") || (await secret("CRON_SECRET"));
-    if (cronKey && req.headers.get("x-cron-key") !== cronKey) {
-      return new Response(JSON.stringify({ error: "not for you" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!cronKey) {
+      return Response.json({ error: "the scheduler's key is not on file" }, { status: 503 });
+    }
+    if (!sameSecret(req.headers.get("x-cron-key"), cronKey)) {
+      return Response.json({ error: "not for you" }, { status: 403 });
     }
 
     /* Sandbox proves the wiring — Vault key, template mapping, request shape —
@@ -185,8 +196,9 @@ Deno.serve(async (req) => {
     ]);
 
     if (!apiKey) {
-      for (const r of rows) await mark(r.id, "skipped");
-      return Response.json({ fetched: rows.length, skipped: rows.length, reason: "no api key" });
+      /* The queue waits for the key; it is not drained to prove the key is gone. */
+      console.error(`SENT_API_KEY not set — ${rows.length} text(s) left pending.`);
+      return Response.json({ fetched: rows.length, skipped: 0, reason: "no api key" }, { status: 503 });
     }
 
     const byCode = new Map(mappings.map((m) => [m.code, m]));
@@ -248,6 +260,7 @@ Deno.serve(async (req) => {
 
       const res = await fetch(SENT_API, {
         method: "POST",
+        signal: AbortSignal.timeout(10_000),
         headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           to: [to],
@@ -279,7 +292,7 @@ Deno.serve(async (req) => {
     /* `retried` is reported rather than folded into `failed`: a row waiting
        on a backoff has not failed, and a drain that reports it as failed would
        have the operator chasing an outage that is a carrier hiccup. */
-    return Response.json({ fetched: rows.length, sent, failed, skipped, retried, sandbox });
+    return Response.json({ fetched: rows.length, sent, failed, skipped, retried, sandbox }, { status: failed > 0 ? 207 : 200 });
   } catch (err) {
     console.error(err);
     return Response.json({ error: String(err) }, { status: 500 });

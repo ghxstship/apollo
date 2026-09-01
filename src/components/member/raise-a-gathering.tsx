@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Badge, Button, Input, Select, Textarea, Toast } from "@/components/ds";
 import {
   raiseAProposal,
@@ -24,6 +25,8 @@ export type ProposalCard = {
   proposedFor: string | null;
   status: "submitted" | "considering" | "approved" | "declined";
   decisionNote: string | null;
+  /* The sailing the Bridge raised from this proposal, once there is one. */
+  sailing: { title: string; slug: string; when: string } | null;
 };
 
 const NOTE_MAX = 2000;
@@ -84,7 +87,7 @@ export function RaiseAGathering({
             name="title"
             maxLength={120}
             placeholder="name it for the calendar"
-            error={state.error}
+            error={state.field === "title" ? state.error : undefined}
           />
           <Select
             label="Shape"
@@ -107,8 +110,16 @@ export function RaiseAGathering({
             maxLength={NOTE_MAX}
             placeholder="who it's for and why it belongs on the calendar"
             hint={`Optional, up to ${NOTE_MAX} characters. The Bridge reads every one.`}
+            error={state.field === "note" ? state.error : undefined}
           />
         </div>
+        {/* Anything not about one control — a paused membership, a refusal
+            from the table — is the form's to say, not the title's. */}
+        {state.error && !state.field ? (
+          <p role="alert" style={{ color: "var(--siren)", fontSize: 12.5, marginTop: 12 }}>
+            {state.error}
+          </p>
+        ) : null}
         <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
           <Button type="submit" variant="outline" size="sm" disabled={pending}>
             Raise it
@@ -136,6 +147,16 @@ export function RaiseAGathering({
                     ? p.decisionNote
                     : STATUS_LINE[p.status]}
                 </p>
+                {p.sailing ? (
+                  <p className="mbr-mono" style={{ marginTop: 4 }}>
+                    <Link
+                      href={`/charters/${p.sailing.slug}`}
+                      style={{ color: "var(--text-link)", textDecoration: "none" }}
+                    >
+                      {p.sailing.title.toUpperCase()} · {p.sailing.when}
+                    </Link>
+                  </p>
+                ) : null}
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
                 <Badge tone={statusTone(p.status)}>

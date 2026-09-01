@@ -44,6 +44,12 @@ jobs:
           npx eslint src --max-warnings=0
           npx tsc --noEmit
 
+      - name: Design system audit
+        run: npm run check:ds
+
+      - name: Dependency advisories
+        run: npm audit --audit-level=high
+
       - name: Build
         run: npm run build
 
@@ -63,10 +69,10 @@ jobs:
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
         run: |
           if [ -z "$E2E_PASSWORD" ]; then
-            echo "E2E_PASSWORD secret not set — skipping persona e2e (route audit still enforced)."
-          else
-            BASE_URL=http://localhost:3000 node scripts/e2e-suite.mjs
+            echo "::error::E2E_PASSWORD secret is not set — the persona suite cannot run, and a green build without it proves nothing."
+            exit 1
           fi
+          BASE_URL=http://localhost:3000 node scripts/e2e-suite.mjs
 
       - name: Upload reports
         if: always()

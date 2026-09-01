@@ -1,5 +1,7 @@
 "use server";
 
+import { callerAddress } from "@/lib/caller-address";
+
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import type { StatusState } from "./shared";
@@ -22,8 +24,7 @@ export async function lookupApplication(
      it PostgREST sees the Next server for everybody and the rate limit becomes
      one shared budget for the whole site — the eleventh applicant anywhere
      would have been refused. */
-  const forwarded = (await headers()).get("x-forwarded-for") ?? "";
-  const caller = forwarded.split(",")[0]?.trim() || null;
+  const caller = callerAddress(await headers());
 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("application_status_for", {

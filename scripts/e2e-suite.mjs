@@ -164,6 +164,7 @@ async function sweep(p) {
     await stf.del(`${rel}?slug=like.e2e-*&created_at=lt.${STALE_BEFORE()}`);
   }
   await stf.del(`sponsors?name=like.E2E*&created_at=lt.${STALE_BEFORE()}`);
+  await stf.del(`charter_requests?note=eq.E2E&created_at=lt.${STALE_BEFORE()}`);
   await stf.del(`member_event_proposals?title=like.E2E*&created_at=lt.${STALE_BEFORE()}`);
   for (const rel of ["contests", "voyages"]) {
     await stf.del(`${rel}?slug=like.e2e-*${RUN_TOKEN}*`);
@@ -2322,8 +2323,13 @@ async function businessRules(p) {
   /* The balance redeem_reward actually tests is the sum of fathoms_ledger,
      not member_league.knots — reading the wrong source made the assertion
      compare against 0 while the member could plainly afford the reward. */
-  const bal = await reg.get(`fathoms_ledger?profile_id=eq.${uid(p.regional)}&select=delta`);
-  const knots = (bal.data || []).reduce((sum, r) => sum + Number(r.delta ?? 0), 0);
+  /* The balance as the guard computes it — a SUM, not a walk over rows. Summing
+     rows over REST silently stops at PostgREST's 1000-row cap, and a fixture
+     with three thousand ledger rows read 373 where the definer saw 400+: the
+     guard then let a "cannot afford" redemption through and the suite called
+     the guard broken. The hardening log had already named this shape. */
+  const bal = await reg.get(`fathoms_balance?profile_id=eq.${uid(p.regional)}&select=balance`);
+  const knots = Number(bal.data?.[0]?.balance ?? 0);
   const rw = await reg.get(`rewards?select=id,cost_fm&cost_fm=gt.${knots}&order=cost_fm.asc&limit=1`);
   if (rw.data?.[0]) {
     const redeem = await reg.rpc("redeem_reward", { p_reward: rw.data[0].id });
@@ -2916,7 +2922,6 @@ async function remediationRules(p) {
   note("staff", "the deposit fixture is struck", ddel.status < 300, `got ${ddel.status} ${JSON.stringify(ddel.data).slice(0,120)}`);
   // Completion minted 40 apiece; weigh it back out so the section stays neutral.
   await stf.rpc("adjust_knots", { p_profile: uid(p.regional), p_delta: -40, p_reason: "E2E remediation sweep — completion award reversed" });
-  await stf.rpc("adjust_knots", { p_profile: uid(p.national), p_delta: -40, p_reason: "E2E remediation sweep — completion award reversed" });
   const conferred = await reg.get(`member_marks?profile_id=eq.${uid(p.regional)}&select=mark_code&limit=1`);
   note("regional", "completion confers marks through the trigger", (conferred.data ?? []).length >= 1, `got ${conferred.status}`);
 
@@ -3027,7 +3032,7 @@ async function remediationRules(p) {
     { voyage_id: opvid, segment: "single_woman", cap: 20 },
     { voyage_id: opvid, segment: "couple", cap: 1 },
   ]);
-  note("staff", "forty-two heads are refused", overCap.status >= 400 && /forty/.test(JSON.stringify(overCap.data)), `got ${overCap.status}`);
+  note("staff", "forty-two heads are refused", overCap.status >= 400 && /hull holds/.test(JSON.stringify(overCap.data)), `got ${overCap.status}`);
   const atCap = await stf.post("voyage_segment_caps", [
     { voyage_id: opvid, segment: "single_man", cap: 20 },
     { voyage_id: opvid, segment: "single_woman", cap: 20 },
@@ -3376,7 +3381,7 @@ async function programRules(p) {
   const dmk = await stf.post("voyages", {
     slug: `e2e-drop-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
     starts_at: plus30, time_zone: "America/New_York", berths_total: 6, status: "scheduled",
-    price_cents: 0, deposit_required: true, deposit_cents: 12000, format: "sandbar",
+    price_cents: 0, deposit_required: true, deposit_cents: 12000,
     sale_opens_at: new Date(Date.now() + 47 * 3600e3).toISOString(), presale_hours: 24,
   });
   const dropVid = dmk.data?.[0]?.id;
@@ -3463,7 +3468,7 @@ async function programRules(p) {
   note("regional", "one daybed to a pass", claimTwice.status >= 400, `got ${claimTwice.status}`);
   const claim2 = await nat.rpc("claim_a_daybed", { p_rsvp: bedNat.data?.[0]?.id });
   const claim3 = await glo.rpc("claim_a_daybed", { p_rsvp: bedGlo.data?.[0]?.id });
-  note("global", "the rail holds at two groups", claim2.status < 300 && claim3.status >= 400 && /two daybed groups/.test(said(claim3)),
+  note("global", "the rail holds at two groups", claim2.status < 300 && claim3.status >= 400 && /daybed groups/.test(said(claim3)),
     `got ${claim2.status}/${claim3.status} ${said(claim3).slice(0, 90)}`);
   const bedMine = await nat.get(`voyage_daybeds?voyage_id=eq.${bedVid}&select=id`);
   note("national", "the daybed list shows your own name only", (bedMine.data ?? []).length === 1, JSON.stringify(bedMine.data).slice(0, 80));
@@ -3549,6 +3554,148 @@ async function programRules(p) {
   note("staff", "the sponsor, season and venue fixtures are struck",
     sponDel.status < 300 && spDel.status < 300 && venDel.status < 300 && seaDel.status < 300,
     `got ${sponDel.status}/${spDel.status}/${venDel.status}/${seaDel.status}`);
+}
+
+
+/* ---------- W8. the crawl: one ruler, honest money, a record that keeps ----------
+   The single-source tables answer for the numbers; a sailing honours its
+   format and its drop; the transfer moves the whole pass and refuses what it
+   cannot move; a struck daybed pays back; a sailing inside the window is
+   cancelled, never struck; the Bridge's changes are on the record; a member
+   can take their own record away with them. Every fixture struck, money and
+   knots net to zero. */
+async function crawlRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national),
+        glo = rest(p.global), anon = rest(null);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+  const plus30 = new Date(Date.now() + 30 * 24 * 3600e3).toISOString();
+  const said = (r) => String(JSON.stringify(r.data ?? "")).toLowerCase();
+
+  // — the facts, stated once and public reading —
+  const hull = await anon.rpc("club_setting", { p_key: "hull_ceiling_heads" });
+  note("anon", "the hull ceiling is one setting", hull.data === 40, `got ${hull.status} ${JSON.stringify(hull.data)}`);
+  const segs = await anon.get("segments?select=slug,heads&order=slug");
+  note("anon", "a couple is two heads, said once", (segs.data ?? []).some((x) => x.slug === "couple" && x.heads === 2), JSON.stringify(segs.data).slice(0, 100));
+  const tiers = await anon.get("sponsor_tiers?select=slug,rate_cents&order=position");
+  note("anon", "the rate card is a table", (tiers.data ?? []).length === 4 && tiers.data[0].rate_cents === 1000000, JSON.stringify(tiers.data).slice(0, 120));
+  const dial = await reg.patch("club_settings?key=eq.hull_ceiling_heads", { value_int: 41 });
+  const dialRead = await anon.rpc("club_setting", { p_key: "hull_ceiling_heads" });
+  note("regional", "the dials are not a member's to turn", dial.status >= 400 || dialRead.data === 40, `got ${dial.status} ${JSON.stringify(dialRead.data)}`);
+
+  // — a sailing honours its format and its drop —
+  const incl = await stf.post("voyages", {
+    slug: `e2e-incl-${stamp}`, title: "E2E fixture sailing.", class: "shore", kind: "port_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, format: "shore_leave", price_cents: 1000,
+  });
+  note("staff", "an included format is never sold", incl.status >= 400 && /included|never sold/.test(said(incl)), said(incl).slice(0, 100));
+  const overCap = await stf.post("voyages", {
+    slug: `e2e-over-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 41, format: "sandbar", price_cents: 0,
+  });
+  note("staff", "a hull is not set past its format", overCap.status >= 400 && /seats 40/.test(said(overCap)), said(overCap).slice(0, 100));
+  const lateDrop = await stf.post("voyages", {
+    slug: `e2e-late-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, price_cents: 0,
+    sale_opens_at: new Date(Date.now() + 31 * 24 * 3600e3).toISOString(),
+  });
+  note("staff", "a drop opens before the boat leaves", lateDrop.status >= 400, `got ${lateDrop.status}`);
+
+  // — a composition sailing sends the waitlist to the line —
+  const cmk = await stf.post("voyages", {
+    slug: `e2e-comp-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, price_cents: 0,
+  });
+  const compVid = cmk.data?.[0]?.id;
+  await stf.post("voyage_segment_caps", [
+    { voyage_id: compVid, segment: "single_woman", cap: 1 },
+    { voyage_id: compVid, segment: "single_man", cap: 1 },
+  ]);
+  const compWait = await reg.post("rsvps", { voyage_id: compVid, profile_id: uid(p.regional), status: "waitlist" });
+  note("regional", "a composition sailing sends the waitlist to the line", compWait.status >= 400 && /line/.test(said(compWait)), said(compWait).slice(0, 100));
+  const compDel = await stf.del(`voyages?id=eq.${compVid}`);
+  note("staff", "the composition fixture is struck", compDel.status < 300, `got ${compDel.status}`);
+
+  // — a hand-off moves the whole pass, deposit as deposit —
+  const hmk = await stf.post("voyages", {
+    slug: `e2e-whole-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, price_cents: 1000,
+    deposit_required: true, deposit_cents: 7000, status: "scheduled",
+  });
+  const hvid = hmk.data?.[0]?.id;
+  const giver = await nat.post("rsvps", { voyage_id: hvid, profile_id: uid(p.national), status: "aboard" });
+  const giverRsvp = giver.data?.[0]?.id;
+  const bed = await nat.rpc("claim_a_daybed", { p_rsvp: giverRsvp });
+  note("national", "holds a daybed on the pass to hand on", bed.status < 300, `got ${bed.status} ${said(bed).slice(0, 80)}`);
+  const bedTwice = await nat.rpc("claim_a_daybed", { p_rsvp: giverRsvp });
+  note("national", "a second claim is told it is already theirs", bedTwice.status >= 400 && /already yours/.test(said(bedTwice)), said(bedTwice).slice(0, 80));
+  const off = await nat.post("pass_transfers", { rsvp_id: giverRsvp, from_profile: uid(p.national), to_profile: uid(p.global) });
+  const take = await glo.rpc("accept_pass_transfer", { p_id: off.data?.[0]?.id });
+  note("global", "takes over the whole pass", take.status < 300, `got ${take.status} ${said(take).slice(0, 100)}`);
+  const takerDep = await glo.get(`account_ledger?rsvp_id=eq.${giverRsvp}&profile_id=eq.${uid(p.global)}&kind=eq.deposit&select=delta_cents`);
+  note("global", "the taker's deposit is a deposit", takerDep.data?.[0]?.delta_cents === -7000, JSON.stringify(takerDep.data).slice(0, 80));
+  const bedNow = await glo.get(`voyage_daybeds?rsvp_id=eq.${giverRsvp}&select=profile_id`);
+  note("global", "the daybed followed the pass", bedNow.data?.[0]?.profile_id === uid(p.global), JSON.stringify(bedNow.data).slice(0, 80));
+  const strike = await stf.del(`voyage_daybeds?rsvp_id=eq.${giverRsvp}`);
+  const struckBack = await glo.get(`account_ledger?rsvp_id=eq.${giverRsvp}&profile_id=eq.${uid(p.global)}&kind=eq.credit&memo=like.Bow daybed*&select=delta_cents`);
+  note("global", "a struck daybed pays back", strike.status < 300 && (struckBack.data ?? []).some((l) => l.delta_cents === 150000), JSON.stringify(struckBack.data).slice(0, 80));
+  const hdel = await stf.del(`voyages?id=eq.${hvid}`);
+  note("staff", "the hand-off fixture is struck", hdel.status < 300, `got ${hdel.status} ${JSON.stringify(hdel.data).slice(0, 80)}`);
+
+  // — inside the window a sailing is cancelled, never struck —
+  const nmk = await stf.post("voyages", {
+    slug: `e2e-near-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: new Date(Date.now() + 6 * 3600e3).toISOString(), time_zone: "America/New_York",
+    berths_total: 4, price_cents: 1000, status: "scheduled",
+  });
+  const nvid = nmk.data?.[0]?.id;
+  await stf.post("rsvps", { voyage_id: nvid, profile_id: uid(p.global), status: "aboard" });
+  const nearDel = await stf.del(`voyages?id=eq.${nvid}`);
+  note("staff", "inside the window a sailing is cancelled, never struck", nearDel.status >= 400 && /cancelled, not struck/.test(said(nearDel)), said(nearDel).slice(0, 100));
+  await stf.patch(`voyages?id=eq.${nvid}`, { status: "cancelled" });
+  const nearDel2 = await stf.del(`voyages?id=eq.${nvid}`);
+  note("staff", "and once cancelled it may be struck", nearDel2.status < 300, `got ${nearDel2.status}`);
+
+  // — the flotilla is levelled in one statement, and the log keeps the change —
+  const h1 = await stf.post("vessels", { name: `E2E Charter Hull A ${stamp}` });
+  const h2 = await stf.post("vessels", { name: `E2E Charter Hull B ${stamp}` });
+  const fmk = await stf.post("voyages", {
+    slug: `e2e-level-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 6, price_cents: 0, status: "scheduled",
+  });
+  const fvid = fmk.data?.[0]?.id;
+  await stf.post("voyage_vessels", [{ voyage_id: fvid, vessel_id: h1.data?.[0]?.id, position: 1 }, { voyage_id: fvid, vessel_id: h2.data?.[0]?.id, position: 2 }]);
+  for (const who of ["regional", "national", "global"]) await stf.post("rsvps", { voyage_id: fvid, profile_id: uid(p[who]), status: "aboard" });
+  const level = await stf.rpc("assign_vessels_evenly", { p_voyage: fvid });
+  const hulls = await stf.get(`rsvps?voyage_id=eq.${fvid}&select=vessel_id`);
+  note("staff", "the flotilla is levelled in one statement", level.data === 3 && (hulls.data ?? []).every((r) => r.vessel_id), `got ${level.status} ${JSON.stringify(level.data)}`);
+  const logged = await stf.get(`audit_log?table_name=eq.voyages&row_id=eq.${fvid}&action=eq.INSERT&select=actor_id`);
+  note("staff", "the bridge's change is on the record, with a name", (logged.data ?? []).length === 1 && logged.data[0].actor_id === uid(p.staff), JSON.stringify(logged.data).slice(0, 80));
+  const logMember = await reg.get("audit_log?select=id&limit=1");
+  note("regional", "the record is the bridge's reading", (logMember.data ?? []).length === 0, `got ${logMember.status}`);
+  const ref = await stf.get(`fathoms_ledger?voyage_id=eq.${fvid}&select=member_ref&limit=1`);
+  note("staff", "a ledger row carries the member's number, not only their id", typeof ref.data?.[0]?.member_ref === "string" && ref.data[0].member_ref.length > 0, JSON.stringify(ref.data).slice(0, 60));
+  const fdel = await stf.del(`voyages?id=eq.${fvid}`);
+  await stf.del(`vessels?id=in.(${h1.data?.[0]?.id},${h2.data?.[0]?.id})`);
+  note("staff", "the flotilla fixture is struck", fdel.status < 300, `got ${fdel.status} ${JSON.stringify(fdel.data).slice(0, 80)}`);
+
+  // — a ruling is given once; a request has a door; a record can be taken away —
+  const prMk = await reg.post("member_event_proposals", { proposer_id: uid(p.regional), title: `E2E once ${stamp}`, format: "mixer" });
+  const prId = prMk.data?.[0]?.id;
+  await stf.rpc("decide_a_proposal", { p_id: prId, p_status: "declined", p_note: "E2E" });
+  const again = await stf.rpc("decide_a_proposal", { p_id: prId, p_status: "approved" });
+  note("staff", "a ruling is given once", again.status >= 400 && /ruled on already/.test(said(again)), said(again).slice(0, 80));
+  await stf.del(`member_event_proposals?id=eq.${prId}`);
+  const rq = await reg.post("charter_requests", { profile_id: uid(p.regional), format: "private_charter", party_size: 12, note: "E2E" });
+  note("regional", "an on-request format has a door", rq.status === 201, `got ${rq.status} ${JSON.stringify(rq.data).slice(0, 80)}`);
+  const rqAnon = await anon.post("charter_requests", { profile_id: uid(p.regional), format: "private_charter" });
+  note("anon", "the door needs a member behind it", rqAnon.status >= 400, `got ${rqAnon.status}`);
+  await stf.del(`charter_requests?id=eq.${rq.data?.[0]?.id}`);
+  const mine = await reg.rpc("export_my_data", {});
+  note("regional", "a member can take their record away with them", mine.status < 300 && mine.data?.profile?.id === uid(p.regional) && Array.isArray(mine.data?.passes), `got ${mine.status} ${Object.keys(mine.data ?? {}).join(",").slice(0, 80)}`);
+  const requeueMember = await reg.rpc("requeue_outbox_row", { p_table: "email_outbox", p_id: uid(p.regional) });
+  note("regional", "the outbox is not a member's to requeue", requeueMember.status >= 400, `got ${requeueMember.status}`);
+  const stripeSealed = await reg.get("stripe_events?select=id&limit=1");
+  note("regional", "the stripe log is sealed to the wardroom", (stripeSealed.data ?? []).length === 0, `got ${stripeSealed.status}`);
 }
 
 async function membershipRules(p) {
@@ -3765,6 +3912,7 @@ async function main() {
   await membershipRules(personas);
   await remediationRules(personas);
   await programRules(personas);
+  await crawlRules(personas);
   for (const [who, before] of Object.entries(kitBefore)) {
     const after = await knotsFor(personas[who], personas.staff);
     note(who, "activity, charter and membership leave the ledger as they found it",

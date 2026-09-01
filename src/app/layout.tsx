@@ -113,6 +113,7 @@ export default function RootLayout({
             app raises is a receipt for something that already happened
             (an order placed, a pass held), so it announces through here. */}
         <div id="ls-announcer" role="status" aria-live="polite" aria-atomic="true" className="ls-visually-hidden" />
+        <div id="ls-announcer-alert" role="alert" aria-live="assertive" aria-atomic="true" className="ls-visually-hidden" />
         <Script id="un-theme-init" strategy="beforeInteractive">{themeInit}</Script>
         <SwRegister />
         {children}

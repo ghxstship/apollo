@@ -29,6 +29,7 @@ const GROUPS = [
   ],
   [
     ["/bridge/radar", "Radar"],
+    ["/bridge/tables", "Tables"],
     ["/bridge/envelopes", "Envelopes"],
     ["/bridge/elements", "Elements"],
   ],

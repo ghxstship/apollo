@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { logDateTime, price } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { getOperator, readConditions } from "../../data";
-import { VoyagesClient, type AssignedHull, type VoyageOpsRow } from "./voyages-client";
+import {
+  VoyagesClient,
+  type AssignedHull,
+  type FormatOption,
+  type ProgramOption,
+  type VoyageOpsRow,
+} from "./voyages-client";
 import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Voyages" };
@@ -27,12 +33,39 @@ function wallClockValue(iso: string | null, zone: string): string {
 
 /* activity_formats is a module table — read through the seam, typed at the
    boundary, the way the Activity screens already read it. */
-type FormatRow = { slug: string; label: string; category: string };
+type FormatRow = {
+  slug: string;
+  label: string;
+  category: string;
+  access: string;
+  price_cents: number | null;
+  capacity: number | null;
+  requires_vetting: boolean;
+  active: boolean;
+};
+
+/* The access line the picker shows beside each format — what it costs to be
+   there, and how many it seats, in the words the catalogue uses. */
+function accessLine(f: FormatRow): string {
+  const door =
+    f.access === "open"
+      ? `open · ${price(f.price_cents ?? 0)}`
+      : f.access === "invite"
+        ? "by invitation"
+        : f.access === "on_request"
+          ? "on request"
+          : f.access === "included"
+            ? "included"
+            : f.access.replaceAll("_", " ");
+  const seats = f.capacity ? ` · seats ${f.capacity}` : "";
+  const vetted = f.requires_vetting ? " · vetted" : "";
+  return `${door}${seats}${vetted}`;
+}
 
 export default async function VoyagesOpsPage() {
   const { supabase } = await getOperator();
 
-  const [voyagesRes, capacityRes, harborsRes, flotillaRes, fleetRes, seasonsRes, venuesRes, formatsRes] =
+  const [voyagesRes, capacityRes, harborsRes, flotillaRes, fleetRes, seasonsRes, venuesRes, seriesRes, formatsRes] =
     await Promise.all([
       supabase.from("voyages").select("*").order("starts_at", { ascending: false }),
       supabase.from("voyage_capacity").select("*"),
@@ -41,10 +74,12 @@ export default async function VoyagesOpsPage() {
       supabase.from("vessels").select("id, name, capacity, active").order("name", { ascending: true }),
       supabase.from("seasons").select("id, title, active").order("starts_on", { ascending: false }),
       supabase.from("venues").select("id, name, active").order("name", { ascending: true }),
+      supabase.from("voyage_series").select("id, title, template_voyage_id"),
+      /* Retired formats ride along, marked: a voyage filed under one must not
+         read as Unfiled, and the composer filters them out of a new filing. */
       moduleTables(supabase)
         .from("activity_formats")
-        .select("slug, label, category")
-        .eq("active", true)
+        .select("slug, label, category, access, price_cents, capacity, requires_vetting, active")
         .order("position"),
     ]);
 
@@ -69,7 +104,28 @@ export default async function VoyagesOpsPage() {
   }
   for (const list of hullsByVoyage.values()) list.sort((a, b) => a.position - b.position);
 
-  const rows: VoyageOpsRow[] = (must(voyagesRes)).map((v) => {
+  /* A series is one template sailing cloned forward on a cadence. The
+     template is the row voyage_series points at; the occurrences are the rows
+     that point back. Both are marked on the board, because editing a template
+     changes nothing already raised from it. */
+  const voyages = must(voyagesRes);
+  const occurrencesBySeries = new Map<string, number>();
+  for (const v of voyages) {
+    if (v.series_id) occurrencesBySeries.set(v.series_id, (occurrencesBySeries.get(v.series_id) ?? 0) + 1);
+  }
+  const seriesById = new Map(must(seriesRes).map((s) => [s.id, s]));
+  const seriesByTemplate = new Map(must(seriesRes).map((s) => [s.template_voyage_id, s]));
+  const seriesRole = (v: { id: string; series_id: string | null }): VoyageOpsRow["series"] => {
+    const asTemplate = seriesByTemplate.get(v.id);
+    if (asTemplate) {
+      return { role: "template", title: asTemplate.title, occurrences: occurrencesBySeries.get(asTemplate.id) ?? 0 };
+    }
+    const asOccurrence = v.series_id ? seriesById.get(v.series_id) : null;
+    if (asOccurrence) return { role: "occurrence", title: asOccurrence.title, occurrences: 0 };
+    return null;
+  };
+
+  const rows: VoyageOpsRow[] = voyages.map((v) => {
     const c = readConditions(v.conditions);
     return {
       id: v.id,
@@ -79,13 +135,16 @@ export default async function VoyagesOpsPage() {
       kind: v.kind,
       departs: logDateTime(v.starts_at, v.time_zone),
       startsAtIso: v.starts_at,
+      startsAtLocal: wallClockValue(v.starts_at, v.time_zone),
       vessels: hullsByVoyage.get(v.id)?.length ?? 0,
       hulls: hullsByVoyage.get(v.id) ?? [],
       aboard: capacity.get(v.id)?.aboard ?? 0,
       berths: v.berths_total,
       held: v.held_passes,
       price: price(v.price_cents),
+      priceCents: v.price_cents,
       status: v.status,
+      series: seriesRole(v),
       muster: v.muster ?? "",
       wind: c.wind ?? "",
       swell: c.swell ?? "",
@@ -102,15 +161,24 @@ export default async function VoyagesOpsPage() {
   });
 
   const harbors = (must(harborsRes)).map((h) => ({ value: h.id, label: h.name }));
-  const seasons = (must(seasonsRes))
-    .filter((s) => s.active)
-    .map((s) => ({ value: s.id, label: s.title }));
-  const venues = (must(venuesRes))
-    .filter((v) => v.active)
-    .map((v) => ({ value: v.id, label: v.name }));
-  const formats = ((formatsRes.data ?? []) as FormatRow[]).map((f) => ({
+  /* Retired seasons and venues stay in the pickers, marked, so a voyage that
+     still holds one reads as what it is rather than as Unassigned. Active
+     first; the composer offers only the active ones for a new filing. */
+  const seasons: ProgramOption[] = (must(seasonsRes))
+    .sort((a, b) => Number(b.active) - Number(a.active))
+    .map((s) => ({ value: s.id, label: s.active ? s.title : `${s.title} (retired)`, retired: !s.active }));
+  const venues: ProgramOption[] = (must(venuesRes))
+    .sort((a, b) => Number(b.active) - Number(a.active))
+    .map((v) => ({ value: v.id, label: v.active ? v.name : `${v.name} (retired)`, retired: !v.active }));
+  const formats: FormatOption[] = (must(formatsRes) as FormatRow[]).map((f) => ({
     value: f.slug,
-    label: `${f.label} · ${f.category}`,
+    label: f.active ? f.label : `${f.label} (retired)`,
+    retired: !f.active,
+    category: f.category,
+    access: f.access,
+    accessLine: accessLine(f),
+    priceCents: f.price_cents,
+    capacity: f.capacity,
   }));
 
   return (

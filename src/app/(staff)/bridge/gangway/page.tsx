@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import { StateBlock } from "@/components/ds";
 import { EVENT_CLASS_LABEL, logDate, logTime } from "@/lib/format";
+import { moduleTables } from "@/lib/module-tables";
 import { getOperator } from "../../data";
 import { GangwayConsole, type GangwayRow } from "./gangway-client";
 import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Gangway" };
+
+/* cabins.muster landed in 20260825065942 and the shared type file has not
+   caught up — read through the module seam and type it at the boundary. */
+type CabinRow = { id: string; name: string; muster: string | null };
 
 export default async function GangwayPage({
   searchParams,
@@ -97,9 +102,41 @@ export default async function GangwayPage({
     guestsByRsvp.set(g.rsvp_id, list);
   }
 
+  /* A daybed is a claim on the sailing, not on the pass — the door needs to
+     know who holds one so the crew can point them to it. */
+  const daybedsRes = await supabase
+    .from("voyage_daybeds")
+    .select("rsvp_id")
+    .eq("voyage_id", voyage.id);
+  const daybedRsvps = new Set(must(daybedsRes).map((d) => d.rsvp_id));
+
+  /* A cabin card prints its own muster station; the pass carries the cabin. */
+  const cabinIds = [...new Set(rsvps.map((r) => r.cabin_id).filter((id): id is string => !!id))];
+  const cabinsRes = cabinIds.length
+    ? await moduleTables(supabase).from("cabins").select("id, name, muster").in("id", cabinIds)
+    : { data: [] as CabinRow[], error: null };
+  const cabinById = new Map(
+    must<CabinRow>(cabinsRes as { data: CabinRow[] | null; error?: { message?: string } | null }).map(
+      (c) => [c.id, c]
+    )
+  );
+
+  /* The door's muster line. A shore night musters at its venue — name and
+     address — where a sailing musters at the slip the voyage names. */
+  let muster: string | null = voyage.muster ?? null;
+  if (voyage.class === "shore" && voyage.venue_id) {
+    const { data: venue } = await supabase
+      .from("venues")
+      .select("name, address")
+      .eq("id", voyage.venue_id)
+      .maybeSingle();
+    if (venue) muster = venue.address ? `${venue.name} · ${venue.address}` : venue.name;
+  }
+
   const rows: GangwayRow[] = rsvps.map((r) => {
     const p = profiles.get(r.profile_id);
     const guestList = guestsByRsvp.get(r.id) ?? (r.guest_names ?? []).map((name: string) => ({ name, aboard: false }));
+    const cabin = r.cabin_id ? cabinById.get(r.cabin_id) : undefined;
     return {
       rsvpId: r.id,
       code: r.boarding_code ?? "",
@@ -111,6 +148,9 @@ export default async function GangwayPage({
       guests: r.guests,
       waiverSigned: waiverCurrent.get(r.profile_id) ?? false,
       checkedInAt: r.checked_in_at,
+      daybed: daybedRsvps.has(r.id),
+      cabin: cabin?.name ?? null,
+      cabinMuster: cabin?.muster ?? null,
     };
   });
 
@@ -128,6 +168,7 @@ export default async function GangwayPage({
         family={EVENT_CLASS_LABEL[voyage.class] ?? "Sea Day"}
         departs={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`}
         timeZone={voyage.time_zone}
+        muster={muster}
         options={voyages.map((v) => ({
           value: v.id,
           label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,

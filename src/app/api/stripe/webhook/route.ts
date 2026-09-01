@@ -266,6 +266,26 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
+  /* Handled once: Stripe retries, and a late duplicate of
+     customer.subscription.updated could overwrite newer state. The ledger
+     inserts already dedupe on idem_key; this is the ordering half. */
+  const { error: seen } = await admin
+    .from("stripe_events")
+    .insert({ id: event.id, type: event.type, created: new Date(event.created * 1000).toISOString() });
+  if (seen) {
+    if (seen.code === "23505") return NextResponse.json({ received: true, replay: true });
+    return NextResponse.json({ error: "Could not record the event." }, { status: 500 });
+  }
+  const { data: newer } = await admin
+    .from("stripe_events")
+    .select("id")
+    .eq("type", event.type)
+    .gt("created", new Date(event.created * 1000).toISOString())
+    .limit(1);
+  if (newer && newer.length > 0 && event.type.startsWith("customer.subscription.")) {
+    return NextResponse.json({ received: true, stale: true });
+  }
+
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;

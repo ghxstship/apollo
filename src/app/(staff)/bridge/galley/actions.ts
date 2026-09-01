@@ -60,7 +60,7 @@ export async function settleTicket(
   tender: "account" | "till",
   /* Minted by the POS per ticket. A double-tap at a bar with a queue behind it
      should not ring twice. */
-  idemKey?: string
+  idemKey: string
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
@@ -81,7 +81,7 @@ export async function settleTicket(
     p_profile: profileId,
     p_lines: clean.map((l) => ({ itemId: l.itemId, qty: l.qty })),
     p_tender: tender,
-    ...(idemKey ? { p_idem_key: idemKey } : {}),
+    p_idem_key: idemKey,
   });
   if (error) return { error: await voiceWith(supabase, error) };
 

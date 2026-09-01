@@ -62,10 +62,15 @@ function RowBody({ m }: { m: DirectoryMember }) {
 export function DirectoryList({
   members,
   harbors,
+  total,
 }: {
   members: DirectoryMember[];
   harbors: HarborOption[];
+  /* Everyone listed, which may be more than the page has loaded. */
+  total?: number;
 }) {
+  const listed = total ?? members.length;
+  const partial = listed > members.length;
   const [query, setQuery] = React.useState("");
   const [harbor, setHarbor] = React.useState("all");
   const [league, setLeague] = React.useState("all");
@@ -117,7 +122,9 @@ export function DirectoryList({
       </div>
 
       <p className="mbr-mono dir-count">
-        {shown.length} of {members.length} listed
+        {partial
+          ? `${shown.length} of ${members.length} loaded · ${listed} listed`
+          : `${shown.length} of ${listed} listed`}
       </p>
 
       {shown.length === 0 ? (

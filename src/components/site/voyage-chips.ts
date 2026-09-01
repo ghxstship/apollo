@@ -3,19 +3,22 @@
    what holds a pass. No ratings, no value badges, no urgency copy (see
    docs/EVENT-CARD-ENRICHMENT.md — those were rejected on brand grounds). */
 
-import { price } from "@/lib/format";
+import { logDateTime, price, type Zone } from "@/lib/format";
 
-/* The deposit figure is per-voyage now — voyages.deposit_cents — rendered
+/* "ON SALE OCT 12 · 18:00" — the drop hour, on the harbour's clock. A sailing
+   whose sale_opens_at is still ahead is announced, not on offer, and the card
+   says the hour rather than a pass count. Deeper tiers walk in earlier; the
+   public figure is the public hour. */
+export function onSaleChip(saleOpensAt: string, zone: Zone): string {
+  return `ON SALE ${logDateTime(saleOpensAt, zone)}`;
+}
+
+/* The deposit figure is the voyage's own — voyages.deposit_cents — rendered
    through price() so a zero would read as Complimentary rather than "$0".
-   The club-wide const stays as the fallback for surfaces that cannot reach
-   the voyage row. */
-export const DEPOSIT_CENTS = 5000;
-
+   There is no club-wide figure: a surface that shows a deposit reads the row. */
 export function depositChip(cents: number): string {
   return `${price(cents)} holds it`.toUpperCase();
 }
-
-export const DEPOSIT_CHIP = depositChip(DEPOSIT_CENTS);
 
 /* "6 HRS" — the sail's length, from cast off to alongside. */
 export function durationChip(startsAt: string, endsAt: string | null): string | null {

@@ -124,12 +124,16 @@ export function Toast({
      twice. */
   const msgRef = React.useRef<HTMLSpanElement>(null);
   const saidRef = React.useRef<string | null>(null);
+  /* Which region this toast spoke into, for the cleanup to clear the same one. */
+  const regionRef = React.useRef<string>("ls-announcer");
   /* No dependency array on purpose. `message` is a ReactNode at half the call
      sites, so it has a new identity on every parent render; keying the effect
      on it would clear and refill the region each time and read the same
      sentence out over and over. The guard is the text itself. */
   React.useEffect(() => {
-    const region = document.getElementById("ls-announcer");
+    /* A refusal is read at once; a receipt waits its turn. */
+    regionRef.current = tone === "danger" ? "ls-announcer-alert" : "ls-announcer";
+    const region = document.getElementById(regionRef.current);
     const text = msgRef.current?.textContent?.trim();
     if (!region || !text || text === saidRef.current) return;
     saidRef.current = text;
@@ -137,7 +141,7 @@ export function Toast({
   });
   React.useEffect(
     () => () => {
-      const region = document.getElementById("ls-announcer");
+      const region = document.getElementById(regionRef.current);
       if (region && saidRef.current && region.textContent === saidRef.current) region.textContent = "";
     },
     []

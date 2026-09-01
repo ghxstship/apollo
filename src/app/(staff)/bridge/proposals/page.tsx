@@ -1,30 +1,49 @@
 import type { Metadata } from "next";
+import { logDate } from "@/lib/format";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
 import { moduleTables } from "@/lib/module-tables";
-import { ProposalsClient, type ProposalRow } from "./proposals-client";
+import { ProposalsClient, type CharterRow, type ProposalRow } from "./proposals-client";
 
 export const metadata: Metadata = { title: "Proposals" };
 
 export default async function ProposalsPage() {
   const { supabase } = await getOperator();
 
-  const proposalsRes = await supabase
-    .from("member_event_proposals")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [proposalsRes, chartersRes, voyagesRes] = await Promise.all([
+    supabase
+      .from("member_event_proposals")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase.from("charter_requests").select("*").order("created_at", { ascending: false }),
+    /* Two jobs from one read: the picker offers sailings still ahead; the
+       label for a linked sailing must resolve even after it has gone. */
+    supabase
+      .from("voyages")
+      .select("id, title, starts_at, time_zone, status")
+      .order("starts_at", { ascending: true }),
+  ]);
   const proposals = must(proposalsRes);
+  const charters = must(chartersRes);
+  const voyages = must(voyagesRes);
+  const voyageById = new Map(voyages.map((v) => [v.id, v]));
 
-  const proposerIds = [...new Set(proposals.map((p) => p.proposer_id))];
-  const proposersRes = proposerIds.length
-    ? await supabase.from("profiles").select("id, full_name, member_no").in("id", proposerIds)
+  const memberIds = [
+    ...new Set([...proposals.map((p) => p.proposer_id), ...charters.map((c) => c.profile_id)]),
+  ];
+  const membersRes = memberIds.length
+    ? await supabase.from("profiles").select("id, full_name, member_no").in("id", memberIds)
     : { data: [] };
-  const proposers = new Map(must(proposersRes).map((p) => [p.id, p]));
+  const members = new Map(must(membersRes).map((p) => [p.id, p]));
 
   /* Labels for whatever shapes turn up on the rows. activity_formats belongs
      to another module, reached through the moduleTables seam. */
   const formatSlugs = [
-    ...new Set(proposals.map((p) => p.format).filter((s): s is string => !!s)),
+    ...new Set(
+      [...proposals.map((p) => p.format), ...charters.map((c) => c.format)].filter(
+        (s): s is string => !!s
+      )
+    ),
   ];
   const { data: formatsData } = formatSlugs.length
     ? await moduleTables(supabase)
@@ -39,8 +58,14 @@ export default async function ProposalsPage() {
     ])
   );
 
+  const voyageLabel = (id: string | null): string | null => {
+    if (!id) return null;
+    const v = voyageById.get(id);
+    return v ? `${v.title} · ${logDate(v.starts_at, v.time_zone)}` : "A sailing off the board";
+  };
+
   const rows: ProposalRow[] = proposals.map((p) => {
-    const proposer = proposers.get(p.proposer_id);
+    const proposer = members.get(p.proposer_id);
     const format = p.format ? formats.get(p.format) : undefined;
     return {
       id: p.id,
@@ -54,6 +79,25 @@ export default async function ProposalsPage() {
       status: p.status,
       decisionNote: p.decision_note,
       raisedAt: p.created_at,
+      voyageId: p.voyage_id,
+      voyageLabel: voyageLabel(p.voyage_id),
+    };
+  });
+
+  const charterRows: CharterRow[] = charters.map((c) => {
+    const member = members.get(c.profile_id);
+    const format = c.format ? formats.get(c.format) : undefined;
+    return {
+      id: c.id,
+      proposer: member?.full_name ?? "A member",
+      proposerMark: member?.member_no ?? null,
+      formatLabel: format?.label ?? c.format,
+      partySize: c.party_size,
+      preferredDates: c.preferred_dates,
+      note: c.note,
+      status: c.status,
+      decisionNote: c.decision_note,
+      raisedAt: c.created_at,
     };
   });
 
@@ -66,7 +110,16 @@ export default async function ProposalsPage() {
         ruling reaches the proposer as a word — considering, approved, or
         declined with your reason on it. Nothing here is decided silently.
       </p>
-      <ProposalsClient rows={rows} />
+      <ProposalsClient
+        rows={rows}
+        charters={charterRows}
+        voyages={voyages
+          .filter((v) => v.status === "scheduled" || v.status === "live")
+          .map((v) => ({
+            value: v.id,
+            label: `${v.title} · ${logDate(v.starts_at, v.time_zone)}`,
+          }))}
+      />
     </div>
   );
 }

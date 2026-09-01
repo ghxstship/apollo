@@ -28,7 +28,7 @@ export async function placeGalleyOrder(
      galley and was charged, but whose response the boat wifi swallowed, used to
      come back as a second order and a second charge — the exact failure the
      offline queue exists to survive. */
-  idemKey?: string
+  idemKey: string
 ): Promise<GalleyResult> {
   const supabase = await createClient();
   const {
@@ -47,7 +47,7 @@ export async function placeGalleyOrder(
        inside the RPC, and there is a whole migration named after getting this
        wrong on the shop's twin. */
     p_lines: clean.map((l) => ({ itemId: l.itemId, qty: l.qty })),
-    ...(idemKey ? { p_idem_key: idemKey } : {}),
+    p_idem_key: idemKey,
   });
   if (error) return { error: await voiceWith(supabase, error) };
 
@@ -76,8 +76,12 @@ export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
   const file = formData.get("frame");
   if (!voyageId || !(file instanceof File) || file.size === 0)
     return { error: "Pick a frame first." };
-  if (!file.type.startsWith("image/"))
-    return { error: "Frames are photographs — the log takes images only." };
+  if (!/^[0-9a-f-]{36}$/i.test(voyageId))
+    return { error: "Pick a frame first." };
+  /* An allowlist, not a prefix: image/svg+xml passes startsWith("image/") and
+     is scriptable content served from the storage origin. */
+  if (!["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].includes(file.type))
+    return { error: "Frames are photographs — JPEG, PNG, WebP or HEIC." };
   if (file.size > 12 * 1024 * 1024)
     return { error: "That frame is over 12MB — send a smaller cut." };
 

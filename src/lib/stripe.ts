@@ -17,7 +17,9 @@ export function stripeEnabled(): boolean {
 
 export function getStripe(): Stripe {
   if (!client) {
-    client = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    /* The SDK's default is an 80-second wait and no retries; a webhook route
+       that hangs that long is a lost event. */
+    client = new Stripe(process.env.STRIPE_SECRET_KEY!, { timeout: 10_000, maxNetworkRetries: 2 });
   }
   return client;
 }

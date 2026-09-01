@@ -3,11 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
-export type SponsorTier =
-  | "presenting_partner"
-  | "sandbar_hub"
-  | "confessional_pod"
-  | "shore_leave_partner";
+/* A tier is a row on the rate card (sponsor_tiers), not a list in this file.
+   The slug is validated against the table at write time, so a tier the Bridge
+   retires from the card cannot be signed by a stale screen. */
+export type SponsorTier = string;
 
 export type NewSponsor = {
   name: string;
@@ -30,13 +29,6 @@ function done(): ActionResult {
   return {};
 }
 
-const TIERS: SponsorTier[] = [
-  "presenting_partner",
-  "sandbar_hub",
-  "confessional_pod",
-  "shore_leave_partner",
-];
-
 export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
@@ -44,7 +36,13 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
   const name = input.name.trim();
   if (!name) return { error: "A sponsor needs a name — that is the whole credit." };
 
-  if (!TIERS.includes(input.tier)) return { error: "Pick a tier off the rate card." };
+  const { data: tierRow, error: tierError } = await supabase
+    .from("sponsor_tiers")
+    .select("slug")
+    .eq("slug", input.tier)
+    .maybeSingle();
+  if (tierError) return { error: ERR_LAND };
+  if (!tierRow) return { error: "Pick a tier off the rate card." };
 
   const monthly = Math.round(input.monthlyCents);
   if (!Number.isFinite(monthly) || monthly < 0)
@@ -64,12 +62,15 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
 
   const { error } = await supabase.from("sponsors").insert({
     name,
-    tier: input.tier,
+    tier: input.tier as "presenting_partner" | "sandbar_hub" | "confessional_pod" | "shore_leave_partner",
     monthly_cents: monthly,
     contact_email: email || null,
     starts_on: startsOn,
     ends_on: endsOn,
     notes: input.notes.trim() || null,
+    /* The column defaults to auth.uid(); stated so the row says who signed
+       them even if a future default changes. */
+    created_by: staffId,
   });
   if (error) return { error: ERR_LAND };
   return done();

@@ -191,6 +191,8 @@ export async function leaveTheLine(entryId: string): Promise<VettingResult> {
 export async function offerTheNextPlace(voyageId: string, segment: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  const { data: staff } = await supabase.rpc("is_staff");
+  if (!staff) return { error: "Offering the next place is the Bridge's to do." };
   if (!isSegment(segment)) return { error: "Pick a segment first." };
 
   const { error } = await db.rpc("offer_the_next_place", { p_voyage: voyageId, p_segment: segment });

@@ -109,48 +109,25 @@ export async function setRsvpVessel(
   return done();
 }
 
-/* Spread the unassigned aboard across the flotilla — each pass goes to the
-   least-loaded yacht in turn, so the boats level out. */
+/* Spread the unassigned aboard across the flotilla. One statement at the
+   database (assign_vessels_evenly, definer, staff-only) deals the loose passes
+   round the hulls in position order and reports how many moved — the per-row
+   loop this replaced could be interrupted halfway and leave a flotilla
+   half-levelled with no word. Passes holding a cabin already have a hull and
+   are left where they are. */
 export async function assignVesselsEvenly(voyageId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const [vvRes, rsvpsRes] = await Promise.all([
-    supabase
-      .from("voyage_vessels")
-      .select("vessel_id, position")
-      .eq("voyage_id", voyageId)
-      .order("position", { ascending: true }),
-    supabase
-      .from("rsvps")
-      .select("id, vessel_id, created_at")
-      .eq("voyage_id", voyageId)
-      .eq("status", "aboard")
-      .order("created_at", { ascending: true }),
-  ]);
-  if (vvRes.error || rsvpsRes.error) return { error: ERR_LAND };
-
-  const vessels = vvRes.data ?? [];
-  if (vessels.length === 0) return { error: "No yachts assigned to this voyage yet." };
-
-  const load = new Map<string, number>(vessels.map((v) => [v.vessel_id, 0]));
-  for (const r of rsvpsRes.data ?? []) {
-    if (r.vessel_id && load.has(r.vessel_id))
-      load.set(r.vessel_id, (load.get(r.vessel_id) ?? 0) + 1);
-  }
-
-  const unassigned = (rsvpsRes.data ?? []).filter((r) => !r.vessel_id);
-  if (unassigned.length === 0) return {};
-
-  for (const r of unassigned) {
-    /* Least-loaded first; ties break on flotilla position order. */
-    let pick = vessels[0].vessel_id;
-    for (const v of vessels) {
-      if ((load.get(v.vessel_id) ?? 0) < (load.get(pick) ?? 0)) pick = v.vessel_id;
-    }
-    const { error } = await supabase.from("rsvps").update({ vessel_id: pick }).eq("id", r.id);
-    if (error) return { error: ERR_LAND };
-    load.set(pick, (load.get(pick) ?? 0) + 1);
+  const { data: moved, error } = await supabase.rpc("assign_vessels_evenly", { p_voyage: voyageId });
+  if (error) return { error: error.code === "P0001" && error.message ? error.message : ERR_LAND };
+  if (!moved) {
+    /* Zero rows is one of two things — no hull to deal onto, or nothing loose
+       to deal — and either way "spread" would be the wrong word. */
+    return {
+      error:
+        "Nothing to spread — no hull is on this voyage yet, or every pass aboard already has one. Assign hulls from the Voyages board first.",
+    };
   }
   return done();
 }

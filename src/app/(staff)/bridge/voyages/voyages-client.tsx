@@ -45,13 +45,20 @@ export type VoyageOpsRow = {
   kind: string;
   departs: string;
   startsAtIso: string;
+  /* The departure on the harbor's wall clock, as a datetime-local value — the
+     same frame the on-sale input is typed in, so the two compare as strings. */
+  startsAtLocal: string;
   vessels: number;
   hulls: AssignedHull[];
   aboard: number;
   berths: number;
   held: number;
   price: string;
+  priceCents: number;
   status: VoyageStatus;
+  /* Where this sailing stands in a series: the template a series clones
+     forward, an occurrence raised from one, or neither. */
+  series: { role: "template" | "occurrence"; title: string; occurrences: number } | null;
   muster: string;
   wind: string;
   swell: string;
@@ -67,7 +74,63 @@ export type VoyageOpsRow = {
   depositCents: number;
 };
 
-export type ProgramOption = { value: string; label: string };
+/* A retired season, venue or format stays in the picker, marked, so a voyage
+   that holds one reads as what it is rather than as Unassigned. The composer
+   offers only the live ones for a new filing. */
+export type ProgramOption = { value: string; label: string; retired?: boolean };
+
+export type FormatOption = ProgramOption & {
+  category: string;
+  access: string;
+  /* "open · $350 · seats 40", "by invitation", "on request", "included" */
+  accessLine: string;
+  priceCents: number | null;
+  capacity: number | null;
+};
+
+/* sky was folded into shore when the two-family taxonomy landed; the enum
+   still carries it, so it takes the shore default. */
+const DEFAULT_KIND: Record<EventClass, string> = { sea: "sea_day", shore: "port_day", sky: "port_day" };
+
+/* A format's category settles the class: port → shore, sea → sea. Premium
+   formats sail either way and leave the class as the operator set it. */
+function classForCategory(category: string, current: EventClass): EventClass {
+  if (category === "port") return "shore";
+  if (category === "sea") return "sea";
+  return current;
+}
+
+/* What a_sailing_honours_its_format will refuse, said here before the submit
+   rather than by the trigger after it. Each names the way out. */
+function formatConflicts(format: FormatOption | undefined, berths: number, priceCents: number): string[] {
+  if (!format) return [];
+  const out: string[] = [];
+  if (format.access === "included" && priceCents > 0) {
+    out.push(
+      `${format.label} is included with a pass and never sold alone — the board will refuse a price. Clear the price, or file it under another format.`
+    );
+  }
+  if (format.capacity !== null && berths > format.capacity) {
+    out.push(
+      `A ${format.label} seats ${format.capacity} — the board will refuse ${berths} berths. Lower the capacity, or file it under another format.`
+    );
+  }
+  return out;
+}
+
+const DEPOSIT_CEILING = 1000;
+const ERR_DEPOSIT_CEILING = "A deposit is at most $1,000.";
+const ERR_DROP_AFTER_DEPARTURE = "The drop has to open before the boat leaves.";
+
+/* Both values are wall clocks on the same harbor, in datetime-local form, so
+   the string order is the time order. */
+function dropAfterDeparture(saleOpensAt: string, startsAt: string): boolean {
+  return !!saleOpensAt && !!startsAt && saleOpensAt > startsAt;
+}
+
+function formatOptions(formats: FormatOption[], blank: string): ProgramOption[] {
+  return [{ value: "", label: blank }, ...formats.map((f) => ({ value: f.value, label: `${f.label} · ${f.accessLine}` }))];
+}
 
 /* The 3rd-yacht rule as product logic — a flotilla forms at 30 berths. */
 const FLOTILLA_FORMS_AT = 30;
@@ -185,7 +248,7 @@ export function VoyagesClient({
   harbors: Array<{ value: string; label: string }>;
   seasons: ProgramOption[];
   venues: ProgramOption[];
-  formats: ProgramOption[];
+  formats: FormatOption[];
   fleet: FleetVessel[];
 }) {
   const [pending, startTransition] = React.useTransition();
@@ -234,6 +297,17 @@ export function VoyagesClient({
     setProgram(row);
   };
 
+  /* The Program dialog's own refusals, worked out before the save so the
+     button says why rather than the toast afterwards. The format ones are the
+     trigger's; the deposit and drop ones are the CHECKs'. */
+  const programFormat = formats.find((f) => f.value === programForm.format);
+  const formatRefusals = program ? formatConflicts(programFormat, program.berths, program.priceCents) : [];
+  const programRefusals = [
+    ...formatRefusals,
+    ...(Number(programForm.deposit || "0") > DEPOSIT_CEILING ? [ERR_DEPOSIT_CEILING] : []),
+    ...(program && dropAfterDeparture(programForm.saleOpensAt, program.startsAtLocal) ? [ERR_DROP_AFTER_DEPARTURE] : []),
+  ];
+
   return (
     <>
       <div className="hm-head" style={{ marginTop: 20 }}>
@@ -274,6 +348,14 @@ export function VoyagesClient({
             </span>
             <span>·</span>
             <span>{v.price}</span>
+            {v.series ? (
+              <>
+                <span>·</span>
+                <span title={v.series.role === "template" ? "The sailing a series clones forward" : "Raised from a series template"}>
+                  {v.series.role === "template" ? "SERIES TEMPLATE" : "SERIES OCCURRENCE"} · {v.series.title.toUpperCase()}
+                </span>
+              </>
+            ) : null}
             {v.muster ? (
               <>
                 <span>·</span>
@@ -480,7 +562,7 @@ export function VoyagesClient({
               </Button>
               <Button
                 variant="outline"
-                disabled={pending}
+                disabled={pending || programRefusals.length > 0}
                 onClick={() => {
                   const row = program;
                   setProgram(null);
@@ -505,11 +587,21 @@ export function VoyagesClient({
         }
       >
         <div className="hm-form">
+          {program?.series?.role === "template" ? (
+            <p className="hm-note" style={{ marginTop: 0 }}>
+              {program.series.occurrences === 1
+                ? "1 occurrence will not follow this change"
+                : `${program.series.occurrences} occurrences will not follow this change`}{" "}
+              — a series copies its template forward when it is extended, not when the template is edited.
+            </p>
+          ) : null}
           <div className="hm-form__row">
             <Select
               label="Format"
-              options={[{ value: "", label: "Unfiled" }, ...formats]}
+              options={formatOptions(formats, "Unfiled")}
               value={programForm.format}
+              hint={programFormat ? programFormat.accessLine : undefined}
+              error={formatRefusals.length ? formatRefusals.join(" ") : undefined}
               onChange={(e) => setProgramForm((f) => ({ ...f, format: e.target.value }))}
             />
             <Select
@@ -530,7 +622,9 @@ export function VoyagesClient({
               label="Deposit ($)"
               type="number"
               min={0}
+              max={DEPOSIT_CEILING}
               step="0.01"
+              error={Number(programForm.deposit || "0") > DEPOSIT_CEILING ? ERR_DEPOSIT_CEILING : undefined}
               value={programForm.deposit}
               onChange={(e) => setProgramForm((f) => ({ ...f, deposit: e.target.value }))}
             />
@@ -540,6 +634,11 @@ export function VoyagesClient({
               label="On sale"
               type="datetime-local"
               hint="On the harbor's clock. Blank means on sale now."
+              error={
+                program && dropAfterDeparture(programForm.saleOpensAt, program.startsAtLocal)
+                  ? ERR_DROP_AFTER_DEPARTURE
+                  : undefined
+              }
               value={programForm.saleOpensAt}
               onChange={(e) => setProgramForm((f) => ({ ...f, saleOpensAt: e.target.value }))}
             />
@@ -794,7 +893,7 @@ function NewVoyageDialog({
   harbors: Array<{ value: string; label: string }>;
   seasons: ProgramOption[];
   venues: ProgramOption[];
-  formats: ProgramOption[];
+  formats: FormatOption[];
   pending: boolean;
   onCreate: (input: Parameters<typeof createVoyage>[0], title: string) => void;
 }) {
@@ -802,9 +901,43 @@ function NewVoyageDialog({
   const set = <K extends keyof NewVoyageForm>(k: K, v: NewVoyageForm[K]) =>
     setF((prev) => ({ ...prev, [k]: v }));
 
-  /* Class picks the sub-class ladder — keep the two in step. */
-  const setClass = (cls: EventClass) =>
-    setF((prev) => ({ ...prev, cls, subClass: prev.subClass || (subClassOptions()[0]?.value ?? "") }));
+  /* A new filing goes under a live season, venue or format — the retired ones
+     are in the lists only so existing voyages can still show theirs. */
+  const liveSeasons = seasons.filter((s) => !s.retired);
+  const liveVenues = venues.filter((v) => !v.retired);
+  const liveFormats = formats.filter((x) => !x.retired);
+
+  /* Class picks the sub-class ladder — keep the two in step. The kind follows
+     the class while it is still the other class's default, and is left alone
+     once the operator has typed their own. */
+  const withClass = (prev: NewVoyageForm, cls: EventClass): NewVoyageForm => {
+    const wasDefault = !prev.kind.trim() || Object.values(DEFAULT_KIND).includes(prev.kind.trim());
+    return {
+      ...prev,
+      cls,
+      kind: wasDefault ? DEFAULT_KIND[cls] : prev.kind,
+      subClass: prev.subClass || (subClassOptions()[0]?.value ?? ""),
+    };
+  };
+  const setClass = (cls: EventClass) => setF((prev) => withClass(prev, cls));
+
+  /* Choosing a format settles the class from its category — a port format is
+     a shore day, a sea format a sea day, a premium one sails as set. */
+  const setFormat = (slug: string) =>
+    setF((prev) => {
+      const chosen = liveFormats.find((x) => x.value === slug);
+      const next = { ...prev, format: slug };
+      if (!chosen) return next;
+      const cls = classForCategory(chosen.category, prev.cls);
+      return cls === prev.cls ? next : withClass(next, cls);
+    });
+
+  const chosenFormat = liveFormats.find((x) => x.value === f.format);
+  const priceCents = f.price.trim() ? Math.round(Number(f.price) * 100) : 0;
+  const formatRefusals = formatConflicts(chosenFormat, f.berths, priceCents);
+  const depositOver = f.deposit && Number(f.depositAmount || "0") > DEPOSIT_CEILING;
+  const dropLate = dropAfterDeparture(f.saleOpensAt, f.startsAt);
+  const refused = formatRefusals.length > 0 || depositOver || dropLate;
 
   const setLeg = (i: number, patch: Partial<ItineraryDraft>) =>
     setF((prev) => ({
@@ -867,7 +1000,7 @@ function NewVoyageDialog({
           <Button variant="ghost" onClick={onClose}>
             Not yet
           </Button>
-          <Button variant="gold" disabled={pending || !f.title || !f.startsAt || !f.endsAt} onClick={submit}>
+          <Button variant="gold" disabled={pending || !f.title || !f.startsAt || !f.endsAt || refused} onClick={submit}>
             Set the voyage
           </Button>
         </>
@@ -900,9 +1033,11 @@ function NewVoyageDialog({
           <Input label="Kind" placeholder="sea_day · port_day" value={f.kind} onChange={(e) => set("kind", e.target.value)} />
           <Select
             label="Format"
-            options={[{ value: "", label: "Unfiled" }, ...formats]}
+            options={formatOptions(liveFormats, "Unfiled")}
             value={f.format}
-            onChange={(e) => set("format", e.target.value)}
+            hint={chosenFormat ? `${chosenFormat.accessLine} · sets the class from its category` : "Sets the class from its category."}
+            error={formatRefusals.length ? formatRefusals.join(" ") : undefined}
+            onChange={(e) => setFormat(e.target.value)}
           />
         </div>
         <div className="hm-form__row">
@@ -955,13 +1090,13 @@ function NewVoyageDialog({
         <div className="hm-form__row">
           <Select
             label="Season"
-            options={[{ value: "", label: "Unassigned" }, ...seasons]}
+            options={[{ value: "", label: "Unassigned" }, ...liveSeasons]}
             value={f.seasonId}
             onChange={(e) => set("seasonId", e.target.value)}
           />
           <Select
             label="Venue"
-            options={[{ value: "", label: "Unassigned" }, ...venues]}
+            options={[{ value: "", label: "Unassigned" }, ...liveVenues]}
             value={f.venueId}
             onChange={(e) => set("venueId", e.target.value)}
           />
@@ -973,6 +1108,7 @@ function NewVoyageDialog({
             label="On sale"
             type="datetime-local"
             hint="On the harbor's clock. Blank means on sale now."
+            error={dropLate ? ERR_DROP_AFTER_DEPARTURE : undefined}
             value={f.saleOpensAt}
             onChange={(e) => set("saleOpensAt", e.target.value)}
           />
@@ -1001,7 +1137,9 @@ function NewVoyageDialog({
               label="Deposit ($)"
               type="number"
               min={0}
+              max={DEPOSIT_CEILING}
               step="0.01"
+              error={depositOver ? ERR_DEPOSIT_CEILING : undefined}
               value={f.depositAmount}
               onChange={(e) => set("depositAmount", e.target.value)}
             />

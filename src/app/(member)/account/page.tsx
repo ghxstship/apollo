@@ -8,6 +8,7 @@ import { subscriptionToShow } from "@/lib/dues";
 import { getMember } from "../data";
 import { SettleCardButton } from "../portal/settle-card";
 import { JoinedNotice, ManageBillingButton, StandingControls } from "./billing-client";
+import { ExportDataButton } from "./export-data";
 
 export const metadata: Metadata = { title: "Account" };
 
@@ -65,7 +66,7 @@ export default async function AccountPage({
   const { joined } = await searchParams;
   const processorLive = stripeEnabled();
 
-  const [subRes, invoicesRes, cardsRes, accountRes, accountBalRes, installmentsRes] =
+  const [subRes, invoicesRes, cardsRes, accountRes, accountBalRes, installmentsRes, erasureRes] =
     await Promise.all([
       /* Was "newest by created_at, any status". A superseded CANCELED row is
          newer than the live one it replaced, so this screen could say "Closed"
@@ -94,7 +95,13 @@ export default async function AccountPage({
         .select("*")
         .eq("profile_id", user.id)
         .order("created_at", { ascending: false }),
+      /* The club's own figure for how long a departed record stands before
+         it is anonymised — read, not retyped, so the line below cannot drift
+         from what the nightly job actually does. */
+      supabase.rpc("club_setting", { p_key: "departed_erasure_days" }),
     ]);
+  const erasureDays =
+    typeof erasureRes.data === "number" && erasureRes.data > 0 ? erasureRes.data : 30;
 
   const subscription = subRes ?? null;
   const planId = subscription?.plan_id ?? profile?.plan_id ?? null;
@@ -400,6 +407,26 @@ export default async function AccountPage({
             ) : null}
           </div>
         )}
+      </section>
+
+      <section className="mbr-sec">
+        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+          Your record
+        </span>
+        <div className="ptl-panel">
+          <p style={{ fontSize: 13, color: "var(--text-2)", maxWidth: "48ch" }}>
+            Everything the club holds in your name — the papers, the passes, both
+            ledgers, the word — as one JSON file. Boarding codes and the
+            processor&rsquo;s references stay with the club.
+          </p>
+          <div style={{ marginTop: 14 }}>
+            <ExportDataButton memberNo={profile?.member_no ?? null} />
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 12 }}>
+            Erasure runs {erasureDays} days after departure. The ledger keeps its
+            figures; your name comes off them.
+          </p>
+        </div>
       </section>
 
       {joined === "1" ? <JoinedNotice /> : null}

@@ -192,11 +192,15 @@ export function Stepper({
   className?: string; style?: React.CSSProperties;
 }) {
   const set = (v: number) => { const n = Math.min(max, Math.max(min, v)); if (n !== value && onChange) onChange(n); };
+  /* The value used to be its own aria-live region, so a table of steppers
+     was a table of live regions and any one changing was read against the
+     rest. The value rides on the buttons' labels instead: focus stays on
+     the button that was pressed, and its label now says what it did. */
   return (
     <span className={["ls-stepper", "ls-stepper--" + size, inverse ? "ls-stepper--inverse" : "", className].filter(Boolean).join(" ")} style={style} role="group">
-      <button type="button" aria-label={decrementLabel} disabled={value <= min} onClick={() => set(value - 1)}>−</button>
-      <span className="ls-stepper__val" aria-live="polite">{value}</span>
-      <button type="button" aria-label={incrementLabel} disabled={value >= max} onClick={() => set(value + 1)}>+</button>
+      <button type="button" aria-label={`${decrementLabel}, now ${value}`} disabled={value <= min} onClick={() => set(value - 1)}>−</button>
+      <span className="ls-stepper__val">{value}</span>
+      <button type="button" aria-label={`${incrementLabel}, now ${value}`} disabled={value >= max} onClick={() => set(value + 1)}>+</button>
     </span>
   );
 }

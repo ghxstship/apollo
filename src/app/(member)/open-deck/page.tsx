@@ -10,6 +10,11 @@ export const metadata: Metadata = { title: SURFACES.openDeck };
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
+/* The deck reads the newest sixty posts, not the whole log. Before this the
+   page pulled every post, every hail and every comment the club had ever
+   written on each render — and realtime re-renders it on every write. */
+const PAGE_SIZE = 60;
+
 function toneOf(p: { avatar_tone?: string | null } | undefined | null): "ink" | "sea" | "gold" | "sand" {
   const t = p?.avatar_tone;
   return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "sand";
@@ -17,31 +22,59 @@ function toneOf(p: { avatar_tone?: string | null } | undefined | null): "ink" | 
 
 export default async function OpenDeckPage() {
   const { supabase, user, profile, onHold } = await getMember();
+  const nowIso = new Date().toISOString();
 
-  const [postsRes, hailsRes, commentsRes, voyagesRes] = await Promise.all([
-    supabase.from("wardroom_posts").select("*").order("created_at", { ascending: false }),
-    supabase.from("wardroom_hails").select("*"),
-    supabase.from("wardroom_comments").select("*").order("created_at", { ascending: true }),
-    supabase.from("voyages").select("id,title,status,starts_at"),
+  const [postsRes, taggableRes] = await Promise.all([
+    supabase
+      .from("wardroom_posts")
+      .select("id,author_id,author_name,body,voyage_id,created_at")
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE),
+    /* Taggable voyages for the composer: live now, or still ahead. Filtered
+       at the database rather than after reading every sailing ever raised. */
+    supabase
+      .from("voyages")
+      .select("id,title,starts_at")
+      .or(`status.eq.live,and(status.in.(scheduled,weather_hold),starts_at.gte.${nowIso})`)
+      .order("starts_at", { ascending: true })
+      .limit(40),
   ]);
 
   const posts = postsRes.data ?? [];
+  const postIds = posts.map((p) => p.id);
+  const taggable: VoyageOption[] = (taggableRes.data ?? []).map((v) => ({ id: v.id, title: v.title }));
+
+  /* Hails, comments and sailing titles only for the posts on the page. */
+  const postVoyageIds = Array.from(
+    new Set(posts.map((p) => p.voyage_id).filter((id): id is string => !!id))
+  );
+  const [hailsRes, commentsRes, voyagesRes] = await Promise.all([
+    postIds.length
+      ? supabase.from("wardroom_hails").select("post_id,profile_id").in("post_id", postIds)
+      : Promise.resolve({ data: [] as Array<{ post_id: string; profile_id: string }> }),
+    postIds.length
+      ? supabase
+          .from("wardroom_comments")
+          .select("id,post_id,author_id,author_name,body")
+          .in("post_id", postIds)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({
+          data: [] as Array<{
+            id: string;
+            post_id: string;
+            author_id: string | null;
+            author_name: string | null;
+            body: string;
+          }>,
+        }),
+    postVoyageIds.length
+      ? supabase.from("voyages").select("id,title").in("id", postVoyageIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
+  ]);
+
   const hails = hailsRes.data ?? [];
   const comments = commentsRes.data ?? [];
-  const voyages = voyagesRes.data ?? [];
-  const voyageTitles = new Map(voyages.map((v) => [v.id, v.title]));
-
-  /* Taggable voyages for the composer: live now, or still ahead. */
-  const nowIso = new Date().toISOString();
-  const taggable: VoyageOption[] = voyages
-    .filter(
-      (v) =>
-        v.status === "live" ||
-        ((v.status === "scheduled" || v.status === "weather_hold") &&
-          v.starts_at >= nowIso)
-    )
-    .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
-    .map((v) => ({ id: v.id, title: v.title }));
+  const voyageTitles = new Map((voyagesRes.data ?? []).map((v) => [v.id, v.title]));
 
   /* Resolve author profiles in one pass. */
   const authorIds = Array.from(
@@ -52,9 +85,12 @@ export default async function OpenDeckPage() {
     )
   );
   const profilesRes = authorIds.length
-    ? await supabase.from("member_directory").select("*").in("id", authorIds)
-    : { data: [] as DirectoryMember[] };
-  const byId = new Map<string, DirectoryMember>((profilesRes.data ?? []).map((p) => [p.id, p]));
+    ? await supabase
+        .from("member_directory")
+        .select("id,full_name,member_no,avatar_tone")
+        .in("id", authorIds)
+    : { data: [] as Array<Pick<DirectoryMember, "id" | "full_name" | "member_no" | "avatar_tone">> };
+  const byId = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
 
   /* League, not tier — tenure rather than spend, matching the directory. */
   const leagueRes = authorIds.length
@@ -63,6 +99,12 @@ export default async function OpenDeckPage() {
   const leagueOf = new Map(
     (leagueRes.data ?? []).map((l) => [l.profile_id, (l.league_name ?? "").split(" — ")[0]])
   );
+
+  /* Group once rather than filtering the whole list per post. */
+  const hailsByPost = new Map<string, typeof hails>();
+  for (const h of hails) hailsByPost.set(h.post_id, [...(hailsByPost.get(h.post_id) ?? []), h]);
+  const commentsByPost = new Map<string, typeof comments>();
+  for (const c of comments) commentsByPost.set(c.post_id, [...(commentsByPost.get(c.post_id) ?? []), c]);
 
   const feed: FeedPost[] = posts.map((p) => {
     const author = p.author_id ? byId.get(p.author_id) : null;
@@ -77,7 +119,7 @@ export default async function OpenDeckPage() {
     ]
       .filter(Boolean)
       .join(" · ");
-    const postHails = hails.filter((h) => h.post_id === p.id);
+    const postHails = hailsByPost.get(p.id) ?? [];
     return {
       id: p.id,
       who,
@@ -89,22 +131,20 @@ export default async function OpenDeckPage() {
       hails: postHails.length,
       myHail: postHails.some((h) => h.profile_id === user.id),
       mine: p.author_id === user.id,
-      comments: comments
-        .filter((c) => c.post_id === p.id)
-        .map((c) => {
-          const ca = c.author_id ? byId.get(c.author_id) : null;
-          return {
-            id: c.id,
-            who: ca?.full_name ?? c.author_name ?? "A member",
-            body: c.body,
-          };
-        }),
+      comments: (commentsByPost.get(p.id) ?? []).map((c) => {
+        const ca = c.author_id ? byId.get(c.author_id) : null;
+        return {
+          id: c.id,
+          who: ca?.full_name ?? c.author_name ?? "A member",
+          body: c.body,
+        };
+      }),
     };
   });
 
   return (
     <div style={{ maxWidth: 720, marginInline: "auto" }}>
-      <OpenDeckRealtime />
+      <OpenDeckRealtime postIds={postIds} />
       <span className="mbr-eyebrow">Members only · mind the code</span>
       <h1 className="mbr-h1" style={{ marginTop: 6, marginBottom: 24 }}>
         Open Deck.
@@ -116,6 +156,11 @@ export default async function OpenDeckPage() {
         onHold={onHold}
       />
       <FeedList posts={feed} />
+      {posts.length === PAGE_SIZE ? (
+        <p className="mbr-mono" style={{ marginTop: 20, color: "var(--text-3)" }}>
+          THE {PAGE_SIZE} MOST RECENT · OLDER WORDS STAY IN THE LOG
+        </p>
+      ) : null}
     </div>
   );
 }

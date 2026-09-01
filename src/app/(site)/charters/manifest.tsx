@@ -19,6 +19,8 @@ export interface ManifestItem {
   price: string;
   passesLeft: number | null;
   seatsWord: string;
+  /** "ON SALE OCT 12 · 18:00" while the drop hour is still ahead; null once open. */
+  onSale: string | null;
   blurb: string | null;
   duration: string | null;
   week: string;
@@ -170,9 +172,12 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
             v.duration,
             v.week,
             v.fleet,
-            v.passesLeft != null && v.passesLeft > 0
-              ? `${v.passesLeft} ${v.seatsWord} left`
-              : null,
+            /* Before the drop hour the count is not an offer — the hour is. */
+            v.onSale
+              ? v.onSale
+              : v.passesLeft != null && v.passesLeft > 0
+                ? `${v.passesLeft} ${v.seatsWord} left`
+                : null,
             v.deposit,
           ].filter((m): m is string => Boolean(m));
           return (
@@ -194,7 +199,8 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
                   <div className="ws-vrow__title">
                     {v.title}
                     {v.status === "weather_hold" ? <Badge tone="caution">Weather hold</Badge> : null}
-                    {v.passesLeft === 0 ? <Badge tone="caution">Full</Badge> : null}
+                    {v.passesLeft === 0 && !v.onSale ? <Badge tone="caution">Full</Badge> : null}
+                    {v.onSale ? <Badge tone="outline">Not yet on sale</Badge> : null}
                     {/* A quiet mark that this sailing runs in a series. */}
                     {v.series ? <Tag>{v.series}</Tag> : null}
                   </div>

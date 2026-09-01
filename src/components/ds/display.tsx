@@ -31,7 +31,24 @@ export function Card({
     </div>
   ) : null;
   return (
-    <div className={cls} style={style} onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}>
+    <div
+      className={cls}
+      style={style}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                /* A real click, so the handler gets the event it was typed for. */
+                e.currentTarget.click();
+              }
+            }
+          : undefined
+      }
+    >
       {mediaEl}
       <div className="ls-card__body">
         {eyebrow ? <div className="ls-card__eyebrow">{eyebrow}</div> : null}
@@ -118,7 +135,11 @@ export function Table<R extends Record<string, unknown>>({
   return (
     <div className="ls-table-wrap">
       <table className={["ls-table", dense ? "ls-table--dense" : "", inverse ? "ls-table--inverse" : "", className].filter(Boolean).join(" ")} style={style}>
-        <thead><tr>{columns.map((c) => <th key={c.key} scope="col" style={c.width ? { width: c.width } : undefined}>{c.label}</th>)}</tr></thead>
+        {/* An action column is declared with an empty label so nothing shows
+            above its switch or button — but an empty <th> is a header a
+            screen reader reads out as nothing for every cell beneath it. The
+            header is there and hidden, not absent. */}
+        <thead><tr>{columns.map((c) => <th key={c.key} scope="col" style={c.width ? { width: c.width } : undefined}>{c.label == null || c.label === "" ? <span className="ls-visually-hidden">Actions</span> : c.label}</th>)}</tr></thead>
         <tbody>
           {rows.map((r, i) => (
             /* A clickable row was mouse-only: the Bridge's crew queue and member

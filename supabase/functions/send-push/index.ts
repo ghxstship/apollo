@@ -10,6 +10,16 @@ const H = {
   "Content-Type": "application/json",
 };
 
+function sameSecret(given: string | null, expected: string): boolean {
+  if (!given) return false;
+  const a = new TextEncoder().encode(given);
+  const b = new TextEncoder().encode(expected);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 async function secret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
     method: "POST",
@@ -22,7 +32,7 @@ async function secret(name: string): Promise<string> {
 }
 
 type Row = { id: string; profile_id: string; title: string; body: string | null; url: string | null; attempts?: number };
-type Sub = { id: string; endpoint: string; p256dh: string; auth: string };
+type Sub = { id: string; profile_id: string; endpoint: string; p256dh: string; auth: string };
 
 const MAX_ATTEMPTS = 5;
 
@@ -63,8 +73,8 @@ async function requeue(row: Row, why: string) {
     headers: H,
     body: JSON.stringify(
       terminal
-        ? { status: "failed", attempts }
-        : { status: "pending", attempts, next_attempt_at: backoff },
+        ? { status: "failed", attempts, last_error: `${why} (gave up after ${attempts})` }
+        : { status: "pending", attempts, next_attempt_at: backoff, last_error: why },
     ),
   });
   console.error(`push ${row.id}: ${why}${terminal ? " (gave up)" : ""}`);
@@ -77,12 +87,13 @@ Deno.serve(async (req: Request) => {
        did, in send-outbox, and in neither of the other two. Both answered a
        bare anon key with 200 for a week. The anon key is public; it proves
        nothing about who is calling. */
+    /* Fail CLOSED: an empty key used to skip the check entirely. */
     const cronKey = Deno.env.get("CRON_SECRET") || (await secret("CRON_SECRET"));
-    if (cronKey && req.headers.get("x-cron-key") !== cronKey) {
-      return new Response(JSON.stringify({ error: "not for you" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!cronKey) {
+      return Response.json({ error: "the scheduler's key is not on file" }, { status: 503 });
+    }
+    if (!sameSecret(req.headers.get("x-cron-key"), cronKey)) {
+      return Response.json({ error: "not for you" }, { status: 403 });
     }
 
     const [pub, priv, subj] = await Promise.all([
@@ -97,17 +108,30 @@ Deno.serve(async (req: Request) => {
     ).then((r) => r.json());
 
     if (!pub || !priv) {
-      for (const r of rows) await mark(r.id, "skipped");
-      return Response.json({ fetched: rows.length, skipped: rows.length });
+      /* The queue waits for the keys; it is not drained to prove they are gone. */
+      console.error(`VAPID keys not set — ${rows.length} push(es) left pending.`);
+      return Response.json({ fetched: rows.length, skipped: 0, reason: "no vapid keys" }, { status: 503 });
     }
     webpush.setVapidDetails(subj || "mailto:shore@atlvs.pro", pub, priv);
 
+    /* One read for every subscription this batch needs, not one per row. */
+    const profileIds = [...new Set(rows.map((r) => r.profile_id))];
+    const allSubs: Sub[] = profileIds.length
+      ? await fetch(
+          `${SUPABASE_URL}/rest/v1/push_subscriptions?profile_id=in.(${profileIds.join(",")})&select=id,profile_id,endpoint,p256dh,auth`,
+          { headers: H },
+        ).then((r) => r.json())
+      : [];
+    const subsByProfile = new Map<string, Sub[]>();
+    for (const s of allSubs) {
+      const list = subsByProfile.get(s.profile_id) ?? [];
+      list.push(s);
+      subsByProfile.set(s.profile_id, list);
+    }
+
     let sent = 0, failed = 0, skipped = 0;
     for (const row of rows) {
-      const subs: Sub[] = await fetch(
-        `${SUPABASE_URL}/rest/v1/push_subscriptions?profile_id=eq.${row.profile_id}&select=id,endpoint,p256dh,auth`,
-        { headers: H },
-      ).then((r) => r.json());
+      const subs = subsByProfile.get(row.profile_id) ?? [];
       if (!subs.length) { await mark(row.id, "skipped"); skipped++; continue; }
 
       /* Claimed immediately before the push — a row another run took is
@@ -126,6 +150,7 @@ Deno.serve(async (req: Request) => {
           await webpush.sendNotification(
             { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
             payload,
+            { timeout: 5000 },
           );
           ok = true;
         } catch (e) {
@@ -153,7 +178,7 @@ Deno.serve(async (req: Request) => {
         failed++;
       }
     }
-    return Response.json({ fetched: rows.length, sent, failed, skipped });
+    return Response.json({ fetched: rows.length, sent, failed, skipped }, { status: failed > 0 ? 207 : 200 });
   } catch (err) {
     console.error(err);
     return Response.json({ error: String(err) }, { status: 500 });

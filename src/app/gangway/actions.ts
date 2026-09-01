@@ -1,5 +1,7 @@
 "use server";
 
+import { callerAddress } from "@/lib/caller-address";
+
 import { safeNext } from "@/lib/safe-next";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
@@ -38,7 +40,7 @@ export async function sendMagicLink(
      trap that made the status-page limit a self-inflicted outage. */
   const { data: mayBoard, error: gateError } = await supabase.rpc("email_may_board", {
     p_email: email,
-    p_fingerprint: h.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+    p_fingerprint: callerAddress(h),
   });
   if (gateError) {
     /* 53400 is the pacing speaking, and it says something useful. Anything else

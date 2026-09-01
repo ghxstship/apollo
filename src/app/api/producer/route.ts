@@ -226,7 +226,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "Bad request." }, { status: 400 });
   }
 
-  const anthropic = new Anthropic();
+  /* Six turns at the SDK's ten-minute default would hold one serverless
+     invocation for an hour. Twenty seconds a turn, one retry. */
+  const anthropic = new Anthropic({ timeout: 20_000, maxRetries: 1 });
 
   try {
     for (let turn = 0; turn < MAX_TURNS; turn++) {

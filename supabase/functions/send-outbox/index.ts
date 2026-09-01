@@ -45,6 +45,17 @@ const TIER_LABEL: Record<string, string> = {
   global: "Global",
 };
 
+/* Constant-time over encoded bytes; a length mismatch is a mismatch. */
+function sameSecret(given: string | null, expected: string): boolean {
+  if (!given) return false;
+  const a = new TextEncoder().encode(given);
+  const b = new TextEncoder().encode(expected);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
+
 async function vaultSecret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
     method: "POST",
@@ -427,6 +438,7 @@ async function sendViaResend(row: OutboxRow): Promise<{ ok: boolean; status: num
   const { subject, html } = render(row);
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
+    signal: AbortSignal.timeout(10_000),
     headers: {
       Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
@@ -460,8 +472,16 @@ Deno.serve(async (req: Request) => {
     await resolveSecrets();
 
     /* Scheduler only. The anon key is public, so it proves nothing. */
+    /* Fail CLOSED. An empty key — Vault blip, missing row — used to skip the
+       check entirely and reopen the drain to anyone with the public anon key. */
     const cronKey = Deno.env.get("CRON_SECRET") || (await vaultSecret("CRON_SECRET"));
-    if (cronKey && req.headers.get("x-cron-key") !== cronKey) {
+    if (!cronKey) {
+      return new Response(JSON.stringify({ error: "the scheduler's key is not on file" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (!sameSecret(req.headers.get("x-cron-key"), cronKey)) {
       return new Response(JSON.stringify({ error: "not for you" }), {
         status: 403,
         headers: { "Content-Type": "application/json" },
@@ -471,13 +491,14 @@ Deno.serve(async (req: Request) => {
     let sent = 0, skipped = 0, failed = 0;
 
     if (!RESEND_API_KEY) {
-      if (rows.length > 0) {
-        console.log(`RESEND_API_KEY not set — marking ${rows.length} pending email(s) skipped so the queue drains.`);
-      }
-      for (const row of rows) {
-        await mark(row.id, "skipped");
-        skipped++;
-      }
+      /* Leave the queue standing. Marking rows skipped to "drain" a queue with
+         no key destroyed real letters during a key rotation; a queue that waits
+         is a queue that sends when the key is back. */
+      console.error(`RESEND_API_KEY not set — ${rows.length} letter(s) left pending.`);
+      return new Response(JSON.stringify({ fetched: rows.length, sent: 0, skipped: 0, failed: 0, reason: "no api key" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      });
     } else {
       for (const row of rows) {
         /* Claim first: marking after the send stops double-marking, not
@@ -506,7 +527,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    /* A run that gave up on a letter is not a clean run. pg_net records the
+       status, and a 207 is what a watcher can see; 200 said every run was fine. */
     return new Response(JSON.stringify({ fetched: rows.length, sent, skipped, failed }), {
+      status: failed > 0 ? 207 : 200,
       headers: { "Content-Type": "application/json" },
     });
   } catch (err) {

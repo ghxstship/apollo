@@ -30,26 +30,33 @@ const STEPS: Array<[string, string]> = [
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const [{ data: voyages }, { data: capacity }, { data: harbors }, { data: posts }, { data: episodes }] =
+  const [{ data: voyages }, { data: harbors }, { data: posts }, { data: episodes }] =
     await Promise.all([
       supabase
         .from("voyages")
-        .select("*")
+        .select(
+          "id,slug,title,class,sub_class,status,starts_at,ends_at,distance_nm,time_zone,media,blurb,deposit_required,deposit_cents"
+        )
         .in("status", ["scheduled", "live", "weather_hold"])
       /* A sailing that has cast off is not on offer, whatever its status
          still says — the detail page and the manifest already knew this. */
       .gte("starts_at", new Date().toISOString())
-        .order("starts_at", { ascending: true }),
-      supabase.from("voyage_capacity").select("*"),
-      supabase.from("harbors").select("*").order("position", { ascending: true }),
+        .order("starts_at", { ascending: true })
+        /* Three next up plus whatever is live — twelve covers a full-season
+           calendar's worth of underway sailings without reading the year. */
+        .limit(12),
+      supabase
+        .from("harbors")
+        .select("id,slug,name,status,coordinates,launch_year")
+        .order("position", { ascending: true }),
       supabase
         .from("dispatch_posts")
-        .select("*")
+        .select("id,slug,title,dek,tag,published_at")
         .order("published_at", { ascending: false })
         .limit(2),
       supabase
         .from("episodes")
-        .select("*")
+        .select("id,number,title,dek,aired_at")
         .eq("state", "published")
         .order("number", { ascending: true })
         .limit(3),
@@ -63,12 +70,20 @@ export default async function HomePage() {
     nextHarbor ? ` ${nextHarbor.name} is next.` : ""
   }`;
 
+  const live = (voyages ?? []).filter((v) => v.status === "live");
+  const nextUp = (voyages ?? []).filter((v) => v.status !== "live").slice(0, 3);
+  /* Berth counts and hulls for the three cards only — the capacity view was
+     being read for every sailing the club has ever raised. */
+  const nextUpIds = nextUp.map((v) => v.id);
+  const [{ data: capacity }, fleets] = await Promise.all([
+    nextUpIds.length
+      ? supabase.from("voyage_capacity").select("voyage_id,berths_left").in("voyage_id", nextUpIds)
+      : Promise.resolve({ data: [] as Array<{ voyage_id: string | null; berths_left: number | null }> }),
+    fleetByVoyage(nextUpIds),
+  ]);
   const capacityById = new Map(
     (capacity ?? []).map((c) => [c.voyage_id, c] as const)
   );
-  const live = (voyages ?? []).filter((v) => v.status === "live");
-  const nextUp = (voyages ?? []).filter((v) => v.status !== "live").slice(0, 3);
-  const fleets = await fleetByVoyage(nextUp.map((v) => v.id));
 
   return (
     <>

@@ -2,10 +2,28 @@
 
 import React from "react";
 import Link from "next/link";
-import { chooseCabin, claimDaybed } from "./actions";
-import { Badge, Button, Checkbox, Dialog, Input, Stepper, Tag } from "@/components/ds";
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Dialog,
+  Input,
+  Select,
+  Stepper,
+  Switch,
+  Tag,
+  Toast,
+} from "@/components/ds";
 import { price } from "@/lib/format";
-import { confirmBerth, improvePass, releaseBerth, setGuests, setRsvpStatus } from "./actions";
+import {
+  chooseCabin,
+  claimDaybed,
+  confirmBerth,
+  improvePass,
+  releaseBerth,
+  setGuests,
+  setRsvpStatus,
+} from "./actions";
 import {
   CrewCall,
   GuestStubs,
@@ -21,8 +39,15 @@ import {
 
 export type AddonOption = { id: string; name: string; price_cents: number };
 
-const POLICY =
-  "Weather holds are called by 18:00 the night before. Release your pass up to 48h out for full credit — it goes to the waitlist in order.";
+/* The bow daybed as the club_products row states it — price, how many it
+   seats, how many go per sailing. Null when the water does not carry one. */
+export type DaybedOffer = { priceCents: number; cap: number; party: number };
+
+/* The release window is the club's own figure (club_setting
+   'release_credit_hours'), so the policy line reads it rather than saying 48. */
+function policyLine(hours: number): string {
+  return `Weather holds are called by 18:00 the night before. Release your pass up to ${hours}h out for full credit — it goes to the waitlist in order.`;
+}
 
 const rowStyle: React.CSSProperties = {
   display: "flex",
@@ -35,6 +60,18 @@ const rowStyle: React.CSSProperties = {
 
 function money(cents: number): string {
   return `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
+}
+
+/* Small counts in words, the way the daybed line always read them. */
+const WORDS = ["none", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+function countWord(n: number): string {
+  return WORDS[n] ?? String(n);
+}
+
+/* "the pass, the deposit and the bow daybed" — a list that reads as prose. */
+function prose(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
 /* One name slot per guest, sized to the count. */
@@ -89,6 +126,7 @@ export function RsvpControls({
   addonWindowOpen,
   knotsOnCompletion,
   fullCredit,
+  creditHours,
   boardingCode,
   rsvpId,
   waitlistPosition,
@@ -103,6 +141,11 @@ export function RsvpControls({
   splitOffered,
   guestsAllowed,
   daybedHeld,
+  daybed,
+  paused,
+  composition,
+  enquiryHref,
+  inviteOnly,
 }: {
   voyageId: string;
   voyageTitle: string;
@@ -116,7 +159,8 @@ export function RsvpControls({
   weatherHold: boolean;
   locked: boolean;
   lockedNote: string;
-  /* Set when the plan's booking window hasn't opened yet — replaces the CTA. */
+  /* Set when the plan's booking window or the drop hour hasn't opened yet —
+     replaces the CTA. */
   windowNote: string | null;
   recommended: boolean;
   priceCents: number;
@@ -128,8 +172,10 @@ export function RsvpControls({
   /* Add-ons may be added until 18:00 the night before departure. */
   addonWindowOpen: boolean;
   knotsOnCompletion: number | null;
-  /* Computed shoreside: more than 48h out at render time. */
+  /* Computed shoreside: more than creditHours out at render time. */
   fullCredit: boolean;
+  /* club_setting('release_credit_hours') — the window the copy names. */
+  creditHours: number;
   boardingCode: string | null;
   /* — ticketing polish — */
   rsvpId: string | null;
@@ -152,6 +198,19 @@ export function RsvpControls({
   splitOffered: boolean;
   /* True when a bow daybed already rides on this pass. */
   daybedHeld: boolean;
+  /* The daybed on offer, from club_products; null when this water has none. */
+  daybed: DaybedOffer | null;
+  /* profile.status !== 'active'. rsvps UPDATE is refused for a paused member
+     (WITH CHECK is_active()), so every control that would update is disabled
+     with the one line that says why. Release is a DELETE and still works. */
+  paused: boolean;
+  /* A sailing with segment caps — its door is the vetting page. Nothing here
+     may upsert an rsvp without a segment. */
+  composition: boolean;
+  /* Set when the format is on request: the door is an enquiry, not a pass. */
+  enquiryHref: string | null;
+  /* Set when the format is by invitation — no door on this page at all. */
+  inviteOnly: boolean;
 }) {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -159,6 +218,7 @@ export function RsvpControls({
   const [checkout, setCheckout] = React.useState(false);
   const [releasing, setReleasing] = React.useState(false);
   const [improving, setImproving] = React.useState(false);
+  const [claimingDaybed, setClaimingDaybed] = React.useState(false);
   const [chosen, setChosen] = React.useState<Set<string>>(new Set());
   const [improveChosen, setImproveChosen] = React.useState<Set<string>>(new Set());
   /* Checkout guest party — local until the pass is confirmed. */
@@ -172,6 +232,13 @@ export function RsvpControls({
   const [promo, setPromo] = React.useState<AppliedPromo | null>(null);
   /* Draws chosen at review — null is the whole thing, today. */
   const [split, setSplit] = React.useState<number | null>(null);
+  /* One line of receipt, said once and gone. */
+  const [toast, setToast] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const run = (fn: () => Promise<{ error?: string; full?: boolean }>, after?: () => void) => {
     setError(null);
@@ -187,7 +254,10 @@ export function RsvpControls({
     });
   };
 
-  const needsReview = priceCents > 0 || depositRequired;
+  /* A deposit of nothing is not a deposit — the row is hidden rather than
+     shown as "$0", and adds nothing to the total either way. */
+  const depositDue = depositRequired && depositCents > 0;
+  const needsReview = priceCents > 0 || depositDue;
   const checkoutNames = sizeNames(coGuests, coNames);
   const namesMissing = checkoutNames.some((n) => !n.trim());
   const qty = 1 + coGuests;
@@ -196,7 +266,7 @@ export function RsvpControls({
     .reduce((sum, a) => sum + a.price_cents * qty, 0);
   /* A code trims the pass alone — the deposit and add-ons stand. */
   const passDue = promo ? promo.passCents : priceCents;
-  const total = passDue + (depositRequired ? depositCents : 0) + addonTotal;
+  const total = passDue + (depositDue ? depositCents : 0) + addonTotal;
 
   /* Split it — anything over $200 may be drawn in 2, 3, or 4 goes. The first
      draw is today; the rest come monthly, at no interest. */
@@ -210,6 +280,17 @@ export function RsvpControls({
   const improveTotal = unattached
     .filter((a) => improveChosen.has(a.id))
     .reduce((sum, a) => sum + a.price_cents * aboardQty, 0);
+
+  /* The cabin premium riding on this pass, if a premium cabin was chosen. */
+  const cabinPremiumCents = cabins.find((c) => c.id === cabinId)?.premiumCents ?? 0;
+
+  /* What goes with the pass inside the window — named, not implied. */
+  const forfeits = [
+    "the pass",
+    depositDue ? `the ${money(depositCents)} deposit` : null,
+    daybedHeld ? "the bow daybed" : null,
+    cabinPremiumCents > 0 ? `the ${money(cabinPremiumCents)} cabin premium` : null,
+  ].filter((f): f is string => !!f);
 
   const toggle = (set: React.Dispatch<React.SetStateAction<Set<string>>>) => (id: string) => {
     set((prev) => {
@@ -263,11 +344,13 @@ export function RsvpControls({
       </p>
     ) : null;
 
+  const pausedLine = `Your membership is paused — resume it on your page to change this pass. Release still works, and the ${creditHours}-hour clock is running.`;
+
   /* A lock governs claiming a NEW pass. It must never swallow one the member
      already holds — otherwise a waitlister cannot see their place or leave the
      list, and a member who puts their own membership on hold loses the Release
-     control while the 48-hour credit window runs out on them. When there is a
-     pass on this sailing, the note rides alongside the standing instead. */
+     control while the credit window runs out on them. When there is a pass on
+     this sailing, the note rides alongside the standing instead. */
   const holdsAPass = myStatus === "aboard" || myStatus === "waitlist";
   if (locked && !holdsAPass) {
     return (
@@ -279,11 +362,15 @@ export function RsvpControls({
     );
   }
 
+  const dialogOpen = checkout || improving || !!guestEdit || releasing || claimingDaybed;
+
   return (
     <div className="voy-foot">
       {locked ? (
         <span className="voy-lock" style={{ flexBasis: "100%" }}>
-          {lockedNote}
+          {/* One line for a paused member, in place of the lock's own: it
+              names what still works and the clock that is running. */}
+          {paused ? pausedLine : lockedNote}
         </span>
       ) : null}
       {weatherHold ? (
@@ -300,7 +387,15 @@ export function RsvpControls({
           {guestsAllowed ? (
             <>
               <span className="mbr-mono">GUESTS</span>
-              <Stepper size="sm" min={0} max={2} value={guests} onChange={onGuestStep} />
+              {/* Pinned to the current count while paused — the stepper has
+                  no disabled prop, and a range of one is the same thing. */}
+              <Stepper
+                size="sm"
+                min={paused ? guests : 0}
+                max={paused ? guests : 2}
+                value={guests}
+                onChange={onGuestStep}
+              />
             </>
           ) : null}
           {boardingCode ? (
@@ -309,17 +404,25 @@ export function RsvpControls({
             </Link>
           ) : null}
           <span className="voy-foot__spacer"></span>
-          <HandOff
-            rsvpId={rsvpId}
-            voyageTitle={voyageTitle}
-            members={members}
-            offer={standingOffer}
-          />
+          {/* A standing offer stays visible to be withdrawn; a fresh one is
+              not offered while paused. */}
+          {standingOffer || !paused ? (
+            <HandOff
+              rsvpId={rsvpId}
+              voyageTitle={voyageTitle}
+              members={members}
+              offer={standingOffer}
+            />
+          ) : rsvpId ? (
+            <Button variant="ghost" size="sm" disabled>
+              Hand it to a member
+            </Button>
+          ) : null}
           {addonWindowOpen && unattached.length > 0 ? (
             <Button
               variant="ghost"
               size="sm"
-              disabled={pending}
+              disabled={pending || paused}
               onClick={() => {
                 setError(null);
                 setImproveChosen(new Set());
@@ -333,42 +436,41 @@ export function RsvpControls({
             variant="ghost"
             size="sm"
             disabled={pending}
-            onClick={() => setReleasing(true)}
+            onClick={() => {
+              setError(null);
+              setReleasing(true);
+            }}
           >
             Release pass
           </Button>
           <GuestStubs guests={guestStubs} />
           {cabins.length > 0 ? (
-            <div style={{ marginTop: 14 }}>
-              <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
-                YOUR CABIN
-              </span>
-              <select
-                aria-label="Choose a cabin"
-                className="ls-input"
-                defaultValue={cabinId ?? ""}
-                style={{ minHeight: 44, width: "100%" }}
-                onChange={(e) => {
-                  const v = e.target.value || null;
-                  void chooseCabin(voyageId, v).then((r) => {
-                    if (r.error) alert(r.error);
-                  });
-                }}
-              >
-                <option value="">Assigned at the dock</option>
-                {cabins.map((c) => (
-                  <option key={c.id} value={c.id} disabled={c.left <= 0 && c.id !== cabinId}>
-                    {c.name}
-                    {c.premiumCents > 0 ? ` — +$${(c.premiumCents / 100).toFixed(0)}` : ""}
-                    {c.left <= 0 && c.id !== cabinId ? " — taken" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Your cabin"
+              defaultValue={cabinId ?? ""}
+              disabled={paused || pending}
+              style={{ marginTop: 14, width: "100%" }}
+              onChange={(e) => {
+                const v = e.target.value || null;
+                /* Refusals land in the card's own error line, not a browser
+                   alert the page cannot style or a reader cannot find again. */
+                run(() => chooseCabin(voyageId, v));
+              }}
+            >
+              <option value="">Assigned at the dock</option>
+              {cabins.map((c) => (
+                <option key={c.id} value={c.id} disabled={c.left <= 0 && c.id !== cabinId}>
+                  {c.name}
+                  {c.premiumCents > 0 ? ` — +$${(c.premiumCents / 100).toFixed(0)}` : ""}
+                  {c.left <= 0 && c.id !== cabinId ? " — taken" : ""}
+                </option>
+              ))}
+            </Select>
           ) : null}
-          {/* — The bow daybed. One claim per pass, two groups per sailing —
-              the RPC holds both lines and answers refusals in its own voice. */}
-          {rsvpId ? (
+          {/* — The bow daybed. One claim per pass, the cap per sailing — the
+              RPC holds both lines and answers refusals in its own voice. The
+              figures are the product's own; the block is absent off Sea. */}
+          {rsvpId && daybed ? (
             <div style={{ marginTop: 14 }}>
               <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
                 BOW DAYBED
@@ -380,13 +482,17 @@ export function RsvpControls({
               ) : (
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <span className="mbr-mono" style={{ fontSize: 12 }}>
-                    $1,500 · group of four · two per sailing
+                    {price(daybed.priceCents)} · group of {countWord(daybed.party)} ·{" "}
+                    {countWord(daybed.cap)} per sailing
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pending}
-                    onClick={() => run(() => claimDaybed(rsvpId))}
+                    disabled={pending || paused}
+                    onClick={() => {
+                      setError(null);
+                      setClaimingDaybed(true);
+                    }}
                   >
                     Claim the daybed
                   </Button>
@@ -407,6 +513,22 @@ export function RsvpControls({
         <>
           <Badge tone="outline">Waitlisted</Badge>
           <span className="voy-foot__spacer"></span>
+          {/* Auto-claim off means first come, first aboard — so a pass that
+              has freed needs a button, and this is it. A priced pass still
+              goes through Review & confirm. Never on a composition sailing,
+              whose seat is taken with a segment on the vetting page. */}
+          {!autoClaim && !composition && passesLeft > 0 ? (
+            <Button
+              variant="gold"
+              size="sm"
+              disabled={pending || paused}
+              onClick={() =>
+                needsReview ? openCheckout() : run(() => setRsvpStatus(voyageId, "aboard"))
+              }
+            >
+              Confirm your pass
+            </Button>
+          ) : null}
           <Button
             variant="ghost"
             size="sm"
@@ -415,13 +537,55 @@ export function RsvpControls({
           >
             Leave the list
           </Button>
-          <WaitlistClaim
-            voyageId={voyageId}
-            position={waitlistPosition}
-            autoClaim={autoClaim}
-          />
+          {paused ? (
+            /* The switch is an rsvps UPDATE, refused while paused — shown as
+               it stands, and not offered. */
+            <div style={{ width: "100%", marginTop: 4 }}>
+              {waitlistPosition != null ? (
+                <span className="mbr-mono" style={{ display: "block", marginTop: 6 }}>
+                  {waitlistPosition} IN ORDER
+                </span>
+              ) : null}
+              <Switch
+                label="Claim it automatically"
+                checked={autoClaim}
+                readOnly
+                disabled
+                style={{ marginTop: 10 }}
+              />
+            </div>
+          ) : (
+            <WaitlistClaim
+              voyageId={voyageId}
+              position={waitlistPosition}
+              autoClaim={autoClaim}
+            />
+          )}
           <CrewCall voyageId={voyageId} mine={crewMine} seekers={[]} />
         </>
+      ) : composition ? (
+        <>
+          {/* A composition sailing seats by segment. The manifest never
+              writes that rsvp — the vetting page does, with the segment. */}
+          <span className="mbr-mono">SEATED BY SEGMENT</span>
+          <span className="voy-foot__spacer"></span>
+          <Link
+            href="/vetting"
+            className={`ls-btn ls-btn--${recommended ? "gold" : "outline"} ls-btn--sm`}
+          >
+            Take a seat on the vetting page →
+          </Link>
+        </>
+      ) : enquiryHref ? (
+        <>
+          <span className="mbr-mono">ON REQUEST</span>
+          <span className="voy-foot__spacer"></span>
+          <Link href={enquiryHref} className="ls-btn ls-btn--outline ls-btn--sm">
+            Enquire
+          </Link>
+        </>
+      ) : inviteOnly ? (
+        <span className="mbr-mono">BY INVITATION — THE WORD ARRIVES WITH THE PASS</span>
       ) : windowNote ? (
         <span className="mbr-mono">{windowNote}</span>
       ) : passesLeft <= 0 ? (
@@ -465,7 +629,7 @@ export function RsvpControls({
         </>
       )}
 
-      {error && !checkout && !improving && !guestEdit ? (
+      {error && !dialogOpen ? (
         <span className="voy-hold" role="alert" style={{ width: "100%" }}>
           {error}
           {offerWaitlist ? (
@@ -482,6 +646,10 @@ export function RsvpControls({
             </>
           ) : null}
         </span>
+      ) : null}
+
+      {toast ? (
+        <Toast fixed tone="positive" message={toast} onDismiss={() => setToast(null)} />
       ) : null}
 
       {/* — Review & confirm: priced voyages — */}
@@ -527,7 +695,7 @@ export function RsvpControls({
               {price(passDue)}
             </span>
           </div>
-          {depositRequired ? (
+          {depositDue ? (
             <div style={rowStyle}>
               <span>
                 <Badge tone="gold">Deposit</Badge>{" "}
@@ -637,10 +805,78 @@ export function RsvpControls({
               </span>
             </div>
           ) : null}
-          <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>{POLICY}</p>
+          <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>
+            {policyLine(creditHours)}
+          </p>
           {errorBlock(() => setCheckout(false))}
         </div>
       </Dialog>
+
+      {/* — Review & confirm: the bow daybed, the same way the pass is — */}
+      {daybed ? (
+        <Dialog
+          open={claimingDaybed}
+          onClose={() => setClaimingDaybed(false)}
+          width={400}
+          eyebrow="Review & confirm"
+          title="The bow daybed"
+          footer={
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setClaimingDaybed(false)}>
+                Not yet
+              </Button>
+              <Button
+                variant="gold"
+                size="sm"
+                disabled={pending || !rsvpId}
+                onClick={() =>
+                  rsvpId &&
+                  run(
+                    () => claimDaybed(rsvpId),
+                    () => {
+                      setClaimingDaybed(false);
+                      setToast("Bow daybed held — the steward knows your name.");
+                    }
+                  )
+                }
+              >
+                Claim the daybed
+              </Button>
+            </>
+          }
+        >
+          <div style={{ fontSize: 13 }}>
+            <div style={{ ...rowStyle, borderTop: "none" }}>
+              <span>
+                Bow daybed
+                <span style={{ display: "block", color: "var(--text-3)", fontSize: 12 }}>
+                  {voyageTitle}
+                </span>
+              </span>
+              <span className="mbr-mono" style={{ fontSize: 12 }}>
+                {price(daybed.priceCents)}
+              </span>
+            </div>
+            <div style={rowStyle}>
+              <span style={{ color: "var(--text-2)" }}>
+                Room for {countWord(daybed.party)}. {countWord(daybed.cap).replace(/^./, (c) => c.toUpperCase())}{" "}
+                per sailing, one per pass.
+              </span>
+            </div>
+            <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
+              <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
+              <span className="mbr-mono" style={{ fontSize: 13, color: "var(--text-1)" }}>
+                {price(daybed.priceCents)}
+              </span>
+            </div>
+            <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>
+              It rides on your pass. Release the pass and the daybed goes with it —
+              credited in full more than {creditHours} hours out, forfeit inside.
+            </p>
+            {errorBlock()}
+          </div>
+        </Dialog>
+      ) : null}
 
       {/* — Guest names, prompted when the party grows on an aboard row — */}
       <Dialog
@@ -774,9 +1010,16 @@ export function RsvpControls({
           </>
         }
       >
-        {fullCredit
-          ? "More than 48 hours out — every charge credits back in full, and the pass goes to the waitlist in order."
-          : "Inside 48 hours the pass releases without credit. It still goes to the waitlist in order."}
+        <div style={{ fontSize: 13 }}>
+          {fullCredit
+            ? `More than ${creditHours} hours out — every charge credits back in full, and the pass goes to the waitlist in order.`
+            : /* Inside the window, what goes is named: the pass, the deposit,
+                 the daybed if held, the cabin premium if any. */
+              `Inside ${creditHours} hours the pass releases without credit — ${prose(forfeits)} ${
+                forfeits.length > 1 ? "are" : "is"
+              } forfeit. It still goes to the waitlist in order.`}
+          {errorBlock()}
+        </div>
       </Dialog>
     </div>
   );

@@ -3,7 +3,7 @@ import { CameraConsent } from "./camera-consent";
 import { ManifestConsent } from "./manifest-consent";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
-import { TIER_LABEL, roman } from "@/lib/format";
+import { TIER_LABEL, logDateTime, roman } from "@/lib/format";
 import { PushControls } from "@/components/push-controls";
 import { PhoneField } from "@/components/phone-field";
 import { stripeEnabled } from "@/lib/stripe";
@@ -48,6 +48,23 @@ export default async function YouPage() {
   const formatLabels = new Map(
     ((formats ?? []) as Array<{ slug: string; label: string }>).map((f) => [f.slug, f.label])
   );
+
+  /* An approved proposal carries the sailing the Bridge raised from it. Named
+     on the card, with its hour on the harbour's clock, so "On the calendar"
+     points at something. */
+  const linkedIds = (proposals ?? [])
+    .map((p) => p.voyage_id)
+    .filter((id): id is string => !!id);
+  const { data: linkedVoyages } = linkedIds.length
+    ? await supabase.from("voyages").select("id, title, slug, starts_at, time_zone").in("id", linkedIds)
+    : { data: [] };
+  const sailingById = new Map(
+    (linkedVoyages ?? []).map((v) => [
+      v.id,
+      { title: v.title, slug: v.slug, when: logDateTime(v.starts_at, v.time_zone) },
+    ])
+  );
+
   const proposalCards: ProposalCard[] = (proposals ?? []).map((p) => ({
     id: p.id,
     title: p.title,
@@ -55,6 +72,7 @@ export default async function YouPage() {
     proposedFor: p.proposed_for,
     status: p.status,
     decisionNote: p.decision_note,
+    sailing: p.voyage_id ? (sailingById.get(p.voyage_id) ?? null) : null,
   }));
 
   const tier = profile?.tier ?? "regional";
@@ -162,10 +180,14 @@ export default async function YouPage() {
       <div>
         <div className="you-h">The word</div>
         <div className="you-sec">
+          {/* fathoms unset reads TRUE: the column default and every trigger
+              that sends the word coalesce it true, so a member who never
+              touched the switch was being told it was off while the word
+              kept arriving. The screen now agrees with what is sent. */}
           <NotificationPrefsForm
             weather={prefOn("weather", true)}
             berths={prefOn("berths", true)}
-            fathoms={prefOn("fathoms", false)}
+            fathoms={prefOn("fathoms", true)}
             digest={prefOn("digest", true)}
           />
           <PushControls />

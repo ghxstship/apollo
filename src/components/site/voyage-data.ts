@@ -65,13 +65,13 @@ export async function fleetByVoyage(
     const supabase = await createClient();
     const { data: links } = await supabase
       .from("voyage_vessels")
-      .select("*")
+      .select("voyage_id,vessel_id,position")
       .in("voyage_id", voyageIds)
       .order("position", { ascending: true });
     if (!links || links.length === 0) return byVoyage;
     const { data: vessels } = await supabase
       .from("vessels")
-      .select("*")
+      .select("id,name,capacity,length_ft,year,cabins")
       .in("id", Array.from(new Set(links.map((l) => l.vessel_id))));
     const byId = new Map((vessels ?? []).map((v) => [v.id, v] as const));
     for (const link of links) {
@@ -104,7 +104,7 @@ export async function framesFor(voyageId: string): Promise<Frame[]> {
     const supabase = await createClient();
     const { data } = await supabase
       .from("voyage_media")
-      .select("*")
+      .select("id,voyage_id,storage_path,caption")
       .eq("voyage_id", voyageId)
       .eq("approved", true)
       .order("created_at", { ascending: true });
@@ -122,28 +122,40 @@ export async function framesFor(voyageId: string): Promise<Frame[]> {
   }
 }
 
-/* Every approved frame in the club, grouped by sailing, most recent first. */
-export async function frameGroups(): Promise<FrameGroup[]> {
+/* The gallery shows this many frames at most — the newest, then grouped by
+   sailing. Every approved frame in the club was being read and signed on each
+   render before this, and createSignedUrls is one storage call per render
+   whose cost grows with the list. */
+export const GALLERY_FRAME_LIMIT = 48;
+
+/* The newest approved frames in the club, grouped by sailing, most recent
+   sailing first; inside a group the roll runs oldest first, as it was shot. */
+export async function frameGroups(limit = GALLERY_FRAME_LIMIT): Promise<FrameGroup[]> {
   try {
     const supabase = await createClient();
     const { data: media } = await supabase
       .from("voyage_media")
-      .select("*")
+      .select("id,voyage_id,storage_path,caption")
       .eq("approved", true)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(limit);
     if (!media || media.length === 0) return [];
+    /* Newest-first is the cut; oldest-first is the reading order. */
+    media.reverse();
 
     const voyageIds = Array.from(new Set(media.map((m) => m.voyage_id)));
     const { data: voyages } = await supabase
       .from("voyages")
-      .select("*")
+      .select("id,slug,title,starts_at,class,harbor_id")
       .in("id", voyageIds);
     if (!voyages || voyages.length === 0) return [];
 
     const harborIds = Array.from(
       new Set(voyages.map((v) => v.harbor_id).filter((id): id is string => !!id))
     );
-    const { data: harbors } = await supabase.from("harbors").select("*").in("id", harborIds);
+    const { data: harbors } = harborIds.length
+      ? await supabase.from("harbors").select("id,slug").in("id", harborIds)
+      : { data: [] as Array<{ id: string; slug: string }> };
     const harborSlug = new Map((harbors ?? []).map((h) => [h.id, h.slug] as const));
 
     const groups = new Map<string, FrameGroup>();

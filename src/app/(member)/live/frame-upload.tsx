@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ds";
+import { Button, Input } from "@/components/ds";
 import { uploadFrame } from "./actions";
 
 /* One frame at a time, straight to the Bridge's queue. No local queue here —
@@ -11,7 +11,6 @@ export function FrameUpload({ voyageId }: { voyageId: string }) {
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [sent, setSent] = React.useState(false);
-  const fileRef = React.useRef<HTMLInputElement>(null);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,24 +32,24 @@ export function FrameUpload({ voyageId }: { voyageId: string }) {
     <form onSubmit={submit}>
       <input type="hidden" name="voyage_id" value={voyageId} />
       <div style={{ display: "grid", gap: 10 }}>
-        <input
-          ref={fileRef}
+        {/* Visible labels, not aria-label alone: the sighted member was
+            guessing at an unlabelled file control and a bare text box. */}
+        <Input
+          label="The frame"
           type="file"
           name="frame"
           accept="image/*"
           required
-          aria-label="Frame to send"
           onChange={() => {
             setError(null);
             setSent(false);
           }}
         />
-        <input
+        <Input
+          label="A line for the log, if it wants one"
           type="text"
           name="caption"
           maxLength={200}
-          placeholder="A line for the log, if it wants one"
-          aria-label="Caption"
         />
         <Button type="submit" disabled={pending}>
           {pending ? "Sending…" : "Send the frame"}
@@ -62,7 +61,7 @@ export function FrameUpload({ voyageId }: { voyageId: string }) {
         </p>
       ) : null}
       {sent ? (
-        <p style={{ marginTop: 8 }}>
+        <p role="status" style={{ marginTop: 8 }}>
           In the queue for the Bridge&apos;s eye — it reaches the gallery once cleared.
         </p>
       ) : null}

@@ -11,7 +11,15 @@ import { createClient } from "@/lib/supabase/server";
    proposal only while it still reads SUBMITTED — once the Bridge picks it up,
    the record is theirs to rule on. */
 
-export type ProposalFormState = { raised?: boolean; error?: string };
+/* `field` names the control an error belongs to. Without it the form pinned
+   every message — a paused membership, a note over length — to the title box
+   as aria-invalid, which told a reader the name was wrong when it was not. A
+   message with no field is the form's, and reads at form level. */
+export type ProposalFormState = {
+  raised?: boolean;
+  error?: string;
+  field?: "title" | "note";
+};
 
 /* A "use server" file may export only async functions, so the caps live here
    as plain consts and again in raise-a-gathering.tsx as the form's maxLength —
@@ -39,9 +47,15 @@ export async function raiseAProposal(
   const proposedFor = String(formData.get("proposed_for") ?? "");
   const note = String(formData.get("note") ?? "").trim();
 
-  if (title.length < TITLE_MIN) return { error: "Give it a name — three characters at least." };
-  if (title.length > TITLE_MAX) return { error: `Keep the name under ${TITLE_MAX} characters.` };
-  if (note.length > NOTE_MAX) return { error: `Keep the case under ${NOTE_MAX} characters.` };
+  if (title.length < TITLE_MIN) {
+    return { error: "Give it a name — three characters at least.", field: "title" };
+  }
+  if (title.length > TITLE_MAX) {
+    return { error: `Keep the name under ${TITLE_MAX} characters.`, field: "title" };
+  }
+  if (note.length > NOTE_MAX) {
+    return { error: `Keep the case under ${NOTE_MAX} characters.`, field: "note" };
+  }
 
   const { error } = await supabase.from("member_event_proposals").insert({
     proposer_id: user.id,

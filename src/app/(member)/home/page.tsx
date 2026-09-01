@@ -3,48 +3,59 @@ import Link from "next/link";
 import { Badge, Card, Icon, Stat, StateBlock } from "@/components/ds";
 import { CURRENCY, knots, SURFACES } from "@/lib/brand";
 import { logDate, logMeta } from "@/lib/format";
-import { firstName, getMember, type Notification, type Voyage } from "../data";
+import { firstName, getMember } from "../data";
 import { KIND_ICON, relTime } from "../relative";
 
 export const metadata: Metadata = { title: "Harbor" };
+
+/* How many underway sailings the strip will name. */
+const LIVE_LIMIT = 12;
 
 export default async function HarborPage() {
   const { supabase, user, profile, zone } = await getMember();
   const nowIso = new Date().toISOString();
 
-  const [harborRes, voyagesRes, rsvpsRes, liveRes, balanceRes, wordRes, planRes, usageRes] =
+  const [harborRes, rsvpsRes, liveRes, balanceRes, wordRes, planRes, usageRes] =
     await Promise.all([
       profile?.home_harbor
-        ? supabase.from("harbors").select("*").eq("id", profile.home_harbor).maybeSingle()
+        ? supabase.from("harbors").select("name,coordinates").eq("id", profile.home_harbor).maybeSingle()
         : Promise.resolve({ data: null }),
-      supabase
-        .from("voyages")
-        .select("*")
-        .gte("starts_at", nowIso)
-        .in("status", ["scheduled", "live", "weather_hold"])
-        .order("starts_at", { ascending: true }),
-      supabase.from("rsvps").select("*").eq("profile_id", user.id).eq("status", "aboard"),
-      supabase.from("voyages").select("*").eq("status", "live"),
-      supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+      supabase.from("rsvps").select("voyage_id").eq("profile_id", user.id).eq("status", "aboard"),
+      supabase.from("voyages").select("id,title").eq("status", "live").limit(LIVE_LIMIT),
+      supabase.from("fathoms_balance").select("balance").eq("profile_id", user.id).maybeSingle(),
       supabase
         .from("notifications")
-        .select("*")
+        .select("id,kind,title,body,read,created_at")
         .eq("profile_id", user.id)
         .order("created_at", { ascending: false })
         .limit(2),
       profile?.plan_id
-        ? supabase.from("membership_plans").select("*").eq("id", profile.plan_id).maybeSingle()
+        ? supabase.from("membership_plans").select("events_per_month").eq("id", profile.plan_id).maybeSingle()
         : Promise.resolve({ data: null }),
-      supabase.from("member_pass_usage").select("*").eq("profile_id", user.id),
+      supabase.from("member_pass_usage").select("month,passes_used").eq("profile_id", user.id),
     ]);
 
+  /* The next pass is the soonest upcoming sailing this member is aboard —
+     asked for by id, rather than reading every upcoming sailing in the club
+     and searching it for one of theirs. */
+  const aboardIds = (rsvpsRes.data ?? []).map((r) => r.voyage_id);
+  const nextBerthRes = aboardIds.length
+    ? await supabase
+        .from("voyages")
+        .select("id,title,media,blurb,starts_at,distance_nm,time_zone")
+        .in("id", aboardIds)
+        .gte("starts_at", nowIso)
+        .in("status", ["scheduled", "live", "weather_hold"])
+        .order("starts_at", { ascending: true })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
+
   const harbor = harborRes.data;
-  const upcoming: Voyage[] = voyagesRes.data ?? [];
-  const aboardIds = new Set((rsvpsRes.data ?? []).map((r) => r.voyage_id));
-  const nextBerth = upcoming.find((v) => aboardIds.has(v.id)) ?? null;
-  const live: Voyage[] = liveRes.data ?? [];
+  const nextBerth = nextBerthRes.data ?? null;
+  const live = liveRes.data ?? [];
   const balance = balanceRes.data?.balance ?? 0;
-  const word: Notification[] = wordRes.data ?? [];
+  const word = wordRes.data ?? [];
 
   const nowMs = Date.parse(nowIso);
   const daysOut = nextBerth

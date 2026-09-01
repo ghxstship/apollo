@@ -43,7 +43,7 @@ The member assistant has an optional LLM brain (`/api/aurora`, Claude via `@anth
 
 ### Word, push, and SMS
 
-Every `notifications` row fans out by trigger: into `push_outbox` always, and into `sms_outbox` for weather holds when the member has a verified phone. Three edge functions drain the queues on a five-minute `pg_cron` schedule — `send-outbox` (Resend), `send-push` (VAPID/web-push), `send-sms` (sent.dm). Each degrades to marking rows `skipped` when its keys are absent, so nothing backs up. sent.dm is template-based rather than free-text: `sms_templates` maps the club's template codes to sent.dm template ids, and a code with no registered id is skipped rather than failed. Secrets live in Supabase Vault, read through the service-role-only `get_app_secret` RPC — never in the repo or CI.
+Every `notifications` row fans out by trigger: into `push_outbox` always, and into `sms_outbox` for weather holds when the member has a verified phone. Three edge functions drain the queues on a five-minute `pg_cron` schedule — `send-outbox` (Resend), `send-push` (VAPID/web-push), `send-sms` (sent.dm). Each leaves the queue standing (503) when its keys are absent — a queue that waits is a queue that sends when the key is back — and answers 207 when any row gave up, so the scheduler's response log shows a run that was not clean. Failed and skipped rows can be requeued from `/bridge/reports`. sent.dm is template-based rather than free-text: `sms_templates` maps the club's template codes to sent.dm template ids, and a code with no registered id is skipped rather than failed. Secrets live in Supabase Vault, read through the service-role-only `get_app_secret` RPC — never in the repo or CI.
 
 ### Wallet passes
 
@@ -55,6 +55,23 @@ Apple/Google wallet passes require platform signing credentials the project does
 - `src/app/sitemap.ts` and `src/app/robots.ts` derive from that manifest plus live Supabase slugs: new pages, voyages, and Dispatch posts appear in `/sitemap.xml` without manual edits; member surfaces never do.
 - `scripts/audit-routes.mjs` (`npm run routes:audit` against a running server) fetches every route and asserts: 200s on public pages, signed-out redirects on member pages, 404 (not 500) on unknown slugs, fail-safe auth handlers, HTML violations (missing title/lang/alt, error-boundary text), internal link integrity, sitemap/robots/PWA-icon resolution.
 - `.github/workflows/route-audit.yml` runs the audit on every push and PR **and on a daily schedule**, fails if the committed manifest is stale, and uploads `route-audit-report.json` as an artifact.
+
+## Gates — what "done" means
+
+Every change ships only when all of these are green, on the commit (not the working tree):
+
+| Gate | Command | Proves |
+| --- | --- | --- |
+| Types | `npx tsc --noEmit` | the hand-maintained `src/lib/supabase/types.ts` still matches the code that reads it |
+| Lint | `npx eslint src --max-warnings=0` | no warnings, no disabled rules |
+| Design system | `npm run check:ds` | tokens, lockups, casing and the named vocabulary hold |
+| Unit | `npm run test` | the pure helpers in `src/lib` (vitest) |
+| Routes | `E2E_PASSWORD=… BASE_URL=… npm run routes:audit` | every route renders for its role, no leaked undefined/null text |
+| Personas | `E2E_PASSWORD=… BASE_URL=… npm run e2e` — **twice** | business rules through the live API with real RLS and triggers; the suite sweeps its own fixtures and pins its knots footprint |
+| Corpus | `npm run migrations:replay` | the migration corpus rebuilds the database from empty (the only proof of that — `migrations:mirror --adopt` records applied migrations; it does not prove them) |
+| Advisories | `npm audit --audit-level=high` | no high or critical dependency advisories |
+
+Migrations are applied to the live project first (never hand-written), then adopted into `supabase/migrations` with `npm run migrations:mirror -- --adopt`, then proven with `migrations:replay`. Business constants live in `club_settings`, `segments`, `sponsor_tiers`, `leagues` and `club_products` — read them; never restate them in code or copy.
 
 ## Data model
 

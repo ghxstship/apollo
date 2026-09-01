@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CLUB_ZONE, FAMILY_LABEL } from "@/lib/brand";
 import { logDate, roman } from "@/lib/format";
-import { frameGroups } from "@/components/site/voyage-data";
+import { frameGroups, GALLERY_FRAME_LIMIT } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/gallery" },
@@ -42,6 +42,8 @@ const TILES: Array<{
 
 export default async function GalleryPage() {
   const groups = await frameGroups();
+  const frameCount = groups.reduce((n, g) => n + g.frames.length, 0);
+  const capped = frameCount >= GALLERY_FRAME_LIMIT;
 
   return (
     <div className="ls-container">
@@ -52,7 +54,9 @@ export default async function GalleryPage() {
           The season in frames — shot by members, credited by name, never staged.
           {groups.length === 0
             ? " Placeholder seas hold each frame until the film comes back."
-            : " One entry per sailing, most recent first."}
+            : capped
+              ? ` The ${GALLERY_FRAME_LIMIT} newest frames, one entry per sailing, most recent first — the rest live on each charter's page.`
+              : " One entry per sailing, most recent first."}
         </p>
       </div>
 

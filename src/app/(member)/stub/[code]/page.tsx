@@ -65,12 +65,31 @@ export default async function StubPage({
   /* Members read the whole manifest; a stub belongs to its host alone. */
   const isStaff = profile?.is_staff ?? false;
   if (!rsvp || (rsvp.profile_id !== user.id && !isStaff)) {
+    /* A hand-off clears the code and the new holder is cut a fresh one, so a
+       stub the member printed before offering the pass now answers nothing.
+       Best effort: pass_transfers keeps no record of the old code, only of the
+       transfer — so a member with ANY accepted hand-off out of their name is
+       told the likely truth, and everyone else keeps the generic line. */
+    let changedHands = false;
+    if (!rsvp) {
+      const { data: handedOff } = await supabase
+        .from("pass_transfers")
+        .select("id")
+        .eq("from_profile", user.id)
+        .eq("status", "accepted")
+        .limit(1);
+      changedHands = (handedOff ?? []).length > 0;
+    }
     return (
       <div className="mbr-sec">
         <StateBlock
           status="empty"
           icon="Ticket"
-          title="No stub under that code."
+          title={
+            changedHands
+              ? "That pass changed hands — the new holder carries its code."
+              : "No stub under that code."
+          }
           detail="Confirm a pass on the manifest and the stub is cut for you."
         />
       </div>

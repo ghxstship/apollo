@@ -245,10 +245,12 @@ export function ProgramClient({
     {
       key: "extend",
       label: "",
-      width: 220,
+      /* Wide enough for the stepper and its button side by side; never
+         wider than the table it sits in. */
+      width: "min(260px, 100%)",
       render: (r: SeriesPanelRow) =>
         r.active ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <Stepper
               size="sm"
               min={1}

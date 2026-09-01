@@ -16,38 +16,28 @@ export type SponsorItem = {
   id: string;
   name: string;
   tier: SponsorTier;
+  tierLabel: string;
   monthlyCents: number;
   contactEmail: string | null;
   startsOn: string | null;
   endsOn: string | null;
   notes: string | null;
   active: boolean;
+  /* Who signed them, by name. Null on rows from before the column existed. */
+  signedBy: string | null;
   activations: Array<{ voyageId: string; label: string; placement: string | null }>;
   [key: string]: unknown;
 };
 
-export const TIER_LABEL: Record<SponsorTier, string> = {
-  presenting_partner: "Presenting Partner",
-  sandbar_hub: "Sandbar Hub",
-  confessional_pod: "Confessional Pod",
-  shore_leave_partner: "Shore Leave Partner",
+/* One row of the rate card — sponsor_tiers, read server-side. The label, the
+   opening figure and the assets a tier promises all come from the table, so
+   a change on the card reaches this screen without a deploy. */
+export type TierCard = {
+  slug: string;
+  label: string;
+  rateCents: number;
+  assets: string[];
 };
-
-/* operations.md §5 — the rate card. The select fills these as an opening
-   figure; the retainer field stays the operator's to override. */
-const RATE_CARD: Record<SponsorTier, number> = {
-  presenting_partner: 1000000,
-  sandbar_hub: 400000,
-  confessional_pod: 300000,
-  shore_leave_partner: 200000,
-};
-
-const TIERS: SponsorTier[] = [
-  "presenting_partner",
-  "sandbar_hub",
-  "confessional_pod",
-  "shore_leave_partner",
-];
 
 /* starts_on/ends_on are date-only rows; read them on UTC so the term shown
    is the term signed, whatever clock the console runs on. */
@@ -60,18 +50,23 @@ function termLine(s: SponsorItem): string {
 
 export function SponsorsClient({
   rows,
+  tiers,
   voyages,
 }: {
   rows: SponsorItem[];
+  tiers: TierCard[];
   voyages: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [signing, setSigning] = React.useState(false);
 
+  const firstTier = tiers[0];
+  const cardFor = (slug: string) => tiers.find((t) => t.slug === slug);
+
   const [name, setName] = React.useState("");
-  const [tier, setTier] = React.useState<SponsorTier>("presenting_partner");
-  const [retainer, setRetainer] = React.useState(String(RATE_CARD.presenting_partner / 100));
+  const [tier, setTier] = React.useState<SponsorTier>(firstTier?.slug ?? "");
+  const [retainer, setRetainer] = React.useState(String((firstTier?.rateCents ?? 0) / 100));
   const [email, setEmail] = React.useState("");
   const [startsOn, setStartsOn] = React.useState("");
   const [endsOn, setEndsOn] = React.useState("");
@@ -95,6 +90,11 @@ export function SponsorsClient({
               {r.contactEmail}
             </span>
           ) : null}
+          {r.signedBy ? (
+            <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+              signed by {r.signedBy}
+            </span>
+          ) : null}
         </span>
       ),
     },
@@ -102,7 +102,7 @@ export function SponsorsClient({
       key: "tier",
       label: "Tier",
       width: 170,
-      render: (r: SponsorItem) => TIER_LABEL[r.tier],
+      render: (r: SponsorItem) => r.tierLabel,
     },
     {
       key: "retainer",
@@ -153,12 +153,18 @@ export function SponsorsClient({
   return (
     <>
       <div style={{ margin: "22px 0 14px", display: "flex", gap: 10 }}>
-        <Button variant="gold" onClick={() => setSigning(true)}>
+        <Button variant="gold" onClick={() => setSigning(true)} disabled={tiers.length === 0}>
           Sign a sponsor
         </Button>
       </div>
 
-      {rows.length === 0 ? (
+      {tiers.length === 0 ? (
+        <StateBlock
+          status="error"
+          title="The rate card is empty."
+          detail="sponsor_tiers has no rows, so there is nothing to sign a sponsor to. Seed the card before signing anyone."
+        />
+      ) : rows.length === 0 ? (
         <StateBlock
           title="No names on the book."
           detail="A sponsor keeps a retainer and gets a credit on the sailings it rides. Sign the first one and place it below."
@@ -173,21 +179,29 @@ export function SponsorsClient({
           <p className="hm-lede" style={{ marginTop: 4 }}>
             An activation puts the name on a sailing — the public page reads it as a
             credit line, presenting partner first. Placement is a note for the crew,
-            not copy for the shore.
+            not copy for the shore. The tier&rsquo;s assets are listed under each name
+            as the checklist for what the activation owes them.
           </p>
           {rows.map((s) => {
             const pick = pickFor(s.id);
             const taken = new Set(s.activations.map((a) => a.voyageId));
             const open = voyages.filter((v) => !taken.has(v.value));
+            const card = cardFor(s.tier);
             return (
               <div key={s.id} className="hm-panel" style={{ padding: "16px 20px" }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
                   <b style={{ fontWeight: 600 }}>{s.name}</b>
                   <span className="ls-mono-data" style={{ color: "var(--text-3)", textTransform: "uppercase" }}>
-                    {TIER_LABEL[s.tier]}
+                    {s.tierLabel}
                     {s.active ? "" : " · RETIRED"}
                   </span>
                 </div>
+
+                {card && card.assets.length > 0 ? (
+                  <p style={{ marginTop: 6, fontSize: 12.5, color: "var(--text-3)" }}>
+                    Owed on activation: {card.assets.join(" · ")}
+                  </p>
+                ) : null}
 
                 {s.activations.length > 0 ? (
                   <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
@@ -310,8 +324,8 @@ export function SponsorsClient({
                   }
                   setSigning(false);
                   setName("");
-                  setTier("presenting_partner");
-                  setRetainer(String(RATE_CARD.presenting_partner / 100));
+                  setTier(firstTier?.slug ?? "");
+                  setRetainer(String((firstTier?.rateCents ?? 0) / 100));
                   setEmail("");
                   setStartsOn("");
                   setEndsOn("");
@@ -332,19 +346,24 @@ export function SponsorsClient({
             hint="Picking a tier fills the rate-card figure below."
             value={tier}
             onChange={(e) => {
-              const t = e.target.value as SponsorTier;
+              const t = e.target.value;
               setTier(t);
               /* The card is the default, not the deal — the operator can
                  override the figure after picking. */
-              setRetainer(String(RATE_CARD[t] / 100));
+              setRetainer(String((cardFor(t)?.rateCents ?? 0) / 100));
             }}
           >
-            {TIERS.map((t) => (
-              <option key={t} value={t}>
-                {TIER_LABEL[t]}
+            {tiers.map((t) => (
+              <option key={t.slug} value={t.slug}>
+                {t.label}
               </option>
             ))}
           </Select>
+          {cardFor(tier)?.assets.length ? (
+            <p style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: -6 }}>
+              This tier carries: {cardFor(tier)!.assets.join(" · ")}
+            </p>
+          ) : null}
           <Input
             label="Monthly retainer"
             hint="Dollars a month, as agreed."
