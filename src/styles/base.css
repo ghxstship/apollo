@@ -1,7 +1,14 @@
 /* Minimal base — element defaults so consumers start on-brand. */
 *,*:before,*:after{box-sizing:border-box}
 body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var(--font-sans);font-size:var(--text-md);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
-h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0}
+/* §Type: "Anton for display ≥22px, ALL CAPS always (via text-transform)". The
+   transform lives here so a heading is caps by default and sentence case is a
+   decision a rule states (text-transform:none on the Archivo-700 headings, the
+   lowercase transform inside the tagline lockup). Uppercasing this rule was
+   blocked until the owner ruled (2026-08-31) that the hero renders the tagline
+   as the §Tagline lockup rather than bare Anton — the tagline being the one
+   string the display face must never capitalise. */
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0;text-transform:uppercase}
 p{margin:0;text-wrap:pretty}
 a{color:var(--text-link);text-decoration:none;transition:color var(--dur-1) var(--ease-swell)}
 a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}

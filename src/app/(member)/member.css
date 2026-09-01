@@ -345,7 +345,7 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .rgt-list{display:flex;flex-direction:column;gap:1px;background:var(--line-faint);border:1px solid var(--line-faint)}
 .rgt-row{background:var(--surface-card);padding:18px 20px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start;text-decoration:none;color:inherit}
 .rgt-row:hover{background:var(--wash-ink)}
-.rgt-row h3{font-family:var(--font-sans);font-weight:700;font-size:var(--text-lg);margin:0}
+.rgt-row h3{font-family:var(--font-sans);font-weight:700;font-size:var(--text-lg);margin:0;text-transform:none}/* Archivo 700 headings are sentence case — a font-family swap alone would inherit the base rule's caps */
 .rgt-row p{margin:6px 0 0;font-size:var(--text-xs);color:var(--text-2);max-width:56ch}
 .rgt-meta{margin-top:9px;display:flex;flex-wrap:wrap;gap:8px}
 .rgt-aside{display:flex;flex-direction:column;align-items:flex-end;gap:8px}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
+import { TaglineMark } from "@/components/site/logo";
 import { SectionHeader } from "@/components/site/section-header";
 import { ANCHOR, CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
@@ -74,7 +75,11 @@ export default async function HomePage() {
       <header className="ws-hero">
         <div className="ls-container ws-hero__in">
           <div className="ls-eyebrow">Season I · Casting now</div>
-          <h1>{TAGLINE}</h1>
+          {/* The tagline lockup, not a bare phrase — owner ruling 2026-08-31:
+              the hero is the §Tagline Active Rule mark (Anton anchor, mono
+              lowercase phrase on the rule), never Anton alone, because the
+              tagline is the one string the display face must not capitalise. */}
+          <h1><TaglineMark /></h1>
           <p className="ws-hero__sub">
             Twelve strangers. One yacht. Cameras from boarding to docking —
             whatever happens after sunset is the show.

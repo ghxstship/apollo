@@ -73,7 +73,19 @@
 .ws-phead .ls-eyebrow{color:var(--gold-deep);margin-bottom:16px;display:block}
 .ws-phead__sub{color:var(--text-2);margin-top:16px;max-width:52ch}
 /* the tagline is lockup-adjacent only — it is the view's single accent */
-.ws-phead__tag{font-family:var(--font-display);font-size:22px;margin-top:14px;background:var(--lava);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content;text-transform:uppercase}
+/* — the tagline lockup (brand-architecture §Tagline · Option 1 "Active Rule").
+   These three rules are the ONE css setting of the mark; the markup half lives
+   in TaglineMark (components/site/logo.tsx). The phrase's lowercase transform
+   is load-bearing: base.css uppercases h1–h4, and the tagline is the one
+   string the brand never capitalises. */
+.ws-tagline{text-transform:none;display:inline-flex;align-items:baseline;flex-wrap:wrap}
+.ws-tagline__anchor{font-family:var(--font-display);letter-spacing:.02em;text-transform:uppercase}
+.ws-tagline__line{font:400 .65em/1.2 var(--font-mono);letter-spacing:normal;margin-left:.61em;border-bottom:1.5pt solid var(--accent);padding-bottom:.06em;text-transform:lowercase}
+/* Was Anton + uppercase + a lava gradient on {TAGLINE} — three violations in
+   one rule (the tagline is lowercase-always and in mono, and decorative
+   gradients are banned on UI surfaces), none visible to a gate because
+   text-transform never reaches the HTML. Now a sized placement of the mark. */
+.ws-phead__tag{font-size:22px;margin-top:14px;width:fit-content}
 .ws-ledger-row{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:22px 0;border-top:1px solid var(--line-faint)}
 .ws-ledger-row:last-of-type{border-bottom:1px solid var(--line-faint)}
 .ws-ledger-row__t{font-family:var(--font-display);font-size:var(--text-xl);text-transform:uppercase}
@@ -88,7 +100,11 @@
 .ws-hero:after{content:"";position:absolute;inset:0;background:var(--scrim);pointer-events:none}
 .ws-hero__in{position:relative;z-index:1;min-height:600px;display:flex;flex-direction:column;justify-content:center;padding-top:64px;padding-bottom:48px}
 .ws-hero__in .ls-eyebrow{color:var(--gold-bright);margin-bottom:24px}
-.ws-hero h1{font-size:var(--text-display-xl);color:var(--bone);max-width:12ch}
+/* The hero h1 IS the tagline lockup: the anchor sets the size, the phrase
+   rides at .65 of it. 12ch capped the old single-face setting; the lockup
+   manages its own width and wraps at the baseline flex. */
+.ws-hero h1{font-size:var(--text-display-xl);color:var(--bone)}
+@media (max-width:720px){.ws-hero h1{font-size:var(--text-3xl)}}
 .ws-hero__sub{font-size:var(--text-body-l);color:var(--text-inverse-2);margin-top:24px;max-width:44ch}
 .ws-hero__cta{display:flex;gap:16px;margin-top:40px;align-items:center;flex-wrap:wrap}
 .ws-liveseam{height:3px;background:var(--lava)}

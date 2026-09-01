@@ -5,6 +5,7 @@
    anything it did on its own (its own display face, its own rule colour) would
    be a mark the brand does not own. */
 import { Wordmark } from "@/components/ds";
+import { ANCHOR, TAGLINE } from "@/lib/brand";
 
 export function LockupHorizontal({ height = 34 }: { height?: number }) {
   return (
@@ -20,5 +21,32 @@ export function LockupHorizontal({ height = 34 }: { height?: number }) {
          the nav in light mode once already. */
       inverse
     />
+  );
+}
+
+/* The tagline lockup — brand-architecture §Tagline, Option 1 "Active Rule",
+   the master form for web headlines. Like the Wordmark, it is set in exactly
+   one place so the invariants hold by construction rather than by review:
+
+   - [UN] in Anton caps; the phrase in Space Mono LOWERCASE at .65 of the
+     bracket size — "lowercase, always, in mono. It is not a sentence and
+     takes no full stop." The lowercase is enforced in ws-tagline__line's CSS
+     transform, so the phrase stays lowercase even inside the uppercased
+     h1–h4 base rule (owner ruling 2026-08-31: the hero moves to this lockup
+     and base.css takes the blanket uppercase).
+   - One full character space after the closing bracket — .61em of the
+     TAGLINE size, which is one Space Mono advance.
+   - The continuous 1.5pt rule runs the exact length of the phrase — an
+     active form field, not decorative underlining — and keeps .06em clear
+     of the descenders on g and y.
+
+   Sized in em: one font-size on the surrounding element scales the whole
+   mark, so the hero and a 22px page tag are the same setting at two sizes. */
+export function TaglineMark({ className = "" }: { className?: string }) {
+  return (
+    <span className={["ws-tagline", className].filter(Boolean).join(" ")}>
+      <span className="ws-tagline__anchor">{ANCHOR}</span>
+      <span className="ws-tagline__line">{TAGLINE}</span>
+    </span>
   );
 }

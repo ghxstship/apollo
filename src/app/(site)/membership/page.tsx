@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { TAGLINE } from "@/lib/brand";
+import { TaglineMark } from "@/components/site/logo";
 import { price } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
@@ -75,7 +75,7 @@ export default async function MembershipPage() {
       <div className="ws-phead">
         <span className="ls-eyebrow">The manifest</span>
         <h1>Five ways aboard.</h1>
-        <p className="ws-phead__tag">{TAGLINE}</p>
+        <p className="ws-phead__tag"><TaglineMark /></p>
         <p className="ws-phead__sub">
           Membership is by invitation or application. Geography sets where you
           sail; the class tier sets how far. Dues keep passes few and tables

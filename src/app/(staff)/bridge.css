@@ -153,7 +153,7 @@
   body{background:#fff}
   .hm-shell,.ls-toast--fixed{display:none !important}
   .hm-doorlist{display:block;color:#000;font-family:var(--font-sans);padding:24px}
-  .hm-doorlist h1{font-size:var(--text-lg);font-weight:700;margin:0 0 4px}
+  .hm-doorlist h1{font-family:var(--font-sans);font-size:var(--text-lg);font-weight:700;margin:0 0 4px;text-transform:none}/* 18px heading = Archivo 700 sentence case; without the explicit family it inherited Anton from base (the container's sans loses to the element-targeted rule) */
   .hm-doorlist p{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;margin:0 0 16px;color:var(--noir-600)}
   .hm-doorlist table{width:100%;border-collapse:collapse;font-size:12px}
   .hm-doorlist th{text-align:left;font-size:9px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid #000;padding:6px 8px 4px}
@@ -218,7 +218,7 @@
 .hm-envelopes{display:none}
 @media print{
   .hm-envelopes{display:block;color:#000;font-family:var(--font-sans);padding:24px}
-  .hm-envelopes h1{font-size:var(--text-lg);font-weight:700;margin:0 0 4px}
+  .hm-envelopes h1{font-family:var(--font-sans);font-size:var(--text-lg);font-weight:700;margin:0 0 4px;text-transform:none}/* same as the door list: 18px = Archivo 700 sentence case, stated rather than inherited wrong */
   .hm-envelopes>p{font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;margin:0 0 16px;color:var(--noir-600)}
   .hm-envelopes__grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .hm-envelopes__card{border:1px solid #000;padding:12px 14px;break-inside:avoid;display:flex;flex-direction:column;gap:5px}
