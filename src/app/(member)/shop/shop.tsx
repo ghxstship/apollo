@@ -125,15 +125,31 @@ export function Shop({
   const discount = isGlobal ? Math.round(subtotal * 0.15) : 0;
   const total = subtotal - discount;
 
+  /* Minted once per crate and re-sent unchanged on every retry — the server's
+     idempotency machinery only works if the client actually sends the key it
+     was built for. Cleared when the crate changes (a different crate is a
+     different order) and on success. */
+  const idemRef = React.useRef<string | null>(null);
+  const mintIdem = () => (idemRef.current ??= crypto.randomUUID());
+  /* A different crate is a different order. A failed retry keeps the key
+     (cart untouched), an edit mints fresh. */
+  React.useEffect(() => {
+    idemRef.current = null;
+  }, [cart]);
+
   const checkout = async () => {
     setPending(true);
     setError(null);
-    const res = await placeShopOrder(cart.map(({ productId, qty: q, size: s }) => ({ productId, qty: q, size: s })));
+    const res = await placeShopOrder(
+      cart.map(({ productId, qty: q, size: s }) => ({ productId, qty: q, size: s })),
+      mintIdem()
+    );
     setPending(false);
     if (res.error) {
       setError(res.error);
       return;
     }
+    idemRef.current = null;
     setCart([]);
     setDrawer(false);
     setToast("Charged to your account — collect at the harbor or the next Port Day.");
@@ -142,10 +158,15 @@ export function Shop({
 
   const refund = async (orderId: string) => {
     const res = await requestRefund(orderId);
-    if (!res.error) {
-      setToast("Refund requested — the Bridge reviews it.");
-      router.refresh();
+    if (res.error) {
+      /* The server writes these refusals to be read — "already with the
+         Bridge", "past the point where it can be sent back". Dropping them
+         made the button look dead. */
+      setToast(res.error);
+      return;
     }
+    setToast("Refund requested — the Bridge reviews it.");
+    router.refresh();
   };
 
   return (

@@ -17,10 +17,24 @@ export type GangwayRow = {
   memberNo: string;
   vessel: string;
   guestNames: string[];
+  /* Per-guest aboard state from rsvp_guests.checked_in_at — the evacuation
+     list is read from this, so a guest who scanned their own stub must print
+     as aboard, not as an undifferentiated name on the host's row. Optional so
+     a roster cached before this field existed still parses. */
+  guestList?: { name: string; aboard: boolean }[];
   guests: number;
   waiverSigned: boolean;
   checkedInAt: string | null;
 };
+
+/* One rendering of a guest set, everywhere the roster speaks: aboard guests
+   marked, ashore guests plain, so the list and the paper never disagree. */
+function guestLine(r: GangwayRow): string {
+  if (r.guestList && r.guestList.length) {
+    return r.guestList.map((g) => `${g.name} · ${g.aboard ? "ABOARD" : "ashore"}`).join("; ");
+  }
+  return r.guestNames.length ? r.guestNames.join("; ") : r.guests ? String(r.guests) : "—";
+}
 
 type Scan = {
   /* "refused" is a pass that exists and may not board — an outstanding waiver,
@@ -363,7 +377,7 @@ export function GangwayConsole({
         r.memberNo,
         r.code || "—",
         r.vessel || "—",
-        r.guestNames.length ? r.guestNames.join("; ") : r.guests ? String(r.guests) : "—",
+        guestLine(r),
         r.waiverSigned ? "Signed" : "Missing",
       ]),
     ];
@@ -584,13 +598,7 @@ export function GangwayConsole({
                       <td>{r.memberNo}</td>
                       <td>{r.code || "—"}</td>
                       <td>{r.vessel || "—"}</td>
-                      <td>
-                        {r.guestNames.length
-                          ? r.guestNames.join(", ")
-                          : r.guests
-                            ? String(r.guests)
-                            : "—"}
-                      </td>
+                      <td>{guestLine(r)}</td>
                       <td>{r.waiverSigned ? "Signed" : "Missing"}</td>
                     </tr>
                   ))}

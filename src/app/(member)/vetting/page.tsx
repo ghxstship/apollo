@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Wordmark } from "@/components/ds";
-import { lockup } from "@/lib/brand";
+import { LockupText, Wordmark } from "@/components/ds";
+
 import { logDate, logTime } from "@/lib/format";
 import {
   BACKGROUND_LINE,
@@ -115,7 +115,7 @@ export default async function VettingPage() {
   return (
     <div className="ls-fade vet-stack">
       <div>
-        <span className="mbr-eyebrow">{lockup("scripted")}</span>
+        <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
         <h1 className="mbr-h1">Vetting.</h1>
         <p className="vet-note" style={{ marginTop: 10 }}>
           Every sale passes the ratio gate, capacity is shown by segment and never

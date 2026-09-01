@@ -1,6 +1,6 @@
 import React from "react";
 import { Icon } from "./icon";
-import { ANCHOR, COMMERCE, DIVISION_ACCENT, lockupSuffix, type DivisionId, type LockupForm } from "@/lib/brand";
+import { ANCHOR, COMMERCE, DIVISION_ACCENT, lockup, lockupSuffix, type DivisionId, type LockupForm } from "@/lib/brand";
 
 /* — Card — */
 const SEAS: Record<string, string> = {
@@ -289,6 +289,17 @@ export function Wordmark({
       ) : null}
     </span>
   );
+}
+
+/* — LockupText —
+   The running-text form of the mark, for contexts that transform their text.
+   An eyebrow's text-transform:uppercase rendered lockup() as "[UN] SCRIPTED"
+   on six member pages — the anchor's case is part of the mark and no context
+   may touch it, so the string ships inside its own transform:none, the same
+   doctrine as the tagline lockup. Use this, never bare lockup(), anywhere a
+   CSS transform can reach. */
+export function LockupText({ division }: { division: DivisionId }) {
+  return <span style={{ textTransform: "none" }}>{lockup(division)}</span>;
 }
 
 export { Icon };

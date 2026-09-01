@@ -17,7 +17,10 @@ const LINKS: Array<[string, string]> = [
   ["/crew", "Crew wanted"],
 ];
 
-const COORDS = "33.9803° N — 118.4517° W";
+/* The home port. This read 33.98°N 118.45°W — Marina del Rey — for a club
+   whose anchor sailing leaves Miami; the one factual datum in the chrome was
+   the wrong coast. Haulover Inlet, per the operations spec's own example. */
+const COORDS = "25.9007° N — 80.1206° W";
 
 export function SiteNav() {
   const pathname = usePathname();

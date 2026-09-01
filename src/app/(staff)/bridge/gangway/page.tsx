@@ -79,15 +79,35 @@ export default async function GangwayPage({
     : { data: [] };
   const vesselById = new Map((must(vesselsRes)).map((v) => [v.id, v.name]));
 
+  /* Guests from rsvp_guests, WITH their own checked_in_at. The roster used to
+     render only the host row's guest_names strings, so a guest who scanned
+     their own -G1 stub was aboard in the database and ashore on the printed
+     list — and the printed list is what an evacuation is read from. */
+  const rsvpIds = rsvps.map((r) => r.id);
+  const guestsRes = rsvpIds.length
+    ? await supabase
+        .from("rsvp_guests")
+        .select("rsvp_id, name, checked_in_at")
+        .in("rsvp_id", rsvpIds)
+    : { data: [] };
+  const guestsByRsvp = new Map<string, { name: string; aboard: boolean }[]>();
+  for (const g of must(guestsRes)) {
+    const list = guestsByRsvp.get(g.rsvp_id) ?? [];
+    list.push({ name: g.name, aboard: Boolean(g.checked_in_at) });
+    guestsByRsvp.set(g.rsvp_id, list);
+  }
+
   const rows: GangwayRow[] = rsvps.map((r) => {
     const p = profiles.get(r.profile_id);
+    const guestList = guestsByRsvp.get(r.id) ?? (r.guest_names ?? []).map((name: string) => ({ name, aboard: false }));
     return {
       rsvpId: r.id,
       code: r.boarding_code ?? "",
       name: p?.full_name ?? "Unknown sailor",
       memberNo: p?.member_no ?? "GUEST",
       vessel: r.vessel_id ? (vesselById.get(r.vessel_id) ?? "") : "",
-      guestNames: r.guest_names ?? [],
+      guestNames: guestList.map((g) => g.name),
+      guestList,
       guests: r.guests,
       waiverSigned: waiverCurrent.get(r.profile_id) ?? false,
       checkedInAt: r.checked_in_at,

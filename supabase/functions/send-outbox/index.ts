@@ -197,6 +197,22 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:20px 0 0;">Gangway details land 48 hours before departure.</p>`,
     ),
   }),
+  /* The letter every confirmation promised for weeks before anything sent it:
+     "Gangway details land 48 hours before departure." Queued by
+     carry_the_clock at T-48h, once per pass. */
+  "gangway-details": (p) => ({
+    subject: "Gangway details — 48 hours out.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 20px;">Two days to ${esc(p["voyage"])}. Here is everything the gangway asks for.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${SERIF};font-size:15px;line-height:1.7;">
+<tr><td style="padding:2px 0;color:#6B6B70;width:120px;">Muster</td><td>${esc(p["muster"])}</td></tr>
+<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td>${esc(when(p["starts_at"]))}</td></tr>
+<tr><td style="padding:2px 0;color:#6B6B70;">Code</td><td style="letter-spacing:0.12em;">${esc(p["code"])}</td></tr>
+</table>
+<p style="margin:20px 0 0;">Riviera Chic, sun up, phones down. Your member card boards you — brightness up at the gangway, and the skipper knows the rest.</p>`,
+    ),
+  }),
   "weather-hold": (p) => ({
     subject: `Weather hold: ${String(p["voyage"] ?? "your charter")}`,
     html: shell(

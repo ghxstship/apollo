@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { lockup } from "@/lib/brand";
+import { LockupText } from "@/components/ds";
 import {
   GUARANTEE_OWED_LINE,
   GUARANTEE_UNEARNED_LINE,
@@ -111,7 +111,7 @@ export default async function RadarPage() {
     return (
       <div className="ls-fade rdr-stack">
         <div>
-          <span className="mbr-eyebrow">{lockup("scripted")}</span>
+          <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
           <h1 className="mbr-h1">Radar.</h1>
         </div>
         <div className="rdr-panel" style={{ maxWidth: 420 }}>
@@ -130,7 +130,7 @@ export default async function RadarPage() {
   return (
     <div className="ls-fade rdr-stack">
       <div>
-        <span className="mbr-eyebrow">{lockup("scripted")}</span>
+        <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
         <h1 className="mbr-h1">Radar.</h1>
         <p className="rdr-note" style={{ marginTop: 10 }}>
           {sailing.title} · mutual only, never one-sided. No scores, no streaks,

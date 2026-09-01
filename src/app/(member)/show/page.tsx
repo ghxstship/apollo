@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { lockup } from "@/lib/brand";
+import { LockupText } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import {
   FIVE_A_LABEL,
@@ -127,7 +127,7 @@ export default async function ShowPage() {
   return (
     <div className="ls-fade shw-stack">
       <div>
-        <span className="mbr-eyebrow">{lockup("limited")}</span>
+        <span className="mbr-eyebrow"><LockupText division="limited" /></span>
         <h1 className="mbr-h1">Show.</h1>
         <p className="shw-strap" style={{ display: "block", marginTop: 10 }}>
           Crew surfaces · 24-hour local time · critical-path items carry the

@@ -44,6 +44,13 @@ export async function toggleHail(postId: string, hailed: boolean): Promise<OpenD
     : await supabase
         .from("wardroom_hails")
         .insert({ post_id: postId, profile_id: userId });
+  /* A duplicate hail is a stale render's double-click, not a failure — the PK
+     already holds the fact. Voicing 23505 here told the member "check the
+     numbers" about a button with no numbers on it. */
+  if (error && error.code === "23505") {
+    revalidatePath("/open-deck");
+    return {};
+  }
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/open-deck");
   return {};

@@ -40,9 +40,14 @@ export async function submitApplication(
   });
 
   if (error) {
+    /* 53400 is the pacing trigger speaking, and its message says the way out
+       ("try again in an hour"). Collapsing it into the generic line handed a
+       legitimate re-applicant a dead end — the gangway and status lookups
+       already pass their pacing through; the front door now does too. */
+    const paced = error.code === "53400" && error.message ? error.message.replace(/^[^:]*:\s*/, "") : null;
     return {
       ok: false,
-      errors: { form: "That didn't land. Try again; if it holds, hail Shoreside." },
+      errors: { form: paced ?? "That didn't land. Try again; if it holds, hail Shoreside." },
       values,
     };
   }

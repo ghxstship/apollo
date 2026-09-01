@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Badge, StateBlock } from "@/components/ds";
 import { TIER_LABEL, logDate, logTime } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
+import { literalCode } from "@/lib/boarding-code";
 import { getMember } from "../../data";
 import { PrintButton } from "../../card/print-button";
 
@@ -41,8 +42,15 @@ export default async function StubPage({
 }: {
   params: Promise<{ code: string }>;
 }) {
-  const { code } = await params;
+  const { code: rawCode } = await params;
   const { supabase, user, profile } = await getMember();
+
+  /* The fourth path. src/lib/boarding-code.ts names the scan paths that must
+     map retired prefixes onto the current one, and this route — the one a
+     member reaches from a printed or bookmarked stub URL — was the one that
+     didn't. A SYR- link answered "No stub under that code" for a pass that
+     exists. */
+  const code = literalCode(rawCode);
 
   /* A code is either a member's own pass or one of their guests'. */
   const [memberPassRes, guestRes] = await Promise.all([

@@ -21,17 +21,53 @@ async function secret(name: string): Promise<string> {
   return typeof v === "string" ? v : "";
 }
 
-type Row = { id: string; profile_id: string; title: string; body: string | null; url: string | null };
+type Row = { id: string; profile_id: string; title: string; body: string | null; url: string | null; attempts?: number };
 type Sub = { id: string; endpoint: string; p256dh: string; auth: string };
+
+const MAX_ATTEMPTS = 5;
 
 async function mark(id: string, status: "sent" | "skipped" | "failed") {
   const body: Record<string, unknown> = { status };
   if (status === "sent") body.sent_at = new Date().toISOString();
-  await fetch(`${SUPABASE_URL}/rest/v1/push_outbox?id=eq.${id}&status=eq.pending`, {
+  /* `sending` too: the row is claimed before the Push API call, so by the
+     time this runs it is no longer pending. */
+  await fetch(`${SUPABASE_URL}/rest/v1/push_outbox?id=eq.${id}&status=in.(pending,sending)`, {
     method: "PATCH",
     headers: H,
     body: JSON.stringify(body),
   });
+}
+
+/* Claim before sending — the discipline both siblings hold and this drain
+   did not: two overlapping invocations both pushed, because only the MARKING
+   collided. Only the invocation whose PATCH matched a pending row proceeds. */
+async function claim(id: string): Promise<boolean> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_outbox?id=eq.${id}&status=eq.pending`, {
+    method: "PATCH",
+    headers: { ...H, Prefer: "return=representation" },
+    body: JSON.stringify({ status: "sending", claimed_at: new Date().toISOString() }),
+  });
+  if (!res.ok) return false;
+  const rows = await res.json();
+  return Array.isArray(rows) && rows.length === 1;
+}
+
+/* A transient failure used to be terminal: any error marked `failed`, and the
+   drain reads only `pending`. Push endpoints hiccup like carriers do. */
+async function requeue(row: Row, why: string) {
+  const attempts = (row.attempts ?? 0) + 1;
+  const terminal = attempts >= MAX_ATTEMPTS;
+  const backoff = new Date(Date.now() + Math.min(30, 2 ** attempts) * 60_000).toISOString();
+  await fetch(`${SUPABASE_URL}/rest/v1/push_outbox?id=eq.${row.id}`, {
+    method: "PATCH",
+    headers: H,
+    body: JSON.stringify(
+      terminal
+        ? { status: "failed", attempts }
+        : { status: "pending", attempts, next_attempt_at: backoff },
+    ),
+  });
+  console.error(`push ${row.id}: ${why}${terminal ? " (gave up)" : ""}`);
 }
 
 Deno.serve(async (req: Request) => {
@@ -54,8 +90,9 @@ Deno.serve(async (req: Request) => {
       secret("VAPID_PRIVATE_KEY"),
       secret("VAPID_SUBJECT"),
     ]);
+    const now = new Date().toISOString();
     const rows: Row[] = await fetch(
-      `${SUPABASE_URL}/rest/v1/push_outbox?status=eq.pending&order=created_at.asc&limit=50&select=id,profile_id,title,body,url`,
+      `${SUPABASE_URL}/rest/v1/push_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${now})&order=created_at.asc&limit=50&select=id,profile_id,title,body,url,attempts`,
       { headers: H },
     ).then((r) => r.json());
 
@@ -73,12 +110,17 @@ Deno.serve(async (req: Request) => {
       ).then((r) => r.json());
       if (!subs.length) { await mark(row.id, "skipped"); skipped++; continue; }
 
+      /* Claimed immediately before the push — a row another run took is
+         skipped, not re-sent. */
+      if (!(await claim(row.id))) continue;
+
       const payload = JSON.stringify({
         title: row.title,
         body: row.body ?? "",
         url: row.url ?? "/inbox",
       });
       let ok = false;
+      let transient = false;
       for (const s of subs) {
         try {
           await webpush.sendNotification(
@@ -94,12 +136,22 @@ Deno.serve(async (req: Request) => {
               method: "DELETE",
               headers: H,
             });
+          } else {
+            /* 429/5xx/undefined is the service saying "later", not "never". */
+            transient = true;
           }
         }
       }
-      await mark(row.id, ok ? "sent" : "failed");
-      if (ok) sent++;
-      else failed++;
+      if (ok) {
+        await mark(row.id, "sent");
+        sent++;
+      } else if (transient) {
+        await requeue(row, "push service refused, worth another try");
+        skipped++;
+      } else {
+        await mark(row.id, "failed");
+        failed++;
+      }
     }
     return Response.json({ fetched: rows.length, sent, failed, skipped });
   } catch (err) {
