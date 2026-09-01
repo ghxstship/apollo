@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Avatar, LockupText } from "@/components/ds";
 import { logDate } from "@/lib/format";
+import { anchorCountdown, type SharedAnchorRow } from "@/lib/radar";
+import { moduleTables } from "@/lib/module-tables";
 import { getMember } from "../data";
 
 import { SendAWord } from "@/components/member/send-a-word";
@@ -33,6 +35,61 @@ export default async function MatchesPage() {
   ]);
   const personOf = new Map((people ?? []).map((p) => [p.id, p]));
   const tableOf = new Map((tables ?? []).map((t) => [t.id, t]));
+
+  /* ── Shared Anchors — Radar's mutual picks, deliberately NOT matches ──────
+     Two systems, two data models: `matches` is person-grain and permanent,
+     `shared_anchors` is pass-grain and gone in twenty-four hours. They are
+     listed side by side and never merged.
+
+     The read is the radar page's own mine-anchors read: shared_anchors through
+     the moduleTables seam, with RLS doing the ceremony — a row surfaces only
+     once the envelope is opened (unlocked_at) and vanishes at expires_at, so
+     an empty list is a rule holding, not a query failing. The explicit filter
+     to my own passes matters only for staff, whom the policy does not scope. */
+  const db = moduleTables(supabase);
+  const { data: myPasses } = await supabase
+    .from("rsvps")
+    .select("id, voyage_id")
+    .eq("profile_id", user.id)
+    .eq("status", "aboard");
+  const passIds = (myPasses ?? []).map((p) => p.id);
+  const passIdSet = new Set(passIds);
+
+  let anchors: SharedAnchorRow[] = [];
+  if (passIds.length) {
+    const list = passIds.join(",");
+    const { data } = await db
+      .from("shared_anchors")
+      .select("*")
+      .or(`rsvp_a.in.(${list}),rsvp_b.in.(${list})`);
+    const nowMs = new Date().getTime();
+    anchors = ((data ?? []) as SharedAnchorRow[]).filter(
+      (a) => a.unlocked_at && new Date(a.expires_at).getTime() > nowMs
+    );
+  }
+
+  const anchorVoyageIds = [...new Set(anchors.map((a) => a.voyage_id))];
+  const [{ data: anchorVoyages }, sweeps] = await Promise.all([
+    anchorVoyageIds.length
+      ? supabase.from("voyages").select("id, title").in("id", anchorVoyageIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
+    /* Names come from the sweep, the way radar draws them: first names only,
+       a couple as one pin, and nothing else about anybody. The sweep is a
+       definer that refuses anyone not aboard, so an error here is a rule
+       holding and the card falls back to "A guest" rather than to a lookup
+       that could return a surname. */
+    Promise.all(
+      anchorVoyageIds.map(async (vid) => {
+        const { data: pins } = await db.rpc("radar_sweep", { p_voyage: vid });
+        return (pins ?? []) as Array<{ rsvp_id: string; name: string; couple: boolean }>;
+      })
+    ),
+  ]);
+  const anchorVoyageOf = new Map((anchorVoyages ?? []).map((v) => [v.id, v.title]));
+  const anchorNameOf = new Map<string, string>();
+  for (const pins of sweeps) {
+    for (const p of pins) anchorNameOf.set(p.rsvp_id, p.couple ? `${p.name} + 1` : p.name);
+  }
 
   return (
     <div className="ls-fade" data-theme="shore">
@@ -85,6 +142,49 @@ export default async function MatchesPage() {
           })}
         </div>
       )}
+
+      {anchors.length > 0 ? (
+        <section style={{ marginTop: 40 }}>
+          <span className="mbr-eyebrow">From the water — Shared Anchors</span>
+          <p style={{ marginTop: 10, fontSize: 13, color: "var(--text-2)", maxWidth: "56ch" }}>
+            Anchors come from a sailing&rsquo;s radar, mutual only. Each one
+            holds for twenty-four hours from the reveal, then the contact goes
+            on both sides — no extension and no reminder.
+          </p>
+          <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+            {anchors.map((a) => {
+              const mine = passIdSet.has(a.rsvp_a) ? a.rsvp_a : a.rsvp_b;
+              const theirs = a.rsvp_a === mine ? a.rsvp_b : a.rsvp_a;
+              const name = anchorNameOf.get(theirs) ?? "A guest";
+              const left = anchorCountdown(a.expires_at);
+              return (
+                <div
+                  key={a.id}
+                  style={{
+                    border: "1px solid var(--line-faint)",
+                    background: "var(--surface-card)",
+                    padding: "16px 18px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 14,
+                  }}
+                >
+                  <Avatar name={name} tone="sea" />
+                  <div style={{ flex: 1 }}>
+                    <b style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: 17 }}>
+                      {name}
+                    </b>
+                    <p className="mbr-mono" style={{ marginTop: 3 }}>
+                      ANCHORED · {anchorVoyageOf.get(a.voyage_id) ?? "A sailing"}
+                      {left ? ` · ${left}` : ""}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

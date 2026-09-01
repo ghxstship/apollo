@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ds";
 import { logDate, logDateYear } from "@/lib/format";
+import type { Tables } from "@/lib/supabase/types";
 import { getMember } from "../data";
 
 export const metadata: Metadata = { title: "Agreements" };
@@ -18,8 +19,26 @@ const STATE_COPY: Record<string, { label: string; tone: "positive" | "caution" |
 
 export default async function AgreementsPage() {
   const { supabase, user, zone } = await getMember();
-  const { data } = await supabase.rpc("signature_standing", { p_profile_id: user.id });
+  const [{ data }, { data: standingRows }] = await Promise.all([
+    supabase.rpc("signature_standing", { p_profile_id: user.id }),
+    /* agreement_standing is a definer view that scopes itself to the caller —
+       it exists because counter_signatures is staff-only (the row carries the
+       officer's IP), so the member's own client cannot join it directly. It
+       exposes only the officer's name and the date. The eq is belt-and-braces
+       for a staff viewer, whom the view does not scope. */
+    supabase.from("agreement_standing").select("*").eq("profile_id", user.id),
+  ]);
   const rows = Array.isArray(data) ? data : [];
+
+  /* One standing per document: a member re-signs when wording moves on, so the
+     view can hold several rows per code — the latest signature is the one the
+     page is talking about. */
+  const standingOf = new Map<string, Tables<"agreement_standing">>();
+  for (const s of standingRows ?? []) {
+    if (!s.document_code) continue;
+    const held = standingOf.get(s.document_code);
+    if (!held || (s.signed_at ?? "") > (held.signed_at ?? "")) standingOf.set(s.document_code, s);
+  }
 
   const outstanding = rows.filter((r) => r.state !== "signed");
 
@@ -54,6 +73,17 @@ export default async function AgreementsPage() {
           <ul className="agr-list">
             {rows.map((r) => {
               const copy = STATE_COPY[r.state] ?? STATE_COPY.missing;
+              /* A contract binds only once the club counter-signs; a waiver
+                 stands on the member's signature alone. The view answers for
+                 both, so the line renders only where a countersignature is the
+                 question — a signed contract — and stays silent elsewhere. */
+              const standing = standingOf.get(r.document_code);
+              const counterLine =
+                r.state === "signed" && standing && standing.kind === "contract"
+                  ? standing.in_force
+                    ? `In force — countersigned by ${standing.counter_signed_by ?? "the club"}`
+                    : "Awaiting the club's counter-signature"
+                  : null;
               return (
                 <li key={r.document_code} className="agr-row">
                   <span>
@@ -68,6 +98,18 @@ export default async function AgreementsPage() {
                     >
                       {copy.line}
                     </span>
+                    {counterLine ? (
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: 12.5,
+                          color: standing?.in_force ? "var(--laurel)" : "var(--text-3)",
+                          marginTop: 2,
+                        }}
+                      >
+                        {counterLine}
+                      </span>
+                    ) : null}
                   </span>
                   <Badge tone={copy.tone}>{copy.label}</Badge>
                   {r.state === "signed" ? (

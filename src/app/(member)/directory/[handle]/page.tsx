@@ -6,7 +6,9 @@ import { CLUB_ZONE, CITY_CODES, CURRENCY, FAMILY_LABEL, knots } from "@/lib/bran
 import { logDate, roman, yearIn } from "@/lib/format";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
+import { moduleTables } from "@/lib/module-tables";
 import { SendAWord } from "@/components/member/send-a-word";
+import { DeclineWord } from "@/components/member/decline-word";
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
@@ -48,6 +50,20 @@ export default async function MemberPage({
   if (member.status !== "active" && !own && !staff) notFound();
 
   const { log, marks } = await readPassageLog(supabase, member.id);
+
+  /* Whether the viewer has declined messages from this member. member_blocks
+     RLS shows a member only their own blocks, so this reads at most one row
+     and never anybody else's refusals. */
+  let blocked = false;
+  if (!own) {
+    const { data: block } = await moduleTables(supabase)
+      .from("member_blocks")
+      .select("blocked_id")
+      .eq("blocker_id", user.id)
+      .eq("blocked_id", member.id)
+      .maybeSingle();
+    blocked = !!block;
+  }
 
   const [harborRes, leagueRes, engagementRes, affinityRes, rsvpsRes, balanceRes] =
     await Promise.all([
@@ -123,7 +139,7 @@ export default async function MemberPage({
             {member.member_no ?? "UN-0000"} · member since {roman(joinedYear)}
           </p>
         </div>
-        {!own ? (
+        {!own && !blocked ? (
           <SendAWord otherId={member.id} className="dir-head__act" />
         ) : null}
       </header>
@@ -179,6 +195,18 @@ export default async function MemberPage({
       </section>
 
       <PassageLog zone={zone} log={log} marks={marks} own={own} />
+
+      {!own ? (
+        <section className="mbr-sec">
+          <span className="mbr-eyebrow">The word</span>
+          <DeclineWord
+            otherId={member.id}
+            handle={member.handle ?? null}
+            firstName={(member.full_name ?? "This member").split(" ")[0]}
+            blocked={blocked}
+          />
+        </section>
+      ) : null}
 
       {own ? (
         <section className="mbr-sec">

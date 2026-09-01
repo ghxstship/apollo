@@ -16,7 +16,9 @@ import { SUB_CLASSES } from "@/lib/brand";
 import type { EventClass, MembershipTier, VoyageStatus } from "@/lib/supabase/types";
 import { useToast } from "../../ui";
 import {
+  assignVessel,
   createVoyage,
+  removeVessel,
   saveVoyageOps,
   setBerthsTotal,
   setHeldPasses,
@@ -24,6 +26,15 @@ import {
   type ItineraryLeg,
   type SubClass,
 } from "./actions";
+
+export type AssignedHull = {
+  vesselId: string;
+  name: string;
+  capacity: number;
+  position: number;
+};
+
+export type FleetVessel = { id: string; name: string; capacity: number };
 
 export type VoyageOpsRow = {
   id: string;
@@ -34,6 +45,7 @@ export type VoyageOpsRow = {
   departs: string;
   startsAtIso: string;
   vessels: number;
+  hulls: AssignedHull[];
   aboard: number;
   berths: number;
   held: number;
@@ -144,9 +156,11 @@ function movesFor(status: VoyageStatus): StatusMove[] {
 export function VoyagesClient({
   rows,
   harbors,
+  fleet,
 }: {
   rows: VoyageOpsRow[];
   harbors: Array<{ value: string; label: string }>;
+  fleet: FleetVessel[];
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -154,6 +168,11 @@ export function VoyagesClient({
   const [ops, setOps] = React.useState<VoyageOpsRow | null>(null);
   const [opsForm, setOpsForm] = React.useState({ wind: "", swell: "", heading: "", speed: "", muster: "" });
   const [creating, setCreating] = React.useState(false);
+  /* The flotilla dialog holds the voyage's ID, not the row: the rows prop is
+     refreshed by revalidatePath after every assign/remove, and a captured row
+     object would keep showing the flotilla as it stood when the dialog opened. */
+  const [flotillaId, setFlotillaId] = React.useState<string | null>(null);
+  const flotilla = flotillaId ? (rows.find((r) => r.id === flotillaId) ?? null) : null;
 
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
@@ -253,6 +272,9 @@ export function VoyagesClient({
             </span>
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => openOps(v)}>
               Conditions
+            </Button>
+            <Button variant="ghost" size="sm" disabled={pending} onClick={() => setFlotillaId(v.id)}>
+              Flotilla
             </Button>
             {movesFor(v.status).map((m) => (
               <Button
@@ -391,6 +413,25 @@ export function VoyagesClient({
         </div>
       </Dialog>
 
+      <Dialog
+        open={!!flotilla}
+        onClose={() => setFlotillaId(null)}
+        width={460}
+        eyebrow={flotilla ? flotilla.title : ""}
+        title="The flotilla."
+        footer={
+          <Button variant="ghost" onClick={() => setFlotillaId(null)}>
+            Close
+          </Button>
+        }
+      >
+        {flotilla ? (
+          /* Keyed on the voyage so pick, position and the remove confirmation
+             reset when the dialog moves to another sailing. */
+          <FlotillaBody key={flotilla.id} row={flotilla} fleet={fleet} pending={pending} onRun={run} notify={show} />
+        ) : null}
+      </Dialog>
+
       <NewVoyageDialog
         open={creating}
         onClose={() => setCreating(false)}
@@ -411,6 +452,125 @@ export function VoyagesClient({
         <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
       ) : null}
     </>
+  );
+}
+
+/* Hull assignment, through the "staff write flotilla" policy that has been on
+   voyage_vessels since the fleet landed and never had a writer. Assigning is
+   plain; removing asks first, because the manifests screen spreads passes onto
+   these hulls and a hull that vanishes under a spread manifest is an
+   operational surprise. */
+function FlotillaBody({
+  row,
+  fleet,
+  pending,
+  onRun,
+  notify,
+}: {
+  row: VoyageOpsRow;
+  fleet: FleetVessel[];
+  pending: boolean;
+  onRun: (fn: () => Promise<{ error?: string }>, ok: () => void) => void;
+  notify: (t: { msg: string; meta?: string; tone?: "ink" | "positive" | "caution" | "danger" }) => void;
+}) {
+  const assigned = new Set(row.hulls.map((h) => h.vesselId));
+  const open = fleet.filter((v) => !assigned.has(v.id));
+  const [pick, setPick] = React.useState("");
+  const [pos, setPos] = React.useState(row.hulls.length + 1);
+  /* Confirm-first, inline — a second dialog stacked over this one would fight
+     the overlay. The first press arms the row; the second removes. */
+  const [arming, setArming] = React.useState<string | null>(null);
+
+  const assign = () => {
+    const hull = open.find((v) => v.id === pick);
+    if (!hull) return;
+    onRun(
+      () => assignVessel(row.id, hull.id, pos),
+      () => {
+        setPick("");
+        setPos((p) => p + 1);
+        notify({ msg: "Hull assigned.", meta: `${row.title.toUpperCase()} · ${hull.name.toUpperCase()}`, tone: "positive" });
+      }
+    );
+  };
+
+  const remove = (hull: AssignedHull) => {
+    setArming(null);
+    onRun(
+      () => removeVessel(row.id, hull.vesselId),
+      () => notify({ msg: "Hull removed.", meta: `${row.title.toUpperCase()} · ${hull.name.toUpperCase()}`, tone: "caution" })
+    );
+  };
+
+  return (
+    <div className="hm-form">
+      {row.hulls.length ? (
+        <div>
+          <span className="hm-mono">ASSIGNED · IN POSITION ORDER</span>
+          <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: 13 }}>
+            {row.hulls.map((h) => (
+              <li key={h.vesselId} style={{ display: "flex", gap: 10, alignItems: "center", padding: "4px 0" }}>
+                <span className="hm-mono" style={{ minWidth: 24 }}>
+                  {h.position}
+                </span>
+                <span style={{ flex: 1 }}>
+                  {h.name}
+                  <span style={{ color: "var(--text-3)" }}> · {h.capacity} berths</span>
+                </span>
+                {arming === h.vesselId ? (
+                  <>
+                    <Button size="sm" variant="ghost" disabled={pending} onClick={() => setArming(null)}>
+                      Keep it
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={pending} onClick={() => remove(h)}>
+                      Take it off
+                    </Button>
+                  </>
+                ) : (
+                  <Button size="sm" variant="ghost" disabled={pending} onClick={() => setArming(h.vesselId)}>
+                    Remove
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+          {arming ? (
+            <p className="hm-note" style={{ marginTop: 6 }}>
+              Passes already spread onto this hull keep their berth note — spread
+              the manifest again after taking it off.
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <p className="hm-note" style={{ marginTop: 0 }}>
+          No hulls assigned yet. The manifest cannot spread across a flotilla
+          that has no yachts in it.
+        </p>
+      )}
+
+      {open.length ? (
+        <div className="hm-form__row" style={{ alignItems: "end" }}>
+          <Select
+            label="Hull"
+            value={pick}
+            onChange={(e) => setPick(e.target.value)}
+            options={[
+              { value: "", label: "Pick a hull" },
+              ...open.map((v) => ({ value: v.id, label: `${v.name} · ${v.capacity} berths` })),
+            ]}
+          />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 10, paddingBottom: 2 }}>
+            <span className="hm-mono">POSITION</span>
+            <Stepper size="sm" min={1} max={96} value={pos} onChange={setPos} />
+          </span>
+          <Button variant="outline" size="sm" disabled={pending || !pick} onClick={assign}>
+            Assign
+          </Button>
+        </div>
+      ) : (
+        <p className="hm-note">Every active hull in the fleet is already on this voyage.</p>
+      )}
+    </div>
   );
 }
 

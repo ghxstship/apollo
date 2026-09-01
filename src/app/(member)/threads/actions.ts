@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
 
@@ -25,6 +26,19 @@ export async function markThreadRead(threadId: string): Promise<void> {
     .eq("thread_id", threadId)
     .eq("profile_id", userId);
   revalidatePath("/threads");
+}
+
+/* Open (or rejoin) the member's one live Shoreside thread. The RPC is a
+   definer and idempotent — one line per member, and pressing the button twice
+   lands in the same conversation rather than a drawer of parallel threads. */
+export async function writeToShoreside(): Promise<ThreadResult> {
+  const { supabase, userId } = await member();
+  if (!userId) redirect("/gangway");
+
+  const { data, error } = await supabase.rpc("open_shoreside_thread");
+  if (error) return { error: await voiceWith(supabase, error) };
+  if (!data) return { error: "That didn't land. Try again." };
+  redirect(`/threads/${data}`);
 }
 
 export async function sendMessage(

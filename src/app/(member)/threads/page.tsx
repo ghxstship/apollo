@@ -6,6 +6,7 @@ import type { Tables } from "@/lib/supabase/types";
 import { getMember, type DirectoryMember, type Profile } from "../data";
 import { relTime } from "../relative";
 import { ThreadsRealtime } from "./realtime";
+import { WriteToShoreside } from "@/components/member/write-to-shoreside";
 
 export const metadata: Metadata = { title: "Threads" };
 
@@ -125,6 +126,11 @@ export default async function ThreadsPage() {
         Crew threads open when you go aboard and close after the debrief. Direct
         words stay open as long as you both want them.
       </p>
+      {/* The shore desk, from the member's side: threads.kind 'shoreside' has
+          always had a queue on the Bridge, and this is the door into it. */}
+      <div style={{ marginTop: 14 }}>
+        <WriteToShoreside />
+      </div>
 
       {rows.length === 0 ? (
         <StateBlock

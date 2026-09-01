@@ -57,6 +57,21 @@ export function ApplyForm() {
         placeholder="A member's name, or how you found the water"
         defaultValue={state.values.referral}
       />
+      <Input
+        label="Invite code"
+        name="invite"
+        placeholder="UN-XXXX-XXXX"
+        defaultValue={state.values.invite}
+        error={state.errors.invite}
+        hint="If a member handed you one. Optional."
+        autoComplete="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+        // .ls-input draws its face from var(--font-sans); re-pointing the
+        // variable on the field wrapper is the only inline route to a mono
+        // code box, since Input keeps `style` on the wrapper, not the input.
+        style={{ "--font-sans": "var(--font-mono)" } as React.CSSProperties}
+      />
       <Textarea
         label="Why the water?"
         name="note"

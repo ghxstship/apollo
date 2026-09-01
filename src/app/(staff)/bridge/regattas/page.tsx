@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LOGBOOK } from "@/lib/brand";
+import { logDate } from "@/lib/format";
 import { getOperator } from "../../data";
 import { RegattasClient, type ContestRow } from "./regattas-client";
 import { must } from "../../staff";
@@ -9,9 +10,17 @@ export const metadata: Metadata = { title: LOGBOOK.regattas };
 export default async function RegattasPage() {
   const { supabase } = await getOperator();
 
-  const [contestsRes, entriesRes] = await Promise.all([
+  const [contestsRes, entriesRes, voyagesRes] = await Promise.all([
     supabase.from("contests").select("*").order("ends_at", { ascending: false }),
     supabase.from("contest_entries").select("contest_id"),
+    /* The crew-scope picker. A crew contest runs within one sailing's crew, so
+       only sailings that could still hold one are offered — completed and
+       cancelled voyages have no crew to enter it. */
+    supabase
+      .from("voyages")
+      .select("id, title, starts_at, time_zone")
+      .in("status", ["scheduled", "live"])
+      .order("starts_at", { ascending: true }),
   ]);
 
   const counts = new Map<string, number>();
@@ -42,7 +51,13 @@ export default async function RegattasPage() {
         Both run inside a window and both get settled — the standing freezes, the
         award posts, and the result becomes history. The club keeps no all-time table.
       </p>
-      <RegattasClient rows={rows} />
+      <RegattasClient
+        rows={rows}
+        voyages={must(voyagesRes).map((v) => ({
+          value: v.id,
+          label: `${v.title} · ${logDate(v.starts_at, v.time_zone)}`,
+        }))}
+      />
     </div>
   );
 }

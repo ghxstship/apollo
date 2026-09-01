@@ -40,3 +40,41 @@ export async function openTheRadar(voyageId: string): Promise<ActionResult> {
   if (error) return { error: voice(error) };
   return done();
 }
+
+export type CutResult = { error?: string; cut?: number };
+
+/* The incident control: cut every live anchor on one sailing short, now.
+
+   The authority is the "staff may cut an anchor short" UPDATE policy plus the
+   table grant that 20260825073049 restored behind it, and the DIRECTION is the
+   an_anchor_is_never_extended trigger — expires_at may only ever come forward,
+   so this write can end a contact and can never quietly re-open one.
+
+   It is a per-voyage cut, not a per-anchor one, and that is deliberate. Staff
+   can count anchors (the select policy admits is_staff), but a per-anchor
+   control would have to render the pair — who anchored with whom — on a crew
+   screen, and this page's own copy says a member's contacts are not crew
+   reading material. So the control stays blind: one sailing, every live
+   anchor, all at once.
+
+   The `.gt("expires_at", now)` filter is load-bearing twice over: it keeps the
+   write to anchors that are still alive, and it keeps already-expired rows out
+   from under the never-extend trigger — setting an expired row to now() would
+   count as an extension and abort the whole statement. */
+export async function cutAnchorsShort(voyageId: string): Promise<CutResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const now = new Date().toISOString();
+  const { data, error } = await moduleTables(supabase)
+    .from("shared_anchors")
+    .update({ expires_at: now })
+    .eq("voyage_id", voyageId)
+    .gt("expires_at", now)
+    .select("id");
+  if (error) return { error: voice(error) };
+
+  revalidatePath("/bridge/radar");
+  revalidatePath("/radar");
+  return { cut: (data ?? []).length };
+}

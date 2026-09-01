@@ -12,15 +12,21 @@ export type StatusState = {
 
 export const STATUS_INITIAL: StatusState = { state: "idle" };
 
-/* The four stages the funnel promised, with the promise each one carries. */
+/* The four stages the funnel promised, with the promise each one carries.
+   Stage 3 used to read "Signatures — two members vouch", a gate no table
+   backs; it now names the vouching the database actually records — an invite
+   code redeemed onto the application. */
 export const STAGES: Array<{ title: string; note: string }> = [
   { title: "Applied", note: "Received and read by a person, not a model." },
   { title: "Port Day invite", note: "Come ashore once, as our guest." },
-  { title: "Signatures", note: "Two members vouch." },
+  { title: "Vouched for", note: "A member's code on your file — if one sent you." },
   { title: "Aboard", note: "Card in hand, manifest open." },
 ];
 
-/* How far the ladder has been climbed, by the status the database keeps. */
+/* How far the ladder has been climbed, by the status the database keeps.
+   Vouching is a property of the application (its invite_code), not a status
+   an application waits in — so no status maps to 3, and "aboard" clears the
+   whole ladder whether or not a code came with the file. */
 export const REACHED: Record<ApplicationStage, number> = {
   received: 1,
   review: 1,

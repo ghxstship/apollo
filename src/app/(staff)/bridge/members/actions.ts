@@ -48,6 +48,7 @@ export type MemberDetail = {
   memberNo: string;
   email: string;
   phone: string;
+  phoneVerified: boolean;
   handle: string;
   joined: string;
   planLine: string;
@@ -137,6 +138,7 @@ export async function loadMember(
       memberNo: memberMark(profile.member_no) || "—",
       email: profile.email ?? "—",
       phone: profile.phone ?? "—",
+      phoneVerified: !!profile.phone_verified,
       handle: profile.handle ?? "—",
       joined: profile.joined_at,
       planLine: plan?.label ?? "No plan on file",
@@ -196,6 +198,27 @@ export async function setMemberStatus(
      on it. A failure here must not undo the standing change — the member is
      paused either way, and Shoreside needs to know the card was not. */
   return note && (dues.kind === "not-wired" || dues.kind === "failed") ? { note } : {};
+}
+
+/* Marking a number verified. The write goes through verify_member_phone — a
+   staff-only definer RPC that opens the app.verify_phone gate the profile
+   column guard honours — because the column itself is barred to everyone:
+   members are rightly refused from swearing to their own number, and a direct
+   staff UPDATE would be stopped by the same guard.
+
+   The RPC's refusals are already in the club's voice ('a number is verified
+   from the Bridge'; 'there is no number on file to verify — the member adds
+   one on their You page first'), so they pass to the operator as said rather
+   than being flattened into ERR_LAND. */
+export async function verifyPhone(profileId: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const { error } = await supabase.rpc("verify_member_phone", { p_profile: profileId });
+  if (error) return { error: voice(error) };
+
+  revalidatePath("/bridge/members");
+  return {};
 }
 
 export async function adjustKnots(

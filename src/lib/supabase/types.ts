@@ -495,6 +495,15 @@ export type Database = {
         Args: { p_rsvp: string; p_addons: string[]; p_qty: number }
         Returns: number
       }
+      /* Hand-added after 20260901151953 — regenerate types to fold in. */
+      verify_member_phone: {
+        Args: { p_profile: string }
+        Returns: undefined
+      }
+      open_shoreside_thread: {
+        Args: Record<string, never>
+        Returns: string
+      }
       apply_with_invite: {
         Args: { p_full_name: string; p_email: string; p_city: string; p_note: string; p_code: string }
         Returns: string

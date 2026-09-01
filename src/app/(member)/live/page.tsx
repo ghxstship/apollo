@@ -1,22 +1,173 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Badge, StateBlock } from "@/components/ds";
 import { SURFACES } from "@/lib/brand";
 import { logDateTime, logTime, price } from "@/lib/format";
+import { moduleTables } from "@/lib/module-tables";
+import { DECK_FLAGS, DECK_STATES, type DeckState } from "@/lib/show";
 import type { Json } from "@/lib/supabase/types";
 import { getMember, type Voyage } from "../data";
+import { readLegs, readStops, type VoyageLeg, type VoyageStop } from "../charter/data";
 import { Countdown } from "./countdown";
 import { GalleyOrderForm, type GalleyItem } from "./galley";
 
 export const metadata: Metadata = { title: SURFACES.gateway };
 
-/* — the standard sea-day legs, offsets in minutes from cast-off — */
+/* — the standard sea-day legs, offsets in minutes from cast-off. The LAST
+   resort: the crew's posted legs come first, the voyage's itinerary jsonb
+   second, and this only when both are silent — a member should never read a
+   stock schedule while the crew has posted a real one. — */
 const LEGS = [
   { offset: -30, title: "Boards", detail: "Muster at the gangway. Waivers clear, coffee below deck." },
   { offset: 0, title: "Underway", detail: "Open water. Watch two on deck; helm open to first-timers." },
   { offset: 240, title: "Swim stop", detail: "If the water agrees. Ladder aft, buddy up." },
   { offset: 600, title: "Golden hour", detail: "The long light home. Back before it goes." },
 ] as const;
+
+/* One line of the member timeline, whichever source it came from. */
+type Leg = {
+  key: string;
+  /* Epoch ms when the leg is timed; null for a day-numbered charter leg. */
+  at: number | null;
+  timeLabel: string | null;
+  title: string;
+  detail: string | null;
+  /* The kit's hold copy in its order — reason, new plan, what is unchanged. */
+  hold: string | null;
+  /* Port-guide facts, printed in the data register. */
+  stops: string[];
+};
+
+/* Postgres `time` comes out as "11:00:00"; the seconds are noise here. */
+const hm = (t: string) => t.slice(0, 5);
+
+function stopLine(s: VoyageStop): string {
+  return [
+    s.name,
+    s.tender_at ? `tender ${hm(s.tender_at)}` : null,
+    s.last_return ? `last return ${hm(s.last_return)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function legsFromRows(legs: VoyageLeg[], stops: VoyageStop[], tz: string | null): Leg[] {
+  const out: Leg[] = legs.map((leg) => ({
+    key: leg.id,
+    at: leg.starts_at ? Date.parse(leg.starts_at) : null,
+    timeLabel: leg.starts_at ? logTime(leg.starts_at, tz) : `Day ${leg.day}`,
+    title: leg.port,
+    detail: leg.note,
+    /* The constraint guarantees all three fields on a held leg; the guard is
+       only for a cached row from before it existed. */
+    hold:
+      leg.status === "held" && leg.hold_reason && leg.hold_new_plan && leg.hold_unchanged
+        ? `Held — ${leg.hold_reason} · ${leg.hold_new_plan} · Unchanged: ${leg.hold_unchanged}`
+        : null,
+    stops: stops.filter((s) => s.leg_id === leg.id).map(stopLine),
+  }));
+  /* A stop filed under no leg still belongs on the page. */
+  const loose = stops.filter((s) => !s.leg_id).map(stopLine);
+  if (loose.length) {
+    out.push({
+      key: "ports-of-call",
+      at: null,
+      timeLabel: null,
+      title: "Ports of call",
+      detail: null,
+      hold: null,
+      stops: loose,
+    });
+  }
+  return out;
+}
+
+/* The guest-facing itinerary jsonb — [{ offset, title, note }], offsets in
+   minutes from cast-off, as the Voyages tab writes it. Anything that does not
+   parse is skipped rather than invented. */
+function legsFromItinerary(itinerary: Json | null, startMs: number, tz: string | null): Leg[] {
+  if (!Array.isArray(itinerary)) return [];
+  const out: Leg[] = [];
+  itinerary.forEach((item, i) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return;
+    const rec = item as { [key: string]: Json | undefined };
+    const offset = typeof rec.offset === "number" ? rec.offset : null;
+    const title = typeof rec.title === "string" && rec.title.trim() ? rec.title.trim() : null;
+    if (offset === null || !title) return;
+    const note =
+      typeof rec.note === "string" ? rec.note : typeof rec.detail === "string" ? rec.detail : null;
+    const at = startMs + offset * 60000;
+    out.push({
+      key: `itinerary-${i}`,
+      at,
+      timeLabel: logTime(new Date(at).toISOString(), tz),
+      title,
+      detail: note,
+      hold: null,
+      stops: [],
+    });
+  });
+  return out;
+}
+
+/* The deck-state signal flag, member-sized. Geometry carries the meaning,
+   never a division hue (src/lib/show.ts); stand_by is the one sanctioned
+   caution override, because the amber is doing the work of the word. */
+function DeckStateStrip({ state }: { state: DeckState }) {
+  const flag = DECK_FLAGS[state];
+  const ink = flag.inverse ? "var(--ivory-100)" : "var(--noir-900)";
+  const mark: CSSProperties =
+    flag.mark === "square"
+      ? { position: "absolute", inset: 0, margin: "auto", width: 10, height: 10, background: ink }
+      : flag.mark === "band"
+        ? { position: "absolute", left: 0, right: 0, top: 9, height: 6, background: ink }
+        : flag.mark === "triangle"
+          ? {
+              position: "absolute",
+              left: "50%",
+              top: 6,
+              transform: "translateX(-50%)",
+              width: 0,
+              height: 0,
+              borderLeft: "6px solid transparent",
+              borderRight: "6px solid transparent",
+              borderBottom: `11px solid ${ink}`,
+            }
+          : { position: "absolute", left: -10, top: -3, width: 56, height: 12, transform: "rotate(-32deg)", background: ink };
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 0",
+        borderBottom: "1px solid var(--line-faint)",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          position: "relative",
+          flex: "none",
+          width: 34,
+          height: 24,
+          overflow: "hidden",
+          border: "1px solid var(--border-strong)",
+          background: flag.caution
+            ? "var(--caution)"
+            : flag.inverse
+              ? "var(--noir-900)"
+              : "var(--surface-raised)",
+        }}
+      >
+        <span style={mark} />
+      </span>
+      <b style={{ font: "700 10px var(--font-mono)", letterSpacing: "var(--track-data)" }}>{flag.label}</b>
+      <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)" }}>{flag.says}</span>
+    </div>
+  );
+}
 
 /* Read a live condition off the voyage's conditions jsonb — never fake it. */
 function condition(conditions: Json | null, keys: string[]): string | null {
@@ -97,15 +248,36 @@ export default async function LivePage() {
     );
   }
 
-  /* Am I aboard? The galley only serves the crew on the water. */
-  const { data: myRsvp } = await supabase
-    .from("rsvps")
-    .select("id,status")
-    .eq("voyage_id", live.id)
-    .eq("profile_id", user.id)
-    .eq("status", "aboard")
-    .maybeSingle();
+  /* Am I aboard? The galley only serves the crew on the water. Alongside it:
+     the voyage's posted legs, its stops, and the deck state.
+
+     RLS reality, read before writing this (supabase/migrations/20260825065942):
+     voyage_legs and voyage_stops carry `for select … using (true)` for both
+     anon and authenticated — a member reads them directly. voyages.deck_state
+     (20260825070340) rides the public voyages select policy; its column
+     comment says guests are meant to read it. Nothing here needs a definer or
+     a wider policy. moduleTables() only because the shared type file predates
+     these tables and this column — see src/lib/module-tables.ts. */
+  const db = moduleTables(supabase);
+  const [{ data: myRsvp }, legRows, stopRows, deckRes] = await Promise.all([
+    supabase
+      .from("rsvps")
+      .select("id,status")
+      .eq("voyage_id", live.id)
+      .eq("profile_id", user.id)
+      .eq("status", "aboard")
+      .maybeSingle(),
+    readLegs(supabase, live.id),
+    readStops(supabase, live.id),
+    db.from("voyages").select("deck_state").eq("id", live.id).maybeSingle(),
+  ]);
   const aboard = !!myRsvp;
+
+  /* Validated against the model rather than cast blind — the check constraint
+     guarantees the four values, but a constraint is not a compiler. */
+  const deckRaw = (deckRes.data as { deck_state?: string | null } | null)?.deck_state ?? null;
+  const deckState: DeckState | null =
+    deckRaw && (DECK_STATES as readonly string[]).includes(deckRaw) ? (deckRaw as DeckState) : null;
 
   /* Galley shelf + my orders for this voyage. */
   const [itemsRes, ordersRes] = aboard
@@ -143,8 +315,32 @@ export default async function LivePage() {
   /* Leg states derived from the clock — done, current, or ahead. */
   const nowMs = Date.parse(nowIso);
   const startMs = Date.parse(live.starts_at);
-  const legTimes = LEGS.map((l) => startMs + l.offset * 60000);
-  const currentIdx = legTimes.reduce((acc, t, i) => (t <= nowMs ? i : acc), -1);
+
+  /* The crew's posted legs first, the itinerary jsonb second, the standard
+     sea-day fallback only when both are empty. */
+  const postedLegs = legsFromRows(legRows, stopRows, live.time_zone);
+  const itineraryLegs = postedLegs.length
+    ? []
+    : legsFromItinerary(live.itinerary, startMs, live.time_zone);
+  const legs: Leg[] = postedLegs.length
+    ? postedLegs
+    : itineraryLegs.length
+      ? itineraryLegs
+      : LEGS.map((l, i) => {
+          const at = startMs + l.offset * 60000;
+          return {
+            key: `standard-${i}`,
+            at,
+            timeLabel: logTime(new Date(at).toISOString(), live.time_zone),
+            title: l.title,
+            detail: l.detail,
+            hold: null,
+            stops: [],
+          };
+        });
+  /* The current leg is the last timed one already begun; untimed legs take no
+     state of their own. */
+  const currentIdx = legs.reduce((acc, l, i) => (l.at !== null && l.at <= nowMs ? i : acc), -1);
 
   /* Live conditions off the voyage record — "—" when the log is silent. */
   const cond = live.conditions;
@@ -178,14 +374,29 @@ export default async function LivePage() {
       </div>
       <div className="now-seam"></div>
 
+      {deckState ? <DeckStateStrip state={deckState} /> : null}
+
       <div className="now-tl ls-rise">
-        {LEGS.map((leg, i) => (
-          <div key={leg.title} className={i < currentIdx ? "done" : i === currentIdx ? "here" : undefined}>
-            <span className="t">{logTime(new Date(legTimes[i]).toISOString(), live.time_zone)}</span>
+        {legs.map((leg, i) => (
+          <div key={leg.key} className={i < currentIdx ? "done" : i === currentIdx ? "here" : undefined}>
+            <span className="t">{leg.timeLabel ?? "—"}</span>
             <span className="dot"><i></i></span>
             <div>
               <b className={i === currentIdx ? "ls-live" : undefined}>{leg.title}</b>
-              <p>{leg.detail}</p>
+              {leg.detail ? <p>{leg.detail}</p> : null}
+              {leg.hold ? <p style={{ color: "var(--caution)" }}>{leg.hold}</p> : null}
+              {leg.stops.map((s) => (
+                <p
+                  key={s}
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    letterSpacing: "var(--track-data)",
+                  }}
+                >
+                  {s.toUpperCase()}
+                </p>
+              ))}
             </div>
           </div>
         ))}

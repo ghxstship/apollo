@@ -10,6 +10,7 @@ import {
   openContest,
   settleContest,
   type ContestMetric,
+  type ContestScope,
   type ContestShape,
 } from "./actions";
 
@@ -36,7 +37,13 @@ function statusTone(s: ContestRow["status"]): "positive" | "caution" | "outline"
   return "caution";
 }
 
-export function RegattasClient({ rows }: { rows: ContestRow[] }) {
+export function RegattasClient({
+  rows,
+  voyages,
+}: {
+  rows: ContestRow[];
+  voyages: Array<{ value: string; label: string }>;
+}) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [calling, setCalling] = React.useState(false);
@@ -46,6 +53,8 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
   const [slug, setSlug] = React.useState("");
   const [blurb, setBlurb] = React.useState("");
   const [shape, setShape] = React.useState<ContestShape>("regatta");
+  const [scope, setScope] = React.useState<ContestScope>("member");
+  const [voyageId, setVoyageId] = React.useState("");
   const [metric, setMetric] = React.useState<ContestMetric>("nm");
   const [target, setTarget] = React.useState("100");
   const [prize, setPrize] = React.useState("");
@@ -171,6 +180,8 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
                     slug,
                     blurb,
                     shape,
+                    scope,
+                    voyageId: scope === "crew" ? voyageId || null : null,
                     metric,
                     target: Number(target) || 0,
                     prize,
@@ -187,6 +198,8 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
                   setSlug("");
                   setBlurb("");
                   setPrize("");
+                  setScope("member");
+                  setVoyageId("");
                   show({ msg: "Called.", meta: "DRAFT · OPEN IT WHEN READY" });
                 })
               }
@@ -219,6 +232,36 @@ export function RegattasClient({ rows }: { rows: ContestRow[] }) {
               onChange={() => setShape("challenge")}
             />
           </div>
+          {/* Scope. Crew contests have been complete server-side since
+              20260819145000 — the constraint requires the voyage and the entry
+              policy admits only its aboard crew; the composer just could never
+              say anything but member. */}
+          <div role="radiogroup" aria-label="Scope" style={{ display: "flex", gap: 18 }}>
+            <Radio
+              name="contest-scope"
+              label="Members — open to the club"
+              checked={scope === "member"}
+              onChange={() => setScope("member")}
+            />
+            <Radio
+              name="contest-scope"
+              label="Crew — one sailing only"
+              checked={scope === "crew"}
+              onChange={() => setScope("crew")}
+            />
+          </div>
+          {scope === "crew" ? (
+            <Select
+              label="Sailing"
+              hint="Only those aboard this sailing can enter."
+              value={voyageId}
+              onChange={(e) => setVoyageId(e.target.value)}
+              options={[
+                { value: "", label: voyages.length ? "Pick the sailing" : "Nothing on the board to run it on" },
+                ...voyages,
+              ]}
+            />
+          ) : null}
           <Select
             label="Measured by"
             value={metric}

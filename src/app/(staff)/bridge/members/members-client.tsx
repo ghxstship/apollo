@@ -12,6 +12,7 @@ import {
   removeSegment,
   saveSegment,
   setMemberStatus,
+  verifyPhone,
   type MemberDetail,
   type SegmentFilters,
 } from "./actions";
@@ -122,6 +123,7 @@ export function MembersClient({
   const [loading, setLoading] = React.useState(false);
   const [holding, setHolding] = React.useState(false);
   const [adjusting, setAdjusting] = React.useState(false);
+  const [verifying, setVerifying] = React.useState(false);
   const [knotDelta, setKnotDelta] = React.useState("");
   const [knotReason, setKnotReason] = React.useState("");
 
@@ -405,6 +407,14 @@ export function MembersClient({
               <span className="hm-mono">CONTACT</span>
               <p style={{ fontSize: 13, marginTop: 4 }}>
                 {detail.email} · {detail.phone}
+                {detail.phone !== "—" ? (
+                  <>
+                    {" "}
+                    <Badge tone={detail.phoneVerified ? "positive" : "outline"}>
+                      {detail.phoneVerified ? "Number verified" : "Unverified"}
+                    </Badge>
+                  </>
+                ) : null}
                 <br />
                 {detail.handle} · joined {logDate(detail.joined, CLUB_ZONE)}
               </p>
@@ -470,6 +480,11 @@ export function MembersClient({
               <Button size="sm" variant="outline" disabled={pending} onClick={() => setAdjusting(true)}>
                 Correct knots
               </Button>
+              {!detail.phoneVerified ? (
+                <Button size="sm" variant="outline" disabled={pending} onClick={() => setVerifying(true)}>
+                  Mark number verified
+                </Button>
+              ) : null}
               <Link className="ls-btn ls-btn--outline ls-btn--sm" href="/bridge/manifests">
                 Manifests
               </Link>
@@ -605,6 +620,55 @@ export function MembersClient({
             onChange={(e) => setKnotReason(e.target.value)}
           />
         </div>
+      </Dialog>
+
+      <Dialog
+        open={verifying}
+        onClose={() => setVerifying(false)}
+        width={420}
+        eyebrow={detail ? detail.name : ""}
+        title="Mark this number verified?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setVerifying(false)}>
+              Not yet
+            </Button>
+            <Button
+              variant="gold"
+              disabled={pending}
+              onClick={() => {
+                const row = openRow;
+                if (!row) return;
+                startTransition(async () => {
+                  const res = await verifyPhone(row.id);
+                  if (res.error) {
+                    /* The RPC speaks for itself — 'there is no number on file
+                       to verify — the member adds one on their You page first'
+                       arrives here as said, refusal and way out together. */
+                    show({ msg: res.error, tone: "danger" });
+                    return;
+                  }
+                  setVerifying(false);
+                  setDetail((d) => (d ? { ...d, phoneVerified: true } : d));
+                  show({
+                    msg: "Number verified. Weather-hold texts can reach them now.",
+                    meta: `${row.name.toUpperCase()} · ${detail?.phone ?? ""}`,
+                    tone: "positive",
+                  });
+                });
+              }}
+            >
+              Mark it verified
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13, lineHeight: 1.6 }}>
+          {detail?.phone ?? "—"} — verify only a number you have called or seen
+          answered. The weather-hold texts ride on it. If the member changes
+          their number later, the flag drops on its own and it is verified
+          again from here.
+        </p>
       </Dialog>
 
       {toast ? (

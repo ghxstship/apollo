@@ -99,22 +99,43 @@ export default async function ShowPage() {
   const queue = (pods ?? []) as PodSessionRow[];
   const kit = (elements ?? []) as ElementRow[];
 
-  /* Names for the queue. Two queries rather than a nested embed: the embed
-     would depend on PostgREST resolving two hops of foreign key, and this
-     surface is read on a wet deck where a silently empty column is worse than
-     one extra round trip. */
-  const rsvpIds = queue.map((q) => q.rsvp_id);
-  const { data: passes } = rsvpIds.length
-    ? await supabase.from("rsvps").select("id, profile_id").in("id", rsvpIds)
+  /* Names for the queue, and the aboard passes the queue could still take.
+     Two queries rather than a nested embed: the embed would depend on PostgREST
+     resolving two hops of foreign key, and this surface is read on a wet deck
+     where a silently empty column is worse than one extra round trip.
+
+     The aboard read is the enqueue control's whole world: pod_sessions is
+     unique on (voyage_id, rsvp_id), so a pass already queued is not offered
+     again, and a pass that is not aboard is not offered at all. */
+  const queuedIds = new Set(queue.map((q) => q.rsvp_id));
+  const { data: aboard } = sailing
+    ? await supabase
+        .from("rsvps")
+        .select("id, profile_id")
+        .eq("voyage_id", sailing.id)
+        .eq("status", "aboard")
     : { data: [] };
-  const profileIds = (passes ?? []).map((p) => p.profile_id);
+  const aboardIds = new Set((aboard ?? []).map((p) => p.id));
+  /* A queued pass whose status has since moved off 'aboard' still needs its
+     name on the board. */
+  const strayIds = [...queuedIds].filter((id) => !aboardIds.has(id));
+  const { data: strays } = strayIds.length
+    ? await supabase.from("rsvps").select("id, profile_id").in("id", strayIds)
+    : { data: [] };
+  const passes = [...(aboard ?? []), ...(strays ?? [])];
+  const profileIds = passes.map((p) => p.profile_id);
   const { data: people } = profileIds.length
     ? await supabase.from("profiles").select("id, full_name").in("id", profileIds)
     : { data: [] };
   const nameByProfile = new Map((people ?? []).map((p) => [p.id, p.full_name ?? "A guest"]));
   const names = Object.fromEntries(
-    (passes ?? []).map((p) => [p.id, nameByProfile.get(p.profile_id) ?? "A guest"])
+    passes.map((p) => [p.id, nameByProfile.get(p.profile_id) ?? "A guest"])
   );
+
+  const candidates = (aboard ?? [])
+    .filter((p) => !queuedIds.has(p.id))
+    .map((p) => ({ id: p.id, name: nameByProfile.get(p.profile_id) ?? "A guest" }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const subsByElement = new Set((subs ?? []).map((s) => s.element_id));
   /* The specification error the whole substitution rule exists to catch, shown
@@ -210,7 +231,7 @@ export default async function ShowPage() {
                 a preference
               </span>
             </div>
-            <PodQueue sessions={queue} names={names} />
+            <PodQueue voyageId={sailing.id} sessions={queue} names={names} candidates={candidates} />
           </div>
         </>
       )}

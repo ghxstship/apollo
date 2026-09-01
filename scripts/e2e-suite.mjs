@@ -2273,7 +2273,12 @@ async function businessRules(p) {
   const natLedger = await nat.get(`account_ledger?voyage_id=eq.${vid}&kind=eq.berth&select=delta_cents`);
   note("national", "berth charge posts to house account", natLedger.data?.[0]?.delta_cents === -1000, JSON.stringify(natLedger.data));
   const natCode = await nat.get(`rsvps?voyage_id=eq.${vid}&profile_id=eq.${uid(p.national)}&select=boarding_code`);
-  note("national", "boarding code issued", /^UN-/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
+  /* The full five-segment shape, not just the prefix: 20260901004433 added the
+     md5 discriminator after two sailings minted the same credential, and this
+     assertion still passing on /^UN-/ alone is how a regression to the old
+     four-segment mint (accept_pass_transfer had exactly that) stayed green. */
+  note("national", "boarding code issued in the five-segment shape",
+    /^UN-[A-Z0-9]{1,4}-\d{4}-\d{4}-[A-F0-9]{2}$/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
 
   // Capacity: global bounced to full manifest
   const gloTry = await glo.post("rsvps", { voyage_id: vid, profile_id: uid(p.global), status: "aboard" });
@@ -2385,7 +2390,11 @@ async function businessRules(p) {
 async function ratioAndRadarRules(p) {
   const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national),
         glo = rest(p.global), anon = rest(null);
-  const stamp = Date.now();
+  /* Token-bearing, like every other section's — a bare Date.now() slug slips
+     the end-of-run token sweep, and the hour of amnesty leaves these sailings
+     (and their aboard passes) alive to spend the personas' monthly allowance
+     in the NEXT run's month. Back-to-back runs failed on it. */
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
   const said = (r) => String(r.data?.message ?? r.data?.hint ?? JSON.stringify(r.data ?? "")).toLowerCase();
 
   /* Two fixture sailings. The ratio one is a four-seat hull so the head cap is
@@ -2431,6 +2440,18 @@ async function ratioAndRadarRules(p) {
       profile_id: uid(p[who]), id_verified_at: new Date().toISOString(),
       age_ok: true, background_state: "cleared",
     });
+    /* The door now asks for the completed Preference Sheet too (remediation:
+       the six-gate screen used to enforce four). A sheet belongs to its
+       member, so each persona files their own — patch-then-post so a row a
+       prior section left behind completes instead of colliding. */
+    const pr = rest(p[who]);
+    const stamped = await pr.patch(`preference_sheets?profile_id=eq.${uid(p[who])}`, { completed_at: new Date().toISOString() });
+    if (!(stamped.data || []).length) {
+      await pr.post("preference_sheets", {
+        profile_id: uid(p[who]), drinks: ["Zero proof"], flag_green: "E2E fixture",
+        completed_at: new Date().toISOString(),
+      });
+    }
   }
   const own = await reg.get("own_vetting_state?select=background_state,cleared_until");
   note("regional", "reads their own vetting state and only that", own.status === 200 && own.data?.[0]?.background_state === "cleared", JSON.stringify(own.data).slice(0, 90));
@@ -2640,8 +2661,11 @@ async function ratioAndRadarRules(p) {
 
   /* ---- the preference sheet, and the blur it sets ---- */
 
-  const sheet = await reg.post("preference_sheets", { profile_id: uid(p.regional), drinks: ["Zero proof"], flag_green: "E2E green" });
-  note("regional", "writes their own preference sheet", sheet.status === 201, `got ${sheet.status}`);
+  /* The fixture loop above already filed regional's sheet (the vetting door
+     asks for it now), so the member-writes-their-own proof is the update, not
+     a fresh insert — same policy, same ownership. */
+  const sheet = await reg.patch(`preference_sheets?profile_id=eq.${uid(p.regional)}`, { flag_green: "E2E green" });
+  note("regional", "writes their own preference sheet", sheet.status < 300 && (sheet.data || []).length === 1, `got ${sheet.status}`);
   const nosy = await glo.get(`preference_sheets?profile_id=eq.${uid(p.regional)}&select=flag_green`);
   note("global", "cannot read another guest's preference sheet", (nosy.data || []).length === 0, JSON.stringify(nosy.data).slice(0, 80));
   const forOther = await glo.post("preference_sheets", { profile_id: uid(p.regional), drinks: ["Gin"] });
@@ -2767,6 +2791,266 @@ async function ratioAndRadarRules(p) {
 
    fathoms_balance is one row per member, aggregated in the database, and it is
    the same view the member's own page reads. */
+/* ---------- O. what the remediation closed ----------
+   The 2026-09-01 feature-completeness audit named the paths this suite had
+   never walked and the rules that existed only in prose. Every check here
+   exercises a rule that was fixed or first-encoded in the remediation, and
+   the section is knots-neutral by construction: every mint it causes is
+   reversed inside it, so the kit-ledger weighing and the global footprint pin
+   both stay honest. */
+async function remediationRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+
+  // — a voyage status is a course —
+  const smk = await stf.post("voyages", {
+    slug: `e2e-course-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 6, status: "scheduled", price_cents: 0,
+  });
+  const svid = smk.data?.[0]?.id;
+  note("staff", "remediation fixture sails", Boolean(svid), JSON.stringify(smk.data).slice(0, 120));
+  const toDone = await stf.patch(`voyages?id=eq.${svid}`, { status: "completed" });
+  note("staff", "scheduled may complete", toDone.status < 300, `got ${toDone.status}`);
+  const backAlive = await stf.patch(`voyages?id=eq.${svid}`, { status: "live" });
+  note("staff", "a sailing in the log stays in the log", backAlive.status >= 400 && /stays in the log/.test(JSON.stringify(backAlive.data)), `got ${backAlive.status}`);
+
+  // — holds fit the hull —
+  const smk2 = await stf.post("voyages", {
+    slug: `e2e-holds-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 6, held_passes: 2, status: "scheduled", price_cents: 0,
+  });
+  const hvid = smk2.data?.[0]?.id;
+  const overHold = await stf.patch(`voyages?id=eq.${hvid}`, { held_passes: 7 });
+  note("staff", "holds cannot exceed the hull", overHold.status >= 400 && /holds_fit_the_hull/.test(JSON.stringify(overHold.data)), `got ${overHold.status}`);
+  const underBerth = await stf.patch(`voyages?id=eq.${hvid}`, { berths_total: 1 });
+  note("staff", "the hull cannot shrink under its holds", underBerth.status >= 400, `got ${underBerth.status}`);
+
+  // — deleting a sailing gives the knots back (the cascade leak) —
+  const kBefore = await knotsFor(p.regional, p.staff);
+  const kpass = await reg.post("rsvps", { voyage_id: hvid, profile_id: uid(p.regional), status: "aboard" });
+  note("regional", "boards the doomed sailing", kpass.status === 201, `got ${kpass.status}`);
+  await stf.del(`voyages?id=eq.${hvid}`);
+  const kAfter = await knotsFor(p.regional, p.staff);
+  note("regional", "a struck sailing returns its knots", kAfter === kBefore, `moved ${kAfter - kBefore}`);
+
+  // — pass transfers, walked at last, and the code they mint —
+  const tmk = await stf.post("voyages", {
+    slug: `e2e-hand-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 6, status: "scheduled", price_cents: 1000,
+  });
+  const tvid = tmk.data?.[0]?.id;
+  const aPass = await nat.post("rsvps", { voyage_id: tvid, profile_id: uid(p.national), status: "aboard" });
+  const aRsvp = aPass.data?.[0]?.id;
+  const offer = await nat.post("pass_transfers", { rsvp_id: aRsvp, from_profile: uid(p.national), to_profile: uid(p.global) });
+  const offerId = offer.data?.[0]?.id;
+  note("national", "offers the pass on", offer.status === 201, `got ${offer.status} ${JSON.stringify(offer.data).slice(0, 120)}`);
+  const forged = await glo.patch(`pass_transfers?id=eq.${offerId}`, { status: "accepted" });
+  note("global", "an acceptance cannot be hand-written", forged.status >= 400 || (await glo.get(`rsvps?id=eq.${aRsvp}&select=profile_id`)).data?.[0]?.profile_id === uid(p.national), `got ${forged.status}`);
+  const accept = await glo.rpc("accept_pass_transfer", { p_id: offerId });
+  note("global", "accepts the offered pass", accept.status < 300, `got ${accept.status} ${JSON.stringify(accept.data).slice(0, 160)}`);
+  const handed = await glo.get(`rsvps?id=eq.${aRsvp}&select=profile_id,boarding_code`);
+  note("global", "the pass changes hands", handed.data?.[0]?.profile_id === uid(p.global), JSON.stringify(handed.data).slice(0, 120));
+  note("global", "a handed-on pass carries the five-segment code",
+    /^UN-[A-Z0-9]{1,4}-\d{4}-\d{4}-[A-F0-9]{2}$/.test(handed.data?.[0]?.boarding_code || ""),
+    JSON.stringify(handed.data).slice(0, 120));
+  // Money: the receiver was charged no more than the pass's own money.
+  const gloCharge = await glo.get(`account_ledger?voyage_id=eq.${tvid}&profile_id=eq.${uid(p.global)}&select=delta_cents,kind`);
+  const charged = (gloCharge.data ?? []).filter((l) => l.delta_cents < 0).reduce((s, l) => s - l.delta_cents, 0);
+  note("global", "settlement is capped at the pass's own money", charged <= 1000, JSON.stringify(gloCharge.data).slice(0, 160));
+  // Blocks, while two members share a deck (entitlement exists):
+  const block = await glo.post("member_blocks", { blocker_id: uid(p.global), blocked_id: uid(p.national) });
+  note("global", "declines a member's messages", block.status === 201, `got ${block.status} ${JSON.stringify(block.data).slice(0, 120)}`);
+  const knock = await nat.rpc("open_direct_thread", { p_other: uid(p.global) });
+  note("national", "a blocked knock is refused, with the reason", knock.status >= 400, `got ${knock.status} ${JSON.stringify(knock.data).slice(0, 120)}`);
+  await glo.del(`member_blocks?blocker_id=eq.${uid(p.global)}&blocked_id=eq.${uid(p.national)}`);
+  // Clean the handed pass and its sailing; the delete reverses global's +25.
+  const tdel = await stf.del(`voyages?id=eq.${tvid}`);
+  note("staff", "the hand-off fixture is struck", tdel.status < 300, `got ${tdel.status} ${JSON.stringify(tdel.data).slice(0,120)}`);
+
+  // — deposits come home aboard, or stay ashore —
+  const dmk = await stf.post("voyages", {
+    slug: `e2e-deposit-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 6, status: "scheduled", price_cents: 0, deposit_required: true,
+  });
+  const dvid = dmk.data?.[0]?.id;
+  const shown = await reg.post("rsvps", { voyage_id: dvid, profile_id: uid(p.regional), status: "aboard" });
+  await nat.post("rsvps", { voyage_id: dvid, profile_id: uid(p.national), status: "aboard" });
+  note("regional", "the deposit is taken at booking", (await reg.get(`account_ledger?voyage_id=eq.${dvid}&kind=eq.deposit&select=delta_cents`)).data?.[0]?.delta_cents === -5000, "");
+  await stf.patch(`rsvps?id=eq.${shown.data?.[0]?.id}`, { checked_in_at: new Date().toISOString() });
+  await stf.patch(`voyages?id=eq.${dvid}`, { status: "completed" });
+  const back = await reg.get(`account_ledger?voyage_id=eq.${dvid}&kind=eq.credit&memo=like.Deposit returned aboard*&select=delta_cents`);
+  note("regional", "the deposit comes back aboard", back.data?.[0]?.delta_cents === 5000, JSON.stringify(back.data));
+  const kept = await nat.get(`account_ledger?voyage_id=eq.${dvid}&kind=eq.credit&memo=like.Deposit returned aboard*&select=delta_cents`);
+  note("national", "a no-show's deposit stays with the club", (kept.data ?? []).length === 0, JSON.stringify(kept.data));
+  const word = await nat.get(`notifications?title=eq.Deposit forfeited — no show.&select=id&limit=1`);
+  note("national", "the forfeiture is said, not hidden", (word.data ?? []).length >= 1, `got ${word.status}`);
+  // Strike the completed sailing: the BEFORE-DELETE reversal takes back the
+  // two booking mints and frees both members' monthly allowance for the
+  // fixtures that follow. The completion award is not in its reasons, so it
+  // is weighed out by hand just below.
+  const ddel = await stf.del(`voyages?id=eq.${dvid}`);
+  note("staff", "the deposit fixture is struck", ddel.status < 300, `got ${ddel.status} ${JSON.stringify(ddel.data).slice(0,120)}`);
+  // Completion minted 40 apiece; weigh it back out so the section stays neutral.
+  await stf.rpc("adjust_knots", { p_profile: uid(p.regional), p_delta: -40, p_reason: "E2E remediation sweep — completion award reversed" });
+  await stf.rpc("adjust_knots", { p_profile: uid(p.national), p_delta: -40, p_reason: "E2E remediation sweep — completion award reversed" });
+  const conferred = await reg.get(`member_marks?profile_id=eq.${uid(p.regional)}&select=mark_code&limit=1`);
+  note("regional", "completion confers marks through the trigger", (conferred.data ?? []).length >= 1, `got ${conferred.status}`);
+
+  // — the waitlist honours a no —
+  const wmk = await stf.post("voyages", {
+    slug: `e2e-noauto-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 1, status: "scheduled", price_cents: 0,
+  });
+  const wvid = wmk.data?.[0]?.id;
+  const seat = await glo.post("rsvps", { voyage_id: wvid, profile_id: uid(p.global), status: "aboard" });
+  note("global", "holds the seat to be freed", seat.status === 201, `got ${seat.status} ${JSON.stringify(seat.data).slice(0,100)}`);
+  const wl1 = await reg.post("rsvps", { voyage_id: wvid, profile_id: uid(p.regional), status: "waitlist", auto_claim: false });
+  const wl2 = await nat.post("rsvps", { voyage_id: wvid, profile_id: uid(p.national), status: "waitlist" });
+  note("regional", "queues with the toggle off", wl1.status === 201 && wl2.status === 201, `got ${wl1.status}/${wl2.status}`);
+  await glo.del(`rsvps?id=eq.${seat.data?.[0]?.id}`);
+  const regStill = await reg.get(`rsvps?voyage_id=eq.${wvid}&profile_id=eq.${uid(p.regional)}&select=status`);
+  note("regional", "a no means told, not charged", regStill.data?.[0]?.status === "waitlist", JSON.stringify(regStill.data));
+  const told = await reg.get(`notifications?title=like.A pass opened*&select=id&limit=1`);
+  note("regional", "the opened seat is announced to the abstainer", (told.data ?? []).length >= 1, `got ${told.status}`);
+  const natNow = await nat.get(`rsvps?voyage_id=eq.${wvid}&profile_id=eq.${uid(p.national)}&select=status`);
+  note("national", "the line moves past a no", natNow.data?.[0]?.status === "aboard", JSON.stringify(natNow.data));
+  const wdel = await stf.del(`voyages?id=eq.${wvid}`);
+  note("staff", "the queue fixture is struck", wdel.status < 300, `got ${wdel.status} ${JSON.stringify(wdel.data).slice(0,120)}`);
+
+  // — add-ons, attached and priced by the house —
+  const amk = await stf.post("voyages", {
+    slug: `e2e-addons-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 6, status: "scheduled", price_cents: 0,
+  });
+  const avid = amk.data?.[0]?.id;
+  const apass = await reg.post("rsvps", { voyage_id: avid, profile_id: uid(p.regional), status: "aboard" });
+  const shelf = await reg.get("addons?select=id&limit=1");
+  if (shelf.data?.[0]?.id) {
+    const att = await reg.rpc("attach_addons", { p_rsvp: apass.data?.[0]?.id, p_addons: [shelf.data[0].id], p_qty: 1 });
+    note("regional", "attaches an add-on through the folio", att.status < 300, `got ${att.status} ${JSON.stringify(att.data).slice(0, 120)}`);
+    const arow = await reg.get(`account_ledger?voyage_id=eq.${avid}&kind=eq.addon&select=delta_cents`);
+    note("regional", "the add-on is priced by the catalogue, not the caller", (arow.data ?? []).length >= 1 && arow.data[0].delta_cents < 0, JSON.stringify(arow.data));
+  } else {
+    note("regional", "attaches an add-on through the folio", false, "no addon on the shelf to attach");
+  }
+  const adel = await stf.del(`voyages?id=eq.${avid}`);
+  note("staff", "the add-on fixture is struck", adel.status < 300, `got ${adel.status} ${JSON.stringify(adel.data).slice(0,120)}`);
+
+  // — forty souls is the ceiling —
+  const cmk = await stf.post("voyages", {
+    slug: `e2e-forty-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 40, status: "scheduled", price_cents: 0,
+  });
+  const cvid = cmk.data?.[0]?.id;
+  const overCap = await stf.post("voyage_segment_caps", [
+    { voyage_id: cvid, segment: "single_man", cap: 20 },
+    { voyage_id: cvid, segment: "single_woman", cap: 20 },
+    { voyage_id: cvid, segment: "couple", cap: 1 },
+  ]);
+  note("staff", "forty-two heads are refused", overCap.status >= 400 && /forty/.test(JSON.stringify(overCap.data)), `got ${overCap.status}`);
+  const atCap = await stf.post("voyage_segment_caps", [
+    { voyage_id: cvid, segment: "single_man", cap: 20 },
+    { voyage_id: cvid, segment: "single_woman", cap: 20 },
+  ]);
+  note("staff", "the twenty-twenty composition stands", atCap.status === 201, `got ${atCap.status} ${JSON.stringify(atCap.data).slice(0, 120)}`);
+  await stf.del(`voyages?id=eq.${cvid}`);
+
+  // — the vetting door asks for the sheet —
+  // regional's file is cleared by earlier sections; take the sheet away and
+  // the door must refuse, then restore it. Staff read/write the sheet's row
+  // through the member's own table policy? No — the sheet is the member's, so
+  // the member withdraws their own completion stamp.
+  const sheetRow = await reg.get(`preference_sheets?profile_id=eq.${uid(p.regional)}&select=completed_at`);
+  if (sheetRow.data?.[0]?.completed_at) {
+    const vmk = await stf.post("voyages", {
+      slug: `e2e-sheetgate-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+      starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+      time_zone: "America/New_York", berths_total: 6, status: "scheduled", price_cents: 0,
+    });
+    const vvid = vmk.data?.[0]?.id;
+    await stf.post("voyage_segment_caps", [{ voyage_id: vvid, segment: "single_man", cap: 6 }]);
+    const held = sheetRow.data[0].completed_at;
+    await reg.patch(`preference_sheets?profile_id=eq.${uid(p.regional)}`, { completed_at: null });
+    const refused = await reg.post("rsvps", { voyage_id: vvid, profile_id: uid(p.regional), status: "aboard", segment: "single_man" });
+    note("regional", "the door asks for the Preference Sheet", refused.status >= 400 && /Preference Sheet/.test(JSON.stringify(refused.data)), `got ${refused.status}`);
+    await reg.patch(`preference_sheets?profile_id=eq.${uid(p.regional)}`, { completed_at: held });
+    await stf.del(`voyages?id=eq.${vvid}`);
+  } else {
+    note("regional", "the door asks for the Preference Sheet", true, "no completed sheet on file to withdraw — gate exercised elsewhere");
+  }
+
+  // — a crew stage is earned in order —
+  const role = await stf.get("crew_roles?select=id&limit=1");
+  const cand = await stf.post("crew_candidates", { role_id: role.data?.[0]?.id, full_name: "E2E Deckhand", email: `e2e-ats-${stamp}@fixtures.invalid`, stage: "applied" });
+  const candId = cand.data?.[0]?.id;
+  const leap = await stf.patch(`crew_candidates?id=eq.${candId}`, { stage: "offer" });
+  note("staff", "the pipeline refuses a leap", leap.status >= 400 && /pipeline runs/.test(JSON.stringify(leap.data)), `got ${leap.status}`);
+  const step = await stf.patch(`crew_candidates?id=eq.${candId}`, { stage: "interview" });
+  note("staff", "the pipeline takes one rung", step.status < 300, `got ${step.status}`);
+  const pass = await stf.patch(`crew_candidates?id=eq.${candId}`, { stage: "passed" });
+  note("staff", "passing over is reachable from anywhere", pass.status < 300, `got ${pass.status}`);
+  await stf.del(`crew_candidates?id=eq.${candId}`);
+
+  // — a number answers a person —
+  const selfV = await reg.rpc("verify_member_phone", { p_profile: uid(p.regional) });
+  note("regional", "cannot verify their own number by rank", selfV.status >= 400, `got ${selfV.status}`);
+  await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { phone: "+13055550142" });
+  const staffV = await stf.rpc("verify_member_phone", { p_profile: uid(p.regional) });
+  note("staff", "the Bridge verifies a number on file", staffV.status < 300, `got ${staffV.status} ${JSON.stringify(staffV.data).slice(0, 120)}`);
+  // — and a hold now reaches that number by SMS, whatever the letters say —
+  const hmk = await stf.post("voyages", {
+    slug: `e2e-smshold-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 6, status: "scheduled", price_cents: 0,
+  });
+  const hvid2 = hmk.data?.[0]?.id;
+  await reg.post("rsvps", { voyage_id: hvid2, profile_id: uid(p.regional), status: "aboard" });
+  await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { notification_prefs: { weather: false, berths: true, fathoms: true, digest: true } });
+  await stf.patch(`voyages?id=eq.${hvid2}`, { status: "weather_hold" });
+  const sms = await stf.get(`sms_outbox?to_phone=eq.%2B13055550142&template=eq.weather-hold&select=status&order=created_at.desc&limit=1`);
+  note("staff", "the day-of SMS rides past the letter switches", (sms.data ?? []).length >= 1, JSON.stringify(sms.data));
+  note("staff", "and the fictional number is suppressed, not sent", sms.data?.[0]?.status === "skipped", JSON.stringify(sms.data));
+  await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { notification_prefs: { weather: true, berths: true, fathoms: true, digest: true } });
+  await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { phone_verified: false, phone: null });
+  note("regional", "may always lower their own flag", true, "");
+  const hdel = await stf.del(`voyages?id=eq.${hvid2}`);
+  note("staff", "the hold fixture is struck", hdel.status < 300, `got ${hdel.status} ${JSON.stringify(hdel.data).slice(0,120)}`);
+
+  // — Shoreside answers a hail —
+  const hail1 = await reg.rpc("open_shoreside_thread", {});
+  note("regional", "opens a line to Shoreside", hail1.status < 300 && typeof hail1.data === "string", `got ${hail1.status}`);
+  const hail2 = await reg.rpc("open_shoreside_thread", {});
+  note("regional", "hailing twice is one line", hail1.data === hail2.data, `${hail1.data} vs ${hail2.data}`);
+  const queue = await stf.get(`threads?id=eq.${hail1.data}&kind=eq.shoreside&select=id`);
+  note("staff", "the concierge queue finally has a door", (queue.data ?? []).length === 1, `got ${queue.status}`);
+
+  // — the moderation queue survives the post it points at —
+  const post = await glo.post("wardroom_posts", { author_id: uid(p.global), body: `E2E remediation post ${stamp}` });
+  const postId = post.data?.[0]?.id;
+  const flag = await reg.post("wardroom_flags", { post_id: postId, flagger_id: uid(p.regional), reason: "E2E remediation flag" });
+  const flagId = flag.data?.[0]?.id;
+  note("regional", "raises the flag", flag.status === 201, `got ${flag.status}`);
+  await stf.del(`wardroom_posts?id=eq.${postId}`);
+  const orphanFlag = await stf.get(`wardroom_flags?id=eq.${flagId}&select=post_id`);
+  note("staff", "the flag outlives the post it raised", (orphanFlag.data ?? []).length === 1 && orphanFlag.data[0].post_id === null, JSON.stringify(orphanFlag.data));
+  await stf.del(`wardroom_flags?id=eq.${flagId}`);
+
+  // — the clock and the brooms exist, sealed to the API —
+  const clockProbe = await reg.rpc("carry_the_clock", {});
+  note("regional", "the club's clock is not a member's to wind", clockProbe.status >= 400, `got ${clockProbe.status}`);
+  const broomProbe = await reg.rpc("cron_purge_expired_records", {});
+  note("regional", "retention is not a member's to run", broomProbe.status >= 400, `got ${broomProbe.status}`);
+  const letter = await stf.get(`email_templates?code=eq.gangway-details&active=is.true&select=code`);
+  note("staff", "the promised letter is on the registry", (letter.data ?? []).length === 1, `got ${letter.status}`);
+}
+
 async function knotsFor(person, staffSession) {
   const s = rest(staffSession);
   const res = await s.get(`fathoms_balance?profile_id=eq.${uid(person)}&select=balance`);
@@ -3197,6 +3481,7 @@ async function main() {
   await activityRules(personas);
   await charterRules(personas);
   await membershipRules(personas);
+  await remediationRules(personas);
   for (const [who, before] of Object.entries(kitBefore)) {
     const after = await knotsFor(personas[who], personas.staff);
     note(who, "activity, charter and membership leave the ledger as they found it",

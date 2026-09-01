@@ -3,7 +3,7 @@
 import React from "react";
 import { Badge, Button, Dialog, StateBlock, Table, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { openTheRadar } from "./actions";
+import { cutAnchorsShort, openTheRadar } from "./actions";
 
 /* One row per sailing, with the state of its clock. The times are formatted on
    the server against the SAILING'S zone and arrive here as strings — a client
@@ -51,6 +51,34 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
      about, so it asks first. The first open does not — there is nothing yet to
      disagree with. */
   const [confirmReopen, setConfirmReopen] = React.useState<RadarOpsRow | null>(null);
+  /* Cutting the logs short is the one irreversible act on this screen, so it
+     always asks first. */
+  const [confirmCut, setConfirmCut] = React.useState<RadarOpsRow | null>(null);
+
+  const cut = (row: RadarOpsRow) =>
+    startTransition(async () => {
+      const res = await cutAnchorsShort(row.id);
+      setConfirmCut(null);
+      if (res.error) {
+        show({ msg: res.error, tone: "danger" });
+        return;
+      }
+      /* The count comes back from the write itself, never from the props this
+         screen was rendered with — a second operator pressing the same button
+         is told the truth, which is that nothing was left to cut. */
+      show(
+        res.cut
+          ? {
+              msg: "Cut short. The contacts are gone on both sides.",
+              meta: `${row.title.replace(/\.+$/, "").toUpperCase()} · ${res.cut} ${res.cut === 1 ? "ANCHOR" : "ANCHORS"} ENDED`,
+              tone: "caution",
+            }
+          : {
+              msg: "Nothing was live to cut — every anchor on this sailing had already expired.",
+              meta: row.title.replace(/\.+$/, "").toUpperCase(),
+            }
+      );
+    });
 
   const run = (row: RadarOpsRow, said: string) =>
     startTransition(async () => {
@@ -126,14 +154,21 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       width: 150,
       render: (r: RadarOpsRow) =>
         r.opens ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={pending}
-            onClick={() => setConfirmReopen(r)}
-          >
-            Re-read the clock
-          </Button>
+          <span style={{ display: "inline-flex", flexDirection: "column", gap: 4, alignItems: "start" }}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              onClick={() => setConfirmReopen(r)}
+            >
+              Re-read the clock
+            </Button>
+            {r.anchors > 0 ? (
+              <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirmCut(r)}>
+                Cut the logs short
+              </Button>
+            ) : null}
+          </span>
         ) : (
           <Button
             size="sm"
@@ -195,6 +230,34 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
         <p style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 10 }}>
           Picks already plotted and anchors already made are untouched, and a
           guarantee already settled stays settled.
+        </p>
+      </Dialog>
+
+      <Dialog
+        open={!!confirmCut}
+        onClose={() => setConfirmCut(null)}
+        eyebrow="Cut the logs short"
+        title="End every open Captain's Log on this sailing?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmCut(null)}>
+              Leave them
+            </Button>
+            <Button variant="gold" disabled={pending} onClick={() => confirmCut && cut(confirmCut)}>
+              Cut them short
+            </Button>
+          </>
+        }
+      >
+        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+          Ends the open Captain&apos;s Logs for this sailing now — cannot be
+          undone, cannot be extended back. Every live anchor expires at once, on
+          both sides, with no notice sent.
+        </p>
+        <p style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 10 }}>
+          This is a blind cut. The crew are never shown who is anchored to whom,
+          so there is no way to end one contact and keep another — it is all of
+          them or none.
         </p>
       </Dialog>
 

@@ -58,6 +58,53 @@ export async function seedTheBoard(voyageId: string): Promise<ShowResult> {
   return { ok: true };
 }
 
+/* Putting a guest in the queue at all. Until this existed the Pod could be
+   advanced but never populated: every control moved an existing row, no code
+   path inserted one, and the queue was empty on every sailing there has ever
+   been.
+
+   The insert is deliberately minimal — voyage, pass, position. `state` defaults
+   to 'waiting', which is the queue's entry state; `vip_priority` defaults
+   false; and `blur_required` is not sent at all, because the
+   a_pod_session_keeps_its_blur trigger derives it from blur_is_required() on
+   the guest's own record, and a client that supplied the value would only be
+   supplying something for the trigger to overrule. Authority is the
+   "the queue is the crew's" ALL policy (is_staff), same as every other write
+   on this surface. */
+export async function enqueuePod(voyageId: string, rsvpId: string): Promise<ShowResult> {
+  const { supabase, db, user } = await crew();
+  if (!user) return { error: "Sign in first." };
+  if (!rsvpId) return { error: "Pick a guest first." };
+
+  /* Next position. The ceiling aboard is forty souls, so one small read is
+     fine; the unique (voyage_id, position) index catches the race below. */
+  const { data: tail, error: readError } = await db
+    .from("pod_sessions")
+    .select("position")
+    .eq("voyage_id", voyageId)
+    .order("position", { ascending: false })
+    .limit(1);
+  if (readError) return { error: await voiceWith(supabase, readError) };
+  const position = ((tail?.[0]?.position as number | undefined) ?? 0) + 1;
+
+  const { error } = await db
+    .from("pod_sessions")
+    .insert({ voyage_id: voyageId, rsvp_id: rsvpId, position });
+  if (error) {
+    if (error.code === "23505") {
+      /* Two unique indexes can refuse this. (voyage_id, rsvp_id) means the
+         guest is already queued; (voyage_id, position) means two tablets hit
+         the queue in the same moment. */
+      return /position/i.test(error.message ?? "")
+        ? { error: "Two crew reached for the queue at once. Press it again." }
+        : { error: "That guest is already in the queue." };
+    }
+    return { error: await voiceWith(supabase, error) };
+  }
+  revalidatePath("/show");
+  return { ok: true };
+}
+
 /* Moving a guest through the pod. `blur` is raise-only by name as well as by
    trigger: there is no false to send, because the parameter is a boolean that is
    OR'd in rather than assigned, and the trigger would ignore a false anyway.

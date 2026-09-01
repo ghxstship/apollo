@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ds";
+import { Button, Select } from "@/components/ds";
 import {
   DECK_FLAGS,
   DECK_STATES,
@@ -10,7 +10,7 @@ import {
   type DeckState,
   type PodSessionRow,
 } from "@/lib/show";
-import { advancePod, issueTheEnvelopes, seedTheBoard, setDeckState } from "./actions";
+import { advancePod, enqueuePod, issueTheEnvelopes, seedTheBoard, setDeckState } from "./actions";
 
 /* The two controls on the bridge board: which flag flies, and where each guest
    is in the pod queue. Both write through server actions whose authority is RLS
@@ -81,14 +81,20 @@ export function SignalFlags({
 }
 
 export function PodQueue({
+  voyageId,
   sessions,
   names,
+  candidates,
 }: {
+  voyageId: string;
   sessions: PodSessionRow[];
   names: Record<string, string>;
+  /** Aboard passes not yet in the queue — the only rows enqueuePod can add. */
+  candidates: Array<{ id: string; name: string }>;
 }) {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, start] = React.useTransition();
+  const [pick, setPick] = React.useState("");
 
   const move = (id: string, state: string, blur?: true) =>
     start(async () => {
@@ -97,8 +103,52 @@ export function PodQueue({
       if (res.error) setError(res.error);
     });
 
+  /* The queue's front door. The state, the blur, and the VIP flag are all the
+     database's business — the crew choose only who, and the row lands at the
+     back of the line as 'waiting'. */
+  const add = () =>
+    start(async () => {
+      setError(null);
+      const res = await enqueuePod(voyageId, pick);
+      if (res.error) setError(res.error);
+      else setPick("");
+    });
+
+  const enqueue = candidates.length ? (
+    <div className="shw-acts" style={{ alignItems: "end", gap: 10 }}>
+      <Select
+        label="Add a guest"
+        value={pick}
+        onChange={(e) => setPick(e.target.value)}
+        options={[
+          { value: "", label: "Pick an aboard pass" },
+          ...candidates.map((c) => ({ value: c.id, label: c.name })),
+        ]}
+      />
+      <Button variant="outline" size="sm" disabled={pending || !pick} onClick={add}>
+        Add to the queue
+      </Button>
+    </div>
+  ) : (
+    <p className="shw-note">
+      {sessions.length
+        ? "Everyone aboard is already in the queue."
+        : "Nobody aboard to queue yet — passes appear here once guests are aboard."}
+    </p>
+  );
+
   if (!sessions.length) {
-    return <p className="shw-note">Nobody in the queue. The Pod opens at 12:45.</p>;
+    return (
+      <>
+        <p className="shw-note">Nobody in the queue. The Pod opens at 12:45.</p>
+        {enqueue}
+        {error ? (
+          <p className="shw-note" role="alert" style={{ color: "var(--danger)" }}>
+            {error}
+          </p>
+        ) : null}
+      </>
+    );
   }
 
   return (
@@ -149,6 +199,7 @@ export function PodQueue({
           </div>
         ))}
       </div>
+      {enqueue}
       {error ? (
         <p className="shw-note" role="alert" style={{ color: "var(--danger)" }}>
           {error}

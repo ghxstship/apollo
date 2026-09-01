@@ -19,6 +19,7 @@ import {
   ResumeBanner,
 } from "./you-client";
 import { SignOutForm } from "@/components/sign-out-form";
+import { InstallPrompt } from "@/components/member/install-prompt";
 
 export const metadata: Metadata = { title: "You" };
 
@@ -112,6 +113,11 @@ export default async function YouPage() {
           <ManifestConsent onManifest={profile?.on_manifest ?? true} />
         </div>
       </div>
+
+      {/* Renders nothing until the browser offers an install, and nothing at
+          all when the app is already on the home screen or the member said
+          not now. The heading lives inside the component for that reason. */}
+      <InstallPrompt />
 
       <div>
         <div className="you-h">Appearance</div>

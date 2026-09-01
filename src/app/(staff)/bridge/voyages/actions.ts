@@ -80,6 +80,48 @@ export async function saveVoyageOps(
   return done();
 }
 
+/* — The flotilla. voyage_vessels has had readers since the fleet landed
+     ("the flotilla is public") and a "staff write flotilla" ALL policy
+     (is_staff USING and WITH CHECK) that no code ever exercised — so the
+     manifests screen's "spread across the flotilla" dead-ended on "No yachts
+     assigned to this voyage yet" with no way to assign one. These two are that
+     policy's writer. — */
+
+export async function assignVessel(
+  voyageId: string,
+  vesselId: string,
+  position: number
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!vesselId) return { error: "Pick a hull first." };
+
+  const { error } = await supabase.from("voyage_vessels").insert({
+    voyage_id: voyageId,
+    vessel_id: vesselId,
+    position: Math.max(1, Math.round(position) || 1),
+  });
+  if (error) {
+    /* The primary key is (voyage_id, vessel_id) — the only duplicate this
+       shape can raise is the same hull twice. */
+    if (error.code === "23505") return { error: "That hull is already on this voyage." };
+    return { error: ERR_LAND };
+  }
+  return done();
+}
+
+export async function removeVessel(voyageId: string, vesselId: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const { error } = await supabase
+    .from("voyage_vessels")
+    .delete()
+    .eq("voyage_id", voyageId)
+    .eq("vessel_id", vesselId);
+  if (error) return { error: ERR_LAND };
+  return done();
+}
+
 export type SubClass = "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland";
 export type ItineraryLeg = { offset: number; title: string; note: string };
 

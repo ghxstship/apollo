@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, KnotsLedger, Toast, type LedgerEntry, type LedgerReward } from "@/components/ds";
+import { Badge, Button, Dialog, KnotsLedger, Toast, type LedgerEntry, type LedgerReward } from "@/components/ds";
 import { mintInvite, redeemReward } from "./actions";
 
 /* — Redeem a reward against the knots balance — */
@@ -100,6 +100,27 @@ export function KnotsPanel({
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
   const [redeemed, setRedeemed] = React.useState<string | null>(null);
+  /* The reward awaiting a second word. The kit specifies a confirm step:
+     spending is irreversible, so one click opens the question and only the
+     answer calls redeem_reward. */
+  const [confirming, setConfirming] = React.useState<(LedgerReward & { id: string }) | null>(null);
+
+  const spend = (r: LedgerReward & { id: string }) => {
+    if (pending) return;
+    setError(null);
+    startTransition(async () => {
+      const res = await redeemReward(r.id);
+      if (res.error) setError(res.error);
+      else setRedeemed(r.name);
+      setConfirming(null);
+    });
+  };
+
+  const costLine = confirming
+    ? confirming.costValue != null
+      ? `${confirming.costValue} knots`
+      : confirming.cost
+    : "";
 
   return (
     <>
@@ -110,13 +131,33 @@ export function KnotsPanel({
         onRedeem={onHold ? undefined : (r) => {
           if (pending) return;
           setError(null);
-          startTransition(async () => {
-            const res = await redeemReward((r as LedgerReward & { id: string }).id);
-            if (res.error) setError(res.error);
-            else setRedeemed(r.name);
-          });
+          setConfirming(r as LedgerReward & { id: string });
         }}
       />
+      <Dialog
+        open={!!confirming}
+        onClose={pending ? undefined : () => setConfirming(null)}
+        eyebrow="Knots and rewards"
+        title={confirming ? `Spend ${costLine} on ${confirming.name}?` : undefined}
+        footer={
+          confirming ? (
+            <>
+              <Button variant="outline" size="sm" disabled={pending} onClick={() => setConfirming(null)}>
+                Keep them
+              </Button>
+              <Button variant="gold" size="sm" disabled={pending} onClick={() => spend(confirming)}>
+                Spend the knots
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+          Your balance is {balance} knots
+          {confirming?.costValue != null ? `; ${balance - confirming.costValue} stay with you after this` : ""}.
+          Spent knots do not come back — Shoreside makes the reward so.
+        </p>
+      </Dialog>
       {error ? (
         <span role="alert" style={{ display: "block", marginTop: 10, fontSize: 12, color: "var(--siren)" }}>
           {error}

@@ -7,6 +7,7 @@ import { EVENT_CLASS_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/fo
 import { createClient } from "@/lib/supabase/server";
 import { vesselSpec } from "@/components/site/voyage-chips";
 import { fleetFor, framesFor } from "@/components/site/voyage-data";
+import { readLegs, readStops } from "@/app/(member)/charter/data";
 
 const SEAS: Record<string, string> = {
   day: "var(--sea-day)",
@@ -187,8 +188,22 @@ export default async function VoyagePage({
   const firstNames = crew.map((c) => c.name.split(" ")[0]);
 
   /* Flotilla and frames sit behind members-only RLS — read server-side, and
-     absent rather than invented when there is nothing to show. */
-  const [fleet, frames] = await Promise.all([fleetFor(voyage.id), framesFor(voyage.id)]);
+     absent rather than invented when there is nothing to show.
+
+     Legs and stops are the charter module's operational record and are
+     anon-readable by policy ("legs are anon-readable" / "stops are
+     anon-readable", both `using (true)`) — an itinerary is the guest-facing
+     artefact of a public voyage. Where legs exist they lead, because they are
+     the copy the crew actually revises; the jsonb itinerary keeps feeding the
+     boarding-time arithmetic above and stays as the fallback plan for voyages
+     that have never been given rows. Two systems, one authority: rows when
+     rows exist. */
+  const [fleet, frames, legs, portStops] = await Promise.all([
+    fleetFor(voyage.id),
+    framesFor(voyage.id),
+    readLegs(supabase, voyage.id),
+    readStops(supabase, voyage.id),
+  ]);
 
   return (
     <div data-theme={voyage.class}>
@@ -232,7 +247,67 @@ export default async function VoyagePage({
               <p key={i}>{p}</p>
             ))}
           </div>
-          {stops.length > 0 ? (
+          {legs.length > 0 ? (
+            <div className="ev-plan">
+              <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The plan.</h2>
+              {legs.map((leg) => (
+                <div className="ev-plan__row" key={leg.id}>
+                  <span className="ev-plan__t">Day {String(leg.day).padStart(2, "0")}</span>
+                  <div>
+                    <div className="ev-plan__title">
+                      {leg.port}
+                      {leg.starts_at ? ` — ${logTime(leg.starts_at, zone)}` : ""}
+                    </div>
+                    {leg.note ? <p className="ev-plan__note">{leg.note}</p> : null}
+                    {leg.status === "held" ? (
+                      /* The kit's copy rule, in the kit's order: the reason,
+                         the new plan, and what is unchanged — the database
+                         refuses a hold missing any of the three. */
+                      <p className="ev-plan__note">
+                        Weather hold — {leg.hold_reason} {leg.hold_new_plan}{" "}
+                        {leg.hold_unchanged}
+                      </p>
+                    ) : leg.status === "revised" ? (
+                      <p className="ev-plan__note">
+                        Revised · posted {logDate(leg.posted_at, zone)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+              {portStops.length > 0 ? (
+                <>
+                  <h2 style={{ fontSize: "var(--text-display-xs)", margin: "20px 0 12px" }}>
+                    Ports.
+                  </h2>
+                  {portStops.map((s) => (
+                    <div className="ev-plan__row" key={s.id}>
+                      <span className="ev-plan__t">
+                        Stop {String(s.position).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <div className="ev-plan__title">{s.name}</div>
+                        {s.tender_at || s.last_return || s.notes ? (
+                          <p className="ev-plan__note">
+                            {[
+                              s.tender_at ? `Tender leaves at ${s.tender_at.slice(0, 5)}` : null,
+                              s.last_return ? `Last return ${s.last_return.slice(0, 5)}` : null,
+                              s.notes,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : null}
+              <p className="ev-plan__note" style={{ marginTop: 14 }}>
+                Weather may revise any leg. Crew post changes by 08:00 daily.
+              </p>
+            </div>
+          ) : stops.length > 0 ? (
             <div className="ev-plan">
               <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The plan.</h2>
               {stops.map((s) => (

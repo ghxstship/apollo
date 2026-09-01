@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 export type ContestShape = "regatta" | "challenge";
+export type ContestScope = "member" | "crew";
 export type ContestMetric = "nm" | "sailings" | "harbors" | "vessels" | "crew_met" | "frames";
 
 export type NewContest = {
@@ -11,6 +12,9 @@ export type NewContest = {
   slug: string;
   blurb: string;
   shape: ContestShape;
+  scope: ContestScope;
+  /** Required when scope is crew — crew_scope_has_voyage is a check constraint. */
+  voyageId: string | null;
   metric: ContestMetric;
   target: number;
   prize: string;
@@ -54,12 +58,21 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
   if (input.shape === "challenge" && (!input.target || input.target < 1))
     return { error: "A challenge needs a number to reach." };
 
+  /* Crew scope was complete server-side long before this composer could send
+     it: the check constraint (crew_scope_has_voyage) requires the voyage, and
+     the "enter yourself" policy on contest_entries already admits only that
+     sailing's aboard passes. As with the target, the database enforces this
+     too; the message here is the readable one. */
+  if (input.scope === "crew" && !input.voyageId)
+    return { error: "A crew contest runs on one sailing — pick the voyage." };
+
   const { error } = await supabase.from("contests").insert({
     slug,
     title,
     blurb: input.blurb.trim() || null,
     shape: input.shape,
-    scope: "member",
+    scope: input.scope,
+    voyage_id: input.scope === "crew" ? input.voyageId : null,
     metric: input.metric,
     target: input.shape === "challenge" ? Math.round(input.target) : null,
     prize: input.prize.trim() || null,
