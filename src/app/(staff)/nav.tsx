@@ -16,6 +16,7 @@ const GROUPS = [
     ["/bridge/voyages", "Voyages"],
     ["/bridge/itinerary", "Itinerary"],
     ["/bridge/composition", "Composition"],
+    ["/bridge/program", "Program"],
   ],
   [
     ["/bridge/members", "Members"],
@@ -40,6 +41,8 @@ const GROUPS = [
   [
     ["/bridge/reports", "Reports"],
     ["/bridge/referrals", "Referrals"],
+    ["/bridge/sponsors", "Sponsors"],
+    ["/bridge/proposals", "Proposals"],
     ["/bridge/automations", "Automations"],
     ["/bridge/keys", "Keys"],
   ],

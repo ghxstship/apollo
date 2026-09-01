@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { chooseCabin } from "./actions";
+import { chooseCabin, claimDaybed } from "./actions";
 import { Badge, Button, Checkbox, Dialog, Input, Stepper, Tag } from "@/components/ds";
 import { price } from "@/lib/format";
 import { confirmBerth, improvePass, releaseBerth, setGuests, setRsvpStatus } from "./actions";
@@ -83,6 +83,7 @@ export function RsvpControls({
   recommended,
   priceCents,
   depositRequired,
+  depositCents,
   addons,
   attachedAddonIds,
   addonWindowOpen,
@@ -101,6 +102,7 @@ export function RsvpControls({
   crewSeekers,
   splitOffered,
   guestsAllowed,
+  daybedHeld,
 }: {
   voyageId: string;
   voyageTitle: string;
@@ -119,6 +121,8 @@ export function RsvpControls({
   recommended: boolean;
   priceCents: number;
   depositRequired: boolean;
+  /* The voyage's own figure — voyages.deposit_cents, no longer club-wide. */
+  depositCents: number;
   addons: AddonOption[];
   attachedAddonIds: string[];
   /* Add-ons may be added until 18:00 the night before departure. */
@@ -146,6 +150,8 @@ export function RsvpControls({
   crewSeekers: CrewSeeker[];
   /* Set shoreside when the club can carry split draws on this pass. */
   splitOffered: boolean;
+  /* True when a bow daybed already rides on this pass. */
+  daybedHeld: boolean;
 }) {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -190,7 +196,7 @@ export function RsvpControls({
     .reduce((sum, a) => sum + a.price_cents * qty, 0);
   /* A code trims the pass alone — the deposit and add-ons stand. */
   const passDue = promo ? promo.passCents : priceCents;
-  const total = passDue + (depositRequired ? 5000 : 0) + addonTotal;
+  const total = passDue + (depositRequired ? depositCents : 0) + addonTotal;
 
   /* Split it — anything over $200 may be drawn in 2, 3, or 4 goes. The first
      draw is today; the rest come monthly, at no interest. */
@@ -360,6 +366,34 @@ export function RsvpControls({
               </select>
             </div>
           ) : null}
+          {/* — The bow daybed. One claim per pass, two groups per sailing —
+              the RPC holds both lines and answers refusals in its own voice. */}
+          {rsvpId ? (
+            <div style={{ marginTop: 14 }}>
+              <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
+                BOW DAYBED
+              </span>
+              {daybedHeld ? (
+                <span style={{ fontSize: 13, color: "var(--text-2)" }}>
+                  Bow daybed held — the steward knows your name
+                </span>
+              ) : (
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <span className="mbr-mono" style={{ fontSize: 12 }}>
+                    $1,500 · group of four · two per sailing
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => run(() => claimDaybed(rsvpId))}
+                  >
+                    Claim the daybed
+                  </Button>
+                </span>
+              )}
+            </div>
+          ) : null}
           {crewSeekers.length > 0 || crewMine ? (
             <CrewCall
               voyageId={voyageId}
@@ -502,7 +536,7 @@ export function RsvpControls({
                 </span>
               </span>
               <span className="mbr-mono" style={{ fontSize: 12 }}>
-                {money(5000)}
+                {money(depositCents)}
               </span>
             </div>
           ) : null}

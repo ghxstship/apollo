@@ -126,7 +126,28 @@ async function splitIntoDraws(
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return "Split draws open when the processor is live.";
   }
-  const n = Math.max(2, Math.min(4, Math.round(draws)));
+  let n = Math.max(2, Math.min(4, Math.round(draws)));
+
+  /* The expedition discipline the field runs on: a multi-day passage settles
+     its balance by ninety days out, so the boat is paid for before the
+     provisioning is. Draws step monthly (the database owns that cadence), so
+     the count is clamped to what fits between next month and T−90 — and when
+     nothing fits, the split is refused with the reason, not shrunk silently.
+     Day sailings keep the old rule; T−90 is expedition economics. */
+  const { data: vRow } = await supabase
+    .from("voyages")
+    .select("starts_at, sub_class")
+    .eq("id", voyageId)
+    .maybeSingle();
+  if (vRow && (vRow.sub_class === "expedition" || vRow.sub_class === "odyssey")) {
+    const settleBy = Date.parse(vRow.starts_at) - 90 * 86400_000;
+    const monthsUntil = Math.floor((settleBy - Date.now()) / (30.44 * 86400_000));
+    const maxDraws = 1 + Math.max(0, monthsUntil);
+    if (maxDraws < 2) {
+      return "The balance for a passage settles by ninety days out — this one is inside that window, so it settles now.";
+    }
+    n = Math.min(n, maxDraws);
+  }
 
   /* Already split — a second confirm must not draw it twice. This read is the
      fast path and the courteous one; it is NOT the guard. Two tabs confirming
@@ -560,4 +581,18 @@ export async function chooseCabin(voyageId: string, cabinId: string | null): Pro
   }
   revalidatePath("/manifest");
   return {};
+}
+
+/* — The bow daybed. The RPC is the whole transaction: it checks the pass is
+   the member's own aboard one, holds the two-per-sailing line, prices from
+   club_products and posts the folio charge itself. Its refusals arrive in
+   brand voice and pass through untouched. — */
+export async function claimDaybed(rsvpId: string): Promise<RsvpResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase.rpc("claim_a_daybed", { p_rsvp: rsvpId });
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
+  revalidatePath("/account");
+  revalidatePath("/portal");
+  return done();
 }

@@ -43,6 +43,46 @@ export type VoyageRow = {
   itinerary: Json
   /* The harbor's IANA clock, carried on the sailing. */
   time_zone: string
+  format: string | null
+  deposit_cents: number
+  sale_opens_at: string | null
+  presale_hours: number
+  season_id: string | null
+  venue_id: string | null
+  series_id: string | null
+}
+export type SeasonRow = {
+  id: string; slug: string; title: string; starts_on: string; ends_on: string
+  blurb: string | null; active: boolean; created_at: string
+}
+export type VenueRow = {
+  id: string; slug: string; name: string; harbor_id: string | null
+  kind: "marina" | "club" | "restaurant" | "beach" | "pool" | "partner"
+  address: string | null; notes: string | null; active: boolean; created_at: string
+}
+export type VoyageSeriesRow = {
+  id: string; slug: string; title: string; cadence_days: number
+  template_voyage_id: string; active: boolean; created_at: string
+}
+export type MemberEventProposalRow = {
+  id: string; proposer_id: string; title: string; format: string | null
+  note: string | null; proposed_for: string | null
+  status: "submitted" | "considering" | "approved" | "declined"
+  decided_by: string | null; decided_at: string | null; decision_note: string | null
+  created_at: string
+}
+export type SponsorRow = {
+  id: string; name: string
+  tier: "presenting_partner" | "sandbar_hub" | "confessional_pod" | "shore_leave_partner"
+  monthly_cents: number; contact_email: string | null
+  starts_on: string | null; ends_on: string | null; notes: string | null
+  active: boolean; created_at: string
+}
+export type VoyageSponsorRow = {
+  voyage_id: string; sponsor_id: string; placement: string | null; created_at: string
+}
+export type VoyageDaybedRow = {
+  id: string; voyage_id: string; rsvp_id: string; profile_id: string; created_at: string
 }
 export type DatingTableRow = {
   id: string; voyage_id: string; number: number; seats: number
@@ -335,6 +375,13 @@ export type Database = {
       profiles: Table<ProfileRow, Ins<ProfileRow, "id">>
       harbors: Table<HarborRow, Ins<HarborRow, "slug" | "name">>
       voyages: Table<VoyageRow, Ins<VoyageRow, "slug" | "title" | "class" | "starts_at">>
+      seasons: Table<SeasonRow, Ins<SeasonRow, "slug" | "title" | "starts_on" | "ends_on">>
+      venues: Table<VenueRow, Ins<VenueRow, "slug" | "name">>
+      voyage_series: Table<VoyageSeriesRow, Ins<VoyageSeriesRow, "slug" | "title" | "template_voyage_id">>
+      member_event_proposals: Table<MemberEventProposalRow, Ins<MemberEventProposalRow, "proposer_id" | "title">>
+      sponsors: Table<SponsorRow, Ins<SponsorRow, "name" | "tier" | "monthly_cents">>
+      voyage_sponsors: Table<VoyageSponsorRow, Ins<VoyageSponsorRow, "voyage_id" | "sponsor_id">>
+      voyage_daybeds: Table<VoyageDaybedRow, Ins<VoyageDaybedRow, "voyage_id" | "rsvp_id" | "profile_id">>
       rsvps: Table<RsvpRow, Ins<RsvpRow, "voyage_id" | "profile_id">>
       cabins: Table<CabinRow, Ins<CabinRow, "vessel_id" | "name">>
       episodes: Table<EpisodeRow, Ins<EpisodeRow, "number" | "slug" | "title">>
@@ -491,6 +538,13 @@ export type Database = {
         Returns: string
       }
       validate_invite: { Args: { p_code: string }; Returns: boolean }
+      extend_the_series: { Args: { p_series: string; p_count: number }; Returns: number }
+      decide_a_proposal: {
+        Args: { p_id: string; p_status: "considering" | "approved" | "declined"; p_note?: string | null }
+        Returns: undefined
+      }
+      claim_a_daybed: { Args: { p_rsvp: string }; Returns: undefined }
+      sponsor_credits: { Args: { p_voyage: string }; Returns: Array<{ name: string; tier: string }> }
       attach_addons: {
         Args: { p_rsvp: string; p_addons: string[]; p_qty: number }
         Returns: number

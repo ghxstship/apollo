@@ -26,6 +26,10 @@ export interface ManifestItem {
   deposit: string | null;
   harborId: string | null;
   harborLabel: string | null;
+  seasonId: string | null;
+  seasonLabel: string | null;
+  /** Title of the series this sailing belongs to, when it belongs to one. */
+  series: string | null;
   monthKey: string;
   startsMs: number;
 }
@@ -50,6 +54,7 @@ function monthLabel(key: string, showYear: boolean): string {
 export function VoyageManifest({ items }: { items: ManifestItem[] }) {
   const [cls, setCls] = React.useState("all");
   const [harbor, setHarbor] = React.useState("all");
+  const [season, setSeason] = React.useState("all");
   const [month, setMonth] = React.useState("all");
   const [sort, setSort] = React.useState<"soonest" | "furthest">("soonest");
 
@@ -60,6 +65,18 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
     for (const v of items) {
       if (v.harborId && v.harborLabel && !seen.has(v.harborId)) {
         seen.set(v.harborId, v.harborLabel);
+      }
+    }
+    return Array.from(seen, ([id, label]) => ({ id, label }));
+  }, [items]);
+
+  /* Seasons the same way: an axis only once the calendar actually spans one.
+     Items arrive soonest-first, so the options read in sailing order. */
+  const seasonOptions = React.useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const v of items) {
+      if (v.seasonId && v.seasonLabel && !seen.has(v.seasonId)) {
+        seen.set(v.seasonId, v.seasonLabel);
       }
     }
     return Array.from(seen, ([id, label]) => ({ id, label }));
@@ -77,12 +94,13 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
       (v) =>
         (cls === "all" || v.cls === cls || (cls === "shore" && v.cls === "sky")) &&
         (harbor === "all" || v.harborId === harbor) &&
+        (season === "all" || v.seasonId === season) &&
         (month === "all" || v.monthKey === month)
     );
     return filtered.sort((a, b) =>
       sort === "soonest" ? a.startsMs - b.startsMs : b.startsMs - a.startsMs
     );
-  }, [items, cls, harbor, month, sort]);
+  }, [items, cls, harbor, season, month, sort]);
 
   return (
     <>
@@ -104,6 +122,19 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
             {harborOptions.map((h) => (
               <Tag key={h.id} active={harbor === h.id} onClick={() => setHarbor(h.id)}>
                 {h.label}
+              </Tag>
+            ))}
+          </div>
+        ) : null}
+        {seasonOptions.length > 1 ? (
+          <div className="ws-vfilters">
+            <span className="ws-vfilters__label">Season</span>
+            <Tag active={season === "all"} onClick={() => setSeason("all")}>
+              All
+            </Tag>
+            {seasonOptions.map((s) => (
+              <Tag key={s.id} active={season === s.id} onClick={() => setSeason(s.id)}>
+                {s.label}
               </Tag>
             ))}
           </div>
@@ -164,6 +195,8 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
                     {v.title}
                     {v.status === "weather_hold" ? <Badge tone="caution">Weather hold</Badge> : null}
                     {v.passesLeft === 0 ? <Badge tone="caution">Full</Badge> : null}
+                    {/* A quiet mark that this sailing runs in a series. */}
+                    {v.series ? <Tag>{v.series}</Tag> : null}
                   </div>
                   <div className="ws-vrow__meta">
                     {meta.map((m, i) => (

@@ -20,6 +20,7 @@ import {
   createVoyage,
   removeVessel,
   saveVoyageOps,
+  saveVoyageProgram,
   setBerthsTotal,
   setHeldPasses,
   setVoyageStatus,
@@ -56,7 +57,17 @@ export type VoyageOpsRow = {
   swell: string;
   heading: string;
   speed: string;
+  /* — the program: filing, season, venue, sale window, deposit — */
+  format: string | null;
+  seasonId: string | null;
+  venueId: string | null;
+  /* Wall clock on the harbor, as a datetime-local value; "" = on sale now. */
+  saleOpensAtLocal: string;
+  presaleHours: number;
+  depositCents: number;
 };
+
+export type ProgramOption = { value: string; label: string };
 
 /* The 3rd-yacht rule as product logic — a flotilla forms at 30 berths. */
 const FLOTILLA_FORMS_AT = 30;
@@ -153,13 +164,28 @@ function movesFor(status: VoyageStatus): StatusMove[] {
   return [];
 }
 
+type ProgramForm = {
+  format: string;
+  seasonId: string;
+  venueId: string;
+  saleOpensAt: string;
+  presaleHours: string;
+  deposit: string;
+};
+
 export function VoyagesClient({
   rows,
   harbors,
+  seasons,
+  venues,
+  formats,
   fleet,
 }: {
   rows: VoyageOpsRow[];
   harbors: Array<{ value: string; label: string }>;
+  seasons: ProgramOption[];
+  venues: ProgramOption[];
+  formats: ProgramOption[];
   fleet: FleetVessel[];
 }) {
   const [pending, startTransition] = React.useTransition();
@@ -167,6 +193,15 @@ export function VoyagesClient({
   const [move, setMove] = React.useState<{ row: VoyageOpsRow; m: StatusMove } | null>(null);
   const [ops, setOps] = React.useState<VoyageOpsRow | null>(null);
   const [opsForm, setOpsForm] = React.useState({ wind: "", swell: "", heading: "", speed: "", muster: "" });
+  const [program, setProgram] = React.useState<VoyageOpsRow | null>(null);
+  const [programForm, setProgramForm] = React.useState<ProgramForm>({
+    format: "",
+    seasonId: "",
+    venueId: "",
+    saleOpensAt: "",
+    presaleHours: "24",
+    deposit: "50",
+  });
   const [creating, setCreating] = React.useState(false);
   /* The flotilla dialog holds the voyage's ID, not the row: the rows prop is
      refreshed by revalidatePath after every assign/remove, and a captured row
@@ -185,6 +220,18 @@ export function VoyagesClient({
   const openOps = (row: VoyageOpsRow) => {
     setOpsForm({ wind: row.wind, swell: row.swell, heading: row.heading, speed: row.speed, muster: row.muster });
     setOps(row);
+  };
+
+  const openProgram = (row: VoyageOpsRow) => {
+    setProgramForm({
+      format: row.format ?? "",
+      seasonId: row.seasonId ?? "",
+      venueId: row.venueId ?? "",
+      saleOpensAt: row.saleOpensAtLocal,
+      presaleHours: String(row.presaleHours),
+      deposit: String(row.depositCents / 100),
+    });
+    setProgram(row);
   };
 
   return (
@@ -272,6 +319,9 @@ export function VoyagesClient({
             </span>
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => openOps(v)}>
               Conditions
+            </Button>
+            <Button variant="ghost" size="sm" disabled={pending} onClick={() => openProgram(v)}>
+              Program
             </Button>
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => setFlotillaId(v.id)}>
               Flotilla
@@ -413,6 +463,99 @@ export function VoyagesClient({
         </div>
       </Dialog>
 
+      {/* — The program: file an existing sailing under a format, season and
+          venue, and set its sale window and deposit. The columns landed after
+          most sailings did; this is how the board catches up. — */}
+      <Dialog
+        open={!!program}
+        onClose={() => setProgram(null)}
+        width={460}
+        eyebrow={program ? program.title : ""}
+        title="The program."
+        footer={
+          program ? (
+            <>
+              <Button variant="ghost" onClick={() => setProgram(null)}>
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                disabled={pending}
+                onClick={() => {
+                  const row = program;
+                  setProgram(null);
+                  run(
+                    () =>
+                      saveVoyageProgram(row.id, {
+                        format: programForm.format || null,
+                        seasonId: programForm.seasonId || null,
+                        venueId: programForm.venueId || null,
+                        saleOpensAt: programForm.saleOpensAt || null,
+                        presaleHours: Number(programForm.presaleHours) || 0,
+                        depositCents: Math.round(Number(programForm.deposit || "0") * 100),
+                      }),
+                    () => show({ msg: "Program set.", meta: row.title.toUpperCase() })
+                  );
+                }}
+              >
+                Save
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <div className="hm-form">
+          <div className="hm-form__row">
+            <Select
+              label="Format"
+              options={[{ value: "", label: "Unfiled" }, ...formats]}
+              value={programForm.format}
+              onChange={(e) => setProgramForm((f) => ({ ...f, format: e.target.value }))}
+            />
+            <Select
+              label="Season"
+              options={[{ value: "", label: "Unassigned" }, ...seasons]}
+              value={programForm.seasonId}
+              onChange={(e) => setProgramForm((f) => ({ ...f, seasonId: e.target.value }))}
+            />
+          </div>
+          <div className="hm-form__row">
+            <Select
+              label="Venue"
+              options={[{ value: "", label: "Unassigned" }, ...venues]}
+              value={programForm.venueId}
+              onChange={(e) => setProgramForm((f) => ({ ...f, venueId: e.target.value }))}
+            />
+            <Input
+              label="Deposit ($)"
+              type="number"
+              min={0}
+              step="0.01"
+              value={programForm.deposit}
+              onChange={(e) => setProgramForm((f) => ({ ...f, deposit: e.target.value }))}
+            />
+          </div>
+          <div className="hm-form__row">
+            <Input
+              label="On sale"
+              type="datetime-local"
+              hint="On the harbor's clock. Blank means on sale now."
+              value={programForm.saleOpensAt}
+              onChange={(e) => setProgramForm((f) => ({ ...f, saleOpensAt: e.target.value }))}
+            />
+            <Input
+              label="Presale hours"
+              type="number"
+              min={0}
+              max={336}
+              hint="Each deeper tier enters this many hours earlier."
+              value={programForm.presaleHours}
+              onChange={(e) => setProgramForm((f) => ({ ...f, presaleHours: e.target.value }))}
+            />
+          </div>
+        </div>
+      </Dialog>
+
       <Dialog
         open={!!flotilla}
         onClose={() => setFlotillaId(null)}
@@ -436,6 +579,9 @@ export function VoyagesClient({
         open={creating}
         onClose={() => setCreating(false)}
         harbors={harbors}
+        seasons={seasons}
+        venues={venues}
+        formats={formats}
         pending={pending}
         onCreate={(input, title) =>
           run(
@@ -591,6 +737,12 @@ type NewVoyageForm = {
   minTier: MembershipTier;
   media: string;
   deposit: boolean;
+  depositAmount: string;
+  format: string;
+  saleOpensAt: string;
+  presaleHours: string;
+  seasonId: string;
+  venueId: string;
   itinerary: ItineraryDraft[];
 };
 
@@ -609,6 +761,12 @@ const BLANK: NewVoyageForm = {
   minTier: "regional",
   media: "dawn",
   deposit: false,
+  depositAmount: "50",
+  format: "",
+  saleOpensAt: "",
+  presaleHours: "24",
+  seasonId: "",
+  venueId: "",
   itinerary: [],
 };
 
@@ -625,12 +783,18 @@ function NewVoyageDialog({
   open,
   onClose,
   harbors,
+  seasons,
+  venues,
+  formats,
   pending,
   onCreate,
 }: {
   open: boolean;
   onClose: () => void;
   harbors: Array<{ value: string; label: string }>;
+  seasons: ProgramOption[];
+  venues: ProgramOption[];
+  formats: ProgramOption[];
   pending: boolean;
   onCreate: (input: Parameters<typeof createVoyage>[0], title: string) => void;
 }) {
@@ -676,6 +840,12 @@ function NewVoyageDialog({
         minTier: f.minTier,
         media: f.media,
         depositRequired: f.deposit,
+        depositCents: f.depositAmount.trim() ? Math.round(Number(f.depositAmount) * 100) : 5000,
+        format: f.format || null,
+        saleOpensAt: f.saleOpensAt || null,
+        presaleHours: Number(f.presaleHours) || 0,
+        seasonId: f.seasonId || null,
+        venueId: f.venueId || null,
         itinerary,
       },
       f.title
@@ -728,6 +898,12 @@ function NewVoyageDialog({
         </div>
         <div className="hm-form__row">
           <Input label="Kind" placeholder="sea_day · port_day" value={f.kind} onChange={(e) => set("kind", e.target.value)} />
+          <Select
+            label="Format"
+            options={[{ value: "", label: "Unfiled" }, ...formats]}
+            value={f.format}
+            onChange={(e) => set("format", e.target.value)}
+          />
         </div>
         <div className="hm-form__row">
           <Select
@@ -776,6 +952,40 @@ function NewVoyageDialog({
             onChange={(e) => set("media", e.target.value)}
           />
         </div>
+        <div className="hm-form__row">
+          <Select
+            label="Season"
+            options={[{ value: "", label: "Unassigned" }, ...seasons]}
+            value={f.seasonId}
+            onChange={(e) => set("seasonId", e.target.value)}
+          />
+          <Select
+            label="Venue"
+            options={[{ value: "", label: "Unassigned" }, ...venues]}
+            value={f.venueId}
+            onChange={(e) => set("venueId", e.target.value)}
+          />
+        </div>
+        {/* The sale window: blank on-sale means on sale the moment it is set.
+            Presale hours ladder the tiers into it, deepest first. */}
+        <div className="hm-form__row">
+          <Input
+            label="On sale"
+            type="datetime-local"
+            hint="On the harbor's clock. Blank means on sale now."
+            value={f.saleOpensAt}
+            onChange={(e) => set("saleOpensAt", e.target.value)}
+          />
+          <Input
+            label="Presale hours"
+            type="number"
+            min={0}
+            max={336}
+            hint="Each deeper tier enters this many hours earlier."
+            value={f.presaleHours}
+            onChange={(e) => set("presaleHours", e.target.value)}
+          />
+        </div>
         <div className="hm-form__row" style={{ alignItems: "center" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
             <span className="hm-mono">CAPACITY</span>
@@ -786,6 +996,16 @@ function NewVoyageDialog({
             checked={f.deposit}
             onChange={(e) => set("deposit", e.target.checked)}
           />
+          {f.deposit ? (
+            <Input
+              label="Deposit ($)"
+              type="number"
+              min={0}
+              step="0.01"
+              value={f.depositAmount}
+              onChange={(e) => set("depositAmount", e.target.value)}
+            />
+          ) : null}
         </div>
 
         {/* Itinerary — minutes from cast off, a title, a note. */}

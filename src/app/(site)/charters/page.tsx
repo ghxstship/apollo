@@ -3,7 +3,7 @@ import { CITY_CODES, SUB_CLASSES } from "@/lib/brand";
 import { EVENT_CLASS_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import {
-  DEPOSIT_CHIP,
+  depositChip,
   durationChip,
   fleetChip,
   weekChip,
@@ -23,7 +23,11 @@ export default async function VoyagesPage() {
   const [{ data: voyages }, { data: capacity }, { data: harbors }] = await Promise.all([
     supabase
       .from("voyages")
-      .select("*")
+      /* Joined titles ride along for the Season filter and the series chip —
+         both tables are public reading by policy. The series embed is hinted
+         through series_id: voyage_series holds a second path back to voyages
+         (template_voyage_id), and PostgREST refuses to guess between them. */
+      .select("*, seasons(title), voyage_series!series_id(title)")
       .in("status", ["scheduled", "live", "weather_hold"])
       /* A sailing that has cast off is not on offer, whatever its status
          still says — the detail page and the manifest already knew this. */
@@ -62,9 +66,15 @@ export default async function VoyagesPage() {
       duration: durationChip(v.starts_at, v.ends_at),
       week: weekChip(v.starts_at),
       fleet: v.class === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
-      deposit: v.deposit_required ? DEPOSIT_CHIP : null,
+      deposit: v.deposit_required ? depositChip(v.deposit_cents) : null,
       harborId: v.harbor_id,
       harborLabel: harbor ? CITY_CODES[harbor.slug] ?? harbor.name : null,
+      seasonId: v.season_id,
+      /* The hand-maintained Database type carries no Relationships, so the
+         embedded titles arrive untyped — the cast is the same one the clause
+         reader uses, and the shape is one column deep. */
+      seasonLabel: (v.seasons as unknown as { title: string } | null)?.title ?? null,
+      series: (v.voyage_series as unknown as { title: string } | null)?.title ?? null,
       monthKey: `${starts.getFullYear()}-${String(starts.getMonth() + 1).padStart(2, "0")}`,
       startsMs: starts.getTime(),
     };

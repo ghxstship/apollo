@@ -156,6 +156,15 @@ async function sweep(p) {
   await stf.del("webhooks?url=like.*example.com/e2e*");
   await stf.del("wardroom_flags?reason=eq.E2E");
   await stf.del("wardroom_posts?body=like.E2E*");
+  /* Program fixtures. voyage_series holds a RESTRICT on its template voyage,
+     so the series row goes before the voyages pattern below can take the
+     template with it. */
+  for (const rel of ["voyage_series", "seasons", "venues"]) {
+    await stf.del(`${rel}?slug=like.e2e-*${RUN_TOKEN}*`);
+    await stf.del(`${rel}?slug=like.e2e-*&created_at=lt.${STALE_BEFORE()}`);
+  }
+  await stf.del(`sponsors?name=like.E2E*&created_at=lt.${STALE_BEFORE()}`);
+  await stf.del(`member_event_proposals?title=like.E2E*&created_at=lt.${STALE_BEFORE()}`);
   for (const rel of ["contests", "voyages"]) {
     await stf.del(`${rel}?slug=like.e2e-*${RUN_TOKEN}*`);
     await stf.del(`${rel}?slug=like.e2e-*&created_at=lt.${STALE_BEFORE()}`);
@@ -3343,6 +3352,205 @@ async function charterRules(p) {
   await stf.del(`vessels?id=eq.${vesselId}`);
 }
 
+
+/* ---------- W7. the program: what the event-type study asked for ----------
+   Deposit as the sailing's own figure, the on-sale drop with tiered presale,
+   the format FK, series raised from a template, seasons and venues as rows,
+   the daybed cap with an actual door, the cabin premium reaching the folio,
+   member-raised gatherings, and the sponsor book with its public credit.
+
+   DECLARED FOOTPRINT: the proposal blocks leave two Words on the regional
+   persona per run ("The Bridge is weighing it…", "Your gathering is on…") —
+   notifications are append-only for everyone including staff, the same
+   discipline the waitlist notice already documents. Money and knots net to
+   zero: every fixture sailing is struck with an asserted delete, and the
+   release machinery hands back what the tests charged. */
+async function programRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national),
+        glo = rest(p.global), anon = rest(null);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+  const plus30 = new Date(Date.now() + 30 * 24 * 3600e3).toISOString();
+  const said = (r) => String(JSON.stringify(r.data ?? "")).toLowerCase();
+
+  // — the drop: a stated hour, and the deeper tier walks in first —
+  const dmk = await stf.post("voyages", {
+    slug: `e2e-drop-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 6, status: "scheduled",
+    price_cents: 0, deposit_required: true, deposit_cents: 12000, format: "sandbar",
+    sale_opens_at: new Date(Date.now() + 47 * 3600e3).toISOString(), presale_hours: 24,
+  });
+  const dropVid = dmk.data?.[0]?.id;
+  note("staff", "raises a sailing with a format, a figure and an hour", dmk.status === 201,
+    `got ${dmk.status} ${JSON.stringify(dmk.data).slice(0, 120)}`);
+  const dropReg = await reg.post("rsvps", { voyage_id: dropVid, profile_id: uid(p.regional), status: "aboard" });
+  note("regional", "the drop holds the door, and names the hour", dropReg.status >= 400 && /drop opens/.test(said(dropReg)), said(dropReg).slice(0, 100));
+  const dropNat = await nat.post("rsvps", { voyage_id: dropVid, profile_id: uid(p.national), status: "aboard" });
+  note("national", "one step early is still an hour short", dropNat.status >= 400 && /drop opens/.test(said(dropNat)), said(dropNat).slice(0, 100));
+  const dropGlo = await glo.post("rsvps", { voyage_id: dropVid, profile_id: uid(p.global), status: "aboard" });
+  note("global", "the deepest tier walks in first", dropGlo.status === 201, `got ${dropGlo.status} ${said(dropGlo).slice(0, 100)}`);
+  const dropDep = await glo.get(`account_ledger?voyage_id=eq.${dropVid}&kind=eq.deposit&select=delta_cents`);
+  note("global", "the deposit is the sailing's own figure", dropDep.data?.[0]?.delta_cents === -12000, JSON.stringify(dropDep.data));
+  const badFmt = await stf.post("voyages", {
+    slug: `e2e-badfmt-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, format: "not_a_format",
+  });
+  note("staff", "a format answers to the catalogue", badFmt.status >= 400, `got ${badFmt.status}`);
+  const dropDel = await stf.del(`voyages?id=eq.${dropVid}`);
+  note("staff", "the drop fixture is struck", dropDel.status < 300, `got ${dropDel.status} ${JSON.stringify(dropDel.data).slice(0, 100)}`);
+
+  // — a series raises its own sailings —
+  const tmk = await stf.post("voyages", {
+    slug: `e2e-sert-${stamp}`, title: "E2E series sailing.", class: "sea", kind: "voyage",
+    starts_at: new Date(Date.now() + 40 * 24 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 4, status: "scheduled", price_cents: 0, format: "sandbar",
+  });
+  const tplVid = tmk.data?.[0]?.id;
+  const smk = await stf.post("voyage_series", {
+    slug: `e2e-ser-${stamp}`, title: "E2E weekly", cadence_days: 7, template_voyage_id: tplVid,
+  });
+  const serId = smk.data?.[0]?.id;
+  note("staff", "opens the series book", smk.status === 201, `got ${smk.status} ${JSON.stringify(smk.data).slice(0, 100)}`);
+  const serMember = await glo.post("voyage_series", { slug: `e2e-serx-${stamp}`, title: "Nope", cadence_days: 7, template_voyage_id: tplVid });
+  note("global", "the series book is the bridge's", serMember.status >= 400, `got ${serMember.status}`);
+  const raised = await stf.rpc("extend_the_series", { p_series: serId, p_count: 2 });
+  note("staff", "the series raises two sailings", raised.data === 2, `got ${raised.status} ${JSON.stringify(raised.data)}`);
+  const occ = await stf.get(`voyages?series_id=eq.${serId}&select=id,slug,format,deposit_cents&order=starts_at`);
+  note("staff", "the occurrences inherit the template's program",
+    (occ.data ?? []).length === 2 && occ.data.every((o) => o.format === "sandbar"),
+    JSON.stringify(occ.data).slice(0, 140));
+  const windMember = await glo.rpc("extend_the_series", { p_series: serId, p_count: 1 });
+  note("global", "a member cannot wind the series", windMember.status >= 400, `got ${windMember.status} ${said(windMember).slice(0, 80)}`);
+  const occDel = await stf.del(`voyages?series_id=eq.${serId}`);
+  const serDel = await stf.del(`voyage_series?id=eq.${serId}`);
+  const tplDel = await stf.del(`voyages?id=eq.${tplVid}`);
+  note("staff", "the series and its sailings are struck",
+    occDel.status < 300 && serDel.status < 300 && tplDel.status < 300,
+    `got ${occDel.status}/${serDel.status}/${tplDel.status}`);
+
+  // — a season and a venue are rows, and public reading —
+  const seaMk = await stf.post("seasons", {
+    slug: `e2e-season-${stamp}`, title: "E2E Season", starts_on: "2026-10-01", ends_on: "2027-01-07",
+  });
+  const seasonId = seaMk.data?.[0]?.id;
+  const venMk = await stf.post("venues", { slug: `e2e-venue-${stamp}`, name: "E2E Venue", kind: "club" });
+  const venueId = venMk.data?.[0]?.id;
+  note("staff", "opens the season and names the venue", seaMk.status === 201 && venMk.status === 201,
+    `got ${seaMk.status}/${venMk.status}`);
+  const seaAnon = await anon.get(`seasons?slug=eq.e2e-season-${stamp}&select=title`);
+  const venAnon = await anon.get(`venues?slug=eq.e2e-venue-${stamp}&select=name`);
+  note("anon", "a season and a venue are public reading",
+    (seaAnon.data ?? []).length === 1 && (venAnon.data ?? []).length === 1,
+    `${JSON.stringify(seaAnon.data)} ${JSON.stringify(venAnon.data)}`.slice(0, 100));
+  const seaMember = await reg.post("seasons", { slug: `e2e-seasonx-${stamp}`, title: "Nope", starts_on: "2026-10-01", ends_on: "2026-10-02" });
+  note("regional", "the calendar is not a member's to write", seaMember.status >= 400, `got ${seaMember.status}`);
+
+  // — two daybed groups a sailing, and a real door to buy one —
+  const bmk = await stf.post("voyages", {
+    slug: `e2e-daybed-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 6, status: "scheduled", price_cents: 0,
+  });
+  const bedVid = bmk.data?.[0]?.id;
+  const bedReg = await reg.post("rsvps", { voyage_id: bedVid, profile_id: uid(p.regional), status: "aboard" });
+  const bedNat = await nat.post("rsvps", { voyage_id: bedVid, profile_id: uid(p.national), status: "aboard" });
+  const bedGlo = await glo.post("rsvps", { voyage_id: bedVid, profile_id: uid(p.global), status: "aboard" });
+  const claim1 = await reg.rpc("claim_a_daybed", { p_rsvp: bedReg.data?.[0]?.id });
+  note("regional", "a daybed rides the pass", claim1.status < 300, `got ${claim1.status} ${said(claim1).slice(0, 90)}`);
+  const bedCharge = await reg.get(`account_ledger?voyage_id=eq.${bedVid}&kind=eq.addon&select=delta_cents,memo`);
+  note("regional", "priced by the house at the catalogue figure",
+    (bedCharge.data ?? []).some((l) => l.delta_cents === -150000 && /Bow daybed/.test(l.memo)),
+    JSON.stringify(bedCharge.data).slice(0, 120));
+  const claimTwice = await reg.rpc("claim_a_daybed", { p_rsvp: bedReg.data?.[0]?.id });
+  note("regional", "one daybed to a pass", claimTwice.status >= 400, `got ${claimTwice.status}`);
+  const claim2 = await nat.rpc("claim_a_daybed", { p_rsvp: bedNat.data?.[0]?.id });
+  const claim3 = await glo.rpc("claim_a_daybed", { p_rsvp: bedGlo.data?.[0]?.id });
+  note("global", "the rail holds at two groups", claim2.status < 300 && claim3.status >= 400 && /two daybed groups/.test(said(claim3)),
+    `got ${claim2.status}/${claim3.status} ${said(claim3).slice(0, 90)}`);
+  const bedMine = await nat.get(`voyage_daybeds?voyage_id=eq.${bedVid}&select=id`);
+  note("national", "the daybed list shows your own name only", (bedMine.data ?? []).length === 1, JSON.stringify(bedMine.data).slice(0, 80));
+  const bedDel = await stf.del(`voyages?id=eq.${bedVid}`);
+  note("staff", "the daybed fixture is struck", bedDel.status < 300, `got ${bedDel.status} ${JSON.stringify(bedDel.data).slice(0, 100)}`);
+
+  // — the cabin premium reaches the folio at last —
+  const hullMk = await stf.post("vessels", { name: `E2E Charter Hull ${stamp}` });
+  const hullId = hullMk.data?.[0]?.id;
+  const cabMk = await stf.post("cabins", { vessel_id: hullId, name: "E2E Owner", berths: 2, premium_cents: 4000 });
+  const cabId = cabMk.data?.[0]?.id;
+  const cmk2 = await stf.post("voyages", {
+    slug: `e2e-cabin-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, status: "scheduled", price_cents: 0,
+  });
+  const cabVid = cmk2.data?.[0]?.id;
+  await stf.post("voyage_vessels", { voyage_id: cabVid, vessel_id: hullId });
+  const cabPass = await glo.post("rsvps", { voyage_id: cabVid, profile_id: uid(p.global), status: "aboard" });
+  const cabRsvp = cabPass.data?.[0]?.id;
+  const takeCab = await glo.patch(`rsvps?id=eq.${cabRsvp}`, { cabin_id: cabId });
+  const cabCharge = await glo.get(`account_ledger?rsvp_id=eq.${cabRsvp}&select=delta_cents,memo&memo=like.Cabin*`);
+  note("global", "the cabin premium reaches the folio at last",
+    takeCab.status < 300 && (cabCharge.data ?? []).some((l) => l.delta_cents === -4000),
+    `got ${takeCab.status} ${JSON.stringify(cabCharge.data).slice(0, 120)}`);
+  await glo.patch(`rsvps?id=eq.${cabRsvp}`, { cabin_id: null });
+  const cabBack = await glo.get(`account_ledger?rsvp_id=eq.${cabRsvp}&select=delta_cents,memo&memo=like.Cabin*`);
+  note("global", "moving out hands it back",
+    (cabBack.data ?? []).some((l) => l.delta_cents === 4000 && /given up/.test(l.memo)),
+    JSON.stringify(cabBack.data).slice(0, 140));
+  const cabDel = await stf.del(`voyages?id=eq.${cabVid}`);
+  const hullDel = await stf.del(`vessels?id=eq.${hullId}`);
+  note("staff", "the cabin fixture is struck", cabDel.status < 300 && hullDel.status < 300, `got ${cabDel.status}/${hullDel.status}`);
+
+  // — a member may raise a gathering, and only the bridge may rule —
+  const prMk = await reg.post("member_event_proposals", {
+    proposer_id: uid(p.regional), title: `E2E gathering ${stamp}`, format: "gathering", note: "E2E",
+  });
+  const prId = prMk.data?.[0]?.id;
+  note("regional", "raises a gathering", prMk.status === 201, `got ${prMk.status} ${JSON.stringify(prMk.data).slice(0, 100)}`);
+  await reg.patch(`member_event_proposals?id=eq.${prId}`, { status: "approved" });
+  const prStill = await reg.get(`member_event_proposals?id=eq.${prId}&select=status`);
+  note("regional", "the ruling is not the proposer's to write", prStill.data?.[0]?.status === "submitted", JSON.stringify(prStill.data));
+  const prAnon = await anon.post("member_event_proposals", { proposer_id: uid(p.regional), title: "E2E nope" });
+  note("anon", "the door needs a member behind it", prAnon.status >= 400, `got ${prAnon.status}`);
+  const gavelMember = await reg.rpc("decide_a_proposal", { p_id: prId, p_status: "approved" });
+  note("regional", "the gavel is the bridge's", gavelMember.status >= 400, `got ${gavelMember.status} ${said(gavelMember).slice(0, 60)}`);
+  const weigh = await stf.rpc("decide_a_proposal", { p_id: prId, p_status: "considering" });
+  const ruled = await stf.rpc("decide_a_proposal", { p_id: prId, p_status: "approved" });
+  note("staff", "the bridge weighs it and rules", weigh.status < 300 && ruled.status < 300, `got ${weigh.status}/${ruled.status}`);
+  const word = await reg.get(`notifications?title=eq.${encodeURIComponent(`Your gathering is on: E2E gathering ${stamp}`)}&select=id`);
+  note("regional", "the yes reaches the member as a Word", (word.data ?? []).length >= 1, `got ${word.status} ${JSON.stringify(word.data).slice(0, 80)}`);
+  await reg.del(`member_event_proposals?id=eq.${prId}`);
+  const prHeld = await stf.get(`member_event_proposals?id=eq.${prId}&select=id`);
+  note("regional", "a ruled proposal is off the member's hands", (prHeld.data ?? []).length === 1, JSON.stringify(prHeld.data).slice(0, 60));
+  const prDel = await stf.del(`member_event_proposals?id=eq.${prId}`);
+  note("staff", "and the bridge may strike the record", prDel.status < 300, `got ${prDel.status}`);
+
+  // — the sponsor book: sealed terms, a public credit —
+  const spMk = await stf.post("sponsors", { name: `E2E Sponsor ${stamp}`, tier: "presenting_partner", monthly_cents: 1000000 });
+  const spId = spMk.data?.[0]?.id;
+  note("staff", "opens the sponsor book", spMk.status === 201, `got ${spMk.status} ${JSON.stringify(spMk.data).slice(0, 100)}`);
+  const badTier = await stf.post("sponsors", { name: "E2E Off-card", tier: "title_sponsor", monthly_cents: 1 });
+  note("staff", "a tier answers to the rate card", badTier.status >= 400, `got ${badTier.status}`);
+  const spSealed = await reg.get("sponsors?select=id&limit=5");
+  note("regional", "the sponsor book is sealed to the wardroom", (spSealed.data ?? []).length === 0, `got ${spSealed.status} ${JSON.stringify(spSealed.data).slice(0, 60)}`);
+  const spmk2 = await stf.post("voyages", {
+    slug: `e2e-spon-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "voyage",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, status: "scheduled", price_cents: 0,
+    season_id: seasonId, venue_id: venueId,
+  });
+  const sponVid = spmk2.data?.[0]?.id;
+  note("staff", "a sailing takes its season and its venue", spmk2.status === 201, `got ${spmk2.status} ${JSON.stringify(spmk2.data).slice(0, 100)}`);
+  await stf.post("voyage_sponsors", { voyage_id: sponVid, sponsor_id: spId });
+  const credits = await anon.rpc("sponsor_credits", { p_voyage: sponVid });
+  note("anon", "the public reads the credit, never the money",
+    Array.isArray(credits.data) && credits.data.length === 1 &&
+      credits.data[0]?.name === `E2E Sponsor ${stamp}` && credits.data[0]?.monthly_cents === undefined,
+    `got ${credits.status} ${JSON.stringify(credits.data).slice(0, 120)}`);
+  const sponDel = await stf.del(`voyages?id=eq.${sponVid}`);
+  const spDel = await stf.del(`sponsors?id=eq.${spId}`);
+  const venDel = await stf.del(`venues?id=eq.${venueId}`);
+  const seaDel = await stf.del(`seasons?id=eq.${seasonId}`);
+  note("staff", "the sponsor, season and venue fixtures are struck",
+    sponDel.status < 300 && spDel.status < 300 && venDel.status < 300 && seaDel.status < 300,
+    `got ${sponDel.status}/${spDel.status}/${venDel.status}/${seaDel.status}`);
+}
+
 async function membershipRules(p) {
   const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national);
   const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
@@ -3556,6 +3764,7 @@ async function main() {
   await charterRules(personas);
   await membershipRules(personas);
   await remediationRules(personas);
+  await programRules(personas);
   for (const [who, before] of Object.entries(kitBefore)) {
     const after = await knotsFor(personas[who], personas.staff);
     note(who, "activity, charter and membership leave the ledger as they found it",

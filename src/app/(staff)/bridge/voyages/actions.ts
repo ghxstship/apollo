@@ -146,8 +146,30 @@ export type NewVoyageInput = {
   minTier: MembershipTier;
   media: string;
   depositRequired: boolean;
+  /* What actually holds the pass — per voyage now, not club-wide. */
+  depositCents: number;
+  /* Filing under an activity format (activity_formats.slug), or unfiled. */
+  format: string | null;
+  /* Wall clock on the harbor, or null = on sale the moment it is set. */
+  saleOpensAt: string | null;
+  /* Each deeper tier enters this many hours earlier — rsvp_guard enforces it. */
+  presaleHours: number;
+  seasonId: string | null;
+  venueId: string | null;
   itinerary: ItineraryLeg[];
 };
+
+/* 0–336: two weeks of presale per tier step is the ceiling the guard carries. */
+function clampPresaleHours(n: number): number {
+  return Math.max(0, Math.min(336, Math.round(Number(n) || 0)));
+}
+
+/* Guards at the database raise in the club's own voice (P0001) — those reach
+   the operator as written. RLS and constraint noise says nothing an operator
+   can act on, so it stays behind ERR_LAND. */
+function programRefusal(error: { message?: string | null; code?: string | null }): string {
+  return error.code === "P0001" && error.message ? error.message : ERR_LAND;
+}
 
 /* One <input type="datetime-local"> value, resolved on a named clock. Null when
    the string is not a wall clock at all — the caller says which field it was. */
@@ -213,6 +235,14 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
   if (endsAt.getTime() <= startsAt.getTime())
     return { error: "The return has to come after the departure." };
 
+  /* The on-sale hour reads on the same harbor clock as the departure. Blank
+     means on sale immediately — null, not an invented instant. */
+  let saleOpensAt: Date | null = null;
+  if (input.saleOpensAt) {
+    saleOpensAt = onHarbourClock(input.saleOpensAt, harbor.time_zone);
+    if (!saleOpensAt) return { error: "That on-sale hour doesn't parse." };
+  }
+
   /* Itinerary rows: minutes from cast off, a title, an optional note. */
   const itinerary = (input.itinerary ?? [])
     .map((leg) => ({
@@ -238,7 +268,63 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
     min_tier: input.minTier,
     media: input.media,
     deposit_required: input.depositRequired,
+    deposit_cents: Math.max(0, Math.round(input.depositCents)),
+    format: input.format || null,
+    sale_opens_at: saleOpensAt ? saleOpensAt.toISOString() : null,
+    presale_hours: clampPresaleHours(input.presaleHours),
+    season_id: input.seasonId || null,
+    venue_id: input.venueId || null,
   });
-  if (error) return { error: ERR_LAND };
+  if (error) return { error: programRefusal(error) };
+  return done();
+}
+
+export type VoyageProgramInput = {
+  format: string | null;
+  seasonId: string | null;
+  venueId: string | null;
+  /* Wall clock on the voyage's harbor, or null = on sale immediately. */
+  saleOpensAt: string | null;
+  presaleHours: number;
+  depositCents: number;
+};
+
+/* Assign an existing sailing to the program — format, season, venue, the
+   on-sale hour and what a pass costs to hold. The columns landed after most
+   sailings did, so this is how the board catches up. */
+export async function saveVoyageProgram(
+  voyageId: string,
+  program: VoyageProgramInput
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  /* The voyage carries its harbor's zone — the on-sale hour is read on that
+     clock, exactly as the departure was when the voyage was set. */
+  const { data: voyage } = await supabase
+    .from("voyages")
+    .select("time_zone")
+    .eq("id", voyageId)
+    .maybeSingle();
+  if (!voyage) return { error: "That voyage is not on the board." };
+
+  let saleOpensAt: Date | null = null;
+  if (program.saleOpensAt) {
+    saleOpensAt = onHarbourClock(program.saleOpensAt, voyage.time_zone);
+    if (!saleOpensAt) return { error: "That on-sale hour doesn't parse." };
+  }
+
+  const { error } = await supabase
+    .from("voyages")
+    .update({
+      format: program.format || null,
+      season_id: program.seasonId || null,
+      venue_id: program.venueId || null,
+      sale_opens_at: saleOpensAt ? saleOpensAt.toISOString() : null,
+      presale_hours: clampPresaleHours(program.presaleHours),
+      deposit_cents: Math.max(0, Math.round(program.depositCents)),
+    })
+    .eq("id", voyageId);
+  if (error) return { error: programRefusal(error) };
   return done();
 }

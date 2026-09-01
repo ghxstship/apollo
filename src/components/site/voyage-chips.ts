@@ -5,10 +5,17 @@
 
 import { price } from "@/lib/format";
 
-/* One deposit figure, club-wide, rendered through price() so a zero would
-   read as Complimentary rather than "$0". */
+/* The deposit figure is per-voyage now — voyages.deposit_cents — rendered
+   through price() so a zero would read as Complimentary rather than "$0".
+   The club-wide const stays as the fallback for surfaces that cannot reach
+   the voyage row. */
 export const DEPOSIT_CENTS = 5000;
-export const DEPOSIT_CHIP = `${price(DEPOSIT_CENTS)} holds it`.toUpperCase();
+
+export function depositChip(cents: number): string {
+  return `${price(cents)} holds it`.toUpperCase();
+}
+
+export const DEPOSIT_CHIP = depositChip(DEPOSIT_CENTS);
 
 /* "6 HRS" — the sail's length, from cast off to alongside. */
 export function durationChip(startsAt: string, endsAt: string | null): string | null {

@@ -8,7 +8,7 @@ import { ANCHOR, CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand
 import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import {
-  DEPOSIT_CHIP,
+  depositChip,
   durationChip,
   fleetChip,
   weekChip,
@@ -135,7 +135,7 @@ export default async function HomePage() {
                 durationChip(v.starts_at, v.ends_at),
                 weekChip(v.starts_at),
                 v.class === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
-                v.deposit_required ? DEPOSIT_CHIP : null,
+                v.deposit_required ? depositChip(v.deposit_cents) : null,
               ].filter((m): m is string => Boolean(m));
               return (
                 <Link

@@ -198,12 +198,21 @@ export default async function VoyagePage({
      boarding-time arithmetic above and stays as the fallback plan for voyages
      that have never been given rows. Two systems, one authority: rows when
      rows exist. */
-  const [fleet, frames, legs, portStops] = await Promise.all([
+  const [fleet, frames, legs, portStops, creditsRes, venueRes] = await Promise.all([
     fleetFor(voyage.id),
     framesFor(voyage.id),
     readLegs(supabase, voyage.id),
     readStops(supabase, voyage.id),
+    /* The sponsor book is staff-sealed; this definer is the one window through
+       it and returns only what the shore may read — names and tiers, ordered
+       presenting partner first. A credit, never an ad, and never the money. */
+    supabase.rpc("sponsor_credits", { p_voyage: voyage.id }),
+    voyage.venue_id
+      ? supabase.from("venues").select("name").eq("id", voyage.venue_id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const credits = creditsRes.data ?? [];
+  const venueName = venueRes.data?.name ?? null;
 
   return (
     <div data-theme={voyage.class}>
@@ -460,6 +469,12 @@ export default async function VoyagePage({
                 <span>{voyage.coordinates}</span>
               </div>
             ) : null}
+            {venueName ? (
+              <div>
+                <span>Venue</span>
+                <span>{venueName}</span>
+              </div>
+            ) : null}
             {voyage.distance_nm != null ? (
               <div>
                 <span>Distance</span>
@@ -491,6 +506,13 @@ export default async function VoyagePage({
                 </a>
               </span>
             </div>
+            {/* One quiet line, absent when no one is on it. */}
+            {credits.length > 0 ? (
+              <div>
+                <span>Presented with</span>
+                <span>{credits.map((c) => c.name).join(", ")}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="ev-panel">

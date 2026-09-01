@@ -20,15 +20,42 @@ import {
 } from "./you-client";
 import { SignOutForm } from "@/components/sign-out-form";
 import { InstallPrompt } from "@/components/member/install-prompt";
+import { RaiseAGathering, type ProposalCard } from "@/components/member/raise-a-gathering";
+import { moduleTables } from "@/lib/module-tables";
 
 export const metadata: Metadata = { title: "You" };
 
 export default async function YouPage() {
   const { supabase, user, profile } = await getMember();
-  const [{ data: harbors }, { data: account }] = await Promise.all([
-    supabase.from("harbors").select("*").order("position", { ascending: true }),
-    supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
-  ]);
+  const [{ data: harbors }, { data: account }, { data: proposals }, { data: formats }] =
+    await Promise.all([
+      supabase.from("harbors").select("*").order("position", { ascending: true }),
+      supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+      /* RLS narrows this to the member's own rows; newest raised, first read. */
+      supabase
+        .from("member_event_proposals")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      /* The two shapes a member may raise. activity_formats is another
+         module's table, reached through the moduleTables seam. */
+      moduleTables(supabase)
+        .from("activity_formats")
+        .select("slug, label")
+        .in("slug", ["gathering", "mixer"])
+        .order("position"),
+    ]);
+
+  const formatLabels = new Map(
+    ((formats ?? []) as Array<{ slug: string; label: string }>).map((f) => [f.slug, f.label])
+  );
+  const proposalCards: ProposalCard[] = (proposals ?? []).map((p) => ({
+    id: p.id,
+    title: p.title,
+    formatLabel: p.format ? (formatLabels.get(p.format) ?? p.format) : null,
+    proposedFor: p.proposed_for,
+    status: p.status,
+    decisionNote: p.decision_note,
+  }));
 
   const tier = profile?.tier ?? "regional";
   const status = profile?.status ?? "active";
@@ -144,6 +171,19 @@ export default async function YouPage() {
           <PushControls />
           {/* Weather holds are the one message that must not wait in an inbox. */}
           <PhoneField defaultValue={profile?.phone ?? null} verified={profile?.phone_verified ?? false} />
+        </div>
+      </div>
+
+      <div>
+        <div className="you-h">Raise a gathering</div>
+        <div className="you-sec" style={{ padding: 18 }}>
+          <RaiseAGathering
+            formats={((formats ?? []) as Array<{ slug: string; label: string }>).map((f) => ({
+              value: f.slug,
+              label: f.label,
+            }))}
+            proposals={proposalCards}
+          />
         </div>
       </div>
 

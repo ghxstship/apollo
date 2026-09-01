@@ -291,6 +291,20 @@
       "access": "member"
     },
     {
+      "path": "/bridge/program",
+      "file": "src/app/(staff)/bridge/program/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/proposals",
+      "file": "src/app/(staff)/bridge/proposals/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/radar",
       "file": "src/app/(staff)/bridge/radar/page.tsx",
       "type": "page",
@@ -321,6 +335,13 @@
     {
       "path": "/bridge/shoreside",
       "file": "src/app/(staff)/bridge/shoreside/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/sponsors",
+      "file": "src/app/(staff)/bridge/sponsors/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"

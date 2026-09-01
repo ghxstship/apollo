@@ -76,13 +76,17 @@ export default async function VoyagesPage() {
   const aboardRsvpIds = (rsvpsRes.data ?? [])
     .filter((r) => r.status === "aboard")
     .map((r) => r.id);
-  const [attachedRes, guestRes] =
+  const [attachedRes, guestRes, daybedRes] =
     aboardRsvpIds.length > 0
       ? await Promise.all([
           supabase.from("rsvp_addons").select("rsvp_id, addon_id").in("rsvp_id", aboardRsvpIds),
           supabase.from("rsvp_guests").select("*").in("rsvp_id", aboardRsvpIds),
+          /* Bow daybeds already riding on my passes — the claim block flips
+             to "held" instead of offering the button twice. */
+          supabase.from("voyage_daybeds").select("rsvp_id").in("rsvp_id", aboardRsvpIds),
         ])
-      : [{ data: [] }, { data: [] }];
+      : [{ data: [] }, { data: [] }, { data: [] }];
+  const daybedRsvps = new Set((daybedRes.data ?? []).map((d) => d.rsvp_id));
   const attachedRows = attachedRes.data ?? [];
   const attachedByRsvp = new Map<string, string[]>();
   for (const row of attachedRows) {
@@ -365,6 +369,8 @@ export default async function VoyagesPage() {
                       recommended={v.id === recommendedId}
                       priceCents={v.price_cents}
                       depositRequired={v.deposit_required}
+                      depositCents={v.deposit_cents}
+                      daybedHeld={r ? daybedRsvps.has(r.id) : false}
                       addons={addons}
                       attachedAddonIds={r ? attachedByRsvp.get(r.id) ?? [] : []}
                       addonWindowOpen={nowMs < addonCutoff.getTime()}
