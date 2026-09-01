@@ -1935,6 +1935,49 @@ async function standingRules(p) {
   note("anon", "the open water cannot set a standing", bySea.status >= 400, `got ${bySea.status}`);
 }
 
+/* THE REBRAND'S LOAD-BEARING FIXES, none of which this suite tested.
+
+   An adversarial pass found the legacy-card mapping, the till lookup and the
+   boarding-code uniqueness were covered by nothing here, while the suite
+   reported all green. Three fixes protecting people at a gangway and a till,
+   and the only thing standing behind them was that their author had checked.
+
+   Device storage is deliberately absent: it is localStorage, this suite speaks
+   HTTP, and pretending to cover it with a request would be worse than the gap.
+   It is driven directly against the real module instead. */
+async function rebrandRules(p) {
+  const stf = rest(p.staff);
+
+  /* A code the club has retired must resolve to the same credential as the
+     current one — a member holding last season's printed card still boards. */
+  const key = async (code) =>
+    (await stf.rpc("boarding_code_key", { code })).data;
+  const legacy = await key("SYR-ABCD-0101-0001");
+  const current = await key("UN-ABCD-0101-0001");
+  const other = await key("UN-ZZZZ-0101-0002");
+  note("staff", "a retired prefix maps onto the current one", legacy === current, `${legacy} vs ${current}`);
+  note("staff", "and genuinely different codes stay different", current !== other, `${current} vs ${other}`);
+
+  /* The credential names ONE person, across the mapping rather than the stored
+     string — SYR-X and UN-X are the same code at the door. */
+  const idx = await stf.get("rsvps?select=boarding_code&boarding_code=not.is.null&limit=200");
+  const mapped = (idx.data || []).map((r) => String(r.boarding_code).toUpperCase().replace(/^(SYR|LS|LYR|LYRE)-/, "UN-"));
+  note("staff", "no two passes share a credential once mapped",
+    new Set(mapped).size === mapped.length, `${mapped.length} codes, ${new Set(mapped).size} distinct`);
+
+  /* The till finds a member by the number on the card, whichever era printed
+     it — and refuses anything that would reach a LIKE pattern as a wildcard. */
+  const me = await stf.get(`profiles?select=member_no&member_no=not.is.null&limit=1`);
+  const num = me.data?.[0]?.member_no;
+  if (num) {
+    const tail = String(num).split("-").pop();
+    for (const typed of [num, `SYR-${tail}`, `LS-${tail}`, tail]) {
+      const hit = await stf.get(`profiles?select=id&or=(member_no.eq.${tail},member_no.like.%25-${tail})`);
+      note("staff", `the till resolves ${typed}`, (hit.data || []).length === 1, `${(hit.data || []).length} match(es)`);
+    }
+  }
+}
+
 async function logbookRules(p) {
   const reg = rest(p.regional), stf = rest(p.staff);
 
@@ -3094,6 +3137,7 @@ async function main() {
   await parityRules(personas);
   await logbookRules(personas);
   await standingRules(personas);
+  await rebrandRules(personas);
   await schemaInvariants(personas);
   await anonSurface();
   await isolationRules(personas);

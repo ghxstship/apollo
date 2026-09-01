@@ -117,7 +117,14 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       const sailed =
         !gv ||
         !UPCOMING_STATUSES.includes(gv.status as (typeof UPCOMING_STATUSES)[number]) ||
-        gv.starts_at < upcomingCutoff();
+        /* Compared as INSTANTS, not as strings. This read
+           `gv.starts_at < upcomingCutoff()` — a lexicographic comparison of
+           PostgREST's "…+00:00" against toISOString()'s "…Z" form. Correct only
+           for as long as PostgREST renders UTC; the day it renders any other
+           offset, the string order stops matching the time order and this fails
+           OPEN — boarding a guest for a sailing that has already gone. The
+           member path does the same test in SQL and cannot drift this way. */
+        new Date(gv.starts_at).getTime() < new Date(upcomingCutoff()).getTime();
       if (sailed) {
         return gv
           ? { error: `That guest pass is for ${gv.title}, which sailed on ${logDateYear(gv.starts_at, gv.time_zone)}.` }
