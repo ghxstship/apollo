@@ -1,5 +1,5 @@
 // send-outbox — drains public.email_outbox and delivers via Resend.
-// [UN] email system: paper canvas, acid rule, producer voice.
+// [un] email system: paper canvas, acid rule, producer voice.
 // No dependencies beyond fetch; talks to PostgREST directly with the service role key.
 
 type OutboxRow = {
@@ -23,11 +23,11 @@ let FROM = Deno.env.get("OUTBOX_FROM") ?? "";
    Sending sits on atlvs.pro because Resend verifies one domain per plan and
    unhingedsocial.us is not registered yet. Moving it is one Vault update.
 
-   The display name is QUOTED. RFC 5322 lists [ and ] as specials, so `[UN] —
+   The display name is QUOTED. RFC 5322 lists [ and ] as specials, so `[un] —
    Shoreside <shore@…>` is not a valid From header — some relays reject it and
    others silently mangle the name. The brackets are part of the mark and are
    not coming off, so they get quoted instead. */
-const DEFAULT_FROM = '"[UN] — Shoreside" <shore@atlvs.pro>';
+const DEFAULT_FROM = '"[un] — Shoreside" <shore@atlvs.pro>';
 /* Member-app origin for email deep links; overridable the same way as FROM. */
 const APP_URL = Deno.env.get("APP_URL") || "https://unhingedsocial.us";
 /* Derived from the sender rather than hard-coded, so the unsubscribe mailbox
@@ -134,14 +134,14 @@ function shell(bodyHtml: string, inverse = false, audience: Audience = "member")
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper};padding:32px 0;">
 <tr><td align="center">
 <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:${card};color:${ink};font-family:${SERIF};">
-<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">[UN]</td></tr>
+<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">[un]</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:2px solid ${rule};"></div></td></tr>
 <tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>
 <tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:${muted};">${audience === "applicant"
   ? "You're getting this because you asked to come aboard. Nothing else follows unless we write again."
   : `You're getting this because you're on the cast. <a href="${APP_URL}/you" style="color:${muted};">Choose what we send you</a>.`}</td></tr>
-<tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:${muted};">The unscripted social experiment.</td></tr>
+<tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;color:${muted};">[un] anything goes here</td></tr>
 </table>
 </td></tr></table>`;
 }

@@ -99,7 +99,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
-  // 2026-08 [UN] rebrand: the [UN]-era paths move permanently.
+  // 2026-08 [un] rebrand: the [un]-era paths move permanently.
   async redirects() {
     return [
       { source: "/home-port", destination: "/home", permanent: true },

@@ -23,7 +23,7 @@ Set secrets with the CLI:
 
 ```sh
 supabase secrets set RESEND_API_KEY=re_xxxxxxxx --project-ref mpyvwpunwrioakmtmcdo
-supabase secrets set OUTBOX_FROM='"[UN] — Shoreside" <shore@atlvs.pro>' --project-ref mpyvwpunwrioakmtmcdo
+supabase secrets set OUTBOX_FROM='"[un] — Shoreside" <shore@atlvs.pro>' --project-ref mpyvwpunwrioakmtmcdo
 ```
 
 Or in the Dashboard: Project Settings → Edge Functions → Secrets.
