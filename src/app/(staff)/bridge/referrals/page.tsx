@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Stat, Table } from "@/components/ds";
+import { Stat, StateBlock, Table } from "@/components/ds";
 import { knots } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { memberMark } from "@/lib/membership";
@@ -103,25 +103,32 @@ export default async function ReferralsPage() {
 
       <section className="hm-sec">
         <h2>Code by code.</h2>
-        <div className="hm-panel">
-          <Table
-            rowKey={(r: ReferralRow) => r.code}
-            columns={[
-              { key: "sponsor", label: "Sponsor" },
-              { key: "code", label: "Code", mono: true, width: 130 },
-              { key: "uses", label: "Used", mono: true, width: 80 },
-              { key: "aboard", label: "Came aboard" },
-              { key: "knotsAwarded", label: "Knots", mono: true, width: 100 },
-              { key: "cut", label: "Cut", mono: true, width: 80 },
-            ]}
-            rows={rows}
-          />
-          {rows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
-              No codes in hands yet.
-            </p>
-          ) : null}
-        </div>
+        {/* Six column headings over an empty body, with the explanation
+            stranded beneath them, whenever nobody holds a code. */}
+        {rows.length ? (
+          <div className="hm-panel">
+            <Table
+              rowKey={(r: ReferralRow) => r.code}
+              columns={[
+                { key: "sponsor", label: "Sponsor" },
+                { key: "code", label: "Code", mono: true, width: 130 },
+                { key: "uses", label: "Used", mono: true, width: 80 },
+                { key: "aboard", label: "Came aboard" },
+                { key: "knotsAwarded", label: "Knots", mono: true, width: 100 },
+                { key: "cut", label: "Cut", mono: true, width: 80 },
+              ]}
+              rows={rows}
+            />
+          </div>
+        ) : (
+          <div style={{ marginTop: 20 }}>
+            <StateBlock
+              status="empty"
+              title="No codes in hands yet."
+              detail="A member sponsors someone with a code of their own. Every code cut shows here with what it brought aboard."
+            />
+          </div>
+        )}
       </section>
     </div>
   );

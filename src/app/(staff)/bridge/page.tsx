@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Table } from "@/components/ds";
+import { Badge, Stat, StateBlock, Table } from "@/components/ds";
 import { TIER_LABEL, logDateTime } from "@/lib/format";
 import { memberMark } from "@/lib/membership";
 import { getOperator } from "../data";
@@ -69,9 +69,26 @@ export default async function ApplicationsPage() {
       <h1 className="hm-h1">The application queue.</h1>
       <p className="hm-lede">
         {openCount
-          ? `${openCount} waiting on a decision. Move them to review, invite them ashore, then call it.`
+          ? "Move them to review, invite them ashore, then call it."
           : "Nothing waiting on a decision. The queue below is the record."}
       </p>
+
+      {/* The one number this console exists for was a substring of the lede.
+          Said as a figure, with the two states it is made of beside it. */}
+      <div className="hm-row">
+        <Stat size="sm" label="Waiting on a decision" value={openCount} />
+        <Stat
+          size="sm"
+          label="In review"
+          value={apps.filter((a) => a.status === "review").length}
+        />
+        <Stat
+          size="sm"
+          label="Invited ashore"
+          value={apps.filter((a) => a.status === "invited").length}
+        />
+        <Stat size="sm" label="On the roll" value={rollRows.length} />
+      </div>
 
       <AppsClient apps={apps} />
 
@@ -80,6 +97,9 @@ export default async function ApplicationsPage() {
         <p className="hm-note">
           Accepted emails cleared to board — joined means the card is in a hand.
         </p>
+        {/* Six column headings over an empty body, with the line that explains
+            the emptiness stranded underneath them. */}
+        {rollRows.length ? (
         <div className="hm-panel">
           <Table
             rowKey={(r: RollRow) => r.email}
@@ -107,12 +127,16 @@ export default async function ApplicationsPage() {
             ]}
             rows={rollRows}
           />
-          {rollRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
-              The roll is empty. Accept an application and it lands here.
-            </p>
-          ) : null}
         </div>
+        ) : (
+          <div style={{ marginTop: 20 }}>
+            <StateBlock
+              status="empty"
+              title="The roll is empty."
+              detail="Accept an application and it lands here — the email cleared to board, and whether the card is in a hand yet."
+            />
+          </div>
+        )}
       </section>
     </div>
   );

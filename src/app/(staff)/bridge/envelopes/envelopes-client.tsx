@@ -108,7 +108,7 @@ export function EnvelopesClient({
       label: "Guest",
       render: (r: EnvelopeRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <b style={{ fontWeight: 700 }}>{r.name}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.memberNo}</span>
         </span>
       ),

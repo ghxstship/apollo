@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Table, Tag, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, StateBlock, Table, Tag, Toast } from "@/components/ds";
 import { useToast } from "../ui";
 import {
   acceptApplication,
@@ -60,7 +60,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       label: "Applicant",
       render: (a: AppRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{a.name}</b>
+          <b style={{ fontWeight: 700 }}>{a.name}</b>
           <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
             {a.email.toUpperCase()}
           </span>
@@ -136,7 +136,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
                 Accept aboard
               </Button>
               <Button
-                variant="ghost"
+                variant="danger"
                 size="sm"
                 disabled={pending}
                 onClick={() => setConfirm({ app: a, mode: "decline" })}
@@ -152,14 +152,22 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
 
   return (
     <>
-      <div className="hm-panel">
-        <Table rowKey={(a: AppRow) => a.id} columns={columns} rows={apps} />
-        {apps.length === 0 ? (
-          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
-            No applications on the desk. The tide brings more.
-          </p>
-        ) : null}
-      </div>
+      {/* The table rendered whatever the row count was, so an empty desk left a
+          header row standing over nothing with the explanation stranded
+          underneath it. Nothing to show means no table. */}
+      {apps.length ? (
+        <div className="hm-panel">
+          <Table rowKey={(a: AppRow) => a.id} columns={columns} rows={apps} />
+        </div>
+      ) : (
+        <div style={{ marginTop: 20 }}>
+          <StateBlock
+            status="empty"
+            title="No applications on the desk."
+            detail="The tide brings more. What arrives queues here, newest first."
+          />
+        </div>
+      )}
 
       <Dialog
         open={confirm?.mode === "accept"}
@@ -211,7 +219,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
               Not yet
             </Button>
             <Button
-              variant="outline"
+              variant="danger"
               disabled={pending}
               onClick={() => {
                 const a = confirm!.app;

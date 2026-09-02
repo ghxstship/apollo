@@ -488,7 +488,7 @@ export function RsvpControls({
                 BOW DAYBED
               </span>
               {daybedHeld ? (
-                <span style={{ fontSize: 13, color: "var(--text-2)" }}>
+                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
                   Bow daybed held — the steward knows your name
                 </span>
               ) : (
@@ -700,7 +700,7 @@ export function RsvpControls({
           </>
         }
       >
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: "var(--text-sm)" }}>
           <div style={{ ...rowStyle, borderTop: "none" }}>
             <span>Pass</span>
             <span className="mbr-mono" style={{ fontSize: 12 }}>
@@ -775,7 +775,7 @@ export function RsvpControls({
           {splitEligible ? (
             <div style={{ ...rowStyle, alignItems: "center" }}>
               <span>
-                <b style={{ fontWeight: 600 }}>Split it</b>
+                <b style={{ fontWeight: 700 }}>Split it</b>
                 <span style={{ display: "block", color: "var(--text-3)", fontSize: 12 }}>
                   No interest. The rest is drawn monthly.
                 </span>
@@ -797,7 +797,7 @@ export function RsvpControls({
             <span className="mbr-mono">
               {splitDraws ? "DUE TODAY" : "DUE TO MEMBER ACCOUNT"}
             </span>
-            <span className="mbr-mono" style={{ fontSize: 13, color: "var(--text-1)" }}>
+            <span className="mbr-mono" style={{ fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
               {price(dueToday)}
             </span>
           </div>
@@ -857,7 +857,7 @@ export function RsvpControls({
             </>
           }
         >
-          <div style={{ fontSize: 13 }}>
+          <div style={{ fontSize: "var(--text-sm)" }}>
             <div style={{ ...rowStyle, borderTop: "none" }}>
               <span>
                 Bow daybed
@@ -877,7 +877,7 @@ export function RsvpControls({
             </div>
             <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
               <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
-              <span className="mbr-mono" style={{ fontSize: 13, color: "var(--text-1)" }}>
+              <span className="mbr-mono" style={{ fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
                 {price(daybed.priceCents)}
               </span>
             </div>
@@ -919,7 +919,7 @@ export function RsvpControls({
           </>
         }
       >
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: "var(--text-sm)" }}>
           {guestEdit ? (
             <GuestNameInputs
               names={guestEdit.names}
@@ -962,7 +962,7 @@ export function RsvpControls({
           </>
         }
       >
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: "var(--text-sm)" }}>
           {unattached.map((a, i) => (
             <div key={a.id} style={i === 0 ? { ...rowStyle, borderTop: "none" } : rowStyle}>
               <Checkbox
@@ -983,7 +983,7 @@ export function RsvpControls({
           ))}
           <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
             <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
-            <span className="mbr-mono" style={{ fontSize: 13, color: "var(--text-1)" }}>
+            <span className="mbr-mono" style={{ fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
               {money(improveTotal)}
             </span>
           </div>
@@ -1022,7 +1022,7 @@ export function RsvpControls({
           </>
         }
       >
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: "var(--text-sm)" }}>
           {fullCredit
             ? `More than ${creditHours} hours out — every charge credits back in full, and the pass goes to the waitlist in order.`
             : /* Inside the window, what goes is named: the pass, the deposit,

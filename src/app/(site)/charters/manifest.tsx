@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import React from "react";
-import { Badge, Tag } from "@/components/ds";
+import { Badge, Button, Tag } from "@/components/ds";
 
 export interface ManifestItem {
   id: string;
@@ -63,6 +63,17 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
   const [season, setSeason] = React.useState("all");
   const [month, setMonth] = React.useState("all");
   const [sort, setSort] = React.useState<"soonest" | "furthest">("soonest");
+  /* The three calendar axes fold away on a narrow screen — see .ws-vdisc.
+     Open on every screen the disclosure is not shown on, so the CSS alone
+     decides where it applies and nothing is unreachable without JS layout. */
+  const [axesOpen, setAxesOpen] = React.useState(false);
+
+  const clearFilters = () => {
+    setCls("all");
+    setHarbor("all");
+    setSeason("all");
+    setMonth("all");
+  };
 
   /* Controls read the calendar rather than a hardcoded list — a harbor or a
      month appears only once something is actually sailing from it. */
@@ -108,6 +119,42 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
     );
   }, [items, cls, harbor, season, month, sort]);
 
+  /* Rows in month order already; the groups are the runs of one month. Fifty
+     sailings emitted as one column of identical stripes gave the reader no
+     landmark at all — the month is the one the manifest is filed under. */
+  const spansYears = React.useMemo(
+    () => new Set(items.map((v) => v.monthKey.slice(0, 4))).size > 1,
+    [items]
+  );
+  const groups = React.useMemo(() => {
+    const out: Array<{ key: string; label: string; rows: ManifestItem[] }> = [];
+    for (const v of list) {
+      const last = out[out.length - 1];
+      if (last && last.key === v.monthKey) last.rows.push(v);
+      else out.push({ key: v.monthKey, label: monthLabel(v.monthKey, spansYears), rows: [v] });
+    }
+    return out;
+  }, [list, spansYears]);
+
+  /* "12 sailings · AUG – NOV" — what the controls above just did, in a line. */
+  const countLine = React.useMemo(() => {
+    if (groups.length === 0) return "No sailings";
+    const first = groups[0].label;
+    const last = groups[groups.length - 1].label;
+    const span = groups.length > 1 ? `${first} – ${last}` : first;
+    return `${list.length} ${list.length === 1 ? "sailing" : "sailings"} · ${span}`;
+  }, [groups, list.length]);
+
+  /* What the folded axes are holding, when they are folded. */
+  const axesSummary =
+    [
+      harborOptions.find((h) => h.id === harbor)?.label,
+      seasonOptions.find((s) => s.id === season)?.label,
+      monthOptions.find((m) => m.id === month)?.label,
+    ]
+      .filter(Boolean)
+      .join(" · ") || "All";
+
   return (
     <>
       <div className="ws-vcontrols">
@@ -119,6 +166,22 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
             </Tag>
           ))}
         </div>
+        <div className="ws-vdisc">
+          <Button
+            variant="outline"
+            size="sm"
+            aria-expanded={axesOpen}
+            aria-controls="ws-vsecondary"
+            onClick={() => setAxesOpen((o) => !o)}
+          >
+            Filter
+          </Button>
+          {axesOpen ? null : <span className="ws-vdisc__sum">{axesSummary}</span>}
+        </div>
+        <div
+          id="ws-vsecondary"
+          className={"ws-vsecondary" + (axesOpen ? " ws-vsecondary--open" : "")}
+        >
         {harborOptions.length > 1 ? (
           <div className="ws-vfilters">
             <span className="ws-vfilters__label">Harbor</span>
@@ -158,6 +221,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
             ))}
           </div>
         ) : null}
+        </div>
         <div className="ws-vfilters">
           <span className="ws-vfilters__label">Sort</span>
           <Tag active={sort === "soonest"} onClick={() => setSort("soonest")}>
@@ -166,71 +230,83 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
           <Tag active={sort === "furthest"} onClick={() => setSort("furthest")}>
             Furthest out
           </Tag>
+          <span className="ws-vcount">{countLine}</span>
         </div>
       </div>
-      <div style={{ padding: "32px 0 96px" }}>
-        {list.map((v) => {
-          const meta = [
-            v.coordinates,
-            v.distance,
-            v.week,
-            v.fleet,
-            /* Before the drop hour the count is not an offer — the hour is. */
-            v.onSale
-              ? v.onSale
-              : v.passesLeft != null && v.passesLeft > 0
-                ? `${v.passesLeft} ${v.seatsWord} left`
-                : null,
-            v.deposit,
-          ].filter((m): m is string => Boolean(m));
-          return (
-            <Link
-              key={v.id}
-              href={`/charters/${v.slug}`}
-              style={{ color: "inherit", textDecoration: "none", display: "block" }}
-            >
-              <div className="ws-vrow">
-                <div className="ws-vrow__date">
-                  <b>{v.date}</b>
-                  {v.time}
-                </div>
-                <div>
-                  <span className="ls-eyebrow ws-vrow__eyebrow">
-                    {v.formatLabel}
-                    {v.hours ? ` · ${v.hours}` : ""}
-                  </span>
-                  <div className="ws-vrow__title">
-                    {v.title}
-                    {v.status === "weather_hold" ? <Badge tone="caution">Weather hold</Badge> : null}
-                    {v.passesLeft === 0 && !v.onSale ? <Badge tone="caution">Full</Badge> : null}
-                    {v.onSale ? <Badge tone="outline">Not yet on sale</Badge> : null}
-                    {/* A quiet mark that this sailing runs in a series. */}
-                    {v.series ? <Tag>{v.series}</Tag> : null}
-                  </div>
-                  <div className="ws-vrow__meta">
-                    {meta.map((m, i) => (
-                      <span key={`${i}-${m}`}>
-                        {i > 0 ? "· " : ""}
-                        {m}
+      <div className="ws-vlist">
+        {groups.map((g) => (
+          <section key={g.key}>
+            <h2 className="ws-vmonth">{g.label}</h2>
+            {g.rows.map((v) => {
+              const meta = [
+                v.coordinates,
+                v.distance,
+                v.week,
+                v.fleet,
+                /* Before the drop hour the count is not an offer — the hour is. */
+                v.onSale
+                  ? v.onSale
+                  : v.passesLeft != null && v.passesLeft > 0
+                    ? `${v.passesLeft} ${v.seatsWord} left`
+                    : null,
+                v.deposit,
+              ].filter((m): m is string => Boolean(m));
+              return (
+                <Link
+                  key={v.id}
+                  href={`/charters/${v.slug}`}
+                  style={{ color: "inherit", textDecoration: "none", display: "block" }}
+                >
+                  <div className="ws-vrow">
+                    <div className="ws-vrow__date">
+                      <b>{v.date}</b>
+                      {v.time}
+                    </div>
+                    <div>
+                      <span className="ls-eyebrow ws-vrow__eyebrow">
+                        {v.formatLabel}
+                        {v.hours ? ` · ${v.hours}` : ""}
                       </span>
-                    ))}
+                      <div className="ws-vrow__title">
+                        {v.title}
+                        {v.status === "weather_hold" ? <Badge tone="caution">Weather hold</Badge> : null}
+                        {v.passesLeft === 0 && !v.onSale ? <Badge tone="caution">Full</Badge> : null}
+                        {v.onSale ? <Badge tone="outline">Not yet on sale</Badge> : null}
+                        {/* A quiet mark that this sailing runs in a series. */}
+                        {v.series ? <Tag>{v.series}</Tag> : null}
+                      </div>
+                      <div className="ws-vrow__meta">
+                        {meta.map((m, i) => (
+                          <span key={`${i}-${m}`}>
+                            {i > 0 ? "· " : ""}
+                            {m}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-vrow__act">
+                      {v.status === "live" ? (
+                        <span className="ls-live ws-live-label">Underway</span>
+                      ) : (
+                        <span className="ws-vrow__price">{v.price}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="ws-vrow__act">
-                  {v.status === "live" ? (
-                    <span className="ls-live ws-live-label">Underway</span>
-                  ) : (
-                    <span className="ws-vrow__price">{v.price}</span>
-                  )}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
+                </Link>
+              );
+            })}
+          </section>
+        ))}
         {list.length === 0 ? (
-          <p style={{ padding: "48px 0", color: "var(--text-3)" }}>
-            Nothing under that flag this season. Loosen the filters.
-          </p>
+          /* The empty branch was a bare paragraph telling the reader to loosen
+             filters it gave them no way to loosen. */
+          <div className="ws-zero">
+            <span className="ws-zero__label">Nothing under that flag</span>
+            <p>Nothing under that flag this season. Loosen the filters.</p>
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          </div>
         ) : null}
       </div>
     </>

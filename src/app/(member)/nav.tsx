@@ -37,13 +37,31 @@ const TABS = [
   ["/home", "Anchor", "Home"],
   ["/live", "Navigation", SURFACES.gateway],
   ["/manifest", "Sailboat", "Voyages"],
-  ["/card", "IdCard", SURFACES.passbook],
+  /* The tab label, not the page's name: "Member Card" at 9px mono with .12em
+     tracking wants ~70px of the ~62px six tabs leave, so it wrapped to two
+     lines and lifted the whole bar. The destination is still the Member Card —
+     the desktop nav and the page title both say so. */
+  ["/card", "IdCard", "Card"],
   ["/inbox", "Bell", "Word"],
   ["/you", "User", "You"],
 ] as const;
 
 function isCurrent(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
+}
+
+/* The nav scrolls sideways inside the bar, and seven of the twenty-one links
+   sit past its right edge — Portal, Account, Member Card, Standing, Agreements,
+   Word and You were invisible by default, including the one you were standing
+   on. Bring the current link into the middle of the strip on mount and on every
+   move; block:"nearest" keeps the page itself from scrolling. */
+function useScrollCurrentIntoView(pathname: string) {
+  const ref = React.useRef<HTMLElement | null>(null);
+  React.useEffect(() => {
+    const here = ref.current?.querySelector<HTMLElement>('a[aria-current="page"]');
+    here?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [pathname]);
+  return ref;
 }
 
 /* Live unread count for the Word — recounts on any notifications change. */
@@ -187,13 +205,14 @@ export function MemberTopBar({
   const pathname = usePathname();
   const unread = useUnreadWord(userId, unreadWord);
   const unreadThreads = useUnreadThreads(userId);
+  const navRef = useScrollCurrentIntoView(pathname);
   return (
     <header className="mbr-top">
       <div className="mbr-top__in">
         <Link href="/home" className="mbr-top__wm" aria-label="Home — home">
           <Wordmark size="sm" suffix={null} />
         </Link>
-        <nav className="mbr-nav" aria-label="Member navigation">
+        <nav className="mbr-nav" aria-label="Member navigation" ref={navRef}>
           {LINKS.map(([href, label]) => (
             <Link
               key={href}

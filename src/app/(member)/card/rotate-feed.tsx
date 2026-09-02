@@ -55,13 +55,13 @@ export function RotateFeed() {
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)" }}>
+          <p style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
             The address on this page stops answering straight away, and so does
             anyone else&rsquo;s copy of it. Your own calendars go quiet until you
             subscribe again with the new address.
           </p>
           {error ? (
-            <p role="alert" style={{ margin: 0, fontSize: 13, color: "var(--siren)" }}>
+            <p role="alert" style={{ margin: 0, fontSize: "var(--text-sm)", color: "var(--siren)" }}>
               {error}
             </p>
           ) : null}

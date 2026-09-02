@@ -13,8 +13,14 @@
   --gold-deep:var(--gold-400);--bronze:var(--gold-400);--gilt:var(--gold-400);--gold:var(--gold-400);
 }
 
-/* — top chrome — */
-.hm-top{position:sticky;top:0;z-index:300;background:var(--surface-abyss);border-bottom:1px solid var(--line-faint)}
+/* — top chrome —
+   The masthead scrolls away; the SECTIONS do not. Sticking the top bar pinned
+   the wordmark and the clock — neither of which an operator navigates by — and
+   let the 27-link tab row scroll off, so getting from Reports to Gangway
+   halfway down a long table meant scrolling back to the top first. The sticky
+   moved to .hm-tabs below, and the z-index went with it: z-index only orders a
+   positioned element, so leaving 300 here would have done nothing. */
+.hm-top{background:var(--surface-abyss);border-bottom:1px solid var(--line-faint)}
 .hm-top__in{max-width:1240px;margin-inline:auto;padding:0 28px;height:56px;display:flex;align-items:center;gap:18px}
 .hm-top__sub{font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--neon-cyan);display:block;margin-top:3px}
 .hm-top__clock{margin-inline-start:auto}
@@ -35,12 +41,22 @@
 }
 
 /* — sub-nav tabs — */
-.hm-tabs{border-bottom:1px solid var(--line-faint);background:var(--surface-abyss)}
+.hm-tabs{position:sticky;top:0;z-index:300;border-bottom:1px solid var(--line-faint);background:var(--surface-abyss)}
 .hm-tabs__in{max-width:1240px;margin-inline:auto;padding:0 28px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
 .hm-tabs__in::-webkit-scrollbar{display:none}
+/* Twenty-seven links in a hidden-scrollbar strip, and nothing said there was
+   more to the right of it — an operator saw the sailing group and had no way to
+   know the money and instrument groups existed. The mask fades the last few
+   pixels at each end so a cut-off label reads as cut off. The gradient's black
+   is a stencil, not a colour: a mask reads the alpha channel, so this paints
+   nothing and there is no token for it to take. */
+.hm-tabs__in{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%)}
 .hm-tabs__in a{font:var(--type-label);flex:none;padding:12px 14px;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;border-bottom:2px solid transparent;transition:color var(--dur-1) var(--ease-swell)}
 .hm-tabs__in a:hover{color:var(--text-1);background:var(--wash-ink)}
 .hm-tabs__in a[aria-current="page"]{color:var(--text-1);border-bottom-color:var(--neon-cyan)}
+/* A 12px block on a 10px label is a 34px target on the dock, under a thumb, in
+   the wet. 16px takes it past 44. */
+@media (pointer:coarse){.hm-tabs__in a{padding-block:16px}}
 
 /* — page scaffolding — */
 .hm-main{flex:1;width:100%;max-width:1240px;margin-inline:auto;padding:30px 28px 96px;box-sizing:border-box}
@@ -72,6 +88,12 @@
 .hm-fleet__card{background:var(--surface-card);border:1px solid var(--line-faint);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
 .hm-fleet__card b{font-family:var(--font-sans);font-weight:700;font-size:var(--text-sm)}
 .hm-fleet__card span{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3)}
+/* A hull with berths left is the one the operator is looking for, and it was
+   distinguished by lifting its caption one step of grey — two adjacent greys,
+   at 10px, in a grid of identical cards. It carries a real edge now: the
+   positive tone, said on the border and repeated as a rule down the leading
+   side, so the difference survives a glance and a colour-blind reader. */
+.hm-fleet__card.hm-fleet__card--open{border-color:color-mix(in srgb,var(--positive) 50%,var(--line-faint));box-shadow:inset 3px 0 0 var(--positive)}
 .hm-fleet__card.hm-fleet__card--open span{color:var(--text-2)}
 
 /* — moderation cards — */
@@ -173,6 +195,58 @@
 .hm-filters__grow{flex:1 1 200px;min-width:200px}
 .hm-filters__acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-inline-start:auto}
 .hm-count{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3);margin-top:10px;display:block}
+/* Seven pickers, a search field, a checkbox and four buttons stack into a wall
+   on a phone — the table they filter is pushed off the screen entirely. Below
+   900px the bar collapses to what is actually SET, as removable chips, with the
+   controls a tap away. display:contents on the body keeps the wide layout
+   byte-identical to what it was: the controls stay direct flex children of
+   .hm-filters until the query fires. */
+.hm-filters__summary{display:none}
+.hm-filters__body{display:contents}
+@media (max-width:900px){
+  .hm-filters__summary{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%}
+  .hm-filters__body{display:none}
+  .hm-filters.is-open .hm-filters__body{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;width:100%}
+  .hm-filters.is-open .hm-filters__acts{margin-inline-start:0}
+}
+
+/* — the attention band: only what is wrong, and only when it is —
+   A dashboard where the count of failures is set exactly like the count of
+   members teaches an operator to read past both. This band carries nothing
+   that is nought, so its presence is itself the signal. */
+.hm-attn{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;margin-top:20px}
+.hm-attn__item{display:flex;flex-direction:column;gap:4px;padding:10px 16px;background:var(--surface-card);border:1px solid var(--line-faint);border-inline-start:3px solid var(--line-strong)}
+.hm-attn__item--danger{border-inline-start-color:var(--danger)}
+.hm-attn__item--caution{border-inline-start-color:var(--caution)}
+.hm-attn__n{font-family:var(--font-mono);font-weight:700;font-size:var(--text-lg);line-height:1;letter-spacing:var(--track-data);font-variant-numeric:tabular-nums;color:var(--text-1)}
+.hm-attn__item--danger .hm-attn__n{color:var(--danger)}
+.hm-attn__item--caution .hm-attn__n{color:var(--caution)}
+.hm-attn__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2)}
+
+/* A five-figure run-on in a Stat's sub line is one string nobody parses. Same
+   figures, laid out as labelled cells. */
+.hm-substat{display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:6px 16px;margin-top:2px}
+.hm-substat>span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hm-substat b{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
+.hm-substat i{font-style:normal;font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);font-variant-numeric:tabular-nums;color:var(--text-2)}
+
+/* — the outbox: a failure you can see without reading —
+   Gave up, Skipped and In flight were three plain strings in one column. The
+   badge carries the severity, and a failed row wears it down its whole leading
+   edge. box-shadow rather than border-inline-start: the table collapses its
+   borders, so a border on a cell is negotiated with its neighbour's and the
+   3px would not survive. This paints inside the cell and always lands. */
+.hm-outbox tr.is-failed td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
+.hm-outbox tr.is-skipped td:first-child{box-shadow:inset 3px 0 0 var(--caution)}
+
+/* — running prose on the console —
+   .hm-body is a paragraph inside a dialog or under a heading; .hm-empty is the
+   line that stands in for absent content. Both existed as inline fontSize
+   objects at 13, 13.5 and 12.5 — none of them on the ladder, all of them
+   retyped at each of sixty-eight call sites. */
+.hm-body{font-size:var(--text-sm);line-height:var(--leading-body);color:var(--text-2);margin:0}
+.hm-body+.hm-body{margin-top:10px}
+.hm-empty{padding:20px 4px;font-size:var(--text-xs);color:var(--text-3)}
 
 /* — a row of small named panels (keys, hooks, rules) — */
 .hm-item{background:var(--surface-card);border:1px solid var(--line-faint);padding:14px 16px;margin-top:10px}

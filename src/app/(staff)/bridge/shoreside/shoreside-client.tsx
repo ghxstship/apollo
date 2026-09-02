@@ -102,7 +102,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
                   </div>
                 ))
               ) : (
-                <p style={{ fontSize: 13, color: "var(--text-3)" }}>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
                   The thread is open and empty. Say the first thing.
                 </p>
               )}

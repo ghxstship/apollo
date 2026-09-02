@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Badge } from "@/components/ds";
+import { Badge, StateBlock } from "@/components/ds";
 import { logDate, logDateYear } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 import { getMember } from "../data";
@@ -40,7 +40,13 @@ export default async function AgreementsPage() {
     if (!held || (s.signed_at ?? "") > (held.signed_at ?? "")) standingOf.set(s.document_code, s);
   }
 
+  /* Two lists, not one interleaved one. `outstanding` was computed and then
+     used only to size a sentence, so the two rows that actually block boarding
+     sat wherever signature_standing happened to return them — the member had to
+     read every row and every badge to find them. The set that needs something
+     from you leads; the set that is done follows. */
   const outstanding = rows.filter((r) => r.state !== "signed");
+  const onFile = rows.filter((r) => r.state === "signed");
 
   return (
     <div className="ls-fade">
@@ -52,10 +58,13 @@ export default async function AgreementsPage() {
         old copy stays as it was.
       </p>
 
+      {/* The count is the one thing on this page that can stop a member
+          boarding. It was 13.5px in --clay — off the ladder and quieter than
+          the lede above it. Heading weight, in the caution channel. */}
       {outstanding.length > 0 ? (
         <p
           role="status"
-          style={{ marginTop: 16, fontSize: 13.5, color: "var(--clay)" }}
+          style={{ marginTop: 16, font: "var(--type-heading)", color: "var(--caution)" }}
         >
           {outstanding.length === 1
             ? "One agreement needs your signature."
@@ -63,71 +72,120 @@ export default async function AgreementsPage() {
         </p>
       ) : null}
 
-      <section className="mbr-sec">
-        <span className="mbr-eyebrow">On file</span>
-        {rows.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-3)" }}>
-            Nothing to sign yet.
-          </p>
-        ) : (
-          <ul className="agr-list">
-            {rows.map((r) => {
-              const copy = STATE_COPY[r.state] ?? STATE_COPY.missing;
-              /* A contract binds only once the club counter-signs; a waiver
-                 stands on the member's signature alone. The view answers for
-                 both, so the line renders only where a countersignature is the
-                 question — a signed contract — and stays silent elsewhere. */
-              const standing = standingOf.get(r.document_code);
-              const counterLine =
-                r.state === "signed" && standing && standing.kind === "contract"
-                  ? standing.in_force
-                    ? `In force — countersigned by ${standing.counter_signed_by ?? "the club"}`
-                    : "Awaiting the club's counter-signature"
-                  : null;
-              return (
-                <li key={r.document_code} className="agr-row">
-                  <span>
-                    <b>{r.title}</b>
-                    <span
-                      style={{
-                        display: "block",
-                        fontSize: 12.5,
-                        color: "var(--text-3)",
-                        marginTop: 2,
-                      }}
-                    >
-                      {copy.line}
-                    </span>
-                    {counterLine ? (
-                      <span
-                        style={{
-                          display: "block",
-                          fontSize: 12.5,
-                          color: standing?.in_force ? "var(--laurel)" : "var(--text-3)",
-                          marginTop: 2,
-                        }}
-                      >
-                        {counterLine}
-                      </span>
-                    ) : null}
-                  </span>
-                  <Badge tone={copy.tone}>{copy.label}</Badge>
-                  {r.state === "signed" ? (
-                    <span className="agr-when">
-                      {r.signed_at ? logDate(r.signed_at, zone) : ""}
-                      {r.expires_at ? ` · UNTIL ${logDateYear(r.expires_at, zone)}` : ""}
-                    </span>
-                  ) : (
-                    <Link href={`/agreements/${r.document_code}`} className="ls-btn ls-btn--sm">
-                      Read and sign
-                    </Link>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      {rows.length === 0 ? (
+        <section className="mbr-sec">
+          <span className="mbr-eyebrow">On file</span>
+          <StateBlock
+            status="empty"
+            icon="FileSignature"
+            title="Nothing to sign yet."
+          />
+        </section>
+      ) : (
+        <>
+          {outstanding.length > 0 ? (
+            <section className="mbr-sec">
+              <span className="mbr-eyebrow">Needs your signature</span>
+              <ul className="agr-list">
+                {outstanding.map((r) => (
+                  <AgreementRow
+                    key={r.document_code}
+                    row={r}
+                    standing={standingOf.get(r.document_code)}
+                    zone={zone}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {onFile.length > 0 ? (
+            <section className="mbr-sec">
+              <span className="mbr-eyebrow">On file</span>
+              <ul className="agr-list">
+                {onFile.map((r) => (
+                  <AgreementRow
+                    key={r.document_code}
+                    row={r}
+                    standing={standingOf.get(r.document_code)}
+                    zone={zone}
+                  />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
+      )}
     </div>
+  );
+}
+
+type StandingRow = {
+  document_code: string;
+  title: string;
+  state: string;
+  signed_at?: string | null;
+  expires_at?: string | null;
+};
+
+function AgreementRow({
+  row: r,
+  standing,
+  zone,
+}: {
+  row: StandingRow;
+  standing: Tables<"agreement_standing"> | undefined;
+  zone: string | null;
+}) {
+  const copy = STATE_COPY[r.state] ?? STATE_COPY.missing;
+  /* A contract binds only once the club counter-signs; a waiver stands on the
+     member's signature alone. The view answers for both, so the line renders
+     only where a countersignature is the question — a signed contract — and
+     stays silent elsewhere. */
+  const counterLine =
+    r.state === "signed" && standing && standing.kind === "contract"
+      ? standing.in_force
+        ? `In force — countersigned by ${standing.counter_signed_by ?? "the club"}`
+        : "Awaiting the club's counter-signature"
+      : null;
+  return (
+    <li className="agr-row">
+      <span>
+        <b>{r.title}</b>
+        <span
+          style={{
+            display: "block",
+            fontSize: "var(--text-xs)",
+            color: "var(--text-3)",
+            marginTop: 2,
+          }}
+        >
+          {copy.line}
+        </span>
+        {counterLine ? (
+          <span
+            style={{
+              display: "block",
+              fontSize: "var(--text-xs)",
+              color: standing?.in_force ? "var(--laurel)" : "var(--text-3)",
+              marginTop: 2,
+            }}
+          >
+            {counterLine}
+          </span>
+        ) : null}
+      </span>
+      <Badge tone={copy.tone}>{copy.label}</Badge>
+      {r.state === "signed" ? (
+        <span className="agr-when">
+          {r.signed_at ? logDate(r.signed_at, zone) : ""}
+          {r.expires_at ? ` · UNTIL ${logDateYear(r.expires_at, zone)}` : ""}
+        </span>
+      ) : (
+        <Link href={`/agreements/${r.document_code}`} className="ls-btn ls-btn--sm">
+          Read and sign
+        </Link>
+      )}
+    </li>
   );
 }

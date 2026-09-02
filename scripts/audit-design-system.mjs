@@ -335,6 +335,63 @@ function checkVocab() {
     total: terms.length, hits: missing.map((t) => ({ term: t })), exempted: [] };
 }
 
+/* ── check: inline styles ─────────────────────────────────────────────────── */
+/* The blind spot every other check had. checkWeights, checkScale and
+   checkDisplay all walk APP_CSS, so nothing inside a React `style={{…}}` was
+   ever measured — and that is precisely where the drift collected: Anton set
+   at 17, 19 and 20px against its own 22px floor, `fontWeight: 600` that
+   Archivo cannot render so the browser fakes it, and well over a hundred
+   off-ladder sizes like 12.5 and 13.5 doing the job of both 12 and 14.
+   Roughly two hundred violations were shipping green.
+
+   Same three rules as the CSS checks, read out of JSX style objects. A size
+   given as a var() or an em resolves through the ladder and passes, exactly as
+   it does in the stylesheet. */
+
+function checkInline() {
+  const hits = [];
+  let total = 0;
+  const files = CODE.filter((p) => /\/src\//.test(p) && /\.tsx?$/.test(p));
+  for (const p of files) {
+    lines(p).forEach((line, i) => {
+      const why = exempt(line);
+      const push = (h) => hits.push({ file: rel(p), line: i + 1, exempt: why, ...h });
+
+      /* fontSize: 13 · fontSize: "13.5px" · fontSize: 24 */
+      for (const m of line.matchAll(/fontSize:\s*"?([\d.]+)(?:px)?"?[,\s}]/g)) {
+        total++;
+        const n = Number(m[1]);
+        if (n > POSTER_FLOOR || LADDER.includes(n)) continue;
+        push({ size: n, why: `off the ladder [${LADDER.join(",")}]` });
+      }
+
+      /* fontWeight: 600 — Archivo ships 400/500/700; anything else is synthesised */
+      for (const m of line.matchAll(/fontWeight:\s*"?(\d{3})"?/g)) {
+        total++;
+        const w = Number(m[1]);
+        if (LOADED_WEIGHTS.has(w)) continue;
+        push({ weight: w, why: "no such face is loaded — the browser fakes it" });
+      }
+
+      /* Anton below its floor, or without the caps it is only ever set in. */
+      if (/--font-display/.test(line)) {
+        total++;
+        const size = line.match(/fontSize:\s*"?([\d.]+)(?:px)?"?/);
+        if (size && Number(size[1]) < ANTON_FLOOR) {
+          push({ size: Number(size[1]), why: `display face below the ${ANTON_FLOOR}px floor` });
+        }
+      }
+    });
+  }
+  return {
+    name: "inline",
+    rule: "JSX style objects obey the same ladder, weights and display floor as the stylesheets",
+    total,
+    hits: hits.filter((h) => !h.exempt),
+    exempted: hits.filter((h) => h.exempt),
+  };
+}
+
 /* ── check: the founding year ─────────────────────────────────────────────── */
 /* The club was founded in 2026 — MMXXVI — and brand.ts holds that in one
    constant. The offline page inside the service worker still read MMXXIV two
@@ -370,7 +427,7 @@ function checkFoundingYear() {
 /* ── report ───────────────────────────────────────────────────────────────── */
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
-const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear()]
+const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear(), checkInline()]
   .filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {

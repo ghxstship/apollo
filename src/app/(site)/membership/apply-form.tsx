@@ -86,7 +86,7 @@ export function ApplyForm() {
         description="Follow the skipper, mind the boom, leave every port better."
       />
       {state.errors.form ? (
-        <p role="alert" style={{ fontSize: 13, color: "var(--siren)" }}>
+        <p role="alert" style={{ fontSize: "var(--text-sm)", color: "var(--siren)" }}>
           {state.errors.form}
         </p>
       ) : null}

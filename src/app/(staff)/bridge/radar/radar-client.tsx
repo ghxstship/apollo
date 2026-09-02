@@ -94,7 +94,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       label: "Sailing",
       render: (r: RadarOpsRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.title.replace(/\.+$/, "")}</b>
+          <b style={{ fontWeight: 700 }}>{r.title.replace(/\.+$/, "")}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.departs}</span>
         </span>
       ),
@@ -109,16 +109,19 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       key: "clock",
       label: "The clock",
       width: 260,
+      /* Four times read on the sailing's own zone — the data register, declared
+         on the column rather than patched on with .hm-mono inside each cell. */
+      mono: true,
       render: (r: RadarOpsRow) =>
         r.opens ? (
-          <span className="hm-mono" style={{ display: "block", lineHeight: 1.7 }}>
+          <span style={{ display: "block", lineHeight: 1.7 }}>
             OPENS {r.opens} · LOCKS {r.locks}
             <span style={{ display: "block" }}>
               LOG {r.unlocks} · GONE {r.expires}
             </span>
           </span>
         ) : (
-          <span className="hm-mono">NEVER OPENED</span>
+          "NEVER OPENED"
         ),
     },
     {
@@ -139,13 +142,16 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       key: "settled",
       label: "Guarantee",
       width: 120,
+      /* Three states, and two of them were plain mono text sitting either side
+         of a badge — the one column an operator scans for whether the club owes
+         a guarantee, told in two different registers. */
       render: (r: RadarOpsRow) =>
         !r.opens ? (
-          <span className="hm-mono">UNREACHABLE</span>
+          <Badge tone="outline">Unreachable</Badge>
         ) : r.settled ? (
           <Badge tone="positive">Settled</Badge>
         ) : (
-          <span className="hm-mono">ON DOCKING</span>
+          <Badge tone="caution">On docking</Badge>
         ),
     },
     {
@@ -163,8 +169,10 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
             >
               Re-read the clock
             </Button>
+            {/* The one irreversible act on this screen, and it was a ghost
+                button directly under Re-read the clock, which is not. */}
             {r.anchors > 0 ? (
-              <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirmCut(r)}>
+              <Button size="sm" variant="danger" disabled={pending} onClick={() => setConfirmCut(r)}>
                 Cut the logs short
               </Button>
             ) : null}
@@ -222,12 +230,12 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+        <p className="hm-body">
           The four times are read off the sailing&apos;s departure date and its
           harbour&apos;s zone. If the departure moved, this brings the clock with
           it. If it did not, nothing changes.
         </p>
-        <p style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 10 }}>
+        <p className="hm-body">
           Picks already plotted and anchors already made are untouched, and a
           guarantee already settled stays settled.
         </p>
@@ -243,18 +251,18 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
             <Button variant="ghost" onClick={() => setConfirmCut(null)}>
               Leave them
             </Button>
-            <Button variant="gold" disabled={pending} onClick={() => confirmCut && cut(confirmCut)}>
+            <Button variant="danger" disabled={pending} onClick={() => confirmCut && cut(confirmCut)}>
               Cut them short
             </Button>
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+        <p className="hm-body">
           Ends the open Captain&apos;s Logs for this sailing now — cannot be
           undone, cannot be extended back. Every live anchor expires at once, on
           both sides, with no notice sent.
         </p>
-        <p style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 10 }}>
+        <p className="hm-body">
           This is a blind cut. The crew are never shown who is anchored to whom,
           so there is no way to end one contact and keep another — it is all of
           them or none.

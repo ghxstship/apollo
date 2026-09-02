@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Avatar, Badge, Button, Dialog, Stat, Switch, Table, Tabs, Toast } from "@/components/ds";
+import { Avatar, Badge, Button, Dialog, Stat, StateBlock, Switch, Table, Tabs, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { setCandidateStage, setRoleOpen, type CrewStage } from "./actions";
 
@@ -107,7 +107,7 @@ export function CrewClient({
 
   if (roles.length === 0) {
     return (
-      <p style={{ padding: "24px 4px", color: "var(--text-3)", fontSize: 13 }}>
+      <p style={{ padding: "24px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
         No roles posted. The crew page waits on the first one.
       </p>
     );
@@ -190,6 +190,17 @@ export function CrewClient({
                 onChange={(id) => setStage(id as "all" | CrewStage)}
               />
 
+              {/* A stage with nobody at it rendered four column headings over
+                  an empty body, with the explanation stranded below them. */}
+              {list.length === 0 ? (
+                <div style={{ marginTop: 20 }}>
+                  <StateBlock
+                    status="empty"
+                    title="Nobody at this stage."
+                    detail="The tide brings more. Candidates move up the stages from here."
+                  />
+                </div>
+              ) : (
               <div className="hm-panel">
                 <Table
                   rowKey={(c: CandidateRow) => c.id}
@@ -201,7 +212,7 @@ export function CrewClient({
                       render: (c: CandidateRow) => (
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
                           <Avatar name={c.name} size="sm" tone="sand" />
-                          <b style={{ fontWeight: 600 }}>{c.name}</b>
+                          <b style={{ fontWeight: 700 }}>{c.name}</b>
                         </span>
                       ),
                     },
@@ -222,12 +233,8 @@ export function CrewClient({
                   ]}
                   rows={list}
                 />
-                {list.length === 0 ? (
-                  <p style={{ padding: "24px 4px", color: "var(--text-3)", fontSize: 13 }}>
-                    Nobody at this stage. The tide brings more.
-                  </p>
-                ) : null}
               </div>
+              )}
             </>
           ) : null}
         </div>

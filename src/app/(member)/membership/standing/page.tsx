@@ -101,7 +101,7 @@ export default async function StandingPage() {
         pause and for ninety days after a lapse.
       </p>
 
-      <div className="std-card">
+      <div className="crd-card crd-card--wide std-card">
         <div className="std-card__id">
           <Wordmark size="sm" suffix="Hinged" inverse />
           <span className="std-card__no">Member {memberMark(profile?.member_no)}</span>

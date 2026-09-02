@@ -180,7 +180,10 @@ export default async function ShowPage() {
                   <span className="shw-c-cp">CP</span>
                 </div>
                 {rows.map((r) => (
-                  <div className="shw-board__row" key={r.id}>
+                  <div
+                    className={`shw-board__row${r.critical_path ? " shw-board__row--cp" : ""}`}
+                    key={r.id}
+                  >
                     <span className="shw-c-window">{boardWindow(r.window_start, r.window_end)}</span>
                     <span className="shw-c-stage">{r.stage}</span>
                     <span className="shw-c-cue">{r.cue}</span>

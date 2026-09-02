@@ -101,7 +101,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: 13 }}>
+          <p style={{ fontSize: "var(--text-sm)" }}>
             The post comes down and the author gets the word with your reason on
             it — never silently.
           </p>

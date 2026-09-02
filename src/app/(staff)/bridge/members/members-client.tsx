@@ -202,7 +202,7 @@ export function MembersClient({
       label: "Member",
       render: (r: MemberRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <b style={{ fontWeight: 700 }}>{r.name}</b>
           <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
             {r.memberNo}
             {r.staff ? " · CREW" : ""}
@@ -394,7 +394,7 @@ export function MembersClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: 13 }}>
+          <p style={{ fontSize: "var(--text-sm)" }}>
             The filters as they stand are stored with the name — load it again from the Saved views
             list.
           </p>
@@ -420,7 +420,7 @@ export function MembersClient({
           <div className="hm-form">
             <div>
               <span className="hm-mono">STANDING</span>
-              <p style={{ fontSize: 13, marginTop: 4, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <p style={{ fontSize: "var(--text-sm)", marginTop: 4, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <Badge tone={standing(detail).tone}>{standing(detail).label}</Badge>
                 {detail.holdReason === "dues" ? (
                   <span style={{ color: "var(--text-2)" }}>{DUES_HOLD_NOTE}.</span>
@@ -429,7 +429,7 @@ export function MembersClient({
             </div>
             <div>
               <span className="hm-mono">CONTACT</span>
-              <p style={{ fontSize: 13, marginTop: 4 }}>
+              <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>
                 {detail.email} · {detail.phone}
                 {detail.phone !== "—" ? (
                   <>
@@ -445,7 +445,7 @@ export function MembersClient({
             </div>
             <div>
               <span className="hm-mono">PLAN AND DUES</span>
-              <p style={{ fontSize: 13, marginTop: 4 }}>
+              <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>
                 {detail.planLine} — {detail.duesLine}
                 <br />
                 House account: {detail.balanceCents ? price(Math.abs(detail.balanceCents)) : "Complimentary"}
@@ -455,7 +455,7 @@ export function MembersClient({
             <div>
               <span className="hm-mono">KNOTS — {knots(detail.knotsBalance).toUpperCase()} ON THE LEDGER</span>
               {detail.knotsRecent.length ? (
-                <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: 13 }}>
+                <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: "var(--text-sm)" }}>
                   {detail.knotsRecent.map((k) => (
                     <li key={k.id} style={{ display: "flex", gap: 10, padding: "3px 0" }}>
                       <span className="hm-mono" style={{ minWidth: 96 }}>
@@ -467,13 +467,13 @@ export function MembersClient({
                   ))}
                 </ul>
               ) : (
-                <p style={{ fontSize: 13, marginTop: 4 }}>Nothing banked yet.</p>
+                <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>Nothing banked yet.</p>
               )}
             </div>
             <div>
               <span className="hm-mono">RECENT PASSES</span>
               {detail.passes.length ? (
-                <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: 13 }}>
+                <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: "var(--text-sm)" }}>
                   {detail.passes.map((p) => (
                     <li key={p.id} style={{ display: "flex", gap: 10, padding: "3px 0" }}>
                       <span className="hm-mono" style={{ minWidth: 96 }}>
@@ -485,7 +485,7 @@ export function MembersClient({
                   ))}
                 </ul>
               ) : (
-                <p style={{ fontSize: 13, marginTop: 4 }}>No passes on the record.</p>
+                <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>No passes on the record.</p>
               )}
             </div>
             <div className="hm-acts">
@@ -595,7 +595,7 @@ export function MembersClient({
           </>
         }
       >
-        <p style={{ fontSize: 13, lineHeight: 1.6 }}>
+        <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>
           {detail?.status === "paused"
             ? detail.holdReason === "dues"
               ? `${DUES_HOLD_NOTE}. Booking, posting and contests open back up, and the member is told.`
@@ -698,7 +698,7 @@ export function MembersClient({
           </>
         }
       >
-        <p style={{ fontSize: 13, lineHeight: 1.6 }}>
+        <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>
           {detail?.phone ?? "—"} — verify only a number you have called or seen
           answered. The weather-hold texts ride on it. If the member changes
           their number later, the flag drops on its own and it is verified

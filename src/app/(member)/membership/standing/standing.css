@@ -8,10 +8,21 @@
 
 .std-lede{max-width:62ch;font:var(--type-body);color:var(--text-muted);margin:var(--space-3) 0 0}
 
-/* — the card face — */
-.std-card{margin-top:var(--space-6);display:flex;flex-wrap:wrap;gap:var(--space-6);align-items:flex-start;padding:var(--space-6);border-radius:var(--radius-md);background:var(--noir-900);color:var(--ivory-100);border-inline-start:2px solid var(--brand-hinged)}
+/* — the card face —
+
+   One credential, one dress. This is the same member's card that the Member
+   Card page shows, and it used to be drawn from scratch here: a different
+   ground, a different radius, a different frame, no seam. The ground, radius
+   and frame now come from .crd-card in member.css and this rule only cuts it to
+   a wider shape (.crd-card--wide) and hangs the division seam down its leading
+   edge — written as .crd-card.std-card so the seam beats .crd-card's own frame
+   whichever order the two stylesheets land in.
+
+   The magenta is on the seam and nowhere else: §Color allows one accent per
+   view, and this page's eyebrows are already acid. */
+.crd-card.std-card{margin-top:var(--space-6);display:flex;flex-wrap:wrap;gap:var(--space-6);align-items:flex-start;padding:var(--space-6);border-inline-start:2px solid var(--brand-hinged)}
 .std-card__id{display:flex;flex-direction:column;gap:var(--space-2);min-width:220px}
-.std-card__no{font:var(--type-label);letter-spacing:var(--tracking-strap);color:var(--brand-hinged-lift)}
+.std-card__no{font:var(--type-label);letter-spacing:var(--tracking-strap);color:var(--text-faint)}
 .std-card__name{font:var(--type-title);text-transform:uppercase}
 .std-card__est{font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint)}
 

@@ -21,7 +21,7 @@ export default function GlobalError({
         }}
       >
         <p style={{ letterSpacing: "0.18em", fontSize: 12, opacity: 0.7 }}>[un]</p>
-        <h1 style={{ marginTop: 12, fontSize: 32 }}>That didn&rsquo;t land.</h1>
+        <h1 style={{ marginTop: 12, fontSize: 36 }}>That didn&rsquo;t land.</h1>
         <p style={{ maxWidth: 460, marginTop: 12, lineHeight: 1.6 }}>
           Our end, not yours. Reload, and if it keeps happening write to us.
         </p>

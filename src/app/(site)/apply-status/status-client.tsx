@@ -44,8 +44,8 @@ function Ladder({ reached }: { reached: number }) {
               }}
             ></span>
             <div>
-              <b style={{ fontSize: 14, fontWeight: 600 }}>{stage.title}</b>
-              <p style={{ ...MONO, marginTop: 5, textTransform: "none", fontSize: 11 }}>
+              <b style={{ fontSize: 14, fontWeight: 700 }}>{stage.title}</b>
+              <p style={{ ...MONO, marginTop: 5, textTransform: "none", fontSize: "var(--text-xs)" }}>
                 {stage.note}
               </p>
               <span style={{ ...MONO, display: "block", marginTop: 6 }}>

@@ -46,7 +46,7 @@ export default async function LorePage() {
             </div>
           </Link>
         ))}
-        <p style={{ padding: "40px 0 48px", fontSize: 12.5, color: "var(--text-3)", maxWidth: "58ch" }}>
+        <p style={{ padding: "40px 0 48px", fontSize: "var(--text-xs)", color: "var(--text-3)", maxWidth: "58ch" }}>
           Episodes are written by the cast and crew, not a content team. Sailed
           something, cooked something, learned something? File a dispatch —{" "}
           <a href={`mailto:${MAILBOX.casting}`}>{MAILBOX.casting}</a>. Bylines always.

@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import { logDate, logTime } from "@/lib/format";
 import { getMember } from "../data";
-import { LockupText } from "@/components/ds";
+import { LockupText, StateBlock } from "@/components/ds";
 import { TableCard, type TableView } from "./table-card";
 
 export const metadata: Metadata = { title: "Tonight" };
 
 /* [un] Scripted — Tonight. Blind tables for six on the next Table night.
    Matches come from tables, not swiping: you sit, and afterwards you privately
-   say who you'd meet again. Rose accent rides data-theme="shore". */
+   say who you'd meet again. The division is spoken by the [un] Scripted lockup
+   in the eyebrow, not by a theme attribute — there is no [data-theme="shore"]
+   block in any stylesheet this route loads. */
 
 export default async function TablesPage() {
   const { supabase, user } = await getMember();
@@ -78,7 +80,7 @@ export default async function TablesPage() {
   });
 
   return (
-    <div className="ls-fade" data-theme="shore">
+    <div className="ls-fade">
       <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
       <h1 className="mbr-h1">Tonight.</h1>
       <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "56ch" }}>
@@ -88,9 +90,13 @@ export default async function TablesPage() {
       </p>
 
       {views.length === 0 ? (
-        <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
-          No Table night on the sheet. Thursday comes around.
-        </p>
+        <StateBlock
+          status="empty"
+          icon="CalendarDays"
+          title="No Table night on the sheet."
+          detail="Thursday comes around."
+          style={{ marginTop: 24 }}
+        />
       ) : (
         <div style={{ marginTop: 24, display: "grid", gap: 14 }}>
           {views.map((t) => (

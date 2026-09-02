@@ -188,7 +188,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
       label: "Element",
       render: (r: ElementListRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <b style={{ fontWeight: 700 }}>{r.name}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
             {r.elementId} · {r.urid}
           </span>
@@ -537,7 +537,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
           {confirmRemove?.elementId} — {confirmRemove?.name} leaves the
           catalogue, and its substitute goes with it. Retiring it instead keeps
           the specification and the cost history where a rollup can still read

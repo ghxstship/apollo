@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Dialog, Select, Tag, Textarea, Toast } from "@/components/ds";
+import { Button, Dialog, Select, StateBlock, Tag, Textarea, Toast } from "@/components/ds";
 import {
   PostCard as DeckPost,
   Hail,
@@ -67,7 +67,7 @@ export function Composer({
           border: "1px solid var(--line-faint)",
           borderRadius: "var(--radius-md)",
           padding: "16px 18px",
-          fontSize: 13,
+          fontSize: "var(--text-sm)",
           color: "var(--text-2)",
         }}
       >
@@ -110,7 +110,7 @@ export function Composer({
         }}
       />
       {state.error ? (
-        <p role="alert" style={{ fontSize: 12.5, color: "var(--danger)", margin: 0 }}>
+        <p role="alert" style={{ fontSize: "var(--text-xs)", color: "var(--danger)", margin: 0 }}>
           {state.error}
         </p>
       ) : null}
@@ -187,6 +187,11 @@ export function FeedList({ posts }: { posts: FeedPost[] }) {
           ))}
         </div>
       ) : null}
+      {/* The deck had no zero-state at all: a new member saw a composer and
+          then an empty flex column, with nothing to say the deck was empty
+          rather than broken. The kit's own words, so nothing new is invented
+          for a state that is meant to be temporary. */}
+      {posts.length === 0 ? <StateBlock status="empty" /> : null}
       {shown.map((post) => (
         <FeedEntry key={post.id} post={post} />
       ))}
@@ -258,6 +263,12 @@ function FeedEntry({ post }: { post: FeedPost }) {
       setToasting(true);
     });
 
+  /* Whether a post has been answered was legible only by reading its footer,
+     one post at a time. A conversation takes a --line-strong rule on the
+     leading edge; a post nobody has replied to keeps the hairline. Same fact,
+     carried in form, so live threads are findable down the column. */
+  const answered = post.comments.length > 0;
+
   return (
     <DeckPost
       author={post.who}
@@ -265,6 +276,11 @@ function FeedEntry({ post }: { post: FeedPost }) {
       timestamp={post.meta}
       sailing={post.voyageTitle ?? undefined}
       body={post.body}
+      style={
+        answered
+          ? { borderInlineStartWidth: 3, borderInlineStartColor: "var(--line-strong)" }
+          : undefined
+      }
       footer={
         <>
           <Hail count={post.hails} hailed={post.myHail} onToggle={pending ? undefined : hail} />
@@ -310,7 +326,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
           {actionError ? (
             <span
               role="alert"
-              style={{ display: "block", marginTop: 8, fontSize: 12.5, color: "var(--siren)" }}
+              style={{ display: "block", marginTop: 8, fontSize: "var(--text-xs)", color: "var(--siren)" }}
             >
               {actionError}
             </span>

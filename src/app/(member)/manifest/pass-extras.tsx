@@ -183,7 +183,7 @@ export function HandOff({
           </>
         }
       >
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: "var(--text-sm)" }}>
           <Select
             label="Who takes it"
             placeholder="Choose a member"
@@ -459,7 +459,7 @@ export function CrewCall({
           </>
         }
       >
-        <div style={{ fontSize: 13 }}>
+        <div style={{ fontSize: "var(--text-sm)" }}>
           <p style={{ color: "var(--text-2)" }}>
             Members aboard this sailing will see your name and can send you a
             word. Withdraw it any time.

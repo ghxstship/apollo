@@ -41,7 +41,8 @@ export function TableCard({ table }: { table: TableView }) {
       }}
     >
       <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-        <b style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: 19 }}>
+        {/* Below the 22px Anton floor a title is Archivo 700, sentence case. */}
+        <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
           Table {t.number}
         </b>
         <span className="mbr-mono">{t.nightWhen}</span>
@@ -57,7 +58,7 @@ export function TableCard({ table }: { table: TableView }) {
           )}
         </span>
       </div>
-      <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+      <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
         Blind table for six · {t.nightTitle}
       </p>
 
@@ -104,7 +105,7 @@ export function TableCard({ table }: { table: TableView }) {
       ) : null}
 
       {error ? (
-        <p role="alert" style={{ fontSize: 12.5, color: "var(--danger)" }}>{error}</p>
+        <p role="alert" style={{ fontSize: "var(--text-xs)", color: "var(--danger)" }}>{error}</p>
       ) : null}
     </div>
   );

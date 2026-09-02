@@ -1,4 +1,3 @@
-import { LEDGER_KIND } from "@/lib/brand";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Progress, StateBlock, Table } from "@/components/ds";
@@ -6,8 +5,8 @@ import { TIER_LABEL, logDate, price, logDateYear } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { subscriptionToShow } from "@/lib/dues";
 import { getMember } from "../data";
-import { SettleCardButton } from "../portal/settle-card";
 import { JoinedNotice, ManageBillingButton, StandingControls } from "./billing-client";
+import { AccountStatement, STATEMENT_MAX } from "./statement";
 import { ExportDataButton } from "./export-data";
 
 export const metadata: Metadata = { title: "Account" };
@@ -84,11 +83,16 @@ export default async function AccountPage({
         .eq("profile_id", user.id)
         .order("is_default", { ascending: false })
         .order("created_at", { ascending: false }),
+      /* Bounded. This read had no ceiling, so a member two seasons in rendered
+         every house charge ever written — the statement itself shows 24 and
+         keeps the rest behind a disclosure, and asking for more than it can
+         show is a database dump nobody reads. */
       supabase
         .from("account_ledger")
         .select("*")
         .eq("profile_id", user.id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(STATEMENT_MAX),
       supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
       supabase
         .from("installment_plans")
@@ -150,7 +154,7 @@ export default async function AccountPage({
                 flexWrap: "wrap",
               }}
             >
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20 }}>{plan.label}</div>
+              <div style={{ fontWeight: 700, fontSize: "var(--text-lg)" }}>{plan.label}</div>
               {status ? (
                 <Badge tone={STATUS_TONE[status] ?? "outline"}>
                   {STATUS_LABEL[status] ?? status}
@@ -172,7 +176,7 @@ export default async function AccountPage({
               </p>
             ) : null}
             {status === "past_due" ? (
-              <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 12, maxWidth: "48ch" }}>
+              <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 12, maxWidth: "48ch" }}>
                 The card was declined. Put a good one on file and the standing
                 holds — nothing else changes.
               </p>
@@ -200,7 +204,7 @@ export default async function AccountPage({
             Change the standing
           </span>
           <div className="ptl-panel">
-            <p style={{ fontSize: 13, color: "var(--text-2)", maxWidth: "48ch" }}>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "48ch" }}>
               Pay by the month, or pay by the year and the club keeps two months
               off the bill.
             </p>
@@ -290,7 +294,7 @@ export default async function AccountPage({
                         href={r.hosted_url}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: 12.5, color: "var(--text-link)" }}
+                        style={{ fontSize: "var(--text-xs)", color: "var(--text-link)" }}
                       >
                         Receipt
                       </a>
@@ -353,59 +357,12 @@ export default async function AccountPage({
             detail="Passes, deposits, and add-ons post here as house charges."
           />
         ) : (
-          <div className="ptl-panel" style={{ padding: "8px 20px 16px" }}>
-            <Table<AccountRow>
-              columns={[
-                {
-                  key: "created_at",
-                  label: "Date",
-                  mono: true,
-                  width: 90,
-                  render: (r) => logDate(r.created_at, zone),
-                },
-                { key: "memo", label: "Entry", render: (r) => r.memo ?? (LEDGER_KIND[r.kind] ?? r.kind).toUpperCase() },
-                {
-                  key: "kind",
-                  label: "Kind",
-                  mono: true,
-                  width: 90,
-                  render: (r) => (LEDGER_KIND[r.kind] ?? r.kind).toUpperCase(),
-                },
-                {
-                  key: "delta_cents",
-                  label: "Amount",
-                  mono: true,
-                  render: (r) => (
-                    <span style={{ color: r.delta_cents < 0 ? "var(--siren)" : "var(--laurel)" }}>
-                      {r.delta_cents < 0 ? "−" : "+"}
-                      {money(r.delta_cents)}
-                    </span>
-                  ),
-                },
-              ]}
-              rows={account}
-              rowKey={(r) => r.id}
-            />
-            <p className="mbr-mono" style={{ marginTop: 12 }}>
-              {/* A member $776 in credit was told "SETTLED" — true only in the
-                  sense that they owe nothing, and wrong about the money that is
-                  theirs. Three states, not two. */}
-              {accountBalance < 0
-                ? `BALANCE — ${money(accountBalance)} DUE`
-                : accountBalance > 0
-                  ? `BALANCE — ${money(accountBalance)} IN CREDIT`
-                  : "BALANCE — SETTLED"}
-            </p>
-            {accountBalance < 0 && processorLive ? (
-              <div style={{ marginTop: 12 }}>
-                <SettleCardButton amountLabel={money(accountBalance)} />
-              </div>
-            ) : accountBalance < 0 ? (
-              <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6 }}>
-                Settled at the gangway or by invoice — Shoreside posts payments.
-              </p>
-            ) : null}
-          </div>
+          <AccountStatement
+            rows={account}
+            balanceCents={accountBalance}
+            zone={zone}
+            processorLive={processorLive}
+          />
         )}
       </section>
 
@@ -414,7 +371,7 @@ export default async function AccountPage({
           Your record
         </span>
         <div className="ptl-panel">
-          <p style={{ fontSize: 13, color: "var(--text-2)", maxWidth: "48ch" }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "48ch" }}>
             Everything the club holds in your name — the papers, the passes, both
             ledgers, the word — as one JSON file. Boarding codes and the
             processor&rsquo;s references stay with the club.

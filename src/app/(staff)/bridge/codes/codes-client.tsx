@@ -20,6 +20,15 @@ export type CodeRow = {
   [key: string]: unknown;
 };
 
+/* The same three things check_promo refuses on, asked once so the badge and
+   the tally above the table can never disagree about what "live" means. */
+function isLive(r: CodeRow): boolean {
+  if (!r.active) return false;
+  if (r.expiresAt && new Date(r.expiresAt) <= new Date()) return false;
+  if (r.maxUses != null && r.uses >= r.maxUses) return false;
+  return true;
+}
+
 function valueLine(kind: CodeKind, value: number): string {
   if (kind === "comp") return "COMPLIMENTARY";
   if (kind === "percent") return `${value}% OFF`;
@@ -55,7 +64,7 @@ export function CodesClient({
       mono: true,
       render: (r: CodeRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.code}</b>
+          <b style={{ fontWeight: 700 }}>{r.code}</b>
           {r.note ? (
             <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.note}</span>
           ) : null}
@@ -108,7 +117,9 @@ export function CodesClient({
       width: 110,
       render: (r: CodeRow) =>
         r.active ? (
-          <Button variant="ghost" size="sm" disabled={pending} onClick={() => setConfirmOff(r)}>
+          /* Deactivate takes a code out of circulation for everyone holding
+             it; Reinstate, its neighbour in the same cell, puts it back. */
+          <Button variant="danger" size="sm" disabled={pending} onClick={() => setConfirmOff(r)}>
             Deactivate
           </Button>
         ) : (
@@ -145,8 +156,16 @@ export function CodesClient({
           Reconcile uses
         </Button>
       </div>
+      {/* The count slot was spent on an explanation and the screen carried no
+          figure at all — an operator could not tell how many of the codes in
+          hands still work without reading every badge. The sentence is a note,
+          which is what it always was; the count takes the count's place. */}
+      <p className="hm-note">
+        Redemption checks the code but never marks it — Reconcile recounts passes and sets the
+        tally.
+      </p>
       <span className="hm-count">
-        REDEMPTION CHECKS THE CODE BUT NEVER MARKS IT — RECONCILE RECOUNTS PASSES AND SETS THE TALLY
+        {rows.filter(isLive).length} OF {rows.length} CODES LIVE
       </span>
 
       {rows.length ? (
@@ -282,7 +301,7 @@ export function CodesClient({
                 Leave it live
               </Button>
               <Button
-                variant="gold"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   const target = confirmOff;
@@ -305,7 +324,7 @@ export function CodesClient({
           ) : null
         }
       >
-        <p style={{ fontSize: 13 }}>
+        <p className="hm-body">
           Anyone holding it stops being able to redeem it from this moment. Passes already booked on
           it stand.
         </p>
@@ -351,7 +370,7 @@ export function CodesClient({
           </>
         }
       >
-        <p style={{ fontSize: 13 }}>
+        <p className="hm-body">
           Every pass carrying a code is counted, and each code&apos;s tally is written to match. It
           only ever moves the count to what the passes say.
         </p>

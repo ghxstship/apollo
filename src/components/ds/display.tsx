@@ -68,7 +68,7 @@ export function Card({
 /* — Badge — */
 export function Badge({
   tone = "outline", inverse = false, className = "", children, ...rest
-}: { tone?: "gold" | "ink" | "positive" | "caution" | "outline"; inverse?: boolean; className?: string; children?: React.ReactNode } & React.HTMLAttributes<HTMLSpanElement>) {
+}: { tone?: "gold" | "ink" | "positive" | "caution" | "danger" | "outline"; inverse?: boolean; className?: string; children?: React.ReactNode } & React.HTMLAttributes<HTMLSpanElement>) {
   const cls = ["ls-badge", "ls-badge--" + tone, inverse ? "ls-badge--inverse" : "", className].filter(Boolean).join(" ");
   return <span className={cls} {...rest}>{children}</span>;
 }
@@ -123,23 +123,47 @@ export function Stat({
 /* — Table — */
 export interface TableColumn<R> {
   key: string; label?: React.ReactNode; width?: number | string; mono?: boolean;
+  /* Money and counts read down the last digit. Set align:"end" on those; leave
+     a boarding code, a slug or a date at the start even though it is mono. */
+  align?: "start" | "end";
   render?: (row: R) => React.ReactNode;
 }
 
+/* The table is pinned to width:100% inside a wrapper that scrolls, which meant
+   the scroll could never engage — the columns squeezed instead, and on a phone
+   the receipts table left about 40px for its widest text column. A min-width
+   lets the wrapper do its job. It is derived from the column count rather than
+   set flat, so a two-column table still fits a narrow screen rather than
+   scrolling for no reason. Pass minWidth to override. */
+function defaultMinWidth(count: number): number | undefined {
+  if (count >= 6) return 780;
+  if (count >= 4) return 640;
+  if (count === 3) return 460;
+  return undefined;
+}
+
 export function Table<R extends Record<string, unknown>>({
-  columns = [], rows = [], rowKey, onRowClick, dense = false, inverse = false, className = "", style,
+  columns = [], rows = [], rowKey, onRowClick, dense = false, inverse = false,
+  tall = false, minWidth, className = "", style,
 }: {
   columns: TableColumn<R>[]; rows: R[]; rowKey?: (row: R) => React.Key;
-  onRowClick?: (row: R) => void; dense?: boolean; inverse?: boolean; className?: string; style?: React.CSSProperties;
+  onRowClick?: (row: R) => void; dense?: boolean; inverse?: boolean;
+  /* A long table keeps its header in view instead of scrolling it away. */
+  tall?: boolean; minWidth?: number | false;
+  className?: string; style?: React.CSSProperties;
 }) {
+  const min = minWidth === false ? undefined : (minWidth ?? defaultMinWidth(columns.length));
   return (
-    <div className="ls-table-wrap">
-      <table className={["ls-table", dense ? "ls-table--dense" : "", inverse ? "ls-table--inverse" : "", className].filter(Boolean).join(" ")} style={style}>
+    <div className={["ls-table-wrap", tall ? "ls-table-wrap--tall" : ""].filter(Boolean).join(" ")}>
+      <table
+        className={["ls-table", dense ? "ls-table--dense" : "", inverse ? "ls-table--inverse" : "", className].filter(Boolean).join(" ")}
+        style={min ? { minWidth: min, ...style } : style}
+      >
         {/* An action column is declared with an empty label so nothing shows
             above its switch or button — but an empty <th> is a header a
             screen reader reads out as nothing for every cell beneath it. The
             header is there and hidden, not absent. */}
-        <thead><tr>{columns.map((c) => <th key={c.key} scope="col" style={c.width ? { width: c.width } : undefined}>{c.label == null || c.label === "" ? <span className="ls-visually-hidden">Actions</span> : c.label}</th>)}</tr></thead>
+        <thead><tr>{columns.map((c) => <th key={c.key} scope="col" className={c.align === "end" ? "num--end" : ""} style={c.width ? { width: c.width } : undefined}>{c.label == null || c.label === "" ? <span className="ls-visually-hidden">Actions</span> : c.label}</th>)}</tr></thead>
         <tbody>
           {rows.map((r, i) => (
             /* A clickable row was mouse-only: the Bridge's crew queue and member
@@ -164,7 +188,7 @@ export function Table<R extends Record<string, unknown>>({
                   : undefined
               }
             >
-              {columns.map((c) => <td key={c.key} className={c.mono ? "num" : ""}>{c.render ? c.render(r) : (r[c.key] as React.ReactNode)}</td>)}
+              {columns.map((c) => <td key={c.key} className={[c.mono ? "num" : "", c.align === "end" ? "num--end" : ""].filter(Boolean).join(" ")}>{c.render ? c.render(r) : (r[c.key] as React.ReactNode)}</td>)}
             </tr>
           ))}
         </tbody>

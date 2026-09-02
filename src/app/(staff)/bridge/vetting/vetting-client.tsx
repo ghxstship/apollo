@@ -123,7 +123,7 @@ export function VettingClient({
       label: "Member",
       render: (r: FileRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <b style={{ fontWeight: 700 }}>{r.name}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.memberNo}</span>
         </span>
       ),
@@ -137,11 +137,18 @@ export function VettingClient({
     {
       key: "identity",
       label: "Identity",
-      width: 130,
+      width: 150,
+      /* Two gates, each either turned or not — that is a state, and it was
+         set as mono data alongside the dates. The badge uppercases, so these
+         read exactly as VERIFIED / NOT SEEN / AGE OK / AGE UNCONFIRMED did. */
       render: (r: FileRow) => (
-        <span className="hm-mono">
-          {r.idVerified ? "VERIFIED" : "NOT SEEN"}
-          <span style={{ display: "block" }}>{r.ageOk ? "AGE OK" : "AGE UNCONFIRMED"}</span>
+        <span style={{ display: "inline-flex", flexDirection: "column", gap: 4, alignItems: "start" }}>
+          <Badge tone={r.idVerified ? "positive" : "caution"}>
+            {r.idVerified ? "Verified" : "Not seen"}
+          </Badge>
+          <Badge tone={r.ageOk ? "positive" : "caution"}>
+            {r.ageOk ? "Age OK" : "Age unconfirmed"}
+          </Badge>
         </span>
       ),
     },
@@ -160,7 +167,9 @@ export function VettingClient({
       label: "Sheet",
       width: 100,
       render: (r: FileRow) => (
-        <span className="hm-mono">{r.sheetComplete ? "COMPLETE" : "OPEN"}</span>
+        <Badge tone={r.sheetComplete ? "positive" : "outline"}>
+          {r.sheetComplete ? "Complete" : "Open"}
+        </Badge>
       ),
     },
     {
@@ -187,7 +196,10 @@ export function VettingClient({
           />
         </div>
         <span className="hm-filters__acts">
-          <Button variant="ghost" size="sm" disabled={pending} onClick={sweep}>
+          {/* A bulk purge of identity records, and it was the quietest control
+              on the page — a ghost button beside a gold one that only opens a
+              form. What it destroys is what it should look like. */}
+          <Button variant="danger" size="sm" disabled={pending} onClick={sweep}>
             Sweep spent identity records
           </Button>
           <Button variant="gold" size="sm" disabled={unfiled.length === 0} onClick={() => setOpening(true)}>
@@ -243,7 +255,7 @@ export function VettingClient({
           value={newProfile}
           onChange={(e) => setNewProfile(e.target.value)}
         />
-        <p style={{ fontSize: 13, color: "var(--text-3)", marginTop: 12 }}>
+        <p className="hm-body" style={{ marginTop: 12 }}>
           The file opens SUBMITTED. The member reads &ldquo;with the vetting
           team, 48 hours&rdquo; and nothing else — no counts, no queue position,
           nothing about anybody else.

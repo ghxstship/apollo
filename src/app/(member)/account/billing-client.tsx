@@ -82,7 +82,7 @@ export function StandingControls({
     <div>
       <div style={optionStyle}>
         <span>
-          <b style={{ fontSize: 13.5, fontWeight: 600 }}>Monthly</b>
+          <b style={{ fontSize: "var(--text-sm)", fontWeight: 700 }}>Monthly</b>
           <span style={{ display: "block", fontSize: 12, color: "var(--text-2)", marginTop: 2 }}>
             {price(monthlyCents)} every month.
           </span>
@@ -99,7 +99,7 @@ export function StandingControls({
       {annualCents ? (
         <div style={optionStyle}>
           <span>
-            <b style={{ fontSize: 13.5, fontWeight: 600 }}>Annual</b>
+            <b style={{ fontSize: "var(--text-sm)", fontWeight: 700 }}>Annual</b>
             <span style={{ display: "block", fontSize: 12, color: "var(--text-2)", marginTop: 2 }}>
               {price(annualCents)} a year — two months on the house.
             </span>

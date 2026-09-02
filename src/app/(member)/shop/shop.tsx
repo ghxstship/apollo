@@ -206,7 +206,7 @@ export function Shop({
         ))}
       </div>
       {shown.length === 0 ? (
-        <p style={{ fontSize: 13, color: "var(--text-3)", marginTop: 16 }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)", marginTop: 16 }}>
           Nothing on this shelf yet.
         </p>
       ) : null}
@@ -262,7 +262,7 @@ export function Shop({
             </div>
             <div className="chd-drawer__body">
               {cart.length === 0 ? (
-                <p style={{ fontSize: 13, color: "var(--text-3)" }}>Empty. The shelves are right there.</p>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>Empty. The shelves are right there.</p>
               ) : (
                 cart.map((l, i) => (
                   <div key={l.productId + (l.size ?? "")} className="chd-line">

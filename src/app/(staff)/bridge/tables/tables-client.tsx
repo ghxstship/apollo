@@ -127,7 +127,7 @@ export function TablesClient({
         <Table columns={columns} rows={rows} rowKey={(r) => r.id} />
       )}
 
-      <p style={{ marginTop: 14, color: "var(--text-3)", fontSize: 12.5 }}>
+      <p style={{ marginTop: 14, color: "var(--text-3)", fontSize: "var(--text-xs)" }}>
         A held seat lapses on its own in fifteen minutes. A confirmed seat is
         somebody&rsquo;s evening — the table stays until it is released from the
         member side, or the pass is struck and the seat follows it.

@@ -148,16 +148,16 @@ export default async function ContestPage({
       </div>
 
       {contest.prize ? (
-        <p style={{ marginTop: 14, fontSize: 13, color: "var(--text-2)" }}>{contest.prize}</p>
+        <p style={{ marginTop: 14, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>{contest.prize}</p>
       ) : null}
 
       {open && !closed && onHold ? (
-        <p style={{ marginTop: 22, fontSize: 13, color: "var(--text-2)" }}>
+        <p style={{ marginTop: 22, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
           Entries wait while your membership is paused. Resume it on your page
           and this contest opens back up.
         </p>
       ) : open && !closed && !mayEnter && !entered ? (
-        <p style={{ marginTop: 22, fontSize: 13, color: "var(--text-2)" }}>
+        <p style={{ marginTop: 22, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
           This one is the crew&rsquo;s — it counts{" "}
           {sailing ? (
             <Link href={`/charters/${sailing.slug}`} className="mbr-plain">
@@ -184,7 +184,7 @@ export default async function ContestPage({
           {contest.status === "settled" ? "The result" : "Standing so far"}
         </span>
         {standing.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-3)" }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
             No one has entered yet.
           </p>
         ) : (

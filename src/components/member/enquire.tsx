@@ -46,7 +46,7 @@ export function Enquire({
       <form ref={formRef} action={formAction}>
         <input type="hidden" name="sailing" value={sailingTitle} />
         {formatSlug ? <input type="hidden" name="format" value={formatSlug} /> : null}
-        <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 12 }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginBottom: 12 }}>
           {formatLabel ?? "This one"} is on request. Say who and when; the Bridge
           answers by word.
         </p>
@@ -77,7 +77,7 @@ export function Enquire({
           />
         </div>
         {state.error && !state.field ? (
-          <p role="alert" style={{ color: "var(--siren)", fontSize: 12.5, marginTop: 12 }}>
+          <p role="alert" style={{ color: "var(--siren)", fontSize: "var(--text-xs)", marginTop: 12 }}>
             {state.error}
           </p>
         ) : null}

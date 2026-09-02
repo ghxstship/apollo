@@ -600,7 +600,7 @@ export default async function ReportsPage() {
             rows={fillRows}
           />
           {fillRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
               No voyages on the books yet.
             </p>
           ) : null}
@@ -627,7 +627,7 @@ export default async function ReportsPage() {
             rows={changeRows}
           />
           {changeRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
               Nothing recorded yet.
             </p>
           ) : null}
@@ -654,7 +654,7 @@ export default async function ReportsPage() {
             rows={errorRows}
           />
           {errorRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
               Nothing has failed that the app knows of.
             </p>
           ) : null}
@@ -705,7 +705,7 @@ export default async function ReportsPage() {
             rows={schedulerRows}
           />
           {schedulerRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
               The scheduler has not answered yet.
             </p>
           ) : null}

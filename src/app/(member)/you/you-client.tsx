@@ -436,7 +436,7 @@ export function Offboarding({ status, heldPasses }: { status: string; heldPasses
           has turned.
         </p>
         {error && mode === "pause" ? (
-          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
+          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: "var(--text-xs)" }}>
             {error}
           </p>
         ) : null}
@@ -509,7 +509,7 @@ export function Offboarding({ status, heldPasses }: { status: string; heldPasses
           <p style={{ marginTop: 10 }}>Nothing on the manifest to square.</p>
         )}
         {error && mode === "depart" ? (
-          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
+          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: "var(--text-xs)" }}>
             {error}
           </p>
         ) : null}

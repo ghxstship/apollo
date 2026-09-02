@@ -65,7 +65,9 @@ export function PostCard({
               letterSpacing: ".12em",
               textTransform: "uppercase",
               color: "var(--brand-yacht)",
-              border: "1px solid rgba(46,155,181,.4)",
+              /* Was a literal rgba teal — a colour from a palette this brand
+                 does not have, on a chip whose text is --brand-yacht amber. */
+              border: "1px solid color-mix(in srgb, var(--brand-yacht) 40%, transparent)",
               borderRadius: "var(--radius-pill)",
               padding: "3px 8px",
               whiteSpace: "nowrap",
@@ -89,7 +91,10 @@ export function PostCard({
               bottom: 8,
               font: `700 var(--text-3xs)/1 ${MONO}`,
               letterSpacing: ".14em",
-              color: "rgba(244,239,230,.7)",
+              /* The label sits on a scene gradient under a scrim, which is what
+                 --text-on-media is for; the literal it replaces was an ivory
+                 from the retired palette. */
+              color: "var(--text-on-media)",
             }}
           >
             {mediaLabel}
@@ -137,7 +142,7 @@ export function Hail({
         ...style,
       }}
     >
-      <span aria-hidden="true" style={{ fontSize: 13, lineHeight: 1 }}>
+      <span aria-hidden="true" style={{ fontSize: "var(--text-xs)", lineHeight: 1 }}>
         {hailed ? "⚑" : "⚐"}
       </span>
       HAIL{count > 0 ? " · " + count : ""}
@@ -158,7 +163,7 @@ export function CommentThread({
 }) {
   if (!comments.length)
     return (
-      <div style={{ padding: "14px 0", fontSize: 13, color: "var(--text-3)", fontFamily: BODY, ...style }}>
+      <div style={{ padding: "14px 0", fontSize: "var(--text-sm)", color: "var(--text-3)", fontFamily: BODY, ...style }}>
         {emptyLabel}
       </div>
     );
@@ -169,10 +174,13 @@ export function CommentThread({
           <Avatar name={c.author} tone={c.tone ?? "ink"} size="sm" />
           <div style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text-1)" }}>{c.author}</span>
+              {/* A comment is subordinate to the post it hangs off, and the
+                  app's own comment bubble (.wd-cmt__b) is already --text-xs;
+                  13 was doing the job of 12 here. */}
+              <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--text-1)" }}>{c.author}</span>
               <span style={{ font: `400 9px/1 ${MONO}`, color: "var(--text-3)" }}>{c.timestamp}</span>
             </div>
-            <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--text-1)" }}>{c.body}</span>
+            <span style={{ fontSize: "var(--text-xs)", lineHeight: 1.5, color: "var(--text-1)" }}>{c.body}</span>
           </div>
         </div>
       ))}
@@ -236,7 +244,7 @@ export function Composer({
               letterSpacing: ".12em",
               textTransform: "uppercase",
               color: "var(--brand-yacht)",
-              border: "1px solid rgba(46,155,181,.4)",
+              border: "1px solid color-mix(in srgb, var(--brand-yacht) 40%, transparent)",
               borderRadius: "var(--radius-pill)",
               padding: "3px 8px",
               whiteSpace: "nowrap",
@@ -342,7 +350,7 @@ export function FlagQueue({
   const td: React.CSSProperties = { padding: "11px 12px", borderBottom: "1px solid var(--line-faint)" };
   return (
     <div style={{ fontFamily: BODY, ...style }}>
-      {!items.length ? <div style={{ padding: "14px 0", fontSize: 13, color: "var(--text-3)" }}>{emptyLabel}</div> : null}
+      {!items.length ? <div style={{ padding: "14px 0", fontSize: "var(--text-sm)", color: "var(--text-3)" }}>{emptyLabel}</div> : null}
       {items.length > 0 ? (
         /* The Bridge's other tables sit in .ls-table-wrap; this one did not, so
            on a phone the moderation queue pushed the page 10px wide and made it

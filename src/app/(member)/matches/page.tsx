@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Avatar, LockupText } from "@/components/ds";
+import { Avatar, LockupText, StateBlock } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import { anchorCountdown, type SharedAnchorRow } from "@/lib/radar";
 import { moduleTables } from "@/lib/module-tables";
@@ -92,7 +92,7 @@ export default async function MatchesPage() {
   }
 
   return (
-    <div className="ls-fade" data-theme="shore">
+    <div className="ls-fade">
       <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
       <h1 className="mbr-h1">Matches.</h1>
       <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "56ch" }}>
@@ -101,10 +101,13 @@ export default async function MatchesPage() {
       </p>
 
       {(matches ?? []).length === 0 ? (
-        <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
-          That is everyone. Matches come from tables, not swiping — take a seat
-          on Thursday.
-        </p>
+        <StateBlock
+          status="empty"
+          icon="Users"
+          title="That is everyone."
+          detail="Matches come from tables, not swiping — take a seat on Thursday."
+          style={{ marginTop: 24 }}
+        />
       ) : (
         <div style={{ marginTop: 24, display: "grid", gap: 12 }}>
           {(matches ?? []).map((m) => {
@@ -126,14 +129,16 @@ export default async function MatchesPage() {
               >
                 <Avatar name={first} tone={(p?.avatar_tone ?? "ink") as "ink" | "sea" | "gold" | "sand"} />
                 <div style={{ flex: 1 }}>
-                  <b style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: 17 }}>
+                  {/* Below the 22px Anton floor a name is set in Archivo 700,
+                      sentence case — the display face is not a caption face. */}
+                  <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
                     {first}
                   </b>
                   <p className="mbr-mono" style={{ marginTop: 3 }}>
                     {t ? `MATCHED AT TABLE ${t.number}` : "MATCHED"} · {logDate(m.created_at, zone)} · YOU BOTH SAID THURSDAY
                   </p>
                   {p?.bio ? (
-                    <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 4 }}>{p.bio}</p>
+                    <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 4 }}>{p.bio}</p>
                   ) : null}
                 </div>
                 <SendAWord otherId={otherId} label="Say something" />
@@ -146,7 +151,7 @@ export default async function MatchesPage() {
       {anchors.length > 0 ? (
         <section style={{ marginTop: 40 }}>
           <span className="mbr-eyebrow">From the water — Shared Anchors</span>
-          <p style={{ marginTop: 10, fontSize: 13, color: "var(--text-2)", maxWidth: "56ch" }}>
+          <p style={{ marginTop: 10, fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "56ch" }}>
             Anchors come from a sailing&rsquo;s radar, mutual only. Each one
             holds for twenty-four hours from the reveal, then the contact goes
             on both sides — no extension and no reminder.
@@ -171,7 +176,7 @@ export default async function MatchesPage() {
                 >
                   <Avatar name={name} tone="sea" />
                   <div style={{ flex: 1 }}>
-                    <b style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: 17 }}>
+                    <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
                       {name}
                     </b>
                     <p className="mbr-mono" style={{ marginTop: 3 }}>

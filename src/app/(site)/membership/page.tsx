@@ -181,7 +181,7 @@ export default async function MembershipPage() {
           one night ashore as a guest usually settles it.
         </p>
         <ApplyForm />
-        <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 20 }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 20 }}>
           Applied already? <Link href="/apply-status">Read where you stand</Link> — four
           stages, no silence.
         </p>

@@ -32,7 +32,7 @@ function Row({ label, value }: { label: string; value: ReactNode }) {
       </span>
       <span
         className="mbr-mono"
-        style={{ color: "var(--text-inverse-1)", fontSize: 11, textAlign: "right" }}
+        style={{ color: "var(--text-inverse-1)", fontSize: "var(--text-xs)", textAlign: "right" }}
       >
         {value}
       </span>
@@ -214,7 +214,7 @@ export default async function StubPage({
           <div
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 24,
+              fontSize: "var(--text-xl)",
               color: "var(--bone)",
               marginTop: 14,
             }}
@@ -265,7 +265,7 @@ export default async function StubPage({
             </span>
             <span
               className="mbr-mono"
-              style={{ color: "var(--text-inverse-1)", fontSize: 11 }}
+              style={{ color: "var(--text-inverse-1)", fontSize: "var(--text-xs)" }}
             >
               CHECK 18:00 NIGHT BEFORE
             </span>
@@ -276,26 +276,8 @@ export default async function StubPage({
       <div className="crd-acts">
         <PrintButton label="Print the stub" />
       </div>
-      {/* Print: the stub alone, edge to edge, colors exact. */}
-      <style>{`
-        @media print {
-          @page { margin: 12mm; }
-          body { background: #fff !important; }
-          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts { display: none !important; }
-          .mbr-shell, .mbr-main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
-          .crd { padding: 0 !important; }
-          .ls-fade { animation: none !important; opacity: 1 !important; }
-          .crd-card {
-            width: 100% !important;
-            max-width: 480px !important;
-            margin-inline: auto !important;
-            border-color: #0D0D0D !important; /* --noir-950; print has no cascade to resolve a var against on some engines */
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .crd-seam { animation: none !important; }
-        }
-      `}</style>
+      {/* Print — the stub alone, edge to edge, colours exact — is one rule in
+          member.css that this page and the Member Card both inherit. */}
     </div>
   );
 }

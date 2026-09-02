@@ -283,7 +283,7 @@ export function RosterTable({
       render: (r: RosterRow) => (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
           <Avatar name={r.name} size="sm" tone={avatarTone(r.tone)} />
-          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <b style={{ fontWeight: 700 }}>{r.name}</b>
         </span>
       ),
     },
@@ -298,7 +298,7 @@ export function RosterTable({
             {r.guests}
           </span>
           {r.guestParty.length ? (
-            <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)" }}>
               {r.guestParty.map((g, i) => (
                 <span key={g.name + i}>
                   {i > 0 ? ", " : ""}
@@ -308,7 +308,7 @@ export function RosterTable({
               ))}
             </span>
           ) : r.guestNames.length ? (
-            <span style={{ fontSize: 11.5, color: "var(--text-3)" }}>{r.guestNames.join(", ")}</span>
+            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)" }}>{r.guestNames.join(", ")}</span>
           ) : null}
         </span>
       ),
@@ -382,7 +382,7 @@ export function RosterTable({
       <div className="hm-panel">
         <Table rowKey={(r: RosterRow) => r.rsvpId} columns={columns} rows={rows} />
         {rows.length === 0 ? (
-          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
             No passes claimed yet. The roster fills as RSVPs land.
           </p>
         ) : null}

@@ -121,7 +121,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
               </button>
             ))}
             {inCat.length === 0 ? (
-              <p style={{ color: "var(--text-3)", fontSize: 13 }}>Nothing on this shelf.</p>
+              <p style={{ color: "var(--text-3)", fontSize: "var(--text-sm)" }}>Nothing on this shelf.</p>
             ) : null}
           </div>
         </div>
@@ -132,7 +132,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <Avatar name={member.name} tone="gold" size="sm" />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13 }}>{member.name}</div>
+                  <div style={{ fontSize: "var(--text-sm)" }}>{member.name}</div>
                   <span className="hm-mono">
                     {member.memberNo} · {(TIER_LABEL[member.tier] ?? member.tier).toUpperCase()}
                   </span>
@@ -162,7 +162,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
 
           <div className="hm-ticket__lines">
             {lines.length === 0 ? (
-              <p style={{ padding: "20px 0", color: "var(--text-3)", fontSize: 12.5 }}>
+              <p style={{ padding: "20px 0", color: "var(--text-3)", fontSize: "var(--text-xs)" }}>
                 Ring the first item — tap the catalog.
               </p>
             ) : (

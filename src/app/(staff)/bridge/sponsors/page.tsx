@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Stat } from "@/components/ds";
 import { CLUB_ZONE } from "@/lib/brand";
 import { logDate, price } from "@/lib/format";
 import { memberMark } from "@/lib/membership";
@@ -144,14 +145,24 @@ export default async function SponsorsPage() {
         sailing, never an ad. The terms live here on the Bridge; the shore reads
         names and tiers through one window, and nothing else.
       </p>
-      <p
-        className="ls-mono-data"
-        style={{ marginTop: 16, color: "var(--text-2)", textTransform: "uppercase" }}
-      >
-        {/* price(0) says COMPLIMENTARY, which is a pass, not a ledger figure. */}
-        {monthlyTotal ? price(monthlyTotal) : "$0"} this month · {earning.length} in term ·{" "}
-        {activeCount} active {activeCount === 1 ? "retainer" : "retainers"}
-      </p>
+      {/* Three figures the book is read for, and they were one run-on line of
+          10px mono — the money set exactly like the two counts beside it, in
+          the register this console uses for slugs and timestamps. */}
+      <div className="hm-row">
+        <Stat
+          size="sm"
+          label="This month"
+          /* price(0) says COMPLIMENTARY, which is a pass, not a ledger figure. */
+          value={monthlyTotal ? price(monthlyTotal) : "$0"}
+          sub="RETAINERS IN TERM"
+        />
+        <Stat size="sm" label="In term" value={earning.length} />
+        <Stat
+          size="sm"
+          label={activeCount === 1 ? "Active retainer" : "Active retainers"}
+          value={activeCount}
+        />
+      </div>
       <SponsorsClient
         rows={items}
         tiers={cards}

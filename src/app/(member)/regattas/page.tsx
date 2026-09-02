@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ContestCard } from "@/components/ds";
+import { Badge, StateBlock } from "@/components/ds";
 import { CONTEST_METRIC, knots, LOGBOOK } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { getMember } from "../data";
@@ -10,7 +10,15 @@ export const metadata: Metadata = { title: LOGBOOK.regattas };
 /* Regattas and challenges — the club's contests, all of them bounded. A regatta
    ranks its entrants; a challenge measures them against a target. Both close on
    a date and become history, which is the point: no standing outlives its
-   window, so nobody is permanently mid-table. */
+   window, so nobody is permanently mid-table.
+
+   One idiom, not two. .rgt-list is a seam container — 1px gap over a faint
+   ground inside a single border — built so flush children read as one ruled
+   block. It was filled with the kit's ContestCard, which brings its own border,
+   --radius-md and --shadow-card: between any two of them that made card border
+   + seam + card border, a 3px grey stripe with rounded corners floating inside
+   a square container. The list is hairline rows now, which is what the design
+   system asks for; the card lives on in the kit for surfaces that want one. */
 
 export default async function RegattasPage() {
   const { supabase, user, zone } = await getMember();
@@ -47,32 +55,38 @@ export default async function RegattasPage() {
       <section className="mbr-sec">
         <span className="mbr-eyebrow">Running now</span>
         {running.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--text-3)" }}>
-            Nothing open. The next one is called from the Bridge.
-          </p>
+          <StateBlock
+            status="empty"
+            icon="Flag"
+            title="Nothing open."
+            detail="The next one is called from the Bridge."
+          />
         ) : (
           <div className="rgt-list">
             {running.map((c) => {
               const closes = new Date(c.ends_at).getTime();
               const days = Math.max(0, Math.ceil((closes - now) / 86_400_000));
               return (
-                <Link key={c.id} href={`/regattas/${c.slug}`} className="mbr-plain">
-                  <ContestCard
-                    shape={c.shape === "challenge" ? "challenge" : "regatta"}
-                    name={c.title}
-                    metric={
-                      c.shape === "challenge" && c.target
-                        ? `${c.target} ${CONTEST_METRIC[c.metric] ?? c.metric}`
-                        : (CONTEST_METRIC[c.metric] ?? c.metric)
-                    }
-                    award={c.knots_award > 0 ? knots(c.knots_award) : undefined}
-                    entered={entered.has(c.id)}
-                    daysLeft={days}
-                  >
-                    {c.blurb ? (
-                      <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)" }}>{c.blurb}</p>
-                    ) : null}
-                  </ContestCard>
+                <Link key={c.id} href={`/regattas/${c.slug}`} className="rgt-row">
+                  <div>
+                    <span className="mbr-eyebrow">
+                      {c.shape === "challenge" ? "CHALLENGE" : "REGATTA"}
+                    </span>
+                    <h3>{c.title}</h3>
+                    {c.blurb ? <p>{c.blurb}</p> : null}
+                    <div className="rgt-meta">
+                      <Badge tone="outline">
+                        {c.shape === "challenge" && c.target
+                          ? `${c.target} ${CONTEST_METRIC[c.metric] ?? c.metric}`
+                          : (CONTEST_METRIC[c.metric] ?? c.metric)}
+                      </Badge>
+                      {c.knots_award > 0 ? <Badge tone="gold">{knots(c.knots_award)}</Badge> : null}
+                    </div>
+                  </div>
+                  <div className="rgt-aside">
+                    <span className="mbr-mono">{days} DAYS LEFT</span>
+                    {entered.has(c.id) ? <Badge tone="positive">ENTERED</Badge> : null}
+                  </div>
                 </Link>
               );
             })}
@@ -85,17 +99,18 @@ export default async function RegattasPage() {
           <span className="mbr-eyebrow">Settled</span>
           <div className="rgt-list">
             {past.map((c) => (
-              <Link key={c.id} href={`/regattas/${c.slug}`} className="mbr-plain">
-                <ContestCard
-                  shape={c.shape === "challenge" ? "challenge" : "regatta"}
-                  name={c.title}
-                  window={c.settled_at ? logDate(c.settled_at, zone) : logDate(c.ends_at, zone)}
-                  settled
-                >
-                  {c.blurb ? (
-                    <p style={{ margin: 0, fontSize: 13, color: "var(--text-2)" }}>{c.blurb}</p>
-                  ) : null}
-                </ContestCard>
+              <Link key={c.id} href={`/regattas/${c.slug}`} className="rgt-row">
+                <div>
+                  <span className="mbr-mono">
+                    {c.shape === "challenge" ? "CHALLENGE" : "REGATTA"} ·{" "}
+                    {c.settled_at ? logDate(c.settled_at, zone) : logDate(c.ends_at, zone)}
+                  </span>
+                  <h3>{c.title}</h3>
+                  {c.blurb ? <p>{c.blurb}</p> : null}
+                </div>
+                <div className="rgt-aside">
+                  <span className="mbr-mono">SETTLED</span>
+                </div>
               </Link>
             ))}
           </div>

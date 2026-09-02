@@ -79,6 +79,21 @@ export function SponsorsClient({
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [signing, setSigning] = React.useState(false);
+  /* Take it off fired straight off the click — the only control on this screen
+     that undoes a placement, and the only one that never asked. The credit line
+     is already on the sailing's public page by then, and the delivered-assets
+     ticks go with it. Same confirm-first shape as Sign a sponsor below. */
+  const [detaching, setDetaching] = React.useState<{ sponsor: SponsorItem; act: Activation } | null>(
+    null
+  );
+
+  const detach = (sponsor: SponsorItem, act: Activation) =>
+    startTransition(async () => {
+      const res = await detachSponsor(act.voyageId, sponsor.id);
+      setDetaching(null);
+      if (res.error) show({ msg: res.error, tone: "danger" });
+      else show({ msg: "Taken off the sailing.", meta: sponsor.name.toUpperCase(), tone: "caution" });
+    });
 
   const firstTier = tiers[0];
   const cardFor = (slug: string) => tiers.find((t) => t.slug === slug);
@@ -134,7 +149,7 @@ export function SponsorsClient({
       label: "Sponsor",
       render: (r: SponsorItem) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <b style={{ fontWeight: 700 }}>{r.name}</b>
           {r.contactEmail ? (
             <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
               {r.contactEmail}
@@ -241,7 +256,7 @@ export function SponsorsClient({
             return (
               <div key={s.id} className="hm-panel" style={{ padding: "16px 20px" }}>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                  <b style={{ fontWeight: 600 }}>{s.name}</b>
+                  <b style={{ fontWeight: 700 }}>{s.name}</b>
                   <span className="ls-mono-data" style={{ color: "var(--text-3)", textTransform: "uppercase" }}>
                     {s.tierLabel}
                     {s.active ? "" : " · RETIRED"}
@@ -249,7 +264,7 @@ export function SponsorsClient({
                 </div>
 
                 {card && card.assets.length > 0 ? (
-                  <p style={{ marginTop: 6, fontSize: 12.5, color: "var(--text-3)" }}>
+                  <p className="hm-body" style={{ marginTop: 6, color: "var(--text-3)" }}>
                     Owed on activation: {card.assets.join(" · ")}
                   </p>
                 ) : null}
@@ -268,7 +283,7 @@ export function SponsorsClient({
                           style={{ borderTop: "1px solid var(--line)", paddingTop: 10 }}
                         >
                           <div className="hm-item__head">
-                            <span style={{ fontSize: 13 }}>
+                            <span className="hm-body">
                               {a.label}
                               {a.placement ? (
                                 <span style={{ color: "var(--text-3)" }}> · {a.placement}</span>
@@ -284,15 +299,9 @@ export function SponsorsClient({
                             <span className="hm-item__acts">
                               <Button
                                 size="sm"
-                                variant="ghost"
+                                variant="danger"
                                 disabled={pending}
-                                onClick={() =>
-                                  startTransition(async () => {
-                                    const res = await detachSponsor(a.voyageId, s.id);
-                                    if (res.error) show({ msg: res.error, tone: "danger" });
-                                    else show({ msg: "Taken off the sailing.", meta: s.name.toUpperCase() });
-                                  })
-                                }
+                                onClick={() => setDetaching({ sponsor: s, act: a })}
                               >
                                 Take it off
                               </Button>
@@ -315,7 +324,7 @@ export function SponsorsClient({
                               </div>
                             </div>
                           ) : (
-                            <p style={{ marginTop: 8, fontSize: 12.5, color: "var(--text-3)" }}>
+                            <p className="hm-body" style={{ marginTop: 8, color: "var(--text-3)" }}>
                               This tier lists no assets, so there is nothing to tick off.
                             </p>
                           )}
@@ -327,7 +336,7 @@ export function SponsorsClient({
                                 : `${a.comps.length} COMPED ON THIS ACCOUNT`}
                             </span>
                             {a.comps.length > 0 ? (
-                              <p style={{ marginTop: 4, fontSize: 13 }}>
+                              <p className="hm-body" style={{ marginTop: 4 }}>
                                 {a.comps.map((c, i) => (
                                   <span key={c.id}>
                                     {i > 0 ? ", " : ""}
@@ -384,7 +393,7 @@ export function SponsorsClient({
                     })}
                   </div>
                 ) : (
-                  <p style={{ marginTop: 10, fontSize: 13, color: "var(--text-3)" }}>
+                  <p className="hm-body" style={{ marginTop: 10, color: "var(--text-3)" }}>
                     On no sailing yet.
                   </p>
                 )}
@@ -443,6 +452,39 @@ export function SponsorsClient({
           })}
         </section>
       ) : null}
+
+      <Dialog
+        open={!!detaching}
+        onClose={() => setDetaching(null)}
+        width={420}
+        eyebrow={detaching ? detaching.sponsor.name : ""}
+        title="Take it off this sailing?"
+        footer={
+          detaching ? (
+            <>
+              <Button variant="ghost" onClick={() => setDetaching(null)}>
+                Leave it on
+              </Button>
+              <Button
+                variant="danger"
+                disabled={pending}
+                onClick={() => detach(detaching.sponsor, detaching.act)}
+              >
+                Take it off
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <p className="hm-body">
+          The credit line comes off {detaching?.act.label} at once — the public page stops naming
+          them. What has been ticked as delivered goes with the activation, and placing them again
+          starts the checklist over.
+          {detaching?.act.comps.length
+            ? ` ${detaching.act.comps.length} comped ${detaching.act.comps.length === 1 ? "pass stays" : "passes stay"} on the manifest.`
+            : ""}
+        </p>
+      </Dialog>
 
       <Dialog
         open={signing}
@@ -510,7 +552,7 @@ export function SponsorsClient({
             ))}
           </Select>
           {cardFor(tier)?.assets.length ? (
-            <p style={{ fontSize: 12.5, color: "var(--text-3)", marginTop: -6 }}>
+            <p className="hm-body" style={{ marginTop: -6, color: "var(--text-3)" }}>
               This tier carries: {cardFor(tier)!.assets.join(" · ")}
             </p>
           ) : null}

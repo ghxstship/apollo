@@ -8,7 +8,12 @@ export function Button({
   variant = "primary", size = "md", inverse = false, fullWidth = false,
   disabled = false, type = "button", className = "", children, ...rest
 }: {
-  variant?: "primary" | "gold" | "outline" | "ghost"; size?: "sm" | "md" | "lg";
+  /* `danger` is for a control that destroys or cannot be undone — cancelling a
+     sailing, revoking a key, redacting a signature, striking a record. It is
+     deliberately an outline at rest so it never competes with the view's one
+     accent, and fills only under the pointer. Reach for it whenever the safe
+     neighbour in the same row is `outline` or `ghost`. */
+  variant?: "primary" | "gold" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
   inverse?: boolean; fullWidth?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", className].filter(Boolean).join(" ");

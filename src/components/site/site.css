@@ -63,6 +63,29 @@
    bare anchor at ~80px and does not need to shrink. */
 
 /* ————— shared ————— */
+/* — section rhythm. The marketing surfaces run on two paddings and nothing
+     else: the full one a section takes on its own, and the tight one the
+     tinted bands and the reading columns take. The home page used to carry
+     four values across five sections, three of them written inline on the
+     element (96 · "0 96" · "0 96") over an .ls-section that had already been
+     set, so the rhythm lived in three places and agreed in none.
+
+     The pair is named here rather than added to the token scale: the published
+     spacing scale stops at --space-20 (80px), tokens.css is a verbatim copy of
+     the handoff package (a step added there is dropped the next time it is
+     regenerated, and a padding-block reading a var that no longer resolves
+     silently computes to zero), and compat.css takes aliases only. One name,
+     one place, every marketing surface reading it. — */
+:root{--rhythm-section:96px;--rhythm-section-tight:72px}
+/* Qualified by the site's own <main> so the marketing rhythm wins over the
+   shared .ls-section default (--space-14) wherever the two sheets land in the
+   bundle — CSS order across chunks is an import-order promise, not a
+   specificity one, and it differs between dev and build. */
+main .ls-section{padding-block:var(--rhythm-section)}
+main .ls-section--tight{padding-block:var(--rhythm-section-tight)}
+/* Sections in a run meet on one rhythm, not two stacked ones. This is what the
+   inline `paddingBlock:"0 96px"` on every section after the first was saying. */
+main .ls-section + .ls-section{padding-top:0}
 .ws-shead{display:flex;align-items:flex-end;gap:24px;margin-bottom:var(--space-7)}
 .ws-shead__eb{color:var(--gold-deep);margin-bottom:12px}
 .ws-shead h2{font-size:var(--text-display-m)}
@@ -70,7 +93,11 @@
 @media (max-width:960px){.ws-shead{flex-wrap:wrap;gap:16px}.ws-shead__aside{margin-left:0}}
 .ws-phead{padding:72px 0 0}
 .ws-phead h1{font-size:var(--text-display-l)}
-.ws-phead .ls-eyebrow{color:var(--gold-deep);margin-bottom:16px;display:block}
+/* The page eyebrow — the accent line above a page's h1. The same three
+   declarations were pasted inline on the eyebrow of /legal, /support,
+   /apply-status and /episodes, which are the four page heads that do NOT use
+   .ws-phead; the modifier is the same setting under a name they can use. */
+.ls-eyebrow--page,.ws-phead .ls-eyebrow{color:var(--gold-deep);margin-bottom:16px;display:block}
 .ws-phead__sub{color:var(--text-2);margin-top:16px;max-width:52ch}
 /* the tagline is lockup-adjacent only — it is the view's single accent */
 /* — the tagline lockup (brand-architecture §Tagline · Option 1 "Active Rule").
@@ -124,7 +151,8 @@
 .ws-harbor-row h3{font-size:var(--text-display-xs)}
 .ws-harbor-row .hm{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
 @media (max-width:640px){.ws-harbor-row{grid-template-columns:1fr;gap:8px}}
-.ws-dispatch-teaser{background:var(--surface-tint);padding:72px 0}
+.ws-harbor-note{margin-top:24px;font-size:var(--text-sm);color:var(--text-3)}
+.ws-dispatch-teaser{background:var(--surface-tint);padding-block:var(--rhythm-section-tight)}
 .ws-dp-row{display:grid;grid-template-columns:110px 1fr auto;gap:24px;padding:22px 0;border-bottom:1px solid var(--line-faint);align-items:baseline}
 .ws-dp-row:first-of-type{border-top:1px solid var(--line-faint)}
 .ws-dp-row__d{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
@@ -132,16 +160,35 @@
 .ws-dp-row:hover .ws-dp-row__t{color:var(--aegean)}
 .ws-dp-row__dek{font-size:var(--text-xs);color:var(--text-2);margin-top:4px;max-width:60ch}
 @media (max-width:640px){.ws-dp-row{grid-template-columns:1fr;gap:6px}}
-.ws-band{background:var(--surface-deep);color:var(--text-inverse-1);padding:96px 0}
+.ws-band{background:var(--surface-deep);color:var(--text-inverse-1);padding-block:var(--rhythm-section)}
 .ws-band h2{font-size:var(--text-display-l);color:var(--bone);max-width:18ch}
 .ws-band p{color:var(--text-inverse-2);margin-top:16px;max-width:44ch}
-@media (max-width:960px){.ws-band{padding:64px 0}}
+@media (max-width:960px){.ws-band{padding-block:var(--rhythm-section-tight)}}
 
 /* ————— voyages manifest ————— */
 .ws-vcontrols{display:flex;flex-direction:column;gap:10px;margin-top:32px}
 .ws-vfilters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .ws-vfilters__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);flex:none;min-width:54px}
-@media (max-width:640px){.ws-vfilters__label{min-width:100%}}
+/* How many sailings the filters left, and the months they span — the answer to
+   the question the controls above it just asked. Rides in the Sort row. */
+.ws-vcount{margin-left:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+/* — the narrow-screen filter stack. Five axes stacked in a column, each label
+     forced onto its own line, put 400–500px of chrome above the first sailing
+     on a 390px screen. Setting and Sort stay out; the three calendar axes go
+     behind one disclosure, with what they currently hold summarised on its
+     own line while it is closed. — */
+.ws-vdisc{display:none}
+.ws-vdisc__sum{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;min-width:0;overflow-wrap:anywhere}
+@media (max-width:640px){
+  .ws-vdisc{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ws-vsecondary:not(.ws-vsecondary--open){display:none}
+  .ws-vcount{margin-left:0;width:100%}
+}
+.ws-vsecondary{display:flex;flex-direction:column;gap:10px}
+/* The month rule — fifty sailings were one unbroken run of identical stripes.
+   Same mono treatment as the plan grid's header row. */
+.ws-vmonth{position:sticky;top:72px;z-index:1;background:var(--surface-page);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase;padding:14px 0 8px}
+@media (max-width:960px){.ws-vmonth{top:64px}}
 .ws-vrow{display:grid;grid-template-columns:110px 1fr auto;gap:24px;align-items:center;padding:24px 0;border-top:1px solid var(--line-faint)}
 .ws-vrow:last-of-type{border-bottom:1px solid var(--line-faint)}
 .ws-vrow__date{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase}
@@ -155,7 +202,31 @@
 .ws-live-label{text-transform:uppercase;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep)}
 @media (max-width:640px){.ws-vrow{grid-template-columns:1fr;gap:8px}.ws-vrow__act{flex-direction:row;align-items:center}}
 
+/* ————— zero states ————— */
+/* An empty list is still a list: it keeps the hairlines the rows would have
+   drawn, says what is missing in the mono register the meta uses, and — where
+   the reader put the filters there — carries the control that undoes it. */
+.ws-zero{border-top:1px solid var(--line-faint);border-bottom:1px solid var(--line-faint);padding:48px 0;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.ws-zero__label{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
+.ws-zero p{font-size:var(--text-sm);color:var(--text-2);max-width:56ch}
+
 /* ————— event page ————— */
+/* — the division accent. A charter page carries data-theme with its setting,
+     and until now nothing answered to those values: a sailing and a shore night
+     rendered byte-identically, on the one view where the divisions are most
+     visible. §Setting files afloat under [un] Limited (amber) and ashore under
+     [un] Scripted (cobalt) — brand/page.tsx says so in the kit itself — so the
+     attribute repoints the accent and nothing else. One accent per view; type,
+     surfaces and rules stay exactly where they were.
+
+     Each setting takes the paper-safe -deep step for small type, and the ink
+     -lift step where the ground is dark — the same split compat.css makes for
+     the house accent, restated because this element's declaration wins over the
+     one on <html> for its own subtree. — */
+[data-theme="sea"]{--accent:var(--brand-limited);--gold-deep:var(--brand-limited-deep);--gold-bright:var(--brand-limited-lift)}
+[data-theme="shore"]{--accent:var(--brand-scripted);--gold-deep:var(--brand-scripted-deep);--gold-bright:var(--brand-scripted-lift)}
+[data-theme="dark"] [data-theme="sea"]{--gold-deep:var(--brand-limited-lift)}
+[data-theme="dark"] [data-theme="shore"]{--gold-deep:var(--brand-scripted-lift)}
 .ev-hero{color:var(--text-inverse-1);position:relative;min-height:420px;display:flex;align-items:flex-end}
 .ev-hero__bg{position:absolute;inset:0}
 .ev-hero__bg:after{content:"";position:absolute;inset:0;background:var(--scrim)}
@@ -166,6 +237,10 @@
 .ev-hero__meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-inverse-2);text-transform:uppercase}
 .ev-body{display:grid;grid-template-columns:1fr 360px;gap:64px;padding-block:64px 96px}
 .ev-desc p{margin-top:20px;font-size:16px;line-height:1.75;max-width:var(--measure)}
+/* The column's section heads — "The plan.", "Ports.", "The fleet.", "Frames.",
+   "Asked often." — were six copies of the same two inline declarations. */
+.ev-h2{font-size:var(--text-display-xs);margin-bottom:12px}
+.ev-h2--mid{margin-top:20px}
 .ev-faq{margin-top:48px}
 .ev-faq details{border-top:1px solid var(--line-faint)}
 .ev-faq details:last-of-type{border-bottom:1px solid var(--line-faint)}
@@ -197,9 +272,30 @@
 .ev-side{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column;gap:20px}
 .ev-panel{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);padding:24px}
 .ev-panel__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin-bottom:12px}
+/* The passage panel's short answers — cancelled, sailed, held, underway, on
+   request, by invitation, full, and who's aboard. Ten call sites carried the
+   same off-ladder pair inline; --above is the copy that stands over a button,
+   --fine the consent line under the roster. */
+.ev-note{font-size:var(--text-sm);color:var(--text-2)}
+.ev-note--above{margin-bottom:16px}
+.ev-note--fine{font-size:var(--text-xs);color:var(--text-3);margin-top:10px}
 .ev-log{background:var(--surface-deep);border-radius:var(--radius-sharp);padding:16px;display:flex;flex-direction:column;gap:8px}
-.ev-log div{display:flex;justify-content:space-between;gap:12px;font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);color:var(--text-inverse-1);text-transform:uppercase}
-.ev-log div span:first-child{color:var(--text-inverse-3);font-size:var(--text-3xs)}
+/* Twelve rows of the reader's own decision data — when it boards, what a pass
+   costs them in tier, whether there is one left. It was set at 9px key / 10px
+   value beside a 14px/700 FAQ, and the rows were two auto flex spans, so a long
+   value (a venue name, a sponsor credit) ate the gap and left the column
+   ragged. A two-track grid holds the key column still; min-width:0 lets a long
+   value wrap in its own track instead of pushing the key out of line. */
+.ev-log div{display:grid;grid-template-columns:auto 1fr;gap:12px;font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-inverse-1);text-transform:uppercase}
+.ev-log div span:first-child{color:var(--text-inverse-3);font-size:var(--text-2xs)}
+.ev-log div span:last-child{text-align:end;min-width:0;overflow-wrap:anywhere}
+/* The two lines a reader acts on — when it casts off, and whether a pass is
+   left — read first and larger, above the rule the rest of the record hangs
+   from. Everything below them is reference. */
+.ev-log>.ev-log__lead{grid-template-columns:1fr 1fr;gap:16px;padding-bottom:12px;border-bottom:1px solid var(--line-inverse-faint)}
+.ev-log__lead>div{display:block}
+.ev-log__lead>div span:first-child{display:block}
+.ev-log__lead>div span:last-child{display:block;text-align:start;font-size:var(--text-sm);margin-top:4px}
 .ev-mono-note{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);margin-top:12px;text-transform:uppercase}
 @media (max-width:960px){.ev-body{grid-template-columns:1fr;gap:40px}.ev-side{position:static}}
 
@@ -249,7 +345,7 @@
 .dp-head:after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid var(--line-strong)}
 .dp-head h1{font-size:var(--text-display-l)}
 .dp-list{padding-bottom:48px}
-.dp-art{max-width:680px;margin:0 auto;padding:64px 0 96px}
+.dp-art{max-width:680px;margin:0 auto;padding-block:var(--rhythm-section-tight) var(--rhythm-section)}
 .dp-art h1{font-size:var(--text-display-m);margin:14px 0 10px}
 .dp-art__dek{font-size:var(--text-body-l);color:var(--text-2)}
 .dp-kick{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);display:flex;gap:10px;flex-wrap:wrap;text-transform:uppercase}
@@ -260,7 +356,9 @@
 .dp-art__coords{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
 
 /* ————— gallery ————— */
-.gl-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:180px;gap:12px;padding:40px 0 48px}
+/* Rows are a floor, not a cap: a tile that spans two rows sets its own height,
+   and a group that has grown past its placeholder is not clipped to 180px. */
+.gl-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(180px,auto);gap:12px;padding:40px 0 48px}
 .gl-tile{border-radius:var(--radius-sharp);position:relative;overflow:hidden}
 .gl-tile__bg{position:absolute;inset:0}
 .gl-tile__bg:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply}
@@ -281,10 +379,10 @@
 .gl-caption p{font-size:var(--text-xs);color:var(--text-3);max-width:58ch}
 .gl-caption span{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
 @media (max-width:960px){.gl-grid{grid-template-columns:1fr 1fr}}
-@media (max-width:640px){.gl-grid{grid-template-columns:1fr;grid-auto-rows:200px}.gl-tile--wide{grid-column:span 1}}
+@media (max-width:640px){.gl-grid{grid-template-columns:1fr;grid-auto-rows:minmax(200px,auto)}.gl-tile--wide{grid-column:span 1}}
 
 /* ————— legal / support ————— */
-.lg-wrap{max-width:760px;margin:0 auto;padding:72px 24px 96px}
+.lg-wrap{max-width:760px;margin:0 auto;padding-inline:24px;padding-block:var(--rhythm-section-tight) var(--rhythm-section)}
 .lg-wrap h1{font-size:var(--text-display-l)}
 .lg-anchors{display:flex;gap:18px;flex-wrap:wrap;margin-top:32px;padding-bottom:16px;border-bottom:1px solid var(--line-faint)}
 .lg-anchors a{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2)}
@@ -294,6 +392,25 @@
 .lg-sec p,.lg-sec li{font-size:14px;line-height:1.7;color:var(--text-2);margin-top:10px;max-width:var(--measure)}
 .lg-sec ul{margin:10px 0 0;padding-inline-start:18px}
 .lg-mono{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+/* ————— apply-status: the ladder ————— */
+/* Fifteen inline style objects used to carry this, including a 600 weight
+   Archivo does not ship (the browser faked it) and three off-ladder sizes. The
+   state that mattered was missing too: opacity was the only signal, so the
+   stage the applicant is AT looked exactly like the two after it — on the page
+   whose whole purpose is where they stand. Three states now: done, now, ahead. */
+.as-ladder{list-style:none;margin:28px 0 0;padding:0;border-top:1px solid var(--line-faint)}
+.as-ladder li{display:grid;grid-template-columns:28px 1fr;gap:14px;padding:16px 0;border-bottom:1px solid var(--line-faint)}
+.as-ladder__dot{width:12px;height:12px;margin-top:5px;border-radius:var(--radius-pill);border:1px solid var(--line-strong)}
+.as-ladder__t{font:var(--type-heading)}
+.as-ladder__note{font-size:var(--text-xs);color:var(--text-2);margin-top:5px}
+.as-ladder__state{display:block;margin-top:6px;font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
+.as-ladder li[data-state="done"] .as-ladder__dot{background:var(--gold-deep);border-color:var(--gold-deep)}
+/* The one row the reader came for: full strength, the accent in the dot, and a
+   ring so it reads down a column of hairlines at a glance. */
+.as-ladder li[data-state="now"] .as-ladder__dot{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px var(--wash-gold)}
+.as-ladder li[data-state="now"] .as-ladder__state{color:var(--gold-deep)}
+.as-ladder li[data-state="ahead"]{opacity:.55}
+
 .sp-faq{margin-top:32px}
 .sp-faq details{border-top:1px solid var(--line-faint)}
 .sp-faq details:last-of-type{border-bottom:1px solid var(--line-faint)}
@@ -306,7 +423,10 @@
 .sp-group{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin:24px 0 6px}
 .sp-contact{margin-top:56px;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
 .sp-contact:before{content:"";display:block;border-top:1px solid var(--line-strong)}
-.sp-contact>div{display:grid;grid-template-columns:1fr 1fr;gap:32px;padding-top:24px}
+/* Three panels — Write, Applicants, Hours — in a two-track grid left Hours
+   alone on a second row beside an empty cell. The track count follows the
+   children instead of being asserted. */
+.sp-contact>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;padding-top:24px}
 .sp-contact b{font:var(--type-label);display:block;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
 .sp-contact p{font-size:var(--text-sm);color:var(--text-2)}
 .sp-hours{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase;line-height:2}

@@ -133,7 +133,7 @@ export function ProgramClient({
       label: "Season",
       render: (r: SeasonPanelRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.title}</b>
+          <b style={{ fontWeight: 700 }}>{r.title}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>/{r.slug}</span>
         </span>
       ),
@@ -173,7 +173,7 @@ export function ProgramClient({
       label: "Venue",
       render: (r: VenuePanelRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.name}</b>
+          <b style={{ fontWeight: 700 }}>{r.name}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>/{r.slug}</span>
         </span>
       ),
@@ -217,7 +217,7 @@ export function ProgramClient({
       label: "Series",
       render: (r: SeriesPanelRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.title}</b>
+          <b style={{ fontWeight: 700 }}>{r.title}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>/{r.slug}</span>
         </span>
       ),

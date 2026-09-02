@@ -116,7 +116,7 @@ export function RaiseAGathering({
         {/* Anything not about one control — a paused membership, a refusal
             from the table — is the form's to say, not the title's. */}
         {state.error && !state.field ? (
-          <p role="alert" style={{ color: "var(--siren)", fontSize: 12.5, marginTop: 12 }}>
+          <p role="alert" style={{ color: "var(--siren)", fontSize: "var(--text-xs)", marginTop: 12 }}>
             {state.error}
           </p>
         ) : null}
@@ -188,7 +188,7 @@ export function RaiseAGathering({
             </div>
           ))}
           {withdrawError ? (
-            <p role="alert" style={{ color: "var(--siren)", fontSize: 12.5 }}>
+            <p role="alert" style={{ color: "var(--siren)", fontSize: "var(--text-xs)" }}>
               {withdrawError}
             </p>
           ) : null}

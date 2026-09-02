@@ -23,6 +23,17 @@
 .ls-btn--ghost:hover{background:var(--wash-ink)}
 .ls-btn--ghost.ls-btn--inverse{color:var(--text-inverse-1)}
 .ls-btn--ghost.ls-btn--inverse:hover{background:var(--wash-bone)}
+/* The danger channel. Until this existed, `gold` was the create CTA, the safe
+   confirm AND the destructive confirm — so Cancel a sailing, which credits
+   every account and fans out to every pass, was the same button as Mark
+   completed sitting beside it, and Revoke was the same button as Cut the key.
+   Danger reads as an outline at rest so it never competes with the page's one
+   accent, and commits to a fill on hover and focus, at the moment the pointer
+   is actually on it. */
+.ls-btn--danger{background:transparent;color:var(--danger);border-color:color-mix(in srgb, var(--danger) 55%, transparent)}
+.ls-btn--danger:hover,.ls-btn--danger:focus-visible{background:var(--danger);border-color:var(--danger);color:var(--bone)}
+.ls-btn--danger.ls-btn--inverse{color:var(--danger)}
+.ls-btn--danger.ls-btn--inverse:hover{background:var(--danger);color:var(--bone)}
 .ls-btn--full{width:100%}
 /* -7px, not -6px: `inset` resolves against the PADDING box, and .ls-btn has a
    1px border, so -6px reached 42 rather than 44. Two pixels short of the touch
@@ -96,6 +107,10 @@
    accent — only brass keeps a fill. */
 .ls-badge--positive{background:color-mix(in srgb, var(--positive) 12%, transparent);border-color:color-mix(in srgb, var(--positive) 55%, transparent);color:var(--positive)}
 .ls-badge--caution{background:color-mix(in srgb, var(--terracotta) 12%, transparent);border-color:color-mix(in srgb, var(--terracotta) 55%, transparent);color:var(--terracotta)}
+/* The third status tone. Its absence is why six consoles printed "Gave up" and
+   "UNREACHABLE" as undifferentiated body text in the one column an operator
+   scans, and why two files hand-patched var(--danger) inline. */
+.ls-badge--danger{background:color-mix(in srgb, var(--danger) 12%, transparent);border-color:color-mix(in srgb, var(--danger) 55%, transparent);color:var(--danger)}
 /* Two [data-theme="light"] badge overrides used to live here, deepening the
    status greens and ambers so 10px uppercase badge text cleared AA on paper.
    They are gone rather than renamed: the polarity inverted with the rebrand, so
@@ -135,8 +150,11 @@
 /* — Stat — */
 .ls-stat{display:flex;flex-direction:column;gap:6px;font-family:var(--font-sans)}
 .ls-stat__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
-.ls-stat__value{font-family:var(--font-display);font-size:var(--text-3xl);line-height:1;letter-spacing:var(--track-display);text-transform:uppercase;color:var(--text-1)}
-.ls-stat__sub{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3)}
+/* Anton is proportional, so a Stat that ticks — the gangway's checked/total
+   counter — visibly jitters as the digits change width, and Stats in a row do
+   not align down a column. tabular-nums fixes both without changing the face. */
+.ls-stat__value{font-family:var(--font-display);font-size:var(--text-3xl);line-height:1;letter-spacing:var(--track-display);text-transform:uppercase;color:var(--text-1);font-variant-numeric:tabular-nums}
+.ls-stat__sub{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);font-variant-numeric:tabular-nums}
 .ls-stat--inverse .ls-stat__label{color:var(--text-inverse-3)}
 .ls-stat--inverse .ls-stat__value{color:var(--bone)}
 .ls-stat--inverse .ls-stat__sub{color:var(--text-inverse-3)}
@@ -154,12 +172,33 @@
 /* outline-offset would draw the ring outside the row and be clipped by the
    scroll wrapper on a narrow table; inset keeps every edge of it on screen. */
 .ls-table tr.ls-table__row--click:focus-visible{outline:2px solid var(--focus);outline-offset:-3px;background:var(--wash-ink)}
-.ls-table .num{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data)}
+/* Mono gives these columns their shape; tabular-nums is what makes the digits
+   themselves a column. Space Mono is already fixed-pitch, so this is belt and
+   braces there — but .num is also the hook every aligned figure inherits, and
+   nothing was enforcing that the face stayed mono. */
+.ls-table .num{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);font-variant-numeric:tabular-nums}
+/* Money and counts read down the last digit, so they align to the end. Applied
+   per column rather than to every .num, because a boarding code or a date is
+   mono too and belongs at the start of its cell. */
+.ls-table .num--end{text-align:end}
+.ls-table th.num--end{text-align:end}
 .ls-table--inverse th{color:var(--text-inverse-3);border-bottom-color:var(--line-inverse)}
 .ls-table--inverse td{color:var(--text-inverse-1);border-bottom-color:var(--line-inverse-faint)}
 .ls-table--inverse tr.ls-table__row--click:hover{background:var(--wash-bone)}
 .ls-table--inverse tr.ls-table__row--click:focus-visible{outline-color:var(--focus-on-dark);background:var(--wash-bone)}
+/* The wrapper scrolls, but the table inside it was pinned to width:100% — so
+   it could never exceed the wrapper and the scroll never engaged. Columns
+   squeezed instead: the receipts table left about 40px for the entry column on
+   a phone and wrapped every memo to four lines. The min-width comes from the
+   Table component, which derives it from the column count, so a two-column
+   table still fits a narrow screen without scrolling for no reason. */
 .ls-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* A long table keeps its header. Past about row fifteen the header has scrolled
+   away and an operator is reading unlabelled columns — on documents, keys,
+   members, orders and all four tables on reports. */
+.ls-table-wrap--tall{max-height:70vh;overflow:auto}
+.ls-table-wrap--tall .ls-table thead th{position:sticky;top:0;z-index:1;background:var(--surface-card)}
+.ls-table-wrap--tall .ls-table--inverse thead th{background:var(--surface-abyss)}
 
 /* — Wordmark — */
 .ls-wm{display:inline-flex;flex-direction:column;line-height:1}
@@ -303,9 +342,16 @@
 .ls-progress{display:flex;flex-direction:column;gap:8px;font-family:var(--font-sans)}
 .ls-progress__head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:2px 12px;min-width:0}
 .ls-progress__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2)}
-.ls-progress__val{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3)}
+.ls-progress__val{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);font-variant-numeric:tabular-nums}
 .ls-progress__track{height:6px;background:var(--surface-tint);border:1px solid var(--line-faint);border-radius:var(--radius-pill);overflow:hidden}
 .ls-progress__fill{height:100%;background:var(--gradient-accent);border-radius:var(--radius-pill);transition:width var(--dur-3) var(--ease-out)}
+/* A meter that exists to say "this sailing is under water below thirty" was
+   accent green at 4/30 and at 30/30 alike — the severity lived only in a badge
+   beside it. The tone is set by the caller, which knows what the threshold
+   means; the bar only has to show it. */
+.ls-progress--danger .ls-progress__fill{background:var(--danger)}
+.ls-progress--caution .ls-progress__fill{background:var(--caution)}
+.ls-progress--positive .ls-progress__fill{background:var(--positive)}
 .ls-progress--thick .ls-progress__track{height:10px}
 .ls-progress--inverse .ls-progress__label{color:var(--text-inverse-2)}
 .ls-progress--inverse .ls-progress__val{color:var(--text-inverse-3)}

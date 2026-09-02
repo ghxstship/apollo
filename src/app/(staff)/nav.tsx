@@ -59,9 +59,22 @@ function isCurrent(pathname: string, href: string) {
    on the same key, so a tab never points at a door that is shut. */
 export function HmTabs({ hidden = [] }: { hidden?: readonly string[] }) {
   const pathname = usePathname();
+  /* The strip scrolls and the current tab may be anywhere in it — an operator
+     on Keys, the last link of the last group, arrived at a nav scrolled to
+     Applications with no sign their own section was on it. Bring the current
+     link into view on mount and on every move. block:"nearest" so the page
+     itself never scrolls: this must not fight the sticky header or steal the
+     reader's place in a long table. */
+  const strip = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    strip.current?.querySelector('[aria-current="page"]')?.scrollIntoView({
+      inline: "center",
+      block: "nearest",
+    });
+  }, [pathname]);
   return (
     <nav className="hm-tabs" aria-label="Bridge sections">
-      <div className="hm-tabs__in">
+      <div className="hm-tabs__in" ref={strip}>
         {GROUPS.map((group, gi) => (
           <React.Fragment key={gi}>
             {gi > 0 ? <span className="hm-tabs__sep" aria-hidden="true" /> : null}

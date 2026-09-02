@@ -143,12 +143,27 @@ export default async function OpenDeckPage() {
   });
 
   return (
-    <div style={{ maxWidth: 720, marginInline: "auto" }}>
+    /* The composer and the feed were adjacent siblings with no gap while the
+       feed's own children sat on 14 — so the composer's bottom border touched
+       the first post's top border and the input this page exists for read as
+       post zero. One column, one rhythm, and the header keeps its own tighter
+       pairing inside its own box. */
+    <div
+      style={{
+        maxWidth: 720,
+        marginInline: "auto",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-5)",
+      }}
+    >
       <OpenDeckRealtime postIds={postIds} />
-      <span className="mbr-eyebrow">Members only · mind the code</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6, marginBottom: 24 }}>
-        Open Deck.
-      </h1>
+      <div>
+        <span className="mbr-eyebrow">Members only · mind the code</span>
+        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
+          Open Deck.
+        </h1>
+      </div>
       <Composer
         authorName={profile?.full_name ?? "You"}
         tone={toneOf(profile)}
@@ -157,7 +172,7 @@ export default async function OpenDeckPage() {
       />
       <FeedList posts={feed} />
       {posts.length === PAGE_SIZE ? (
-        <p className="mbr-mono" style={{ marginTop: 20, color: "var(--text-3)" }}>
+        <p className="mbr-mono" style={{ color: "var(--text-3)" }}>
           THE {PAGE_SIZE} MOST RECENT · OLDER WORDS STAY IN THE LOG
         </p>
       ) : null}

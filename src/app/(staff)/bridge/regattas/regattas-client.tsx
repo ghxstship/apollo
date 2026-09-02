@@ -68,7 +68,7 @@ export function RegattasClient({
       label: "Contest",
       render: (r: ContestRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.title}</b>
+          <b style={{ fontWeight: 700 }}>{r.title}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
             /regattas/{r.slug}
           </span>

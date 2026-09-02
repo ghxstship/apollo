@@ -150,7 +150,7 @@ export function PushControls() {
         }}
       />
       {permission === "denied" ? (
-        <p style={{ fontSize: 11.5, color: "var(--text-3)", maxWidth: "42ch" }}>
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--text-3)", maxWidth: "42ch" }}>
           This device is refusing the word. Change it in browser settings.
         </p>
       ) : (
@@ -159,7 +159,7 @@ export function PushControls() {
         </span>
       )}
       {error ? (
-        <p style={{ fontSize: 11.5, color: "var(--terracotta, var(--text-2))" }} role="alert">
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--terracotta, var(--text-2))" }} role="alert">
           {error}
         </p>
       ) : null}

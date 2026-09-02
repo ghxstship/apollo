@@ -91,12 +91,16 @@
 --text-inverse-2:var(--ivory-300);
 --text-inverse-3:var(--ivory-500);
 --text-link:var(--text-accent);
-/* --text-gold and --clay were referenced by ~13 call sites and declared by
-   nothing — held balances, hail counts and the agreements note have been
-   painting in whatever colour they inherited. Declared here so the rebrand does
-   not carry a silent inheritance bug forward. */
+/* --text-gold was referenced by call sites and declared by nothing — held
+   balances and hail counts were painting in whatever colour they inherited.
+   Declared here so the rebrand does not carry a silent inheritance bug forward.
+
+   --clay stood beside it for the same reason and is gone: its last consumer was
+   the agreements count, which the layout pass moved to --caution because an
+   outstanding waiver is a thing to act on, not a muted aside. An alias with no
+   consumer is a name the next person has to decide about, so it goes with the
+   call site rather than waiting for one. */
 --text-gold:var(--text-accent);
---clay:var(--text-muted);
 
 /* — the metallic channel is retired. Antique gold, brass and gilt were one
      accent under eleven names; the house accent is now acid green and the

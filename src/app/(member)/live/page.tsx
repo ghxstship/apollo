@@ -352,7 +352,7 @@ export default async function LivePage() {
 
   return (
     <div className="ls-fade">
-      <div className="now-hero">
+      <div className="now-hero mbr-bleed">
         <span
           className="ls-live"
           style={{
@@ -373,7 +373,7 @@ export default async function LivePage() {
           {live.coordinates ? <span>{live.coordinates}</span> : null}
         </div>
       </div>
-      <div className="now-seam"></div>
+      <div className="now-seam mbr-bleed"></div>
 
       {deckState ? <DeckStateStrip state={deckState} /> : null}
 

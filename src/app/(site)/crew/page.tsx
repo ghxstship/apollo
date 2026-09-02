@@ -84,7 +84,7 @@ export default function CrewPage() {
             </a>
           </div>
         ))}
-        <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
+        <p style={{ marginTop: 24, fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
           Nothing that fits? Write to{" "}
           <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a> anyway — good hands
           find a place aboard.

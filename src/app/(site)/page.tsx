@@ -142,7 +142,7 @@ export default async function HomePage() {
         </>
       ) : null}
 
-      <section className="ls-section" style={{ paddingBlock: 96 }}>
+      <section className="ls-section">
         <div className="ls-container">
           <SectionHeader
             eyebrow="On this charter"
@@ -209,7 +209,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section style={{ paddingBlock: "0 96px" }}>
+      <section className="ls-section">
         <div className="ls-container">
           <SectionHeader eyebrow="The format" title="Apply. Board. See what happens." />
           <div className="ws-steps">
@@ -224,7 +224,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section style={{ paddingBlock: "0 96px" }}>
+      <section className="ls-section">
         <div className="ls-container">
           {/* Read from the harbors table rather than hardcoded: the copy used to
               promise the Balearics, which is not a harbor the club has, directly
@@ -247,7 +247,7 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-          <p style={{ marginTop: 24, fontSize: 13, color: "var(--text-3)" }}>
+          <p className="ws-harbor-note">
             Founding passes in new harbors go to the waitlist first —{" "}
             <Link href="/membership#apply">get on the list</Link>.
           </p>

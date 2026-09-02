@@ -406,12 +406,12 @@ export function CompositionPanel({
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
           {voyageTitle.replace(/\.+$/, "")} stops being ratio-gated. The segment
           gate stops counting, and the vetting gate stops running — a pass with
           no clearance and no verified identity will board.
         </p>
-        <p style={{ fontSize: 13.5, color: "var(--text-2)", marginTop: 10 }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 10 }}>
           Passes already sold keep their seats. Nobody may be standing in the
           line when this happens.
         </p>

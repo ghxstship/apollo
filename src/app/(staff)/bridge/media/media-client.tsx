@@ -141,7 +141,10 @@ export function MediaClient({
                     Approve
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" disabled={pending} onClick={() => setRemoving(c)}>
+                {/* Remove takes the frame off the record for good; Pull back
+                    beside it is a reversible second look. They were the same
+                    ghost button, side by side, on every card. */}
+                <Button variant="danger" size="sm" disabled={pending} onClick={() => setRemoving(c)}>
                   Remove
                 </Button>
               </div>
@@ -171,7 +174,7 @@ export function MediaClient({
                 Keep it
               </Button>
               <Button
-                variant="gold"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   const target = removing;
@@ -193,7 +196,7 @@ export function MediaClient({
           ) : null
         }
       >
-        <p style={{ fontSize: 13 }}>
+        <p className="hm-body">
           It leaves the record and stops showing anywhere. There is no undo from here — the member
           would have to send it up again.
         </p>

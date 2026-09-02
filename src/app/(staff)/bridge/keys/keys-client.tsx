@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Button, Checkbox, Dialog, Input, StateBlock, Switch, Table, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, Stat, StateBlock, Switch, Table, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
 import { createApiKey, createWebhook, revokeApiKey, setWebhookActive } from "./actions";
@@ -67,7 +67,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       label: "Key",
       render: (k: KeyRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{k.label}</b>
+          <b style={{ fontWeight: 700 }}>{k.label}</b>
           <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
             {k.prefix}…
           </span>
@@ -101,15 +101,25 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       width: 90,
       render: (k: KeyRow) =>
         k.revoked ? null : (
-          <Button variant="ghost" size="sm" disabled={pending} onClick={() => setRevoking(k)}>
+          <Button variant="danger" size="sm" disabled={pending} onClick={() => setRevoking(k)}>
             Revoke
           </Button>
         ),
     },
   ];
 
+  /* This console said how many keys and hooks exist nowhere at all — the only
+     way to learn what was still open through the hull was to count rows. */
+  const live = keys.filter((k) => !k.revoked).length;
+  const liveHooks = hooks.filter((h) => h.active).length;
+
   return (
     <>
+      <div className="hm-row">
+        <Stat size="sm" label="Keys live" value={live} sub={`${keys.length} CUT IN ALL`} />
+        <Stat size="sm" label="Hooks live" value={liveHooks} sub={`${hooks.length} SET IN ALL`} />
+      </div>
+
       <section className="hm-sec">
         <div className="hm-head">
           <div>
@@ -125,7 +135,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
         </div>
         {keys.length ? (
           <div className="hm-panel">
-            <Table rowKey={(k: KeyRow) => k.id} columns={keyColumns} rows={keys} />
+            <Table tall rowKey={(k: KeyRow) => k.id} columns={keyColumns} rows={keys} />
           </div>
         ) : (
           <div style={{ marginTop: 20 }}>
@@ -157,7 +167,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           hooks.map((h) => (
             <div className="hm-item" key={h.id}>
               <div className="hm-item__head">
-                <b style={{ fontFamily: "var(--font-mono)", fontSize: 13, wordBreak: "break-all" }}>
+                <b style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", wordBreak: "break-all" }}>
                   {h.url}
                 </b>
                 {h.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Held</Badge>}
@@ -197,16 +207,20 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
                       >
                         <span style={{ minWidth: 108 }}>{logDateTime(d.createdAt, CLUB_ZONE)}</span>
                         <span style={{ flex: 1 }}>{d.event.toUpperCase()}</span>
-                        <span
-                          style={{
-                            color:
-                              d.status && d.status < 300
-                                ? "var(--laurel)"
-                                : "var(--terracotta)",
-                          }}
+                        {/* Three outcomes told by a hand-patched text colour on
+                            a 10px mono line, with no shape to it — a delivery
+                            that failed looked like one that succeeded. */}
+                        <Badge
+                          tone={
+                            d.status && d.status < 300
+                              ? "positive"
+                              : d.error
+                                ? "danger"
+                                : "caution"
+                          }
                         >
-                          {d.status ?? (d.error ? "FAILED" : "PENDING")}
-                        </span>
+                          {d.status ?? (d.error ? "Failed" : "Pending")}
+                        </Badge>
                       </li>
                     ))}
                   </ul>
@@ -301,7 +315,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: 13 }}>
+          <p className="hm-body">
             This is the only time the key is readable. Close this and all that is left is the hash
             and the first eight characters.
           </p>
@@ -322,7 +336,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
                 Leave it live
               </Button>
               <Button
-                variant="gold"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   const target = revoking;
@@ -345,7 +359,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           ) : null
         }
       >
-        <p style={{ fontSize: 13 }}>
+        <p className="hm-body">
           Anything using it stops working the moment you do this, and it cannot be turned back on.
         </p>
       </Dialog>

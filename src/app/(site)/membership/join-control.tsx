@@ -53,7 +53,7 @@ export function JoinControl({
       {error ? (
         <span
           role="alert"
-          style={{ display: "block", fontSize: 11.5, color: "var(--siren)", marginTop: 6 }}
+          style={{ display: "block", fontSize: "var(--text-xs)", color: "var(--siren)", marginTop: 6 }}
         >
           {error}
         </span>

@@ -27,6 +27,20 @@ import { moduleTables } from "@/lib/module-tables";
 
 export const metadata: Metadata = { title: "You" };
 
+/* The rail's contents — the same words the section headings carry, in the same
+   order. The install prompt keeps no entry: it renders nothing at all unless
+   the browser has an install to offer, and a contents line that leads nowhere
+   is worse than a section without one. */
+const SECTIONS: Array<[string, string]> = [
+  ["you-manifest", "The manifest reads"],
+  ["you-cameras", "The cameras"],
+  ["you-appearance", "Appearance"],
+  ["you-word", "The word"],
+  ["you-gathering", "Raise a gathering"],
+  ["you-membership", "Membership"],
+  ["you-gangway", "The gangway out"],
+];
+
 export default async function YouPage() {
   const { supabase, user, profile } = await getMember();
   const nowIso = new Date().toISOString();
@@ -115,7 +129,8 @@ export default async function YouPage() {
     typeof prefs[key] === "boolean" ? (prefs[key] as boolean) : fallback;
 
   return (
-    <div style={{ maxWidth: 720, marginInline: "auto", display: "flex", flexDirection: "column", gap: 28 }}>
+    <div className="you-page">
+      <div className="you-col">
       <div>
         <span className="mbr-eyebrow">You</span>
         <h1 className="mbr-h1" style={{ marginTop: 6 }}>
@@ -152,11 +167,13 @@ export default async function YouPage() {
               ring
             />
             <div>
-              <b style={{ fontFamily: "var(--font-display)", fontWeight: 400, fontSize: 20 }}>
+              {/* A member's own name, so sentence case — which puts it below
+                  Anton's 22px floor, where the type system says Archivo 700. */}
+              <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
                 {profile?.full_name ?? "A member"}
               </b>
               {profile?.handle ? (
-                <p style={{ fontSize: 12.5, color: "var(--text-2)", marginTop: 2 }}>
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 2 }}>
                   @{profile.handle}
                 </p>
               ) : null}
@@ -169,7 +186,7 @@ export default async function YouPage() {
         </div>
       </div>
 
-      <div>
+      <section id="you-manifest">
         <div className="you-h">The manifest reads</div>
         <div className="you-sec" style={{ padding: 18 }}>
           <ProfileForm
@@ -183,22 +200,22 @@ export default async function YouPage() {
             inDirectory={profile?.in_directory ?? true}
           />
         </div>
-      </div>
+      </section>
 
-      <div>
+      <section id="you-cameras">
         <div className="you-h">The cameras</div>
         <div className="you-sec">
           <CameraConsent onCamera={profile?.on_camera ?? true} />
           <ManifestConsent onManifest={profile?.on_manifest ?? true} />
         </div>
-      </div>
+      </section>
 
       {/* Renders nothing until the browser offers an install, and nothing at
           all when the app is already on the home screen or the member said
           not now. The heading lives inside the component for that reason. */}
       <InstallPrompt />
 
-      <div>
+      <section id="you-appearance">
         <div className="you-h">Appearance</div>
         <div className="you-sec">
           <div className="you-row">
@@ -209,9 +226,9 @@ export default async function YouPage() {
             <ThemeToggle />
           </div>
         </div>
-      </div>
+      </section>
 
-      <div>
+      <section id="you-word">
         <div className="you-h">The word</div>
         <div className="you-sec">
           {/* fathoms unset reads TRUE: the column default and every trigger
@@ -228,9 +245,9 @@ export default async function YouPage() {
           {/* Weather holds are the one message that must not wait in an inbox. */}
           <PhoneField defaultValue={profile?.phone ?? null} verified={profile?.phone_verified ?? false} />
         </div>
-      </div>
+      </section>
 
-      <div>
+      <section id="you-gathering">
         <div className="you-h">Raise a gathering</div>
         <div className="you-sec" style={{ padding: 18 }}>
           <RaiseAGathering
@@ -241,9 +258,9 @@ export default async function YouPage() {
             proposals={proposalCards}
           />
         </div>
-      </div>
+      </section>
 
-      <div>
+      <section id="you-membership">
         <div className="you-h">Membership</div>
         <div className="you-sec">
           <div className="you-row">
@@ -280,9 +297,9 @@ export default async function YouPage() {
             </div>
           ) : null}
         </div>
-      </div>
+      </section>
 
-      <div>
+      <section id="you-gangway">
         <div className="you-h">The gangway out</div>
         <div className="you-sec">
           <div className="you-row">
@@ -304,7 +321,19 @@ export default async function YouPage() {
             </SignOutForm>
           </div>
         </div>
+      </section>
       </div>
+
+      {/* The contents, in the gutter the 720px column was already leaving
+          empty. Above 960 only — below it the rail is gone and the sections
+          stay stacked in the order they are read. */}
+      <nav className="you-rail" aria-label="On this page">
+        {SECTIONS.map(([id, label]) => (
+          <a key={id} href={`#${id}`}>
+            {label}
+          </a>
+        ))}
+      </nav>
     </div>
   );
 }

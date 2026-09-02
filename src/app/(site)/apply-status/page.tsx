@@ -26,7 +26,7 @@ export default function ApplyStatusPage() {
 
       <StatusLookup />
 
-      <p style={{ marginTop: 40, fontSize: 13.5, color: "var(--text-2)" }}>
+      <p style={{ marginTop: 40, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
         Something looks wrong, or the wait has run long? <Link href="/support">Hail Shoreside</Link>{" "}
         — a human answers. Not applied yet?{" "}
         <Link href="/membership#apply">Request an invitation</Link>.

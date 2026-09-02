@@ -110,7 +110,7 @@ export default async function MemberCardPage() {
           <span className="mbr-eyebrow" style={{ display: "block", color: "var(--text-3)" }}>
             Subscribe to your season
           </span>
-          <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 8, maxWidth: "44ch" }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 8, maxWidth: "44ch" }}>
             Every sailing you are confirmed on, in your own calendar, kept current as the
             season moves. Subscribe once — new boarding passes arrive on their own.
           </p>
@@ -155,26 +155,8 @@ export default async function MemberCardPage() {
         <PassageLog zone={zone} log={log} marks={marks} own />
       </div>
 
-      {/* Print: the card alone, edge to edge, colors exact. */}
-      <style>{`
-        @media print {
-          @page { margin: 12mm; }
-          body { background: #fff !important; }
-          .mbr-top, .mbr-tabbar, .pr-fab, .pr-panel, .crd-note, .crd-acts, .crd-feed, .plog { display: none !important; }
-          .mbr-shell, .mbr-main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
-          .crd { padding: 0 !important; }
-          .ls-fade { animation: none !important; opacity: 1 !important; }
-          .crd-card {
-            width: 100% !important;
-            max-width: 480px !important;
-            margin-inline: auto !important;
-            border-color: #0D0D0D !important; /* --noir-950; print has no cascade to resolve a var against on some engines */
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-          .crd-seam { animation: none !important; }
-        }
-      `}</style>
+      {/* Print — the card alone, edge to edge, colours exact — is one rule in
+          member.css that this page and the stub both inherit. */}
     </div>
   );
 }

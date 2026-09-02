@@ -60,11 +60,33 @@
   display: flex;
   gap: var(--space-3);
   align-items: baseline;
-  padding: 9px 0;
+  padding: var(--space-2) 0;
   border-top: 1px solid var(--border-subtle);
   min-width: 760px;
 }
 .shw-board__row:last-child { border-bottom: 1px solid var(--border-subtle); }
+
+/* CP — whether the sailing can proceed without this item — is the most
+   operationally important signal on the board and it was the LAST of six
+   columns, so on a phone it lived past 700px of horizontal scroll. The rule
+   below is the same fact as a leading marker: a sticky 3px flex item pinned to
+   the inline start of the SCROLLPORT, so it is on screen at every scroll
+   offset while the board keeps its fixed widths and its contained scroll. It
+   is on every row, transparent unless critical — otherwise a marked row would
+   sit 15px right of an unmarked one and the columns would stop lining up,
+   which is the whole reason the widths are fixed. The CP column stays exactly
+   where it was: it is the accessible label, and the marker is decoration. */
+.shw-board__row::before {
+  content: "";
+  position: sticky;
+  inset-inline-start: 0;
+  flex: none;
+  align-self: stretch;
+  width: 3px;
+  margin-block: calc(-1 * var(--space-2));
+  background: transparent;
+}
+.shw-board__row--cp::before { background: var(--text-accent); }
 .shw-board__row--head {
   border-top: 0;
   padding: var(--space-2) 0;

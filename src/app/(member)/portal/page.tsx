@@ -114,7 +114,7 @@ export default async function PortalPage({
             }
             value={progress}
           />
-          <p style={{ fontSize: 13, color: "var(--text-inverse-2)", marginTop: 14, maxWidth: "46ch" }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-inverse-2)", marginTop: 14, maxWidth: "46ch" }}>
             Knots are earned under sail, ashore, and by bringing good people.
             {" "}{CURRENCY.line}
           </p>
@@ -127,8 +127,8 @@ export default async function PortalPage({
           Leagues
         </span>
         <div className="ptl-panel">
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 20 }}>{leagueName}</div>
-          <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 8, maxWidth: "46ch" }}>
+          <div style={{ fontWeight: 700, fontSize: "var(--text-lg)" }}>{leagueName}</div>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 8, maxWidth: "46ch" }}>
             Knots are earned and spent; leagues only deepen. The longer aboard,
             the deeper you ride.
           </p>
@@ -148,7 +148,7 @@ export default async function PortalPage({
                     gap: 12,
                     padding: "7px 0",
                     borderTop: "1px solid var(--line-faint)",
-                    fontSize: 13,
+                    fontSize: "var(--text-sm)",
                     color: here ? "var(--text-1)" : "var(--text-3)",
                     fontWeight: here ? 600 : 400,
                   }}
@@ -207,7 +207,7 @@ export default async function PortalPage({
                   justifyContent: "space-between",
                   gap: 12,
                   padding: "6px 0",
-                  fontSize: 13,
+                  fontSize: "var(--text-sm)",
                 }}
               >
                 <span>{rewardName.get(rd.reward_id) ?? "A reward"}</span>
@@ -223,7 +223,7 @@ export default async function PortalPage({
           Bring a good one
         </span>
         <div className="ptl-panel">
-          <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 14 }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginBottom: 14 }}>
             Good for one night ashore as your guest. The rest is on them.
           </p>
           {invite ? (

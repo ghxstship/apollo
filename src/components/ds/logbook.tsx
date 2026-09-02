@@ -32,16 +32,24 @@ export function PassageLog({
     );
   return (
     <div style={{ fontFamily: BODY, ...style }}>
+      {/* The seams are the grid's own gap showing the container's ground
+          through, not borders counted off the cell index. The index arithmetic
+          this replaces (borderLeft on i % 6, borderTop on i >= 6) assumed six
+          columns; auto-fit lays out three at 390px, so cells 3–5 lost their top
+          rule and cell 3 gained a left one. A gap cannot be wrong about the
+          wrap count — it is the same construction .plog-figs already uses. */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))",
+          gap: 1,
+          background: "var(--line-faint)",
           border: "1px solid var(--line-faint)",
           borderRadius: "var(--radius-md)",
           overflow: "hidden",
         }}
       >
-        {figures.map((f, i) => (
+        {figures.map((f) => (
           <div
             key={f.label}
             style={{
@@ -49,8 +57,6 @@ export function PassageLog({
               flexDirection: "column",
               gap: 6,
               padding: "16px 18px",
-              borderLeft: i % 6 ? "1px solid var(--line-faint)" : "none",
-              borderTop: i >= 6 ? "1px solid var(--line-faint)" : "none",
               background: "var(--surface-card)",
             }}
           >
@@ -300,75 +306,87 @@ export function StandingsTable({
   style?: React.CSSProperties;
 }) {
   const isCh = shape === "challenge";
+  /* A settled result and a live provisional standing were pixel-identical
+     apart from a 9px line under the table. Frozen is now carried by the form:
+     the header rule drops to the faint step (nothing is being asked of you any
+     more), the score column mutes, and the caption leads instead of trailing —
+     you read FINAL before you read the places, not after. */
   const th: React.CSSProperties = {
     textAlign: "left",
     padding: "10px 14px",
-    font: `700 10px/1 ${MONO}`,
+    font: `700 var(--text-2xs)/1 ${MONO}`,
     letterSpacing: ".16em",
     textTransform: "uppercase",
     color: "var(--text-2)",
-    borderBottom: "1px solid var(--line-strong)",
+    borderBottom: `1px solid var(${frozen ? "--line-faint" : "--line-strong"})`,
   };
+  const caption: React.CSSProperties = {
+    font: `700 var(--text-3xs)/1 ${MONO}`,
+    letterSpacing: ".14em",
+    textTransform: "uppercase",
+    color: "var(--text-3)",
+  };
+  /* ROMAN runs out at XII, and a thirteenth entrant used to fall through to
+     Arabic on its own row — X, XI, XII, 13, 14 down one column. Past twelve the
+     WHOLE column is Arabic, so the numbering is one system either way. */
+  const useRoman = !isCh && rows.length <= ROMAN.length;
   return (
     <div style={{ fontFamily: BODY, ...style }}>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, color: "var(--text-1)" }}>
-        <thead>
-          <tr>
-            <th style={{ ...th, width: 70 }}>{isCh ? "" : "PLACE"}</th>
-            <th style={th}>NAME</th>
-            <th style={{ ...th, textAlign: "right", width: 110 }}>{isCh ? "REACHED" : "SCORE"}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => {
-            const you = youName && r.name === youName;
-            return (
-              <tr key={r.name + i} style={{ background: you ? "rgba(211,177,94,.08)" : "transparent" }}>
-                <td
-                  style={{
-                    padding: "11px 14px",
-                    borderBottom: "1px solid var(--line-faint)",
-                    font: `700 12px/1 ${MONO}`,
-                    color: i === 0 && !isCh ? "var(--text-gold)" : "var(--text-2)",
-                  }}
-                >
-                  {isCh ? (r.reached ? "✓" : "—") : ROMAN[r.place != null ? r.place - 1 : i] || r.place || i + 1}
-                  {!isCh && r.tie ? " =" : ""}
-                </td>
-                <td style={{ padding: "11px 14px", borderBottom: "1px solid var(--line-faint)" }}>
-                  {r.name}
-                  {you ? (
-                    <span style={{ marginLeft: 8, font: `700 9px/1 ${MONO}`, letterSpacing: ".14em", color: "var(--text-gold)" }}>
-                      YOU
-                    </span>
-                  ) : null}
-                </td>
-                <td
-                  style={{
-                    padding: "11px 14px",
-                    borderBottom: "1px solid var(--line-faint)",
-                    textAlign: "right",
-                    font: `700 12px/1 ${MONO}`,
-                  }}
-                >
-                  {r.score}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <div
-        style={{
-          paddingTop: 8,
-          font: `700 9px/1 ${MONO}`,
-          letterSpacing: ".14em",
-          textTransform: "uppercase",
-          color: "var(--text-3)",
-        }}
-      >
-        {frozen ? "FINAL · PUBLISHED ONCE" : "LIVE · SETTLES AT WINDOW CLOSE"}
+      {frozen ? <div style={{ ...caption, paddingBottom: 10 }}>FINAL · PUBLISHED ONCE</div> : null}
+      {/* Two fixed columns and a name that may be long: without a scroll
+          container the table pushed the page sideways at 390px. */}
+      <div className="ls-table-wrap">
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
+          <thead>
+            <tr>
+              <th style={{ ...th, width: 70 }}>{isCh ? "" : "PLACE"}</th>
+              <th style={th}>NAME</th>
+              <th style={{ ...th, textAlign: "right", width: 110 }}>{isCh ? "REACHED" : "SCORE"}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const you = youName && r.name === youName;
+              const place = r.place ?? i + 1;
+              return (
+                <tr key={r.name + i} style={{ background: you ? "var(--wash-gold)" : "transparent" }}>
+                  <td
+                    style={{
+                      padding: "11px 14px",
+                      borderBottom: "1px solid var(--line-faint)",
+                      font: `700 var(--text-xs)/1 ${MONO}`,
+                      color: i === 0 && !isCh ? "var(--text-gold)" : "var(--text-2)",
+                    }}
+                  >
+                    {isCh ? (r.reached ? "✓" : "—") : useRoman ? ROMAN[place - 1] ?? place : place}
+                    {!isCh && r.tie ? " =" : ""}
+                  </td>
+                  <td style={{ padding: "11px 14px", borderBottom: "1px solid var(--line-faint)" }}>
+                    {r.name}
+                    {you ? (
+                      <span style={{ marginLeft: 8, font: `700 var(--text-3xs)/1 ${MONO}`, letterSpacing: ".14em", color: "var(--text-gold)" }}>
+                        YOU
+                      </span>
+                    ) : null}
+                  </td>
+                  <td
+                    style={{
+                      padding: "11px 14px",
+                      borderBottom: "1px solid var(--line-faint)",
+                      textAlign: "right",
+                      font: `700 var(--text-xs)/1 ${MONO}`,
+                      color: frozen ? "var(--text-2)" : undefined,
+                    }}
+                  >
+                    {r.score}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
+      {frozen ? null : <div style={{ ...caption, paddingTop: 8 }}>LIVE · SETTLES AT WINDOW CLOSE</div>}
     </div>
   );
 }
@@ -405,21 +423,60 @@ export function KnotsLedger({
       ) : null}
       {entries.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column" }}>
-          {entries.map((e, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 12, padding: "10px 0", borderTop: "1px solid var(--line-faint)" }}>
-              <span style={{ fontSize: 13, flex: 1 }}>{e.reason}</span>
-              <span
-                style={{
-                  font: `700 12px/1 ${MONO}`,
-                  color: String(e.delta).startsWith("−") || String(e.delta).startsWith("-") ? "var(--text-2)" : "var(--positive)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {e.delta}
-              </span>
-              <span style={{ font: `400 10px/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>{e.date}</span>
-            </div>
-          ))}
+          {/* A grid, not a flex line with auto widths: +1,200 and −80 on
+              adjacent rows started at different x, so the column of figures had
+              no edge to read down. Fixed tracks and an end-aligned, tabular
+              delta give it one. The date keeps its own track for the same
+              reason. */}
+          {entries.map((e, i) => {
+            /* The date arrives already set — "MAR 04" — so the month is its
+               leading token. One mono eyebrow per run of a month turns a year
+               of entries into months instead of one undifferentiated column. */
+            const monthOf = (d: string) => String(d).trim().split(/\s+/)[0] ?? "";
+            const month = monthOf(e.date);
+            const prev = i > 0 ? monthOf(entries[i - 1].date) : null;
+            return (
+              <React.Fragment key={i}>
+                {month && month !== prev ? (
+                  <div
+                    style={{
+                      font: `700 var(--text-3xs)/1 ${MONO}`,
+                      letterSpacing: ".12em",
+                      textTransform: "uppercase",
+                      color: "var(--text-3)",
+                      padding: i === 0 ? "0 0 8px" : "18px 0 8px",
+                    }}
+                  >
+                    {month}
+                  </div>
+                ) : null}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 88px 78px",
+                    alignItems: "baseline",
+                    gap: 12,
+                    padding: "10px 0",
+                    borderTop: "1px solid var(--line-faint)",
+                  }}
+                >
+                  <span style={{ fontSize: "var(--text-sm)" }}>{e.reason}</span>
+                  <span
+                    style={{
+                      font: `700 12px/1 ${MONO}`,
+                      fontVariantNumeric: "tabular-nums",
+                      textAlign: "end",
+                      color: String(e.delta).startsWith("−") || String(e.delta).startsWith("-") ? "var(--text-2)" : "var(--positive)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {e.delta}
+                  </span>
+                  <span style={{ font: `400 10px/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap", textAlign: "end" }}>{e.date}</span>
+                </div>
+              </React.Fragment>
+            );
+          })}
         </div>
       ) : null}
       {rewards.length > 0 ? (

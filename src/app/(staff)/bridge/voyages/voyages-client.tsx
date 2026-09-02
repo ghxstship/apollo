@@ -9,7 +9,9 @@ import {
   Input,
   Progress,
   Select,
+  Stat,
   Stepper,
+  Tag,
   Toast,
 } from "@/components/ds";
 import {
@@ -129,7 +131,7 @@ function formatConflicts(format: FormatOption | undefined, berths: number, price
   }
   if (format.capacity !== null && berths > format.capacity) {
     out.push(
-      `A ${format.label} seats ${format.capacity} — the board will refuse ${berths} berths. Lower the capacity, or file it under another format.`
+      `A ${format.label} seats ${format.capacity} — the board will refuse ${berths} passes. Lower the capacity, or file it under another format.`
     );
   }
   return out;
@@ -194,21 +196,41 @@ function insideT72(row: VoyageOpsRow): boolean {
   return ms > 0 && ms <= 72 * 3600 * 1000;
 }
 
+/* Short of the flotilla line inside 72 hours, on a sailing that is still going
+   out — the one state on this screen that costs the club money if nobody looks.
+   Read twice: once for the meter's severity, once for the board's tally. */
+function holdingShort(row: VoyageOpsRow): boolean {
+  return (
+    row.cls === "sea" &&
+    row.vessels > 0 &&
+    row.aboard < FLOTILLA_FORMS_AT &&
+    insideT72(row) &&
+    (row.status === "scheduled" || row.status === "live" || row.status === "weather_hold")
+  );
+}
+
 function FlotillaMeter({ row }: { row: VoyageOpsRow }) {
   if (row.cls !== "sea" || row.vessels === 0) return null;
-  const short = row.aboard < FLOTILLA_FORMS_AT;
-  const holding =
-    short &&
-    insideT72(row) &&
-    (row.status === "scheduled" || row.status === "live" || row.status === "weather_hold");
+  const holding = holdingShort(row);
+  /* The bar carried the brand accent whatever it read, so a sailing at 8 of 30
+     inside T-72 was the same colour as one at 30 of 30. Severity on the fill:
+     the line met is positive, short inside T-72 is the danger case, and short
+     with time still on the clock is a caution. */
+  const tone = holding
+    ? "ls-progress--danger"
+    : row.aboard >= FLOTILLA_FORMS_AT
+      ? "ls-progress--positive"
+      : "ls-progress--caution";
   return (
     <div style={{ marginTop: 12, maxWidth: 460 }}>
       <Progress
+        thick
+        className={tone}
         value={(row.aboard / FLOTILLA_FORMS_AT) * 100}
         label={
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
             FLOTILLA FORMS AT {FLOTILLA_FORMS_AT} — profitable at 3 yachts
-            {holding ? <Badge tone="caution">Under 30 inside T-72h</Badge> : null}
+            {holding ? <Badge tone="danger">Under 30 inside T-72h</Badge> : null}
           </span>
         }
         detail={`${row.aboard} / ${FLOTILLA_FORMS_AT} · ${row.vessels} ${row.vessels === 1 ? "YACHT" : "YACHTS"}`}
@@ -233,6 +255,20 @@ const STATUS_LABEL: Record<VoyageStatus, string> = {
   cancelled: "Cancelled",
 };
 
+/* The board carries every sailing it has ever raised, and the two an operator
+   is usually after are the live one and the one on hold. Same shape as the
+   ledger's filter on Orders. */
+type StatusFilter = "all" | VoyageStatus;
+
+const STATUS_FILTERS: Array<[StatusFilter, string]> = [
+  ["all", "All"],
+  ["scheduled", STATUS_LABEL.scheduled],
+  ["live", STATUS_LABEL.live],
+  ["weather_hold", STATUS_LABEL.weather_hold],
+  ["completed", STATUS_LABEL.completed],
+  ["cancelled", STATUS_LABEL.cancelled],
+];
+
 type StatusMove = {
   to: VoyageStatus;
   label: string;
@@ -240,6 +276,12 @@ type StatusMove = {
   body: string;
   confirm: string;
   tone: "positive" | "caution" | "ink";
+  /* Cancel refunds every account and cannot be walked back, and it rendered
+     from the same map as Mark completed and Call weather hold — three
+     identical outline buttons in a row, the destructive one in the middle.
+     The map now carries which move is the one that cannot be undone, and both
+     the row button and its confirmation read it. */
+  destructive?: boolean;
 };
 
 function movesFor(status: VoyageStatus): StatusMove[] {
@@ -274,6 +316,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     body: "Cancelling credits every account in full and sends the word — the trigger does it, no forms.",
     confirm: "Cancel the voyage",
     tone: "caution",
+    destructive: true,
   };
   if (status === "scheduled") return [hold, complete, cancel];
   if (status === "live") return [hold, complete, cancel];
@@ -327,6 +370,16 @@ export function VoyagesClient({
      object would keep showing the flotilla as it stood when the dialog opened. */
   const [flotillaId, setFlotillaId] = React.useState<string | null>(null);
   const flotilla = flotillaId ? (rows.find((r) => r.id === flotillaId) ?? null) : null;
+  const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
+
+  /* The tally is the whole board, never the filtered slice — a summary that
+     moved with the filter would be answering a different question each time. */
+  const shown = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
+  const totals = rows.reduce(
+    (t, r) => ({ aboard: t.aboard + r.aboard, berths: t.berths + r.berths }),
+    { aboard: 0, berths: 0 }
+  );
+  const shortInsideT72 = rows.filter(holdingShort).length;
 
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
@@ -369,6 +422,26 @@ export function VoyagesClient({
 
   return (
     <>
+      {/* The board had no aggregate at all: an operator counted rows to learn
+          how many sailings were on it, and there was no way to see from the top
+          that one of them was short of the flotilla line inside 72 hours. The
+          four figures the room actually asks for, before the detail. */}
+      <div className="hm-row">
+        <Stat size="sm" label="On the board" value={rows.length} />
+        <Stat
+          size="sm"
+          label="On weather hold"
+          value={rows.filter((v) => v.status === "weather_hold").length}
+        />
+        <Stat
+          size="sm"
+          label="Aboard"
+          value={`${totals.aboard} / ${totals.berths}`}
+          sub="ABOARD VS CAPACITY"
+        />
+        <Stat size="sm" label="Under 30 inside T-72" value={shortInsideT72} />
+      </div>
+
       <div className="hm-head" style={{ marginTop: 20 }}>
         <p className="hm-note" style={{ marginTop: 0 }}>
           Holds, completions, and cancellations fan out to every pass — each one asks first. Held
@@ -379,7 +452,15 @@ export function VoyagesClient({
         </Button>
       </div>
 
-      {rows.map((v) => (
+      <div className="hm-acts" style={{ marginTop: 14 }}>
+        {STATUS_FILTERS.map(([id, label]) => (
+          <Tag key={id} active={statusFilter === id} onClick={() => setStatusFilter(id)}>
+            {label}
+          </Tag>
+        ))}
+      </div>
+
+      {shown.map((v) => (
         <div className="hm-voy" key={v.id}>
           <div className="hm-voy__head">
             <b>{v.title}</b>
@@ -469,7 +550,7 @@ export function VoyagesClient({
             {movesFor(v.status).map((m) => (
               <Button
                 key={m.to + m.label}
-                variant="outline"
+                variant={m.destructive ? "danger" : "outline"}
                 size="sm"
                 disabled={pending}
                 onClick={() => setMove({ row: v, m })}
@@ -481,9 +562,11 @@ export function VoyagesClient({
         </div>
       ))}
 
-      {rows.length === 0 ? (
-        <p style={{ padding: "24px 4px", color: "var(--text-3)", fontSize: 13 }}>
-          Nothing on the board. Set the first voyage.
+      {shown.length === 0 ? (
+        <p className="hm-empty">
+          {rows.length === 0
+            ? "Nothing on the board. Set the first voyage."
+            : "Nothing on the board under that filter."}
         </p>
       ) : null}
 
@@ -500,7 +583,7 @@ export function VoyagesClient({
                 Not yet
               </Button>
               <Button
-                variant="outline"
+                variant={move.m.destructive ? "danger" : "outline"}
                 disabled={pending}
                 onClick={() => {
                   const { row, m } = move;
@@ -825,7 +908,7 @@ function FlotillaBody({
       {row.hulls.length ? (
         <div>
           <span className="hm-mono">ASSIGNED · IN POSITION ORDER</span>
-          <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: 13 }}>
+          <ul className="hm-body" style={{ listStyle: "none", padding: 0, margin: "6px 0 0" }}>
             {row.hulls.map((h) => (
               <li key={h.vesselId} style={{ display: "flex", gap: 10, alignItems: "center", padding: "4px 0" }}>
                 <span className="hm-mono" style={{ minWidth: 24 }}>
@@ -833,14 +916,14 @@ function FlotillaBody({
                 </span>
                 <span style={{ flex: 1 }}>
                   {h.name}
-                  <span style={{ color: "var(--text-3)" }}> · {h.capacity} berths</span>
+                  <span style={{ color: "var(--text-3)" }}> · {h.capacity} passes</span>
                 </span>
                 {arming === h.vesselId ? (
                   <>
                     <Button size="sm" variant="ghost" disabled={pending} onClick={() => setArming(null)}>
                       Keep it
                     </Button>
-                    <Button size="sm" variant="outline" disabled={pending} onClick={() => remove(h)}>
+                    <Button size="sm" variant="danger" disabled={pending} onClick={() => remove(h)}>
                       Take it off
                     </Button>
                   </>
@@ -874,7 +957,7 @@ function FlotillaBody({
             onChange={(e) => setPick(e.target.value)}
             options={[
               { value: "", label: "Pick a hull" },
-              ...open.map((v) => ({ value: v.id, label: `${v.name} · ${v.capacity} berths` })),
+              ...open.map((v) => ({ value: v.id, label: `${v.name} · ${v.capacity} passes` })),
             ]}
           />
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10, paddingBottom: 2 }}>

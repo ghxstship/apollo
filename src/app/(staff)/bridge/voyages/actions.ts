@@ -43,7 +43,7 @@ export async function setBerthsTotal(voyageId: string, berths: number): Promise<
        also watches berths_total (a format seats so many), and speaks for
        itself. */
     if (/holds_fit_the_hull|held_passes/.test(error.message ?? ""))
-      return { error: "The hull cannot shrink under its holds — release held passes first, then lower the berths." };
+      return { error: "The hull cannot shrink under its holds — release held passes first, then lower the capacity." };
     return { error: programRefusal(error) };
   }
   return done();

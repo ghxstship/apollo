@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, Select, Stat, StateBlock, Textarea, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import {
   liftLegHold,
@@ -107,8 +107,18 @@ export function ItineraryClient({
   const nextDay = legs.length ? Math.max(...legs.map((l) => l.day)) + 1 : 1;
   const nextPosition = stops.length ? Math.max(...stops.map((s) => s.position)) + 1 : 1;
 
+  /* Held legs are the number that decides whether this screen needs work at
+     all, and it was readable only by counting badges down the page. */
+  const held = legs.filter((l) => l.status === "held").length;
+
   return (
     <>
+      <div className="hm-row">
+        <Stat size="sm" label="Legs" value={legs.length} />
+        <Stat size="sm" label="Stops" value={stops.length} />
+        <Stat size="sm" label="On hold" value={held} />
+      </div>
+
       {/* — legs — */}
       <section className="hm-sec">
         <div className="hm-head">
@@ -197,7 +207,7 @@ export function ItineraryClient({
                   >
                     Edit
                   </Button>
-                  <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirmLeg(leg)}>
+                  <Button size="sm" variant="danger" disabled={pending} onClick={() => setConfirmLeg(leg)}>
                     Remove
                   </Button>
                 </span>
@@ -278,7 +288,7 @@ export function ItineraryClient({
                   </Button>
                   <Button
                     size="sm"
-                    variant="ghost"
+                    variant="danger"
                     disabled={pending}
                     onClick={() => setConfirmStop(stop)}
                   >
@@ -482,7 +492,7 @@ export function ItineraryClient({
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)", marginBottom: 12 }}>
+        <p className="hm-body" style={{ marginBottom: 12 }}>
           A hold does not cancel a leg — it swaps it. All three lines are
           required, and the database refuses a hold that is missing one, because
           a hold without a new plan is just bad news.
@@ -521,7 +531,7 @@ export function ItineraryClient({
               Keep it
             </Button>
             <Button
-              variant="gold"
+              variant="danger"
               disabled={pending}
               onClick={() =>
                 confirmLeg &&
@@ -533,7 +543,7 @@ export function ItineraryClient({
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+        <p className="hm-body">
           Day {confirmLeg?.day} — {confirmLeg?.port} comes off the itinerary
           every pass-holder reads.
           {confirmLeg?.stops
@@ -554,7 +564,7 @@ export function ItineraryClient({
               Keep it
             </Button>
             <Button
-              variant="gold"
+              variant="danger"
               disabled={pending}
               onClick={() =>
                 confirmStop &&
@@ -568,7 +578,7 @@ export function ItineraryClient({
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+        <p className="hm-body">
           {confirmStop?.name} comes off the port guide every pass-holder reads.
         </p>
       </Dialog>

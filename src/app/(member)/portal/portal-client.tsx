@@ -152,7 +152,7 @@ export function KnotsPanel({
           ) : null
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)" }}>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
           Your balance is {balance} knots
           {confirming?.costValue != null ? `; ${balance - confirming.costValue} stay with you after this` : ""}.
           Spent knots do not come back — Shoreside makes the reward so.

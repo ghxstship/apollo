@@ -28,6 +28,38 @@
   gap: var(--space-3);
 }
 
+/* Two tiers, not six identical cards. A six-gate checklist, a four-state
+   machine, a capacity table, a chip picker, a stance matrix and two textareas
+   all wore the same card at the same width, so nothing on the page said what to
+   read first. The member's own file — the gates and the background states — is
+   what they came for, and it reads as the page rather than as another panel on
+   it: rule-separated and borderless, the same treatment the show board's panels
+   use. The three sheet panels stay cards, because a card is what asks something
+   of you. */
+.vet-panel--bare {
+  border: 0;
+  border-top: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: none;
+  padding: var(--space-4) 0 0;
+}
+
+/* The page's answer, said once, before the panels that explain it. */
+.vet-summary {
+  font: 700 var(--text-sm)/1 var(--font-mono);
+  letter-spacing: var(--tracking-dense);
+  text-transform: uppercase;
+  color: var(--text-body);
+  margin: 0;
+}
+
+/* A gate is a thing the member is waiting on. It was set in .vet-row__value —
+   caption weight in --text-muted, the dimmest text on the page — while the
+   fixed 132px mono column .vet-row__label was built for exactly this row shape
+   and had no consumer at all. The index goes in the column, the gate name
+   comes up to body. */
+.vet-gate { flex: 1; font: var(--type-body); color: var(--text-body); }
+
 .vet-eyebrow {
   font: var(--type-label);
   letter-spacing: var(--tracking-label);

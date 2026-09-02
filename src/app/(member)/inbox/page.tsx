@@ -24,22 +24,48 @@ function Row({ n, index }: { n: Notification; index: number }) {
   );
 }
 
+const DAY_MS = 86400000;
+
 export default async function WordPage() {
   const { supabase, user } = await getMember();
 
-  const { data } = await supabase
-    .from("notifications")
-    .select("*")
-    .eq("profile_id", user.id)
-    .order("created_at", { ascending: false });
+  /* Capped. The word never stops arriving, and this query had no ceiling — a
+     member two seasons in rendered every notice ever written to them in one
+     document. Sixty is a long scroll and a bounded one. */
+  const [{ data }, { count }] = await Promise.all([
+    supabase
+      .from("notifications")
+      .select("*")
+      .eq("profile_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(60),
+    /* Counted at the source, not off the page: the headline is how many are
+       unread, which the sixty rows below can no longer answer for. */
+    supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", user.id)
+      .eq("read", false),
+  ]);
 
   const items: Notification[] = data ?? [];
-  const unread = items.filter((n) => !n.read).length;
+  const unread = count ?? items.filter((n) => !n.read).length;
 
   const dayStart = new Date();
   dayStart.setHours(0, 0, 0, 0);
-  const today = items.filter((n) => new Date(n.created_at) >= dayStart);
-  const earlier = items.filter((n) => new Date(n.created_at) < dayStart);
+  const todayMs = dayStart.getTime();
+  const weekMs = todayMs - 6 * DAY_MS;
+  const monthMs = todayMs - 29 * DAY_MS;
+  const at = (n: Notification) => new Date(n.created_at).getTime();
+
+  /* "Earlier" was everything that was not today — a single heading over months
+     of notices. The same run, read as the member reads time. */
+  const groups: Array<[string, Notification[]]> = [
+    ["Today", items.filter((n) => at(n) >= todayMs)],
+    ["This week", items.filter((n) => at(n) < todayMs && at(n) >= weekMs)],
+    ["This month", items.filter((n) => at(n) < weekMs && at(n) >= monthMs)],
+    ["Earlier", items.filter((n) => at(n) < monthMs)],
+  ];
 
   return (
     <div>
@@ -70,26 +96,20 @@ export default async function WordPage() {
         </div>
       ) : (
         <>
-          {today.length > 0 ? (
-            <section className="mbr-sec">
-              <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
-                Today
-              </span>
-              {today.map((n, i) => (
-                <Row key={n.id} n={n} index={i} />
-              ))}
-            </section>
-          ) : null}
-          {earlier.length > 0 ? (
-            <section className="mbr-sec">
-              <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
-                Earlier
-              </span>
-              {earlier.map((n, i) => (
-                <Row key={n.id} n={n} index={i} />
-              ))}
-            </section>
-          ) : null}
+          {groups.map(([label, rows]) =>
+            rows.length > 0 ? (
+              <section className="mbr-sec" key={label}>
+                <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+                  {label}
+                </span>
+                <div className="wrd-list">
+                  {rows.map((n, i) => (
+                    <Row key={n.id} n={n} index={i} />
+                  ))}
+                </div>
+              </section>
+            ) : null
+          )}
         </>
       )}
     </div>

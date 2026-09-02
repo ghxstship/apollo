@@ -28,19 +28,25 @@ export default async function MemberLayout({
           for whom there is nothing on that page to resume with and never was.
           A banner that gives an instruction the product cannot carry out is
           worse than one that says nothing. */}
+      {/* The banner is a child of the shell, which has no max-width, so it ran
+          full-bleed while everything under it stopped at 1080 — the first thing
+          a paused member saw was the one element that lined up with nothing.
+          .mbr-holdbox is .mbr-main's box, and only that. */}
       {onHold ? (
-        <div className="mbr-hold" role="status">
-          <span className="mbr-hold__eyebrow">
-            {departed ? "YOUR PLACE IS CLOSED" : "MEMBERSHIP PAUSED"}
-          </span>
-          <p>
-            {departed
-              ? "Your log and your ledger stay as they were. Coming back is a conversation — Shoreside opens it again."
-              : "Your log, your ledger and what you owe stay open. Booking, posting and contests wait until it resumes."}
-          </p>
-          <a href="/you" className="mbr-hold__link">
-            Your page
-          </a>
+        <div className="mbr-holdbox">
+          <div className="mbr-hold" role="status">
+            <span className="mbr-hold__eyebrow">
+              {departed ? "YOUR PLACE IS CLOSED" : "MEMBERSHIP PAUSED"}
+            </span>
+            <p>
+              {departed
+                ? "Your log and your ledger stay as they were. Coming back is a conversation — Shoreside opens it again."
+                : "Your log, your ledger and what you owe stay open. Booking, posting and contests wait until it resumes."}
+            </p>
+            <a href="/you" className="mbr-hold__link">
+              Your page
+            </a>
+          </div>
         </div>
       ) : null}
       <main id="main" className="mbr-main">{children}</main>

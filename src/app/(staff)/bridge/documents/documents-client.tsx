@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE, SETTING_LABEL } from "@/lib/brand";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Tabs, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, Select, Stat, StateBlock, Table, Tabs, Textarea, Toast } from "@/components/ds";
 import type { ClauseCategory } from "@/lib/supabase/types";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -114,7 +114,7 @@ export function DocumentsClient({
       label: "Clause",
       render: (c: ClauseRow) => (
         <span style={{ opacity: c.active ? 1 : 0.55 }}>
-          <b style={{ fontWeight: 600 }}>{c.title}</b>
+          <b style={{ fontWeight: 700 }}>{c.title}</b>
           {c.active ? null : (
             <>
               {" "}
@@ -169,7 +169,7 @@ export function DocumentsClient({
       label: "Document",
       render: (d: DocRow) => (
         <span style={{ opacity: d.active ? 1 : 0.55 }}>
-          <b style={{ fontWeight: 600 }}>{d.title}</b>
+          <b style={{ fontWeight: 700 }}>{d.title}</b>
           {d.active ? null : (
             <>
               {" "}
@@ -286,9 +286,11 @@ export function DocumentsClient({
       key: "force",
       label: "In force",
       width: 150,
+      /* Three states in one column, and one of them was grey body text between
+         two badges — a waiver read as an absence rather than as a kind. */
       render: (s: SignatureRow) =>
         !s.isContract ? (
-          <span style={{ color: "var(--text-3)" }}>Waiver</span>
+          <Badge tone="outline">Waiver</Badge>
         ) : s.counterSignedBy ? (
           <Badge tone="positive">Counter-signed</Badge>
         ) : (
@@ -307,7 +309,10 @@ export function DocumentsClient({
                 Counter-sign
               </Button>
             ) : null}
-            <Button size="sm" variant="ghost" onClick={() => setConfirmRedact(s)}>
+            {/* Redact strips the person out of a signed record for good;
+                Counter-sign beside it puts an agreement in force. They were the
+                same ghost button. */}
+            <Button size="sm" variant="danger" onClick={() => setConfirmRedact(s)}>
               Redact
             </Button>
           </span>
@@ -330,8 +335,24 @@ export function DocumentsClient({
      there would be no way to untick it. */
   const offerable = clauses.filter((c) => c.active || composition.has(c.code));
 
+  /* A draft version is the state this screen exists to move, and it was
+     readable only by scanning the Draft column of the documents tab. */
+  const drafts = docs.filter((d) => d.draftVersionId).length;
+  const awaiting = register.filter((s) => s.isContract && !s.counterSignedBy && !s.redacted).length;
+
   return (
     <>
+      <div className="hm-row">
+        <Stat size="sm" label="Clauses" value={clauses.length} />
+        <Stat size="sm" label="Documents" value={docs.length} sub={`${drafts} IN DRAFT`} />
+        <Stat
+          size="sm"
+          label="Signatures"
+          value={register.length}
+          sub={`${awaiting} AWAITING THE CLUB`}
+        />
+      </div>
+
       <div style={{ marginTop: 22 }}>
         <Tabs
           items={[
@@ -354,14 +375,14 @@ export function DocumentsClient({
           {clauses.length === 0 ? (
             <StateBlock title="No clauses yet." detail="A document is a composition of clauses; start with one." />
           ) : (
-            <Table columns={clauseColumns} rows={clauses} rowKey={(c) => c.code} />
+            <Table tall columns={clauseColumns} rows={clauses} rowKey={(c) => c.code} />
           )}
         </>
       ) : null}
 
       {tab === "documents" ? (
         <div style={{ marginTop: 18 }}>
-          <Table columns={docColumns} rows={docs} rowKey={(d) => d.code} />
+          <Table tall columns={docColumns} rows={docs} rowKey={(d) => d.code} />
         </div>
       ) : null}
 
@@ -375,7 +396,7 @@ export function DocumentsClient({
           {register.length === 0 ? (
             <StateBlock title="Nothing signed yet." detail="Signatures land here with their hash and the exact wording agreed." />
           ) : (
-            <Table columns={registerColumns} rows={register} rowKey={(s) => s.id} />
+            <Table tall columns={registerColumns} rows={register} rowKey={(s) => s.id} />
           )}
         </div>
       ) : null}
@@ -447,7 +468,7 @@ export function DocumentsClient({
           </>
         }
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+        <p className="hm-body" style={{ marginBottom: 14 }}>
           This publishes the next version alongside the last. Signatures already
           taken keep pointing at the wording they were given — nothing already
           agreed to changes. Documents pick up the new wording when you draft
@@ -465,7 +486,7 @@ export function DocumentsClient({
         title={composing ? `Compose — ${composing.title} v${composing.draftVersion}` : "Compose"}
         footer={<Button variant="ghost" onClick={() => setComposing(null)}>Done</Button>}
       >
-        <p style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+        <p className="hm-body" style={{ marginBottom: 14 }}>
           Tick the clauses this document carries and say when each one applies. A
           clause held to afloat is left out when the document renders for a night
           ashore — one document, assembled per occasion.
@@ -514,7 +535,7 @@ export function DocumentsClient({
                     });
                   }}
                 />
-                <span style={{ fontSize: 13.5 }}>
+                <span className="hm-body">
                   {c.title}
                   {stale ? (
                     <>
@@ -522,7 +543,7 @@ export function DocumentsClient({
                       <Badge tone="caution">Older wording in this draft</Badge>
                     </>
                   ) : null}
-                  <span style={{ display: "block", color: "var(--text-3)", fontSize: 11 }}>
+                  <span className="hm-mono" style={{ display: "block" }}>
                     v{c.latestVersion}
                   </span>
                 </span>
@@ -571,7 +592,7 @@ export function DocumentsClient({
           <>
             <Button variant="ghost" onClick={() => setConfirmRedact(null)}>Keep it</Button>
             <Button
-              variant="gold"
+              variant="danger"
               disabled={pending}
               onClick={() => {
                 const target = confirmRedact;
@@ -589,7 +610,7 @@ export function DocumentsClient({
           </>
         }
       >
-        <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>
+        <p className="hm-body">
           This answers an erasure request without destroying the record. The name,
           address, IP and the signature itself are removed. What was agreed, when,
           and the hash that proves it are kept — erasure does not reach a record
@@ -623,7 +644,7 @@ export function DocumentsClient({
           </>
         }
       >
-        <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+        <p className="hm-body" style={{ marginBottom: 14 }}>
           Until the club signs, this is an offer rather than an agreement. Signing
           puts it in force and tells the other party. Like every signature here it
           is a record — it cannot be edited or withdrawn afterwards.
@@ -666,7 +687,7 @@ export function DocumentsClient({
           </>
         }
       >
-        <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
+        <p className="hm-body" style={{ marginBottom: 14 }}>
           One card per member who actually sailed inside the window — miles,
           sailings, harbors, crew met, and any Marks rounded. Members who did not
           sail get nothing; a card reading nought miles is a reproach, not a

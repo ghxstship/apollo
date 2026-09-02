@@ -140,7 +140,7 @@ export function OrdersClient({
               label: "Member",
               render: (e: LedgerRow) => (
                 <span>
-                  <b style={{ fontWeight: 600 }}>{e.member}</b>
+                  <b style={{ fontWeight: 700 }}>{e.member}</b>
                   <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
                     {e.memberNo}
                   </span>
@@ -161,7 +161,7 @@ export function OrdersClient({
           rows={visible}
         />
         {visible.length === 0 ? (
-          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
             Nothing in the record under that filter.
           </p>
         ) : null}
@@ -197,7 +197,7 @@ export function OrdersClient({
             rows={shopOrders}
           />
           {shopOrders.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
               No Shop orders on the books.
             </p>
           ) : null}
@@ -226,7 +226,7 @@ export function OrdersClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: 13 }}>
+          <p style={{ fontSize: "var(--text-sm)" }}>
             Financial actions log to the ship&apos;s record with your name on them.
           </p>
           <Select
@@ -282,8 +282,8 @@ export function OrdersClient({
           </>
         }
       >
-        <p style={{ fontSize: 13 }}>{repeat?.why}</p>
-        <p style={{ fontSize: 13, color: "var(--text-3)" }}>
+        <p style={{ fontSize: "var(--text-sm)" }}>{repeat?.why}</p>
+        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
           Two operators working the same request is how a member gets refunded
           twice out of the club&rsquo;s money. Nothing has been posted yet.
         </p>

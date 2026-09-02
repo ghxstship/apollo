@@ -52,9 +52,9 @@ export function OgFrame({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 24, letterSpacing: 15 }}>{ANCHOR}</div>
+          <div style={{ display: "flex", fontSize: "var(--text-xl)", letterSpacing: 15 }}>{ANCHOR}</div>
           <div
-            style={{ display: "flex", fontSize: 17, letterSpacing: 6, color: MUTED, marginTop: 18 }}
+            style={{ display: "flex", fontSize: "var(--text-lg)", letterSpacing: 6, color: MUTED, marginTop: 18 }}
           >
             {eyebrow}
           </div>
@@ -65,7 +65,7 @@ export function OgFrame({
             <div
               style={{
                 display: "flex",
-                fontSize: 24,
+                fontSize: "var(--text-xl)",
                 lineHeight: 1.4,
                 color: MUTED,
                 marginTop: 22,
@@ -75,7 +75,7 @@ export function OgFrame({
             </div>
           ) : null}
         </div>
-        <div style={{ display: "flex", fontSize: 19, letterSpacing: 5, color: MUTED }}>{meta}</div>
+        <div style={{ display: "flex", fontSize: "var(--text-lg)", letterSpacing: 5, color: MUTED }}>{meta}</div>
       </div>
     </div>
   );

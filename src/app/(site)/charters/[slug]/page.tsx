@@ -274,7 +274,7 @@ export default async function VoyagePage({
           </div>
           {legs.length > 0 ? (
             <div className="ev-plan">
-              <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The plan.</h2>
+              <h2 className="ev-h2">The plan.</h2>
               {legs.map((leg) => (
                 <div className="ev-plan__row" key={leg.id}>
                   <span className="ev-plan__t">Day {String(leg.day).padStart(2, "0")}</span>
@@ -302,7 +302,7 @@ export default async function VoyagePage({
               ))}
               {portStops.length > 0 ? (
                 <>
-                  <h2 style={{ fontSize: "var(--text-display-xs)", margin: "20px 0 12px" }}>
+                  <h2 className="ev-h2 ev-h2--mid">
                     Ports.
                   </h2>
                   {portStops.map((s) => (
@@ -334,7 +334,7 @@ export default async function VoyagePage({
             </div>
           ) : stops.length > 0 ? (
             <div className="ev-plan">
-              <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The plan.</h2>
+              <h2 className="ev-h2">The plan.</h2>
               {stops.map((s) => (
                 <div className="ev-plan__row" key={`${s.offset}-${s.title}`}>
                   <span className="ev-plan__t">{stopTime(s.offset)}</span>
@@ -348,7 +348,7 @@ export default async function VoyagePage({
           ) : null}
           {fleet.length > 0 ? (
             <div className="ev-fleet">
-              <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>The fleet.</h2>
+              <h2 className="ev-h2">The fleet.</h2>
               {fleet.map((v) => (
                 <div className="ev-fleet__row" key={v.id}>
                   <span className="ev-fleet__name">{v.name}</span>
@@ -358,7 +358,7 @@ export default async function VoyagePage({
             </div>
           ) : null}
           <div className="ev-frames">
-            <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Frames.</h2>
+            <h2 className="ev-h2">Frames.</h2>
             {frames.length > 0 ? (
               <div className="ev-frames__strip">
                 {frames.map((f) => (
@@ -381,7 +381,7 @@ export default async function VoyagePage({
             )}
           </div>
           <div className="ev-faq">
-            <h2 style={{ fontSize: "var(--text-display-xs)", marginBottom: 12 }}>Asked often.</h2>
+            <h2 className="ev-h2">Asked often.</h2>
             {faq.map(([q, a]) => (
               <details key={q}>
                 <summary>{q}</summary>
@@ -416,21 +416,21 @@ export default async function VoyagePage({
               )}
             </div>
             {cancelled ? (
-              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <p className="ev-note">
                 The club called this one off. Anything reserved against it was
                 credited in full — the manifest holds the next open water.
               </p>
             ) : sailed ? (
-              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <p className="ev-note">
                 This one is in the log. What the cameras kept is in Episodes.
               </p>
             ) : voyage.status === "weather_hold" ? (
-              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <p className="ev-note">
                 A hold is a postponement, not a cancellation. The new date arrives in
                 Episodes, and every reserved pass carries forward in full.
               </p>
             ) : voyage.status === "live" ? (
-              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <p className="ev-note">
                 This one is on the water. Follow along on the Open Deck, or find the
                 next sailing on the manifest.
               </p>
@@ -445,7 +445,7 @@ export default async function VoyagePage({
                 />
               ) : (
                 <>
-                  <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
+                  <p className="ev-note ev-note--above">
                     Members enquire from their manifest. Sign in and the form is here.
                   </p>
                   <LinkButton
@@ -458,13 +458,13 @@ export default async function VoyagePage({
                 </>
               )
             ) : byInvitation ? (
-              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <p className="ev-note">
                 Passes for this one go out by invitation. When the Bridge has your
                 name, the word arrives with the pass.
               </p>
             ) : onSaleLine ? (
               <>
-                <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
+                <p className="ev-note ev-note--above">
                   Passes open on the harbour&rsquo;s clock at that hour. Deeper tiers
                   walk in earlier — the manifest shows your own.
                 </p>
@@ -478,7 +478,7 @@ export default async function VoyagePage({
               </>
             ) : full ? (
               <>
-                <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 16 }}>
+                <p className="ev-note ev-note--above">
                   Passes release in order — join the waitlist{user ? " on the manifest" : " at the gangway"} and
                   you&rsquo;ll get the word first.
                 </p>
@@ -516,6 +516,27 @@ export default async function VoyagePage({
           </div>
 
           <div className="ev-log">
+            {/* The two the reader acts on lead the log: the hour it leaves, and
+                whether there is still a pass. The record follows below the
+                rule, in the order the log has always kept it. */}
+            <div className="ev-log__lead">
+              <div>
+                <span>Cast off</span>
+                <span>{logTime(voyage.starts_at, zone)}</span>
+              </div>
+              <div>
+                <span>{seatsWord}</span>
+                <span>
+                  {closed
+                    ? `${aboard} ABOARD`
+                    : onSaleLine
+                      ? onSaleLine
+                      : left != null
+                        ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT`
+                        : voyage.berths_total}
+                </span>
+              </div>
+            </div>
             <div>
               <span>Format</span>
               <span>{badge.toUpperCase()}</span>
@@ -531,10 +552,6 @@ export default async function VoyagePage({
             <div>
               <span>Boards</span>
               <span>{logTime(boards, zone)}</span>
-            </div>
-            <div>
-              <span>Cast off</span>
-              <span>{logTime(voyage.starts_at, zone)}</span>
             </div>
             {voyage.coordinates ? (
               <div>
@@ -554,18 +571,6 @@ export default async function VoyagePage({
                 <span>{voyage.distance_nm} NM</span>
               </div>
             ) : null}
-            <div>
-              <span>{seatsWord}</span>
-              <span>
-                {closed
-                  ? `${aboard} ABOARD`
-                  : onSaleLine
-                    ? onSaleLine
-                    : left != null
-                      ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT`
-                      : voyage.berths_total}
-              </span>
-            </div>
             <div>
               <span>Tier</span>
               <span>{TIER_LABEL[voyage.min_tier]}+</span>
@@ -615,15 +620,15 @@ export default async function VoyagePage({
                 </p>
               </>
             ) : aboard > 0 ? (
-              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <p className="ev-note">
                 {aboard} aboard{user ? "" : " — sign in to see who's aboard"}.
               </p>
             ) : (
-              <p style={{ fontSize: 13, color: "var(--text-2)" }}>
+              <p className="ev-note">
                 The manifest is open. First aboard sets the tone.
               </p>
             )}
-            <p style={{ fontSize: 11.5, color: "var(--text-3)", marginTop: 10 }}>
+            <p className="ev-note ev-note--fine">
               Shown with consent — members choose visibility per voyage.
             </p>
           </div>

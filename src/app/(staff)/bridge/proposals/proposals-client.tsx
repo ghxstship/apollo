@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, Select, Stat, StateBlock, Table, Toast } from "@/components/ds";
 import { relTime, useToast } from "../../ui";
 import { decideCharter, decideProposal, linkProposal, type CharterRuling } from "./actions";
 
@@ -113,7 +113,7 @@ export function ProposalsClient({
       label: "Proposal",
       render: (r: ProposalRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.title}</b>
+          <b style={{ fontWeight: 700 }}>{r.title}</b>
           <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
             {r.proposerMark ? `${r.proposer} · ${r.proposerMark}` : r.proposer}
           </span>
@@ -195,7 +195,7 @@ export function ProposalsClient({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="danger"
               disabled={pending}
               onClick={() => {
                 setDeclineNote("");
@@ -232,7 +232,7 @@ export function ProposalsClient({
             </Button>
           </span>
         ) : r.status === "declined" && r.decisionNote ? (
-          <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>{r.decisionNote}</span>
+          <span className="hm-body" style={{ color: "var(--text-3)" }}>{r.decisionNote}</span>
         ) : null,
     },
   ];
@@ -243,7 +243,7 @@ export function ProposalsClient({
       label: "Member",
       render: (r: CharterRow) => (
         <span>
-          <b style={{ fontWeight: 600 }}>{r.proposer}</b>
+          <b style={{ fontWeight: 700 }}>{r.proposer}</b>
           {r.proposerMark ? (
             <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.proposerMark}</span>
           ) : null}
@@ -272,6 +272,7 @@ export function ProposalsClient({
       key: "dates",
       label: "Dates in mind",
       width: 170,
+      mono: true,
       render: (r: CharterRow) => r.preferredDates ?? "—",
     },
     {
@@ -307,7 +308,7 @@ export function ProposalsClient({
             </Button>
             <Button
               size="sm"
-              variant="ghost"
+              variant="danger"
               disabled={pending}
               onClick={() => {
                 setCharterNote("");
@@ -318,13 +319,30 @@ export function ProposalsClient({
             </Button>
           </span>
         ) : r.decisionNote ? (
-          <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>{r.decisionNote}</span>
+          <span className="hm-body" style={{ color: "var(--text-3)" }}>{r.decisionNote}</span>
         ) : null,
     },
   ];
 
+  /* What is actually waiting on the Bridge, across both queues — the number an
+     operator opens this screen for, and it was nowhere on it. */
+  const waiting = rows.filter((r) => r.status === "submitted" || r.status === "considering").length;
+  const chartersWaiting = charters.filter((r) => r.status === "submitted").length;
+  const unlinked = rows.filter((r) => r.status === "approved" && !r.voyageId).length;
+
   return (
     <>
+      <div className="hm-row">
+        <Stat size="sm" label="Waiting on the word" value={waiting} sub={`${rows.length} RAISED`} />
+        <Stat
+          size="sm"
+          label="Charter requests"
+          value={chartersWaiting}
+          sub={`${charters.length} RAISED`}
+        />
+        <Stat size="sm" label="Approved, no sailing" value={unlinked} />
+      </div>
+
       {rows.length === 0 ? (
         <div style={{ marginTop: 24 }}>
           <StateBlock
@@ -338,7 +356,7 @@ export function ProposalsClient({
         </div>
       )}
 
-      <p style={{ marginTop: 14, color: "var(--text-3)", fontSize: 12.5 }}>
+      <p className="hm-body" style={{ marginTop: 14, color: "var(--text-3)" }}>
         Approval is the word, not the sailing. The sailing itself gets raised on
         Voyages, with access set by the format — link it here once it exists, so
         the row and the member both know which sailing it became.
@@ -404,7 +422,7 @@ export function ProposalsClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: 13 }}>
+          <p className="hm-body">
             The proposer is told either way. If the sailing already exists on the
             board, name it here and the row will carry it.
           </p>
@@ -434,7 +452,7 @@ export function ProposalsClient({
                 Not yet
               </Button>
               <Button
-                variant="gold"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   const r = declining;
@@ -458,7 +476,7 @@ export function ProposalsClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: 13 }}>
+          <p className="hm-body">
             The line below reaches the member word for word. Left blank, they
             read &quot;The Bridge passed on this one&quot;.
           </p>
@@ -483,8 +501,10 @@ export function ProposalsClient({
               <Button variant="ghost" onClick={() => setRuling(null)}>
                 Not yet
               </Button>
+              {/* One dialog, two rulings — the commit button takes the shape of
+                  whichever it is about to send. */}
               <Button
-                variant="gold"
+                variant={ruling.kind === "declined" ? "danger" : "gold"}
                 disabled={pending || (ruling.kind === "answered" && !charterNote.trim())}
                 onClick={() => {
                   const { row, kind } = ruling;
@@ -511,7 +531,7 @@ export function ProposalsClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: 13 }}>
+          <p className="hm-body">
             {ruling?.kind === "answered"
               ? "The line below is the answer, and it reaches the member word for word — dates, a price, the next step."
               : "The line below reaches the member word for word. Left blank, they read “The Bridge passed on this one”."}
