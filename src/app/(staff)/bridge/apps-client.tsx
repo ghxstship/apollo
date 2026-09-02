@@ -34,7 +34,7 @@ const STATUS_TONE: Record<AppRow["status"], "gold" | "ink" | "positive" | "cauti
 const STATUS_LABEL: Record<AppRow["status"], string> = {
   received: "Received",
   review: "In review",
-  invited: "Port Day invite",
+  invited: "Invited ashore",
   aboard: "Aboard",
   declined: "Declined",
 };
@@ -118,11 +118,11 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
               onClick={() =>
                 run(
                   () => salonInvite(a.id),
-                  () => show({ msg: "Port Day invite set.", meta: a.email.toUpperCase() })
+                  () => show({ msg: "Invited ashore.", meta: a.email.toUpperCase() })
                 )
               }
             >
-              Port Day invite
+              Invite ashore
             </Button>
           ) : null}
           {a.status === "invited" ? (

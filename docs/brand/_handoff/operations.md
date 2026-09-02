@@ -19,6 +19,24 @@ Activations use the `[un]` bracketed anchor plus a sentence-case suffix (see `br
 
 **Audience:** vetted singles aged 25–45, primary; open-minded and alternative-lifestyle couples, first-class secondary. Copy addresses both — never singles-only phrasing on shared surfaces.
 
+### Experience taxonomy — two axes
+
+There were always two facts, and one column held them. **Where** an experience happens and **what kind** of thing it is are now filed separately, because a private charter is very much afloat and a pool social is not a day at sea.
+
+| Axis | Column | Values | What it decides |
+| --- | --- | --- | --- |
+| Setting — where | `voyages.class` / `activity_formats.category` | **Afloat** (`sea`) · **Ashore** (`port`) | Hulls, weather holds, flotillas and muster apply afloat only; only ashore admits an unvetted guest |
+| Experience class — what kind | `voyages.experience_class` / `activity_formats.experience_class` | **Open** · **Club** · **Premium** · **Exotic** | How far the club goes, and who may come |
+
+- **Open** — a member's guest who has not been vetted may come. The low-commitment door, and the only one that is.
+- **Club** — the members' standard: the anchor sailing and its kin.
+- **Premium** — the club goes further; the boat, or the room, is yours.
+- **Exotic** — the club leaves home water: blue water and foreign harbours.
+
+A format is free to be afloat *and* premium (private charter) or ashore *and* premium (a gathering) — the pairing the single column could not express. Sea Day and Port Day named the filing system rather than the day, and are retired from copy entirely: a card names its format and its hours.
+
+**Duration is the third fact and prints as hours, not as a name.** The ladder keeps three keys because they price the plans and gate the class ceiling — `voyage` (up to 4 hours) · `expedition` (up to 8 hours) · `odyssey` (any length) — but a member reads the hours. Calling a three-hour pool social an Odyssey is grandiosity this brand avoids.
+
 ---
 
 ## 2. Anchor experience
@@ -32,7 +50,7 @@ Destination: Haulover Sandbar. Total arc: **7 hours**, 11:00 → 18:00, plus opt
 | Time | Stage | Guest experience | Staff lead | Sound |
 | --- | --- | --- | --- | --- |
 | 11:00–12:00 | Pre-Boarding Social | Optional marina-lounge icebreaker; early check-in and ID verification | Host / Marina Lead | Lounge chill, 115 BPM |
-| 12:00–12:45 | Boarding & Casting | Navy carpet dock; Intent Wristband; welcome espresso martini; board | Chief Vibe Stew & Dock Crew | Deep tropical house, 118 BPM |
+| 12:00–12:45 | Boarding & Casting | Navy carpet dock; Wristband; welcome espresso martini; board | Chief Stew & Dock Crew | Deep tropical house, 118 BPM |
 | 12:45–14:00 | Departure & Cruise | Consent and lifestyle briefing; Confessional Pod opens; scenic cruise | MC & Media Team | Upbeat vocal house, 122 BPM |
 | 14:00–16:00 | Sandbar Arrival & Challenges | Anchor at Haulover; BOTE tandem paddleboard heats; FUNBOY ring raft floating bar | Marine Safety & Challenge Leads | High-energy pool sets, 125 BPM |
 | 16:00–17:00 | Sandbar Water Lounge | Open aquatic mingling, water sports, canned cocktails, golden-hour photos | Resident DJ & Safety Crew | Melodic house, 124 BPM |
@@ -46,7 +64,7 @@ Sales lock at **40 passengers**. Two permitted compositions:
 - **20 / 20** — single males capped at 10, single females capped at 10, balance from couples; or
 - **10 couples (20 guests) + 20 vetted singles.**
 
-The ratio engine is a gate, not a guideline: it refuses sales that would break composition. Every ticketing, admin, and kiosk surface must show remaining capacity **by segment**, never as a single number.
+The ratio engine is a gate, not a guideline: it refuses sales that would break composition. Every sales, admin, and kiosk surface must show remaining capacity **by segment**, never as a single number.
 
 ---
 
@@ -57,7 +75,7 @@ The ratio engine is a gate, not a guideline: it refuses sales that would break c
 | Single Pass | $350 / sailing | Sailing + sandbar, premium open bar, challenge entry, 24-hr app access | Strict vetting; 10 male / 10 female cap |
 | Couples Pass | $650 / couple | Sailing for two, open bar, VIP lounge access, 24-hr Radar access | Couple vetting; max 10 couples |
 | Club Lifestyle Membership | $2,500 / quarter | Priority access to 4 sailings, fast-track background check, VIP daybed priority, 1 guest pass | Background check + video interview; **capped at 20 active** |
-| VIP Pontoon Lounge Upgrade | $1,500 (group of 4) | Reserved bow daybed, dedicated steward, bottle service upgrade, priority Confessional slot | Must hold approved tickets; max 2 daybed groups |
+| VIP Pontoon Lounge Upgrade | $1,500 (group of 4) | Reserved bow daybed, dedicated steward, bottle service upgrade, priority Confessional slot | Must hold approved boarding passes; max 2 daybed groups |
 | Match Guarantee Rollover | Included | **$150 credit** toward next sailing if zero mutual matches | Auto-triggered when 0 Shared Anchors post-docking |
 
 ---
@@ -68,7 +86,7 @@ Per sailing, and 90-day totals across 12 sailings.
 
 | Line | Setup | Per event | 90-day |
 | --- | --- | --- | --- |
-| Gross ticket & pass revenue | 0 | $14,000 | $168,000 |
+| Gross boarding pass & membership revenue | 0 | $14,000 | $168,000 |
 | Sponsorship revenue | 0 | $3,500 | $42,000 |
 | VIP upgrades & merch | 0 | $1,000 | $12,000 |
 | **Gross revenue** | 0 | **$18,500** | **$222,000** |
@@ -104,7 +122,7 @@ Co-marketing rights scale with tier; the Presenting Partner is the only tier wit
 | --- | --- | --- | --- | --- |
 | Riviera Linen Shirt | $35 | $120 | 70.8% | Members / onboard |
 | Sand-Free Turkish Towel | $12 | $45 | 73.3% | VIP daybeds / challenge winners |
-| Intent Woven Wristband | $1.50 | — | — | All guests at check-in |
+| Woven Wristband | $1.50 | — | — | All guests at check-in |
 | Captain Caps & Buckets | $10 | $38 | 73.7% | Onboard retail / giveaways |
 | Insulated Marine Tumbler | $14 | $45 | 68.9% | Hydration bar / swag bag |
 | Sunset Silk Kimono | $28 | $110 | 74.5% | Sunset Match Ceremony prize |
@@ -130,7 +148,7 @@ Five zones, each with named equipment and a procurement model — sponsorship in
 
 W1–W2 launch and vetting → W3 premiere sailing → W4 content engine → W5 sponsor activation → W6 creator seeding → W7 testimonials → W8 mid-season recap and quarterly membership launch → W9 theme voyage announcement → W10 corporate partnership push → W11 special edition execution → W12 Art Basel pre-promotion → W13 retain and optimize → W14 90-day wrap and Q1 expansion teaser.
 
-Named KPI per week: 100% ticket conversion, zero incidents, 250k+ organic impressions, 2 inbound sponsor retainers, 15% application lift, 15+ match success stories, 15 memberships, sellout under 24 hours, 30% high-HHI applicant growth, record engagement, $10,000 presale, 95%+ guest rating, 1,000+ Q1 waitlist.
+Named KPI per week: 100% pass conversion, zero incidents, 250k+ organic impressions, 2 inbound sponsor retainers, 15% application lift, 15+ match success stories, 15 memberships, sellout under 24 hours, 30% high-HHI applicant growth, record engagement, $10,000 presale, 95%+ guest rating, 1,000+ Q1 waitlist.
 
 ---
 
@@ -139,12 +157,12 @@ Named KPI per week: 100% ticket conversion, zero incidents, 250k+ organic impres
 | # | Trigger | Channel | Subject |
 | --- | --- | --- | --- |
 | 1 | Application submitted | Email + push | Application received — 48-hour review window |
-| 2 | Vetting approved | Email + push | Accepted — secure your Captain's Pass |
+| 2 | Vetting approved | Email + push | Accepted — your membership is open |
 | 3 | T−48h | Email + push | Sailing briefing & Master Waiver |
 | 4 | T−24h | **Encrypted SMS** | Secret marina pin drop + Riviera Chic dress code |
 | 5 | T−2h | SMS + push | Check-in reminder |
 | 6 | 12:00 boarding | App push | Welcome aboard — Event Passport |
-| 7 | 17:15 open water | App push | Match Ceremony open — plot course before 17:30 lock |
+| 7 | 17:15 open water | App push | Match Ceremony open — make your picks before the 17:30 lock |
 | 8 | 18:00 docking | Push + SMS | Shore Leave shuttle; open envelope QR at 19:00 |
 | 9 | 19:00 post-sailing | Push + SMS | Shared Anchors unlocked — **24-hour expiry** |
 | 10 | T+24h | Email + push | Confessional clip ready |
@@ -162,7 +180,7 @@ Ten enforceable clauses cover: USCG maritime passenger liability, water sports r
 1. **Consent is mandatory** — verbal, enthusiastic, before touching, flirting, or entering personal space.
 2. **What happens at sea stays at sea** — never ask for full names, employers, or personal details unless freely offered.
 3. **Zero personal cameras** — phones in totes; the onboard media team are the only authorized photographers.
-4. **Respect Cast & Crew authority** — the USCG Captain, Chief Vibe Stew, and safety crew have absolute authority.
+4. **Respect Cast & Crew authority** — the USCG Captain, Chief Stew, and safety crew have absolute authority.
 5. **Graceful declines** — accept "no" instantly; pushing after a decline means water-taxi removal.
 6. **Disembark clean** — leave the pontoon, sandbar, and Miami waters cleaner than you found them.
 
@@ -175,14 +193,16 @@ Use these terms verbatim across product, marketing, and operations. Never substi
 | Term | Means |
 | --- | --- |
 | **Shared Anchor** | A mutual match between members or couples |
-| **Chief Vibe Stew** | Lead MC and hospitality staff managing guest flow, boundaries, and challenges |
+| **Chief Stew** | Lead MC and hospitality staff managing guest flow, boundaries, and challenges |
 | **The Cast & Crew** | Marine safety, media, and lifestyle hospitality personnel |
-| **Plot Course** | The action of selecting a potential connection in Radar |
+| **Pick** | The action of selecting a potential connection in Radar |
 | **Preference Sheet** | 3-part onboarding profile: drink preferences, boundaries, lifestyle green/red flags |
-| **Captain's Pass** | The issued digital ticket |
+| **Boarding pass** | What admits a member to one sailing |
 | **Captain's Log** | Sealed gold-foil envelope with QR unlocking mutual matches |
 | **Confessional Pod** | Soundproofed onboard booth for recorded guest confessionals |
-| **Intent Wristband** | Woven magnetic wristband signalling openness, issued at check-in |
+| **Wristband** | Woven magnetic wristband signalling openness, issued at check-in |
 | **Shore Leave** | The partnered VIP afterparty |
 | **Match of the Day** | Sunset-cruise announcement with champagne toast |
 | **Riviera Chic** | The stated dress code |
+
+**Membership is reached by invitation or by application.** It is not a thing on a shelf. "Captain's Pass" is retired as a term — it carried two conflicting definitions (a standing invitational place, and an issued digital ticket) and the second leaned on a word the brand does not use. What a member holds for one sailing is a **boarding pass**; what a member holds for a season is a membership, arrived at through an invite or an application. The public listing page is **The Manifest**. Marks are **earned**, never rounded. A format that asks for vetting says **Vetting required**.

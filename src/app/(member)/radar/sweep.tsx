@@ -83,16 +83,15 @@ export function Sweep({
         {!listed ? (
           /* Named, rather than an empty sweep with no explanation. This member
              asked to be off the manifest, radar_sweep honours that, and the
-             consequence — nobody can plot a course to them, so nothing they plot
-             can ever come back mutual — is a dead end they are owed the reason
-             for. */
+             consequence — nobody can pick them, so nothing they pick can ever
+             come back mutual — is a dead end they are owed the reason for. */
           <div className="rdr-strip">
             <span className="rdr-strip__badge">Off the manifest</span>
             <span className="rdr-strip__title">You are not a pin.</span>
             <p className="rdr-strip__body">
               You asked to stay off the manifest, and Radar honours that — which
-              means nobody aboard can plot a course to you, so nothing you plot
-              can come back mutual. Your page has the switch.
+              means nobody aboard can pick you, so nothing you pick can come
+              back mutual. Your page has the switch.
             </p>
           </div>
         ) : null}
@@ -126,7 +125,7 @@ export function Sweep({
 
         <p className="rdr-note">
           Everyone aboard, no distance, no ranking. Couples show as one pin. Tap
-          a pin to plot course.
+          a pin to pick someone.
         </p>
 
         <div className="rdr-meter">

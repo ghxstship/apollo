@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Badge, Tag, Icon } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { ANCHOR, CITY_CODES, CLASS_CODES, CURRENCY, DIVISION_IDS, DIVISIONS, FAMILY_LABEL, HANDLE, LEAGUES, MAILBOX, SUB_CLASSES, SURFACES, TAGLINE, EST_YEAR_ROMAN, lockup } from "@/lib/brand";
+import { ANCHOR, CITY_CODES, CURRENCY, DIVISION_IDS, DIVISIONS, EXPERIENCE_CLASSES, EXPERIENCE_CLASS_IDS, HANDLE, LEAGUES, MAILBOX, SETTING_LABEL, SUB_CLASSES, SURFACES, TAGLINE, EST_YEAR_ROMAN, lockup } from "@/lib/brand";
 import { Wordmark } from "@/components/ds";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
@@ -307,22 +307,32 @@ export default function BrandKitPage() {
               </div>
             ))}
           </div>
-          <div className="bk-swlbl">Event families</div>
+          {/* Two axes, because there were always two facts. The old single
+              family row tangled where a thing happens with how far the club
+              goes, which is why a pool social could not be filed at all. */}
+          <div className="bk-swlbl">Setting — where it happens</div>
           <div className="bk-facts">
-            {(["sea", "shore"] as const).map((fam) => (
-              <div className="row" key={fam}>
-                <span className="k">
-                  {CLASS_CODES[fam]} · {FAMILY_LABEL[fam]}
-                </span>
+            {(["sea", "shore"] as const).map((setting) => (
+              <div className="row" key={setting}>
+                <span className="k">{SETTING_LABEL[setting]}</span>
                 <span className="bk-rooms__role">
-                  {fam === "sea"
-                    ? `Aboard — ${lockup("limited")}, amber accent`
-                    : `Ashore — ${lockup("scripted")}, cobalt accent`}
+                  {setting === "sea"
+                    ? `On the water — ${lockup("limited")}, amber accent. Hulls, holds and muster apply here.`
+                    : `On land — ${lockup("scripted")}, cobalt accent. Only ashore admits an unvetted guest.`}
                 </span>
               </div>
             ))}
           </div>
-          <div className="bk-swlbl">The class ladder — both families</div>
+          <div className="bk-swlbl">Experience class — what kind of thing it is</div>
+          <div className="bk-facts">
+            {EXPERIENCE_CLASS_IDS.map((id) => (
+              <div className="row" key={id}>
+                <span className="k">{EXPERIENCE_CLASSES[id].label}</span>
+                <span className="bk-rooms__role">{EXPERIENCE_CLASSES[id].what}</span>
+              </div>
+            ))}
+          </div>
+          <div className="bk-swlbl">Duration — either setting, any class</div>
           <div className="bk-facts">
             {Object.entries(SUB_CLASSES).map(([key, s]) => (
               <div className="row" key={key}>

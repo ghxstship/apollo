@@ -37,6 +37,9 @@ type FormatRow = {
   slug: string;
   label: string;
   category: string;
+  /* What the format files a sailing as — the value the taxonomy trigger copies
+     onto every voyage filed under it. */
+  experience_class: string;
   access: string;
   price_cents: number | null;
   capacity: number | null;
@@ -47,9 +50,11 @@ type FormatRow = {
 /* The access line the picker shows beside each format — what it costs to be
    there, and how many it seats, in the words the catalogue uses. */
 function accessLine(f: FormatRow): string {
+  /* The catalogue renamed this value from open to bookable when Open became an
+     experience class — two different facts that were reading as one word. */
   const door =
-    f.access === "open"
-      ? `open · ${price(f.price_cents ?? 0)}`
+    f.access === "bookable"
+      ? `bookable · ${price(f.price_cents ?? 0)}`
       : f.access === "invite"
         ? "by invitation"
         : f.access === "on_request"
@@ -79,7 +84,7 @@ export default async function VoyagesOpsPage() {
          read as Unfiled, and the composer filters them out of a new filing. */
       moduleTables(supabase)
         .from("activity_formats")
-        .select("slug, label, category, access, price_cents, capacity, requires_vetting, active")
+        .select("slug, label, category, experience_class, access, price_cents, capacity, requires_vetting, active")
         .order("position"),
     ]);
 
@@ -125,6 +130,13 @@ export default async function VoyagesOpsPage() {
     return null;
   };
 
+  /* A sailing reads by its format's name now, the way a member reads it — so
+     the board needs the catalogue's label beside every row, retired ones
+     included. A slug with no row left in the catalogue keeps its slug rather
+     than going blank; that is a filing an operator has to see to fix. */
+  const formatRows = must(formatsRes) as FormatRow[];
+  const formatLabelBySlug = new Map(formatRows.map((f) => [f.slug, f.label]));
+
   const rows: VoyageOpsRow[] = voyages.map((v) => {
     const c = readConditions(v.conditions);
     return {
@@ -132,6 +144,7 @@ export default async function VoyagesOpsPage() {
       title: v.title,
       cls: v.class,
       subClass: v.sub_class,
+      experienceClass: v.experience_class,
       kind: v.kind,
       departs: logDateTime(v.starts_at, v.time_zone),
       startsAtIso: v.starts_at,
@@ -151,6 +164,7 @@ export default async function VoyagesOpsPage() {
       heading: c.heading ?? "",
       speed: c.speed ?? "",
       format: v.format,
+      formatLabel: v.format ? (formatLabelBySlug.get(v.format) ?? v.format) : null,
       seasonId: v.season_id,
       venueId: v.venue_id,
       /* Rendered back to the harbor's wall clock, ready for the input. */
@@ -170,11 +184,12 @@ export default async function VoyagesOpsPage() {
   const venues: ProgramOption[] = (must(venuesRes))
     .sort((a, b) => Number(b.active) - Number(a.active))
     .map((v) => ({ value: v.id, label: v.active ? v.name : `${v.name} (retired)`, retired: !v.active }));
-  const formats: FormatOption[] = (must(formatsRes) as FormatRow[]).map((f) => ({
+  const formats: FormatOption[] = formatRows.map((f) => ({
     value: f.slug,
     label: f.active ? f.label : `${f.label} (retired)`,
     retired: !f.active,
     category: f.category,
+    experienceClass: f.experience_class,
     access: f.access,
     accessLine: accessLine(f),
     priceCents: f.price_cents,

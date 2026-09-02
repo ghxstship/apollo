@@ -156,7 +156,7 @@ export const GUARANTEE_OWED_LINE =
   "That happens, and it is on us. A $150 credit goes on your account when this sailing closes — no form, no request.";
 
 export const GUARANTEE_UNEARNED_LINE =
-  "The guarantee covers a course plotted and not returned. You left all three slots open, which is a real choice and costs nothing — but there is nothing for it to cover.";
+  "The guarantee covers a pick that was not picked back. You left all three slots open, which is a real choice and costs nothing — but there is nothing for it to cover.";
 
 /* Whether this pass is owed the credit, by the same two conditions the database
    settles on. Duplicated deliberately and narrowly: the surface has to be able

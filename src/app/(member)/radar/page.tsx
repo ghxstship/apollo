@@ -192,8 +192,8 @@ export default async function RadarPage() {
         </div>
 
         {/* The Match Guarantee. Stated before docking rather than after, so a
-            member who plotted nothing learns the condition while there is still
-            time to plot something. */}
+            member who has picked nobody learns the condition while there is
+            still time to pick someone. */}
         {phase === "unlocked" && mine.length === 0 ? (
           <div className={`rdr-strip${guaranteeOwed(picksPlotted, mine.length) ? " rdr-strip--credit" : ""}`}>
             <span className="rdr-strip__badge">
@@ -219,7 +219,7 @@ export default async function RadarPage() {
             No bios, no photo galleries, no ages, no distance. You met them today.
           </p>
           <p className="rdr-rule">
-            Couples plot course as one pin and appear as one anchor.
+            Couples pick as one pin and appear as one anchor.
           </p>
           <p className="rdr-rule">
             Contacts expire in 24 hours, both sides, with no extension and no

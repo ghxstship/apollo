@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getMember } from "../data";
-import { ACTIVITY_CATEGORIES, lockup, type ActivityCategory } from "@/lib/brand";
+import {
+  EXPERIENCE_CLASSES,
+  EXPERIENCE_CLASS_IDS,
+  SETTING_LABEL,
+  lockup,
+  type ExperienceClassId,
+} from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import {
-  CATEGORY_ACCENT,
-  CATEGORY_LINE,
+  EXPERIENCE_ACCENT,
   formatPrice,
   readFiledSailings,
   readFormats,
@@ -15,13 +20,15 @@ import "./activity.css";
 
 export const metadata: Metadata = { title: "Activity" };
 
-/* Activity — Sea, Port and Premium, and what each format is on the hook for.
+/* Activity — the four classes, and what each format is on the hook for.
 
-   The kit requires every format to state three things: its capacity, its price,
-   and what it does not include. All three are columns, so all three render or
-   the row is visibly incomplete — which is the point. The fourth fact is the
-   one the kit only says in prose and this product enforces in the booking
-   guard: whether the format asks for a Captain's Pass at all. */
+   Grouped by experience class, which is what kind of thing a format is; where
+   it happens is the other axis and rides on the tile as afloat or ashore. The
+   kit requires every format to state three things: its capacity, its price, and
+   what it does not include. All three are columns, so all three render or the
+   row is visibly incomplete — which is the point. The fourth fact is the one
+   the kit only says in prose and this product enforces in the booking guard:
+   whether the format asks for vetting at all. */
 
 /* operations.md §2, the seven-hour arc, with the guest-facing Five-A phase the
    activity kit prints beside each window. Deliberately NOT the run-of-show
@@ -30,7 +37,7 @@ export const metadata: Metadata = { title: "Activity" };
    two screens, which is how one of them goes stale. */
 const ANCHOR_ARC: Array<[string, string, string]> = [
   ["11:00", "Pre-boarding social in the marina lounge", "Arrival"],
-  ["12:00", "Boarding, and the Intent Wristband", "Arrival"],
+  ["12:00", "Boarding, and the Wristband", "Arrival"],
   ["12:45", "Departure, consent briefing, the Pod opens", "Atmosphere"],
   ["14:00", "Haulover Sandbar and the challenges", "Activity"],
   ["17:00", "Sunset cruise. Radar closes at 17:30", "Afterglow"],
@@ -44,18 +51,19 @@ export default async function ActivityPage() {
     readFiledSailings(supabase),
   ]);
 
-  const byCategory = (c: ActivityCategory) => formats.filter((f) => f.category === c);
+  const byClass = (c: ExperienceClassId) => formats.filter((f) => f.experience_class === c);
   const sailingsFor = (slug: string) => filed.filter((v) => v.format === slug);
 
   return (
     <div className="act">
-      <span className="mbr-eyebrow">Three categories · Sea · Port · Premium</span>
+      <span className="mbr-eyebrow">Four classes · Open · Club · Premium · Exotic</span>
       <h1 className="mbr-h1">Every way in</h1>
       <p className="act-lede">
-        Sea leaves the dock. Port never does, and is the only door open to a
-        member&rsquo;s guest who has not been vetted. Premium is either of those
-        with the whole thing to yourself. Every format below states what it
-        holds, what it costs or why it has no price, and what it leaves out.
+        Open is the one door a member&rsquo;s guest may come through unvetted.
+        Club is the members&rsquo; standard. Premium hands you the boat or the
+        room. Exotic leaves home water. Every format below says whether it is
+        afloat or ashore, what it holds, what it costs or why it has no price,
+        and what it leaves out.
       </p>
 
       <section className="mbr-sec" aria-labelledby="act-anchor">
@@ -77,31 +85,39 @@ export default async function ActivityPage() {
         </p>
       </section>
 
-      {ACTIVITY_CATEGORIES.map((category) => (
-        <section
-          className="act-cat"
-          key={category}
-          aria-labelledby={`act-cat-${category}`}
-          style={{ ["--act-accent" as string]: CATEGORY_ACCENT[category] }}
-        >
-          <span className="act-cat__rule" aria-hidden="true" />
-          <h2 className="act-cat__name" id={`act-cat-${category}`}>
-            {category}
-          </h2>
-          <p className="act-cat__line">{CATEGORY_LINE[category]}</p>
-          <div className="act-grid">
-            {byCategory(category).map((f) => (
-              <FormatTile key={f.slug} format={f} sailings={sailingsFor(f.slug)} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {EXPERIENCE_CLASS_IDS.map((klass) => {
+        const inClass = byClass(klass);
+        return (
+          <section
+            className="act-cat"
+            key={klass}
+            aria-labelledby={`act-cat-${klass}`}
+            style={{ ["--act-accent" as string]: EXPERIENCE_ACCENT[klass] }}
+          >
+            <span className="act-cat__rule" aria-hidden="true" />
+            <h2 className="act-cat__name" id={`act-cat-${klass}`}>
+              {EXPERIENCE_CLASSES[klass].label}
+            </h2>
+            <p className="act-cat__line">{EXPERIENCE_CLASSES[klass].what}</p>
+            {inClass.length ? (
+              <div className="act-grid">
+                {inClass.map((f) => (
+                  <FormatTile key={f.slug} format={f} sailings={sailingsFor(f.slug)} />
+                ))}
+              </div>
+            ) : (
+              <p className="act-lede">Nothing on the calendar under this class yet.</p>
+            )}
+          </section>
+        );
+      })}
 
       <p className="act-note">
-        A format that asks for no pass is still a format a paused membership
+        A format that asks for no vetting is still a format a paused membership
         cannot book, and it is still counted against the day&rsquo;s capacity.
-        What it does not ask for is vetting. {lockup("limited")} carries the
-        premium formats; {lockup("bound")} carries Port.
+        {" "}
+        {lockup("limited")} carries the premium formats; {lockup("bound")}{" "}
+        carries what happens ashore.
       </p>
     </div>
   );
@@ -123,8 +139,9 @@ function FormatTile({
       </div>
       <p className="act-tile__blurb">{format.blurb}</p>
       <div className="act-tile__facts">
+        <span>{SETTING_LABEL[format.category]}</span>
         <span>{format.capacity ? `Holds ${format.capacity}` : "Rides the sailing"}</span>
-        <span>{format.requires_vetting ? "Captain's Pass required" : "No pass required"}</span>
+        <span>{format.requires_vetting ? "Vetting required" : "No vetting required"}</span>
       </div>
       {format.excludes.length ? (
         <ul className="act-tile__not">

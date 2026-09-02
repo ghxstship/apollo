@@ -90,7 +90,7 @@ export default async function MemberCardPage() {
         </div>
       </div>
       <p className="crd-note">
-        Your member card boards you. Turn the brightness up at the gangway — the skipper knows the rest.
+        Your member card is your boarding pass. Turn the brightness up at the gangway — the skipper knows the rest.
       </p>
       <div className="crd-acts">
         <PrintButton label="Print or save" />
@@ -112,7 +112,7 @@ export default async function MemberCardPage() {
           </span>
           <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 8, maxWidth: "44ch" }}>
             Every sailing you are confirmed on, in your own calendar, kept current as the
-            season moves. Subscribe once — new passes arrive on their own.
+            season moves. Subscribe once — new boarding passes arrive on their own.
           </p>
           <div
             style={{

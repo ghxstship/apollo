@@ -224,7 +224,7 @@ export default async function PortalPage({
         </span>
         <div className="ptl-panel">
           <p style={{ fontSize: 13, color: "var(--text-2)", marginBottom: 14 }}>
-            Good for one Port Day as your guest. The rest is on them.
+            Good for one night ashore as your guest. The rest is on them.
           </p>
           {invite ? (
             <>

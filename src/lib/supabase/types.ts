@@ -38,6 +38,14 @@ export type VoyageRow = {
   id: string; slug: string; title: string; class: EventClass; kind: string
   harbor_id: string | null; starts_at: string; ends_at: string | null; coordinates: string | null
   distance_nm: number | null; berths_total: number; price_cents: number; status: VoyageStatus
+  /* The second taxonomy axis. `class` says WHERE (afloat or ashore); this says
+     WHAT KIND — open | club | premium | exotic, NOT NULL. A sailing filed under
+     a format does not get to disagree with it: a_sailing_keeps_its_taxonomy
+     copies the format's class down on every write that names a format, so this
+     is only the operator's to set while the sailing is unfiled. Widened to
+     string rather than the union in brand.ts, the way `kind` is — the enum
+     lives there, and the row type mirrors the column. */
+  experience_class: string
   blurb: string | null; description: string | null; media: string; min_tier: MembershipTier
   created_at: string; deposit_required: boolean; muster: string | null; conditions: Json | null
   fathoms_multiplier: number; held_passes: number

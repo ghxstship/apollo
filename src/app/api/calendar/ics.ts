@@ -1,4 +1,4 @@
-import { FAMILY_LABEL } from "@/lib/brand";
+import { SETTING_LABEL } from "@/lib/brand";
 import type { VoyageRow } from "@/lib/supabase/types";
 
 /* iCalendar plumbing — RFC 5545 to the letter the calendars actually read:
@@ -72,7 +72,7 @@ export function voyageWindow(voyage: Pick<VoyageRow, "starts_at" | "ends_at">): 
 }
 
 export function voyageSummary(voyage: Pick<VoyageRow, "title" | "class">): string {
-  return `${voyage.title} — ${FAMILY_LABEL[voyage.class] ?? "Sea Day"}`;
+  return `${voyage.title} — ${SETTING_LABEL[voyage.class] ?? SETTING_LABEL.sea}`;
 }
 
 export function voyageLocation(

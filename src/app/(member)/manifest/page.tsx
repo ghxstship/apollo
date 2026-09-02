@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Card, StateBlock } from "@/components/ds";
 import {
-  EVENT_CLASS_LABEL,
+  SETTING_LABEL,
   TIER_LABEL,
   eveningBefore,
   logDate,
@@ -10,12 +10,13 @@ import {
   price,
 } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
+import { durationChip } from "@/components/site/voyage-chips";
 import { TIER_RANK, getMember, type Rsvp, type Voyage, type VoyageCapacity } from "../data";
 import { RsvpControls, type DaybedOffer } from "./rsvp-controls";
 import type { CrewSeeker, GuestStub, MemberOption, StandingOffer } from "./pass-extras";
 import { TransferInbox, type IncomingOffer } from "./transfer-inbox";
 
-export const metadata: Metadata = { title: "Voyages" };
+export const metadata: Metadata = { title: "The manifest" };
 
 export default async function VoyagesPage() {
   const { supabase, user, profile, onHold } = await getMember();
@@ -82,8 +83,10 @@ export default async function VoyagesPage() {
        refused — or worse, seated outside the ratio. */
     moduleTables(supabase).from("voyage_segment_caps").select("voyage_id"),
     /* Category decides whether the daybed is even a thing on this water;
-       access decides whether a pass is on sale at all. */
-    moduleTables(supabase).from("activity_formats").select("slug, category, access"),
+       access decides whether a pass is on sale at all; the label is what the
+       card actually reads. Read once and mapped by slug below — never per
+       row. */
+    moduleTables(supabase).from("activity_formats").select("slug, label, category, access"),
     /* The release window is the club's own figure, read rather than retyped. */
     supabase.rpc("club_setting", { p_key: "release_credit_hours" }),
     /* Names for the harbor lock's refusal — read once, not per row. */
@@ -107,9 +110,14 @@ export default async function VoyagesPage() {
     ((segmentCapRes.data ?? []) as Array<{ voyage_id: string }>).map((r) => r.voyage_id)
   );
   const formatBySlug = new Map(
-    ((formatRes.data ?? []) as Array<{ slug: string; category: string; access: string }>).map(
-      (f) => [f.slug, f] as const
-    )
+    (
+      (formatRes.data ?? []) as Array<{
+        slug: string;
+        label: string;
+        category: string;
+        access: string;
+      }>
+    ).map((f) => [f.slug, f] as const)
   );
   const creditHours =
     typeof creditHoursRes.data === "number" && creditHoursRes.data > 0 ? creditHoursRes.data : 48;
@@ -402,7 +410,7 @@ export default async function VoyagesPage() {
     <div>
       <span className="mbr-eyebrow">The manifest</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Voyages.
+        The manifest.
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
         Passes are few by design. Claim one{profile?.tier === "global" ? ", bring up to two guests," : ""} or hold the
@@ -473,10 +481,17 @@ export default async function VoyagesPage() {
               v.kind === "port_day" ? 40 : v.distance_nm != null ? v.distance_nm * 10 : null;
             const knotsOnCompletion =
               baseFm != null ? Math.round(baseFm * (v.fathoms_multiplier ?? 1)) : null;
+            /* The badge names the format and how long it runs — the card says
+               what this is, not how it is filed. A sailing with no format yet
+               falls back to where it happens; a sailing with no stated end
+               drops the hours rather than guessing them. */
+            const hours = durationChip(v.starts_at, v.ends_at);
+            const badge = [format?.label ?? SETTING_LABEL[v.class] ?? "Afloat", hours]
+              .filter(Boolean)
+              .join(" · ");
             const meta = [
               logDate(v.starts_at, v.time_zone),
               logTime(v.starts_at, v.time_zone),
-              EVENT_CLASS_LABEL[v.class].toUpperCase(),
               ...(v.distance_nm != null ? [`${v.distance_nm} NM`] : []),
               price(v.price_cents),
               v.status === "weather_hold"
@@ -487,7 +502,7 @@ export default async function VoyagesPage() {
               <div key={v.id} className={i === 0 ? "ls-rise" : i < 4 ? `ls-rise-${Math.min(i, 3)}` : undefined}>
                 <Card
                   media={v.media}
-                  eyebrow={`${v.kind === "port_day" ? "Ashore" : "At sea"} · ${logDate(v.starts_at, v.time_zone)}`}
+                  eyebrow={badge}
                   title={v.title}
                   meta={meta}
                   footer={

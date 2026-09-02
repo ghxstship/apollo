@@ -18,7 +18,7 @@ export const STATUS_INITIAL: StatusState = { state: "idle" };
    code redeemed onto the application. */
 export const STAGES: Array<{ title: string; note: string }> = [
   { title: "Applied", note: "Received and read by a person, not a model." },
-  { title: "Port Day invite", note: "Come ashore once, as our guest." },
+  { title: "Invitation ashore", note: "Come ashore once, as our guest." },
   { title: "Vouched for", note: "A member's code on your file — if one sent you." },
   { title: "Aboard", note: "Card in hand, manifest open." },
 ];
@@ -38,7 +38,7 @@ export const REACHED: Record<ApplicationStage, number> = {
 export const STAGE_LINE: Record<ApplicationStage, string> = {
   received: "Received. A person reads it — not a filter.",
   review: "In front of a person now. A word follows within the week.",
-  invited: "Invited ashore. Pick a Port Day and come as our guest.",
+  invited: "Invited ashore. Pick a shore night and come as our guest.",
   aboard: "Aboard. Your member card is waiting behind the gangway.",
   declined: "Not this season.",
 };

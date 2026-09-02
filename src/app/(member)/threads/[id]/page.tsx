@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, Icon, StateBlock } from "@/components/ds";
-import { FAMILY_LABEL } from "@/lib/brand";
-import { logDateTime } from "@/lib/format";
+import { SETTING_LABEL, logDateTime } from "@/lib/format";
 import { getMember, type DirectoryMember, type Profile } from "../../data";
 import { Composer, ThreadLive } from "./live";
 
@@ -89,9 +88,10 @@ export default async function ThreadPage({
       : thread.kind === "direct"
         ? others[0]?.full_name ?? departedName ?? "A member"
         : thread.title ?? "Shoreside";
+  /* The thread header states where the sailing happens, not how it is filed. */
   const eyebrow =
     thread.kind === "crew"
-      ? FAMILY_LABEL[voyage?.class ?? "sea"] ?? "Sea Day"
+      ? SETTING_LABEL[voyage?.class ?? "sea"] ?? "Afloat"
       : thread.kind === "direct"
         ? "Direct"
         : "Shoreside";

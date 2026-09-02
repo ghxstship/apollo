@@ -168,8 +168,8 @@ export default async function StandingPage() {
 
       <p className="std-note">
         A price is the product and not a starting point. Where a product carries
-        no number, there is no number to withhold — the Captain&rsquo;s pass has
-        never had one and the record says so rather than printing a zero.
+        no number, there is no number to withhold — the record says so rather
+        than printing a zero.
       </p>
     </div>
   );

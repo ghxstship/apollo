@@ -289,7 +289,9 @@ export const LOGBOOK = {
   log: "The Passage Log",
   logLine: "Your season, on the record.",
   marks: "Marks",
-  markVerb: "rounded",
+  /* "Rounded" is real racing language for passing a buoy, and invisible to
+     anyone who has not raced. The mark is still a mark; you earn it. */
+  markVerb: "earned",
   regattas: "Regattas",
   regattaLine: "A regatta finishes. The standing is then history.",
   challenges: "Challenges",
@@ -335,14 +337,49 @@ export const CITY_CODES: Record<string, string> = {
   ibiza: "IBZ",
 };
 
-/* Event taxonomy — two families: a Charter (aboard) and a Table (ashore). Both
-   run the same class ladder by duration. The theme keys are styling only. */
-export const CLASS_CODES: Record<string, string> = { sea: "CHT", shore: "TBL", sky: "TBL" };
-export const FAMILY_LABEL: Record<string, string> = { sea: "Charter", shore: "Table", sky: "Table" };
+/* Event taxonomy, on two axes, because there were always two facts.
+
+   The old shape held one: sea | port | premium, where the first two say WHERE
+   and the third says HOW FAR THE CLUB GOES. Tangling them is why nothing could
+   file a pool social, and why a private charter — very much afloat — was
+   filed as neither sea nor port. Now:
+
+     SETTING            where it happens. Two values, operationally load-bearing:
+                        only ashore admits an unvetted guest, and hulls, weather
+                        holds, flotillas and muster all apply afloat only.
+     EXPERIENCE_CLASSES what kind of thing it is. Four rungs, and a format is
+                        free to be afloat AND premium, or ashore AND premium.
+
+   The Charter / Table family labels are gone with them. "Table" now means only
+   the blind dinner for six, which is the one thing it always actually meant. */
+
+export const SETTING_LABEL: Record<string, string> = {
+  sea: "Afloat",
+  shore: "Ashore",
+  /* Legacy rows only — the class enum still carries it; nothing writes it. */
+  sky: "Ashore",
+};
+
+export const EXPERIENCE_CLASS_IDS = ["open", "club", "premium", "exotic"] as const;
+export type ExperienceClassId = (typeof EXPERIENCE_CLASS_IDS)[number];
+
+export const EXPERIENCE_CLASSES: Record<ExperienceClassId, { label: string; what: string }> = {
+  open: { label: "Open", what: "A member's guest may come, vetted or not" },
+  club: { label: "Club", what: "The members' standard" },
+  premium: { label: "Premium", what: "The boat, or the room, is yours" },
+  exotic: { label: "Exotic", what: "Away from home water" },
+};
+
+/* The duration ladder keeps its three keys — they price the plans and gate the
+   class ceiling — and stops printing its names. Voyage, Expedition and Odyssey
+   were doing no work on screen: the real hours were always beside them, and
+   calling a three-hour pool social an Odyssey is the kind of grandiosity the
+   rest of this brand is careful to avoid. The key is plumbing; the label is
+   what a member reads. */
 export const SUB_CLASSES: Record<string, { label: string; note: string }> = {
-  voyage: { label: "Voyage", note: "Under 4 hours" },
-  expedition: { label: "Expedition", note: "4–8 hours" },
-  odyssey: { label: "Odyssey", note: "Over 8 hours" },
+  voyage: { label: "Up to 4 hours", note: "Under 4 hours" },
+  expedition: { label: "Up to 8 hours", note: "4–8 hours" },
+  odyssey: { label: "Any length", note: "Over 8 hours" },
 };
 
 export function knots(n: number): string {
@@ -429,4 +466,17 @@ export const BANNED_TERMS = [
   "Overnight",
   "leaderboard",
   "Leaderboard",
+  /* Retired 2026-09-02 with the two-axis taxonomy. The filing system stopped
+     being copy: a card names its format and its hours, never its class.
+
+     NOTE the bracket and quote rule at the top of this array applies here too.
+     Sea Day and Port Day are banned as prose only — the kind column still
+     stores sea_day and port_day, which no rendered page prints. */
+  "Sea Day",
+  "Port Day",
+  "Sea Days",
+  "Port Days",
+  "Plot Course",
+  "Chief Vibe Stew",
+  "Captain's Pass",
 ];

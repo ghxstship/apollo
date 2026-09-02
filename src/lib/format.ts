@@ -116,11 +116,15 @@ export function roman(n: number): string {
   return out;
 }
 
-/* Two families only — the sky key survives for legacy rows, styled as Port Day. */
-export const EVENT_CLASS_LABEL: Record<string, string> = {
-  sea: "Sea Day",
-  shore: "Port Day",
-  sky: "Port Day",
+/* Where it happens, and nothing else. Sea Day and Port Day named a filing
+   system rather than a day, and could not describe a pool social at all — what
+   a member reads on a card is now the format's own name and the hours. This
+   pair is the operational fact underneath: afloat or ashore. The sky key
+   survives for legacy rows. */
+export const SETTING_LABEL: Record<string, string> = {
+  sea: "Afloat",
+  shore: "Ashore",
+  sky: "Ashore",
 };
 
 export const TIER_LABEL: Record<string, string> = {

@@ -12,7 +12,7 @@ export default function Image() {
       <OgFrame
         eyebrow="THE SOCIAL CLUB FOR SEA AND SHORE"
         title={TAGLINE}
-        standfirst="Sea Days on the water. Port Days ashore. A crew worth the crossing."
+        standfirst="Sailings on the water. Shore nights ashore. A crew worth the crossing."
         meta={`SEA DAY · PORT DAY · ${CITY_CODES.miami} · ${CITY_CODES["los-angeles"]}`}
       />
     ),

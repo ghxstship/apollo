@@ -4,9 +4,10 @@ import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { TaglineMark } from "@/components/site/logo";
 import { SectionHeader } from "@/components/site/section-header";
-import { ANCHOR, CLUB_ZONE, CITY_CODES, SUB_CLASSES, TAGLINE } from "@/lib/brand";
-import { EVENT_CLASS_LABEL, logMeta, roman } from "@/lib/format";
+import { ANCHOR, CLUB_ZONE, CITY_CODES, TAGLINE } from "@/lib/brand";
+import { SETTING_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { moduleTables } from "@/lib/module-tables";
 import {
   depositChip,
   durationChip,
@@ -30,12 +31,17 @@ const STEPS: Array<[string, string]> = [
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const [{ data: voyages }, { data: harbors }, { data: posts }, { data: episodes }] =
-    await Promise.all([
+  const [
+    { data: voyages },
+    { data: harbors },
+    { data: posts },
+    { data: episodes },
+    { data: formatRows },
+  ] = await Promise.all([
       supabase
         .from("voyages")
         .select(
-          "id,slug,title,class,sub_class,status,starts_at,ends_at,distance_nm,time_zone,media,blurb,deposit_required,deposit_cents"
+          "id,slug,title,class,format,status,starts_at,ends_at,distance_nm,time_zone,media,blurb,deposit_required,deposit_cents"
         )
         .in("status", ["scheduled", "live", "weather_hold"])
       /* A sailing that has cast off is not on offer, whatever its status
@@ -60,7 +66,17 @@ export default async function HomePage() {
         .eq("state", "published")
         .order("number", { ascending: true })
         .limit(3),
+      /* The formats, once, mapped by slug below — a card reads the format's own
+         name, and reading the table per row would be one round trip per card.
+         Another module's table, reached through the moduleTables seam. */
+      moduleTables(supabase).from("activity_formats").select("slug, label"),
     ]);
+
+  const formatLabelOf = new Map(
+    ((formatRows ?? []) as Array<{ slug: string; label: string }>).map(
+      (f) => [f.slug, f.label] as const
+    )
+  );
 
   /* The harbors line, said by the data. */
   const WORDS = ["No harbors", "One harbor", "Two harbors", "Three harbors", "Four harbors"];
@@ -142,12 +158,17 @@ export default async function HomePage() {
               const cap = capacityById.get(v.id);
               const left = cap?.berths_left ?? null;
               const seats = "passes";
-              const sub = v.sub_class ? SUB_CLASSES[v.sub_class] : null;
-              /* Ship's-log chips: how long, which week, how many hulls, what
-                 holds a pass. Nothing that scores or hurries the reader. */
+              /* The badge: what this actually is, and how long it runs. The
+                 format names itself; a sailing that has not been filed under
+                 one falls back to where it happens. Hours are omitted rather
+                 than guessed when the sailing has no stated end. */
+              const formatLabel =
+                (v.format && formatLabelOf.get(v.format)) || SETTING_LABEL[v.class] || "Afloat";
+              const hours = durationChip(v.starts_at, v.ends_at);
+              /* Ship's-log chips: which week, how many hulls, what holds a
+                 pass. Nothing that scores or hurries the reader. */
               const meta = [
                 ...logMeta(v.starts_at, v.distance_nm, v.time_zone),
-                durationChip(v.starts_at, v.ends_at),
                 weekChip(v.starts_at),
                 v.class === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
                 v.deposit_required ? depositChip(v.deposit_cents) : null,
@@ -161,7 +182,7 @@ export default async function HomePage() {
                 >
                   <Card
                     media={v.media}
-                    eyebrow={`${EVENT_CLASS_LABEL[v.class]}${sub ? ` · ${sub.label}` : ""}`}
+                    eyebrow={`${formatLabel}${hours ? ` · ${hours}` : ""}`}
                     title={v.title}
                     meta={meta}
                     footer={

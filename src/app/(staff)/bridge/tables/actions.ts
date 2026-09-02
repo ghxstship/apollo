@@ -39,7 +39,7 @@ export async function createTable(
     .maybeSingle();
   if (nightError) return { error: ERR_LAND };
   if (!night) return { error: "That night is not on the board." };
-  if (night.class !== "shore") return { error: "Tables are laid on shore nights only — pick a Port Day." };
+  if (night.class !== "shore") return { error: "Tables are laid ashore only — pick a night ashore." };
   if (night.status !== "scheduled" && night.status !== "live")
     return { error: "That night is off the board. Tables go on a scheduled or live night." };
 

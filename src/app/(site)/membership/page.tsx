@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ds";
+import { SUB_CLASSES } from "@/lib/brand";
 import { SectionHeader } from "@/components/site/section-header";
 import { TaglineMark } from "@/components/site/logo";
 import { price } from "@/lib/format";
@@ -29,21 +30,20 @@ const PLAN_TYPES: Array<{ type: Plan["plan_type"]; name: string; blurb: string }
   { type: "guest", name: "Guest", blurb: "One event, member-sponsored" },
 ];
 
+/* The class tiers are numbered and named by their ceiling in hours. The ladder
+   words are gone from the page entirely: the hours were always beside them and
+   were always the fact a member was reading. The key still prices the plan and
+   gates the ceiling — it just does not print. The cell's own note keeps the
+   precise range, which is the half of the old string that was doing the work. */
 const TIER_HEADS: Array<[string, string]> = [
-  ["I", "Voyage"],
-  ["II", "Expedition"],
-  ["III", "Odyssey"],
+  ["I", SUB_CLASSES.voyage.label],
+  ["II", SUB_CLASSES.expedition.label],
+  ["III", SUB_CLASSES.odyssey.label],
 ];
-
-const CEILING_NOTE: Record<string, string> = {
-  voyage: "Through Voyage · under 4 hrs",
-  expedition: "Through Expedition · 4–8 hrs",
-  odyssey: "Through Odyssey · over 8 hrs",
-};
 
 const KNOTS: Array<[string, string]> = [
   ["10 KN / NM", "Every nautical mile under sail banks ten knots to your ledger."],
-  ["40 KN / Port Day", "A day ashore counts. Long tables, records, the golden hour."],
+  ["40 KN / shore night", "A night ashore counts. Long tables, records, the golden hour."],
   ["250 KN / referral", "When someone you sent comes aboard, the ledger remembers."],
 ];
 
@@ -126,11 +126,13 @@ export default async function MembershipPage() {
                       </span>
                       <span className="ws-plans__ev">
                         {p.events_per_month === 0
-                          ? "Waitlist + one Port Day invitation"
+                          ? "Waitlist + one invitation ashore"
                           : `${p.events_per_month} ${p.events_per_month === 1 ? "event" : "events"} / mo`}
                       </span>
-                      {p.class_ceiling ? (
-                        <span className="ws-plans__note">{CEILING_NOTE[p.class_ceiling]}</span>
+                      {p.class_ceiling && SUB_CLASSES[p.class_ceiling] ? (
+                        <span className="ws-plans__note">
+                          {SUB_CLASSES[p.class_ceiling].note}
+                        </span>
                       ) : null}
                       {duesOpen && p.price_cents > 0 ? (
                         <JoinControl
@@ -176,7 +178,7 @@ export default async function MembershipPage() {
         <SectionHeader eyebrow="Crew wanted, member first" title="Request invitation." />
         <p style={{ color: "var(--text-2)", maxWidth: "52ch", marginTop: -24 }}>
           A person reads every application. Two member signatures shorten the wait;
-          one Port Day as a guest usually settles it.
+          one night ashore as a guest usually settles it.
         </p>
         <ApplyForm />
         <p style={{ fontSize: 13, color: "var(--text-2)", marginTop: 20 }}>

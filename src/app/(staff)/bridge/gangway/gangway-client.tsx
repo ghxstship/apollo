@@ -136,7 +136,7 @@ function csvCell(v: string): string {
 export function GangwayConsole({
   voyageId,
   voyageTitle,
-  family,
+  identity,
   departs,
   timeZone,
   muster,
@@ -145,7 +145,10 @@ export function GangwayConsole({
 }: {
   voyageId: string;
   voyageTitle: string;
-  family: string;
+  /* What this sailing is, as a member reads it: the format's own name, or
+     where it happens when it carries no format. It replaced the event-family
+     label, which named a filing system the club no longer speaks in. */
+  identity: string;
   departs: string;
   /* The sailing's own clock. A boarding stamp read on the render host's zone
      is a stamp on nobody's clock — and this screen is the audit record for who
@@ -426,9 +429,9 @@ export function GangwayConsole({
 
   return (
     <>
-      {/* Event state in the data register — family first, count ticks live. */}
+      {/* Event state in the data register — identity first, count ticks live. */}
       <div className="ls-mono-data hm-gang__meta">
-        {family.toUpperCase()} · {voyageTitle.replace(/\.+$/, "").toUpperCase()} · {departs} · {checked}/{rows.length} ABOARD
+        {identity.toUpperCase()} · {voyageTitle.replace(/\.+$/, "").toUpperCase()} · {departs} · {checked}/{rows.length} ABOARD
       </div>
       <div className="hm-sec" style={{ marginTop: 20 }}>
         <Select

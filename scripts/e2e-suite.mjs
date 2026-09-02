@@ -715,7 +715,7 @@ async function documentRules(p) {
   const staffClauses = await stf.get("clause_versions?select=body&limit=5");
   note("staff", "staff read the clause library", (staffClauses.data || []).length > 0, `got ${staffClauses.status}`);
 
-  // Conditional assembly: a Sea Day carries clauses a Port Day does not.
+  // Conditional assembly: an afloat sailing carries clauses an ashore one does not.
   const ver = await reg.rpc("published_version", { p_document_code: "member-waiver" });
   const vid = typeof ver.data === "string" ? ver.data : null;
   note("regional", "the member waiver is published", Boolean(vid), `got ${ver.status}`);
@@ -723,7 +723,7 @@ async function documentRules(p) {
     const sea = await reg.rpc("render_document", { p_document_version_id: vid, p_context: { class: "sea" } });
     const shore = await reg.rpc("render_document", { p_document_version_id: vid, p_context: { class: "shore" } });
     const seaLen = (sea.data || "").length, shoreLen = (shore.data || "").length;
-    note("regional", "a Sea Day renders more than a Port Day", seaLen > shoreLen && shoreLen > 0, `${seaLen} vs ${shoreLen}`);
+    note("regional", "an afloat sailing renders more than an ashore one", seaLen > shoreLen && shoreLen > 0, `${seaLen} vs ${shoreLen}`);
     note("regional", "the sea clauses stay off the shore rendering",
       /swim/i.test(sea.data || "") && !/swim/i.test(shore.data || ""), "swim-competency placement");
   }
@@ -2683,7 +2683,7 @@ async function ratioAndRadarRules(p) {
   note("regional", "reads the shared anchor once opened", (nowVisible.data || []).length === 1, JSON.stringify(nowVisible.data).slice(0, 80));
 
   /* Twenty-four hours, both sides, no extension. Two halves: the club may cut a
-     contact short — the Chief Vibe Stew needs that after an incident on deck —
+     contact short — the Chief Stew needs that after an incident on deck —
      and nobody may push one out. The second half used to hold only because no
      UPDATE policy existed, which is a rule kept by an absence and lasts exactly
      until someone needs the legitimate half. */
@@ -3197,15 +3197,18 @@ async function activityRules(p) {
   /* --- the catalogue's own arithmetic --- */
   const priced = await stf.post("activity_formats", {
     slug: `e2e-${stamp}-priced`, category: "port", label: "E2E priced invite",
-    blurb: "E2E", division: "bound", access: "invite", price_cents: 1000,
+    blurb: "E2E", division: "bound", access: "invite", experience_class: "club", price_cents: 1000,
   });
   note("staff", "an invitation-only format cannot carry a price", priced.status >= 400,
     `got ${priced.status}`);
+  /* `access` used to spell this 'open'; 'open' is now an experience class and
+     the access mode is 'bookable'. Written the old way the insert still fails,
+     but on the enum rather than on the pricing rule this check is about. */
   const unpriced = await stf.post("activity_formats", {
-    slug: `e2e-${stamp}-open`, category: "port", label: "E2E open unpriced",
-    blurb: "E2E", division: "bound", access: "open", price_cents: null,
+    slug: `e2e-${stamp}-bookable`, category: "port", label: "E2E bookable unpriced",
+    blurb: "E2E", division: "bound", access: "bookable", experience_class: "open", price_cents: null,
   });
-  note("staff", "a format open to buy cannot withhold its price", unpriced.status >= 400,
+  note("staff", "a bookable format cannot withhold its price", unpriced.status >= 400,
     `got ${unpriced.status}`);
 
   /* --- the one rule in the Activity kit that changes behaviour ---
@@ -3891,9 +3894,10 @@ async function decisionRules(p) {
 
 /* ---------- W10. the decisions of September 2 ----------
    A Regional pass sails from home; a hull above the club figure names its
-   certificate; the Captain's Pass states what it holds; the keys console
-   waits for a partner. Everything this section moves — a fixture's home
-   harbor, a sailing's harbor, a hull figure — it puts back. */
+   certificate; the keys console waits for a partner. The pass-contents pair
+   that sat here is retired — see taxonomyOfSept2. Everything this section
+   moves — a fixture's home harbor, a sailing's harbor, a hull figure — it
+   puts back. */
 async function decisionsOfSept2(p) {
   const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national), anon = rest(null);
   const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
@@ -3983,14 +3987,11 @@ async function decisionsOfSept2(p) {
   const certDel = await stf.del(`voyages?id=eq.${certVid}`);
   note("staff", "the certificate fixture is struck", certBack.status < 300 && certDel.status < 300, `got ${certBack.status}/${certDel.status}`);
 
-  // — the captain's pass states what it holds —
-  const pass = await anon.get("club_products?slug=eq.captains_pass&select=slug,includes,price_cents,published");
-  const holds = Array.isArray(pass.data?.[0]?.includes) ? pass.data[0].includes : [];
-  note("anon", "the captain's pass states what it holds",
-    holds.length === 5 && holds.includes("One guest slot") && holds.includes("Radar for the sailing"),
-    `got ${pass.status} ${JSON.stringify(holds).slice(0, 160)}`);
-  note("anon", "and still names no price, unpublished",
-    pass.data?.[0]?.price_cents === null && pass.data?.[0]?.published === false, JSON.stringify(pass.data).slice(0, 120));
+  /* The morning's "the pass states what it holds" pair lived here. The
+     afternoon retired the product entirely — membership is reached by
+     invitation or application, and what admits a member to one sailing is a
+     boarding pass — so the standing assertion moved to taxonomyOfSept2, which
+     measures the retirement instead of the contents. */
 
   // — the keys console waits for a partner —
   /* One dial, read the way the Bridge reads it. The route and the tab follow
@@ -4011,6 +4012,115 @@ async function decisionsOfSept2(p) {
     note("staff", "and the bridge shows no tab for it", bridge.status === 200 && !hasTab,
       bridge.status === 200 ? 'href="/bridge/keys" is in the nav' : `got ${bridge.status}`);
   }
+}
+
+/* ---------- W11. two axes, and what came with them ----------
+   The afternoon of September 2. `category` held WHERE and HOW FAR in one
+   column, so nothing could file a pool social and a private charter — very
+   much afloat — was filed as neither sea nor port. Now `category` says only
+   where (sea | port) and `experience_class` says what kind (open | club |
+   premium | exotic), on both the format and the sailing.
+
+   Three things travelled with the split and are measured here too: 'open' left
+   the access column for the class column and the mode is 'bookable'; the
+   sub_class ladder narrowed to the three rungs the app has always known, which
+   closes the hole a sailing filed as a 'trek' used to fall through; and the
+   Captain's Pass stopped being a product, because membership is reached by
+   invitation or application and what admits a member to one sailing is a
+   boarding pass.
+
+   Everything this section creates is namespaced and struck in a finally. */
+async function taxonomyOfSept2(p) {
+  const stf = rest(p.staff), anon = rest(null);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+  const plus30 = new Date(Date.now() + 30 * 24 * 3600e3).toISOString();
+  const said = (r) => String(JSON.stringify(r.data ?? "")).toLowerCase();
+  const CLASSES = ["open", "club", "premium", "exotic"];
+  const SETTINGS = ["sea", "port"];
+
+  // — the catalogue states both axes, on every row —
+  const cat = await stf.get("activity_formats?select=slug,category,experience_class,access,active&order=slug");
+  const rows = Array.isArray(cat.data) ? cat.data : [];
+  const live = rows.filter((f) => f.active);
+  note("staff", "the format catalogue reads back with both axes",
+    cat.status === 200 && live.length > 0, `got ${cat.status}, ${live.length} active of ${rows.length}`);
+  const offClass = live.filter((f) => !CLASSES.includes(f.experience_class));
+  note("staff", "every active format names one of the four experience classes",
+    live.length > 0 && offClass.length === 0,
+    offClass.map((f) => `${f.slug}=${f.experience_class}`).join(", ").slice(0, 140));
+  const offSetting = live.filter((f) => !SETTINGS.includes(f.category));
+  note("staff", "and a category that says only where it happens",
+    live.length > 0 && offSetting.length === 0,
+    offSetting.map((f) => `${f.slug}=${f.category}`).join(", ").slice(0, 140));
+
+  // — 'open' left the access column when it became an experience class —
+  const stillOpen = rows.filter((f) => f.access === "open");
+  note("staff", "no format is still filed access=open — the mode is bookable",
+    rows.length > 0 && stillOpen.length === 0, stillOpen.map((f) => f.slug).join(", ").slice(0, 140));
+  const openSlug = `e2e-${stamp}-access-open`;
+  const openBack = await stf.post("activity_formats", {
+    slug: openSlug, category: "port", label: "E2E retired access", blurb: "E2E",
+    division: "bound", access: "open", experience_class: "open", price_cents: 1000,
+  });
+  try {
+    note("staff", "and the access column refuses to take it back",
+      openBack.status >= 400, `got ${openBack.status} ${said(openBack).slice(0, 100)}`);
+  } finally {
+    if (openBack.status === 201) await stf.del(`activity_formats?slug=eq.${openSlug}`);
+  }
+
+  // — a sailing carries the class its format states —
+  const unfiled = await stf.get("voyages?experience_class=is.null&select=id,slug&limit=5");
+  note("staff", "no sailing is on the water without an experience class",
+    unfiled.status === 200 && (unfiled.data ?? []).length === 0,
+    `got ${unfiled.status} ${JSON.stringify(unfiled.data ?? []).slice(0, 120)}`);
+
+  /* Read the wanted class off the catalogue rather than typing it here: the
+     trigger's job is to copy the format's answer, and a hard-coded expectation
+     would only prove this file and that row were edited on the same day. */
+  const target = live.find((f) => f.category === "sea" && f.experience_class !== "club")
+              ?? live.find((f) => f.experience_class !== "club");
+  const vmk = await stf.post("voyages", {
+    slug: `e2e-xclass-${stamp}`, title: "E2E fixture sailing.", class: "sea",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, price_cents: 0,
+    fathoms_multiplier: 0, distance_nm: 0,
+  });
+  const xVid = vmk.data?.[0]?.id;
+  try {
+    note("staff", "an unfiled afloat sailing falls to club",
+      vmk.status === 201 && vmk.data?.[0]?.experience_class === "club",
+      `got ${vmk.status} ${said(vmk).slice(0, 100)}`);
+    const filed = await stf.patch(`voyages?id=eq.${xVid}`, { format: target?.slug });
+    note("staff", "and the class follows the format it is filed under",
+      !!target && filed.status < 300 && filed.data?.[0]?.experience_class === target.experience_class,
+      `${target?.slug} states ${target?.experience_class}, sailing reads ${filed.data?.[0]?.experience_class}`);
+
+    // — the duration ladder admits three rungs and no more —
+    /* trek, excursion and overland were admitted by the old CHECK and known to
+       nothing else, so a sailing filed as a trek skipped the class ceiling
+       entirely. The CHECK is the fix; this is the proof it holds. */
+    const trek = await stf.patch(`voyages?id=eq.${xVid}`, { sub_class: "trek" });
+    note("staff", "the duration ladder refuses a trek",
+      trek.status >= 400 && /sub_class/.test(said(trek)), `got ${trek.status} ${said(trek).slice(0, 110)}`);
+  } finally {
+    const del = await stf.del(`voyages?id=eq.${xVid}`);
+    note("staff", "the taxonomy fixture is struck", del.status < 300, `got ${del.status}`);
+  }
+
+  // — the Captain's Pass is not a product; admission is a boarding pass —
+  const retired = await stf.get("club_products?slug=eq.captains_pass&select=slug,active,published");
+  note("staff", "the retired standing place is inactive and unpublished",
+    retired.data?.[0]?.active === false && retired.data?.[0]?.published === false,
+    JSON.stringify(retired.data).slice(0, 120));
+  const shelf = await anon.get("club_products?slug=eq.captains_pass&select=slug");
+  note("anon", "and is off the shelf signed out",
+    shelf.status === 200 && (shelf.data ?? []).length === 0,
+    `got ${shelf.status} ${JSON.stringify(shelf.data).slice(0, 80)}`);
+  const admits = await anon.get("club_products?slug=in.(single_pass,couple_pass)&select=slug,label&order=slug");
+  const labelOf = (s) => (admits.data ?? []).find((r) => r.slug === s)?.label;
+  note("anon", "what admits a member to one sailing is a boarding pass",
+    labelOf("single_pass") === "Single boarding pass" && labelOf("couple_pass") === "Couple boarding pass",
+    `got ${admits.status} ${JSON.stringify(admits.data).slice(0, 140)}`);
 }
 
 async function membershipRules(p) {
@@ -4230,6 +4340,7 @@ async function main() {
   await crawlRules(personas);
   await decisionRules(personas);
   await decisionsOfSept2(personas);
+  await taxonomyOfSept2(personas);
   for (const [who, before] of Object.entries(kitBefore)) {
     const after = await knotsFor(personas[who], personas.staff);
     note(who, "activity, charter and membership leave the ledger as they found it",

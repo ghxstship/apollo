@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CLUB_ZONE } from "@/lib/brand";
+import { CLUB_ZONE, SETTING_LABEL } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Switch, Textarea, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -38,17 +38,18 @@ const TIER_OPTIONS = [
   { value: "global", label: "Global" },
 ];
 
+/* Where the sailing happens — the setting axis, not the old family codes. */
 const CLASS_OPTIONS = [
-  { value: "", label: "Either family" },
-  { value: "sea", label: "Sea Day" },
-  { value: "shore", label: "Port Day" },
+  { value: "", label: "Either setting" },
+  { value: "sea", label: SETTING_LABEL.sea },
+  { value: "shore", label: SETTING_LABEL.shore },
 ];
 
 function conditionLine(c: RuleConditions, harborLabel: (slug: string) => string): string {
   const parts: string[] = [];
   if (c.tier) parts.push(c.tier.toUpperCase());
   if (c.harbor) parts.push(harborLabel(c.harbor).toUpperCase());
-  if (c.class) parts.push(c.class === "sea" ? "SEA DAY" : "PORT DAY");
+  if (c.class) parts.push((SETTING_LABEL[c.class] ?? SETTING_LABEL.shore).toUpperCase());
   return parts.length ? parts.join(" · ") : "EVERYONE";
 }
 
@@ -197,7 +198,7 @@ export function AutomationsClient({
         <div className="hm-form">
           <Input
             label="Name"
-            placeholder="Word to Global members on every Sea Day"
+            placeholder="Word to Global members on every sailing afloat"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />

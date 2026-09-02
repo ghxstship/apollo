@@ -14,11 +14,11 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
     [
       [
         "I applied. Now what?",
-        "A person reads it, a Port Day invite follows within the week, two members sign, and you're aboard. No black box — read where you stand at any hour on the application status page.",
+        "A person reads it, an invitation ashore follows within the week, two members sign, and you're aboard. No black box — read where you stand at any hour on the application status page.",
       ],
       [
         "Can I visit before joining?",
-        "Yes — that's the point. Redeem a member's invite code for one Port Day as their guest.",
+        "Yes — that's the point. Redeem a member's invite code for one shore night as their guest.",
       ],
       [
         "I've never sailed.",
@@ -39,7 +39,7 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
       ],
       [
         "What are knots worth?",
-        "Ten per nautical mile, forty per Port Day, two hundred fifty per referral who joins. More knots, farther water — spend them on rewards money can't buy here.",
+        "Ten per nautical mile, forty per shore night, two hundred fifty per referral who joins. More knots, farther water — spend them on rewards money can't buy here.",
       ],
     ],
   ],

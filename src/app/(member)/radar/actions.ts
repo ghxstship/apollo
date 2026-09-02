@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
 
-/* Radar — Plot Course, the lock, and the envelope.
+/* Radar — the pick, the lock, and the envelope.
 
    There is no `pass` action in this file, and there will not be one. "A PASS IS
    NEVER RECORDED, NEVER SHOWN, NEVER COUNTED": the database has no column to
@@ -44,7 +44,7 @@ export async function plotCourse(
     if (/duplicate|already exists/i.test(error.message ?? "")) return { ok: true };
     const said = await voiceWith(supabase, error);
     return {
-      error: said === REFUSED_MESSAGE ? "Plot course from your own pass, aboard." : said,
+      error: said === REFUSED_MESSAGE ? "Pick from your own pass, aboard." : said,
     };
   }
   revalidatePath("/radar");

@@ -10,7 +10,9 @@ import { LinkButton } from "./link-button";
 import { useModal } from "@/components/ds/use-modal";
 
 const LINKS: Array<[string, string]> = [
-  ["/charters", "Charters"],
+  /* The route stays /charters; the listing has one name everywhere it is
+     linked — nav, footer, and the page's own title. */
+  ["/charters", "The Manifest"],
   ["/membership", "Casting"],
   ["/episodes", "Episodes"],
   ["/gallery", "Gallery"],

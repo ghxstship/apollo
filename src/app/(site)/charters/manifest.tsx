@@ -9,8 +9,11 @@ export interface ManifestItem {
   slug: string;
   title: string;
   cls: "sea" | "shore" | "sky";
-  clsLabel: string;
-  kindLabel: string;
+  /** The format's own name — "Sandbar Social" — or where it happens when the
+      sailing carries no format yet. Never a filing-system phrase. */
+  formatLabel: string;
+  /** "7 HRS", or empty when the sailing has no stated end. */
+  hours: string;
   status: string;
   date: string;
   time: string;
@@ -22,7 +25,6 @@ export interface ManifestItem {
   /** "ON SALE OCT 12 · 18:00" while the drop hour is still ahead; null once open. */
   onSale: string | null;
   blurb: string | null;
-  duration: string | null;
   week: string;
   fleet: string | null;
   deposit: string | null;
@@ -36,10 +38,12 @@ export interface ManifestItem {
   startsMs: number;
 }
 
+/* Where it happens, which is the only axis a reader can filter on usefully —
+   the format's own name rides on each row instead. */
 const FILTERS: Array<{ id: string; label: string }> = [
   { id: "all", label: "All" },
-  { id: "sea", label: "Sea Day" },
-  { id: "shore", label: "Port Day" },
+  { id: "sea", label: "Afloat" },
+  { id: "shore", label: "Ashore" },
 ];
 
 const MONTHS = [
@@ -90,7 +94,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
     return keys.map((key) => ({ id: key, label: monthLabel(key, spansYears) }));
   }, [items]);
 
-  /* Legacy sky-class rows read as Port Day. */
+  /* Legacy sky-class rows read as ashore. */
   const list = React.useMemo(() => {
     const filtered = items.filter(
       (v) =>
@@ -108,7 +112,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
     <>
       <div className="ws-vcontrols">
         <div className="ws-vfilters">
-          <span className="ws-vfilters__label">Class</span>
+          <span className="ws-vfilters__label">Setting</span>
           {FILTERS.map((f) => (
             <Tag key={f.id} active={cls === f.id} onClick={() => setCls(f.id)}>
               {f.label}
@@ -169,7 +173,6 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
           const meta = [
             v.coordinates,
             v.distance,
-            v.duration,
             v.week,
             v.fleet,
             /* Before the drop hour the count is not an offer — the hour is. */
@@ -193,8 +196,8 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
                 </div>
                 <div>
                   <span className="ls-eyebrow ws-vrow__eyebrow">
-                    {v.clsLabel}
-                    {v.kindLabel ? ` · ${v.kindLabel}` : ""}
+                    {v.formatLabel}
+                    {v.hours ? ` · ${v.hours}` : ""}
                   </span>
                   <div className="ws-vrow__title">
                     {v.title}

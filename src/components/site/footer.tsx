@@ -26,7 +26,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
           </div>
           <div className="ws-footer__col">
             <b>The club</b>
-            <Link href="/charters">Voyages</Link>
+            <Link href="/charters">The Manifest</Link>
             <Link href="/membership">Membership</Link>
             <Link href="/episodes">Episodes</Link>
             <Link href="/gallery">Gallery</Link>

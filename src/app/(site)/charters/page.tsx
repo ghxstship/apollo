@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { CITY_CODES, SUB_CLASSES } from "@/lib/brand";
-import { EVENT_CLASS_LABEL, logDate, logTime, price } from "@/lib/format";
+import { CITY_CODES } from "@/lib/brand";
+import { SETTING_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
 import {
@@ -15,9 +15,9 @@ import { VoyageManifest, type ManifestItem } from "./manifest";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/charters" },
-  title: "Voyages",
+  title: "The Manifest",
   description:
-    "Every Sea Day and Port Day on the season's manifest. Passes are few by design.",
+    "Every sailing on the season's manifest, afloat and ashore. Passes are few by design.",
 };
 
 export default async function VoyagesPage() {
@@ -47,21 +47,26 @@ export default async function VoyagesPage() {
     supabase.from("harbors").select("*").order("position", { ascending: true }),
     /* A format's access decides whether a sailing is on offer at all. Invite
        and on-request formats are refused at the booking guard, so listing them
-       as passes would be advertising a door that does not open. Another
-       module's table, reached through the moduleTables seam. */
-    moduleTables(supabase).from("activity_formats").select("slug, access"),
+       as passes would be advertising a door that does not open. Its label is
+       what a row actually reads — the format names itself, once, read here and
+       mapped by slug rather than fetched per row. Another module's table,
+       reached through the moduleTables seam. */
+    moduleTables(supabase).from("activity_formats").select("slug, label, access"),
     /* Series templates are the pattern a series is cut from, not sailings —
        they carry a date because the cloner needs one to shift from. */
     supabase.from("voyage_series").select("template_voyage_id"),
   ]);
 
-  const accessOf = new Map(
-    ((formatRows ?? []) as Array<{ slug: string; access: string }>).map((f) => [f.slug, f.access])
+  const formatBySlug = new Map(
+    ((formatRows ?? []) as Array<{ slug: string; label: string; access: string }>).map(
+      (f) => [f.slug, f] as const
+    )
   );
+  const accessOf = (slug: string | null) => (slug ? formatBySlug.get(slug)?.access ?? null : null);
   const templateIds = new Set((seriesRows ?? []).map((s) => s.template_voyage_id));
   const listed = (voyages ?? []).filter((v) => {
     if (templateIds.has(v.id)) return false;
-    const access = v.format ? accessOf.get(v.format) : null;
+    const access = accessOf(v.format);
     return access !== "invite" && access !== "on_request";
   });
 
@@ -82,8 +87,13 @@ export default async function VoyagesPage() {
       slug: v.slug,
       title: v.title,
       cls: v.class,
-      clsLabel: EVENT_CLASS_LABEL[v.class],
-      kindLabel: (v.sub_class && SUB_CLASSES[v.sub_class]?.label) || "",
+      /* The badge names the format and how long it runs. A sailing with no
+         format yet falls back to where it happens — afloat or ashore — never
+         to a filing-system phrase. */
+      formatLabel:
+        (v.format && formatBySlug.get(v.format)?.label) || SETTING_LABEL[v.class] || "Afloat",
+      /* Omitted rather than guessed when the sailing has no end. */
+      hours: durationChip(v.starts_at, v.ends_at) ?? "",
       status: v.status,
       date: logDate(v.starts_at, v.time_zone),
       time: logTime(v.starts_at, v.time_zone),
@@ -94,7 +104,6 @@ export default async function VoyagesPage() {
       seatsWord: "passes",
       onSale: notYetOnSale && v.sale_opens_at ? onSaleChip(v.sale_opens_at, v.time_zone) : null,
       blurb: v.blurb,
-      duration: durationChip(v.starts_at, v.ends_at),
       week: weekChip(v.starts_at),
       fleet: v.class === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
       deposit: v.deposit_required ? depositChip(v.deposit_cents) : null,
@@ -115,10 +124,10 @@ export default async function VoyagesPage() {
     <div className="ls-container">
       <div className="ws-phead">
         <span className="ls-eyebrow">The manifest</span>
-        <h1>Voyages.</h1>
+        <h1>The manifest.</h1>
         <p className="ws-phead__sub">
-          Every Sea Day and Port Day on the season&rsquo;s manifest. Passes are few by
-          design — reserve early, arrive rested.
+          Every sailing on the season&rsquo;s manifest, afloat and ashore. Passes are
+          few by design — reserve early, arrive rested.
         </p>
       </div>
       <VoyageManifest items={items} />

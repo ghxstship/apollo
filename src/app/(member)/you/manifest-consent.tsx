@@ -26,7 +26,7 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
         <p>
           {on
             ? "Members looking at a charter you are aboard can see you are sailing."
-            : "You sail unlisted. The crew still hold your pass; the other members see only that a berth is taken."}
+            : "You sail unlisted. The crew still hold your boarding pass; the other members see only that a seat is taken."}
         </p>
         {failed ? (
           <p style={{ color: "var(--siren)" }}>That didn&rsquo;t save. Try again, or hail Shoreside.</p>

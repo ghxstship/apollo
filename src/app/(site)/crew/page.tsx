@@ -24,7 +24,7 @@ const ROLES: Array<{
       "Rig, teach, tell the truth about the weather. ASA cert or equivalent scar tissue.",
   },
   {
-    title: "Port Day lead",
+    title: "Shore lead",
     dept: "Ashore",
     type: "Full time",
     port: "Los Angeles",

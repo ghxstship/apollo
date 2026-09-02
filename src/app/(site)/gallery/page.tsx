@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CLUB_ZONE, FAMILY_LABEL } from "@/lib/brand";
-import { logDate, roman } from "@/lib/format";
+import { CLUB_ZONE } from "@/lib/brand";
+import { SETTING_LABEL, logDate, roman } from "@/lib/format";
 import { frameGroups, GALLERY_FRAME_LIMIT } from "@/components/site/voyage-data";
 
 export const metadata: Metadata = {
@@ -26,18 +26,18 @@ const TILES: Array<{
   tall?: boolean;
   wide?: boolean;
 }> = [
-  { media: "dawn", cap: "First light, Catalina bound", meta: "Sea Day · Jul 26", wide: true },
-  { media: "dusk", cap: "Sirens' night, Venice", meta: "Port Day · Jul 10" },
-  { media: "day", cap: "Rail down off Point Dume", meta: "Sea Day · Jul 04", tall: true },
-  { media: "day", cap: "Start line, boat two", meta: "Sea Day · Jun 28" },
-  { media: "day", cap: "The long table at Two Harbors", meta: "Port Day · Jun 21", wide: true },
-  { media: "dawn", cap: "Coffee below deck", meta: "Sea Day · Jun 14" },
-  { media: "dusk", cap: "Records on, wind down", meta: "Port Day · May 31", tall: true },
-  { media: "day", cap: "Swim call at anchor", meta: "Sea Day · May 17" },
-  { media: "dawn", cap: "Watch change, 05:40", meta: "Sea Day · May 24" },
-  { media: "dusk", cap: "The season's toast", meta: "Port Day · May 10" },
-  { media: "dawn", cap: "Fleet leaving the marina", meta: "Sea Day · May 03", wide: true },
-  { media: "day", cap: "The committee boat disagrees", meta: "Sea Day · Jun 07" },
+  { media: "dawn", cap: "First light, Catalina bound", meta: "Afloat · Jul 26", wide: true },
+  { media: "dusk", cap: "Sirens' night, Venice", meta: "Ashore · Jul 10" },
+  { media: "day", cap: "Rail down off Point Dume", meta: "Afloat · Jul 04", tall: true },
+  { media: "day", cap: "Start line, boat two", meta: "Afloat · Jun 28" },
+  { media: "day", cap: "The long table at Two Harbors", meta: "Ashore · Jun 21", wide: true },
+  { media: "dawn", cap: "Coffee below deck", meta: "Afloat · Jun 14" },
+  { media: "dusk", cap: "Records on, wind down", meta: "Ashore · May 31", tall: true },
+  { media: "day", cap: "Swim call at anchor", meta: "Afloat · May 17" },
+  { media: "dawn", cap: "Watch change, 05:40", meta: "Afloat · May 24" },
+  { media: "dusk", cap: "The season's toast", meta: "Ashore · May 10" },
+  { media: "dawn", cap: "Fleet leaving the marina", meta: "Afloat · May 03", wide: true },
+  { media: "day", cap: "The committee boat disagrees", meta: "Afloat · Jun 07" },
 ];
 
 export default async function GalleryPage() {
@@ -69,7 +69,9 @@ export default async function GalleryPage() {
               </h2>
               <span className="gl-group__meta">
                 {[
-                  FAMILY_LABEL[g.cls],
+                  /* Where it happened — the group heading is a place and a
+                     date, not a filing system. */
+                  SETTING_LABEL[g.cls],
                   logDate(g.startsAt, CLUB_ZONE),
                   roman(new Date(g.startsAt).getFullYear()),
                   g.harborCode,
@@ -91,7 +93,7 @@ export default async function GalleryPage() {
                     <span className="gl-tile__cap">
                       <b>{f.caption}</b>
                       <span>
-                        {FAMILY_LABEL[g.cls]} · {logDate(g.startsAt, CLUB_ZONE)}
+                        {SETTING_LABEL[g.cls]} · {logDate(g.startsAt, CLUB_ZONE)}
                       </span>
                     </span>
                   ) : null}

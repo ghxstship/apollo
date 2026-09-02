@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, Icon, Stat, Tag } from "@/components/ds";
-import { CLUB_ZONE, CITY_CODES, CURRENCY, FAMILY_LABEL, knots } from "@/lib/brand";
-import { logDate, roman, yearIn } from "@/lib/format";
+import { CLUB_ZONE, CITY_CODES, CURRENCY, knots } from "@/lib/brand";
+import { SETTING_LABEL, logDate, roman, yearIn } from "@/lib/format";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
 import { moduleTables } from "@/lib/module-tables";
@@ -181,7 +181,8 @@ export default async function MemberPage({
               <ul className="dir-shared">
                 {both.map((v) => (
                   <li key={v.id}>
-                    <span className="mbr-mono">{FAMILY_LABEL[v.class] ?? "Sea Day"}</span>
+                    {/* Shared water, so the fact is where it happened. */}
+                    <span className="mbr-mono">{SETTING_LABEL[v.class] ?? "Afloat"}</span>
                     <b>{v.title}</b>
                     <span className="mbr-mono">{logDate(v.starts_at, zone)}</span>
                   </li>

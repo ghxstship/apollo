@@ -44,7 +44,7 @@ const PHASE_WINDOW: Record<string, string> = {
 
 const PHASE_OWNER: Record<string, string> = {
   arrival: "Boarding lead",
-  atmosphere: "Chief Vibe Stew",
+  atmosphere: "Chief Stew",
   appetite: "Bar lead",
   activity: "Deck crew",
   afterglow: "Producer",

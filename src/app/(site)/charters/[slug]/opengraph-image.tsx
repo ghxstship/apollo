@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { ANCHOR, CITY_CODES, FAMILY_LABEL, SUB_CLASSES } from "@/lib/brand";
+import { ANCHOR, CITY_CODES, SETTING_LABEL, SUB_CLASSES } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
@@ -22,8 +22,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       (
         <OgFrame
           eyebrow="THE MANIFEST"
-          title="Voyages."
-          meta="SEA DAY · PORT DAY · PASSES ARE FEW BY DESIGN"
+          title="The manifest."
+          meta="AFLOAT · ASHORE · PASSES ARE FEW BY DESIGN"
         />
       ),
       { ...size }
@@ -34,10 +34,10 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     ? await supabase.from("harbors").select("slug").eq("id", voyage.harbor_id).maybeSingle()
     : { data: null };
 
-  const family = FAMILY_LABEL[voyage.class] ?? FAMILY_LABEL.sea;
+  const setting = SETTING_LABEL[voyage.class] ?? SETTING_LABEL.sea;
   const sub = voyage.sub_class ? SUB_CLASSES[voyage.sub_class] : null;
   const meta = [
-    family,
+    setting,
     sub?.label,
     logDate(voyage.starts_at, voyage.time_zone),
     harbor?.slug ? CITY_CODES[harbor.slug] : null,
@@ -49,7 +49,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   return new ImageResponse(
     (
       <OgFrame
-        eyebrow={family.toUpperCase()}
+        eyebrow={setting.toUpperCase()}
         title={voyage.title}
         standfirst={voyage.blurb}
         meta={meta}

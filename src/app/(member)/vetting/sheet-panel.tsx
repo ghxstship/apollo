@@ -16,7 +16,7 @@ import {
 import { saveDrinks, saveFlags, setBoundary } from "./actions";
 
 /* The Preference Sheet, three parts. Every answer here is read by the vetting
-   team and the Chief Vibe Stew and by nobody else — never by another guest,
+   team and the crew who run the day and by nobody else — never by another guest,
    never in Radar. That is enforced by RLS on preference_sheets and
    preference_boundaries, not by this component keeping quiet.
 
@@ -153,7 +153,7 @@ export function SheetPanel({
         </div>
         <p className="vet-note">
           Two short lists, 200 characters each. Used by the vetting team and the
-          Chief Vibe Stew — never surfaced in Radar, never shown to another guest.
+          crew who run the day — never surfaced in Radar, never shown to another guest.
           Deleted with your account, and never used for advertising.
         </p>
       </div>

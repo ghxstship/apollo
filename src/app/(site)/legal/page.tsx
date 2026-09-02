@@ -71,7 +71,7 @@ export default function LegalPage() {
         <h2>Privacy.</h2>
         <h3>What we keep.</h3>
         <p>
-          Your manifest — Sea Days, Port Days, knots — your seaworthiness declaration,
+          Your manifest — sailings, shore nights, knots — your seaworthiness declaration,
           and the contact details you gave us. Payment details live with the
           processor, not us.
         </p>

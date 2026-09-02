@@ -12,7 +12,13 @@ import {
   Stepper,
   Toast,
 } from "@/components/ds";
-import { SUB_CLASSES } from "@/lib/brand";
+import {
+  EXPERIENCE_CLASSES,
+  EXPERIENCE_CLASS_IDS,
+  SETTING_LABEL,
+  SUB_CLASSES,
+  type ExperienceClassId,
+} from "@/lib/brand";
 import type { EventClass, MembershipTier, VoyageStatus } from "@/lib/supabase/types";
 import { useToast } from "../../ui";
 import {
@@ -42,6 +48,8 @@ export type VoyageOpsRow = {
   title: string;
   cls: string;
   subClass: string | null;
+  /* open | club | premium | exotic — the second axis. */
+  experienceClass: string;
   kind: string;
   departs: string;
   startsAtIso: string;
@@ -66,6 +74,9 @@ export type VoyageOpsRow = {
   speed: string;
   /* — the program: filing, season, venue, sale window, deposit — */
   format: string | null;
+  /* The catalogue's name for that filing — what the board leads with, because
+     it is what a member reads on the card. Null when the sailing is unfiled. */
+  formatLabel: string | null;
   seasonId: string | null;
   venueId: string | null;
   /* Wall clock on the harbor, as a datetime-local value; "" = on sale now. */
@@ -81,6 +92,10 @@ export type ProgramOption = { value: string; label: string; retired?: boolean };
 
 export type FormatOption = ProgramOption & {
   category: string;
+  /* What this format files a sailing as. Naming the format hands the column
+     over to the trigger, so the composer shows this instead of pretending the
+     operator's own pick still counts. */
+  experienceClass: string;
   access: string;
   /* "open · $350 · seats 40", "by invitation", "on request", "included" */
   accessLine: string;
@@ -88,12 +103,14 @@ export type FormatOption = ProgramOption & {
   capacity: number | null;
 };
 
-/* sky was folded into shore when the two-family taxonomy landed; the enum
-   still carries it, so it takes the shore default. */
+/* sky was folded into shore when the setting axis landed; the enum still
+   carries it, so it takes the ashore default. */
 const DEFAULT_KIND: Record<EventClass, string> = { sea: "sea_day", shore: "port_day", sky: "port_day" };
 
-/* A format's category settles the class: port → shore, sea → sea. Premium
-   formats sail either way and leave the class as the operator set it. */
+/* A format's category settles the setting: port → ashore, sea → afloat. The
+   category column now holds only those two — how far the club goes moved to
+   experience_class — so anything else leaves the setting as the operator set
+   it rather than guessing. */
 function classForCategory(category: string, current: EventClass): EventClass {
   if (category === "port") return "shore";
   if (category === "sea") return "sea";
@@ -130,6 +147,43 @@ function dropAfterDeparture(saleOpensAt: string, startsAt: string): boolean {
 
 function formatOptions(formats: FormatOption[], blank: string): ProgramOption[] {
   return [{ value: "", label: blank }, ...formats.map((f) => ({ value: f.value, label: `${f.label} · ${f.accessLine}` }))];
+}
+
+/* The four rungs of the second axis, in ladder order. */
+const EXPERIENCE_OPTIONS = EXPERIENCE_CLASS_IDS.map((id) => ({
+  value: id,
+  label: `${EXPERIENCE_CLASSES[id].label} — ${EXPERIENCE_CLASSES[id].what}`,
+}));
+
+/* Said the same way in both dialogs: the class is the operator's to set only
+   while the sailing is unfiled. a_sailing_keeps_its_taxonomy copies it off the
+   format on every write that names one, so a control that looked live under a
+   chosen format would be promising an edit the board will undo. */
+function experienceClassHint(format: FormatOption | undefined): string {
+  if (!format) return "Yours to set while this sailing is unfiled.";
+  const files = EXPERIENCE_CLASSES[format.experienceClass as ExperienceClassId];
+  return files
+    ? `Follows the format — ${format.label} files as ${files.label}.`
+    : "Follows the format.";
+}
+
+/* What a sailing is, in the words a member reads it in: its format's name, or
+   where it happens when it has no format, then how long it runs. The class and
+   the ladder key used to print here instead, which named the filing system
+   rather than the thing. */
+function identityLine(row: {
+  formatLabel: string | null;
+  cls: string;
+  subClass: string | null;
+  experienceClass: string;
+}): string[] {
+  const hours = row.subClass ? SUB_CLASSES[row.subClass]?.label : null;
+  const experience = EXPERIENCE_CLASSES[row.experienceClass as ExperienceClassId]?.label;
+  return [
+    row.formatLabel ?? SETTING_LABEL[row.cls] ?? row.cls,
+    ...(hours ? [hours] : []),
+    ...(experience ? [experience] : []),
+  ];
 }
 
 /* The 3rd-yacht rule as product logic — a flotilla forms at 30 berths. */
@@ -209,7 +263,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
     to: "completed",
     label: "Mark completed",
     title: "Mark completed?",
-    body: "Completion banks knots — 10 per NM, 40 per Port Day. The ledger writes once.",
+    body: "Completion banks knots — 10 per NM afloat, 40 for a day ashore. The ledger writes once.",
     confirm: "Mark completed",
     tone: "positive",
   };
@@ -229,6 +283,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
 
 type ProgramForm = {
   format: string;
+  experienceClass: ExperienceClassId;
   seasonId: string;
   venueId: string;
   saleOpensAt: string;
@@ -259,6 +314,7 @@ export function VoyagesClient({
   const [program, setProgram] = React.useState<VoyageOpsRow | null>(null);
   const [programForm, setProgramForm] = React.useState<ProgramForm>({
     format: "",
+    experienceClass: "club",
     seasonId: "",
     venueId: "",
     saleOpensAt: "",
@@ -288,6 +344,9 @@ export function VoyagesClient({
   const openProgram = (row: VoyageOpsRow) => {
     setProgramForm({
       format: row.format ?? "",
+      experienceClass: (EXPERIENCE_CLASS_IDS as readonly string[]).includes(row.experienceClass)
+        ? (row.experienceClass as ExperienceClassId)
+        : "club",
       seasonId: row.seasonId ?? "",
       venueId: row.venueId ?? "",
       saleOpensAt: row.saleOpensAtLocal,
@@ -328,16 +387,15 @@ export function VoyagesClient({
           </div>
           <div className="hm-voy__meta">
             <span>{v.departs}</span>
-            <span>·</span>
-            <span>{v.cls.toUpperCase()}</span>
-            {v.subClass ? (
-              <>
+            {/* Format name and hours, the pairing a member sees — never the
+                class-and-ladder codes, and never `kind`, which is plumbing that
+                spells out a retired phrase when it is uppercased. */}
+            {identityLine(v).map((part) => (
+              <React.Fragment key={part}>
                 <span>·</span>
-                <span>{v.subClass.toUpperCase()}</span>
-              </>
-            ) : null}
-            <span>·</span>
-            <span>{v.kind.replaceAll("_", " ").toUpperCase()}</span>
+                <span>{part.toUpperCase()}</span>
+              </React.Fragment>
+            ))}
             <span>·</span>
             <span>
               {v.aboard} ABOARD / {v.berths} PASSES
@@ -570,6 +628,7 @@ export function VoyagesClient({
                     () =>
                       saveVoyageProgram(row.id, {
                         format: programForm.format || null,
+                        experienceClass: programForm.experienceClass,
                         seasonId: programForm.seasonId || null,
                         venueId: programForm.venueId || null,
                         saleOpensAt: programForm.saleOpensAt || null,
@@ -604,20 +663,34 @@ export function VoyagesClient({
               error={formatRefusals.length ? formatRefusals.join(" ") : undefined}
               onChange={(e) => setProgramForm((f) => ({ ...f, format: e.target.value }))}
             />
+            {/* Next to the format, because the format is what decides it the
+                moment one is named. */}
+            <Select
+              label="Experience class"
+              options={EXPERIENCE_OPTIONS}
+              value={programForm.experienceClass}
+              hint={experienceClassHint(programFormat)}
+              disabled={Boolean(programFormat)}
+              onChange={(e) =>
+                setProgramForm((f) => ({ ...f, experienceClass: e.target.value as ExperienceClassId }))
+              }
+            />
+          </div>
+          <div className="hm-form__row">
             <Select
               label="Season"
               options={[{ value: "", label: "Unassigned" }, ...seasons]}
               value={programForm.seasonId}
               onChange={(e) => setProgramForm((f) => ({ ...f, seasonId: e.target.value }))}
             />
-          </div>
-          <div className="hm-form__row">
             <Select
               label="Venue"
               options={[{ value: "", label: "Unassigned" }, ...venues]}
               value={programForm.venueId}
               onChange={(e) => setProgramForm((f) => ({ ...f, venueId: e.target.value }))}
             />
+          </div>
+          <div className="hm-form__row">
             <Input
               label="Deposit ($)"
               type="number"
@@ -826,6 +899,7 @@ type NewVoyageForm = {
   slug: string;
   cls: EventClass;
   subClass: string;
+  experienceClass: ExperienceClassId;
   kind: string;
   harborId: string;
   startsAt: string;
@@ -850,6 +924,9 @@ const BLANK: NewVoyageForm = {
   slug: "",
   cls: "sea",
   subClass: "voyage",
+  /* The members' standard is the honest default — most of what the club raises
+     is a club sailing, and the operator says so when it is not. */
+  experienceClass: "club",
   kind: "sea_day",
   harborId: "",
   startsAt: "",
@@ -869,13 +946,12 @@ const BLANK: NewVoyageForm = {
   itinerary: [],
 };
 
-/* One duration ladder for every family — sea days and port days both climb
-   voyage, expedition, odyssey. */
+/* One duration ladder whichever setting a sailing runs in — afloat and ashore
+   both climb the same three rungs. The labels are hour phrases now, and the
+   note is the same range said again ("Up to 4 hours — Under 4 hours"), so the
+   phrase stands alone and the range rides along as the picker's hint. */
 function subClassOptions(): Array<{ value: string; label: string }> {
-  return Object.entries(SUB_CLASSES).map(([value, s]) => ({
-    value,
-    label: `${s.label} — ${s.note}`,
-  }));
+  return Object.entries(SUB_CLASSES).map(([value, s]) => ({ value, label: s.label }));
 }
 
 function NewVoyageDialog({
@@ -907,9 +983,9 @@ function NewVoyageDialog({
   const liveVenues = venues.filter((v) => !v.retired);
   const liveFormats = formats.filter((x) => !x.retired);
 
-  /* Class picks the sub-class ladder — keep the two in step. The kind follows
-     the class while it is still the other class's default, and is left alone
-     once the operator has typed their own. */
+  /* The setting picks the duration ladder — keep the two in step. The kind
+     follows the setting while it is still the other setting's default, and is
+     left alone once the operator has typed their own. */
   const withClass = (prev: NewVoyageForm, cls: EventClass): NewVoyageForm => {
     const wasDefault = !prev.kind.trim() || Object.values(DEFAULT_KIND).includes(prev.kind.trim());
     return {
@@ -921,8 +997,9 @@ function NewVoyageDialog({
   };
   const setClass = (cls: EventClass) => setF((prev) => withClass(prev, cls));
 
-  /* Choosing a format settles the class from its category — a port format is
-     a shore day, a sea format a sea day, a premium one sails as set. */
+  /* Choosing a format settles the setting from its category — a port format
+     runs ashore, a sea format afloat. It settles the experience class too, at
+     the board, which is why that control goes quiet once one is named. */
   const setFormat = (slug: string) =>
     setF((prev) => {
       const chosen = liveFormats.find((x) => x.value === slug);
@@ -963,6 +1040,7 @@ function NewVoyageDialog({
         title: f.title,
         cls: f.cls,
         subClass: (f.subClass || null) as SubClass | null,
+        experienceClass: f.experienceClass,
         kind: f.kind,
         harborId: f.harborId || null,
         startsAt: f.startsAt,
@@ -1011,33 +1089,57 @@ function NewVoyageDialog({
           <Input label="Title" placeholder="The Catalina Crossing" value={f.title} onChange={(e) => set("title", e.target.value)} />
           <Input label="Slug" placeholder="catalina-crossing" hint="Blank uses the title." value={f.slug} onChange={(e) => set("slug", e.target.value)} />
         </div>
+        {/* Where it happens, and how long it runs. What kind of thing it is —
+            the other taxonomy axis — sits with the format below, because the
+            format is what settles it. */}
         <div className="hm-form__row">
           <Select
-            label="Class"
+            label="Setting"
             options={[
-              { value: "sea", label: "Sea Day" },
-              { value: "shore", label: "Port Day" },
+              { value: "sea", label: SETTING_LABEL.sea },
+              { value: "shore", label: SETTING_LABEL.shore },
             ]}
+            hint="Where it happens. Only ashore admits an unvetted guest."
             value={f.cls}
             onChange={(e) => setClass(e.target.value as EventClass)}
           />
           <Select
-            label="Sub-class"
+            label="Duration"
             options={subOptions.length ? subOptions : [{ value: "", label: "None" }]}
             value={f.subClass}
+            hint={f.subClass ? SUB_CLASSES[f.subClass]?.note : undefined}
             disabled={subOptions.length === 0}
             onChange={(e) => set("subClass", e.target.value)}
           />
         </div>
         <div className="hm-form__row">
-          <Input label="Kind" placeholder="sea_day · port_day" value={f.kind} onChange={(e) => set("kind", e.target.value)} />
           <Select
             label="Format"
             options={formatOptions(liveFormats, "Unfiled")}
             value={f.format}
-            hint={chosenFormat ? `${chosenFormat.accessLine} · sets the class from its category` : "Sets the class from its category."}
+            hint={chosenFormat ? `${chosenFormat.accessLine} · sets the setting from its category` : "Sets the setting from its category."}
             error={formatRefusals.length ? formatRefusals.join(" ") : undefined}
             onChange={(e) => setFormat(e.target.value)}
+          />
+          {/* The other axis. Live only for an unfiled sailing — naming a format
+              hands the column to the taxonomy trigger, and the hint says so
+              rather than letting the control look like it still decides. */}
+          <Select
+            label="Experience class"
+            options={EXPERIENCE_OPTIONS}
+            value={f.experienceClass}
+            hint={experienceClassHint(chosenFormat)}
+            disabled={Boolean(chosenFormat)}
+            onChange={(e) => set("experienceClass", e.target.value as ExperienceClassId)}
+          />
+        </div>
+        <div className="hm-form__row">
+          <Input
+            label="Kind"
+            placeholder="sea_day · port_day"
+            hint="Plumbing the ledger reads. Blank follows the setting."
+            value={f.kind}
+            onChange={(e) => set("kind", e.target.value)}
           />
         </div>
         <div className="hm-form__row">

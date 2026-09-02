@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { EventClass, MembershipTier, VoyageStatus } from "@/lib/supabase/types";
+import type { ExperienceClassId } from "@/lib/brand";
 import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 
@@ -132,7 +133,9 @@ export async function removeVessel(voyageId: string, vesselId: string): Promise<
   return done();
 }
 
-export type SubClass = "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland";
+/* The three the CHECK still admits. Trek, excursion and overland were dropped
+   with the two-axis taxonomy — offering one here would only earn a refusal. */
+export type SubClass = "voyage" | "expedition" | "odyssey";
 export type ItineraryLeg = { offset: number; title: string; note: string };
 
 export type NewVoyageInput = {
@@ -140,6 +143,10 @@ export type NewVoyageInput = {
   title: string;
   cls: EventClass;
   subClass: SubClass | null;
+  /* What kind of thing it is. Only load-bearing while the sailing is unfiled —
+     a_sailing_keeps_its_taxonomy overwrites it from the format the moment one
+     is named. */
+  experienceClass: ExperienceClassId;
   kind: string;
   harborId: string | null;
   startsAt: string;
@@ -280,6 +287,10 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
     title,
     class: input.cls,
     sub_class: input.subClass,
+    /* Written either way. When a format is named the trigger reads it straight
+       back off the format a moment later, which is the intended outcome — the
+       catalogue is the authority, and this is the answer for the unfiled. */
+    experience_class: input.experienceClass,
     itinerary,
     kind: input.kind.trim() || (input.cls === "shore" ? "port_day" : "sea_day"),
     harbor_id: input.harborId,
@@ -304,6 +315,9 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
 
 export type VoyageProgramInput = {
   format: string | null;
+  /* Same standing as on a new voyage: the operator's answer for an unfiled
+     sailing, and overwritten from the format for a filed one. */
+  experienceClass: ExperienceClassId;
   seasonId: string | null;
   venueId: string | null;
   /* Wall clock on the voyage's harbor, or null = on sale immediately. */
@@ -346,6 +360,7 @@ export async function saveVoyageProgram(
     .from("voyages")
     .update({
       format: program.format || null,
+      experience_class: program.experienceClass,
       season_id: program.seasonId || null,
       venue_id: program.venueId || null,
       sale_opens_at: saleOpensAt ? saleOpensAt.toISOString() : null,

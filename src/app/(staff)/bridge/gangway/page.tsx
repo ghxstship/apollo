@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { StateBlock } from "@/components/ds";
-import { EVENT_CLASS_LABEL, logDate, logTime } from "@/lib/format";
+import { SETTING_LABEL, logDate, logTime } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { getOperator } from "../../data";
 import { GangwayConsole, type GangwayRow } from "./gangway-client";
@@ -121,6 +121,21 @@ export default async function GangwayPage({
     )
   );
 
+  /* What the door calls this sailing: the format's own name, the way it reads
+     on a member's card. A sailing with no format falls back to where it
+     happens — afloat or ashore — which is the fact the crew at the top of the
+     gangway actually needs. */
+  let identity = SETTING_LABEL[voyage.class] ?? SETTING_LABEL.shore;
+  if (voyage.format) {
+    const { data: formatRow } = await moduleTables(supabase)
+      .from("activity_formats")
+      .select("label")
+      .eq("slug", voyage.format)
+      .maybeSingle();
+    const label = (formatRow as { label?: string } | null)?.label;
+    if (label) identity = label;
+  }
+
   /* The door's muster line. A shore night musters at its venue — name and
      address — where a sailing musters at the slip the voyage names. */
   let muster: string | null = voyage.muster ?? null;
@@ -165,7 +180,7 @@ export default async function GangwayPage({
       <GangwayConsole
         voyageId={voyage.id}
         voyageTitle={voyage.title}
-        family={EVENT_CLASS_LABEL[voyage.class] ?? "Sea Day"}
+        identity={identity}
         departs={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`}
         timeZone={voyage.time_zone}
         muster={muster}

@@ -7,7 +7,10 @@ import { literalCode } from "@/lib/boarding-code";
 import { getMember } from "../../data";
 import { PrintButton } from "../../card/print-button";
 
-export const metadata: Metadata = { title: "Boarding stub" };
+/* The page is the credential, so it is named for the credential: a Boarding
+   pass is what admits a member to one sailing, and the stub is the form it
+   takes on a phone at the gangway. */
+export const metadata: Metadata = { title: "Boarding pass" };
 
 const rowStyle: CSSProperties = {
   display: "flex",
@@ -87,10 +90,10 @@ export default async function StubPage({
           icon="Ticket"
           title={
             changedHands
-              ? "That pass changed hands — the new holder carries its code."
+              ? "That boarding pass changed hands — the new holder carries its code."
               : "No stub under that code."
           }
-          detail="Confirm a pass on the manifest and the stub is cut for you."
+          detail="Confirm a boarding pass on the manifest and the stub is cut for you."
         />
       </div>
     );
@@ -113,7 +116,7 @@ export default async function StubPage({
   ]);
   const voyage = voyageRes.data;
 
-  /* A stub is a pass you can present. It was rendered live — QR, muster time,
+  /* A stub is a boarding pass you can present. It was rendered live — QR, muster time,
      "Present at the gangway" — for a pass that had been released and for
      sailings that were completed or called off, so it stayed scannable long
      after it stopped meaning anything. */
@@ -140,7 +143,7 @@ export default async function StubPage({
               ? "That sailing was called off."
               : voyageOver
                 ? "That sailing is in the log."
-                : "That pass is no longer held."
+                : "That boarding pass is no longer held."
           }
           detail={
             voyage.status === "cancelled"
@@ -161,7 +164,7 @@ export default async function StubPage({
           status="empty"
           icon="Ticket"
           title="No stub under that code."
-          detail="Confirm a pass on the manifest and the stub is cut for you."
+          detail="Confirm a boarding pass on the manifest and the stub is cut for you."
         />
       </div>
     );

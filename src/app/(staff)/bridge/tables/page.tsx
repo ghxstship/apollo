@@ -38,7 +38,7 @@ export default async function TablesPage({
         <div className="hm-sec">
           <StateBlock
             title="No shore night on the board."
-            detail="Tables are laid on a Port Day. Raise one on the Voyages tab, then come back to lay the room."
+            detail="Tables are laid ashore. Raise a night ashore on the Voyages tab, then come back to lay the room."
           />
         </div>
       </div>

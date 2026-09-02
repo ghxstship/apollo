@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Avatar, AvatarGroup, Badge, Tag } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
-import { CLASS_CODES, SUB_CLASSES } from "@/lib/brand";
-import { EVENT_CLASS_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
+import { SETTING_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
-import { onSaleChip, vesselSpec } from "@/components/site/voyage-chips";
+import { durationChip, onSaleChip, vesselSpec } from "@/components/site/voyage-chips";
 import { fleetFor, framesFor } from "@/components/site/voyage-data";
 import { readLegs, readStops } from "@/app/(member)/charter/data";
 import { Enquire } from "@/components/member/enquire";
@@ -44,7 +43,7 @@ const FAQS: Record<string, Array<[string, string]>> = {
     ],
     [
       "What if the weather turns?",
-      "Port days hold for rain, not for clouds. Holds are called by 18:00 the night before and your seat carries forward.",
+      "Ashore, we hold for rain, not for clouds. Holds are called by 18:00 the night before and your seat carries forward.",
     ],
     [
       "Can I bring a guest?",
@@ -58,7 +57,7 @@ const FAQS: Record<string, Array<[string, string]>> = {
     ],
     [
       "What if the weather turns?",
-      "Port Days carry on regardless. Night passages hold by 18:00 the night before, and your pass carries forward.",
+      "Anything ashore carries on regardless. Night passages hold by 18:00 the night before, and your pass carries forward.",
     ],
     [
       "Can I bring a guest?",
@@ -170,15 +169,12 @@ export default async function VoyagePage({
   const seatsWord = "passes";
   const full = left === 0;
 
-  /* Class meta in the mono data register: "SEA · EXPEDITION · 4–8 HRS". */
-  const sub = voyage.sub_class ? SUB_CLASSES[voyage.sub_class] : null;
-  const classMeta = [
-    CLASS_CODES[voyage.class],
-    sub?.label.toUpperCase(),
-    sub?.note.toUpperCase().replace("HOURS", "HRS"),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  /* The badge: the format's own name and the hours it runs — "SANDBAR SOCIAL ·
+     7 HRS". A sailing with no format falls back to where it happens, and a
+     sailing with no stated end drops the hours rather than inventing them. */
+  const settingLabel = SETTING_LABEL[voyage.class] ?? "Afloat";
+  const hours = durationChip(voyage.starts_at, voyage.ends_at);
+  const badge = [format?.label ?? settingLabel, hours].filter(Boolean).join(" · ");
 
   /* A sailing in the past, or one the club called off, is a log entry — not a
      pass on sale. The panel below branched only on weather_hold/live/full, so
@@ -242,13 +238,10 @@ export default async function VoyagePage({
       <header className="ev-hero">
         <div className="ev-hero__bg" style={{ background: SEAS[voyage.media] ?? SEAS.dusk }}></div>
         <div className="ls-container ev-hero__in">
-          <span className="ls-eyebrow">
-            {EVENT_CLASS_LABEL[voyage.class]}
-            {sub ? <> · {sub.label}</> : null}
-          </span>
+          <span className="ls-eyebrow">{badge}</span>
           <h1>{voyage.title}</h1>
           <div className="ev-hero__meta">
-            <span>{classMeta}</span>
+            <span>{settingLabel.toUpperCase()}</span>
             <span>·</span>
             <span>{logDate(voyage.starts_at, zone)}</span>
             <span>·</span>
@@ -524,8 +517,12 @@ export default async function VoyagePage({
 
           <div className="ev-log">
             <div>
-              <span>Class</span>
-              <span>{classMeta}</span>
+              <span>Format</span>
+              <span>{badge.toUpperCase()}</span>
+            </div>
+            <div>
+              <span>Setting</span>
+              <span>{settingLabel.toUpperCase()}</span>
             </div>
             <div>
               <span>Date</span>

@@ -236,7 +236,7 @@ export default async function VettingPage() {
       </section>
 
       {/* Acceptance carries the mark. The kit sets the parent anchor on the
-          Captain's Pass card — the umbrella speaking, not a division — so the
+          acceptance card — the umbrella speaking, not a division — so the
           suffix is null here. */}
       {mySegment && sailing ? (
         <section className="mbr-sec">

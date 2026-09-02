@@ -14,7 +14,7 @@ export function ApplyForm() {
         <StateBlock
           icon="Anchor"
           title="Application received."
-          detail="A person reads it — not a filter. If the water suits you, a Port Day invitation follows within the week."
+          detail="A person reads it — not a filter. If the water suits you, an invitation ashore follows within the week."
         />
         <p className="ws-apply__meta" style={{ textAlign: "center", marginTop: 16 }}>
           {state.meta}

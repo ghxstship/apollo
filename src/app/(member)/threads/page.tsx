@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar, Icon, StateBlock } from "@/components/ds";
-import { FAMILY_LABEL } from "@/lib/brand";
+import { SETTING_LABEL } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 import { getMember, type DirectoryMember, type Profile } from "../data";
 import { relTime } from "../relative";
@@ -95,9 +95,11 @@ export default async function ThreadsPage() {
           : t.kind === "direct"
             ? other?.full_name ?? "A member"
             : t.title ?? "Shoreside";
+      /* A crew thread belongs to a sailing, and what the header says about it
+         is where it happens — afloat or ashore. */
       const eyebrow =
         t.kind === "crew"
-          ? FAMILY_LABEL[voyage?.class ?? "sea"] ?? "Sea Day"
+          ? SETTING_LABEL[voyage?.class ?? "sea"] ?? "Afloat"
           : t.kind === "direct"
             ? "Direct"
             : "Shoreside";

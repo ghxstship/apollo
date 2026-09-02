@@ -14,27 +14,29 @@ No UNHINGED logo, fonts, photography, or Figma were provided. **No logo exists**
 ## Brand architecture
 `[un]` is the parent. Six divisions carry the anchor plus a sentence-case suffix; each swaps the accent only — never type, never surfaces.
 
-- **[un] Hinged** — Singles Social Club. Acid green `--brand-hinged`. Sea and Port formats.
-- **[un] Bound** — Open and alternative lifestyle couples social. Violet `--brand-bound`. Port and Premium formats.
-- **[un] Limited** — Premium experiences. Champagne `--brand-limited`. Private charters, VIP, member gatherings.
+- **[un] Hinged** — Singles Social Club. Acid green `--brand-hinged`. Afloat and ashore, Open and Club.
+- **[un] Bound** — Open and alternative lifestyle couples social. Violet `--brand-bound`. Mostly ashore; Open through Premium.
+- **[un] Limited** — Premium experiences. Champagne `--brand-limited`. Private charters, VIP, member gatherings — Premium and Exotic.
 - **[un] Scripted** — Social content series: pop-up dating, matchmaking, mixers. Flare pink `--brand-scripted`.
 - **[un] Cut** — BTS and founder-led content series. Bone `--brand-cut` — no hue; ivory on ink, ink on paper, so it inverts rather than tints.
 - **[un] Brand** — Nautical lifestyle, fashion, and gear. No accent and no token — ink on paper, ivory on ink; the products speak for themselves.
 
 **Shop** carries merch and drops in sun orange (`--brand-shop`) — the sales channel, not the maker. Products carry the **[un] Brand** mark; event and season drops may carry their division's mark instead.
 
-Activity categories (**Sea** · **Port** · **Premium**) determine which division and accent an experience carries. Full rules: `brand-architecture.md`.
+An experience is filed on two axes, and the pair determines which division and accent it carries: **setting** — Afloat (`sea`) or Ashore (`port`) — and **experience class** — Open · Club · Premium · Exotic. Setting and class are independent: a private charter is afloat and Premium, a gathering is ashore and Premium. Taxonomy in full: `operations.md` §1. Division and accent rules: `brand-architecture.md`.
 
 ## Business model
 - **Anchor experience:** weekly sailing, Miami. Trident 512 USCG-certified pontoon, max 40 passengers + crew. 11:00 pre-boarding social → 12:00 departure → 14:00 Haulover Sandbar → 17:00 sunset cruise (Radar locks 17:30) → 18:00 dock → 19:00 Shore Leave.
 - **Ratio gate:** 40 passengers, either 20/20 (singles capped 10 male / 10 female) or 10 couples + 20 singles. The engine refuses sales that break composition; capacity is always shown **by segment**.
-- **Products:** Single Pass $350 · Couples Pass $650 · Club Lifestyle Membership $2,500/quarter (capped at 20 active) · VIP Pontoon Lounge $1,500 per group of four · Match Guarantee $150 rollover credit when a guest records zero Shared Anchors.
+- **Products:** Single boarding pass $350 · Couple boarding pass $650 · Club Lifestyle Membership $2,500/quarter (capped at 20 active) · VIP Pontoon Lounge $1,500 per group of four · Match Guarantee $150 rollover credit when a guest records zero Shared Anchors.
 - **Economics:** ~$18,500 gross per sailing, ~$9,100 net; ~40.6% net margin across the first 90 days (12 sailings).
-- **Revenue mix:** tickets and passes, four sponsor tiers ($2k–$10k/mo), VIP upgrades and merch.
+- **Revenue mix:** boarding passes and memberships, four sponsor tiers ($2k–$10k/mo), VIP upgrades and merch.
 - Full figures, sponsor inventory, merch margins, procurement, calendar, comms triggers, and legal clauses: `operations.md`.
 
 ## Named vocabulary
-Use verbatim; never substitute generic equivalents. **Shared Anchor** (mutual match) · **Chief Vibe Stew** (lead MC and hospitality) · **The Cast & Crew** (marine safety, media, hospitality staff) · **Plot Course** (selecting a connection in Radar) · **Preference Sheet** (3-part onboarding profile) · **Captain's Pass** (digital ticket) · **Captain's Log** (sealed gold-foil match envelope) · **Confessional Pod** (onboard recording booth) · **Intent Wristband** (woven magnetic band issued at check-in) · **Shore Leave** (partnered VIP afterparty) · **Match of the Day** (sunset announcement) · **Riviera Chic** (dress code).
+Use verbatim; never substitute generic equivalents. **Shared Anchor** (mutual match) · **Chief Stew** (lead MC and hospitality) · **The Cast & Crew** (marine safety, media, hospitality staff) · **Pick** (selecting a connection in Radar) · **Preference Sheet** (3-part onboarding profile) · **Boarding pass** (what admits a member to one sailing) · **Captain's Log** (sealed gold-foil match envelope) · **Confessional Pod** (onboard recording booth) · **Wristband** (woven magnetic band issued at check-in) · **Shore Leave** (partnered VIP afterparty) · **Match of the Day** (sunset announcement) · **Riviera Chic** (dress code).
+
+Membership itself is reached by invitation or by application — never by buying a standing place. "Captain's Pass" is retired as a term, and the terms above are the only ones the vocabulary gate reads: a bolded phrase in this section must appear verbatim in a user-facing surface under `src/`.
 
 ## Content fundamentals
 - **Voice:** seductive, athletic, direct, effortlessly confident, selectively exclusive — and explicitly consent-forward. A host who respects the guest. Never corporate, never cute, never coy about boundaries.

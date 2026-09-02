@@ -24,8 +24,8 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const CLASS_LABEL: Record<string, string> = {
-  sea: "Sea Day — aboard",
-  shore: "Port Day — ashore",
+  sea: "Afloat — aboard",
+  shore: "Ashore — a shore night",
 };
 
 export default async function DocumentPreviewPage() {

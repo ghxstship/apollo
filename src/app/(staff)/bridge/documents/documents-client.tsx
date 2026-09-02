@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CLUB_ZONE } from "@/lib/brand";
+import { CLUB_ZONE, SETTING_LABEL } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Tabs, Textarea, Toast } from "@/components/ds";
 import type { ClauseCategory } from "@/lib/supabase/types";
 import { logDate } from "@/lib/format";
@@ -69,10 +69,12 @@ export type SignatureRow = {
 };
 
 const CATEGORIES: ClauseCategory[] = ["liability", "conduct", "media", "privacy", "payment", "crew", "general"];
+/* A clause can be held back to one setting — the clauses that only make sense
+   with the boat under you, and the ones that only make sense ashore. */
 const CONDITIONS: Array<[string, string]> = [
   ["", "Always"],
-  ["sea", "Sea Days only"],
-  ["shore", "Port Days only"],
+  ["sea", `${SETTING_LABEL.sea} only`],
+  ["shore", `${SETTING_LABEL.shore} only`],
 ];
 
 export function DocumentsClient({
@@ -465,8 +467,8 @@ export function DocumentsClient({
       >
         <p style={{ fontSize: 13.5, color: "var(--text-2)", lineHeight: 1.6, marginBottom: 14 }}>
           Tick the clauses this document carries and say when each one applies. A
-          clause set to Sea Days is left out when the document renders for the
-          shore — one document, assembled per occasion.
+          clause held to afloat is left out when the document renders for a night
+          ashore — one document, assembled per occasion.
         </p>
         <div style={{ display: "grid", gap: 10, maxHeight: "48vh", overflowY: "auto" }}>
           {offerable.map((c, i) => {

@@ -111,7 +111,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
               <Textarea
                 label="Reply"
                 rows={3}
-                placeholder="We can hold two passes on the next Sea Day — say the word."
+                placeholder="We can hold two passes on the next sailing afloat — say the word."
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 disabled={active.closed}
