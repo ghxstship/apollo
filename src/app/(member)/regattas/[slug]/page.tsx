@@ -44,7 +44,7 @@ export default async function ContestPage({
   if (!contest || contest.status === "draft") notFound();
 
   /* The standing is computed by a definer RPC — scoring reads every entrant's
-     sailings, and no member can see those rows directly. */
+     episodes, and no member can see those rows directly. */
   const [standingRes, entryRes] = await Promise.all([
     supabase.rpc("contest_standing", { p_contest_id: contest.id }),
     supabase
@@ -59,14 +59,14 @@ export default async function ContestPage({
   const entered = Boolean(entryRes.data);
   const open = contest.status === "open";
 
-  /* A crew-scoped contest belongs to one sailing, and contest_entries' INSERT
+  /* A crew-scoped contest belongs to one episode, and contest_entries' INSERT
      policy says so: scope 'crew' requires an aboard pass on contest.voyage_id.
-     This page never asked. A member with no pass on that sailing was shown
+     This page never asked. A member with no pass on that episode was shown
      Enter, pressed it, and the insert was refused by RLS — and the action threw
      the refusal away, so the page came back identical with no entry on it. Twice
      over, the product offered something it had already decided to say no to.
 
-     A contest scoped to the crew with no sailing named is enterable by nobody,
+     A contest scoped to the crew with no episode named is enterable by nobody,
      which is a Bridge mistake rather than a member's; it reads the same way from
      here — the control stays off. Someone already entered who has since come off
      the pass keeps the control, because withdrawing is still allowed. */
@@ -160,11 +160,11 @@ export default async function ContestPage({
         <p style={{ marginTop: 22, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
           This one is the crew&rsquo;s — it counts{" "}
           {sailing ? (
-            <Link href={`/charters/${sailing.slug}`} className="mbr-plain">
+            <Link href={`/episodes/${sailing.slug}`} className="mbr-plain">
               {sailing.title}
             </Link>
           ) : (
-            "one sailing"
+            "one episode"
           )}
           , and entry opens with a pass on it.
         </p>
@@ -173,7 +173,7 @@ export default async function ContestPage({
           <ContestEntry contestId={contest.id} slug={contest.slug} entered={entered} />
           {!entered ? (
             <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-3)" }}>
-              Entering counts only the sailings inside the window. Nothing before it.
+              Entering counts only the episodes inside the window. Nothing before it.
             </p>
           ) : null}
         </div>
@@ -198,7 +198,7 @@ export default async function ContestPage({
         )}
         {contest.status !== "settled" ? (
           <p style={{ marginTop: 12, fontSize: 12, color: "var(--text-3)" }}>
-            Live from completed sailings inside the window. Final once the Bridge settles it.
+            Live from completed episodes inside the window. Final once the Bridge settles it.
           </p>
         ) : null}
       </section>

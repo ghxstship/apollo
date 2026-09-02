@@ -50,7 +50,7 @@ export interface RadarPin {
 /* ── The clock ──────────────────────────────────────────────────────────────
    Four phases, read from the stored timestamps rather than from a time of day.
    The database stores absolute instants for the same reason this reads them: a
-   sailing whose zone is corrected mid-season must not retroactively move a lock
+   episode whose zone is corrected mid-season must not retroactively move a lock
    that already happened. */
 export type RadarPhase = "before" | "open" | "locked" | "unlocked" | "expired";
 
@@ -148,19 +148,19 @@ export const MATCH_GUARANTEE_CENTS = 15_000;
 
 /* Was "A $150 credit is already on your next sailing" — past tense, on a
    surface that has never read account_ledger and cannot. The credit is posted
-   by settle_the_match_guarantee when the sailing is marked completed, which is
+   by settle_the_match_guarantee when the episode is marked completed, which is
    after this page is ever seen. Saying "already" told a member money had moved
    at a moment when, by construction, it had not. Owed is the true tense, and
    it is no less generous. */
 export const GUARANTEE_OWED_LINE =
-  "That happens, and it is on us. A $150 credit goes on your account when this sailing closes — no form, no request.";
+  "That happens, and it is on us. A $150 credit goes on your account when this episode closes — no form, no request.";
 
 export const GUARANTEE_UNEARNED_LINE =
   "The guarantee covers a pick that was not picked back. You left all three slots open, which is a real choice and costs nothing — but there is nothing for it to cover.";
 
 /* Whether this pass is owed the credit, by the same two conditions the database
    settles on. Duplicated deliberately and narrowly: the surface has to be able
-   to say WHICH of the two applies before the sailing completes, and asking the
+   to say WHICH of the two applies before the episode completes, and asking the
    ledger cannot answer a question about a payment that has not happened. The
    money itself is posted by settle_the_match_guarantee under an idem_key and
    never from here. */

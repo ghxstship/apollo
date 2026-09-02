@@ -8,7 +8,7 @@ import { decideCharter, decideProposal, linkProposal, type CharterRuling } from 
 /* — The proposals queue: read the case, give the word —
 
    Considering is one motion; Approve opens a small dialog so the ruling can
-   name the sailing it became (optional — approval is the word, the sailing may
+   name the episode it became (optional — approval is the word, the episode may
    not exist yet); Decline opens the note field first, because the line written
    there goes to the member word for word. */
 
@@ -24,7 +24,7 @@ export type ProposalRow = {
   status: "submitted" | "considering" | "approved" | "declined";
   decisionNote: string | null;
   raisedAt: string;
-  /* The sailing this became, once the Bridge raised it and linked it. */
+  /* The episode this became, once the Bridge raised it and linked it. */
   voyageId: string | null;
   voyageLabel: string | null;
   [key: string]: unknown;
@@ -92,7 +92,7 @@ export function ProposalsClient({
   const [declineNote, setDeclineNote] = React.useState("");
   const [approving, setApproving] = React.useState<ProposalRow | null>(null);
   const [approveVoyage, setApproveVoyage] = React.useState("");
-  /* Per-row re-link picks for approved proposals not yet tied to a sailing. */
+  /* Per-row re-link picks for approved proposals not yet tied to an episode. */
   const [links, setLinks] = React.useState<Record<string, string>>({});
 
   const [ruling, setRuling] = React.useState<{ row: CharterRow; kind: CharterRuling } | null>(null);
@@ -124,7 +124,7 @@ export function ProposalsClient({
           ) : null}
           {r.voyageLabel ? (
             <span style={{ display: "block", marginTop: 4, color: "var(--text-2)" }}>
-              Sailing: {r.voyageLabel}
+              Episode: {r.voyageLabel}
             </span>
           ) : null}
         </span>
@@ -208,12 +208,12 @@ export function ProposalsClient({
         ) : r.status === "approved" && !r.voyageId ? (
           <span style={{ display: "flex", gap: 6, alignItems: "flex-end", flexWrap: "wrap" }}>
             <Select
-              aria-label={`Sailing for ${r.title}`}
+              aria-label={`Episode for ${r.title}`}
               value={links[r.id] ?? ""}
               onChange={(e) => setLinks((p) => ({ ...p, [r.id]: e.target.value }))}
               style={{ minWidth: 180 }}
               options={[
-                { value: "", label: voyages.length ? "Link the sailing" : "Nothing on the board" },
+                { value: "", label: voyages.length ? "Link the episode" : "Nothing on the board" },
                 ...voyages,
               ]}
             />
@@ -224,7 +224,7 @@ export function ProposalsClient({
               onClick={() =>
                 run(
                   () => linkProposal(r.id, links[r.id] ?? null),
-                  () => show({ msg: "Linked. The row names the sailing now.", meta: r.title.toUpperCase() })
+                  () => show({ msg: "Linked. The row names the episode now.", meta: r.title.toUpperCase() })
                 )
               }
             >
@@ -336,11 +336,11 @@ export function ProposalsClient({
         <Stat size="sm" label="Waiting on the word" value={waiting} sub={`${rows.length} RAISED`} />
         <Stat
           size="sm"
-          label="Charter requests"
+          label="Private episode requests"
           value={chartersWaiting}
           sub={`${charters.length} RAISED`}
         />
-        <Stat size="sm" label="Approved, no sailing" value={unlinked} />
+        <Stat size="sm" label="Approved, no episode" value={unlinked} />
       </div>
 
       {rows.length === 0 ? (
@@ -357,23 +357,23 @@ export function ProposalsClient({
       )}
 
       <p className="hm-body" style={{ marginTop: 14, color: "var(--text-3)" }}>
-        Approval is the word, not the sailing. The sailing itself gets raised on
-        Voyages, with access set by the format — link it here once it exists, so
-        the row and the member both know which sailing it became.
+        Approval is the word, not the episode. The episode itself gets raised on
+        Episodes, with access set by the series — link it here once it exists, so
+        the row and the member both know which episode it became.
       </p>
 
       <section className="hm-sec">
-        <h2>Charter requests.</h2>
+        <h2>Private episode requests.</h2>
         <p className="hm-lede" style={{ marginTop: 4 }}>
-          An on-request format has a door. A member asks for a shape, a party
-          and some dates; the Bridge answers with a line, or passes with one.
-          Either way the line reaches them as a word.
+          An on-request series has a door. A member asks for an episode of their
+          own — a shape, a party and some dates; the Bridge answers with a line,
+          or passes with one. Either way the line reaches them as a word.
         </p>
         {charters.length === 0 ? (
           <div style={{ marginTop: 16 }}>
             <StateBlock
-              title="No charter requests."
-              detail="Formats marked on-request take a request from the member side. They queue here."
+              title="No requests waiting."
+              detail="A series marked on-request takes a request from the member side. They queue here."
             />
           </div>
         ) : (
@@ -407,8 +407,8 @@ export function ProposalsClient({
                     () =>
                       show({
                         msg: v
-                          ? "Approved, proposer told, sailing linked."
-                          : "Approved, proposer told. Now raise the sailing on Voyages.",
+                          ? "Approved, proposer told, episode linked."
+                          : "Approved, proposer told. Now raise the episode on Episodes.",
                         meta: `${r.title.toUpperCase()} · APPROVED`,
                         tone: "positive",
                       })
@@ -423,12 +423,12 @@ export function ProposalsClient({
       >
         <div className="hm-form">
           <p className="hm-body">
-            The proposer is told either way. If the sailing already exists on the
+            The proposer is told either way. If the episode already exists on the
             board, name it here and the row will carry it.
           </p>
           <Select
-            label="The sailing it became"
-            hint="Optional — leave it if the sailing is not raised yet."
+            label="The episode it became"
+            hint="Optional — leave it if the episode is not raised yet."
             value={approveVoyage}
             onChange={(e) => setApproveVoyage(e.target.value)}
             options={[

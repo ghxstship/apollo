@@ -23,7 +23,7 @@ export type PgLikeError = { message?: string | null; code?: string | null };
 
 /* "Paused", not "on hold": that is the word the column uses, the word the
    action uses, and the word the button a member presses uses. A hold, in this
-   product, is a thing that happens to a SAILING. */
+   product, is a thing that happens to an EPISODE. */
 export const HOLD_MESSAGE =
   "Your membership is paused. Your page has the way back.";
 

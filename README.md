@@ -12,9 +12,9 @@ A membership club for experiential connection afloat and ashore — the boat, th
 
 | Surface | Routes |
 | --- | --- |
-| Marketing site | `/` · `/voyages` · `/voyages/[slug]` · `/membership` · `/lore` · `/lore/[slug]` · `/gallery` · `/crew` · `/brand` · `/legal` · `/support` · `/apply-status` |
+| Marketing site | `/` · `/episodes` (the Manifest) · `/episodes/[slug]` · `/membership` · `/log` (the written record) · `/log/[slug]` · `/gallery` · `/crew` · `/brand` · `/legal` · `/support` · `/apply-status` |
 | Gangway (auth) | `/gangway` · `/auth/confirm` · `/auth/signout` — passwordless magic links, invited-only (enforced by a DB trigger on `auth.users`) |
-| Member app | `/home-port` · `/gateway` (live) · `/manifest` (passes) · `/open-deck` (feed) · `/directory` · `/regattas` (contests) · `/agreements` (waivers) · `/threads` · `/portal` (knots + leagues) · `/account` (dues) · `/passbook` (+ the Passage Log and Marks) · `/word` · `/you` |
+| Member app | `/home` · `/live` · `/manifest` (passes) · `/open-deck` (feed) · `/directory` · `/regattas` (contests) · `/agreements` (waivers) · `/threads` · `/portal` (knots + leagues) · `/account` (dues) · `/card` (+ the Passage Log and Marks) · `/inbox` · `/you` |
 | Mobile | Same member routes; under 960px the shell becomes a 6-tab bottom bar. Installable PWA (`/manifest.webmanifest`, standalone, starts at `/home-port`) with a service worker, offline shell, and web push |
 | Signing | `/sign/[token]` — a guest signs their waiver by bearer link, no account. `noindex`, and marked credential-bearing so the audit never enumerates real tokens |
 | Commerce | `/shop` (shop) · `/stub/[code]` (pass and guest stubs + QR) · house-account ledger; Stripe settles balances and runs recurring dues |
@@ -66,7 +66,7 @@ Apple/Google wallet passes require platform signing credentials the project does
 ## Site map & route audit
 
 - `src/lib/route-manifest.json` is generated from the `src/app` filesystem by `scripts/generate-route-manifest.mjs`, which runs automatically before `dev` and `build` — it cannot drift. It also parses the auth proxy's protected-prefix list so route classification and access control share one source of truth.
-- `src/app/sitemap.ts` and `src/app/robots.ts` derive from that manifest plus live Supabase slugs: new pages, voyages, and Dispatch posts appear in `/sitemap.xml` without manual edits; member surfaces never do.
+- `src/app/sitemap.ts` and `src/app/robots.ts` derive from that manifest plus live Supabase slugs: new pages, episodes, and log entries appear in `/sitemap.xml` without manual edits; member surfaces never do.
 - `scripts/audit-routes.mjs` (`npm run routes:audit` against a running server) fetches every route and asserts: 200s on public pages, signed-out redirects on member pages, 404 (not 500) on unknown slugs, fail-safe auth handlers, HTML violations (missing title/lang/alt, error-boundary text), internal link integrity, sitemap/robots/PWA-icon resolution.
 - `.github/workflows/route-audit.yml` runs the audit on every push and PR **and on a daily schedule**, fails if the committed manifest is stale, and uploads `route-audit-report.json` as an artifact.
 
@@ -111,6 +111,7 @@ Each of these was an open question the audits kept returning to. They are decide
 - **The duration ladder stops printing its names.** `voyages.sub_class` keeps `voyage` / `expedition` / `odyssey` because they price the plans and set the class ceiling in `rsvp_guard`, but `SUB_CLASSES` in `src/lib/brand.ts` now labels them "Up to 4 hours" / "Up to 8 hours" / "Any length". The key is plumbing; a card names its format and its hours, and a three-hour pool social is not an Odyssey.
 - **The Captain's Pass is retired, not repriced.** `club_products.captains_pass` is `active = false, published = false`. It carried two conflicting definitions — a standing invitational place and an issued digital ticket — and the second leaned on a banned word. Membership is reached by invitation or by application, both of which are real rows in real tables; what admits a member to one sailing is a **boarding pass** (`single_pass` → "Single boarding pass", `couple_pass` → "Couple boarding pass").
 - **A sailing is filed on one of three rungs, and no others.** `voyages_sub_class_check` now allows only `voyage | expedition | odyssey`; `trek`, `excursion` and `overland` are gone. They were admitted by the old CHECK and known to nothing else — `rsvp_guard` applies the class ceiling only when `sub_class in ('voyage','expedition','odyssey')`, so a sailing filed as a trek skipped the ceiling entirely and any tier could board it. Duration is duration whether or not there is water under it.
+- **Every event is an episode.** One noun for the thing the club runs, afloat or ashore, an hour or three days — the show's own word, and the reality-TV framing the brand is built on. Charter, voyage and event are retired as display nouns; they survive only as catalogue labels on two formats (Private charter, Theme voyage) and as database identifiers, which are plumbing. The list of them is the **Manifest** at `/episodes`. The written record gave up that name to make room and is the **Log** at `/log` — which its own standfirst always called it. `next.config.ts` redirects the four editorial slugs by name, ahead of the wildcards, because `/episodes/:slug` is now an episode address and a blanket rule would shadow every one of them.
 - **Not offered, on purpose:** digital or hybrid events. The phones-in-totes ethos is the product, and every rule in the schema assumes a hull, a gangway and a clock (decided again 2026-09-02).
 
 ## Data model

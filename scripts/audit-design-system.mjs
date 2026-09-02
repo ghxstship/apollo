@@ -335,6 +335,48 @@ function checkVocab() {
     total: terms.length, hits: missing.map((t) => ({ term: t })), exempted: [] };
 }
 
+/* ── check: tracking ──────────────────────────────────────────────────────── */
+/* §Type ships five tracking steps — display .01 · body 0 · dense .12 · label
+   .16 · strap .24 — plus the documented mono-data exception at .04. Every one
+   of them is a token, and nothing was checking that a stylesheet used them.
+
+   It drifted where you would expect: the Log masthead set an Anton heading at
+   .3em with a -.3em margin to cancel the trailing gap — thirty times the
+   display step, and the only letterspaced heading in the app. Nothing caught
+   it because the other checks read font-size, weight and family, never
+   tracking.
+
+   A literal is allowed only where it is 0 or normal (which say "no tracking"
+   unambiguously and need no token), or where the line carries a ds-exempt
+   note. Everything else states which step it means. */
+
+const TRACK_OK = /^(0|normal|var\(--(tracking|track)-[a-z]+\))$/;
+
+function checkTracking() {
+  const hits = [];
+  let total = 0;
+  for (const p of APP_CSS) {
+    lines(p).forEach((line, i) => {
+      for (const m of line.matchAll(/letter-spacing:\s*([^;}]+)/g)) {
+        total++;
+        const v = m[1].trim();
+        if (TRACK_OK.test(v)) continue;
+        const why = exempt(line);
+        const hit = { file: rel(p), line: i + 1, why: `${v} — not a tracking token` };
+        if (why) hits.push({ ...hit, exempt: why });
+        else hits.push(hit);
+      }
+    });
+  }
+  return {
+    name: "tracking",
+    rule: "letter-spacing comes from a tracking token (or is 0/normal)",
+    total,
+    hits: hits.filter((h) => !h.exempt),
+    exempted: hits.filter((h) => h.exempt),
+  };
+}
+
 /* ── check: inline styles ─────────────────────────────────────────────────── */
 /* The blind spot every other check had. checkWeights, checkScale and
    checkDisplay all walk APP_CSS, so nothing inside a React `style={{…}}` was
@@ -427,7 +469,7 @@ function checkFoundingYear() {
 /* ── report ───────────────────────────────────────────────────────────────── */
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
-const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear(), checkInline()]
+const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear(), checkInline(), checkTracking()]
   .filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {

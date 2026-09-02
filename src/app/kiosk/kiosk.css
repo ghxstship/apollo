@@ -11,7 +11,7 @@
 .kio h1{font-family:var(--font-display);font-weight:400;font-size:var(--text-2xl);letter-spacing:var(--track-display);text-transform:uppercase;max-width:16ch;color:var(--text-inverse-1)}
 @media (min-width:768px){.kio h1{font-size:var(--text-4xl)}}
 .kio p{font-size:18px;line-height:1.6;color:var(--text-inverse-2);max-width:38ch}
-.kio-mono{font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:.16em;color:var(--text-inverse-3);text-transform:uppercase}
+.kio-mono{font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--tracking-label);color:var(--text-inverse-3);text-transform:uppercase}
 .kio-cam{width:min(440px,90vw);border:1px solid var(--border-gold);border-radius:var(--radius-md);overflow:hidden}
 .kio .ls-btn{min-height:48px;min-width:220px}
 .kio[data-refused="1"] h1{color:var(--danger)}

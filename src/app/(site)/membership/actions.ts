@@ -25,7 +25,7 @@ export async function submitApplication(
   const errors: ApplyState["errors"] = {};
   if (values.full_name.length < 2) errors.full_name = "Your name, as the manifest should read it.";
   if (!EMAIL_RE.test(values.email)) errors.email = "A working address — the invitation travels by mail.";
-  if (!(CITIES as readonly string[]).includes(values.city)) errors.city = "Pick the harbor nearest you.";
+  if (!(CITIES as readonly string[]).includes(values.city)) errors.city = "Pick the city nearest you.";
   if (values.invite && !INVITE_CODE_RE.test(values.invite))
     errors.invite = "That code doesn't read — check it against the note it came with.";
   if (!conduct) errors.conduct = "The code of conduct comes with the water.";

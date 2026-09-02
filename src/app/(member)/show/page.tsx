@@ -157,7 +157,7 @@ export default async function ShowPage() {
       </div>
 
       {!sailing ? (
-        <p className="shw-note">Nothing on the water. The board comes up when a sailing is on the sheet.</p>
+        <p className="shw-note">Nothing on the water. The board comes up when an episode is on the sheet.</p>
       ) : (
         <>
           {/* Run of show */}
@@ -199,13 +199,13 @@ export default async function ShowPage() {
                 ))}
               </div>
             ) : (
-              <p className="shw-note">No board laid out for this sailing yet.</p>
+              <p className="shw-note">No board laid out for this episode yet.</p>
             )}
 
             <BoardControls voyageId={sailing.id} empty={rows.length === 0} />
 
             <p className="shw-note">
-              CP marks critical path — the sailing cannot proceed without it.
+              CP marks critical path — the episode cannot proceed without it.
               Fixed column widths, never space-between: the board is read at a
               glance on a wet deck. Nothing here blocks a departure; a person
               decides, because a rule that strands a boat at a dock over a
@@ -218,7 +218,7 @@ export default async function ShowPage() {
             <div className="shw-head">
               <h2 className="shw-h2">Signal flags</h2>
               <span className="shw-strap">
-                One flag flies at a time · guests learn them in one sailing ·
+                One flag flies at a time · guests learn them in one episode ·
                 geometry carries the meaning, never a division hue
               </span>
             </div>

@@ -24,7 +24,7 @@ export default async function EnvelopesPage({
   const db = moduleTables(supabase);
   const sp = await searchParams;
 
-  /* The window that matters: a sailing about to run, and one that just did —
+  /* The window that matters: an episode about to run, and one that just did —
      the log stays open for twenty-four hours after 19:00, so yesterday's
      envelopes are still live and still worth reprinting for a guest who lost
      their card. */
@@ -47,7 +47,7 @@ export default async function EnvelopesPage({
             status="empty"
             icon="Mail"
             title="Nothing on the water."
-            detail="An envelope is minted against an aboard pass on a sailing. When there is one, its sheet shows here."
+            detail="An envelope is minted against an aboard pass on an episode. When there is one, its sheet shows here."
           />
         </div>
       </div>
@@ -83,7 +83,7 @@ export default async function EnvelopesPage({
   /* clockRes was consumed as !!clockRes.data with no check, alone on a page
      where every other read goes through must(). A failed read is not an absent
      clock, and it rendered as the confident falsehood "Radar has never been
-     opened on this sailing, so a printed token opens nothing." It is a
+     opened on this episode, so a printed token opens nothing." It is a
      maybeSingle, so must() (which expects a list) does not fit; the error is
      raised directly instead. */
   if (clockRes.error) throw new Error(`the radar clock could not be read: ${clockRes.error.message}`);
@@ -114,8 +114,8 @@ export default async function EnvelopesPage({
       <p className="hm-lede">
         One gold-foil card per aboard pass, carrying one token. The guest types
         it off the card to open their Captain&apos;s Log at 19:00, and it is the
-        only way in — so a sailing whose envelopes were never printed is a
-        sailing whose anchors nobody can reach.
+        only way in — so an episode whose envelopes were never printed is an
+        episode whose anchors nobody can reach.
       </p>
 
       <div className="hm-sec">

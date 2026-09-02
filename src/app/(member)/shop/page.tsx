@@ -58,7 +58,7 @@ export default async function ShopPage() {
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
         Kit worth its salt. Charged to your member account; collect at the
-        harbor or the next shore night.
+        venue or the next shore night.
       </p>
       <div className="mbr-sec">
         <Shop zone={zone}

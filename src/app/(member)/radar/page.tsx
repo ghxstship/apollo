@@ -40,7 +40,7 @@ export default async function RadarPage() {
   const { supabase, user } = await getMember();
   const db = moduleTables(supabase);
 
-  /* The sailing Radar might be running on: one I hold a seat on, whose clock
+  /* The episode Radar might be running on: one I hold a seat on, whose clock
      exists. Passes first — rsvps is "own passes or staff", so this reads only
      mine and no wider query is possible from here. */
   const { data: myPasses } = await supabase
@@ -54,8 +54,8 @@ export default async function RadarPage() {
     ? await db.from("voyage_radar").select("*").in("voyage_id", ids)
     : { data: [] as RadarClock[] };
 
-  /* The soonest sailing whose anchors have not expired. A member on three
-     sailings is on exactly one of them tonight. */
+  /* The soonest episode whose anchors have not expired. A member on three
+     episodes is on exactly one of them tonight. */
   /* Server-rendered per request, so "now" is request time. `new Date()` rather
      than `Date.now()` because the purity rule refuses the latter during render
      — the same reading of the clock, in the form the linter can see is a
@@ -118,7 +118,7 @@ export default async function RadarPage() {
           <span className="rdr-eyebrow">Dark</span>
           <p className="rdr-note">
             Radar is live aboard only, and dark everywhere else. It is not
-            something you scroll at home. It opens at 17:15 on the sailing, on
+            something you scroll at home. It opens at 17:15 on the episode, on
             open water, and closes at 17:30. The Match of the Day is called at
             sunset, on deck.
           </p>
@@ -185,7 +185,7 @@ export default async function RadarPage() {
           ) : (
             <p className="rdr-note">
               {phase === "unlocked"
-                ? "Nothing has come back mutual on this sailing. A one-sided pick is never surfaced, hinted at, or counted — so there is nothing here either way."
+                ? "Nothing has come back mutual on this episode. A one-sided pick is never surfaced, hinted at, or counted — so there is nothing here either way."
                 : "Anchors open at 19:00, from the QR inside the sealed Captain's Log envelope. Nothing shows before then, on either side."}
             </p>
           )}

@@ -91,11 +91,11 @@ export default async function ThreadsPage() {
       const unread = !!last && (!read || Date.parse(last.created_at) > Date.parse(read));
       const title =
         t.kind === "crew"
-          ? `${voyage?.title ?? t.title ?? "A voyage"} — crew`
+          ? `${voyage?.title ?? t.title ?? "An episode"} — crew`
           : t.kind === "direct"
             ? other?.full_name ?? "A member"
             : t.title ?? "Shoreside";
-      /* A crew thread belongs to a sailing, and what the header says about it
+      /* A crew thread belongs to an episode, and what the header says about it
          is where it happens — afloat or ashore. */
       const eyebrow =
         t.kind === "crew"

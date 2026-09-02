@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, Icon, Stat, StateBlock } from "@/components/ds";
-import { CURRENCY, knots, SURFACES } from "@/lib/brand";
+import { CURRENCY, knots, PLACE, SURFACES } from "@/lib/brand";
 import { logDate, logMeta } from "@/lib/format";
 import { firstName, getMember } from "../data";
 import { KIND_ICON, relTime } from "../relative";
 
-export const metadata: Metadata = { title: "Harbor" };
+/* Title, nav label and h1 all read the one name from the lexicon. */
+export const metadata: Metadata = { title: SURFACES.homePort };
 
-/* How many underway sailings the strip will name. */
+/* How many underway episodes the strip will name. */
 const LIVE_LIMIT = 12;
 
-export default async function HarborPage() {
+export default async function HomePortPage() {
   const { supabase, user, profile, zone } = await getMember();
   const nowIso = new Date().toISOString();
 
@@ -35,8 +36,8 @@ export default async function HarborPage() {
       supabase.from("member_pass_usage").select("month,passes_used").eq("profile_id", user.id),
     ]);
 
-  /* The next pass is the soonest upcoming sailing this member is aboard —
-     asked for by id, rather than reading every upcoming sailing in the club
+  /* The next pass is the soonest upcoming episode this member is aboard —
+     asked for by id, rather than reading every upcoming episode in the club
      and searching it for one of theirs. */
   const aboardIds = (rsvpsRes.data ?? []).map((r) => r.voyage_id);
   const nextBerthRes = aboardIds.length
@@ -81,14 +82,21 @@ export default async function HarborPage() {
   return (
     <div>
       <div className="ls-rise">
-        <span className="mbr-eyebrow">Home harbor</span>
+        {/* The greeting was the h1 and the page had no name on it at all. The
+            name is the h1 now — it matches the route, the nav and the title —
+            and the welcome moved up into the eyebrow, where it still lands
+            first and still says the member’s name. */}
+        <span className="mbr-eyebrow">Fair winds, {firstName(profile)}</span>
         <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          Fair winds, {firstName(profile)}.
+          {SURFACES.homePort}.
         </h1>
         <div className="mbr-mono" style={{ marginTop: 8 }}>
-          {/* The club's own harbour is not the member's. Every fixture with a
-              null home_harbor was being told theirs was Marina del Rey. */}
-          {harbor?.name ? harbor.name.toUpperCase() : "NO HOME HARBOR YET"}
+          {/* The club's own city is not the member's. Every fixture with a
+              null home_harbor was being told theirs was Marina del Rey. The
+              column keeps its name; the label reads the lexicon. */}
+          {harbor?.name
+            ? harbor.name.toUpperCase()
+            : `NO HOME ${PLACE.market.toUpperCase()} YET`}
           {harbor?.coordinates ? ` · ${harbor.coordinates}` : ""}
         </div>
       </div>
@@ -108,10 +116,10 @@ export default async function HarborPage() {
               <>
                 <Badge tone="positive">Aboard</Badge>
                 <Link
-                  href="/manifest"
+                  href="/passes"
                   className="ls-btn ls-btn--ghost ls-btn--sm ls-btn--inverse"
                 >
-                  Manifest <Icon name="ArrowUpRight" size={14} />
+                  Passes <Icon name="ArrowUpRight" size={14} />
                 </Link>
               </>
             }
@@ -123,10 +131,10 @@ export default async function HarborPage() {
             status="empty"
             icon="Sailboat"
             title="No passes held."
-            detail="The manifest is open. Passes are few by design."
+            detail="The season is open. Passes are few by design."
             action={
-              <Link href="/manifest" className="ls-btn ls-btn--outline ls-btn--sm">
-                View voyages
+              <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
+                View passes
               </Link>
             }
           />
@@ -169,13 +177,13 @@ export default async function HarborPage() {
               <Icon name="Users" size={18} style={{ color: "var(--text-2)" }} />
               <div>
                 <b>Directory</b>
-                <span>THE ROSTER · BY HARBOR AND LEAGUE</span>
+                <span>THE ROSTER · BY {PLACE.market.toUpperCase()} AND LEAGUE</span>
               </div>
             </Link>
             <Link href="/portal" className="hbr-link">
               <Icon name="Compass" size={18} style={{ color: "var(--text-2)" }} />
               <div>
-                <b>Member portal</b>
+                <b>Portal</b>
                 <span>KNOTS · REWARDS · REFERRALS</span>
               </div>
             </Link>
@@ -191,7 +199,7 @@ export default async function HarborPage() {
       </section>
 
       <section className="mbr-sec ls-rise-3">
-        <span className="mbr-eyebrow">The Word</span>
+        <span className="mbr-eyebrow">Inbox</span>
         {word.length === 0 ? (
           <StateBlock
             status="empty"

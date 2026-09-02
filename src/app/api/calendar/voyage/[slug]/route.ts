@@ -7,9 +7,10 @@ import {
   voyageSummary,
   voyageWindow, icsStatus } from "../../ics";
 
-/* GET /api/calendar/voyage/[slug] — one public sailing, no sign-in.
-   The same row the event page already shows the shore, in a form a calendar
-   will hold onto. */
+/* GET /api/calendar/voyage/[slug] — one public episode, no sign-in.
+   The path segment is legacy plumbing, like the table it reads. The same row
+   the episode page already shows the shore, in a form a calendar will hold
+   onto. */
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export async function GET(
   if (!voyage) return new Response("Not found", { status: 404 });
 
   const { start, end } = voyageWindow(voyage);
-  const url = `${SITE_URL}/charters/${voyage.slug}`;
+  const url = `${SITE_URL}/episodes/${voyage.slug}`;
   const description = [
     voyage.blurb ?? "",
     "Boards thirty minutes before cast off.",

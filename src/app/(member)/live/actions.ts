@@ -19,7 +19,7 @@ export type GalleyResult = { error?: string };
    definer and this caller was never moved across.
 
    The RPC prices the tab from the catalogue, refuses a member who is not
-   aboard that sailing, and refuses a membership on hold — each in its own
+   aboard that episode, and refuses a membership on hold — each in its own
    words, which now reach the member instead of a generic line. */
 export async function placeGalleyOrder(
   voyageId: string,
@@ -59,7 +59,7 @@ export async function placeGalleyOrder(
 
    The policies invited this write from the start — storage's "aboard members
    upload voyage media" (path must open with the member's own id) and
-   voyage_media's "aboard members upload" (own row, aboard that sailing,
+   voyage_media's "aboard members upload" (own row, aboard that episode,
    approved false) — and no product surface ever called them: the gallery's
    member half was fed by staff uploads alone. The file goes first; a row
    that fails after leaves nothing fetchable, and the object is removed so

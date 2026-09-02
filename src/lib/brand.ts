@@ -24,7 +24,14 @@
    - Retired wholesale: Syrius, SYNC, UN__, UNMOORED, Yacht Club, and the
      four-sub-brand model. All of it is in BANNED_TERMS.
    - Ops console = the Bridge · live mode = Live · feed = Open Deck
-   - Credential = Member Card · commerce = the Shop · editorial = Episodes
+   - Credential = Member Card · commerce = the Shop · editorial = the Log
+   - EVERY event is an Episode (2026-09). Not a charter, not a voyage, not an
+     event: one noun, the show's own, whether it is afloat or ashore. The list
+     of them is the Manifest. The written record gave up the name Episodes to
+     make room and became the Log, which its own standfirst already called it.
+     Charter and voyage survive ONLY as catalogue labels on two formats
+     (Private charter, Theme voyage) and as database identifiers, which are
+     plumbing.
    - Agent = the Producer (confirm-first; money always asks). The engine is
      Aurora, the shared ATLVS intelligence — the Producer is its [un] face;
      Aurora is never named in member-facing copy (see BANNED_TERMS).
@@ -212,13 +219,38 @@ export function lockup(division?: DivisionId | null, form: LockupForm = "standar
 /* ── Surfaces and plumbing ──────────────────────────────────────────────── */
 
 export const SURFACES = {
-  homePort: "Home",
+  /* The member's first surface. The route stays /home by the owner's decision;
+     the NAME is Home Port, restored 2026-09-02 and taken back off BANNED_TERMS
+     in the same pass. The nav label, the title and the h1 all read it from
+     here, so there is no second place for the two words to drift apart. */
+  homePort: "Home Port",
   bridge: "The Bridge",
   gateway: "Live",
   openDeck: "Open Deck",
   passbook: "Member Card",
   shoreside: "Shoreside",
-  magazine: "Episodes",
+  /* The written record. It gave up the name "Episodes" in Sept 2026 when every
+     event became an episode — which is what its own standfirst had always
+     called it: "The ship's log, published." */
+  magazine: "The Log",
+  /* What the club runs. One noun for the thing, and it is the show's word:
+     an episode is afloat or ashore, an hour or three days, and it is always an
+     episode. Charter, voyage and event are retired as display nouns. */
+  episode: "Episode",
+  episodes: "Episodes",
+  /* The named strand an episode belongs to, and the word that replaced Format
+     on 2026-09-02. Format is a production word in the same family as call
+     sheet: correct back of house, wrong in front of a member. Series is the
+     word a viewer already owns, it carries the promise that another one is
+     coming, and it collapses two near-identical ideas — the catalogue of kinds
+     and the recurrence mechanism — into the one thing they always were.
+     activity_formats keeps its column names; they are plumbing. */
+  series: "Series",
+  /* An episode belonging to no series. Television calls a one-off exactly
+     this, which is why series_id staying nullable is a feature rather than a
+     gap — a private charter and a founding night are both specials, and the
+     card now has an honest thing to say instead of a blank. */
+  special: "Special",
   agent: "The Producer",
   gangway: "The Gangway",
   shop: "The Shop",
@@ -306,8 +338,12 @@ export const MARK_KIND: Record<string, string> = {
 
 export const CONTEST_METRIC: Record<string, string> = {
   nm: "nautical miles",
-  sailings: "charters",
-  harbors: "harbors",
+  sailings: "episodes",
+  /* The key is the contest_metric enum value and stays; the label is what the
+     Bridge prints in its call-a-contest select and in the target line, so it
+     follows the city rename. This one is rendered unconditionally with no
+     contest data at all, which is why it fails the gate rather than hiding. */
+  harbors: "cities",
   vessels: "hulls",
   crew_met: "cast met",
   frames: "frames posted",
@@ -382,6 +418,49 @@ export const SUB_CLASSES: Record<string, { label: string; note: string }> = {
   odyssey: { label: "Any length", note: "Over 8 hours" },
 };
 
+/* ── Series, seasons, editions ───────────────────────────────────────────────
+   Settled by the owner 2026-09-02, on the Love Island model.
+
+     SERIES   the named strand. Sandbar Social, Dinner Club. Was Format.
+     EDITION  that series in one city. Sandbar Social Miami, Sandbar Social LA
+              — the same series with its own cadence, capacity and crew, the
+              way Love Island UK and Love Island USA are one property in two
+              territories.
+     SEASON   a run of episodes within one edition. Seasons belong to the
+              edition, NOT to the club: Miami launched in 2026 and Chicago
+              launches in 2027, so a single global season number would open the
+              Chicago page on Season II with no Season I behind it. Per edition,
+              both cities are honest at once.
+     EPISODE  one airing. Has a date, a city, a venue, and passes.
+     SPECIAL  an episode in no series. A crossing is away from home water by
+              definition and a private charter has no run; neither is edition-ed.
+
+   The city is part of the edition NAME, never a chip beside it — Love Island
+   USA, not Love Island · Territory: USA. editionName is the only place that
+   joins them so the two halves cannot drift apart across surfaces. */
+export function editionName(series: string, city?: string | null): string {
+  const s = String(series ?? "").trim();
+  const c = String(city ?? "").trim();
+  if (!s) return c;
+  return c ? `${s} ${c}` : s;
+}
+
+/* Where the club is, as a member reads it. The harbors table holds cities —
+   Miami, Los Angeles, Chicago, New York, each with a timezone and a launch
+   year — and never held a dock, which is why Harbor read wrong the moment the
+   club started running episodes ashore. A city has both water and streets.
+
+   The place an episode actually happens is the VENUE (voyages.venue_id), which
+   is the hospitality word and works identically for a marina and a rooftop.
+   Site was considered and dropped: it duplicates venue, it collides with the
+   (site) route group, and it is a production word like call sheet. */
+export const PLACE = {
+  market: "City",
+  markets: "Cities",
+  venue: "Venue",
+  venues: "Venues",
+} as const;
+
 export function knots(n: number): string {
   return `${n >= 0 ? "" : "−"}${Math.abs(n)} KN`;
 }
@@ -443,7 +522,13 @@ export const BANNED_TERMS = [
   "Passbook",
   "The Booth",
   "the Booth",
-  "Home Port",
+  /* Home Port came off this list on 2026-09-02 — the owner restored it as the
+     member page name. It was banned as a Lyre-era surface, and the era was the
+     problem rather than the words. Gateway stays banned; Live is the name now.
+     NOTE the rule at the top of this array: no double quotes in a comment here,
+     because the extractor lifts every quoted string it finds and a quoted
+     example silently becomes a banned term. This comment was written with them
+     the first time and put Home Port straight back on the list. */
   "Gateway",
   "LORE",
   "Aurora",
@@ -479,4 +564,43 @@ export const BANNED_TERMS = [
   "Plot Course",
   "Chief Vibe Stew",
   "Captain's Pass",
+  /* Retired 2026-09-02 with the episode rename. Only the plural is banned, and
+     that is deliberate: the singular survives as a catalogue label on the
+     Private charter and Theme voyage formats, and the gate matches a lowercase
+     substring — banning the singular would fail on the club's own products.
+     Nothing renders the plural any more, so it is a clean regression alarm. */
+  "Charters",
+  /* Retired 2026-09-02. The harbors table holds cities and always did, so the
+     word read as a dock the moment episodes started happening ashore. City is
+     the market, Venue is the place.
+
+     Only these two forms are banned, and the narrowness is the point: the bare
+     singular still appears inside First League - Harborline, which is a league
+     name and stays, and the gate matches a lowercase substring. Banning the
+     bare word would fail the build on the club's own loyalty ladder.
+
+     The third entry carries a trailing space and that is the whole trick: it
+     catches harbor clock, harbor and league, and any other running-prose use,
+     while Harborline has a letter where the space would be and passes clean.
+     Sentence-final harbor. and harbor, still slip through, which is the price
+     of keeping the league name legal. */
+  "Harbors",
+  "home harbor",
+  "harbor ",
+  /* Retired 2026-09-02 with the Series rename. Format is a production word in
+     the same family as call sheet and a member never sees one; Series is the
+     word a viewer already owns. The activity_formats table, voyages.format and
+     every guard that reads them keep their names, because the gate greps
+     VISIBLE TEXT only - tags and attributes are stripped before the match, so
+     plumbing is structurally exempt and the bare word can be banned outright.
+     Proven by the flagship catalogue blurb, which called itself the anchor
+     format and rendered on two surfaces until a data migration moved it.
+
+     THE LEADING SPACE IS LOAD-BEARING. The bare word was tried first and it
+     failed the build on /vetting and /bridge/reports, neither of which says
+     format anywhere — the letters sit inside the word information, which both
+     pages use in their privacy copy. Conformation and reformat are the same
+     trap. With the space, a standalone label still matches, because the gate
+     replaces every tag with a space before it looks. */
+  " format",
 ];

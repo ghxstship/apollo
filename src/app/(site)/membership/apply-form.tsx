@@ -46,7 +46,7 @@ export function ApplyForm() {
       <Select
         label="City"
         name="city"
-        placeholder="The harbor nearest you"
+        placeholder="The city nearest you"
         defaultValue={state.values.city || ""}
         error={state.errors.city}
         options={CITIES.map((c) => ({ value: c, label: c }))}

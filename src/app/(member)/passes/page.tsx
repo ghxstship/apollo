@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Card, StateBlock } from "@/components/ds";
+import { PLACE, SURFACES } from "@/lib/brand";
 import {
-  SETTING_LABEL,
   TIER_LABEL,
   eveningBefore,
   logDate,
@@ -16,9 +16,9 @@ import { RsvpControls, type DaybedOffer } from "./rsvp-controls";
 import type { CrewSeeker, GuestStub, MemberOption, StandingOffer } from "./pass-extras";
 import { TransferInbox, type IncomingOffer } from "./transfer-inbox";
 
-export const metadata: Metadata = { title: "The manifest" };
+export const metadata: Metadata = { title: "Passes" };
 
-export default async function VoyagesPage() {
+export default async function PassesPage() {
   const { supabase, user, profile, onHold } = await getMember();
   const now = new Date();
   const nowIso = now.toISOString();
@@ -58,7 +58,7 @@ export default async function VoyagesPage() {
     supabase.from("waitlist_position").select("*").eq("profile_id", user.id),
     /* Hand-offs in both directions, still standing. */
     supabase.from("pass_transfers").select("*").eq("status", "offered"),
-    /* Everyone forming crew on the sailings ahead. */
+    /* Everyone forming crew on the episodes ahead. */
     supabase.from("crew_requests").select("*").eq("open", true),
     /* The roll a pass may be handed to: members who chose to be findable.
        This filtered on `status = active`, which stopped meaning "active" the
@@ -78,7 +78,7 @@ export default async function VoyagesPage() {
       .select("price_cents, per_sailing_cap, party_size, published")
       .eq("slug", "vip_daybed")
       .maybeSingle(),
-    /* A sailing with segment caps is a composition sailing: its door is the
+    /* An episode with segment caps is a composition episode: its door is the
        vetting page, and an rsvp written here without a segment would be
        refused — or worse, seated outside the ratio. */
     moduleTables(supabase).from("voyage_segment_caps").select("voyage_id"),
@@ -261,7 +261,7 @@ export default async function VoyagesPage() {
   const inboundRows = transfers.filter((t) => t.to_profile === user.id);
   let inbound: IncomingOffer[] = [];
   if (inboundRows.length > 0) {
-    /* Naming the sailing behind an offer means reading the OFFERER's rsvp, and
+    /* Naming the episode behind an offer means reading the OFFERER's rsvp, and
        rsvps is `profile_id = auth.uid()`. The old code resolved it directly,
        always got zero rows, and returned [] — so an offer could be made and
        never seen, and acceptOffer/declineOffer were unreachable. */
@@ -288,10 +288,10 @@ export default async function VoyagesPage() {
     else crewOthersByVoyage.set(c.voyage_id, [...(crewOthersByVoyage.get(c.voyage_id) ?? []), seeker]);
   }
 
-  /* Pass meter. The allowance is spent against a sailing's DEPARTURE month —
+  /* Pass meter. The allowance is spent against an episode's DEPARTURE month —
      that is what rsvp_guard counts — but this read the current calendar month,
-     so a member aboard a September sailing was shown August's untouched
-     allowance while September's was gone. It follows the next sailing they
+     so a member aboard a September episode was shown August's untouched
+     allowance while September's was gone. It follows the next episode they
      could actually claim, and says which month it is talking about. */
   const plan = planRes.data;
   const nextAhead = voyages
@@ -316,8 +316,8 @@ export default async function VoyagesPage() {
   const earlyDays = plan?.early_days ?? 0;
 
   /* The class ceiling is the second gate, and it used to be invisible: an
-     odyssey sailing looked claimable to everyone and the guard refused it at
-     submit ("this sailing runs past your class tier"). A pass you cannot claim
+     odyssey episode looked claimable to everyone and the guard refused it at
+     submit ("this episode runs past your class tier"). A pass you cannot claim
      should read as locked, not as an invitation. */
   const CLASS_RANK: Record<string, number> = {
     excursion: 0, voyage: 0, overland: 1, expedition: 1, trek: 2, odyssey: 2,
@@ -329,11 +329,12 @@ export default async function VoyagesPage() {
   const myRank = TIER_RANK[profile?.tier ?? "regional"] ?? 0;
   const myTier = profile?.tier ?? "regional";
 
-  /* The home-harbor lock, the same way. rsvp_guard boards a Regional member
-     only on a sailing that leaves from their home harbor; a sailing with no
-     harbor is open to everyone, National and Global sail every harbor, and
-     staff pass through. Two refusals, each said here before the guard says
-     it: no harbor chosen yet, or the wrong one. */
+  /* The home-city lock, the same way. rsvp_guard boards a Regional member
+     only on an episode that leaves from their home city; an episode with no
+     city is open to everyone, National and Global sail every city, and staff
+     pass through. Two refusals, each said here before the guard says it: no
+     city chosen yet, or the wrong one. The column is still home_harbor. */
+  const CITY = PLACE.market.toLowerCase();
   const harborName = new Map<string, string>(
     (harborsRes.data ?? []).map((h) => [h.id, h.name] as const)
   );
@@ -352,21 +353,21 @@ export default async function VoyagesPage() {
     if (onHold) return { note: "Your membership is paused. Resume it on your page to claim a pass." };
     if (pastMyClass(v))
       return {
-        note: `This sailing runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`,
+        note: `This episode runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`,
       };
     if ((TIER_RANK[v.min_tier] ?? 0) > myRank)
       return { note: `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.` };
     const harbor = harborLock(v);
     if (harbor === "unset")
       return {
-        note: "Regional passes sail from your home harbor — choose it on your page.",
-        link: { href: "/you", label: "Choose your harbor" },
+        note: `Regional passes sail from your home ${CITY} — choose it on your page.`,
+        link: { href: "/you", label: `Choose your ${CITY}` },
       };
     if (harbor === "mismatch")
       return {
-        note: `Regional passes sail from your home harbor — this one leaves from ${
-          (v.harbor_id && harborName.get(v.harbor_id)) || "another harbor"
-        }. National sails every US harbor.`,
+        note: `Regional passes sail from your home ${CITY} — this one leaves from ${
+          (v.harbor_id && harborName.get(v.harbor_id)) || `another ${CITY}`
+        }. National sails every US ${CITY}.`,
       };
     return null;
   };
@@ -408,12 +409,19 @@ export default async function VoyagesPage() {
 
   return (
     <div>
-      <span className="mbr-eyebrow">The manifest</span>
+      {/* This page is where a pass is claimed and held; the public Episodes
+          page is where episodes are browsed. The old name for it was the
+          manifest, which is the boarding list the club draws from these claims
+          — a back-of-house document, and the standfirst says so instead of the
+          heading. Season is not available: it means the calendar frame and the
+          membership cycle, and Season I would have collided with it. */}
+      <span className="mbr-eyebrow">Every episode ahead</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        The manifest.
+        Passes.
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
-        Passes are few by design. Claim one{profile?.tier === "global" ? ", bring up to two guests," : ""} or hold the
+        Every episode ahead, and the pass on each one. Passes are few by design.
+        Claim one{profile?.tier === "global" ? ", bring up to two guests," : ""} or hold the
         waitlist — releases go out in order.
       </p>
       {passMeter ? (
@@ -430,7 +438,7 @@ export default async function VoyagesPage() {
             status="empty"
             icon="Sailboat"
             title="Nothing on the water."
-            detail="The next season's manifest is being drawn. Watch the Word."
+            detail="The next season is being drawn. It lands in your Inbox."
           />
         </div>
       ) : (
@@ -448,10 +456,10 @@ export default async function VoyagesPage() {
               nowMs < opensMs
                 /* On the harbour's clock, because the database's refusal names
                    the harbour's day. These two disagreed: the banner said
-                   "MAR 31" and the guard said "Apr 01" for the same sailing. */
+                   "MAR 31" and the guard said "Apr 01" for the same episode. */
                 ? `THE WINDOW OPENS ${logDate(new Date(opensMs).toISOString(), v.time_zone)} ON YOUR PLAN`
                 : null;
-            /* The drop hour, when the sailing has one and it is still ahead
+            /* The drop hour, when the episode has one and it is still ahead
                for this tier. Both gates must pass; the later one is the note. */
             const saleOpens = tierOpensMs(v);
             const earlyHours = myRank * v.presale_hours;
@@ -468,7 +476,7 @@ export default async function VoyagesPage() {
                   : planNote
                 : (saleNote ?? planNote);
             const format = formatOf(v);
-            /* The bow daybed rides on Sea formats. An unfiled sailing (no
+            /* The bow daybed rides on Sea formats. An unfiled episode (no
                format yet) falls back to its class, which is the same question
                asked of an older column. */
             const daybedWater = format ? format.category === "sea" : v.class === "sea";
@@ -481,12 +489,12 @@ export default async function VoyagesPage() {
               v.kind === "port_day" ? 40 : v.distance_nm != null ? v.distance_nm * 10 : null;
             const knotsOnCompletion =
               baseFm != null ? Math.round(baseFm * (v.fathoms_multiplier ?? 1)) : null;
-            /* The badge names the format and how long it runs — the card says
-               what this is, not how it is filed. A sailing with no format yet
-               falls back to where it happens; a sailing with no stated end
-               drops the hours rather than guessing them. */
+            /* The badge names the series and how long it runs — the card says
+               what this is, not how it is filed. An episode belonging to no
+               series is a Special; an episode with no stated end drops the
+               hours rather than guessing them. */
             const hours = durationChip(v.starts_at, v.ends_at);
-            const badge = [format?.label ?? SETTING_LABEL[v.class] ?? "Afloat", hours]
+            const badge = [format?.label ?? SURFACES.special, hours]
               .filter(Boolean)
               .join(" · ");
             const meta = [
@@ -533,7 +541,7 @@ export default async function VoyagesPage() {
                       paused={onHold}
                       composition={compositionIds.has(v.id)}
                       daybed={daybedWater ? daybedOffer : null}
-                      enquiryHref={format?.access === "on_request" ? `/charters/${v.slug}` : null}
+                      enquiryHref={format?.access === "on_request" ? `/episodes/${v.slug}` : null}
                       inviteOnly={format?.access === "invite"}
                       boardingCode={r?.status === "aboard" ? r.boarding_code : null}
                       rsvpId={r?.id ?? null}

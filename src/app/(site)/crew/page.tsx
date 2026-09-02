@@ -32,7 +32,12 @@ const ROLES: Array<{
       "Own the land half of the club — long tables, records, the golden hour. Hospitality background, allergic to boring rooms.",
   },
   {
-    title: "Harbormaster ops",
+    /* Was Harbormaster ops. The role is unchanged and the blurb already named
+       what it actually is — the manifest, the gangway, the weather calls — but
+       Harbormaster console is a retired surface name this repo bans, and a job
+       ad carrying the echo invites a candidate to learn a word the product no
+       longer uses. The Gangway is a live surface; the title now matches it. */
+    title: "Gangway ops",
     dept: "Shoreside",
     type: "Full time",
     port: "Miami",

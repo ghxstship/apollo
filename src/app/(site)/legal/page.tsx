@@ -61,7 +61,7 @@ export default function LegalPage() {
         </p>
         <h3>Guests and transfers.</h3>
         <p>
-          Guests ride on Global passes, two per event, and sign the manifest at the
+          Guests ride on Global passes, two per episode, and sign the manifest at the
           gangway. Memberships aren&rsquo;t transferable; knots may be gifted to a
           named member or the crew fund on departure.
         </p>
@@ -71,14 +71,14 @@ export default function LegalPage() {
         <h2>Privacy.</h2>
         <h3>What we keep.</h3>
         <p>
-          Your manifest — sailings, shore nights, knots — your seaworthiness declaration,
+          Your manifest — episodes, shore nights, knots — your seaworthiness declaration,
           and the contact details you gave us. Payment details live with the
           processor, not us.
         </p>
         <h3>What we never do.</h3>
         <ul>
           <li>Sell your data, or your attention. No ad pixels aboard.</li>
-          <li>Show you on a manifest preview without consent — visibility is per-voyage, off by default for guests.</li>
+          <li>Show you on a manifest preview without consent — visibility is per-episode, off by default for guests.</li>
           <li>Keep what you delete. Departure erases your profile within 30 days; the ledger keeps only what accounting law requires.</li>
         </ul>
         <h3>Your levers.</h3>

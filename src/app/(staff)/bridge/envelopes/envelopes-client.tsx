@@ -45,7 +45,7 @@ export function VoyagePicker({
   const router = useRouter();
   return (
     <Select
-      label="Sailing"
+      label="Episode"
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/envelopes?voyage=${e.target.value}`)}
@@ -66,7 +66,7 @@ export function EnvelopesClient({
   voyageTitle: string;
   departs: string;
   aboard: number;
-  /** Whether this sailing carries a radar clock. Without one the tokens are
+  /** Whether this episode carries a radar clock. Without one the tokens are
       inert: open_the_captains_log refuses with "radar does not run on this
       sailing" whatever is printed on the card. */
   radarOpen: boolean;
@@ -143,7 +143,7 @@ export function EnvelopesClient({
 
       {!radarOpen ? (
         <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
-          Radar has never been opened on this sailing, so a printed token opens
+          Radar has never been opened on this episode, so a printed token opens
           nothing — the log refuses with &ldquo;radar does not run on this
           sailing&rdquo;. Set the clock on the Radar tab before these go on
           paper.

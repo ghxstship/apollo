@@ -55,7 +55,7 @@ export async function signFrames(
   return signed;
 }
 
-/* Flotilla assignments for a set of sailings, in the Bridge's own order. */
+/* Flotilla assignments for a set of episodes, in the Bridge's own order. */
 export async function fleetByVoyage(
   voyageIds: string[]
 ): Promise<Map<string, FleetVessel[]>> {
@@ -98,7 +98,7 @@ export async function fleetFor(voyageId: string): Promise<FleetVessel[]> {
   return (await fleetByVoyage([voyageId])).get(voyageId) ?? [];
 }
 
-/* Approved frames for one sailing, oldest first — the roll as it was shot. */
+/* Approved frames for one episode, oldest first — the roll as it was shot. */
 export async function framesFor(voyageId: string): Promise<Frame[]> {
   try {
     const supabase = await createClient();
@@ -123,13 +123,13 @@ export async function framesFor(voyageId: string): Promise<Frame[]> {
 }
 
 /* The gallery shows this many frames at most — the newest, then grouped by
-   sailing. Every approved frame in the club was being read and signed on each
+   episode. Every approved frame in the club was being read and signed on each
    render before this, and createSignedUrls is one storage call per render
    whose cost grows with the list. */
 export const GALLERY_FRAME_LIMIT = 48;
 
-/* The newest approved frames in the club, grouped by sailing, most recent
-   sailing first; inside a group the roll runs oldest first, as it was shot. */
+/* The newest approved frames in the club, grouped by episode, most recent
+   episode first; inside a group the roll runs oldest first, as it was shot. */
 export async function frameGroups(limit = GALLERY_FRAME_LIMIT): Promise<FrameGroup[]> {
   try {
     const supabase = await createClient();

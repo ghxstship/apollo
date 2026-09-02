@@ -5,7 +5,7 @@
    the LIVE BOARDING CODE — the credential the gangway matches on. Nothing ever
    removed it. Sign-out cleared Cache Storage and stopped there, so a crew
    phone that was signed out, handed on or resold kept every name and code for
-   every voyage it had ever opened, with no expiry and unbounded growth. That
+   every episode it had ever opened, with no expiry and unbounded growth. That
    is the exact threat the service worker's PRIVATE list was written to close,
    left open one storage API along. */
 

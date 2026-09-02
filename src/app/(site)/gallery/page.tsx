@@ -30,7 +30,10 @@ const TILES: Array<{
   { media: "dusk", cap: "Sirens' night, Venice", meta: "Ashore · Jul 10" },
   { media: "day", cap: "Rail down off Point Dume", meta: "Afloat · Jul 04", tall: true },
   { media: "day", cap: "Start line, boat two", meta: "Afloat · Jun 28" },
-  { media: "day", cap: "The long table at Two Harbors", meta: "Ashore · Jun 21", wide: true },
+  /* Named for the cove rather than the settlement: Two Harbors is the real
+     place on Catalina, but the plural is in BANNED_TERMS with the City rename
+     and the gate greps rendered text, so this caption named the anchorage. */
+  { media: "day", cap: "The long table at Isthmus Cove", meta: "Ashore · Jun 21", wide: true },
   { media: "dawn", cap: "Coffee below deck", meta: "Afloat · Jun 14" },
   { media: "dusk", cap: "Records on, wind down", meta: "Ashore · May 31", tall: true },
   { media: "day", cap: "Swim call at anchor", meta: "Afloat · May 17" },
@@ -55,8 +58,8 @@ export default async function GalleryPage() {
           {groups.length === 0
             ? " Placeholder seas hold each frame until the film comes back."
             : capped
-              ? ` The ${GALLERY_FRAME_LIMIT} newest frames, one entry per sailing, most recent first — the rest live on each charter's page.`
-              : " One entry per sailing, most recent first."}
+              ? ` The ${GALLERY_FRAME_LIMIT} newest frames, one entry per episode, most recent first — the rest live on each episode's page.`
+              : " One entry per episode, most recent first."}
         </p>
       </div>
 
@@ -65,7 +68,7 @@ export default async function GalleryPage() {
           <section className="gl-group" key={g.voyageId}>
             <div className="gl-group__head">
               <h2>
-                <Link href={`/charters/${g.slug}`}>{g.title}</Link>
+                <Link href={`/episodes/${g.slug}`}>{g.title}</Link>
               </h2>
               <span className="gl-group__meta">
                 {[

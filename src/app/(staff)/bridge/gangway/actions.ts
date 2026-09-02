@@ -19,7 +19,7 @@ export type ScanResult = {
   vessel?: string;
   guestNames?: string[];
   checkedInAt?: string;
-  /* Set when the code matched a different upcoming voyage than the one
+  /* Set when the code matched a different upcoming episode than the one
      selected — the panel says which. */
   otherVoyage?: string;
 };
@@ -49,7 +49,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
   const code = literalCode(rawCode);
   if (!code) return { error: "Type or scan a code first." };
 
-  /* Selected voyage first; fall back to any upcoming voyage. */
+  /* Selected episode first; fall back to any upcoming episode. */
   let { data: rsvp } = await supabase
     .from("rsvps")
     .select("*")
@@ -94,13 +94,13 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       .eq("boarding_code", code)
       .maybeSingle();
 
-    /* SCOPE THE GUEST TO ITS SAILING. The member path above searches the
-       selected voyage and then only sailings still ahead, so a pass for a
-       voyage that has gone is refused by name. The guest path looked a stub up
-       by code alone — so a guest stub for a sailing that departed weeks ago
+    /* SCOPE THE GUEST TO ITS EPISODE. The member path above searches the
+       selected episode and then only episodes still ahead, so a pass for an
+       episode that has gone is refused by name. The guest path looked a stub up
+       by code alone — so a guest stub for an episode that departed weeks ago
        still boarded at today's gangway and stamped checked_in_at, the column
-       the guest waiver gate hangs off. A guest is admitted to a sailing, not to
-       the dock in general. */
+       the guest waiver gate hangs off. A guest is admitted to an episode, not
+       to the dock in general. */
     if (guest) {
       const { data: host } = await supabase
         .from("rsvps")
@@ -122,7 +122,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
            PostgREST's "…+00:00" against toISOString()'s "…Z" form. Correct only
            for as long as PostgREST renders UTC; the day it renders any other
            offset, the string order stops matching the time order and this fails
-           OPEN — boarding a guest for a sailing that has already gone. The
+           OPEN — boarding a guest for an episode that has already gone. The
            member path does the same test in SQL and cannot drift this way. */
         new Date(gv.starts_at).getTime() < new Date(upcomingCutoff()).getTime();
       if (sailed) {
@@ -133,11 +133,11 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     }
 
     if (!guest) {
-      /* Before calling it a forgery: the fallback above only searches sailings
-         still ahead, so a pass for a sailing that has already gone came back as
-         "No pass matches that code on this voyage." The skipper is standing in
-         front of somebody holding a real pass and being told it is not real.
-         Look it up unscoped and say which sailing it was for. */
+      /* Before calling it a forgery: the fallback above only searches episodes
+         still ahead, so a pass for an episode that has already gone came back
+         as "No pass matches that code on this episode." The skipper is standing
+         in front of somebody holding a real pass and being told it is not real.
+         Look it up unscoped and say which episode it was for. */
       const { data: old } = await supabase
         .from("rsvps")
         .select("voyage_id")

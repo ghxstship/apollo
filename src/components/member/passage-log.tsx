@@ -1,9 +1,9 @@
-import { LOGBOOK, MARK_KIND } from "@/lib/brand";
+import { LOGBOOK, MARK_KIND, PLACE } from "@/lib/brand";
 import { KitPassageLog, MarksList, type LogFigure, type MarkItem } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import type { createClient } from "@/lib/supabase/server";
 
-/* The Passage Log — a member's record, computed on read from completed sailings.
+/* The Passage Log — a member's record, computed on read from completed episodes.
    It is a logbook, not a score: nothing here compares one member to another, and
    there is no rank to fall down. Marks sit alongside it as permanent typographic
    marks rather than badges — the design system asks for hairlines, not colour. */
@@ -95,9 +95,9 @@ export function PassageLog({
   const figures: LogFigure[] = sailed
     ? [
         { value: nm(log!.nmLogged), label: "Nautical miles" },
-        { value: String(log!.sailings), label: "Sailings" },
+        { value: String(log!.sailings), label: "Episodes" },
         { value: String(Math.round(log!.hoursAtSea)), label: "Hours at sea" },
-        { value: String(log!.harborsMade), label: "Harbors" },
+        { value: String(log!.harborsMade), label: PLACE.markets },
         { value: String(log!.vesselsSailed), label: "Hulls" },
         { value: String(log!.crewMet), label: "Cast met" },
       ]
@@ -121,8 +121,8 @@ export function PassageLog({
           figures={[]}
           emptyLabel={
             own
-              ? "Nothing logged yet. The log starts on your first sailing — not before."
-              : "No sailings logged yet."
+              ? "Nothing logged yet. The log starts on your first episode — not before."
+              : "No episodes logged yet."
           }
         />
       ) : (

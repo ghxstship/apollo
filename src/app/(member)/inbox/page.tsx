@@ -4,7 +4,9 @@ import { getMember, type Notification } from "../data";
 import { KIND_ICON, relTime } from "../relative";
 import { markAllRead } from "./actions";
 
-export const metadata: Metadata = { title: "The Word" };
+/* Plain utility, plainly named — the owner’s call. Route, nav label, title
+   and h1 all read Inbox; there is no poetic alias for it any more. */
+export const metadata: Metadata = { title: "Inbox" };
 
 function Row({ n, index }: { n: Notification; index: number }) {
   return (
@@ -26,10 +28,10 @@ function Row({ n, index }: { n: Notification; index: number }) {
 
 const DAY_MS = 86400000;
 
-export default async function WordPage() {
+export default async function InboxPage() {
   const { supabase, user } = await getMember();
 
-  /* Capped. The word never stops arriving, and this query had no ceiling — a
+  /* Capped. Notices never stop arriving, and this query had no ceiling — a
      member two seasons in rendered every notice ever written to them in one
      document. Sixty is a long scroll and a bounded one. */
   const [{ data }, { count }] = await Promise.all([
@@ -71,10 +73,16 @@ export default async function WordPage() {
     <div>
       <div className="wrd-head">
         <div>
-          <span className="mbr-eyebrow">The Word</span>
+          {/* The count was the h1, so the page never said its own name. The
+              name is the h1 now and the count is the standfirst under it —
+              still the first thing read, and still the number that matters. */}
+          <span className="mbr-eyebrow">Notices</span>
           <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-            {unread ? `${unread} new.` : "All read."}
+            Inbox.
           </h1>
+          <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8 }}>
+            {unread ? `${unread} new.` : "All read."}
+          </p>
         </div>
         {unread > 0 ? (
           <form action={markAllRead}>

@@ -359,11 +359,11 @@ export function CrewCall({
   canPost = true,
 }: {
   voyageId: string;
-  /* The member's own open request on this sailing, if they posted one. */
+  /* The member's own open request on this episode, if they posted one. */
   mine: CrewSeeker | null;
   /* Everyone else's open requests — shown once you're aboard. */
   seekers: CrewSeeker[];
-  /* Putting your name up is for sailings you aren't aboard yet. */
+  /* Putting your name up is for episodes you aren't aboard yet. */
   canPost?: boolean;
 }) {
   const [pending, startTransition] = React.useTransition();
@@ -461,7 +461,7 @@ export function CrewCall({
       >
         <div style={{ fontSize: "var(--text-sm)" }}>
           <p style={{ color: "var(--text-2)" }}>
-            Members aboard this sailing will see your name and can send you a
+            Members aboard this episode will see your name and can send you a
             word. Withdraw it any time.
           </p>
           <Textarea

@@ -56,7 +56,7 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
       ],
       [
         "Can I bring a guest?",
-        "Two per event on Global passes. Everyone signs the manifest at the gangway.",
+        "Two per episode on Global passes. Everyone signs the manifest at the gangway.",
       ],
     ],
   ],

@@ -61,12 +61,12 @@ export default async function YouPage() {
         .in("slug", ["gathering", "mixer"])
         .order("position"),
       /* Every pass this member holds. Which of them departing would release is
-         decided below against the sailing's hour — RLS narrows this to their
+         decided below against the episode's hour — RLS narrows this to their
          own rows already. */
       supabase.from("rsvps").select("id, voyage_id").eq("profile_id", user.id).eq("status", "aboard"),
     ]);
 
-  /* Aboard passes on sailings still ahead: the ones set_own_standing('departed')
+  /* Aboard passes on episodes still ahead: the ones set_own_standing('departed')
      releases with full credit. Listed in the depart dialog before the member
      confirms, so the manifest does not empty behind their back. */
   const aboardVoyageIds = (aboard ?? []).map((r) => r.voyage_id);
@@ -88,7 +88,7 @@ export default async function YouPage() {
     ((formats ?? []) as Array<{ slug: string; label: string }>).map((f) => [f.slug, f.label])
   );
 
-  /* An approved proposal carries the sailing the Bridge raised from it. Named
+  /* An approved proposal carries the episode the Bridge raised from it. Named
      on the card, with its hour on the harbour's clock, so "On the calendar"
      points at something. */
   const linkedIds = (proposals ?? [])

@@ -25,7 +25,7 @@ export default async function ProgramPage() {
          so the upcoming picker below cannot answer for it. */
       supabase.from("voyages").select("id, title, season_id, series_id"),
       /* The template picker. A template seeds occurrences from its own start
-         date forward, so only sailings still on the board are offered. */
+         date forward, so only episodes still on the board are offered. */
       supabase
         .from("voyages")
         .select("id, title, starts_at, time_zone")
@@ -67,7 +67,11 @@ export default async function ProgramPage() {
     slug: s.slug,
     title: s.title,
     cadenceDays: s.cadence_days,
-    template: voyageTitles.get(s.template_voyage_id) ?? "—",
+    /* template_voyage_id went nullable when editions became nameable before
+       their first episode — an edition you cannot name until something is
+       already scheduled into it is backwards. A run with no template yet
+       prints the em dash the lookup miss already printed. */
+    template: (s.template_voyage_id ? voyageTitles.get(s.template_voyage_id) : null) ?? "—",
     occurrences: seriesCounts.get(s.id) ?? 0,
     active: s.active,
   }));
@@ -78,12 +82,12 @@ export default async function ProgramPage() {
       <h1 className="hm-h1">The standing furniture.</h1>
       <p className="hm-lede">
         Seasons frame the calendar, venues are the places the club returns to, and a
-        series clones one sailing forward on a cadence. Nothing here is deleted —
-        retired entries stand aside, and their sailings keep the record.
+        series clones one episode forward on a cadence. Nothing here is deleted —
+        retired entries stand aside, and their episodes keep the record.
       </p>
       <p className="hm-note">
-        The flow: raise one sailing by hand on Voyages, make it the template here,
-        extend the series — each occurrence inherits everything, format, deposit,
+        The flow: raise one episode by hand on Episodes, make it the template here,
+        extend the series — each occurrence inherits everything, its series filing, deposit,
         and presale window included.
       </p>
       <ProgramClient

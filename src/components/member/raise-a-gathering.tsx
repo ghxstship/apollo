@@ -25,7 +25,7 @@ export type ProposalCard = {
   proposedFor: string | null;
   status: "submitted" | "considering" | "approved" | "declined";
   decisionNote: string | null;
-  /* The sailing the Bridge raised from this proposal, once there is one. */
+  /* The episode the Bridge raised from this proposal, once there is one. */
   sailing: { title: string; slug: string; when: string } | null;
 };
 
@@ -99,7 +99,7 @@ export function RaiseAGathering({
             label="A date in mind"
             name="proposed_for"
             type="date"
-            hint="Optional. The Bridge sets the sailing date."
+            hint="Optional. The Bridge sets the episode date."
           />
         </div>
         <div style={{ marginTop: 16 }}>
@@ -150,7 +150,7 @@ export function RaiseAGathering({
                 {p.sailing ? (
                   <p className="mbr-mono" style={{ marginTop: 4 }}>
                     <Link
-                      href={`/charters/${p.sailing.slug}`}
+                      href={`/episodes/${p.sailing.slug}`}
                       style={{ color: "var(--text-link)", textDecoration: "none" }}
                     >
                       {p.sailing.title.toUpperCase()} · {p.sailing.when}

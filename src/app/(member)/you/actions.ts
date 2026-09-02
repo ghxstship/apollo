@@ -190,7 +190,7 @@ export async function setManifestVisibility(on: boolean): Promise<{ error?: stri
   const { error } = await supabase.rpc("set_manifest_visibility", { p_on: on });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/you");
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   return {};
 }
 

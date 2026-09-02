@@ -116,7 +116,7 @@ export default async function VettingOpsPage() {
       <p className="hm-lede">
         Identity, age, and the background state. Four of the six gates a member
         reads on their own page turn here and nowhere else, and no ratio-gated
-        sailing will seat a member whose file is not open and cleared.
+        episode will seat a member whose file is not open and cleared.
       </p>
       <p className="hm-note">
         A member never sees a count, a queue position or anything about anybody

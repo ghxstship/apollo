@@ -47,6 +47,12 @@ export default async function MemberCardPage() {
 
   return (
     <div className="crd ls-fade">
+      {/* The page had no heading at all — the nav and the title said Member
+          Card and the document itself said nothing, so it was the one surface
+          where the four names could not be checked against each other. It is
+          hidden from print, like the note and the buttons: what prints is the
+          card. */}
+      <h1 className="mbr-h1 crd-title">{SURFACES.passbook}.</h1>
       <div className="crd-card">
         <div className="crd-seam"></div>
         <div className="crd-in">
@@ -111,7 +117,7 @@ export default async function MemberCardPage() {
             Subscribe to your season
           </span>
           <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 8, maxWidth: "44ch" }}>
-            Every sailing you are confirmed on, in your own calendar, kept current as the
+            Every episode you are confirmed on, in your own calendar, kept current as the
             season moves. Subscribe once — new boarding passes arrive on their own.
           </p>
           <div

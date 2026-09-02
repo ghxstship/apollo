@@ -49,7 +49,7 @@ export type CalendarEvent = {
   url?: string | null;
   alarm?: string | null;
   /* A calendar strikes a cancelled event and greys a tentative one; hardcoding
-     CONFIRMED published a called-off sailing as going ahead. */
+     CONFIRMED published a called-off episode as going ahead. */
   status?: "CONFIRMED" | "TENTATIVE" | "CANCELLED";
 };
 

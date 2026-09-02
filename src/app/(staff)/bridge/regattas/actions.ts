@@ -61,10 +61,10 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
   /* Crew scope was complete server-side long before this composer could send
      it: the check constraint (crew_scope_has_voyage) requires the voyage, and
      the "enter yourself" policy on contest_entries already admits only that
-     sailing's aboard passes. As with the target, the database enforces this
+     episode's aboard passes. As with the target, the database enforces this
      too; the message here is the readable one. */
   if (input.scope === "crew" && !input.voyageId)
-    return { error: "A crew contest runs on one sailing — pick the voyage." };
+    return { error: "A crew contest runs on one episode — pick it first." };
 
   const { error } = await supabase.from("contests").insert({
     slug,

@@ -28,6 +28,23 @@ type ChangeRow = {
   [key: string]: unknown;
 };
 
+/* The handful of columns whose name is not the word an operator reads. The log
+   named raw columns, which is defensible for an audit trail and stops being so
+   the moment the display word and the column word are different things: an
+   operator reading "format" on a console that says Series everywhere else has
+   to hold two vocabularies at once to know what moved.
+
+   Deliberately short. Every column not listed here prints its own name, which
+   is what an audit trail should do — this map exists for the drift the 2026-09
+   renames introduced, not to prettify the schema. */
+const FIELD_LABEL: Record<string, string> = {
+  format: "series",
+  experience_class: "class",
+  harbor_id: "city",
+  venue_id: "venue",
+  series_id: "edition",
+};
+
 /* One line for what a change touched. An update names the keys whose value
    moved; an insert and a delete have no keys to compare, so they say what
    they are. Compared as JSON so a nested value counts once, as one key. */
@@ -36,9 +53,9 @@ function diffLine(action: string, before: Json | null, after: Json | null): stri
   if (action === "DELETE") return "struck";
   const b = (before && typeof before === "object" && !Array.isArray(before) ? before : {}) as Record<string, Json | undefined>;
   const a = (after && typeof after === "object" && !Array.isArray(after) ? after : {}) as Record<string, Json | undefined>;
-  const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])].filter(
-    (k) => JSON.stringify(b[k] ?? null) !== JSON.stringify(a[k] ?? null)
-  );
+  const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])]
+    .filter((k) => JSON.stringify(b[k] ?? null) !== JSON.stringify(a[k] ?? null))
+    .map((k) => FIELD_LABEL[k] ?? k);
   if (keys.length === 0) return "no change";
   return keys.length > 6 ? `${keys.slice(0, 6).join(", ")} +${keys.length - 6}` : keys.join(", ");
 }
@@ -260,14 +277,14 @@ export default async function ReportsPage() {
   const referred = roll.filter((r) => r.invite_code).length;
   const referralPct = roll.length ? Math.round((referred / roll.length) * 100) : 0;
 
-  /* Knots paid per voyage (the ledger table keeps its legacy name) */
+  /* Knots paid per episode (the ledger table keeps its legacy name) */
   const knotsByVoyage = new Map<string, number>();
   for (const f of must(knotsRes)) {
     if (!f.voyage_id || f.delta <= 0) continue;
     knotsByVoyage.set(f.voyage_id, (knotsByVoyage.get(f.voyage_id) ?? 0) + f.delta);
   }
 
-  /* Per-yacht fill — flotilla voyages only. */
+  /* Per-yacht fill — flotilla episodes only. */
   const vesselCapacity = new Map((must(vesselsRes)).map((v) => [v.id, v.capacity]));
   const berthsByVessel = new Map<string, number>();
   for (const r of must(berthRes)) {
@@ -291,7 +308,7 @@ export default async function ReportsPage() {
       .join(" · ");
   };
 
-  /* Net revenue per voyage — pass and deposit charges, add-ons, credits,
+  /* Net revenue per episode — pass and deposit charges, add-ons, credits,
      and refunds all carry the voyage_id; the sum is the net. */
   const revenueByVoyage = new Map<string, number>();
   for (const l of must(voyageLedgerRes)) {
@@ -528,7 +545,7 @@ export default async function ReportsPage() {
         <Stat
           label="Pass fill"
           value={`${fillPct}%`}
-          sub={`${sailed.length} VOYAGES SAILED OR LIVE`}
+          sub={`${sailed.length} EPISODES SAILED OR LIVE`}
         />
         <Stat
           label="House revenue"
@@ -618,12 +635,12 @@ export default async function ReportsPage() {
       </section>
 
       <section className="hm-sec">
-        <h2>Voyage by voyage.</h2>
+        <h2>Episode by episode.</h2>
         <div className="hm-panel">
           <Table
             rowKey={(r: FillRow) => r.id}
             columns={[
-              { key: "title", label: "Voyage" },
+              { key: "title", label: "Episode" },
               { key: "fill", label: "Fill", mono: true, width: 90 },
               { key: "perYacht", label: "Per yacht", mono: true, width: 140 },
               { key: "nm", label: "NM", mono: true, width: 70 },
@@ -634,7 +651,7 @@ export default async function ReportsPage() {
           />
           {fillRows.length === 0 ? (
             <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
-              No voyages on the books yet.
+              No episodes on the books yet.
             </p>
           ) : null}
         </div>

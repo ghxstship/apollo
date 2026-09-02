@@ -13,9 +13,9 @@ export default async function RegattasPage() {
   const [contestsRes, entriesRes, voyagesRes] = await Promise.all([
     supabase.from("contests").select("*").order("ends_at", { ascending: false }),
     supabase.from("contest_entries").select("contest_id"),
-    /* The crew-scope picker. A crew contest runs within one sailing's crew, so
-       only sailings that could still hold one are offered — completed and
-       cancelled voyages have no crew to enter it. */
+    /* The crew-scope picker. A crew contest runs within one episode's crew, so
+       only episodes that could still hold one are offered — completed and
+       cancelled episodes have no crew to enter it. */
     supabase
       .from("voyages")
       .select("id, title, starts_at, time_zone")

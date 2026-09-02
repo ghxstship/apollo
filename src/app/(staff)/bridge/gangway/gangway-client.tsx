@@ -25,7 +25,7 @@ export type GangwayRow = {
   guests: number;
   waiverSigned: boolean;
   checkedInAt: string | null;
-  /* What the pass holds on the sailing beyond a place aboard: a daybed claim,
+  /* What the pass holds on the episode beyond a place aboard: a daybed claim,
      a cabin and that cabin's own muster station. Optional for the same reason
      guestList is — a roster cached before these existed still parses. */
   daybed?: boolean;
@@ -59,8 +59,8 @@ type Scan = {
   /* "unsure" is the one the dock most needed and did not have: the cached
      roster has no match, and the cached roster CANNOT ANSWER for at least four
      legitimate passes — a guest stub (guest codes live in rsvp_guests and are
-     only resolvable server-side), a pass for a different sailing (online the
-     action falls back across upcoming voyages and even names one that has
+     only resolvable server-side), a pass for a different episode (online the
+     action falls back across upcoming episodes and even names one that has
      already gone), anyone whose RSVP is not `aboard` (the roster filters on
      that; the action does not), and anyone who booked since the cache. Saying
      "NOT ON THIS MANIFEST" to those people tells someone holding a real pass
@@ -145,17 +145,17 @@ export function GangwayConsole({
 }: {
   voyageId: string;
   voyageTitle: string;
-  /* What this sailing is, as a member reads it: the format's own name, or
-     where it happens when it carries no format. It replaced the event-family
+  /* What this episode is, as a member reads it: the series' own name, or
+     where it happens when it belongs to no series. It replaced the class-family
      label, which named a filing system the club no longer speaks in. */
   identity: string;
   departs: string;
-  /* The sailing's own clock. A boarding stamp read on the render host's zone
+  /* The episode's own clock. A boarding stamp read on the render host's zone
      is a stamp on nobody's clock — and this screen is the audit record for who
      walked aboard and when. */
   timeZone: string | null;
   /* Where the door musters — the venue and its address on a shore night, the
-     slip the voyage names otherwise. Printed on the door list's header. */
+     slip the episode names otherwise. Printed on the door list's header. */
   muster: string | null;
   options: Array<{ value: string; label: string }>;
   rows: GangwayRow[];
@@ -429,13 +429,13 @@ export function GangwayConsole({
 
   return (
     <>
-      {/* Event state in the data register — identity first, count ticks live. */}
+      {/* Episode state in the data register — identity first, count ticks live. */}
       <div className="ls-mono-data hm-gang__meta">
         {identity.toUpperCase()} · {voyageTitle.replace(/\.+$/, "").toUpperCase()} · {departs} · {checked}/{rows.length} ABOARD
       </div>
       <div className="hm-sec" style={{ marginTop: 20 }}>
         <Select
-          label="Voyage"
+          label="Episode"
           options={options}
           value={voyageId}
           onChange={(e) => router.replace(`/bridge/gangway?voyage=${e.target.value}`)}
@@ -511,7 +511,7 @@ export function GangwayConsole({
                 <b>CAN&rsquo;T CHECK THIS ONE FROM HERE</b>
                 <span>
                   No signal, and the cached list does not cover guest stubs,
-                  passes for another sailing, or anyone who booked since this
+                  passes for another episode, or anyone who booked since this
                   page loaded. This is not a refusal.
                 </span>
                 <span>Board them by name off the manifest, or hold them for the crew.</span>
@@ -519,7 +519,7 @@ export function GangwayConsole({
             ) : (
               <>
                 <b>NOT ON THIS MANIFEST</b>
-                <span>No pass matches that code on this voyage.</span>
+                <span>No pass matches that code on this episode.</span>
               </>
             )}
             {scan.queued && scan.kind !== "unsure" ? (

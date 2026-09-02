@@ -23,7 +23,7 @@ export default async function ManifestsPage({
   const { supabase } = await getOperator();
   const sp = await searchParams;
 
-  /* Upcoming sailings — keep today's earlier departures on the board. */
+  /* Upcoming episodes — keep today's earlier departures on the board. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
   const voyagesRes = await supabase
     .from("voyages")
@@ -43,7 +43,7 @@ export default async function ManifestsPage({
             status="empty"
             icon="Sailboat"
             title="Nothing on the water."
-            detail="No upcoming voyages to muster. Set one on the Voyages tab."
+            detail="No upcoming episodes to muster. Set one on the Episodes tab."
           />
         </div>
       </div>
@@ -91,7 +91,7 @@ export default async function ManifestsPage({
     label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` — ${memberMark(m.member_no)}` : ""}`,
   }));
 
-  /* The flotilla for this voyage — yachts in position order, fill from
+  /* The flotilla for this episode — yachts in position order, fill from
      rsvps.vessel_id (aboard berths only). */
   const voyageVesselsRes = await supabase
     .from("voyage_vessels")

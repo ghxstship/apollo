@@ -88,7 +88,7 @@ export interface ClubProduct {
 }
 
 export const PRODUCT_KIND_LABEL: Record<ClubProductKind, string> = {
-  pass: "One sailing",
+  pass: "One episode",
   membership: "Standing",
   upgrade: "Add-on",
 };
@@ -101,7 +101,7 @@ export function productPrice(p: Pick<ClubProduct, "price_cents" | "published">):
   return `$${(p.price_cents / 100).toLocaleString("en-US")}`;
 }
 
-/* What one of these consumes of a sailing's composition, in the two
+/* What one of these consumes of an episode's composition, in the two
    denominations the kit itself mixes: singles counted in heads, couples counted
    in units. Rendering only one of them is what makes "20 singles or 10 couples
    plus 10 singles" look like arithmetic instead of a contradiction. */

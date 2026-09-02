@@ -25,7 +25,7 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
         <b>Show my name on the manifest</b>
         <p>
           {on
-            ? "Members looking at a charter you are aboard can see you are sailing."
+            ? "Members looking at an episode you are aboard can see you are sailing."
             : "You sail unlisted. The crew still hold your boarding pass; the other members see only that a seat is taken."}
         </p>
         {failed ? (

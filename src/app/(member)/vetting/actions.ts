@@ -121,7 +121,7 @@ export async function takeASeat(
     }
     /* The triggers raise in the club's voice and say more than a generic line
        can — which segment is full and how many seats it had, that the clearance
-       has lapsed and when, that this sailing seats by segment. Those messages
+       has lapsed and when, that this episode seats by segment. Those messages
        reach a member verbatim by design, so they are passed through. Only a
        bare RLS refusal, which says nothing, gets a substitute. */
     const said = await voiceWith(supabase, error);
@@ -144,7 +144,7 @@ export async function takeASeat(
       .insert({ rsvp_id: seat.id, name: partner, kind: "partner" });
     if (headError) {
       revalidatePath("/vetting");
-      revalidatePath("/manifest");
+      revalidatePath("/passes");
       /* The seat stands — the insert above committed. Say so, say what did
          not land, and name the way out. */
       return {
@@ -157,7 +157,7 @@ export async function takeASeat(
   }
 
   revalidatePath("/vetting");
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   return { ok: true };
 }
 
@@ -171,7 +171,7 @@ export async function joinTheLine(voyageId: string, segment: string): Promise<Ve
 
   /* `place` is omitted deliberately: number_the_waitlist assigns it under an
      advisory lock. A position sent from a browser is a position two members
-     refreshing the same full sailing would both compute. */
+     refreshing the same full episode would both compute. */
   const { error } = await db
     .from("waitlist_entries")
     .insert({ voyage_id: voyageId, profile_id: user.id, segment: segment as Segment });
@@ -196,7 +196,7 @@ export async function claimYourPlace(entryId: string): Promise<VettingResult> {
   const { error } = await db.rpc("claim_your_place", { p_entry: entryId });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/vetting");
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   return { ok: true };
 }
 
@@ -238,9 +238,9 @@ export async function offerTheNextPlace(voyageId: string, segment: string): Prom
   const { error } = await db.rpc("offer_the_next_place", { p_voyage: voyageId, p_segment: segment });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/vetting");
-  /* The Bridge's Composition screen calls this same function against a sailing
+  /* The Bridge's Composition screen calls this same function against an episode
      the member page may not be showing — /vetting only ever renders the SOONEST
-     gated sailing, so a crew member working the line for a later one could
+     gated episode, so a crew member working the line for a later one could
      offer a seat and watch the queue in front of them not move. One offer
      function, both surfaces revalidated. */
   revalidatePath("/bridge/composition");

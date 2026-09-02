@@ -116,14 +116,59 @@ const nextConfig: NextConfig = {
       { source: "/chandlery", destination: "/shop", permanent: true },
       { source: "/slop-chest", destination: "/shop", permanent: true },
       { source: "/word", destination: "/inbox", permanent: true },
-      { source: "/voyages", destination: "/charters", permanent: true },
-      { source: "/voyages/:path*", destination: "/charters/:path*", permanent: true },
-      { source: "/lore", destination: "/episodes", permanent: true },
-      { source: "/lore/:path*", destination: "/episodes/:path*", permanent: true },
+      /* 2026-09 episode rename. Every event is an episode — the show's own word
+         — so the event listing takes /episodes, and the written record moves to
+         /log, which is what its standfirst always called it.
+
+         Order matters here and is load-bearing. The four editorial slugs are
+         redirected BY NAME, before the wildcards, because /episodes/:slug is
+         now an event address: a blanket /episodes/:path* -> /log/:path* would
+         shadow every episode on the manifest. Only these four ever lived at the
+         old address, so naming them is both exact and finite. */
+      { source: "/episodes/season-two-manifest", destination: "/log/season-two-manifest", permanent: true },
+      { source: "/episodes/passes-are-few-by-design", destination: "/log/passes-are-few-by-design", permanent: true },
+      { source: "/episodes/what-the-wind-writes", destination: "/log/what-the-wind-writes", permanent: true },
+      { source: "/episodes/the-knot-standard", destination: "/log/the-knot-standard", permanent: true },
+      /* 2026-09 route/name alignment. Every surface answers to one name, and
+         the route is that name — a member cannot learn a name the product will
+         not use twice in a row. Four member routes moved to the word already on
+         their own heading. */
+      { source: "/manifest", destination: "/passes", permanent: true },
+      { source: "/manifest/:path*", destination: "/passes/:path*", permanent: true },
+      { source: "/season", destination: "/passes", permanent: true },
+      { source: "/charter", destination: "/itinerary", permanent: true },
+      { source: "/charter/:path*", destination: "/itinerary/:path*", permanent: true },
+      { source: "/tables", destination: "/tonight", permanent: true },
+      { source: "/tables/:path*", destination: "/tonight/:path*", permanent: true },
+      /* The console tab moved for the same reason the member page did: Tables
+         is never a route. The object is still a table — that noun means the
+         blind dinner for six and nothing else — but the surface answers to the
+         night it lays them for, and to the same word the member sees. */
+      { source: "/bridge/tables", destination: "/bridge/tonight", permanent: true },
+      /* The catalogue of named recurring episode kinds has had three addresses
+         in two weeks and every one of them is a 308 somebody's browser has
+         pinned. /activity was the original; /experiences was a stopgap that
+         only ever lived in an unreleased build; /series is the name, because
+         Format was a back-of-house word and Series is the one a viewer owns.
+
+         Both old names have to be answered, and /activity must point at the
+         CURRENT name rather than at /experiences — a redirect that lands on a
+         redirect is fine for a browser and fatal for anyone who already
+         cached the first hop. */
+      { source: "/activity", destination: "/series", permanent: true },
+      { source: "/activity/:path*", destination: "/series/:path*", permanent: true },
+      { source: "/experiences", destination: "/series", permanent: true },
+      { source: "/experiences/:path*", destination: "/series/:path*", permanent: true },
+      { source: "/charters", destination: "/episodes", permanent: true },
+      { source: "/charters/:path*", destination: "/episodes/:path*", permanent: true },
+      { source: "/voyages", destination: "/episodes", permanent: true },
+      { source: "/voyages/:path*", destination: "/episodes/:path*", permanent: true },
+      { source: "/lore", destination: "/log", permanent: true },
+      { source: "/lore/:path*", destination: "/log/:path*", permanent: true },
       /* The ledger's currency was renamed; this article's address had not been. */
       {
         source: "/episodes/the-fathom-standard",
-        destination: "/episodes/the-knot-standard",
+        destination: "/log/the-knot-standard",
         permanent: true,
       },
     ];

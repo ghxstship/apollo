@@ -152,7 +152,7 @@ export function SignForm({
         <h2>Signed.</h2>
         <p>
           {asGuest
-            ? "A copy is kept with the sailing, along with the exact wording you agreed to. This link stays good — keep it if you want to read it again."
+            ? "A copy is kept with the episode, along with the exact wording you agreed to. This link stays good — keep it if you want to read it again."
             : "A copy is kept with your record, along with the exact wording you agreed to. You can read it again from your member card at any time."}
         </p>
       </div>

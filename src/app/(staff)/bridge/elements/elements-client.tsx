@@ -513,7 +513,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
             />
             <Checkbox
               label="Critical path"
-              description="The event cannot run without it. The run-of-show board filters on this."
+              description="The episode cannot run without it. The run-of-show board filters on this."
               checked={f.criticalPath}
               onChange={(e) => set("criticalPath", e.target.checked)}
             />

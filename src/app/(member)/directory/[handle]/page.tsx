@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, Icon, Stat, Tag } from "@/components/ds";
-import { CLUB_ZONE, CITY_CODES, CURRENCY, knots } from "@/lib/brand";
+import { CLUB_ZONE, CITY_CODES, CURRENCY, PLACE, knots } from "@/lib/brand";
 import { SETTING_LABEL, logDate, roman, yearIn } from "@/lib/format";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
@@ -83,7 +83,7 @@ export default async function MemberPage({
         .eq("other_id", member.id)
         .maybeSingle(),
       /* A pass row is its owner's; the shared list comes from a definer that
-         answers only "which voyages were you both on". */
+         answers only "which episodes were you both on". */
       supabase.rpc("shared_voyages", { p_other: member.id }),
       supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
     ]);
@@ -97,7 +97,7 @@ export default async function MemberPage({
     ? yearIn(member.joined_at, CLUB_ZONE)
     : new Date().getFullYear();
 
-  /* Voyages both were aboard for — the affinity count, made concrete. */
+  /* Episodes both were aboard for — the affinity count, made concrete. */
   let both: SharedVoyage[] = [];
   if (!own) {
     const rows = rsvpsRes.data ?? [];
@@ -132,7 +132,7 @@ export default async function MemberPage({
           <p className="dir-head__where">
             {leagueName}
             <span className="dir-row__dot">·</span>
-            {harbor?.name ?? "No home harbor"}
+            {harbor?.name ?? `No home ${PLACE.market.toLowerCase()}`}
             {harborCode ? <span className="dir-row__code">{harborCode}</span> : null}
           </p>
           <p className="mbr-mono dir-head__no">

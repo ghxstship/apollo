@@ -39,10 +39,10 @@ export type VoyageRow = {
   harbor_id: string | null; starts_at: string; ends_at: string | null; coordinates: string | null
   distance_nm: number | null; berths_total: number; price_cents: number; status: VoyageStatus
   /* The second taxonomy axis. `class` says WHERE (afloat or ashore); this says
-     WHAT KIND — open | club | premium | exotic, NOT NULL. A sailing filed under
-     a format does not get to disagree with it: a_sailing_keeps_its_taxonomy
+     WHAT KIND — open | club | premium | exotic, NOT NULL. An episode filed
+     under a format does not get to disagree with it: a_sailing_keeps_its_taxonomy
      copies the format's class down on every write that names a format, so this
-     is only the operator's to set while the sailing is unfiled. Widened to
+     is only the operator's to set while the episode is unfiled. Widened to
      string rather than the union in brand.ts, the way `kind` is — the enum
      lives there, and the row type mirrors the column. */
   experience_class: string
@@ -51,7 +51,7 @@ export type VoyageRow = {
   fathoms_multiplier: number; held_passes: number
   sub_class: "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland" | null
   itinerary: Json
-  /* The harbor's IANA clock, carried on the sailing. */
+  /* The harbor's IANA clock, carried on the episode. */
   time_zone: string
   format: string | null
   deposit_cents: number
@@ -68,15 +68,23 @@ export type VoyageRow = {
 export type SeasonRow = {
   id: string; slug: string; title: string; starts_on: string; ends_on: string
   blurb: string | null; active: boolean; created_at: string
+  /* A season belongs to an edition, not to the club — Miami can be in its
+     second while Chicago is in its first. Null is a club-wide season. */
+  series_id: string | null
 }
 export type VenueRow = {
   id: string; slug: string; name: string; harbor_id: string | null
   kind: "marina" | "club" | "restaurant" | "beach" | "pool" | "partner"
   address: string | null; notes: string | null; active: boolean; created_at: string
 }
+/* An edition: one series running in one city, with its own cadence. Sandbar
+   Social Miami and Sandbar Social LA are two rows here and one series.
+   template_voyage_id is nullable because an edition must be nameable before
+   its first episode exists. */
 export type VoyageSeriesRow = {
   id: string; slug: string; title: string; cadence_days: number
-  template_voyage_id: string; active: boolean; created_at: string
+  template_voyage_id: string | null; active: boolean; created_at: string
+  harbor_id: string | null; format: string | null
 }
 export type MemberEventProposalRow = {
   id: string; proposer_id: string; title: string; format: string | null
@@ -188,7 +196,7 @@ export type ApplicationRow = {
 export type NotificationRow = {
   id: string; profile_id: string; kind: string; title: string; body: string | null
   read: boolean; created_at: string
-  /* The sailing a Word is about, when it is about one — the idempotency key
+  /* The episode a Word is about, when it is about one — the idempotency key
      for the day-of Words since series occurrences share a title. */
   voyage_id: string | null
 }
@@ -426,7 +434,9 @@ export type Database = {
       voyages: Table<VoyageRow, Ins<VoyageRow, "slug" | "title" | "class" | "starts_at">>
       seasons: Table<SeasonRow, Ins<SeasonRow, "slug" | "title" | "starts_on" | "ends_on">>
       venues: Table<VenueRow, Ins<VenueRow, "slug" | "name">>
-      voyage_series: Table<VoyageSeriesRow, Ins<VoyageSeriesRow, "slug" | "title" | "template_voyage_id">>
+      /* template_voyage_id left the required set when it dropped NOT NULL: an
+         edition has to be nameable before its first episode is scheduled. */
+      voyage_series: Table<VoyageSeriesRow, Ins<VoyageSeriesRow, "slug" | "title">>
       member_event_proposals: Table<MemberEventProposalRow, Ins<MemberEventProposalRow, "proposer_id" | "title">>
       sponsors: Table<SponsorRow, Ins<SponsorRow, "name" | "tier" | "monthly_cents">>
       voyage_sponsors: Table<VoyageSponsorRow, Ins<VoyageSponsorRow, "voyage_id" | "sponsor_id">>
@@ -769,7 +779,7 @@ export type Database = {
         Returns: Array<{ document_version_id: string; n: number }>
       }
       /* Three reads a member is owed but RLS cannot answer: an offer names the
-         offerer's sailing, a roster names consenting shipmates, a cabin plan
+         offerer's episode, a roster names consenting shipmates, a cabin plan
          names claims that are not yours. */
       incoming_transfers: {
         Args: Record<string, never>

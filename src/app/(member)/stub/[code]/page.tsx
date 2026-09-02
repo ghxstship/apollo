@@ -2,13 +2,14 @@ import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
 import { Badge, StateBlock } from "@/components/ds";
 import { TIER_LABEL, logDate, logTime } from "@/lib/format";
+import { SURFACES } from "@/lib/brand";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { literalCode } from "@/lib/boarding-code";
 import { getMember } from "../../data";
 import { PrintButton } from "../../card/print-button";
 
 /* The page is the credential, so it is named for the credential: a Boarding
-   pass is what admits a member to one sailing, and the stub is the form it
+   pass is what admits a member to one episode, and the stub is the form it
    takes on a phone at the gangway. */
 export const metadata: Metadata = { title: "Boarding pass" };
 
@@ -93,7 +94,7 @@ export default async function StubPage({
               ? "That boarding pass changed hands — the new holder carries its code."
               : "No stub under that code."
           }
-          detail="Confirm a boarding pass on the manifest and the stub is cut for you."
+          detail="Claim a pass on the Passes page and the stub is cut for you."
         />
       </div>
     );
@@ -118,7 +119,7 @@ export default async function StubPage({
 
   /* A stub is a boarding pass you can present. It was rendered live — QR, muster time,
      "Present at the gangway" — for a pass that had been released and for
-     sailings that were completed or called off, so it stayed scannable long
+     episodes that were completed or called off, so it stayed scannable long
      after it stopped meaning anything. */
   /* Server-rendered per request, so "now" is request time. */
   const nowMs = new Date().getTime();
@@ -140,17 +141,17 @@ export default async function StubPage({
           icon="Ticket"
           title={
             voyage.status === "cancelled"
-              ? "That sailing was called off."
+              ? "That episode was called off."
               : voyageOver
-                ? "That sailing is in the log."
+                ? "That episode is in the log."
                 : "That boarding pass is no longer held."
           }
           detail={
             voyage.status === "cancelled"
-              ? "Anything reserved against it was credited in full. The manifest holds the next open water."
+              ? "Anything reserved against it was credited in full. The Passes page holds the next open water."
               : voyageOver
-                ? "The stub is spent. What the cameras kept is in Episodes."
-                : "Claim it again on the manifest and a fresh stub is cut for you."
+                ? `The stub is spent. What the cameras kept is in ${SURFACES.magazine}.`
+                : "Claim it again on the Passes page and a fresh stub is cut for you."
           }
         />
       </div>
@@ -164,7 +165,7 @@ export default async function StubPage({
           status="empty"
           icon="Ticket"
           title="No stub under that code."
-          detail="Confirm a boarding pass on the manifest and the stub is cut for you."
+          detail="Claim a pass on the Passes page and the stub is cut for you."
         />
       </div>
     );

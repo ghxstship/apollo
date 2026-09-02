@@ -36,7 +36,7 @@ export const getOperator = cache(async () => {
   return { supabase, user, profile };
 });
 
-/* Voyage conditions live in a jsonb column — read the four we chart. */
+/* Episode conditions live in a jsonb column — read the four we chart. */
 export type Conditions = { wind?: string; swell?: string; heading?: string; speed?: string };
 
 export function readConditions(raw: unknown): Conditions {

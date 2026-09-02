@@ -152,7 +152,7 @@ export default async function MatchesPage() {
         <section style={{ marginTop: 40 }}>
           <span className="mbr-eyebrow">From the water — Shared Anchors</span>
           <p style={{ marginTop: 10, fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "56ch" }}>
-            Anchors come from a sailing&rsquo;s radar, mutual only. Each one
+            Anchors come from an episode&rsquo;s radar, mutual only. Each one
             holds for twenty-four hours from the reveal, then the contact goes
             on both sides — no extension and no reminder.
           </p>
@@ -180,7 +180,7 @@ export default async function MatchesPage() {
                       {name}
                     </b>
                     <p className="mbr-mono" style={{ marginTop: 3 }}>
-                      ANCHORED · {anchorVoyageOf.get(a.voyage_id) ?? "A sailing"}
+                      ANCHORED · {anchorVoyageOf.get(a.voyage_id) ?? "An episode"}
                       {left ? ` · ${left}` : ""}
                     </p>
                   </div>

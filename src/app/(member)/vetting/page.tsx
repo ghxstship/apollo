@@ -25,7 +25,7 @@ import "./vetting.css";
 export const metadata: Metadata = { title: "Vetting" };
 
 /* Vetting — the member's own file, their Preference Sheet, and the ratio gate on
-   the next sailing that has one.
+   the next episode that has one.
 
    The kit's own funnel panel is NOT here, and that is a decision rather than an
    omission. It renders club-wide counts — 2,410 applied, 312 lifestyle vetted,
@@ -55,8 +55,8 @@ export default async function VettingPage() {
   const { supabase, user, profile } = await getMember();
   const db = moduleTables(supabase);
 
-  /* The next sailing that is ratio-gated. "Gated" is the presence of cap rows
-     rather than a flag on the sailing, so this asks the caps which sailings they
+  /* The next episode that is ratio-gated. "Gated" is the presence of cap rows
+     rather than a flag on the episode, so this asks the caps which episodes they
      belong to and then takes the soonest — no second column to fall out of sync
      with the ceilings it is meant to describe. */
   const { data: upcoming } = await supabase
@@ -122,7 +122,7 @@ export default async function VettingPage() {
     ["Background cleared", file?.background_state === "cleared"],
     ["Preference Sheet complete", !!sheet?.completed_at],
     ["Lifestyle vetted", file?.background_state === "cleared" && !!sheet?.completed_at],
-    ["Seated this sailing", !!mySegment],
+    ["Seated this episode", !!mySegment],
   ];
 
   return (
@@ -182,7 +182,7 @@ export default async function VettingPage() {
           </div>
           <p className="vet-note">
             Ages 25 to 45, no exceptions. Your ID is deleted 30 days after your
-            last sailing, and it never leaves the vetting file.
+            last episode, and it never leaves the vetting file.
           </p>
         </div>
 
@@ -231,7 +231,7 @@ export default async function VettingPage() {
             <span className="vet-eyebrow">Capacity by segment</span>
             <p className="vet-title">Nothing seats by segment yet.</p>
             <p className="vet-note">
-              The ratio gate runs on sailings that carry a composition. When the
+              The ratio gate runs on episodes that carry a composition. When the
               next one opens, the seats show here by segment — women, men and
               couples — and never as one number.
             </p>

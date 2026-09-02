@@ -70,7 +70,7 @@ export function TablesClient({
         ) : r.held > 0 ? (
           <Badge tone="caution">{r.held} held</Badge>
         ) : r.taken >= r.seats ? (
-          <Badge tone="gold">Full</Badge>
+          <Badge tone="caution">Full</Badge>
         ) : (
           <Badge tone="outline">Open</Badge>
         ),
@@ -100,7 +100,7 @@ export function TablesClient({
           label="Night"
           options={options}
           value={voyageId}
-          onChange={(e) => router.replace(`/bridge/tables?voyage=${e.target.value}`)}
+          onChange={(e) => router.replace(`/bridge/tonight?voyage=${e.target.value}`)}
           style={{ maxWidth: 420 }}
         />
       </div>

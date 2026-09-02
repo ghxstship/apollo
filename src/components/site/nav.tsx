@@ -10,17 +10,19 @@ import { LinkButton } from "./link-button";
 import { useModal } from "@/components/ds/use-modal";
 
 const LINKS: Array<[string, string]> = [
-  /* The route stays /charters; the listing has one name everywhere it is
-     linked — nav, footer, and the page's own title. */
-  ["/charters", "The Manifest"],
-  ["/membership", "Casting"],
+  /* One name per destination. The public listing is Episodes in the nav, the
+     footer and its own page title; the written record is the Log. "Manifest"
+     is not a name for either — a manifest is the boarding list for a single
+     episode, which is a member surface, not a season listing. */
   ["/episodes", "Episodes"],
+  ["/membership", "Casting"],
+  ["/log", "The Log"],
   ["/gallery", "Gallery"],
   ["/crew", "Crew wanted"],
 ];
 
 /* The home port. This read 33.98°N 118.45°W — Marina del Rey — for a club
-   whose anchor sailing leaves Miami; the one factual datum in the chrome was
+   whose anchor episode leaves Miami; the one factual datum in the chrome was
    the wrong coast. Haulover Inlet, per the operations spec's own example. */
 const COORDS = "25.9007° N — 80.1206° W";
 

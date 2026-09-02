@@ -30,7 +30,7 @@ interface StopRecord {
   notes: string | null;
 }
 
-/* An instant as the wall clock of the sailing's zone, in the shape
+/* An instant as the wall clock of the episode's zone, in the shape
    <input type="datetime-local"> wants — the same trap as the vetting screen:
    slicing an ISO string prints UTC, and an unedited field then saves the leg
    several hours from where it was. */
@@ -78,7 +78,7 @@ export default async function ItineraryPage({
             status="empty"
             icon="Map"
             title="Nothing on the water."
-            detail="An itinerary belongs to a sailing. Put one on the board from the Voyages tab and its legs show here."
+            detail="An itinerary belongs to an episode. Put one on the board from the Episodes tab and its legs show here."
           />
         </div>
       </div>
@@ -138,7 +138,7 @@ export default async function ItineraryPage({
       <span className="hm-eyebrow">Itinerary</span>
       <h1 className="hm-h1">Legs and stops.</h1>
       <p className="hm-lede">
-        The charter itinerary and the port guide card, as rows. A leg can be
+        The episode itinerary and the port guide card, as rows. A leg can be
         revised and a revision is timestamped; a hold swaps a leg rather than
         cancelling it, and states the reason, the new plan, and what is
         unchanged.

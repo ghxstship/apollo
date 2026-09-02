@@ -48,7 +48,7 @@ function isFullMessage(raw: string | null | undefined): boolean {
 }
 
 function done(): RsvpResult {
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   revalidatePath("/home");
   revalidatePath("/live");
   return {};
@@ -105,7 +105,7 @@ export async function setRsvpStatus(
   return done();
 }
 
-/* Review & confirm on a priced voyage: the pass (house charge posts by
+/* Review & confirm on a priced episode: the pass (house charge posts by
    trigger) with guest names on the rsvp, then any chosen add-ons. A code,
    if one was applied, is re-checked here — never trusted from the client. */
 /* Passes over this line may be drawn in goes rather than in one. */
@@ -133,7 +133,7 @@ async function splitIntoDraws(
      provisioning is. Draws step monthly (the database owns that cadence), so
      the count is clamped to what fits between next month and T−90 — and when
      nothing fits, the split is refused with the reason, not shrunk silently.
-     Day sailings keep the old rule; T−90 is expedition economics. */
+     Day episodes keep the old rule; T−90 is expedition economics. */
   const { data: vRow } = await supabase
     .from("voyages")
     .select("starts_at, sub_class")
@@ -294,14 +294,14 @@ export async function improvePass(voyageId: string, addonIds: string[]): Promise
     /* time_zone was not even selected here. "18:00 the night before" is a time
        on a wall in a harbour; this read and wrote the render machine's zone
        instead, so the window it enforced was never the window it promises. On
-       an Eastern host it ran ~21 hours long for a Pacific sailing — the galley
+       an Eastern host it ran ~21 hours long for a Pacific episode — the galley
        taking orders a day past its provisioning cut — and on a UTC host it
-       takes four hours off a morning sailing in an eastern harbour, while the
+       takes four hours off a morning episode in an eastern harbour, while the
        refusal text still says "18:00 the night before". */
     .select("starts_at, time_zone")
     .eq("id", voyageId)
     .maybeSingle();
-  if (!voyage) return { error: "That voyage is off the manifest." };
+  if (!voyage) return { error: "That episode is off the manifest." };
   const cutoff = new Date(eveningBefore(voyage.starts_at, voyage.time_zone));
   if (Date.now() >= cutoff.getTime()) {
     return { error: "The add-on window closed at 18:00 the night before." };
@@ -446,7 +446,7 @@ export async function withdrawOffer(transferId: string): Promise<RsvpResult> {
 }
 
 /* The RPC reassigns the pass, clears the code, squares both accounts and
-   posts the Word. Nothing to notify from here. */
+   posts to the Inbox. Nothing to notify from here. */
 export async function acceptOffer(transferId: string): Promise<RsvpResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
@@ -519,7 +519,7 @@ export async function applyPromo(rawCode: string, voyageId: string): Promise<Pro
     .select("price_cents")
     .eq("id", voyageId)
     .maybeSingle();
-  if (!voyage) return { ok: false, reason: "That sailing is off the manifest." };
+  if (!voyage) return { ok: false, reason: "That episode is off the manifest." };
 
   return {
     ok: true,
@@ -582,12 +582,12 @@ export async function chooseCabin(voyageId: string, cabinId: string | null): Pro
     if (/spoken for/i.test(error.message)) return { error: "That cabin just went. Pick another." };
     return { error: await guardMessage(supabase, error.message, error.code) };
   }
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   return {};
 }
 
 /* — The bow daybed. The RPC is the whole transaction: it checks the pass is
-   the member's own aboard one, holds the two-per-sailing line, prices from
+   the member's own aboard one, holds the two-per-episode line, prices from
    club_products and posts the folio charge itself. Its refusals arrive in
    brand voice and pass through untouched. — */
 export async function claimDaybed(rsvpId: string): Promise<RsvpResult> {

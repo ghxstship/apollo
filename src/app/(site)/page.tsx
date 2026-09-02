@@ -4,8 +4,8 @@ import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { TaglineMark } from "@/components/site/logo";
 import { SectionHeader } from "@/components/site/section-header";
-import { ANCHOR, CLUB_ZONE, CITY_CODES, TAGLINE } from "@/lib/brand";
-import { SETTING_LABEL, logMeta, roman } from "@/lib/format";
+import { ANCHOR, CLUB_ZONE, CITY_CODES, PLACE, SURFACES, TAGLINE } from "@/lib/brand";
+import { logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
 import {
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 const STEPS: Array<[string, string]> = [
   ["Apply.", "A short casting form, read by a person. We reply inside the week."],
-  ["Board.", "Claim a pass from the manifest. Solo is normal — the cast meets at the gangway, not before."],
+  ["Board.", "Claim a pass for any episode. Solo is normal — the cast meets at the gangway, not before."],
   ["See what happens.", "Cameras from boarding to docking. No scripts, no second takes."],
 ];
 
@@ -44,12 +44,12 @@ export default async function HomePage() {
           "id,slug,title,class,format,status,starts_at,ends_at,distance_nm,time_zone,media,blurb,deposit_required,deposit_cents"
         )
         .in("status", ["scheduled", "live", "weather_hold"])
-      /* A sailing that has cast off is not on offer, whatever its status
-         still says — the detail page and the manifest already knew this. */
+      /* An episode that has cast off is not on offer, whatever its status
+         still says — the detail page and the listing already knew this. */
       .gte("starts_at", new Date().toISOString())
         .order("starts_at", { ascending: true })
         /* Three next up plus whatever is live — twelve covers a full-season
-           calendar's worth of underway sailings without reading the year. */
+           calendar's worth of underway episodes without reading the year. */
         .limit(12),
       supabase
         .from("harbors")
@@ -78,18 +78,21 @@ export default async function HomePage() {
     )
   );
 
-  /* The harbors line, said by the data. */
-  const WORDS = ["No harbors", "One harbor", "Two harbors", "Three harbors", "Four harbors"];
+  /* The cities line, said by the data. The table is still called harbors and
+     the identifiers below still say so; the word a reader gets is City. */
+  const CITY = PLACE.market.toLowerCase();
+  const CITIES = PLACE.markets.toLowerCase();
+  const WORDS = [`No ${CITIES}`, `One ${CITY}`, `Two ${CITIES}`, `Three ${CITIES}`, `Four ${CITIES}`];
   const openHarbors = (harbors ?? []).filter((h) => h.status === "open");
   const nextHarbor = (harbors ?? []).find((h) => h.status !== "open");
-  const harborsLine = `${WORDS[openHarbors.length] ?? `${openHarbors.length} harbors`} now.${
+  const harborsLine = `${WORDS[openHarbors.length] ?? `${openHarbors.length} ${CITIES}`} now.${
     nextHarbor ? ` ${nextHarbor.name} is next.` : ""
   }`;
 
   const live = (voyages ?? []).filter((v) => v.status === "live");
   const nextUp = (voyages ?? []).filter((v) => v.status !== "live").slice(0, 3);
   /* Berth counts and hulls for the three cards only — the capacity view was
-     being read for every sailing the club has ever raised. */
+     being read for every episode the club has ever raised. */
   const nextUpIds = nextUp.map((v) => v.id);
   const [{ data: capacity }, fleets] = await Promise.all([
     nextUpIds.length
@@ -119,8 +122,8 @@ export default async function HomePage() {
             <LinkButton href="/membership#apply" variant="gold" size="lg">
               Apply to be cast
             </LinkButton>
-            <LinkButton href="/charters" variant="ghost" size="lg" inverse>
-              See the charters <Icon name="ArrowUpRight" size={16} />
+            <LinkButton href="/episodes" variant="ghost" size="lg" inverse>
+              See the episodes <Icon name="ArrowUpRight" size={16} />
             </LinkButton>
           </div>
         </div>
@@ -133,7 +136,7 @@ export default async function HomePage() {
             <div className="ls-container ws-livestrip__in">
               <span className="ls-live">Live now</span>
               {live.map((v) => (
-                <Link key={v.id} href={`/charters/${v.slug}`}>
+                <Link key={v.id} href={`/episodes/${v.slug}`}>
                   {v.title} — underway
                 </Link>
               ))}
@@ -145,11 +148,11 @@ export default async function HomePage() {
       <section className="ls-section">
         <div className="ls-container">
           <SectionHeader
-            eyebrow="On this charter"
+            eyebrow="On this episode"
             title="Next up. Every camera on."
             aside={
-              <LinkButton href="/charters" variant="ghost">
-                All charters <Icon name="ArrowUpRight" size={15} />
+              <LinkButton href="/episodes" variant="ghost">
+                All episodes <Icon name="ArrowUpRight" size={15} />
               </LinkButton>
             }
           />
@@ -159,11 +162,12 @@ export default async function HomePage() {
               const left = cap?.berths_left ?? null;
               const seats = "passes";
               /* The badge: what this actually is, and how long it runs. The
-                 format names itself; a sailing that has not been filed under
-                 one falls back to where it happens. Hours are omitted rather
-                 than guessed when the sailing has no stated end. */
+                 series names itself; an episode filed under no series is a
+                 Special, which is an honest answer rather than a blank or a
+                 restatement of the setting. Hours are omitted rather than
+                 guessed when the episode has no stated end. */
               const formatLabel =
-                (v.format && formatLabelOf.get(v.format)) || SETTING_LABEL[v.class] || "Afloat";
+                (v.format && formatLabelOf.get(v.format)) || SURFACES.special;
               const hours = durationChip(v.starts_at, v.ends_at);
               /* Ship's-log chips: which week, how many hulls, what holds a
                  pass. Nothing that scores or hurries the reader. */
@@ -176,7 +180,7 @@ export default async function HomePage() {
               return (
                 <Link
                   key={v.id}
-                  href={`/charters/${v.slug}`}
+                  href={`/episodes/${v.slug}`}
                   style={{ color: "inherit", textDecoration: "none" }}
                   className={"ls-rise-" + Math.min(i + 1, 3)}
                 >
@@ -211,7 +215,10 @@ export default async function HomePage() {
 
       <section className="ls-section">
         <div className="ls-container">
-          <SectionHeader eyebrow="The format" title="Apply. Board. See what happens." />
+          {/* Not the Series eyebrow: this section is the way in, not a strand
+              of episodes. Format was the word here and it is retired front of
+              house, so the eyebrow says what the three steps actually are. */}
+          <SectionHeader eyebrow="How it works" title="Apply. Board. See what happens." />
           <div className="ws-steps">
             {STEPS.map(([title, body], i) => (
               <div className="ws-step" key={title}>
@@ -227,9 +234,9 @@ export default async function HomePage() {
       <section className="ls-section">
         <div className="ls-container">
           {/* Read from the harbors table rather than hardcoded: the copy used to
-              promise the Balearics, which is not a harbor the club has, directly
+              promise the Balearics, which is not a city the club has, directly
               above a list naming Chicago and New York as the ones coming. */}
-          <SectionHeader eyebrow="Harbors" title={harborsLine} />
+          <SectionHeader eyebrow={PLACE.markets} title={harborsLine} />
           <div>
             {(harbors ?? []).map((h) => (
               <div className="ws-harbor-row" key={h.id}>
@@ -248,7 +255,7 @@ export default async function HomePage() {
             ))}
           </div>
           <p className="ws-harbor-note">
-            Founding passes in new harbors go to the waitlist first —{" "}
+            Founding passes in new {CITIES} go to the waitlist first —{" "}
             <Link href="/membership#apply">get on the list</Link>.
           </p>
         </div>
@@ -260,8 +267,10 @@ export default async function HomePage() {
             eyebrow="The show"
             title="What the cameras kept."
             aside={
-              <LinkButton href="/episodes" variant="ghost">
-                All episodes <Icon name="ArrowUpRight" size={15} />
+              /* The written record, which is the Log — not the listing at
+                 /episodes, which is where the club's episodes are sold. */
+              <LinkButton href="/log" variant="ghost">
+                The Log <Icon name="ArrowUpRight" size={15} />
               </LinkButton>
             }
           />
@@ -284,7 +293,7 @@ export default async function HomePage() {
             {(posts ?? []).map((p) => (
               <Link
                 key={p.id}
-                href={`/episodes/${p.slug}`}
+                href={`/log/${p.slug}`}
                 style={{ color: "inherit", textDecoration: "none", display: "block" }}
               >
                 <div className="ws-dp-row">

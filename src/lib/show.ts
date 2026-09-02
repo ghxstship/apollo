@@ -173,8 +173,8 @@ export function boardWindow(start: string, end: string | null): string {
   return end ? `${hm(start)}–${hm(end)}` : `${hm(start)} on`;
 }
 
-/* "CP marks critical path — the sailing cannot proceed without it."
-   Reported, never enforced: a trigger refusing a sailing's departure because a
+/* "CP marks critical path — the episode cannot proceed without it."
+   Reported, never enforced: a trigger refusing an episode's departure because a
    critical-path element is still Draft would strand a real boat at a real dock
    over a procurement record. The board shows the gap; a person decides. */
 export function criticalPathGaps(rows: RunOfShowRow[]): RunOfShowRow[] {

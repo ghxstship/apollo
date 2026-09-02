@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CLUB_ZONE, CITY_CODES } from "@/lib/brand";
+import { CLUB_ZONE, CITY_CODES, PLACE } from "@/lib/brand";
 import { roman, yearIn } from "@/lib/format";
 import { getMember } from "../data";
 import { DirectoryList, type DirectoryMember, type HarborOption } from "./roster";
@@ -86,7 +86,7 @@ export default async function DirectoryPage({
       handle: p.handle,
       tone: toneOf(p.avatar_tone),
       harborId: harbor?.id ?? "",
-      harborName: harbor?.name ?? "No home harbor",
+      harborName: harbor?.name ?? `No home ${PLACE.market.toLowerCase()}`,
       harborCode: harbor ? CITY_CODES[harbor.slug] ?? "" : "",
       league: leagueById.get(p.id)?.league ?? 1,
       leagueName: leagueById.get(p.id)?.league_name ?? "First League — Harborline",
@@ -103,13 +103,15 @@ export default async function DirectoryPage({
 
   return (
     <div style={{ maxWidth: 820, marginInline: "auto" }}>
-      <span className="mbr-eyebrow">Directory</span>
+      {/* The roster was the h1 and Directory only the eyebrow, so the page and
+          the nav disagreed. Name on top; the roster opens the standfirst. */}
+      <span className="mbr-eyebrow">By {PLACE.market.toLowerCase()} and league</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        The roster.
+        Directory.
       </h1>
       <p className="dir-lede">
-        Everyone who chose to be listed. Search a name, a handle, or what they turn
-        up for.
+        The roster — everyone who chose to be listed. Search a name, a handle, or
+        what they turn up for.
       </p>
       <DirectoryList members={members} harbors={harborOptions} total={total} />
       {more ? (

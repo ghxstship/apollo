@@ -66,7 +66,7 @@ export async function seedTheBoard(voyageId: string): Promise<ShowResult> {
 
 /* Putting a guest in the queue at all. Until this existed the Pod could be
    advanced but never populated: every control moved an existing row, no code
-   path inserted one, and the queue was empty on every sailing there has ever
+   path inserted one, and the queue was empty on every episode there has ever
    been.
 
    The insert is deliberately minimal — voyage, pass, position. `state` defaults

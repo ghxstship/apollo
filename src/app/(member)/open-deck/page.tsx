@@ -31,7 +31,7 @@ export default async function OpenDeckPage() {
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE),
     /* Taggable voyages for the composer: live now, or still ahead. Filtered
-       at the database rather than after reading every sailing ever raised. */
+       at the database rather than after reading every episode ever raised. */
     supabase
       .from("voyages")
       .select("id,title,starts_at")
@@ -44,7 +44,7 @@ export default async function OpenDeckPage() {
   const postIds = posts.map((p) => p.id);
   const taggable: VoyageOption[] = (taggableRes.data ?? []).map((v) => ({ id: v.id, title: v.title }));
 
-  /* Hails, comments and sailing titles only for the posts on the page. */
+  /* Hails, comments and episode titles only for the posts on the page. */
   const postVoyageIds = Array.from(
     new Set(posts.map((p) => p.voyage_id).filter((id): id is string => !!id))
   );

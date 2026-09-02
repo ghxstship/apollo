@@ -30,7 +30,7 @@ export default async function CompositionPage({
   const db = moduleTables(supabase);
   const sp = await searchParams;
 
-  /* Sailings that can still take a seat. A composition on a completed sailing
+  /* Episodes that can still take a seat. A composition on a completed episode
      changes nothing anyone can act on, so the picker does not offer one. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
   const voyagesRes = await supabase
@@ -113,7 +113,7 @@ export default async function CompositionPage({
       <span className="hm-eyebrow">Composition</span>
       <h1 className="hm-h1">The ratio gate.</h1>
       <p className="hm-lede">
-        A sailing is ratio-gated when it carries a composition, and not
+        An episode is ratio-gated when it carries a composition, and not
         otherwise. Setting these three ceilings is what turns the gate on: from
         then on every pass must name its segment, must pass the vetting file,
         and is counted against the ceiling and against the hull.

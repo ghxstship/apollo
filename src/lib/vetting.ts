@@ -69,7 +69,7 @@ export const BACKGROUND_LABEL: Record<BackgroundState, string> = {
 export const BACKGROUND_LINE: Record<BackgroundState, string> = {
   submitted: "With the vetting team. 48 hours.",
   needs_a_call: "A 10-minute video interview finishes it.",
-  cleared: "Good for 12 months across all formats.",
+  cleared: "Good for 12 months across every series.",
   declined: "We do not explain declines, and we do not reopen them.",
 };
 
@@ -86,7 +86,7 @@ export const BACKGROUND_TONE: Record<BackgroundState, string> = {
 
 /* ── Boundaries ─────────────────────────────────────────────────────────────
    Part 2 of the Preference Sheet. `topic` is an open slug in the database
-   because the kit draws boundaries as a list and the next sailing will add one;
+   because the kit draws boundaries as a list and the next episode will add one;
    these three are the ones it draws, and "photographed" is load-bearing — the
    Confessional Pod reads it as the anonymity flag and no crew tablet can lower
    it. */
@@ -133,8 +133,8 @@ export interface SegmentCapacityRow {
   cap: number;
   units: number;
   remaining: number;
-  /* Aboard passes on this sailing that state NO segment — the same figure on
-     every row of a voyage. Every pass sold before a sailing was gated has a
+  /* Aboard passes on this episode that state NO segment — the same figure on
+     every row of an episode. Every pass sold before an episode was gated has a
      null segment, so `units` alone reported "0 SOLD" on a boat with people on
      it, and the first ceilings were always set against a number that was not
      the truth. The hull check counts them, so the overflow surfaced at a
@@ -179,7 +179,7 @@ export interface WaitlistRow {
 
 /* ── What the capacity panel says ───────────────────────────────────────────
    "CAPACITY IS SHOWN BY SEGMENT, NEVER AS ONE NUMBER" is the kit's standing
-   rule, so there is no function here that returns one number for a sailing.
+   rule, so there is no function here that returns one number for an episode.
    The headline total is a sum of heads and is set BESIDE the segment rows, never
    instead of them. */
 export function seatedHeads(rows: SegmentCapacityRow[]): number {

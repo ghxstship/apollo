@@ -185,7 +185,7 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
 
   /* No signal — answer from the manifest this page loaded with, exactly the
      way the gangway answers from its cached roster. The manifest cannot speak
-     for a guest stub, a booking made since load, or a pass for a sailing off
+     for a guest stub, a booking made since load, or a pass for an episode off
      the board, so a miss here is "we cannot check that", never a refusal. */
   const localResolve = React.useCallback(
     (raw: string): Screen => {
@@ -229,7 +229,7 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
         } else {
           try {
             /* Empty voyageId: the action resolves the code against upcoming
-               charters and reports otherVoyage when it lands elsewhere. */
+               episodes and reports otherVoyage when it lands elsewhere. */
             const result = await gangwayCheckIn(code, "00000000-0000-0000-0000-000000000000");
             setScreen({ kind: "confirm", result });
             if (result.outcome === "aboard" && !result.error) {
@@ -300,7 +300,7 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
        machine’s problem, worn by the person in front of it. A refusal is
        now only a refusal OF THE PASS. */
     /* Named precisely rather than inferred from a missing outcome: a waiver
-       refusal and a pass for a sailing that has already gone also arrive with
+       refusal and a pass for an episode that has already gone also arrive with
        no outcome and no name, and both of those ARE answers the member needs
        to hear. Only the two generic errors are silence. */
     const cannotSay = isUnanswered(r.error);

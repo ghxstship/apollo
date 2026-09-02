@@ -96,10 +96,17 @@ export default async function PortalPage({
 
   return (
     <div>
-      <span className="mbr-eyebrow">Member portal</span>
+      {/* Portal is the owner’s word and it stays. The old h1 named the one
+          thing on the page a member could not otherwise guess was here, so it
+          moved into the standfirst rather than being dropped. */}
+      <span className="mbr-eyebrow">Knots · Leagues · Rewards</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        The knots ledger.
+        Portal.
       </h1>
+      <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
+        The knots ledger, the league you ride at, the rewards they buy, and what
+        stands on your account.
+      </p>
 
       <div className="ptl-hero">
         <div>

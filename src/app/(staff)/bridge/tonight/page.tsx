@@ -3,12 +3,18 @@ import { StateBlock } from "@/components/ds";
 import { logDate, logTime } from "@/lib/format";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
-import { TablesClient, type TableRow } from "./tables-client";
+import { TablesClient, type TableRow } from "./tonight-client";
 
-export const metadata: Metadata = { title: "Tables" };
+export const metadata: Metadata = { title: "Tonight" };
 
 /* [un] Scripted, from the Bridge side. The member page reads the next two
-   shore nights and the tables laid on them; this is where the tables get laid. */
+   shore nights and the tables laid on them; this is where the tables get laid.
+
+   The route moved from /bridge/tables on 2026-09-02 under the owner rule that
+   Tables is never a route and that a route, its nav label, its title and its
+   h1 all say the same word. It answers to Tonight now, matching the member
+   surface it operates. A table is still a table — that noun means the blind
+   dinner for six and nothing else, which is the one thing it always meant. */
 
 export default async function TablesPage({
   searchParams,
@@ -33,12 +39,12 @@ export default async function TablesPage({
   if (nights.length === 0) {
     return (
       <div>
-        <span className="hm-eyebrow">Tables</span>
-        <h1 className="hm-h1">Tables for the night.</h1>
+        <span className="hm-eyebrow">Tonight</span>
+        <h1 className="hm-h1">Tonight.</h1>
         <div className="hm-sec">
           <StateBlock
             title="No shore night on the board."
-            detail="Tables are laid ashore. Raise a night ashore on the Voyages tab, then come back to lay the room."
+            detail="Tables are laid ashore. Raise a night ashore on the Episodes tab, then come back to lay the room."
           />
         </div>
       </div>
@@ -84,8 +90,8 @@ export default async function TablesPage({
 
   return (
     <div>
-      <span className="hm-eyebrow">Tables</span>
-      <h1 className="hm-h1">Tables for the night.</h1>
+      <span className="hm-eyebrow">Tonight</span>
+      <h1 className="hm-h1">Tonight.</h1>
       <p className="hm-lede">
         Blind tables for six, laid on a shore night. A member takes a seat and
         confirms it at the door; matches come from tables, not swiping. Lay the

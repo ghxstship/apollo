@@ -40,7 +40,7 @@ export default async function GangwayPage({
             status="empty"
             icon="Sailboat"
             title="Nothing on the water."
-            detail="No upcoming voyages to board. Set one on the Voyages tab."
+            detail="No upcoming episodes to board. Set one on the Episodes tab."
           />
         </div>
       </div>
@@ -102,7 +102,7 @@ export default async function GangwayPage({
     guestsByRsvp.set(g.rsvp_id, list);
   }
 
-  /* A daybed is a claim on the sailing, not on the pass — the door needs to
+  /* A daybed is a claim on the episode, not on the pass — the door needs to
      know who holds one so the crew can point them to it. */
   const daybedsRes = await supabase
     .from("voyage_daybeds")
@@ -121,8 +121,8 @@ export default async function GangwayPage({
     )
   );
 
-  /* What the door calls this sailing: the format's own name, the way it reads
-     on a member's card. A sailing with no format falls back to where it
+  /* What the door calls this episode: the series' own name, the way it reads
+     on a member's card. An episode with no series falls back to where it
      happens — afloat or ashore — which is the fact the crew at the top of the
      gangway actually needs. */
   let identity = SETTING_LABEL[voyage.class] ?? SETTING_LABEL.shore;
@@ -137,7 +137,7 @@ export default async function GangwayPage({
   }
 
   /* The door's muster line. A shore night musters at its venue — name and
-     address — where a sailing musters at the slip the voyage names. */
+     address — where an afloat episode musters at the slip it names. */
   let muster: string | null = voyage.muster ?? null;
   if (voyage.class === "shore" && voyage.venue_id) {
     const { data: venue } = await supabase

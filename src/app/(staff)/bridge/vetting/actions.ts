@@ -13,7 +13,7 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
    vetting_files is staff-only at the policy, had no writer anywhere in src/,
    and was empty. Four of the six gates on a member's own checklist read off it
    — ID and age verified, Background cleared, Lifestyle vetted, and (through
-   guard_the_vetting) Seated this sailing — so all four were permanently OPEN
+   guard_the_vetting) Seated this episode — so all four were permanently OPEN
    for every member, with nothing anyone could do about it from inside the
    product.
 
@@ -28,7 +28,7 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
      that could type a different date would be a screen that could disagree
      with the line every cleared member has already read.
    · id_purge_due is recomputed by purge_spent_identity_records against the
-     member's last completed sailing. Thirty days after the last sailing is the
+     member's last completed episode. Thirty days after the last episode is the
      promise; it is arithmetic, not a decision. */
 
 export type FilePatch = {
@@ -96,7 +96,7 @@ export async function advanceTheFile(fileId: string, patch: FilePatch): Promise<
 
   /* <input type="datetime-local"> yields "2026-09-01T14:30" with NO OFFSET, so
      `new Date()` would resolve it in the NODE SERVER'S zone — on a UTC host
-     that books a 14:30 call for 10:30 Eastern. A vetting file has no harbour to
+     that books a 14:30 call for 10:30 Eastern. A vetting file has no city to
      borrow a clock from, so it is read on the club's, which is the same zone
      guard_the_vetting prints a lapsed clearance in. */
   let interviewAt: string | null = null;
@@ -127,7 +127,7 @@ export async function advanceTheFile(fileId: string, patch: FilePatch): Promise<
     .from("vetting_files")
     .update({
       /* The record is a timestamp, not a flag: the purge sweep clears the
-         timestamp thirty days after the member's last sailing, and a boolean
+         timestamp thirty days after the member's last episode, and a boolean
          would have nothing to clear.
 
          Which is exactly why it must not be re-stamped on every save. This
@@ -146,7 +146,7 @@ export async function advanceTheFile(fileId: string, patch: FilePatch): Promise<
 }
 
 /* The identity record's own clock. purge_spent_identity_records recomputes
-   every due date from the member's last completed sailing and then clears
+   every due date from the member's last completed episode and then clears
    anything past due — idempotent, and correct whether it runs on a schedule or
    never. It had no caller either; this is the crew's hand on it. */
 export async function sweepSpentIdentityRecords(): Promise<ActionResult & { swept?: number }> {

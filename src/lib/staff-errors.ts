@@ -11,7 +11,7 @@ export const ERR_STAFF = "Staff only. If that's wrong, hail Shoreside.";
 export const ERR_LAND = "That didn't land. Try again.";
 
 /* True when the message tells us nothing about the pass. Everything else —
-   an outstanding waiver, a sailing that has already gone — is a real answer
+   an outstanding waiver, an episode that has already gone — is a real answer
    and belongs on screen as written. */
 export function isUnanswered(message?: string): boolean {
   return message === ERR_STAFF || message === ERR_LAND;

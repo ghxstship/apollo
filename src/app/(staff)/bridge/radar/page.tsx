@@ -17,7 +17,7 @@ export default async function RadarOpsPage() {
   const db = moduleTables(supabase);
 
   /* The board: everything still ahead, plus the last fortnight behind — a
-     guarantee settles when a sailing is marked completed, and the crew need to
+     guarantee settles when an episode is marked completed, and the crew need to
      see that it did. */
   const behind = new Date(new Date().getTime() - 14 * 24 * 3600 * 1000).toISOString();
   const voyagesRes = await supabase
@@ -85,13 +85,13 @@ export default async function RadarOpsPage() {
       <span className="hm-eyebrow">Radar</span>
       <h1 className="hm-h1">The sweep.</h1>
       <p className="hm-lede">
-        Radar runs on a sailing or it does not run at all. Opening it sets four
-        times off that sailing&apos;s own departure and its harbour&apos;s clock:
+        Radar runs on an episode or it does not run at all. Opening it sets four
+        times off that episode&apos;s own departure and its city&apos;s clock:
         the sweep opens at 17:15, picks close at 17:30, the Captain&apos;s Log
         opens at 19:00, and the contacts are gone twenty-four hours later.
       </p>
       <p className="hm-note">
-        Until a sailing carries a clock, /radar reads Dark to everybody aboard,
+        Until an episode carries a clock, /radar reads Dark to everybody aboard,
         no pick can be plotted, no anchor can be made, and the Match Guarantee
         has nothing to settle against. Anchors are counted here; picks are not,
         because a member&apos;s picks are theirs and the crew have never been

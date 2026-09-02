@@ -18,7 +18,7 @@ export type LegRow = {
   day: number;
   port: string;
   note: string | null;
-  /** Pre-formatted on the sailing's clock, and the wall-clock form for the field. */
+  /** Pre-formatted on the episode's clock, and the wall-clock form for the field. */
   when: string | null;
   whenLocal: string;
   status: "planned" | "revised" | "held";
@@ -48,7 +48,7 @@ export function VoyagePicker({
   const router = useRouter();
   return (
     <Select
-      label="Sailing"
+      label="Episode"
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/itinerary?voyage=${e.target.value}`)}
@@ -135,7 +135,7 @@ export function ItineraryClient({
         </div>
         <p className="hm-note">
           One row per day, in order. A leg is what a member reads as the
-          itinerary — until there is one, the charter page has no itinerary at
+          itinerary — until there is one, the episode page has no itinerary at
           all and says nothing about where the boat is going.
         </p>
 
@@ -144,7 +144,7 @@ export function ItineraryClient({
             status="empty"
             icon="Map"
             title="No legs posted."
-            detail="The itinerary block does not render on a charter with no legs. Add day one and it appears, for every member holding a pass."
+            detail="The itinerary block does not render on an episode with no legs. Add day one and it appears, for every member holding a pass."
           />
         ) : (
           legs.map((leg) => (
@@ -256,7 +256,7 @@ export function ItineraryClient({
             status="empty"
             icon="Anchor"
             title="No port guide."
-            detail="With no stops the guide card is omitted from the charter page without a word — a member sees nothing and has no way to know anything is missing."
+            detail="With no stops the guide card is omitted from the episode page without a word — a member sees nothing and has no way to know anything is missing."
           />
         ) : (
           stops.map((stop) => (
@@ -361,7 +361,7 @@ export function ItineraryClient({
                 type="datetime-local"
                 value={legForm.f.startsAt}
                 onChange={(e) => setLegForm({ ...legForm, f: { ...legForm.f, startsAt: e.target.value } })}
-                hint="Read on the sailing's own clock, never the browser's."
+                hint="Read on the episode's own clock, never the browser's."
               />
             </div>
             <Input

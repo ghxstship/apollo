@@ -14,7 +14,7 @@ import {
   type SponsorTier,
 } from "./actions";
 
-/* One activation — the sponsor on one sailing — with what it has delivered
+/* One activation — the sponsor on one episode — with what it has delivered
    against the tier's checklist and the passes comped on its account. */
 export type Activation = {
   voyageId: string;
@@ -22,9 +22,9 @@ export type Activation = {
   placement: string | null;
   /** voyage_sponsors.assets_delivered — the ticked entries of the tier's list. */
   assetsDelivered: string[];
-  /** rsvps stamped with this sponsor on this sailing, by member name. */
+  /** rsvps stamped with this sponsor on this episode, by member name. */
   comps: Array<{ id: string; name: string; status: string }>;
-  /** The sailing can still take a pass, so a comp can be given. */
+  /** The episode can still take a pass, so a comp can be given. */
   open: boolean;
 };
 
@@ -81,7 +81,7 @@ export function SponsorsClient({
   const [signing, setSigning] = React.useState(false);
   /* Take it off fired straight off the click — the only control on this screen
      that undoes a placement, and the only one that never asked. The credit line
-     is already on the sailing's public page by then, and the delivered-assets
+     is already on the episode's public page by then, and the delivered-assets
      ticks go with it. Same confirm-first shape as Sign a sponsor below. */
   const [detaching, setDetaching] = React.useState<{ sponsor: SponsorItem; act: Activation } | null>(
     null
@@ -92,7 +92,7 @@ export function SponsorsClient({
       const res = await detachSponsor(act.voyageId, sponsor.id);
       setDetaching(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
-      else show({ msg: "Taken off the sailing.", meta: sponsor.name.toUpperCase(), tone: "caution" });
+      else show({ msg: "Taken off the episode.", meta: sponsor.name.toUpperCase(), tone: "caution" });
     });
 
   const firstTier = tiers[0];
@@ -232,7 +232,7 @@ export function SponsorsClient({
       ) : rows.length === 0 ? (
         <StateBlock
           title="No names on the book."
-          detail="A sponsor keeps a retainer and gets a credit on the sailings it rides. Sign the first one and place it below."
+          detail="A sponsor keeps a retainer and gets a credit on the episodes it rides. Sign the first one and place it below."
         />
       ) : (
         <Table columns={columns} rows={rows} rowKey={(r) => r.id} />
@@ -242,7 +242,7 @@ export function SponsorsClient({
         <section className="hm-sec">
           <h2>Placements.</h2>
           <p className="hm-lede" style={{ marginTop: 4 }}>
-            An activation puts the name on a sailing — the public page reads it as a
+            An activation puts the name on an episode — the public page reads it as a
             credit line, presenting partner first. Placement is a note for the crew,
             not copy for the shore. Each activation carries the tier&rsquo;s assets as a
             checklist, ticked as they are delivered, and can comp a member a pass on
@@ -394,7 +394,7 @@ export function SponsorsClient({
                   </div>
                 ) : (
                   <p className="hm-body" style={{ marginTop: 10, color: "var(--text-3)" }}>
-                    On no sailing yet.
+                    On no episode yet.
                   </p>
                 )}
 
@@ -409,14 +409,14 @@ export function SponsorsClient({
                     }}
                   >
                     <Select
-                      label="Sailing"
+                      label="Episode"
                       value={pick.voyage}
                       onChange={(e) => setPick(s.id, { voyage: e.target.value })}
                       style={{ minWidth: 260 }}
                       options={[
                         {
                           value: "",
-                          label: open.length ? "Pick the sailing" : "Nothing open to place it on",
+                          label: open.length ? "Pick the episode" : "Nothing open to place it on",
                         },
                         ...open,
                       ]}
@@ -439,7 +439,7 @@ export function SponsorsClient({
                             return;
                           }
                           setPick(s.id, { voyage: "", placement: "" });
-                          show({ msg: "Placed. The credit rides with the sailing.", meta: s.name.toUpperCase() });
+                          show({ msg: "Placed. The credit rides with the episode.", meta: s.name.toUpperCase() });
                         })
                       }
                     >
@@ -458,7 +458,7 @@ export function SponsorsClient({
         onClose={() => setDetaching(null)}
         width={420}
         eyebrow={detaching ? detaching.sponsor.name : ""}
-        title="Take it off this sailing?"
+        title="Take it off this episode?"
         footer={
           detaching ? (
             <>
@@ -522,7 +522,7 @@ export function SponsorsClient({
                   setStartsOn("");
                   setEndsOn("");
                   setNotes("");
-                  show({ msg: "Signed.", meta: "ON THE BOOK · PLACE IT ON A SAILING" });
+                  show({ msg: "Signed.", meta: "ON THE BOOK · PLACE IT ON AN EPISODE" });
                 })
               }
             >

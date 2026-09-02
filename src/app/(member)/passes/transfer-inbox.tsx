@@ -2,7 +2,7 @@
 
 /* Offers waiting on you, at the top of the manifest. Accepting runs the RPC
    that reassigns the pass, clears the code and squares both accounts — it
-   posts the Word itself, so nothing is notified from here. */
+   posts to the Inbox itself, so nothing is notified from here. */
 
 import React from "react";
 import { Button } from "@/components/ds";

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Badge, Tag, Icon } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { ANCHOR, CITY_CODES, CURRENCY, DIVISION_IDS, DIVISIONS, EXPERIENCE_CLASSES, EXPERIENCE_CLASS_IDS, HANDLE, LEAGUES, MAILBOX, SETTING_LABEL, SUB_CLASSES, SURFACES, TAGLINE, EST_YEAR_ROMAN, lockup } from "@/lib/brand";
+import { ANCHOR, CITY_CODES, CURRENCY, DIVISION_IDS, DIVISIONS, EXPERIENCE_CLASSES, EXPERIENCE_CLASS_IDS, HANDLE, LEAGUES, MAILBOX, PLACE, SETTING_LABEL, SUB_CLASSES, SURFACES, TAGLINE, EST_YEAR_ROMAN, lockup } from "@/lib/brand";
 import { Wordmark } from "@/components/ds";
 import { CopyProvider, CopyTextButton, Swatch } from "./copy-controls";
 import "./brand.css";
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 const BOILER =
-  "[un] is a global nautical social club. The anchor experience is a weekly seven-hour sailing out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Six divisions share one anchor and swap the accent only: [un] Hinged, [un] Bound, [un] Limited, [un] Scripted, [un] Cut and [un] Brand. Membership is by application or invitation.";
+  "[un] is a global nautical social club. The anchor experience is a weekly seven-hour episode out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Six divisions share one anchor and swap the accent only: [un] Hinged, [un] Bound, [un] Limited, [un] Scripted, [un] Cut and [un] Brand. Membership is by application or invitation.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--scene-golden)",
@@ -87,7 +87,7 @@ const TYPE_VOICES: Array<[string, string, string, string, string]> = [
 /* The rooms of the house — names from brand.ts, roles annotated here. */
 const ROOMS: Array<[keyof typeof SURFACES, string]> = [
   ["bridge", "The crew console"],
-  ["gateway", "Live mode — the charter underway"],
+  ["gateway", "Live mode — the episode underway"],
   ["openDeck", "The cast's feed — the confession booth"],
   ["passbook", "The credential, with its rotating code"],
   ["shoreside", "The crew desk ashore"],
@@ -106,9 +106,13 @@ const IMAGERY: Array<[string, string]> = [
 
 const FACTS: Array<[string, string]> = [
   ["Founded", `${EST_YEAR_ROMAN} · MIAMI, FLORIDA`],
-  ["Home harbor", "HAULOVER SANDBAR · MIAMI, FLORIDA"],
+  /* One row split in two with the City rename: the club's market and the place
+     an episode actually happens were being read off the same line, which is the
+     confusion the rename exists to end. */
+  [`Home ${PLACE.market.toLowerCase()}`, "MIAMI, FLORIDA"],
+  [`Home ${PLACE.venue.toLowerCase()}`, "HAULOVER SANDBAR"],
   ["Handle", HANDLE.toUpperCase()],
-  ["What we run", "CHARTERS ABOARD · TABLES ASHORE · CAMERAS ON"],
+  ["What we run", "EPISODES ABOARD · TABLES ASHORE · CAMERAS ON"],
   ["Casting", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY APPLICATION OR INVITATION"],
   ["Cadence", "EPISODES, SUNDAYS · SEASON I — CASTING NOW"],
 ];
@@ -259,7 +263,7 @@ export default function BrandKitPage() {
             in Space Mono — 38°54′N 1°26′E.
           </p>
           <div className="bk-lex">
-            {["Charters", "Tables", "The Manifest", "Passes", "Cabins", "Open Deck", "Knots", "Leagues", "Marks", "Regattas", "Member Card", "Live", "the Bridge", "Shoreside", "Episodes", "The Producer", "Aboard", "Weather Hold", "The Gangway"].map((w) => (
+            {["Episodes", "Tables", "The Manifest", "Passes", "Cabins", "Open Deck", "Knots", "Leagues", "Marks", "Regattas", "Member Card", "Live", "the Bridge", "Shoreside", "The Log", "The Producer", "Aboard", "Weather Hold", "The Gangway"].map((w) => (
               <Tag key={w}>{w}</Tag>
             ))}
           </div>
@@ -271,7 +275,7 @@ export default function BrandKitPage() {
             Divisions never get their own logos, colours beyond the accent, or
             type — they are spotlights on one stage. Rooms are spoken with the
             definite article and lowercase in prose. The only marks that exist
-            are type-set: the wordmark and the Episodes masthead. One handle
+            are type-set: the wordmark and The Log masthead. One handle
             covers every division: {HANDLE}.
           </p>
           <div className="bk-swlbl">The six divisions</div>

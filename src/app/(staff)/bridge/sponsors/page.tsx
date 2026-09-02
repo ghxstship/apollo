@@ -28,8 +28,8 @@ export default async function SponsorsPage() {
     supabase.from("sponsors").select("*").order("created_at", { ascending: true }),
     supabase.from("voyage_sponsors").select("*"),
     /* One voyages read serves both jobs: titles for whatever is already
-       placed — a credit may sit on a sailing that has since sailed — and the
-       picker below, which offers only sailings that can still carry one. */
+       placed — a credit may sit on an episode that has since sailed — and the
+       picker below, which offers only episodes that can still carry one. */
     supabase
       .from("voyages")
       .select("id, title, starts_at, time_zone, status")
@@ -91,12 +91,12 @@ export default async function SponsorsPage() {
     const list = bySponsor.get(a.sponsor_id) ?? [];
     list.push({
       voyageId: a.voyage_id,
-      label: v ? `${v.title} · ${logDate(v.starts_at, v.time_zone)}` : "A sailing off the board",
+      label: v ? `${v.title} · ${logDate(v.starts_at, v.time_zone)}` : "An episode off the board",
       placement: a.placement,
       assetsDelivered: a.assets_delivered ?? [],
       comps: compsFor.get(`${a.voyage_id}:${a.sponsor_id}`) ?? [],
-      /* A comp is a pass on a sailing, so only a sailing still on the board
-         can take one; the credit itself stays whatever the sailing's state. */
+      /* A comp is a pass on an episode, so only an episode still on the board
+         can take one; the credit itself stays whatever the episode's state. */
       open: v ? v.status === "scheduled" || v.status === "live" : false,
     });
     bySponsor.set(a.sponsor_id, list);
@@ -141,8 +141,8 @@ export default async function SponsorsPage() {
       <span className="hm-eyebrow">Sponsors</span>
       <h1 className="hm-h1">The sponsor book.</h1>
       <p className="hm-lede">
-        A sponsor keeps a monthly retainer and gets a credit — a name carried on a
-        sailing, never an ad. The terms live here on the Bridge; the shore reads
+        A sponsor keeps a monthly retainer and gets a credit — a name carried on
+        an episode, never an ad. The terms live here on the Bridge; the shore reads
         names and tiers through one window, and nothing else.
       </p>
       {/* Three figures the book is read for, and they were one run-on line of

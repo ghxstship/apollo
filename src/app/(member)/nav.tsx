@@ -9,15 +9,18 @@ import { memberMark } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/client";
 import { SignOutForm } from "@/components/sign-out-form";
 
+/* Every label here is the destination's NAME, not a description of it — the
+   route, this label, the page title and the page h1 are one word per surface,
+   and a change to any of the four is a change to all four. */
 const LINKS = [
-  ["/home", "Home"],
+  ["/home", SURFACES.homePort],
   ["/live", SURFACES.gateway],
-  ["/manifest", "Voyages"],
-  ["/activity", "Activity"],
-  ["/charter", "Charter"],
+  ["/passes", "Passes"],
+  ["/series", SURFACES.series],
+  ["/itinerary", "Itinerary"],
   ["/open-deck", SURFACES.openDeck],
   ["/directory", "Directory"],
-  ["/tables", "Tonight"],
+  ["/tonight", "Tonight"],
   ["/matches", "Matches"],
   ["/vetting", "Vetting"],
   ["/radar", "Radar"],
@@ -29,20 +32,23 @@ const LINKS = [
   ["/card", SURFACES.passbook],
   ["/membership/standing", "Standing"],
   ["/agreements", "Agreements"],
-  ["/inbox", "Word"],
+  ["/inbox", "Inbox"],
   ["/you", "You"],
 ] as const;
 
 const TABS = [
+  /* Two tab labels here are SHORTENINGS of their destination's name, not other
+     names for it. At 9px mono with .12em tracking a label wants about 6px per
+     character, and six tabs leave roughly 62px each — anything past nine
+     characters wraps to a second line and lifts the whole bar off the safe
+     area. Member Card and Home Port are both over it. The destinations are
+     still the Member Card and Home Port: the desktop nav, the page title and
+     the page h1 all say so, and those are the four that have to agree. */
   ["/home", "Anchor", "Home"],
   ["/live", "Navigation", SURFACES.gateway],
-  ["/manifest", "Sailboat", "Voyages"],
-  /* The tab label, not the page's name: "Member Card" at 9px mono with .12em
-     tracking wants ~70px of the ~62px six tabs leave, so it wrapped to two
-     lines and lifted the whole bar. The destination is still the Member Card —
-     the desktop nav and the page title both say so. */
+  ["/passes", "Sailboat", "Passes"],
   ["/card", "IdCard", "Card"],
-  ["/inbox", "Bell", "Word"],
+  ["/inbox", "Bell", "Inbox"],
   ["/you", "User", "You"],
 ] as const;
 
@@ -52,7 +58,7 @@ function isCurrent(pathname: string, href: string) {
 
 /* The nav scrolls sideways inside the bar, and seven of the twenty-one links
    sit past its right edge — Portal, Account, Member Card, Standing, Agreements,
-   Word and You were invisible by default, including the one you were standing
+   Inbox and You were invisible by default, including the one you were standing
    on. Bring the current link into the middle of the strip on mount and on every
    move; block:"nearest" keeps the page itself from scrolling. */
 function useScrollCurrentIntoView(pathname: string) {
@@ -64,7 +70,7 @@ function useScrollCurrentIntoView(pathname: string) {
   return ref;
 }
 
-/* Live unread count for the Word — recounts on any notifications change. */
+/* Live unread count for the Inbox — recounts on any notifications change. */
 function useUnreadWord(userId: string, initial: number): number {
   /* No prop-sync effect: server-side changes (e.g. mark-all-read) surface as
      UPDATE events on the channel, which recount. */
@@ -209,7 +215,7 @@ export function MemberTopBar({
   return (
     <header className="mbr-top">
       <div className="mbr-top__in">
-        <Link href="/home" className="mbr-top__wm" aria-label="Home — home">
+        <Link href="/home" className="mbr-top__wm" aria-label={`${SURFACES.homePort} — home`}>
           <Wordmark size="sm" suffix={null} />
         </Link>
         <nav className="mbr-nav" aria-label="Member navigation" ref={navRef}>

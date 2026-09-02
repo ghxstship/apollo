@@ -9,7 +9,7 @@ export type ContestResult = { error?: string };
 
 /* Entering and leaving a contest. Both are plain table writes — the RLS policies
    are the whole rule set: you may only enter yourself, only into an open contest,
-   only before it closes, and, when the contest is scoped to one sailing, only if
+   only before it closes, and, when the contest is scoped to one episode, only if
    you hold an aboard pass on it. Nothing here needs to be trusted.
 
    What a policy cannot do is speak. Both of these threw the result on the floor

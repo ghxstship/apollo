@@ -21,8 +21,8 @@ const GUEST_DOC = "guest-waiver";
    feed works. Asking a guest to make an account before they can sign a liability
    waiver is how waivers go unsigned.
 
-   The sailing is read from the guest's own row rather than the URL, so a token
-   cannot be pointed at a different voyage's document. */
+   The episode is read from the guest's own row rather than the URL, so a token
+   cannot be pointed at a different episode's document. */
 export default async function GuestSignPage({
   params,
 }: {
@@ -57,7 +57,7 @@ export default async function GuestSignPage({
 
       {row.voyage_state !== "ahead" ? (
         <div className="sgn-done" role="status">
-          <h2>{row.voyage_state === "cancelled" ? "That sailing was called off." : "That sailing has gone."}</h2>
+          <h2>{row.voyage_state === "cancelled" ? "That episode was called off." : "That episode has gone."}</h2>
           <p>
             {row.voyage_state === "cancelled"
               ? "Nothing to sign — the club called it off. Whoever booked you will know the next date."
@@ -68,7 +68,7 @@ export default async function GuestSignPage({
         <div className="sgn-done" role="status">
           <h2>Already signed.</h2>
           <p>
-            We have your signature for this sailing. Bring nothing but yourself —
+            We have your signature for this episode. Bring nothing but yourself —
             the gangway has the rest.
           </p>
         </div>

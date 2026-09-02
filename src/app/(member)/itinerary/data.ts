@@ -67,7 +67,7 @@ export interface CabinCard {
   muster: string | null;
 }
 
-/* The kit's four charter states. CONFIRMED, WAITLIST and CLOSED are already
+/* The kit's four episode states. CONFIRMED, WAITLIST and CLOSED are already
    rsvp_status and voyage_status under other names; OPTION is the new one, and
    it is a separate table rather than a fifth value on rsvp_status because eight
    triggers switch on that enum and every one of them would have to learn that

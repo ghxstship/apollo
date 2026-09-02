@@ -52,11 +52,11 @@ export function MediaClient({
     <>
       <div className="hm-filters">
         <Select
-          label="Sailing"
+          label="Episode"
           value={voyageId}
           onChange={(e) => setVoyageId(e.target.value)}
           options={[
-            { value: "", label: "Every sailing" },
+            { value: "", label: "Every episode" },
             ...voyages.map((v) => ({ value: v.id, label: v.title })),
           ]}
         />

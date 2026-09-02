@@ -57,19 +57,19 @@ export async function addToManifest(
 
   /* The database exempts staff from the past-sailing guard, on the assumption
      the Bridge knows what it is doing. It does not know that a tab has been
-     open since before the voyage completed. Seating someone retroactively mints
-     knots, queues a boarding email for a sailing that has happened, and — since
-     contest_standing scores aboard rows on completed voyages — quietly moves
-     regatta standings. The box office checks the clock itself. */
+     open since before the episode completed. Seating someone retroactively
+     mints knots, queues a boarding email for an episode that has happened,
+     and — since contest_standing scores aboard rows on completed episodes —
+     quietly moves regatta standings. The box office checks the clock itself. */
   const { data: target } = await supabase
     .from("voyages")
     .select("status, starts_at, title")
     .eq("id", voyageId)
     .maybeSingle();
-  if (!target) return { error: "No such sailing." };
-  if (target.status === "cancelled") return { error: "That sailing was called off." };
+  if (!target) return { error: "No such episode." };
+  if (target.status === "cancelled") return { error: "That episode was called off." };
   if (target.status === "completed" || new Date(target.starts_at).getTime() <= Date.now()) {
-    return { error: "That sailing has already left — nobody can be seated on it now." };
+    return { error: "That episode has already gone — nobody can be seated on it now." };
   }
 
   const { data: existing } = await supabase
@@ -126,7 +126,7 @@ export async function assignVesselsEvenly(voyageId: string): Promise<ActionResul
        to deal — and either way "spread" would be the wrong word. */
     return {
       error:
-        "Nothing to spread — no hull is on this voyage yet, or every pass aboard already has one. Assign hulls from the Voyages board first.",
+        "Nothing to spread — no hull is on this episode yet, or every pass aboard already has one. Assign hulls from the Episodes board first.",
     };
   }
   return done();

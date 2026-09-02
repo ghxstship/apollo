@@ -53,7 +53,7 @@
 .cht-plan__note{margin:var(--space-3) 0 0;font:var(--type-caption);color:var(--text-muted)}
 .cht-plan__err{margin:var(--space-3) 0 0;font:var(--type-caption);color:var(--danger)}
 
-/* — the four charter states — */
+/* — the four episode states — */
 .cht-states{display:flex;flex-direction:column;gap:var(--space-2);margin-top:var(--space-4);max-width:420px}
 .cht-state{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--surface-card);border-inline-start:3px solid var(--cht-state,var(--text-faint));border-radius:var(--radius-sm)}
 .cht-state__name{flex:none;width:96px;font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-body)}

@@ -16,8 +16,8 @@ export default async function ProposalsPage() {
       .select("*")
       .order("created_at", { ascending: false }),
     supabase.from("charter_requests").select("*").order("created_at", { ascending: false }),
-    /* Two jobs from one read: the picker offers sailings still ahead; the
-       label for a linked sailing must resolve even after it has gone. */
+    /* Two jobs from one read: the picker offers episodes still ahead; the
+       label for a linked episode must resolve even after it has gone. */
     supabase
       .from("voyages")
       .select("id, title, starts_at, time_zone, status")
@@ -36,7 +36,7 @@ export default async function ProposalsPage() {
     : { data: [] };
   const members = new Map(must(membersRes).map((p) => [p.id, p]));
 
-  /* Labels for whatever shapes turn up on the rows. activity_formats belongs
+  /* Labels for whatever series turn up on the rows. activity_formats belongs
      to another module, reached through the moduleTables seam. */
   const formatSlugs = [
     ...new Set(
@@ -61,7 +61,7 @@ export default async function ProposalsPage() {
   const voyageLabel = (id: string | null): string | null => {
     if (!id) return null;
     const v = voyageById.get(id);
-    return v ? `${v.title} · ${logDate(v.starts_at, v.time_zone)}` : "A sailing off the board";
+    return v ? `${v.title} · ${logDate(v.starts_at, v.time_zone)}` : "An episode off the board";
   };
 
   const rows: ProposalRow[] = proposals.map((p) => {

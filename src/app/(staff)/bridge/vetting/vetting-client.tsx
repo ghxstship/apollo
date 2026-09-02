@@ -107,7 +107,7 @@ export function VettingClient({
         show({
           msg:
             res.swept === 0
-              ? "Nothing was due. Every due date was recomputed against its last sailing."
+              ? "Nothing was due. Every due date was recomputed against its last episode."
               : `${res.swept} identity record${res.swept === 1 ? "" : "s"} cleared.`,
         });
     });
@@ -214,7 +214,7 @@ export function VettingClient({
             status="empty"
             icon="ShieldCheck"
             title="No files open."
-            detail="A vetting file is the club's record about a member: identity, age, and the background state. Until one is open, four of the six gates on that member's own checklist cannot turn, and no ratio-gated sailing will seat them."
+            detail="A vetting file is the club's record about a member: identity, age, and the background state. Until one is open, four of the six gates on that member's own checklist cannot turn, and no ratio-gated episode will seat them."
           />
         </div>
       ) : shown.length === 0 ? (
@@ -288,7 +288,7 @@ export function VettingClient({
           <div className="hm-form">
             <Checkbox
               label="Identity verified"
-              description="The record is cleared thirty days after their last sailing, by the sweep."
+              description="The record is cleared thirty days after their last episode, by the sweep."
               checked={draft.idVerified}
               onChange={(e) => setDraft((d) => ({ ...d, idVerified: e.target.checked }))}
             />
@@ -342,20 +342,20 @@ export function VettingClient({
                 <span>{open.clearedUntil ? `CLEARED TO ${open.clearedUntil}` : "NOT CLEARED"}</span>
                 {/* "NO PURGE DUE" read as reassurance and meant the opposite.
                     purge_spent_identity_records derives a due date only from a
-                    COMPLETED aboard sailing, so a member who is verified and
+                    COMPLETED aboard episode, so a member who is verified and
                     never sails is scheduled for nothing and their identity
                     record is kept indefinitely. Say which of the two this is. */}
                 <span>
                   {open.purgeDue
                     ? `ID PURGE DUE ${open.purgeDue}`
                     : open.idVerified
-                      ? "ID HELD — NO PURGE SCHEDULED (NO COMPLETED SAILING)"
+                      ? "ID HELD — NO PURGE SCHEDULED (NO COMPLETED EPISODE)"
                       : "NO ID ON FILE"}
                 </span>
               </div>
               <p className="hm-item__body">
                 Fast-track follows the membership and is never set here. Twelve
-                months from clearance, and thirty days from the last sailing for
+                months from clearance, and thirty days from the last episode for
                 the identity record, are both settled by the database.
               </p>
             </div>

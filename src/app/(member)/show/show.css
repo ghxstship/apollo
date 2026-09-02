@@ -66,7 +66,7 @@
 }
 .shw-board__row:last-child { border-bottom: 1px solid var(--border-subtle); }
 
-/* CP — whether the sailing can proceed without this item — is the most
+/* CP — whether the episode can proceed without this item — is the most
    operationally important signal on the board and it was the LAST of six
    columns, so on a phone it lived past 700px of horizontal scroll. The rule
    below is the same fact as a leading marker: a sticky 3px flex item pinned to

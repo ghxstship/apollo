@@ -24,7 +24,7 @@ export async function claimSeat(tableId: string): Promise<SeatResult> {
      is not one you are booked on, that your membership is on hold. An
      allow-list of two regexes threw all of that away. */
   if (error) return { error: await voiceWith(supabase, error) };
-  revalidatePath("/tables");
+  revalidatePath("/tonight");
   return { heldUntil: typeof data === "string" ? data : undefined };
 }
 
@@ -37,7 +37,7 @@ export async function confirmSeat(tableId: string): Promise<SeatResult> {
 
   const { error } = await supabase.rpc("confirm_table_seat", { p_table: tableId });
   if (error) return { error: await voiceWith(supabase, error) };
-  revalidatePath("/tables");
+  revalidatePath("/tonight");
   return {};
 }
 
@@ -58,7 +58,7 @@ export async function releaseSeat(tableId: string): Promise<SeatResult> {
     .eq("table_id", tableId)
     .eq("profile_id", user.id);
   if (error) return { error: await voiceWith(supabase, error) };
-  revalidatePath("/tables");
+  revalidatePath("/tonight");
   return {};
 }
 
@@ -89,7 +89,7 @@ export async function pickFromTable(tableId: string, picked: string): Promise<Se
           : said,
     };
   }
-  revalidatePath("/tables");
+  revalidatePath("/tonight");
   revalidatePath("/matches");
   return {};
 }

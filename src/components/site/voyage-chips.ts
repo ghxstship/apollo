@@ -1,11 +1,12 @@
-/* Card chips for the public manifest — the mono data register, nothing more.
+/* Card chips for the public episode listing — the mono data register, nothing
+   more.
    Ship's-log values only: how long, which week of the season, how many hulls,
    what holds a pass. No ratings, no value badges, no urgency copy (see
    docs/EVENT-CARD-ENRICHMENT.md — those were rejected on brand grounds). */
 
 import { logDateTime, price, type Zone } from "@/lib/format";
 
-/* "ON SALE OCT 12 · 18:00" — the drop hour, on the harbour's clock. A sailing
+/* "ON SALE OCT 12 · 18:00" — the drop hour, on the harbour's clock. An episode
    whose sale_opens_at is still ahead is announced, not on offer, and the card
    says the hour rather than a pass count. Deeper tiers walk in earlier; the
    public figure is the public hour. */
@@ -13,7 +14,7 @@ export function onSaleChip(saleOpensAt: string, zone: Zone): string {
   return `ON SALE ${logDateTime(saleOpensAt, zone)}`;
 }
 
-/* The deposit figure is the voyage's own — voyages.deposit_cents — rendered
+/* The deposit figure is the episode's own — voyages.deposit_cents — rendered
    through price() so a zero would read as Complimentary rather than "$0".
    There is no club-wide figure: a surface that shows a deposit reads the row. */
 export function depositChip(cents: number): string {

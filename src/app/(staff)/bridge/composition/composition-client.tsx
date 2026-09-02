@@ -41,7 +41,7 @@ export function VoyagePicker({
   const router = useRouter();
   return (
     <Select
-      label="Sailing"
+      label="Episode"
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/composition?voyage=${e.target.value}`)}
@@ -73,7 +73,7 @@ export function CompositionPanel({
       above the club's figure; below that it is a note. */
   hullCertificate: string | null;
   /** club_setting('hull_ceiling_heads') — what the trigger reads when the
-      sailing carries no ceiling of its own. */
+      episode carries no ceiling of its own. */
   clubCeiling: number;
   rows: SegmentCapacityRow[];
   lines: QueueLine[];
@@ -105,13 +105,13 @@ export function CompositionPanel({
     draftCeiling > clubCeiling &&
     certificateDraft.trim() === "";
   /* What the_hull_holds_forty will check the composition against: the
-     sailing's own figure when it has one, the club's otherwise. */
+     episode's own figure when it has one, the club's otherwise. */
   const effectiveCeiling = hullCeiling ?? clubCeiling;
 
-  /* The draft ceilings belong to the sailing on screen, and the page mounts
+  /* The draft ceilings belong to the episode on screen, and the page mounts
      this panel under key={voyage.id} so switching the picker starts a fresh
      one. The alternative — resetting the draft from an effect — left the
-     previous sailing's ceilings in the fields under the new sailing's name for
+     previous episode's ceilings in the fields under the new episode's name for
      one render, and that render is the one where somebody clicks Save. */
   const capOf = (s: Segment) => rows.find((r) => r.segment === s)?.cap ?? 0;
   const [draft, setDraft] = React.useState<Record<Segment, number>>({
@@ -122,7 +122,7 @@ export function CompositionPanel({
 
   const gated = rows.length > 0;
   const draftHeads = SEGMENTS.reduce((n, s) => n + draft[s] * SEGMENT_HEADS[s], 0);
-  /* Passes booked before this sailing was gated carry no segment and so appear
+  /* Passes booked before this episode was gated carry no segment and so appear
      in no cap row. They are aboard, they occupy the hull, and the ratio gate
      counts them — leaving them out of the figure the operator sets ceilings
      against is how a "Seated 0 / 32" is shown for a boat with two people on
@@ -149,7 +149,7 @@ export function CompositionPanel({
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
-          msg: gated ? "Composition set." : "Composition set. This sailing is now ratio-gated.",
+          msg: gated ? "Composition set." : "Composition set. This episode is now ratio-gated.",
           meta: `${draftHeads} HEADS OF ${hull || draftHeads}`,
         });
     });
@@ -165,8 +165,8 @@ export function CompositionPanel({
         show({
           msg:
             heads === null
-              ? "Ceiling cleared. This sailing reads the club default."
-              : "Ceiling set. Compositions on this sailing are checked against it.",
+              ? "Ceiling cleared. This episode reads the club default."
+              : "Ceiling set. Compositions on this episode are checked against it.",
           meta: `THE HULL HOLDS ${heads ?? clubCeiling}${named ? " · CERTIFICATE NAMED" : ""}`,
         });
     });
@@ -181,7 +181,7 @@ export function CompositionPanel({
            be told that happened rather than discovering it later. */
         show({
           msg:
-            "Composition lifted. The ratio gate and the vetting gate no longer run on this sailing." +
+            "Composition lifted. The ratio gate and the vetting gate no longer run on this episode." +
             (res.note ? ` ${res.note}` : ""),
           tone: res.note ? "caution" : undefined,
         });
@@ -208,7 +208,7 @@ export function CompositionPanel({
           size="sm"
           label="Gate"
           value={gated ? "Running" : "Off"}
-          sub={gated ? "RATIO AND VETTING ENFORCED" : "NO COMPOSITION ON THIS SAILING"}
+          sub={gated ? "RATIO AND VETTING ENFORCED" : "NO COMPOSITION ON THIS EPISODE"}
         />
         <Stat
           size="sm"
@@ -308,7 +308,7 @@ export function CompositionPanel({
               </Button>
             ) : null}
             <Button variant="gold" size="sm" disabled={pending || !dirty} onClick={save}>
-              {gated ? "Save the composition" : "Gate this sailing"}
+              {gated ? "Save the composition" : "Gate this episode"}
             </Button>
           </span>
         </div>
@@ -394,7 +394,7 @@ export function CompositionPanel({
         open={confirmLift}
         onClose={() => setConfirmLift(false)}
         eyebrow="Lift the composition"
-        title="Turn the gates off for this sailing?"
+        title="Turn the gates off for this episode?"
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmLift(false)}>
@@ -428,7 +428,7 @@ export function NoSailings() {
       status="empty"
       icon="Sailboat"
       title="Nothing on the water."
-      detail="A composition belongs to a sailing. Put one on the board from the Voyages tab and its three ceilings show here."
+      detail="A composition belongs to an episode. Put one on the board from the Episodes tab and its three ceilings show here."
     />
   );
 }

@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
    or departed changed what they could do and nothing whatsoever about what
    they were charged — while both dialogs told them otherwise.
 
-   A NOTE ON THE WORD "HOLD". A WEATHER HOLD is a SAILING paused for conditions
+   A NOTE ON THE WORD "HOLD". A WEATHER HOLD is an EPISODE paused for conditions
    (voyages.status = 'weather_hold'), called by 18:00 the night before, and it
    is what the `weather` notification preference governs. Nothing in this file
    has anything to do with it.

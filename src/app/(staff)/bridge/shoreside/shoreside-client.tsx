@@ -84,7 +84,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
           <div className="hm-inbox__pane">
             <div className="hm-item__head" style={{ padding: "14px 18px" }}>
               <b>{active.member}</b>
-              {active.waiting ? <Badge tone="gold">Waiting on us</Badge> : null}
+              {active.waiting ? <Badge tone="caution">Waiting on us</Badge> : null}
               {active.closed ? <Badge tone="outline">Closed</Badge> : null}
               <span className="hm-mono hm-item__acts">{active.memberNo}</span>
             </div>
@@ -111,7 +111,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
               <Textarea
                 label="Reply"
                 rows={3}
-                placeholder="We can hold two passes on the next sailing afloat — say the word."
+                placeholder="We can hold two passes on the next episode afloat — say the word."
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 disabled={active.closed}

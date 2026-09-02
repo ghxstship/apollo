@@ -3,16 +3,17 @@
 import Link from "next/link";
 import React from "react";
 import { Badge, Button, Tag } from "@/components/ds";
+import { PLACE } from "@/lib/brand";
 
 export interface ManifestItem {
   id: string;
   slug: string;
   title: string;
   cls: "sea" | "shore" | "sky";
-  /** The format's own name — "Sandbar Social" — or where it happens when the
-      sailing carries no format yet. Never a filing-system phrase. */
+  /** The series' own name — "Sandbar Social" — or Special when the episode
+      belongs to no series. Never a filing-system phrase. */
   formatLabel: string;
-  /** "7 HRS", or empty when the sailing has no stated end. */
+  /** "7 HRS", or empty when the episode has no stated end. */
   hours: string;
   status: string;
   date: string;
@@ -32,14 +33,14 @@ export interface ManifestItem {
   harborLabel: string | null;
   seasonId: string | null;
   seasonLabel: string | null;
-  /** Title of the series this sailing belongs to, when it belongs to one. */
+  /** Title of the series this episode belongs to, when it belongs to one. */
   series: string | null;
   monthKey: string;
   startsMs: number;
 }
 
 /* Where it happens, which is the only axis a reader can filter on usefully —
-   the format's own name rides on each row instead. */
+   the series' own name rides on each row instead. */
 const FILTERS: Array<{ id: string; label: string }> = [
   { id: "all", label: "All" },
   { id: "sea", label: "Afloat" },
@@ -88,7 +89,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
   }, [items]);
 
   /* Seasons the same way: an axis only once the calendar actually spans one.
-     Items arrive soonest-first, so the options read in sailing order. */
+     Items arrive soonest-first, so the options read in episode order. */
   const seasonOptions = React.useMemo(() => {
     const seen = new Map<string, string>();
     for (const v of items) {
@@ -120,8 +121,8 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
   }, [items, cls, harbor, season, month, sort]);
 
   /* Rows in month order already; the groups are the runs of one month. Fifty
-     sailings emitted as one column of identical stripes gave the reader no
-     landmark at all — the month is the one the manifest is filed under. */
+     episodes emitted as one column of identical stripes gave the reader no
+     landmark at all — the month is the one the season is filed under. */
   const spansYears = React.useMemo(
     () => new Set(items.map((v) => v.monthKey.slice(0, 4))).size > 1,
     [items]
@@ -136,13 +137,13 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
     return out;
   }, [list, spansYears]);
 
-  /* "12 sailings · AUG – NOV" — what the controls above just did, in a line. */
+  /* "12 episodes · AUG – NOV" — what the controls above just did, in a line. */
   const countLine = React.useMemo(() => {
-    if (groups.length === 0) return "No sailings";
+    if (groups.length === 0) return "No episodes";
     const first = groups[0].label;
     const last = groups[groups.length - 1].label;
     const span = groups.length > 1 ? `${first} – ${last}` : first;
-    return `${list.length} ${list.length === 1 ? "sailing" : "sailings"} · ${span}`;
+    return `${list.length} ${list.length === 1 ? "episode" : "episodes"} · ${span}`;
   }, [groups, list.length]);
 
   /* What the folded axes are holding, when they are folded. */
@@ -184,7 +185,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
         >
         {harborOptions.length > 1 ? (
           <div className="ws-vfilters">
-            <span className="ws-vfilters__label">Harbor</span>
+            <span className="ws-vfilters__label">{PLACE.market}</span>
             <Tag active={harbor === "all"} onClick={() => setHarbor("all")}>
               All
             </Tag>
@@ -254,7 +255,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
               return (
                 <Link
                   key={v.id}
-                  href={`/charters/${v.slug}`}
+                  href={`/episodes/${v.slug}`}
                   style={{ color: "inherit", textDecoration: "none", display: "block" }}
                 >
                   <div className="ws-vrow">
@@ -272,7 +273,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
                         {v.status === "weather_hold" ? <Badge tone="caution">Weather hold</Badge> : null}
                         {v.passesLeft === 0 && !v.onSale ? <Badge tone="caution">Full</Badge> : null}
                         {v.onSale ? <Badge tone="outline">Not yet on sale</Badge> : null}
-                        {/* A quiet mark that this sailing runs in a series. */}
+                        {/* A quiet mark that this episode runs in a series. */}
                         {v.series ? <Tag>{v.series}</Tag> : null}
                       </div>
                       <div className="ws-vrow__meta">
@@ -302,7 +303,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
              filters it gave them no way to loosen. */
           <div className="ws-zero">
             <span className="ws-zero__label">Nothing under that flag</span>
-            <p>Nothing under that flag this season. Loosen the filters.</p>
+            <p>No episodes under that flag this season. Loosen the filters.</p>
             <Button variant="outline" size="sm" onClick={clearFilters}>
               Clear filters
             </Button>

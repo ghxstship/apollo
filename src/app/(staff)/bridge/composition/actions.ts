@@ -6,10 +6,11 @@ import { moduleTables } from "@/lib/module-tables";
 import { SEGMENTS, type Segment } from "@/lib/vetting";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
-/* The composition — the three segment ceilings a sailing seats to.
+/* The composition — the three segment ceilings an episode seats to.
 
    voyage_segment_caps had no writer anywhere in src/, and the presence of rows
-   in it is what makes a sailing ratio-gated: guard_the_ratio returns early when
+   in it is what makes an episode ratio-gated: guard_the_ratio returns early
+   when
    there are none, guard_the_vetting returns early when there are none, and the
    member's capacity panel — the only host for takeASeat, joinTheLine,
    claimYourPlace, leaveTheLine and the crew's offerTheNextPlace — renders only
@@ -17,7 +18,8 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
    read "Nothing seats by segment yet" and all five controls were unreachable.
 
    So this screen is not a preference pane. Writing a composition here is what
-   turns the ratio gate and the vetting gate ON for a sailing, and taking it off
+   turns the ratio gate and the vetting gate ON for an episode, and taking it
+   off
    is what turns them off. The copy on the screen says so in those words. */
 
 export type CapInput = Record<Segment, number>;
@@ -25,7 +27,7 @@ export type CapInput = Record<Segment, number>;
 function done(): ActionResult {
   revalidatePath("/bridge/composition");
   revalidatePath("/vetting");
-  revalidatePath("/charters");
+  revalidatePath("/episodes");
   return {};
 }
 
@@ -50,7 +52,7 @@ export async function setTheComposition(
   if (rows.every((r) => r.cap === 0)) {
     return {
       error:
-        "Three ceilings of nought is a sailing nobody can board. Set the seats, or take the composition off.",
+        "Three ceilings of nought is an episode nobody can board. Set the seats, or take the composition off.",
     };
   }
 
@@ -64,11 +66,11 @@ export async function setTheComposition(
   return done();
 }
 
-/* The hull's certified heads, per sailing. A flotilla is certified for so many
+/* The hull's certified heads, per episode. A flotilla is certified for so many
    people and the_hull_holds_forty reads coalesce(voyages.hull_ceiling_heads,
    club_setting('hull_ceiling_heads')) before it lets a composition stand, so
    this is the number the ceilings above are checked against. Null hands the
-   sailing back to the club default.
+   episode back to the club default.
 
    The certificate travels with the ceiling. a_tentpole_names_its_certificate
    refuses a hull_ceiling_heads above club_setting('hull_ceiling_heads') unless
@@ -126,15 +128,15 @@ export async function setHullCeiling(
   return done();
 }
 
-/* Removing every cap row un-gates the sailing: guard_the_ratio and
-   guard_the_vetting both return early when a sailing carries no composition, so
+/* Removing every cap row un-gates the episode: guard_the_ratio and
+   guard_the_vetting both return early when an episode carries no composition, so
    this is a real change to who may board and not a tidy-up.
 
    This used to refuse outright while anyone stood in the line — "serve them or
    let them go" — and NEITHER was reachable. The Offer button renders only when
    a segment has room, so a full segment (the only kind that grows a queue) can
    never serve anyone; and the sole delete path, leaveTheLine, is scoped to the
-   member's own row, so no crew surface could let them go. A sailing with a full
+   member's own row, so no crew surface could let them go. An episode with a full
    segment and one person waiting could never have its composition lifted again.
    The RLS policy always permitted staff to release them; the control was simply
    missing.

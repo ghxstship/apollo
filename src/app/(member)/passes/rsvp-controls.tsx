@@ -40,7 +40,7 @@ import {
 export type AddonOption = { id: string; name: string; price_cents: number };
 
 /* The bow daybed as the club_products row states it — price, how many it
-   seats, how many go per sailing. Null when the water does not carry one. */
+   seats, how many go per episode. Null when the water does not carry one. */
 export type DaybedOffer = { priceCents: number; cap: number; party: number };
 
 /* The release window is the club's own figure (club_setting
@@ -188,7 +188,7 @@ export function RsvpControls({
   boardingCode: string | null;
   /* — ticketing polish — */
   rsvpId: string | null;
-  /* Place in the waitlist for this sailing, 1 = next. */
+  /* Place in the waitlist for this episode, 1 = next. */
   waitlistPosition: number | null;
   autoClaim: boolean;
   /* Active members other than you, for a hand-off. */
@@ -202,7 +202,7 @@ export function RsvpControls({
   partner: GuestStub | null;
   cabins: Array<{ id: string; name: string; premiumCents: number; left: number }>;
   cabinId: string | null;
-  /* Your own open crew request on this sailing. */
+  /* Your own open crew request on this episode. */
   crewMine: CrewSeeker | null;
   /* Other members looking for crew — shown once you are aboard. */
   crewSeekers: CrewSeeker[];
@@ -216,7 +216,7 @@ export function RsvpControls({
      (WITH CHECK is_active()), so every control that would update is disabled
      with the one line that says why. Release is a DELETE and still works. */
   paused: boolean;
-  /* A sailing with segment caps — its door is the vetting page. Nothing here
+  /* An episode with segment caps — its door is the vetting page. Nothing here
      may upsert an rsvp without a segment. */
   composition: boolean;
   /* Set when the format is on request: the door is an enquiry, not a pass. */
@@ -362,7 +362,7 @@ export function RsvpControls({
      already holds — otherwise a waitlister cannot see their place or leave the
      list, and a member who puts their own membership on hold loses the Release
      control while the credit window runs out on them. When there is a pass on
-     this sailing, the note rides alongside the standing instead. */
+     this episode, the note rides alongside the standing instead. */
   const holdsAPass = myStatus === "aboard" || myStatus === "waitlist";
   if (locked && !holdsAPass) {
     return (
@@ -479,7 +479,7 @@ export function RsvpControls({
               ))}
             </Select>
           ) : null}
-          {/* — The bow daybed. One claim per pass, the cap per sailing — the
+          {/* — The bow daybed. One claim per pass, the cap per episode — the
               RPC holds both lines and answers refusals in its own voice. The
               figures are the product's own; the block is absent off Sea. */}
           {rsvpId && daybed ? (
@@ -495,7 +495,7 @@ export function RsvpControls({
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <span className="mbr-mono" style={{ fontSize: 12 }}>
                     {price(daybed.priceCents)} · group of {countWord(daybed.party)} ·{" "}
-                    {countWord(daybed.cap)} per sailing
+                    {countWord(daybed.cap)} per episode
                   </span>
                   <Button
                     variant="outline"
@@ -527,7 +527,7 @@ export function RsvpControls({
           <span className="voy-foot__spacer"></span>
           {/* Auto-claim off means first come, first aboard — so a pass that
               has freed needs a button, and this is it. A priced pass still
-              goes through Review & confirm. Never on a composition sailing,
+              goes through Review & confirm. Never on a composition episode,
               whose seat is taken with a segment on the vetting page. */}
           {!autoClaim && !composition && passesLeft > 0 ? (
             <Button
@@ -577,7 +577,7 @@ export function RsvpControls({
         </>
       ) : composition ? (
         <>
-          {/* A composition sailing seats by segment. The manifest never
+          {/* A composition episode seats by segment. The manifest never
               writes that rsvp — the vetting page does, with the segment. */}
           <span className="mbr-mono">SEATED BY SEGMENT</span>
           <span className="voy-foot__spacer"></span>
@@ -872,7 +872,7 @@ export function RsvpControls({
             <div style={rowStyle}>
               <span style={{ color: "var(--text-2)" }}>
                 Room for {countWord(daybed.party)}. {countWord(daybed.cap).replace(/^./, (c) => c.toUpperCase())}{" "}
-                per sailing, one per pass.
+                per episode, one per pass.
               </span>
             </div>
             <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
@@ -999,7 +999,7 @@ export function RsvpControls({
         open={releasing}
         onClose={() => setReleasing(false)}
         width={380}
-        eyebrow="The manifest"
+        eyebrow="Passes"
         title="Release this pass?"
         footer={
           <>

@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Badge, Button, Checkbox, Dialog, Input, Select, Stat, StateBlock, Table, Tag, Toast } from "@/components/ds";
-import { CLUB_ZONE, LEAGUES, knots } from "@/lib/brand";
+import { CLUB_ZONE, LEAGUES, PLACE, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
@@ -102,7 +102,7 @@ const CSV_COLUMNS: Array<[string, (r: MemberRow) => string]> = [
   ["Tier", (r) => r.tierLabel],
   ["Plan", (r) => r.planLabel],
   ["League", (r) => r.leagueName],
-  ["Harbor", (r) => r.harborCode],
+  [PLACE.market, (r) => r.harborCode],
   ["Passes", (r) => String(r.passes)],
   ["Attended", (r) => String(r.attended)],
   ["Knots", (r) => String(r.knots)],
@@ -239,7 +239,7 @@ export function MembersClient({
       mono: true,
       render: (r: MemberRow) => <span title={r.leagueName}>{`L${r.league}`}</span>,
     },
-    { key: "harborCode", label: "Harbor", width: 80, mono: true },
+    { key: "harborCode", label: PLACE.market, width: 80, mono: true },
     { key: "passes", label: "Passes", width: 70, mono: true },
     { key: "attended", label: "Aboard", width: 70, mono: true },
     {
@@ -279,10 +279,10 @@ export function MembersClient({
         </div>
         <div className="hm-filters__body">
         <Select
-          label="Harbor"
+          label={PLACE.market}
           value={f.harbor}
           onChange={(e) => set("harbor", e.target.value)}
-          options={[{ value: "", label: "Every harbor" }, ...harbors.map((h) => ({ value: h.slug, label: h.label }))]}
+          options={[{ value: "", label: "Every city" }, ...harbors.map((h) => ({ value: h.slug, label: h.label }))]}
         />
         <Select
           label="Tier"

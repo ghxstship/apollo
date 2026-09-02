@@ -37,7 +37,7 @@ export async function producerNextBerth(): Promise<{ error?: string; berth?: Pro
   return { berth: v ? { voyageId: v.id, title: v.title, startsAt: v.starts_at, zone: v.time_zone } : null };
 }
 
-/* Three soonest sailings this member can ACTUALLY take.
+/* Three soonest episodes this member can ACTUALLY take.
 
    It used to filter on status and date alone, so the Producer offered
    "Chicago: the founding night · 79 PASSES LEFT · RESERVE" to a member whose
@@ -46,7 +46,7 @@ export async function producerNextBerth(): Promise<{ error?: string; berth?: Pro
    saying nothing: the member believes the assistant and finds the door shut.
    Same tests the manifest applies — tier rank, class ceiling, the plan's
    booking window, and the home harbor: rsvp_guard boards a Regional member
-   only on a sailing that leaves from their home harbor (a sailing with no
+   only on an episode that leaves from their home harbor (an episode with no
    harbor is open to all; National and Global sail every harbor; staff pass). */
 export async function producerSailings(): Promise<{ error?: string; sailings?: ProducerSailing[] }> {
   const { supabase, userId } = await member();
@@ -72,7 +72,7 @@ export async function producerSailings(): Promise<{ error?: string; sailings?: P
   const ceiling = plan?.class_ceiling ?? null;
   const CLASS_RANK: Record<string, number> = { voyage: 1, expedition: 2, odyssey: 3 };
   /* Regional sails from home. With no home harbor chosen, only harborless
-     sailings are open — the guard refuses every other one. */
+     episodes are open — the guard refuses every other one. */
   const harborBound = (me?.tier ?? "regional") === "regional" && !me?.is_staff;
   const homeHarbor = me?.home_harbor ?? null;
 
@@ -125,7 +125,7 @@ export async function producerReleaseBerth(voyageId: string): Promise<{ error?: 
     .eq("voyage_id", voyageId)
     .eq("profile_id", userId);
   if (error) return { error: "That didn't land. Try again." };
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   revalidatePath("/home");
   revalidatePath("/live");
   return {};
@@ -140,7 +140,7 @@ export async function producerReleaseBerthBySlug(slug: string): Promise<{ error?
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
-  if (!voyage) return { error: "No such sailing on the manifest." };
+  if (!voyage) return { error: "No such episode on the manifest." };
   return producerReleaseBerth(voyage.id);
 }
 
@@ -215,7 +215,7 @@ export async function producerOpenShoreside(
   return { threadId };
 }
 
-/* Weather holds on sailings I hold a berth or list spot for. */
+/* Weather holds on episodes I hold a berth or list spot for. */
 export async function producerWeather(): Promise<{
   error?: string;
   holds?: Array<{ title: string; startsAt: string; zone: string }>;

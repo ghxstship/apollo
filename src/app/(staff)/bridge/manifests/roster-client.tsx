@@ -28,7 +28,7 @@ export function VoyagePicker({
   const router = useRouter();
   return (
     <Select
-      label="Voyage"
+      label="Episode"
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/manifests?voyage=${e.target.value}`)}

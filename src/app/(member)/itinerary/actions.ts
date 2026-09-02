@@ -36,7 +36,7 @@ export async function holdCabinOnOption(voyageId: string, cabinId: string): Prom
      generic line could — which cabin is spoken for, how many places it has,
      that a hold is already running. Passing that through beats replacing it. */
   if (error) return { error: await voiceWith(supabase, error) };
-  revalidatePath("/charter");
+  revalidatePath("/itinerary");
   return { heldUntil: typeof data === "string" ? data : undefined };
 }
 
@@ -50,6 +50,6 @@ export async function releaseCabinOption(optionId: string): Promise<OptionResult
   const db = moduleTables(supabase);
   const { error } = await db.rpc("release_charter_option", { p_option: optionId });
   if (error) return { error: await voiceWith(supabase, error) };
-  revalidatePath("/charter");
+  revalidatePath("/itinerary");
   return {};
 }

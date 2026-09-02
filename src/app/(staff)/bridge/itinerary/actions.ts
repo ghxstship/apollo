@@ -6,13 +6,13 @@ import { wallClockInZone } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
-/* Legs and stops — the charter itinerary and the port guide.
+/* Legs and stops — the episode itinerary and the port guide.
 
-   Both tables are read by /charter and neither had a writer anywhere in src/.
-   voyage_legs was empty, so the itinerary block on a charter never rendered at
-   all; voyage_stops was empty, so the port guide card was silently omitted
-   from every charter page there has ever been. post_a_leg_hold and
-   lift_a_leg_hold — the two functions that carry the one charter state with no
+   Both tables are read by the episode page and neither had a writer anywhere
+   in src/. voyage_legs was empty, so the itinerary block on an episode never
+   rendered at all; voyage_stops was empty, so the port guide card was silently
+   omitted from every episode page there has ever been. post_a_leg_hold and
+   lift_a_leg_hold — the two functions that carry the one episode state with no
    counterpart elsewhere in the schema — had zero callers.
 
    The hold is not a status field on this screen. A hold states the reason, the
@@ -23,12 +23,15 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
 function done(): ActionResult {
   revalidatePath("/bridge/itinerary");
-  revalidatePath("/charter");
-  revalidatePath("/charters");
+  /* Both surfaces that render legs: the member's own page, which is still at
+     /itinerary, and the public listing, which moved from /charters to
+     /episodes. */
+  revalidatePath("/itinerary");
+  revalidatePath("/episodes");
   return {};
 }
 
-/* The sailing's own clock, read from the sailing. A leg time typed on the
+/* The episode's own clock, read from the episode. A leg time typed on the
    Bridge and resolved in the node server's zone is the bug createVoyage
    documents at length: on a UTC host, a Chicago tender at 09:00 is published
    as 04:00 CDT. The zone is never taken from the browser. */
@@ -74,7 +77,7 @@ export async function saveLeg(
   let startsAt: string | null = null;
   if (input.startsAt) {
     const zone = await voyageZone(db, voyageId);
-    if (!zone) return { error: "That sailing is not on the chart." };
+    if (!zone) return { error: "That episode is not on the chart." };
     startsAt = instantIn(input.startsAt, zone);
     if (!startsAt) return { error: "That time doesn't parse." };
   }
@@ -85,7 +88,7 @@ export async function saveLeg(
     const { error } = await db.from("voyage_legs").update({ ...patch, day }).eq("id", legId);
     if (error) {
       if (/voyage_legs_voyage_id_day_key|duplicate/i.test(error.message ?? "")) {
-        return { error: `Day ${day} is already a leg on this sailing.` };
+        return { error: `Day ${day} is already a leg on this episode.` };
       }
       return { error: voice(error) };
     }
@@ -95,7 +98,7 @@ export async function saveLeg(
   const { error } = await db.from("voyage_legs").insert({ voyage_id: voyageId, day, ...patch });
   if (error) {
     if (/voyage_legs_voyage_id_day_key|duplicate/i.test(error.message ?? "")) {
-      return { error: `Day ${day} is already a leg on this sailing.` };
+      return { error: `Day ${day} is already a leg on this episode.` };
     }
     return { error: voice(error) };
   }

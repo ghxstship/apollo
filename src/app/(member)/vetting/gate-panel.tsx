@@ -64,10 +64,10 @@ export function GatePanel({
   const heads = seatedHeads(rows);
   /* The denominator is the HULL, not the sum of the segment caps. They coincide
      at the standard composition — 10 + 10 + 10×2 = 40 — and they stop coinciding
-     the moment someone raises a cap for one sailing, at which point summing the
+     the moment someone raises a cap for one episode, at which point summing the
      caps would print "34 of 44" on a boat certified for 40. The number a guest
      reads has to be the number the gate enforces. hullHeads is the fallback for
-     a sailing whose berth count did not come through. */
+     an episode whose berth count did not come through. */
   const capacity = hull > 0 ? hull : hullHeads(rows);
 
   const run = (fn: () => Promise<{ error?: string }>) =>
@@ -165,7 +165,7 @@ export function GatePanel({
                control — the line for the segment that is full. */
             <div className="vet-strip vet-strip--refusal">
               <span className="vet-strip__badge">Segment full</span>
-              <span className="vet-strip__title">This sailing is balanced out.</span>
+              <span className="vet-strip__title">This episode is balanced out.</span>
               <p className="vet-strip__body">
                 {chosen.cap} seats, {chosen.units} taken. The waitlist runs in order.
               </p>

@@ -152,7 +152,7 @@ export function Shop({
     idemRef.current = null;
     setCart([]);
     setDrawer(false);
-    setToast("Charged to your account — collect at the harbor or the next shore night.");
+    setToast("Charged to your account — collect at the venue or the next shore night.");
     router.refresh();
   };
 

@@ -155,10 +155,10 @@ export async function loadMember(
       })),
       passes: (passesRes.data ?? []).map((r) => ({
         id: r.id,
-        title: voyages.get(r.voyage_id)?.title ?? "Voyage off the books",
+        title: voyages.get(r.voyage_id)?.title ?? "Episode off the books",
         when: voyages.get(r.voyage_id)?.starts_at ?? r.created_at,
         /* The drawer used to read this on the operator's clock, disagreeing
-           with every other Bridge console about the same sailing. */
+           with every other Bridge console about the same episode. */
         zone: voyages.get(r.voyage_id)?.time_zone ?? "",
         status: r.status,
       })),

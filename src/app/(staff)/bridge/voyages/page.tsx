@@ -11,9 +11,9 @@ import {
 } from "./voyages-client";
 import { must } from "../../staff";
 
-export const metadata: Metadata = { title: "Voyages" };
+export const metadata: Metadata = { title: "Episodes" };
 
-/* An instant, rendered back as the wall clock the harbor keeps — the value a
+/* An instant, rendered back as the wall clock the city keeps — the value a
    <input type="datetime-local"> can hold, and the inverse of the read the
    create action performs. */
 function wallClockValue(iso: string | null, zone: string): string {
@@ -37,8 +37,8 @@ type FormatRow = {
   slug: string;
   label: string;
   category: string;
-  /* What the format files a sailing as — the value the taxonomy trigger copies
-     onto every voyage filed under it. */
+  /* What the series files an episode as — the value the taxonomy trigger
+     copies onto every episode filed under it. */
   experience_class: string;
   access: string;
   price_cents: number | null;
@@ -47,7 +47,7 @@ type FormatRow = {
   active: boolean;
 };
 
-/* The access line the picker shows beside each format — what it costs to be
+/* The access line the picker shows beside each series — what it costs to be
    there, and how many it seats, in the words the catalogue uses. */
 function accessLine(f: FormatRow): string {
   /* The catalogue renamed this value from open to bookable when Open became an
@@ -80,8 +80,9 @@ export default async function VoyagesOpsPage() {
       supabase.from("seasons").select("id, title, active").order("starts_on", { ascending: false }),
       supabase.from("venues").select("id, name, active").order("name", { ascending: true }),
       supabase.from("voyage_series").select("id, title, template_voyage_id"),
-      /* Retired formats ride along, marked: a voyage filed under one must not
-         read as Unfiled, and the composer filters them out of a new filing. */
+      /* Retired series ride along, marked: an episode filed under one must
+         not read as a Special, and the composer filters them out of a new
+         filing. */
       moduleTables(supabase)
         .from("activity_formats")
         .select("slug, label, category, experience_class, access, price_cents, capacity, requires_vetting, active")
@@ -92,7 +93,7 @@ export default async function VoyagesOpsPage() {
     (must(capacityRes)).filter((c) => c.voyage_id).map((c) => [c.voyage_id as string, c])
   );
 
-  /* Yachts assigned per voyage — the flotilla meter needs the count and the
+  /* Yachts assigned per episode — the flotilla meter needs the count and the
      assignment dialog needs the rows themselves. */
   const fleet = must(fleetRes);
   const vesselName = new Map(fleet.map((v) => [v.id, v]));
@@ -109,7 +110,7 @@ export default async function VoyagesOpsPage() {
   }
   for (const list of hullsByVoyage.values()) list.sort((a, b) => a.position - b.position);
 
-  /* A series is one template sailing cloned forward on a cadence. The
+  /* A series is one template episode cloned forward on a cadence. The
      template is the row voyage_series points at; the occurrences are the rows
      that point back. Both are marked on the board, because editing a template
      changes nothing already raised from it. */
@@ -130,7 +131,7 @@ export default async function VoyagesOpsPage() {
     return null;
   };
 
-  /* A sailing reads by its format's name now, the way a member reads it — so
+  /* An episode reads by its series' name now, the way a member reads it — so
      the board needs the catalogue's label beside every row, retired ones
      included. A slug with no row left in the catalogue keeps its slug rather
      than going blank; that is a filing an operator has to see to fix. */
@@ -167,7 +168,7 @@ export default async function VoyagesOpsPage() {
       formatLabel: v.format ? (formatLabelBySlug.get(v.format) ?? v.format) : null,
       seasonId: v.season_id,
       venueId: v.venue_id,
-      /* Rendered back to the harbor's wall clock, ready for the input. */
+      /* Rendered back to the city's wall clock, ready for the input. */
       saleOpensAtLocal: wallClockValue(v.sale_opens_at, v.time_zone),
       presaleHours: v.presale_hours,
       depositCents: v.deposit_cents,
@@ -175,8 +176,8 @@ export default async function VoyagesOpsPage() {
   });
 
   const harbors = (must(harborsRes)).map((h) => ({ value: h.id, label: h.name }));
-  /* Retired seasons and venues stay in the pickers, marked, so a voyage that
-     still holds one reads as what it is rather than as Unassigned. Active
+  /* Retired seasons and venues stay in the pickers, marked, so an episode
+     that still holds one reads as what it is rather than as Unassigned. Active
      first; the composer offers only the active ones for a new filing. */
   const seasons: ProgramOption[] = (must(seasonsRes))
     .sort((a, b) => Number(b.active) - Number(a.active))
@@ -198,7 +199,7 @@ export default async function VoyagesOpsPage() {
 
   return (
     <div>
-      <span className="hm-eyebrow">Voyage operations</span>
+      <span className="hm-eyebrow">Episode operations</span>
       <h1 className="hm-h1">The board.</h1>
       <VoyagesClient
         rows={rows}

@@ -5,7 +5,7 @@
 "use client";
 
 import React from "react";
-import { Avatar, Button } from "@/components/ds";
+import { Avatar, Badge, Button } from "@/components/ds";
 import { Dialog } from "./feedback";
 
 const MONO = "var(--font-mono)";
@@ -58,24 +58,11 @@ export function PostCard({
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
         <Avatar name={author} tone={tone} size="sm" />
         <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-1)" }}>{author}</span>
-        {sailing ? (
-          <span
-            style={{
-              font: `700 9px/1 ${MONO}`,
-              letterSpacing: ".12em",
-              textTransform: "uppercase",
-              color: "var(--brand-yacht)",
-              /* Was a literal rgba teal — a colour from a palette this brand
-                 does not have, on a chip whose text is --brand-yacht amber. */
-              border: "1px solid color-mix(in srgb, var(--brand-yacht) 40%, transparent)",
-              borderRadius: "var(--radius-pill)",
-              padding: "3px 8px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {sailing}
-          </span>
-        ) : null}
+        {/* A hand-rolled pill until now: 9px off the label step, in
+            --brand-yacht, which is UN Limited's IDENTITY hue spent on a
+            per-post qualifier — and at 2.1:1 on paper, unreadable. It is the
+            neutral status face of the badge the whole app already uses. */}
+        {sailing ? <Badge tone="outline">{sailing}</Badge> : null}
         <span style={{ marginLeft: "auto", font: `400 10px/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>
           {timestamp}
         </span>
@@ -238,20 +225,7 @@ export function Composer({
       />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {sailing ? (
-          <span
-            style={{
-              font: `700 9px/1 ${MONO}`,
-              letterSpacing: ".12em",
-              textTransform: "uppercase",
-              color: "var(--brand-yacht)",
-              border: "1px solid color-mix(in srgb, var(--brand-yacht) 40%, transparent)",
-              borderRadius: "var(--radius-pill)",
-              padding: "3px 8px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {sailing}
-          </span>
+          <Badge tone="outline">{sailing}</Badge>
         ) : onAttachSailing ? (
           <button
       className="ls-bare"

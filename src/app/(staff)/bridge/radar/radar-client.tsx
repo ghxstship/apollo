@@ -5,8 +5,8 @@ import { Badge, Button, Dialog, StateBlock, Table, Toast } from "@/components/ds
 import { useToast } from "../../ui";
 import { cutAnchorsShort, openTheRadar } from "./actions";
 
-/* One row per sailing, with the state of its clock. The times are formatted on
-   the server against the SAILING'S zone and arrive here as strings — a client
+/* One row per episode, with the state of its clock. The times are formatted on
+   the server against the EPISODE'S zone and arrive here as strings — a client
    that reformatted them would render the lock on the operator's clock, which is
    the one number on this screen that must never be the operator's. */
 
@@ -16,7 +16,7 @@ export type RadarOpsRow = {
   departs: string;
   status: string;
   aboard: number;
-  /** Null when the radar has never been opened on this sailing. */
+  /** Null when the radar has never been opened on this episode. */
   opens: string | null;
   locks: string | null;
   unlocks: string | null;
@@ -74,7 +74,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
               tone: "caution",
             }
           : {
-              msg: "Nothing was live to cut — every anchor on this sailing had already expired.",
+              msg: "Nothing was live to cut — every anchor on this episode had already expired.",
               meta: row.title.replace(/\.+$/, "").toUpperCase(),
             }
       );
@@ -91,7 +91,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
   const columns = [
     {
       key: "title",
-      label: "Sailing",
+      label: "Episode",
       render: (r: RadarOpsRow) => (
         <span>
           <b style={{ fontWeight: 700 }}>{r.title.replace(/\.+$/, "")}</b>
@@ -109,7 +109,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       key: "clock",
       label: "The clock",
       width: 260,
-      /* Four times read on the sailing's own zone — the data register, declared
+      /* Four times read on the episode's own zone — the data register, declared
          on the column rather than patched on with .hm-mono inside each cell. */
       mono: true,
       render: (r: RadarOpsRow) =>
@@ -182,7 +182,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
             size="sm"
             variant="gold"
             disabled={pending}
-            onClick={() => run(r, "Radar is set. It opens at 17:15 on the sailing's own clock.")}
+            onClick={() => run(r, "Radar is set. It opens at 17:15 on the episode's own clock.")}
           >
             Open the radar
           </Button>
@@ -197,13 +197,13 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
           status="empty"
           icon="Radar"
           title="Nothing to sweep."
-          detail="Radar runs on a sailing. Put one on the board from the Voyages tab and it shows here, dark, waiting to be set."
+          detail="Radar runs on an episode. Put one on the board from the Episodes tab and it shows here, dark, waiting to be set."
         />
       ) : (
         <div className="hm-sec">
           <Table columns={columns} rows={rows} rowKey={(r) => r.id} />
           <span className="hm-count">
-            {rows.filter((r) => r.opens).length} of {rows.length} sailings carry a radar clock
+            {rows.filter((r) => r.opens).length} of {rows.length} episodes carry a radar clock
           </span>
         </div>
       )}
@@ -222,7 +222,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
               variant="gold"
               disabled={pending}
               onClick={() =>
-                confirmReopen && run(confirmReopen, "Clock re-read off the sailing's departure.")
+                confirmReopen && run(confirmReopen, "Clock re-read off the episode's departure.")
               }
             >
               Re-read it
@@ -231,8 +231,8 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
         }
       >
         <p className="hm-body">
-          The four times are read off the sailing&apos;s departure date and its
-          harbour&apos;s zone. If the departure moved, this brings the clock with
+          The four times are read off the episode&apos;s departure date and its
+          city&apos;s zone. If the departure moved, this brings the clock with
           it. If it did not, nothing changes.
         </p>
         <p className="hm-body">
@@ -245,7 +245,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
         open={!!confirmCut}
         onClose={() => setConfirmCut(null)}
         eyebrow="Cut the logs short"
-        title="End every open Captain's Log on this sailing?"
+        title="End every open Captain's Log on this episode?"
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirmCut(null)}>
@@ -258,7 +258,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
         }
       >
         <p className="hm-body">
-          Ends the open Captain&apos;s Logs for this sailing now — cannot be
+          Ends the open Captain&apos;s Logs for this episode now — cannot be
           undone, cannot be extended back. Every live anchor expires at once, on
           both sides, with no notice sent.
         </p>

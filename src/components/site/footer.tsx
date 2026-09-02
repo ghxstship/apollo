@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/ds";
-import { ANCHOR, CITY_CODES, EST_YEAR_ROMAN } from "@/lib/brand";
+import { ANCHOR, CITY_CODES, EST_YEAR_ROMAN, PLACE } from "@/lib/brand";
 import { roman } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -26,14 +26,14 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
           </div>
           <div className="ws-footer__col">
             <b>The club</b>
-            <Link href="/charters">The Manifest</Link>
-            <Link href="/membership">Membership</Link>
             <Link href="/episodes">Episodes</Link>
+            <Link href="/membership">Membership</Link>
+            <Link href="/log">The Log</Link>
             <Link href="/gallery">Gallery</Link>
             <Link href="/crew">Crew wanted</Link>
           </div>
           <div className="ws-footer__col">
-            <b>Harbors</b>
+            <b>{PLACE.markets}</b>
             {harbors.map((h) => (
               <div className="ws-footer__harbor" key={h.id}>
                 {h.name}

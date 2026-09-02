@@ -51,9 +51,9 @@ export async function raiseCharterRequest(
   if (preferredDates.length > DATES_MAX) {
     return { error: `Keep the dates under ${DATES_MAX} characters.`, field: "dates" };
   }
-  /* The sailing the enquiry was raised from rides at the head of the note —
+  /* The episode the enquiry was raised from rides at the head of the note —
      the table keeps no voyage column, and the Bridge should not have to guess
-     which charter page the member was reading. */
+     which episode page the member was reading. */
   const note = [sailing ? `Re: ${sailing}` : null, noteRaw || null].filter(Boolean).join("\n\n");
   if (note.length > NOTE_MAX) {
     return { error: `Keep the note under ${NOTE_MAX} characters.`, field: "note" };
@@ -68,6 +68,6 @@ export async function raiseCharterRequest(
   });
   if (error) return { error: await voiceWith(supabase, error) };
 
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   return { raised: true };
 }

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Avatar, Input, StateBlock, Tag } from "@/components/ds";
+import { PLACE } from "@/lib/brand";
 
 export type DirectoryMember = {
   id: string;
@@ -99,9 +100,9 @@ export function DirectoryList({
         aria-label="Search the roster"
       />
 
-      <div className="dir-filters" role="group" aria-label="Filter by harbor">
+      <div className="dir-filters" role="group" aria-label={`Filter by ${PLACE.market}`}>
         <Tag active={harbor === "all"} onClick={() => setHarbor("all")}>
-          All harbors
+          All {PLACE.markets.toLowerCase()}
         </Tag>
         {harbors.map((h) => (
           <Tag key={h.id} active={harbor === h.id} onClick={() => setHarbor(h.id)}>

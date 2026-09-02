@@ -8,7 +8,7 @@ import { moduleTables } from "@/lib/module-tables";
 import { DECK_FLAGS, DECK_STATES, type DeckState } from "@/lib/show";
 import type { Json } from "@/lib/supabase/types";
 import { getMember, type Voyage } from "../data";
-import { readLegs, readStops, type VoyageLeg, type VoyageStop } from "../charter/data";
+import { readLegs, readStops, type VoyageLeg, type VoyageStop } from "../itinerary/data";
 import { Countdown } from "./countdown";
 import { FrameUpload } from "./frame-upload";
 import { GalleyOrderForm, type GalleyItem } from "./galley";
@@ -85,7 +85,7 @@ function legsFromRows(legs: VoyageLeg[], stops: VoyageStop[], tz: string | null)
 }
 
 /* The guest-facing itinerary jsonb — [{ offset, title, note }], offsets in
-   minutes from cast-off, as the Voyages tab writes it. Anything that does not
+   minutes from cast-off, as the Episodes tab writes it. Anything that does not
    parse is skipped rather than invented. */
 function legsFromItinerary(itinerary: Json | null, startMs: number, tz: string | null): Leg[] {
   if (!Array.isArray(itinerary)) return [];
@@ -227,19 +227,19 @@ export default async function LivePage() {
             detail={
               next
                 ? `Next departure: ${next.title} · ${logDateTime(next.starts_at, next.time_zone)}.`
-                : "The manifest holds the next departure."
+                : "The season holds the next departure."
             }
             action={
               next ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
                   <Countdown target={next.starts_at} />
-                  <Link href="/manifest" className="ls-btn ls-btn--outline ls-btn--sm">
-                    View the manifest
+                  <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
+                    View the season
                   </Link>
                 </div>
               ) : (
-                <Link href="/manifest" className="ls-btn ls-btn--outline ls-btn--sm">
-                  View the manifest
+                <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
+                  View the season
                 </Link>
               )
             }
@@ -364,7 +364,20 @@ export default async function LivePage() {
         >
           Underway · {live.title}
         </span>
-        <h1>Rail down, all well.</h1>
+        {/* The hero h1 was the log line, so the underway state of this page
+            never carried its own name while the empty state did. The name is
+            the h1 in both states now; the log line reads under it, which is
+            where a status belongs. */}
+        <h1>Live.</h1>
+        <p
+          style={{
+            fontSize: "var(--text-sm)",
+            color: "var(--text-on-media)",
+            marginTop: 8,
+          }}
+        >
+          Rail down, all well.
+        </p>
         <div className="now-cond">
           <span>WIND {wind ?? "—"}</span>
           <span>SWELL {swell ?? "—"}</span>

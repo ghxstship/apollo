@@ -5,13 +5,13 @@ import { Button, Input, Textarea, Toast } from "@/components/ds";
 import {
   raiseCharterRequest,
   type CharterRequestState,
-} from "@/app/(member)/charter/request-actions";
+} from "@/app/(member)/itinerary/request-actions";
 
 /* — Enquire: the door for an on-request format.
 
    No pass, no price, no Reserve — the format is answered by the Bridge, and
    this form is how a member asks. It sits where the Reserve button would on
-   the charter page, carries the sailing it was raised from, and says once
+   the episode page, carries the episode it was raised from, and says once
    when the enquiry has landed. Errors about one field sit on that field;
    anything else is the form's to say. — */
 

@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { MAILBOX } from "@/lib/brand";
+import { MAILBOX, PLACE, SURFACES } from "@/lib/brand";
 import { Button, Checkbox, Dialog, Input, Select, Switch, Textarea, Toast } from "@/components/ds";
 import { BIO_MAX, INTERESTS } from "./interests";
 import {
@@ -53,11 +53,11 @@ export function ProfileForm({
         <Input label="Full name" name="full_name" defaultValue={fullName} error={state.error} />
         <Input label="Handle" name="handle" defaultValue={handle} placeholder="how the crew hails you" />
         <Select
-          label="Home harbor"
+          label={`Home ${PLACE.market.toLowerCase()}`}
           name="home_harbor"
           defaultValue={homeHarbor}
           options={harbors}
-          placeholder="Choose a harbor"
+          placeholder={`Choose a ${PLACE.market.toLowerCase()}`}
         />
         <Select
           label="Avatar tone"
@@ -153,20 +153,20 @@ export function NotificationPrefsForm({
     <form action={formAction}>
       <div className="you-row">
         <div>
-          {/* A weather hold is a SAILING held for conditions, and nothing
+          {/* A weather hold is an EPISODE held for conditions, and nothing
               else. The membership pause used to borrow the phrase — this
               switch sat a few hundred pixels from a banner reading "Membership
               on weather hold", and nothing said which was which — so the
               metaphor is off the membership entirely and this label says what
               it is actually about. */}
-          <b>Weather holds on your sailings</b>
-          <p>When a charter is held for conditions. Called by 18:00 the night before.</p>
+          <b>Weather holds on your episodes</b>
+          <p>When an episode is held for conditions. Called by 18:00 the night before.</p>
         </div>
         <Switch
           name="weather"
           defaultChecked={weather}
           label=""
-          aria-label="Notices when a sailing is held for weather"
+          aria-label="Notices when an episode is held for weather"
         />
       </div>
       <div className="you-row">
@@ -185,10 +185,15 @@ export function NotificationPrefsForm({
       </div>
       <div className="you-row">
         <div>
-          <b>Episodes</b>
+          <b>{SURFACES.magazine}</b>
           <p>The Sunday letter. Nothing to do with your passes.</p>
         </div>
-        <Switch name="digest" defaultChecked={digest} label="" aria-label="Episodes letter" />
+        <Switch
+          name="digest"
+          defaultChecked={digest}
+          label=""
+          aria-label={`${SURFACES.magazine} letter`}
+        />
       </div>
       <div className="you-row">
         <div>
@@ -334,7 +339,7 @@ export function ResumeBanner() {
   );
 }
 
-/* A pass on the manifest for a sailing still ahead — what departing settles. */
+/* A pass on the manifest for an episode still ahead — what departing settles. */
 export type HeldPass = { id: string; title: string; when: string };
 
 /* — Offboarding: pause or depart, for real — */
@@ -473,8 +478,8 @@ export function Offboarding({ status, heldPasses }: { status: string; heldPasses
         No exit surveys, no retention calls; the manifest remembers you kindly.
         Your dues end when the period you have already paid for runs out, and
         nothing further is taken. Booking, posting and the rest close as soon as
-        you confirm — so if there is a sailing you still want, take it first.
-        {/* set_own_standing('departed') releases every aboard pass on a sailing
+        you confirm — so if there is an episode you still want, take it first.
+        {/* set_own_standing('departed') releases every aboard pass on an episode
             still ahead, credited in full, by trigger. The member is shown the
             list before they confirm, because a departure that quietly empties
             the manifest is a surprise, and the credit is the part they would

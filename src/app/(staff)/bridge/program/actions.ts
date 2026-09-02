@@ -30,26 +30,26 @@ export type NewSeries = {
   templateVoyageId: string | null;
 };
 
-/* Extending a series raises real sailings, so the result carries the tally the
+/* Extending a series raises real episodes, so the result carries the tally the
    RPC reports back — the screen reads it out rather than guessing. */
 export type ExtendResult = ActionResult & { raised?: number };
 
 function done(): ActionResult {
   revalidatePath("/bridge/program");
-  /* The Voyages composer offers seasons, venues, and series in its pickers. */
+  /* The Episodes composer offers seasons, venues, and series in its pickers. */
   revalidatePath("/bridge/voyages");
   return {};
 }
 
-/* An extension puts new sailings on the board, and the board is everywhere. */
+/* An extension puts new episodes on the board, and the board is everywhere. */
 function doneWithSailings(): void {
   revalidatePath("/bridge/program");
   revalidatePath("/bridge/voyages");
   revalidatePath("/bridge/manifests");
-  revalidatePath("/manifest");
+  revalidatePath("/passes");
   revalidatePath("/home");
   revalidatePath("/live");
-  revalidatePath("/charters");
+  revalidatePath("/episodes");
 }
 
 function slugify(v: string): string {
@@ -95,7 +95,7 @@ export async function createSeason(input: NewSeason): Promise<ActionResult> {
   return done();
 }
 
-/* Retire, never delete — sailings point at a season and keep pointing at it. */
+/* Retire, never delete — episodes point at a season and keep pointing at it. */
 export async function setSeasonActive(id: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
@@ -162,7 +162,7 @@ export async function createSeries(input: NewSeries): Promise<ActionResult> {
     return { error: "Cadence runs 1 to 92 days — pick a number inside that window." };
 
   if (!input.templateVoyageId)
-    return { error: "A series clones one sailing forward — pick the template voyage." };
+    return { error: "A series clones one episode forward — pick the template episode." };
 
   const { error } = await supabase.from("voyage_series").insert({
     slug,
@@ -189,7 +189,7 @@ export async function setSeriesActive(id: string, active: boolean): Promise<Acti
 }
 
 /* Clone the template forward at the cadence. The RPC is staff-gated and
-   idempotent by slug — dates that already hold a sailing are skipped — so the
+   idempotent by slug — dates that already hold an episode are skipped — so the
    number it returns is the truth about what this call actually raised. Its
    refusals are written in the club's voice; hand them over verbatim. */
 export async function extendSeries(seriesId: string, count: number): Promise<ExtendResult> {
@@ -198,7 +198,7 @@ export async function extendSeries(seriesId: string, count: number): Promise<Ext
 
   const n = Math.round(count);
   if (!Number.isFinite(n) || n < 1 || n > 26)
-    return { error: "An extension raises 1 to 26 sailings at a time." };
+    return { error: "An extension raises 1 to 26 episodes at a time." };
 
   const { data, error } = await supabase.rpc("extend_the_series", {
     p_series: seriesId,

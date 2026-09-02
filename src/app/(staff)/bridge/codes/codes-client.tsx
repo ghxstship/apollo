@@ -260,7 +260,7 @@ export function CodesClient({
             value={voyageId}
             onChange={(e) => setVoyageId(e.target.value)}
             options={[
-              { value: "", label: "Any sailing" },
+              { value: "", label: "Any episode" },
               ...voyages.map((v) => ({ value: v.id, label: v.title })),
             ]}
           />

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Stepper, Switch, Table, Toast } from "@/components/ds";
+import { PLACE } from "@/lib/brand";
 import { useToast } from "../../ui";
 import {
   createSeason,
@@ -145,7 +146,7 @@ export function ProgramClient({
       mono: true,
       render: (r: SeasonPanelRow) => `${onDay(r.startsOn)} — ${onDay(r.endsOn)}`,
     },
-    { key: "voyages", label: "Sailings", width: 90, mono: true },
+    { key: "voyages", label: "Episodes", width: 90, mono: true },
     {
       key: "active",
       label: "State",
@@ -186,7 +187,7 @@ export function ProgramClient({
     },
     {
       key: "harbor",
-      label: "Harbor",
+      label: PLACE.market,
       width: 160,
       render: (r: VenuePanelRow) => r.harbor ?? "—",
     },
@@ -257,8 +258,8 @@ export function ProgramClient({
               max={26}
               value={countFor(r.id)}
               onChange={(n) => setExtendCounts((c) => ({ ...c, [r.id]: n }))}
-              decrementLabel="Fewer sailings"
-              incrementLabel="More sailings"
+              decrementLabel="Fewer episodes"
+              incrementLabel="More episodes"
             />
             <Button
               size="sm"
@@ -276,7 +277,7 @@ export function ProgramClient({
                     show({ msg: "Nothing new — those dates already stand.", meta: r.title.toUpperCase() });
                   else
                     show({
-                      msg: `${raised} sailing${raised === 1 ? "" : "s"} raised.`,
+                      msg: `${raised} episode${raised === 1 ? "" : "s"} raised.`,
                       meta: `${r.title.toUpperCase()} · EVERY ${r.cadenceDays} DAYS`,
                     });
                 })
@@ -310,7 +311,7 @@ export function ProgramClient({
             <h2>Seasons.</h2>
             <p className="hm-note">
               The frame around the calendar. A retired season stays on the record — its
-              sailings point at it and keep pointing at it.
+              episodes point at it and keep pointing at it.
             </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => setOpeningSeason(true)}>
@@ -326,7 +327,7 @@ export function ProgramClient({
             <StateBlock
               status="empty"
               title="No seasons on the books."
-              detail="Open the first one and the calendar has a frame to hang sailings in."
+              detail="Open the first one and the calendar has a frame to hang episodes in."
             />
           </div>
         )}
@@ -366,7 +367,7 @@ export function ProgramClient({
             <h2>Series.</h2>
             <p className="hm-note">
               A series clones its template forward at the cadence. Extending is safe to
-              repeat — dates that already hold a sailing are skipped, not doubled.
+              repeat — dates that already hold an episode are skipped, not doubled.
             </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => setLayingSeries(true)}>
@@ -382,7 +383,7 @@ export function ProgramClient({
             <StateBlock
               status="empty"
               title="No series laid."
-              detail="Raise one sailing by hand on Voyages, then make it the template here."
+              detail="Raise one episode by hand on Episodes, then make it the template here."
             />
           </div>
         )}
@@ -505,11 +506,11 @@ export function ProgramClient({
             ))}
           </Select>
           <Select
-            label="Harbor"
-            hint="Where it sits. A venue can stand free of any harbor."
+            label={PLACE.market}
+            hint="Where it sits. A venue can stand free of any city."
             value={vHarbor}
             onChange={(e) => setVHarbor(e.target.value)}
-            options={[{ value: "", label: "No harbor — freestanding" }, ...harbors]}
+            options={[{ value: "", label: "No city — freestanding" }, ...harbors]}
           />
           <Input
             label="Street address"
@@ -569,22 +570,22 @@ export function ProgramClient({
           />
           <Input
             label="Cadence"
-            hint="Days between sailings — 7 is weekly. 1 to 92."
+            hint="Days between episodes — 7 is weekly. 1 to 92."
             type="number"
             value={rCadence}
             onChange={(e) => setRCadence(e.target.value)}
           />
           <Select
-            label="Template voyage"
-            hint="Occurrences inherit everything — format, deposit, presale window."
+            label="Template episode"
+            hint="Occurrences inherit everything — series, deposit, presale window."
             value={rTemplate}
             onChange={(e) => setRTemplate(e.target.value)}
             options={[
               {
                 value: "",
                 label: templates.length
-                  ? "Pick the sailing"
-                  : "Nothing on the board — raise one on Voyages first",
+                  ? "Pick the episode"
+                  : "Nothing on the board — raise one on Episodes first",
               },
               ...templates,
             ]}

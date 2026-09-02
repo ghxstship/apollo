@@ -21,12 +21,12 @@ export type NewSponsor = {
 };
 
 /* The book lives on the Bridge, but the credit line and the venue register
-   render on the public sailing pages — both read at request time through the
+   render on the public episode pages — both read at request time through the
    definer, so every activation change has to reach the shore too. */
 function done(): ActionResult {
   revalidatePath("/bridge/sponsors");
-  revalidatePath("/charters");
-  revalidatePath("/charters/[slug]", "page");
+  revalidatePath("/episodes");
+  revalidatePath("/episodes/[slug]", "page");
   return {};
 }
 
@@ -88,7 +88,7 @@ export async function setSponsorActive(id: string, active: boolean): Promise<Act
   return done();
 }
 
-/* Activation: the join row is what puts a name on a sailing. Placement is a
+/* Activation: the join row is what puts a name on an episode. Placement is a
    note for the crew — where the asset actually sits — not public copy. */
 export async function attachSponsor(
   voyageId: string,
@@ -97,7 +97,7 @@ export async function attachSponsor(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!voyageId) return { error: "Pick the sailing it rides on." };
+  if (!voyageId) return { error: "Pick the episode it rides on." };
 
   const { error } = await supabase.from("voyage_sponsors").insert({
     voyage_id: voyageId,
@@ -107,7 +107,7 @@ export async function attachSponsor(
   if (error) {
     return {
       error: /duplicate|unique/i.test(error.message)
-        ? "Already placed on that sailing."
+        ? "Already placed on that episode."
         : ERR_LAND,
     };
   }
@@ -163,7 +163,7 @@ export async function setAssetsDelivered(
     .select("voyage_id");
   if (error) return { error: ERR_LAND };
   if (!updated?.length) {
-    return { error: "That sponsor is not on this sailing — place the activation first." };
+    return { error: "That sponsor is not on this episode — place the activation first." };
   }
   return done();
 }
@@ -187,7 +187,7 @@ export async function compAPass(
     p_profile: profileId,
   });
   if (error) return { error: voice(error) };
-  /* A comp is a pass, so the manifest for that sailing moved too. */
+  /* A comp is a pass, so the manifest for that episode moved too. */
   revalidatePath("/bridge/manifests");
   return done();
 }

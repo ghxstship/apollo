@@ -96,9 +96,9 @@ export async function readFormats(supabase: unknown): Promise<ActivityFormat[]> 
   return (data ?? []) as ActivityFormat[];
 }
 
-/* Which sailings are filed under a format. All eighteen voyages that exist are
+/* Which episodes are filed under a format. All eighteen voyages that exist are
    unfiled, and that is the honest state of the pivot rather than a bug: filing
-   them would mean guessing, and the booking guard reads an unfiled sailing as
+   them would mean guessing, and the booking guard reads an unfiled episode as
    requiring a pass, which is the safe way to be wrong. */
 export async function readFiledSailings(supabase: unknown): Promise<FiledSailing[]> {
   const db = moduleTables(supabase);

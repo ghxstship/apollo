@@ -32,7 +32,7 @@ export type FeedPost = {
 
 export type VoyageOption = { id: string; title: string };
 
-/* — Composer — the kit's card: borderless textarea, sailing attach, gold
+/* — Composer — the kit's card: borderless textarea, episode attach, gold
    "Post to the deck". The confession-booth motif lives here, in the voice. */
 export function Composer({
   voyages,
@@ -118,8 +118,8 @@ export function Composer({
         {attaching && voyages.length > 0 ? (
           <Select
             name="voyage_id"
-            aria-label="Attach a sailing"
-            placeholder="Pick the sailing"
+            aria-label="Attach an episode"
+            placeholder="Pick the episode"
             options={voyages.map((v) => ({ value: v.id, label: v.title }))}
             style={{ minWidth: 200 }}
           />

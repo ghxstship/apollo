@@ -69,7 +69,7 @@ export async function setCodeActive(code: string, active: boolean): Promise<Acti
    it should not drift — this stays as the operator's repair for when it has.
    It used to count EVERY rsvp carrying a code, waitlist and released ones
    included, which quietly deflated a spent code back under its cap and handed
-   out uses that were never earned. A use is a pass aboard, on the sailing the
+   out uses that were never earned. A use is a pass aboard, on the episode the
    code was issued for. (The old comment claimed nothing wrote the column back;
    that stopped being true.) */
 export async function reconcileUses(): Promise<{ error?: string; adjusted?: number; scanned?: number; skipped?: number }> {
@@ -94,7 +94,7 @@ export async function reconcileUses(): Promise<{ error?: string; adjusted?: numb
      operator would go on to trust. */
   let skipped = 0;
   for (const c of codesRes.data ?? []) {
-    /* A code scoped to one sailing is only spent on that sailing — the same
+    /* A code scoped to one episode is only spent on that episode — the same
        test pass_price and claim_promo_code apply. */
     const real = aboard.filter(
       (r) =>

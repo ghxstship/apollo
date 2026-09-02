@@ -689,7 +689,7 @@ export function DocumentsClient({
       >
         <p className="hm-body" style={{ marginBottom: 14 }}>
           One card per member who actually sailed inside the window — miles,
-          sailings, harbors, crew met, and any Marks rounded. Members who did not
+          episodes, cities, crew met, and any Marks rounded. Members who did not
           sail get nothing; a card reading nought miles is a reproach, not a
           keepsake.
         </p>

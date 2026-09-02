@@ -35,7 +35,7 @@ const SHORE = MAILBOX.shore;
 
 const QUICK = [
   ["berth", "Next pass"],
-  ["sailings", "Find a sailing"],
+  ["sailings", "Find an episode"],
   ["release", "Release my pass"],
   ["balance", "My balance"],
   ["weather", "Weather"],
@@ -70,7 +70,7 @@ function intentOf(text: string): Intent {
   const s = text.toLowerCase();
   if (/release|cancel|drop|give (up|back)/.test(s)) return "release";
   if (/next|my berth|my pass|aboard|when/.test(s)) return "berth";
-  if (/find|sail|voyage|book|reserve|manifest/.test(s)) return "sailings";
+  if (/find|episode|sail|voyage|book|reserve|manifest/.test(s)) return "sailings";
   if (/balance|knot|fathom|ledger|account|owe/.test(s)) return "balance";
   if (/weather|hold|wind|storm/.test(s)) return "weather";
   return null;
@@ -91,7 +91,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
     { kind: "sys", text: "READS YOUR MANIFEST · NEVER POSTS OR PAYS WITHOUT ASKING" },
     {
       kind: "bot",
-      text: "the Producer here. I can read your manifest, find sailings, release passes, and read your ledgers. Anything that changes the record stops for your confirmation.",
+      text: "the Producer here. I can read your manifest, find episodes, release passes, and read your ledgers. Anything that changes the record stops for your confirmation.",
     },
   ]);
   const [typing, setTyping] = React.useState(false);
@@ -142,7 +142,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
       action:
         action.kind === "release"
           ? { type: "releaseSlug", slug: action.voyage_slug }
-          : { type: "link", href: "/manifest" },
+          : { type: "link", href: "/passes" },
     };
   };
 
@@ -210,10 +210,10 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
           title: s.title,
           meta: `${logDateTime(s.startsAt, s.zone).toUpperCase()} · ${Math.max(0, s.berthsLeft)} PASSES LEFT`,
           confirm: "Reserve",
-          action: { type: "link", href: "/manifest" },
+          action: { type: "link", href: "/passes" },
         }));
         return [
-          { kind: "bot", text: "The next sailings with open passes. Reserving happens on the manifest — I'll walk you there." },
+          { kind: "bot", text: "The next episodes with open passes. Reserving happens on the manifest — I'll walk you there." },
           ...cards,
         ];
       });
@@ -252,13 +252,13 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
         const res = await producerWeather();
         if (res.error) return [{ kind: "bot", text: res.error }];
         if (!res.holds || res.holds.length === 0) {
-          return [{ kind: "bot", text: "Clear charts — no weather holds on your sailings." }];
+          return [{ kind: "bot", text: "Clear charts — no weather holds on your episodes." }];
         }
         const list = res.holds.map((h) => `${h.title} (${logDateTime(h.startsAt, h.zone)})`).join("; ");
         return [
           {
             kind: "bot",
-            text: `Held for weather: ${list}. We call each one by 18:00 the night before — the Word carries the verdict.`,
+            text: `Held for weather: ${list}. We call each one by 18:00 the night before — your Inbox carries the verdict.`,
           },
         ];
       });

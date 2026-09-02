@@ -6,6 +6,7 @@
    section "The chandlery", which contradicts the kit's own shop ("the Slop
    Chest") and this brand's ban list. The heading reads The Shop. */
 import React from "react";
+import { Badge } from "./display";
 
 const MONO = "var(--font-mono)";
 const DISPLAY = "var(--font-display)";
@@ -223,38 +224,12 @@ export function ContestCard({
       </div>
       <div style={{ font: `400 22px/1.2 ${DISPLAY}`, color: "var(--text-1)" }}>{name}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        {metric ? (
-          <span
-            style={{
-              font: `700 10px/1 ${MONO}`,
-              letterSpacing: ".12em",
-              textTransform: "uppercase",
-              color: "var(--text-2)",
-              border: "1px solid var(--line-strong)",
-              borderRadius: "var(--radius-pill)",
-              padding: "4px 10px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {metric}
-          </span>
-        ) : null}
-        {award ? (
-          <span
-            style={{
-              font: `700 10px/1 ${MONO}`,
-              letterSpacing: ".12em",
-              textTransform: "uppercase",
-              color: "var(--text-gold)",
-              border: "1px solid var(--border-gold)",
-              borderRadius: "var(--radius-pill)",
-              padding: "4px 10px",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {award}
-          </span>
-        ) : null}
+        {/* Two more hand-rolled badges, now the component. The split falls out
+            of the family's own rule: a metric is what this contest MEASURES —
+            a fact about the record, so the square neutral face; an award is a
+            distinction the entrant CARRIES, so the identity pill. */}
+        {metric ? <Badge tone="outline">{metric}</Badge> : null}
+        {award ? <Badge tone="gold">{award}</Badge> : null}
         {entered && !settled ? (
           <span style={{ font: `700 10px/1 ${MONO}`, letterSpacing: ".12em", color: "var(--positive)", whiteSpace: "nowrap" }}>
             ENTERED

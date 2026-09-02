@@ -70,7 +70,7 @@
   .mbr-main{padding-bottom:calc(140px + env(safe-area-inset-bottom))}
 }
 
-/* — the Word's unread badge — */
+/* — the Inbox unread badge — */
 .mbr-worddot{display:inline-flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 4px;margin-inline-start:5px;border-radius:999px;background:var(--neon-cyan);color:var(--carbon);font:700 var(--text-3xs) var(--font-mono);letter-spacing:0;box-shadow:var(--glow-cyan);vertical-align:middle}
 .mbr-tab__ic{position:relative;display:inline-flex}
 .mbr-tab__ic .mbr-worddot{position:absolute;top:-5px;inset-inline-end:-11px;margin:0}
@@ -144,7 +144,7 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .now-orders__row b{font-size:var(--text-xs);font-weight:700;display:block}
 .now-orders__row span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3)}
 
-/* — voyages — */
+/* — episodes — */
 .voy-list{display:flex;flex-direction:column;gap:16px;margin-top:24px}
 .voy-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%}
 .voy-foot__spacer{flex:1}
@@ -214,7 +214,7 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .ptl-panel{background:var(--surface-card);border:1px solid var(--line-faint);padding:24px;margin-top:20px}
 .ptl-rew{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
 @media (max-width:960px){.ptl-rew{grid-template-columns:1fr}}
-.ptl-code{display:flex;gap:10px;align-items:center;background:var(--surface-tint);border:1px dashed var(--line-strong);padding:14px 18px;font-family:var(--font-mono);font-size:var(--text-sm);letter-spacing:.14em}
+.ptl-code{display:flex;gap:10px;align-items:center;background:var(--surface-tint);border:1px dashed var(--line-strong);padding:14px 18px;font-family:var(--font-mono);font-size:var(--text-sm);letter-spacing:var(--tracking-dense)}
 
 /* — passbook — */
 .crd{display:flex;flex-direction:column;align-items:center;padding-block:12px 32px}
@@ -224,6 +224,7 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
    compat.css flips under [data-theme="dark"] so the type stays legible on it.
    The paper-theme override that used to sit here is gone: paper is now the
    unattributed default, so there is no selector left for it to match. */
+.crd-title{margin-bottom:20px;text-align:center}
 .crd-card{width:min(360px,100%);background:var(--void-black);color:var(--text-inverse-1);border:1px solid var(--line-inverse);border-radius:var(--radius-sharp);overflow:hidden;text-align:center}
 /* The same credential cut to a page-wide shape — the Standing page's card face.
    It changes what the card is cut to, never what it is made of. */
@@ -232,9 +233,9 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .crd-in{padding:36px 28px 30px;position:relative}
 .crd-in:before{content:"";position:absolute;inset:10px;border:1px solid var(--line-inverse-faint);pointer-events:none}
 .crd-name{font-family:var(--font-display);font-size:var(--text-2xl);color:var(--bone);margin-top:26px;text-transform:uppercase}
-.crd-meta{font-family:var(--font-mono);font-size:10px;letter-spacing:.18em;color:var(--text-inverse-2);margin-top:12px;text-transform:uppercase}
-.crd-est{font-family:var(--font-mono);font-size:9px;letter-spacing:.18em;color:var(--text-inverse-3);margin-top:6px}
-.crd-code{margin-top:26px;border:1px solid var(--line-inverse);padding:18px 12px;font-family:var(--font-mono);font-size:var(--text-2xl);letter-spacing:.14em;color:var(--bone)}
+.crd-meta{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--tracking-label);color:var(--text-inverse-2);margin-top:12px;text-transform:uppercase}
+.crd-est{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--tracking-label);color:var(--text-inverse-3);margin-top:6px}
+.crd-code{margin-top:26px;border:1px solid var(--line-inverse);padding:18px 12px;font-family:var(--font-mono);font-size:var(--text-2xl);letter-spacing:var(--tracking-dense);color:var(--bone)}
 .crd-note{margin-top:22px;font-size:12px;color:var(--text-2);max-width:30ch;text-align:center}
 .crd-acts{margin-top:20px;display:flex;gap:12px;align-items:center}
 
@@ -387,7 +388,7 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .plog-figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:1px;margin:16px 0 0;background:var(--line-faint);border:1px solid var(--line-faint)}
 .plog-figs>div{background:var(--surface-card);padding:14px 12px}
 .plog-figs dt{font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3)}
-.plog-figs dd{margin:6px 0 0;font-family:var(--font-mono);font-size:var(--text-lg);letter-spacing:.02em;color:var(--text-1)}
+.plog-figs dd{margin:6px 0 0;font-family:var(--font-mono);font-size:var(--text-lg);letter-spacing:var(--tracking-display);color:var(--text-1)}
 .plog-marks{margin-top:24px}
 .plog-sub{display:block;color:var(--text-3);margin-bottom:10px}
 .plog-marks ul{list-style:none;margin:0;padding:0}
@@ -447,7 +448,7 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
      membership is paused or departed. Gold rule, never alarm red: a hold is a
      pause, not a penalty. — */
 .mbr-hold{margin:0;padding:14px 18px;border:1px solid var(--border-gold);border-inline-start-width:3px;border-radius:var(--radius-md);background:var(--wash-gold);display:flex;flex-direction:column;gap:6px}
-.mbr-hold__eyebrow{font:700 9px/1 var(--font-mono);letter-spacing:.16em;color:var(--text-gold)}
+.mbr-hold__eyebrow{font:700 9px/1 var(--font-mono);letter-spacing:var(--tracking-label);color:var(--text-gold)}
 .mbr-hold p{margin:0;font-size:var(--text-xs);line-height:1.55;color:var(--text-2);max-width:60ch}
 .mbr-hold__link{align-self:flex-start;font:500 var(--text-xs)/1 var(--font-sans);color:var(--text-gold);text-decoration:none;padding:4px 0;min-height:24px}
 .mbr-hold__link:hover{text-decoration:underline}
@@ -478,7 +479,7 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 @media print{
   @page{margin:12mm}
   body{background:#FFFFFF !important} /* paper */
-  .mbr-top,.mbr-tabbar,.pr-fab,.pr-panel,.crd-note,.crd-acts,.crd-feed,.plog{display:none !important}
+  .mbr-top,.mbr-tabbar,.pr-fab,.pr-panel,.crd-title,.crd-note,.crd-acts,.crd-feed,.plog{display:none !important}
   .mbr-shell,.mbr-main,.mbr-holdbox{padding:0 !important;margin:0 !important;max-width:none !important}
   .crd{padding:0 !important}
   .ls-fade{animation:none !important;opacity:1 !important}

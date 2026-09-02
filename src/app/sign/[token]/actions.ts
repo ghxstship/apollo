@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { voice } from "@/lib/errors";
 
 /* The token is the credential, so it is passed to a definer RPC that resolves
-   the guest and their sailing itself. Nothing here trusts the caller for
+   the guest and their episode itself. Nothing here trusts the caller for
    anything except the words they typed. */
 
 export type GuestSignInput = {
@@ -47,7 +47,7 @@ export async function signAsGuest(
     if (/signature is required/i.test(error.message))
       return { error: "A signature is required." };
     if (/nothing left to sign/i.test(error.message))
-      return { error: "That sailing has gone — there is nothing left to sign." };
+      return { error: "That episode has gone — there is nothing left to sign." };
     /* A guest has no account and no other way to ask what went wrong, so a
        generic line strands them completely. The branches above are kept for
        being shorter than the raise; everything else reaches them as written. */

@@ -42,7 +42,7 @@ export async function GET(
       row.blurb ?? "",
       row.guests > 0 ? `${row.guests} guest${row.guests === 1 ? "" : "s"} on your pass.` : "",
       "Boards thirty minutes before cast off.",
-      `${SITE_URL}/charters/${row.slug}`,
+      `${SITE_URL}/episodes/${row.slug}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -53,7 +53,7 @@ export async function GET(
       summary: voyageSummary(row),
       location: voyageLocation(row),
       description,
-      url: `${SITE_URL}/charters/${row.slug}`,
+      url: `${SITE_URL}/episodes/${row.slug}`,
       alarm: `${row.title} — boards tomorrow.`,
       status: icsStatus(row.status),
     };

@@ -10,8 +10,8 @@ import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staf
    product shipped; no screen ever made them. */
 
 function done(): ActionResult {
-  revalidatePath("/bridge/tables");
-  revalidatePath("/tables");
+  revalidatePath("/bridge/tonight");
+  revalidatePath("/tonight");
   return {};
 }
 

@@ -24,10 +24,10 @@ type Plan = Tables<"membership_plans">;
    ceilings render live from membership_plans — nothing hardcoded here. */
 const PLAN_TYPES: Array<{ type: Plan["plan_type"]; name: string; blurb: string }> = [
   { type: "access", name: "Access", blurb: "The platform, no dues" },
-  { type: "regional", name: "Regional", blurb: "Your home harbor" },
-  { type: "national", name: "National", blurb: "All US harbors" },
-  { type: "global", name: "Global", blurb: "Every harbor worldwide" },
-  { type: "guest", name: "Guest", blurb: "One event, member-sponsored" },
+  { type: "regional", name: "Regional", blurb: "Your home city" },
+  { type: "national", name: "National", blurb: "All US cities" },
+  { type: "global", name: "Global", blurb: "Every city worldwide" },
+  { type: "guest", name: "Guest", blurb: "One episode, member-sponsored" },
 ];
 
 /* The class tiers are numbered and named by their ceiling in hours. The ladder
@@ -73,7 +73,7 @@ export default async function MembershipPage() {
   return (
     <div className="ls-container">
       <div className="ws-phead">
-        <span className="ls-eyebrow">The manifest</span>
+        <span className="ls-eyebrow">Casting</span>
         <h1>Five ways aboard.</h1>
         <p className="ws-phead__tag"><TaglineMark /></p>
         <p className="ws-phead__sub">
@@ -100,15 +100,15 @@ export default async function MembershipPage() {
               <span>{blurb}</span>
             </div>
             {/* Access has no tiers — platform account, passes bought à la
-                carte at each event's listed price. One cell spans the row. */}
+                carte at each episode's listed price. One cell spans the row. */}
             {type === "access" ? (
               <div className="ws-plans__cell ws-plans__cell--span">
                 <span className="ws-plans__price">Complimentary</span>
                 <span className="ws-plans__ev">
-                  Passes à la carte — priced per event, no membership required
+                  Passes à la carte — priced per episode, no membership required
                 </span>
                 <span className="ws-plans__note">
-                  BOOK ANY OPEN SAILING AT ITS LISTED PRICE
+                  BOOK ANY OPEN EPISODE AT ITS LISTED PRICE
                 </span>
               </div>
             ) : null}
@@ -127,7 +127,7 @@ export default async function MembershipPage() {
                       <span className="ws-plans__ev">
                         {p.events_per_month === 0
                           ? "Waitlist + one invitation ashore"
-                          : `${p.events_per_month} ${p.events_per_month === 1 ? "event" : "events"} / mo`}
+                          : `${p.events_per_month} ${p.events_per_month === 1 ? "episode" : "episodes"} / mo`}
                       </span>
                       {p.class_ceiling && SUB_CLASSES[p.class_ceiling] ? (
                         <span className="ws-plans__note">

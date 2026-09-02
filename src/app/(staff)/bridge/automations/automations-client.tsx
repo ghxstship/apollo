@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CLUB_ZONE, SETTING_LABEL } from "@/lib/brand";
+import { CLUB_ZONE, PLACE, SETTING_LABEL } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Switch, Textarea, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -26,7 +26,7 @@ export type RuleRow = {
 const TRIGGER_LABEL: Record<TriggerEvent, string> = {
   pass_confirmed: "A pass is confirmed",
   weather_hold: "A weather hold is called",
-  voyage_completed: "A sailing is logged complete",
+  voyage_completed: "An episode is logged complete",
   member_joined: "A member comes aboard",
   dues_failed: "Dues fail to settle",
 };
@@ -38,7 +38,7 @@ const TIER_OPTIONS = [
   { value: "global", label: "Global" },
 ];
 
-/* Where the sailing happens — the setting axis, not the old family codes. */
+/* Where the episode happens — the setting axis, not the old family codes. */
 const CLASS_OPTIONS = [
   { value: "", label: "Either setting" },
   { value: "sea", label: SETTING_LABEL.sea },
@@ -198,7 +198,7 @@ export function AutomationsClient({
         <div className="hm-form">
           <Input
             label="Name"
-            placeholder="Word to Global members on every sailing afloat"
+            placeholder="Word to Global members on every episode afloat"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -219,11 +219,11 @@ export function AutomationsClient({
               options={TIER_OPTIONS}
             />
             <Select
-              label="Harbor"
+              label={PLACE.market}
               value={harbor}
               onChange={(e) => setHarbor(e.target.value)}
               options={[
-                { value: "", label: "Any harbor" },
+                { value: "", label: "Any city" },
                 ...harbors.map((h) => ({ value: h.slug, label: h.label })),
               ]}
             />

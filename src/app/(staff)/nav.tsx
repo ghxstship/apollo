@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /* Too many sections for one undifferentiated row, so the nav is grouped: the
-   sailing itself, the people, the evening as it runs, the money, then the
+   episode itself, the people, the evening as it runs, the money, then the
    instruments. Hairlines mark the seams; labels stay one word wherever they
    can. */
 const GROUPS = [
@@ -13,7 +13,9 @@ const GROUPS = [
     ["/bridge", "Applications"],
     ["/bridge/gangway", "Gangway"],
     ["/bridge/manifests", "Manifests"],
-    ["/bridge/voyages", "Voyages"],
+    /* The route segment is legacy plumbing, like the table it reads; the tab
+       says what the console is for. */
+    ["/bridge/voyages", "Episodes"],
     ["/bridge/itinerary", "Itinerary"],
     ["/bridge/composition", "Composition"],
     ["/bridge/program", "Program"],
@@ -29,7 +31,7 @@ const GROUPS = [
   ],
   [
     ["/bridge/radar", "Radar"],
-    ["/bridge/tables", "Tables"],
+    ["/bridge/tonight", "Tonight"],
     ["/bridge/envelopes", "Envelopes"],
     ["/bridge/elements", "Elements"],
   ],

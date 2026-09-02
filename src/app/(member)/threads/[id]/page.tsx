@@ -84,11 +84,11 @@ export default async function ThreadPage({
 
   const title =
     thread.kind === "crew"
-      ? `${voyage?.title ?? thread.title ?? "A voyage"} — crew`
+      ? `${voyage?.title ?? thread.title ?? "An episode"} — crew`
       : thread.kind === "direct"
         ? others[0]?.full_name ?? departedName ?? "A member"
         : thread.title ?? "Shoreside";
-  /* The thread header states where the sailing happens, not how it is filed. */
+  /* The thread header states where the episode happens, not how it is filed. */
   const eyebrow =
     thread.kind === "crew"
       ? SETTING_LABEL[voyage?.class ?? "sea"] ?? "Afloat"

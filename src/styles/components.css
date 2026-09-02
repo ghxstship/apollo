@@ -85,7 +85,7 @@
 .ls-card__media:after{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
 .ls-card__media>div,.ls-card__media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform var(--dur-3) var(--ease-out)}
 .ls-card--click:hover .ls-card__media>div,.ls-card--click:hover .ls-card__media>img{transform:scale(1.03)}
-.ls-card__tk{position:absolute;left:12px;bottom:10px;font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--text-on-media)}
+.ls-card__tk{position:absolute;left:12px;bottom:10px;font-family:var(--font-mono);font-size:9px;letter-spacing:var(--tracking-dense);color:var(--text-on-media)}
 .ls-card__body{padding:var(--space-6);display:flex;flex-direction:column;flex:1}
 .ls-card__eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);margin-bottom:var(--space-2)}
 .ls-card--sea .ls-card__eyebrow{color:var(--gold-bright)}
@@ -98,43 +98,120 @@
 .ls-card--sea .ls-card__footer{border-top-color:var(--line-inverse-faint)}
 @media (max-width:640px){.ls-card__body{padding:16px}}
 
-/* — Badge — */
-.ls-badge{font:var(--type-label);display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 12px;border-radius:var(--radius-pill);border:1px solid transparent;letter-spacing:var(--tracking-label);text-transform:uppercase;white-space:nowrap}
-.ls-badge--gold{background:var(--lava);color:var(--action-on-accent)}
-.ls-badge--ink{background:var(--action-primary);color:var(--action-on-primary)}
-/* Status tones read as state, not surface: colored text + hairline + faint
-   wash. Solid neon fills halate on carbon and outshine the view's one
-   accent — only brass keeps a fill. */
-.ls-badge--positive{background:color-mix(in srgb, var(--positive) 12%, transparent);border-color:color-mix(in srgb, var(--positive) 55%, transparent);color:var(--positive)}
-.ls-badge--caution{background:color-mix(in srgb, var(--terracotta) 12%, transparent);border-color:color-mix(in srgb, var(--terracotta) 55%, transparent);color:var(--terracotta)}
-/* The third status tone. Its absence is why six consoles printed "Gave up" and
-   "UNREACHABLE" as undifferentiated body text in the one column an operator
-   scans, and why two files hand-patched var(--danger) inline. */
-.ls-badge--danger{background:color-mix(in srgb, var(--danger) 12%, transparent);border-color:color-mix(in srgb, var(--danger) 55%, transparent);color:var(--danger)}
-/* Two [data-theme="light"] badge overrides used to live here, deepening the
-   status greens and ambers so 10px uppercase badge text cleared AA on paper.
-   They are gone rather than renamed: the polarity inverted with the rebrand, so
-   paper is now the unattributed default and there is no "light" attribute for
-   them to hang off — and tokens.css already ships --positive and --caution at
-   their deepened paper values (#2FA114, #E58A00), brightening them under
-   [data-theme="dark"] instead. Re-adding a selector here would re-pin the raw
-   ramp and undo that. */
-.ls-badge--outline{border-color:var(--line-strong);color:var(--text-1)}
-.ls-badge--outline.ls-badge--inverse{border-color:var(--line-inverse-strong);color:var(--text-inverse-1)}
+/* — Badge —
+   ONE component doing TWO jobs, told apart by silhouette rather than by hue:
 
-/* — Tag — */
-.ls-tag{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:var(--radius-sharp);border:1px solid var(--line);background:var(--surface-card);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase;cursor:default;transition:border-color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
-.ls-tag--active{background:var(--action-primary);border-color:var(--action-primary);color:var(--action-on-primary)}
-.ls-tag--click{cursor:pointer}
-.ls-tag--click:hover{border-color:var(--line-strong)}
-.ls-tag--active.ls-tag--click:hover{background:var(--action-primary-hover)}
+     identity — a tier, an award, a distinction ("Most aboard", "Mate"). A
+       property of the thing, carried by it. Solid fill, PILL.
+     status  — Settled, Weather hold, Gave up, Open. What the thing is doing
+       right now, true until it changes. Hue wash + hue hairline + ink text,
+       SHARP corners.
+
+   Rounded is what a thing WEARS — it is the avatar's shape, and identity is
+   what the avatar stands for. Square is what a thing is RECORDED in — the
+   shape of the input, the toast, the vetting strip and the table cell a status
+   badge almost always sits in. "Rounded is who it is; square is how it is
+   doing" survives at 10px, where hue does not: --accent green and --positive
+   green are three points apart on the same ramp, so an identity chip and a
+   status chip that differ only in colour are the same chip. It also stops the
+   family reading as a wall of capsules — the pill is now the rare one.
+
+   HUE. Six hues went in and four come out: the accent (identity), and the
+   green/amber/red status triad. The status hues are confined to a 1px rule and
+   a 16% wash; the text is ink in both themes. That is not a stylistic
+   preference, it is the only arrangement that clears AA here — see below.
+
+   CONTRAST. This family is 10px uppercase mono on .16em of tracking, which
+   needs MORE contrast than body text and gets no large-text exemption (that
+   starts at 18.66px bold). --positive, --caution and --danger ship as FILL
+   values, not paper text values: on paper, as text on their own 12% wash, they
+   measured 2.77:1, 2.21:1 and 3.52:1 — two of the three below even the 3:1
+   floor, because a wash tinted with the text's own hue closes the gap from both
+   ends. The ramps bottom out too bright to fix by deepening (--acid-600 reaches
+   3.65:1, --amber-600 3.37:1), and tokens.css is verbatim, so the hue moves to
+   the rule and the wash — where nothing has to be read — and --text-1 takes the
+   text. Every status tone now measures 11.2:1 or better in both themes.
+
+   SPECIFICITY. Every tone is written `.ls-badge.ls-badge--x`, not
+   `.ls-badge--x`. Badge renders a bare <span>, and forty-odd stylesheets in
+   this app carry a `.some-block span{...}` rule; at (0,1,1) each of those
+   outranks a (0,1,0) tone rule and repaints the badge from outside the
+   component. That is not hypothetical: `.ws-plans__label span` captured the
+   membership grid's "Most aboard" and painted it --text-3 grey on the accent
+   fill at 1.5:1, then display:block stretched a content-sized marker into a
+   full-width band under the tier name. Doubling the class puts the component at
+   (0,2,0), so a page has to mean it to override.
+
+   SIZE. 22px tall, 12px sides, --tracking-label, one type token, sized to its
+   content and never to its container (max-content, which is what keeps it a
+   marker rather than a section header inside a column flex parent). The end
+   padding subtracts the tracking, which is applied after the last glyph too and
+   would otherwise sit the text half a step left of centre. */
+.ls-badge{font:var(--type-label);display:inline-flex;align-items:center;gap:6px;height:22px;padding-inline:12px calc(12px - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid transparent;letter-spacing:var(--tracking-label);text-transform:uppercase;white-space:nowrap;max-width:max-content}
+/* Identity. The family's only fills, and the only pills.
+   --lava is gone from here: it is the accent SEAM (the 3–8px bands on the
+   member card, the gangway, the site header), a gradient whose stops are
+   --acid-400 and --acid-500. Across a 22px chip that makes contrast a function
+   of x-position, and its lighter stop is the accent's HOVER step, not the
+   accent. A chip takes the flat accent. */
+.ls-badge.ls-badge--gold{border-radius:var(--radius-pill);background:var(--accent);color:var(--action-on-accent)}
+.ls-badge.ls-badge--ink{border-radius:var(--radius-pill);background:var(--action-primary);color:var(--action-on-primary)}
+/* Status. Caution reads --caution, not --terracotta: terracotta is the Shop's
+   commerce hue ("Commerce, not a division" — compat.css), and a weather hold
+   has nothing to do with the Shop. --warn is its alias if a surface wants the
+   status name. The third tone, danger, is why six consoles no longer print
+   "Gave up" and "UNREACHABLE" as undifferentiated body text in the one column
+   an operator scans.
+   Two [data-theme="light"] overrides used to live here deepening the status
+   hues for paper. They stay gone: the polarity inverted with the rebrand, so
+   paper is the unattributed default and there is no "light" attribute to hang
+   them off — and with the hue off the text there is nothing left to deepen. */
+.ls-badge.ls-badge--positive{background:color-mix(in srgb, var(--positive) 16%, transparent);border-color:var(--positive);color:var(--text-1)}
+.ls-badge.ls-badge--caution{background:color-mix(in srgb, var(--caution) 16%, transparent);border-color:var(--caution);color:var(--text-1)}
+.ls-badge.ls-badge--danger{background:color-mix(in srgb, var(--danger) 16%, transparent);border-color:var(--danger);color:var(--text-1)}
+/* The neutral member of the status set — Open, Retired, Closed. */
+.ls-badge.ls-badge--outline{border-color:var(--line-strong);color:var(--text-1)}
+/* Surfaces that stay ink in BOTH themes (the member card, the stub, the
+   Bridge's dark panels). The status text is --text-1 now, which flips with the
+   theme, so every status tone needs the inverse escape the outline tone
+   already had — not only the one that happens to be used today. */
+.ls-badge.ls-badge--outline.ls-badge--inverse{border-color:var(--line-inverse-strong);color:var(--text-inverse-1)}
+.ls-badge.ls-badge--positive.ls-badge--inverse,
+.ls-badge.ls-badge--caution.ls-badge--inverse,
+.ls-badge.ls-badge--danger.ls-badge--inverse{color:var(--text-inverse-1)}
+
+/* — Tag —
+   The filter chip. Square, with the badge's status face: a Tag filters a
+   record set, so it belongs to the rectilinear family of the table and the
+   input it sits above, not to the identity pill. Its interactivity is carried
+   where interactivity belongs — cursor, hover border, aria-pressed — and not
+   by its silhouette, because Tag renders in both interactive and static form
+   and a shape that changes with a prop is a shape nobody can read.
+
+   28px against the badge's 22px is the family's ONE size difference, and it is
+   deliberate: a Tag is pressed and can carry a remove button, and 22px would
+   put that target under the 24px minimum of WCAG 2.5.8. A badge is read and
+   never pressed, so it has no such floor and takes the tighter height. Type,
+   tracking and padding are the badge's — the tag was 10px mono at the
+   inherited 400 weight on --track-data, which is the FIGURES setting (.04em,
+   documented in compat.css as the exception for columns of digits); this text
+   is an uppercase label, so it takes --type-label and --tracking-label like
+   every other label in the system.
+
+   Doubled class for the same reason the badge has one: Tag is a bare <span>
+   too. */
+.ls-tag{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;height:28px;padding-inline:12px calc(12px - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid var(--line);background:var(--surface-card);letter-spacing:var(--tracking-label);color:var(--text-2);text-transform:uppercase;cursor:default;max-width:max-content;transition:border-color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
+.ls-tag.ls-tag--active{background:var(--action-primary);border-color:var(--action-primary);color:var(--action-on-primary)}
+.ls-tag.ls-tag--click{cursor:pointer}
+.ls-tag.ls-tag--click:hover{border-color:var(--line-strong)}
+.ls-tag.ls-tag--active.ls-tag--click:hover{background:var(--action-primary-hover)}
 .ls-tag__x{all:unset;cursor:pointer;line-height:0;display:inline-flex;opacity:.6;position:relative}
 .ls-tag__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
 .ls-tag__x:before{content:"";position:absolute;inset:-8px}
 .ls-tag__x:hover{opacity:1}
 
 /* — Avatar — */
-.ls-avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);font-family:var(--font-sans);font-weight:700;letter-spacing:.06em;text-transform:uppercase;flex:none;user-select:none;box-sizing:border-box}
+.ls-avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);font-family:var(--font-sans);font-weight:700;letter-spacing:var(--track-data);text-transform:uppercase;flex:none;user-select:none;box-sizing:border-box}
 .ls-avatar--ink{background:var(--ink);color:var(--bone)}
 .ls-avatar--sea{background:var(--sea);color:var(--bone)}
 .ls-avatar--gold{background:var(--gold);color:var(--abyss)}

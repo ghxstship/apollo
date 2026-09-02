@@ -245,19 +245,19 @@ export function RegattasClient({
             />
             <Radio
               name="contest-scope"
-              label="Crew — one sailing only"
+              label="Crew — one episode only"
               checked={scope === "crew"}
               onChange={() => setScope("crew")}
             />
           </div>
           {scope === "crew" ? (
             <Select
-              label="Sailing"
-              hint="Only those aboard this sailing can enter."
+              label="Episode"
+              hint="Only those aboard this episode can enter."
               value={voyageId}
               onChange={(e) => setVoyageId(e.target.value)}
               options={[
-                { value: "", label: voyages.length ? "Pick the sailing" : "Nothing on the board to run it on" },
+                { value: "", label: voyages.length ? "Pick the episode" : "Nothing on the board to run it on" },
                 ...voyages,
               ]}
             />

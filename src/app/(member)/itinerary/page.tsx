@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getMember } from "../data";
 import { logDate, logDateTime, logTime } from "@/lib/format";
+import { SURFACES } from "@/lib/brand";
 import { moduleTables } from "@/lib/module-tables";
 import { CabinPlan, type CabinRow } from "./cabin-plan";
 import {
@@ -16,9 +17,10 @@ import {
 } from "./data";
 import "./charter.css";
 
-export const metadata: Metadata = { title: "Charter" };
+export const metadata: Metadata = { title: "Itinerary" };
 
-/* Charter — the passage you are on, as the kit prints it.
+/* The itinerary and cabin card for the episode you are booked on, as the kit
+   prints it.
 
    The manifest is deliberately absent from this page. The charter kit draws one
    with surnames and three aboard states, and apollo already has it twice over:
@@ -27,19 +29,19 @@ export const metadata: Metadata = { title: "Charter" };
    have. Rebuilding the kit's version here would be a third manifest and the
    only one of the three that ignores the opt-out. */
 
-export default async function CharterPage() {
+export default async function ItineraryPage() {
   const { supabase, user, zone } = await getMember();
   const db = moduleTables(supabase);
 
-  /* The passage in front of you. One at a time, because the itinerary
-     one-pager, the cabin card and the port guide are all artefacts OF a
-     passage — a list of them is a manifest, which is a different page. */
+  /* The episode in front of you. One at a time, because the itinerary
+     one-pager, the cabin card and the port guide are all artefacts OF an
+     episode — a list of them is a manifest, which is a different page. */
   /* `voyages!inner(...)` was ambiguous and the whole module went dark.
      radar_picks arrived carrying picker_rsvp → rsvps, picked_rsvp → rsvps AND
      voyage_id → voyages, which manufactures two more rsvps↔voyages paths
      alongside the real one. PostgREST refuses an embed it cannot resolve —
      PGRST201, "more than one relationship was found" — so this returned
-     nothing and the page fell to its "No passage ahead" empty state for every
+     nothing and the page fell to its "No episode ahead" empty state for every
      member with a booking. Naming the constraint pins it to the pass's own
      voyage and no future foreign key can make it ambiguous again.
 
@@ -56,7 +58,7 @@ export default async function CharterPage() {
     .limit(1);
 
   /* A refused query is not an empty manifest, and must never render as one. */
-  if (bookedError) throw new Error(`the passage could not be read: ${bookedError.message}`);
+  if (bookedError) throw new Error(`the episode could not be read: ${bookedError.message}`);
 
   /* PostgREST types an embedded relation as an array even when the join is
      to-one, which `!inner` on a single foreign key always is. Through unknown,
@@ -79,12 +81,12 @@ export default async function CharterPage() {
   if (!row) {
     return (
       <div className="cht">
-        <span className="mbr-eyebrow">Charter · [un] Limited</span>
-        <h1 className="mbr-h1">No passage ahead</h1>
+        <span className="mbr-eyebrow">{SURFACES.episode} · [un] Limited</span>
+        <h1 className="mbr-h1">Itinerary.</h1>
         <p className="cht-empty">
-          The itinerary, the cabin card and the port guide are artefacts of a
-          passage you are booked on. Take a place on the{" "}
-          <Link href="/manifest">Voyages</Link> page and this fills in.
+          No episode ahead. The itinerary, the cabin card and the port guide are
+          artefacts of an episode you are booked on — claim a pass on the{" "}
+          <Link href="/passes">Passes</Link> page and this fills in.
         </p>
         <States />
       </div>
@@ -111,18 +113,24 @@ export default async function CharterPage() {
   return (
     <div className="cht">
       <span className="mbr-eyebrow">
-        Charter · {logDate(v.starts_at, v.time_zone)}
+        {SURFACES.episode} · {logDate(v.starts_at, v.time_zone)}
         {v.distance_nm ? ` · ${v.distance_nm} nm` : ""}
       </span>
-      <h1 className="mbr-h1">{v.title}</h1>
+      {/* The episode title was the h1, so the page never said its own name.
+          The name is the h1 now and the title leads the standfirst, where it
+          reads as what this is the itinerary FOR. */}
+      <h1 className="mbr-h1">Itinerary.</h1>
       <p className="cht-lede">
-        Every time below is local and 24-hour. Legs are intentions; the posted
-        update is the truth, and weather decides which of the two you are
-        reading.
+        {v.title}. Every time below is local and 24-hour. Legs are intentions;
+        the posted update is the truth, and weather decides which of the two you
+        are reading.
       </p>
 
       <section className="mbr-sec" aria-labelledby="cht-itin">
-        <span className="mbr-eyebrow" id="cht-itin">Itinerary</span>
+        {/* Was also headed Itinerary, which put the page name twice on one
+            screen at two different sizes. The legs are the passage plan, which
+            is what the empty copy below already calls them. */}
+        <span className="mbr-eyebrow" id="cht-itin">The passage plan</span>
         {legs.length ? (
           <>
             <div className="cht-legs">
@@ -176,7 +184,7 @@ export default async function CharterPage() {
           </div>
         ) : (
           <p className="cht-empty">
-            No cabin on this passage yet. Hold one below for 72 hours at no
+            No cabin on this episode yet. Hold one below for 72 hours at no
             charge, or take one outright from the plan.
           </p>
         )}
@@ -270,7 +278,7 @@ function Leg({ leg, zone }: { leg: VoyageLeg; zone: string }) {
 function States() {
   return (
     <section className="mbr-sec" aria-labelledby="cht-states">
-      <span className="mbr-eyebrow" id="cht-states">Charter states</span>
+      <span className="mbr-eyebrow" id="cht-states">Episode states</span>
       <div className="cht-states">
         {CHARTER_STATES.map(([name, line, colour]) => (
           <div

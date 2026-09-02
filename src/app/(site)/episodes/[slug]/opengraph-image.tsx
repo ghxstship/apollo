@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
-import { ANCHOR, CLUB_ZONE, SURFACES } from "@/lib/brand";
-import { logDate, roman } from "@/lib/format";
+import { ANCHOR, CITY_CODES, SETTING_LABEL, SUB_CLASSES } from "@/lib/brand";
+import { logDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OG_CONTENT_TYPE, OG_SIZE, OgFrame } from "@/components/site/og-frame";
 
@@ -11,30 +11,36 @@ export const contentType = OG_CONTENT_TYPE;
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: post } = await supabase
-    .from("dispatch_posts")
-    .select("title, dek, tag, published_at")
+  const { data: voyage } = await supabase
+    .from("voyages")
+    .select("*")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (!post) {
+  if (!voyage) {
     return new ImageResponse(
       (
         <OgFrame
-          eyebrow={SURFACES.magazine}
-          title="The ship's log, published."
-          meta={`${SURFACES.magazine} · THE CLUB MAGAZINE`}
+          eyebrow="EPISODES"
+          title="Episodes."
+          meta="AFLOAT · ASHORE · PASSES ARE FEW BY DESIGN"
         />
       ),
       { ...size }
     );
   }
 
+  const { data: harbor } = voyage.harbor_id
+    ? await supabase.from("harbors").select("slug").eq("id", voyage.harbor_id).maybeSingle()
+    : { data: null };
+
+  const setting = SETTING_LABEL[voyage.class] ?? SETTING_LABEL.sea;
+  const sub = voyage.sub_class ? SUB_CLASSES[voyage.sub_class] : null;
   const meta = [
-    SURFACES.magazine,
-    post.tag,
-    logDate(post.published_at, CLUB_ZONE),
-    roman(new Date(post.published_at).getFullYear()),
+    setting,
+    sub?.label,
+    logDate(voyage.starts_at, voyage.time_zone),
+    harbor?.slug ? CITY_CODES[harbor.slug] : null,
   ]
     .filter(Boolean)
     .join(" · ")
@@ -43,9 +49,9 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   return new ImageResponse(
     (
       <OgFrame
-        eyebrow={SURFACES.magazine}
-        title={post.title}
-        standfirst={post.dek}
+        eyebrow={setting.toUpperCase()}
+        title={voyage.title}
+        standfirst={voyage.blurb}
         meta={meta}
       />
     ),

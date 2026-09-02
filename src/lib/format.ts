@@ -1,7 +1,7 @@
 /* Ship's-log formatting — mono caps data per the design system.
    "JUL 26 · 06:00 · 26 NM", "33.9803° N — 118.4517° W", EST. MMXXVI.
 
-   A sailing happens on its harbor's clock, a member reads their account on
+   An episode happens on its harbor's clock, a member reads their account on
    theirs, and the club keeps its own ashore. `zone` is REQUIRED — it used to be
    optional, falling back to whatever zone the rendering machine sat in, which
    the old comment here already called "only ever right by luck".
@@ -13,7 +13,7 @@
    same page.
 
    Required, so every call states which clock it is on. Where a surface belongs
-   to the club rather than to a sailing or a member, it passes CLUB_ZONE and
+   to the club rather than to an episode or a member, it passes CLUB_ZONE and
    says so. */
 
 import { CLUB_ZONE } from "./brand";
@@ -139,9 +139,9 @@ export const TIER_LABEL: Record<string, string> = {
    "18:00 the night before" is not an instant, it is a time on a wall in a
    harbour, and the two only coincide by accident. The add-on cutoff used
    `new Date(y, m, d - 1, 18)` — which reads AND writes the render machine's
-   zone — so on an Eastern host it landed 21 hours late for a Pacific sailing,
+   zone — so on an Eastern host it landed 21 hours late for a Pacific episode,
    and on a UTC host it takes four hours off the window it promises for a
-   morning sailing in an eastern harbour. The refusal text says "closed at 18:00
+   morning episode in an eastern harbour. The refusal text says "closed at 18:00
    the night before" either way.
 
    Two passes: guess the instant, ask the zone what wall time that actually is,
@@ -172,7 +172,7 @@ export function wallClockInZone(
   return guess;
 }
 
-/* 18:00 on the day before this sailing departs, on the harbour's wall. */
+/* 18:00 on the day before this episode departs, on the harbour's wall. */
 export function eveningBefore(iso: string, zone: Zone, hour = 18): number {
   const p = partsIn(iso, zone);
   const dayBefore = new Date(

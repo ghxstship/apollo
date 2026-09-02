@@ -32,7 +32,7 @@
 .pr-typing i:nth-child(2){animation-delay:.2s}.pr-typing i:nth-child(3){animation-delay:.4s}
 @keyframes pr-blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
 .pr-quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 10px}
-.pr-quick button{all:unset;cursor:pointer;border:1px solid var(--line);padding:6px 12px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:.06em;color:var(--text-2);text-transform:uppercase;transition:border-color var(--dur-1) var(--ease-swell)}
+.pr-quick button{all:unset;cursor:pointer;border:1px solid var(--line);padding:6px 12px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase;transition:border-color var(--dur-1) var(--ease-swell)}
 .pr-quick button:hover{border-color:var(--line-strong)}
 .pr-quick button:focus-visible{outline:2px solid var(--focus)}
 .pr-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line-faint)}

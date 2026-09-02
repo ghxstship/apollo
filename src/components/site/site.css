@@ -106,7 +106,7 @@ main .ls-section + .ls-section{padding-top:0}
    is load-bearing: base.css uppercases h1–h4, and the tagline is the one
    string the brand never capitalises. */
 .ws-tagline{text-transform:none;display:inline-flex;align-items:baseline;flex-wrap:wrap}
-.ws-tagline__anchor{font-family:var(--font-display);letter-spacing:.02em;text-transform:none}/* the anchor's case is part of the mark — typed lowercase, never transformed (owner ruling 2026-08-31); ds-exempt: the wordmark/tagline lockup types its own case */
+.ws-tagline__anchor{font-family:var(--font-display);letter-spacing:var(--tracking-display);text-transform:none}/* the anchor's case is part of the mark — typed lowercase, never transformed (owner ruling 2026-08-31); ds-exempt: the wordmark/tagline lockup types its own case */
 .ws-tagline__line{font:400 .65em/1.2 var(--font-mono);letter-spacing:normal;margin-left:.61em;border-bottom:1.5pt solid var(--accent);padding-bottom:.06em;text-transform:lowercase}
 /* Was Anton + uppercase + a lava gradient on {TAGLINE} — three violations in
    one rule (the tagline is lowercase-always and in mono, and decorative
@@ -319,7 +319,16 @@ main .ls-section + .ls-section{padding-top:0}
 .ws-plans__row--head{padding:16px 0 10px;border-bottom:1px solid var(--line-strong)}
 .ws-plans__th{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
 .ws-plans__label b{font-family:var(--font-display);font-weight:400;font-size:22px;display:inline-block;margin-right:10px;text-transform:uppercase}
-.ws-plans__label span{display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:4px;max-width:22ch}
+/* :not(.ls-badge), and a child combinator, because this row also holds the
+   "Most aboard" Badge — which is a bare <span>, so at (0,1,1) this rule
+   outranked every (0,1,0) rule in the Badge component and repainted it from
+   outside: display:block stretched a content-sized distinction marker into a
+   full-width band under the tier name, where it read as a section header, and
+   color:var(--text-3) put grey #8A8A85 on the accent fill at 1.5:1. The badge
+   belongs inline after the name, on the same line, sized to its own text —
+   which is where a reader looks for a qualifier on a heading. This selector
+   describes the blurb underneath it and nothing else. */
+.ws-plans__label>span:not(.ls-badge){display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:4px;max-width:22ch}
 .ws-plans__cell{display:flex;flex-direction:column;gap:5px}
 .ws-plans__tier{display:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
 .ws-plans__price{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-1);text-transform:uppercase}
@@ -340,7 +349,12 @@ main .ls-section + .ls-section{padding-top:0}
 /* ————— LORE ————— */
 .dp-head{padding:72px 0 40px;border-bottom:1px solid var(--line-strong);position:relative}
 /* the masthead — Anton, tracked wide; type-only, the magazine's one mark */
-.dp-mast{font-family:var(--font-display);font-size:var(--text-display-l);letter-spacing:.3em;margin-right:-.3em;text-transform:uppercase}
+/* Display type tracks at --tracking-display (.01em). This masthead carried
+   .3em with a -.3em right margin to cancel the trailing gap — thirty times the
+   specified value, and the one place in the app where a heading was letterspaced
+   like a poster. The compensation margin goes with it: at .01em there is no
+   trailing gap worth cancelling. */
+.dp-mast{font-family:var(--font-display);font-size:var(--text-display-l);letter-spacing:var(--tracking-display);text-transform:uppercase}
 .dp-mast__sub{font-size:var(--text-body-l);color:var(--text-2);margin-top:12px}
 .dp-head:after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid var(--line-strong)}
 .dp-head h1{font-size:var(--text-display-l)}
@@ -365,7 +379,7 @@ main .ls-section + .ls-section{padding-top:0}
 .gl-tile:after{content:"";position:absolute;inset:0;background:var(--scrim);opacity:.85}
 .gl-tile__cap{position:absolute;left:14px;right:14px;bottom:12px;z-index:1;color:var(--bone)}
 .gl-tile__cap b{display:block;font-family:var(--font-sans);font-weight:700;font-size:16px}
-.gl-tile__cap span{font-family:var(--font-mono);font-size:9px;letter-spacing:.12em;color:var(--text-on-media);text-transform:uppercase}
+.gl-tile__cap span{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--tracking-dense);color:var(--text-on-media);text-transform:uppercase}
 .gl-tile__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .gl-tile--frame:after{opacity:.45}
 .gl-group__head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:40px;border-top:1px solid var(--line-faint)}
