@@ -1491,6 +1491,15 @@ async function roundTwoRules(p) {
     await stf.del(`account_ledger?profile_id=eq.${me}&episode_id=eq.${v.id}`);
     await stf.del(`knots_ledger?profile_id=eq.${me}&episode_id=eq.${v.id}`);
     await stf.del(`notifications?profile_id=eq.${me}&title=like.*released to you*`);
+    /* Strike the fixture here, not at the next run's sweep.
+
+       The sweep at the top of this file reclaims e2e-* episodes, but it runs
+       when a run STARTS — so anything left behind sits on the PUBLIC episode
+       listing until somebody runs the suite again. A fixture titled "E2E
+       fixture episode." was live on the production site for exactly as long as
+       it took to notice. Anything that renders to strangers is cleaned by the
+       test that made it. */
+    await stf.del(`episodes?slug=eq.e2e-charge-${stamp}`);
   }
 
   // — A waitlist is for a sailing still ahead —
