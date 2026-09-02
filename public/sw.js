@@ -31,7 +31,7 @@ p{color:#8A8A85;margin:0}
 span{display:block;margin-top:22px;font:600 9px monospace;letter-spacing:.2em;color:#6E6E69}</style>
 </head><body><main><h1>No signal past the breakwater.</h1>
 <p>You're offline. What you've loaded keeps working; the rest returns with the signal.</p>
-<span>[un] · EST. MMXXIV</span></main></body></html>`;
+<span>[un] · EST. MMXXVI</span></main></body></html>`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

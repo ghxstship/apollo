@@ -18,6 +18,7 @@ import { liftTheComposition, setHullCeiling, setTheComposition } from "./actions
    them, so they are stated on both sides of the wire. */
 const HULL_CEILING_MIN = 1;
 const HULL_CEILING_MAX = 400;
+const HULL_CERTIFICATE_MAX = 200;
 
 export type QueueLine = {
   segment: Segment;
@@ -54,6 +55,7 @@ export function CompositionPanel({
   voyageTitle,
   hull,
   hullCeiling,
+  hullCertificate,
   clubCeiling,
   rows,
   lines,
@@ -66,6 +68,10 @@ export function CompositionPanel({
   /** voyages.hull_ceiling_heads — this flotilla's certified heads, or null to
       read the club's figure. */
   hullCeiling: number | null;
+  /** voyages.hull_certificate — the vessel, the authority and the certified
+      number. a_tentpole_names_its_certificate requires it for any ceiling
+      above the club's figure; below that it is a note. */
+  hullCertificate: string | null;
   /** club_setting('hull_ceiling_heads') — what the trigger reads when the
       sailing carries no ceiling of its own. */
   clubCeiling: number;
@@ -81,7 +87,23 @@ export function CompositionPanel({
   const [ceilingDraft, setCeilingDraft] = React.useState(
     hullCeiling === null ? "" : String(hullCeiling)
   );
-  const ceilingDirty = ceilingDraft.trim() !== (hullCeiling === null ? "" : String(hullCeiling));
+  /* The certificate saves in the same act as the ceiling — one update, so a
+     tentpole ceiling and its certificate can never be written apart — and so
+     one dirty flag covers both fields. */
+  const [certificateDraft, setCertificateDraft] = React.useState(hullCertificate ?? "");
+  const ceilingDirty =
+    ceilingDraft.trim() !== (hullCeiling === null ? "" : String(hullCeiling)) ||
+    certificateDraft.trim() !== (hullCertificate ?? "");
+  /* What a_tentpole_names_its_certificate will refuse: a draft ceiling above
+     the club's figure with nothing in the certificate. Said before the click,
+     in the same terms the trigger will use after it. */
+  const draftCeiling = ceilingDraft.trim() === "" ? null : Number(ceilingDraft);
+  const needsCertificate =
+    draftCeiling !== null &&
+    Number.isFinite(draftCeiling) &&
+    clubCeiling > 0 &&
+    draftCeiling > clubCeiling &&
+    certificateDraft.trim() === "";
   /* What the_hull_holds_forty will check the composition against: the
      sailing's own figure when it has one, the club's otherwise. */
   const effectiveCeiling = hullCeiling ?? clubCeiling;
@@ -136,7 +158,8 @@ export function CompositionPanel({
     startTransition(async () => {
       const raw = ceilingDraft.trim();
       const heads = raw === "" ? null : Number(raw);
-      const res = await setHullCeiling(voyageId, heads);
+      const named = certificateDraft.trim();
+      const res = await setHullCeiling(voyageId, heads, named === "" ? null : named);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -144,7 +167,7 @@ export function CompositionPanel({
             heads === null
               ? "Ceiling cleared. This sailing reads the club default."
               : "Ceiling set. Compositions on this sailing are checked against it.",
-          meta: `THE HULL HOLDS ${heads ?? clubCeiling}`,
+          meta: `THE HULL HOLDS ${heads ?? clubCeiling}${named ? " · CERTIFICATE NAMED" : ""}`,
         });
     });
 
@@ -219,6 +242,12 @@ export function CompositionPanel({
           than this is refused at the database, before anyone can be sold a seat
           the hull cannot hold. Blank reads the club&apos;s figure, {clubCeiling} heads.
         </p>
+        <p className="hm-note">
+          A ceiling above the club&apos;s figure of {clubCeiling} heads names its
+          certificate — the vessel, the authority and the certified number — and
+          is refused without one. At or below {clubCeiling} the certificate is
+          optional.
+        </p>
         <div className="hm-form" style={{ marginTop: 18, maxWidth: 720 }}>
           <div className="hm-item">
             <div className="hm-item__head">
@@ -238,16 +267,35 @@ export function CompositionPanel({
                   onChange={(e) => setCeilingDraft(e.target.value)}
                   style={{ width: 110 }}
                 />
+                <Input
+                  label="Certificate"
+                  type="text"
+                  maxLength={HULL_CERTIFICATE_MAX}
+                  placeholder="Vessel · authority · certified heads"
+                  value={certificateDraft}
+                  onChange={(e) => setCertificateDraft(e.target.value)}
+                  style={{ width: 320 }}
+                />
               </span>
             </div>
             <div className="hm-item__meta">
               <span>
                 {HULL_CEILING_MIN}–{HULL_CEILING_MAX} · BLANK READS THE CLUB DEFAULT
               </span>
+              <span>
+                {hullCertificate ? "CERTIFICATE NAMED" : "NO CERTIFICATE"} · UP TO{" "}
+                {HULL_CERTIFICATE_MAX} CHARACTERS
+              </span>
               <span>{hull} PASSES ON SALE NET OF HOLDS</span>
             </div>
           </div>
         </div>
+        {needsCertificate ? (
+          <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
+            {draftCeiling} heads is above the club&apos;s {clubCeiling}. The database
+            refuses this ceiling until the certificate is named.
+          </p>
+        ) : null}
       </section>
 
       <section className="hm-sec">

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { voiceWith } from "@/lib/errors";
 
 export type ProducerHold = { voyageId: string; title: string; startsAt: string; zone: string };
 export type ProducerSailing = { id: string; title: string; startsAt: string; zone: string; berthsLeft: number };
@@ -43,15 +44,17 @@ export async function producerNextBerth(): Promise<{ error?: string; berth?: Pro
    own manifest said "THE WINDOW OPENS MAR 31 ON YOUR PLAN". The assistant
    contradicting the product it is embedded in is worse than the assistant
    saying nothing: the member believes the assistant and finds the door shut.
-   Same three tests the manifest applies — tier rank, class ceiling, and the
-   plan's booking window. */
+   Same tests the manifest applies — tier rank, class ceiling, the plan's
+   booking window, and the home harbor: rsvp_guard boards a Regional member
+   only on a sailing that leaves from their home harbor (a sailing with no
+   harbor is open to all; National and Global sail every harbor; staff pass). */
 export async function producerSailings(): Promise<{ error?: string; sailings?: ProducerSailing[] }> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("tier,status,plan_id")
+    .select("tier,status,plan_id,home_harbor,is_staff")
     .eq("id", userId)
     .maybeSingle();
   const { data: plan } = me?.plan_id
@@ -68,11 +71,15 @@ export async function producerSailings(): Promise<{ error?: string; sailings?: P
   const earlyDays = plan?.early_days ?? 0;
   const ceiling = plan?.class_ceiling ?? null;
   const CLASS_RANK: Record<string, number> = { voyage: 1, expedition: 2, odyssey: 3 };
+  /* Regional sails from home. With no home harbor chosen, only harborless
+     sailings are open — the guard refuses every other one. */
+  const harborBound = (me?.tier ?? "regional") === "regional" && !me?.is_staff;
+  const homeHarbor = me?.home_harbor ?? null;
 
   const [voyagesRes, capacityRes] = await Promise.all([
     supabase
       .from("voyages")
-      .select("id,title,starts_at,berths_total,time_zone,min_tier,sub_class")
+      .select("id,title,starts_at,berths_total,time_zone,min_tier,sub_class,harbor_id")
       .eq("status", "scheduled")
       .gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true })
@@ -96,6 +103,7 @@ export async function producerSailings(): Promise<{ error?: string; sailings?: P
         return (CLASS_RANK[v.sub_class] ?? 0) <= (CLASS_RANK[ceiling] ?? 3);
       })
       .filter((v) => nowMs >= new Date(v.starts_at).getTime() - earlyDays * 86400000)
+      .filter((v) => !harborBound || !v.harbor_id || v.harbor_id === homeHarbor)
       .filter((v) => (left.get(v.id) ?? v.berths_total) > 0)
       .slice(0, 3)
       .map((v) => ({
@@ -153,6 +161,58 @@ export async function producerBalance(): Promise<{
     knots: knRes.data?.balance ?? 0,
     accountCents: accRes.data?.balance_cents ?? 0,
   };
+}
+
+/* The hand-off. The Producer ran past its charts, the member confirmed the
+   card, and now a person takes it: open (or rejoin) the member's one live
+   Shoreside thread and post the question there in the member's own name.
+
+   The insert is the member's — messages.author_id must equal auth.uid() by
+   policy, and that is the right attribution anyway: the question is theirs,
+   the Producer only carried it. open_shoreside_thread seats the member in
+   thread_members, so the write policy's in_thread() passes without an upsert.
+   A thread that already carries the same line (the member confirmed twice, or
+   retyped it) is not written again: Shoreside reads one question, not an echo. */
+export async function producerOpenShoreside(
+  question: string
+): Promise<{ error?: string; threadId?: string }> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+
+  const body = question.trim();
+  if (!body) return { error: "Say what you need first — Shoreside reads the question, not the hail." };
+  if (body.length > 4000) return { error: "Keep it under 4,000 characters." };
+
+  const { data: threadId, error: openErr } = await supabase.rpc("open_shoreside_thread");
+  if (openErr) return { error: await voiceWith(supabase, openErr) };
+  if (!threadId) return { error: "That didn't land. Try again." };
+
+  const { data: last } = await supabase
+    .from("messages")
+    .select("body")
+    .eq("thread_id", threadId)
+    .eq("author_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (last?.body !== body) {
+    const { error: postErr } = await supabase
+      .from("messages")
+      .insert({ thread_id: threadId, author_id: userId, body });
+    if (postErr) return { error: await voiceWith(supabase, postErr) };
+  }
+
+  /* Your own word is never unread to you. */
+  await supabase
+    .from("thread_members")
+    .update({ last_read_at: new Date().toISOString() })
+    .eq("thread_id", threadId)
+    .eq("profile_id", userId);
+
+  revalidatePath(`/threads/${threadId}`);
+  revalidatePath("/threads");
+  return { threadId };
 }
 
 /* Weather holds on sailings I hold a berth or list spot for. */

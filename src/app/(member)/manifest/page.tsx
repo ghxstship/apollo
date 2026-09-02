@@ -38,6 +38,7 @@ export default async function VoyagesPage() {
     segmentCapRes,
     formatRes,
     creditHoursRes,
+    harborsRes,
   ] = await Promise.all([
     supabase
       .from("voyages")
@@ -85,6 +86,8 @@ export default async function VoyagesPage() {
     moduleTables(supabase).from("activity_formats").select("slug, category, access"),
     /* The release window is the club's own figure, read rather than retyped. */
     supabase.rpc("club_setting", { p_key: "release_credit_hours" }),
+    /* Names for the harbor lock's refusal — read once, not per row. */
+    supabase.from("harbors").select("id,name"),
   ]);
 
   const voyages: Voyage[] = voyagesRes.data ?? [];
@@ -318,6 +321,48 @@ export default async function VoyagesPage() {
   const myRank = TIER_RANK[profile?.tier ?? "regional"] ?? 0;
   const myTier = profile?.tier ?? "regional";
 
+  /* The home-harbor lock, the same way. rsvp_guard boards a Regional member
+     only on a sailing that leaves from their home harbor; a sailing with no
+     harbor is open to everyone, National and Global sail every harbor, and
+     staff pass through. Two refusals, each said here before the guard says
+     it: no harbor chosen yet, or the wrong one. */
+  const harborName = new Map<string, string>(
+    (harborsRes.data ?? []).map((h) => [h.id, h.name] as const)
+  );
+  const harborLock = (v: { harbor_id: string | null }): "unset" | "mismatch" | null => {
+    if (myTier !== "regional" || profile?.is_staff || !v.harbor_id) return null;
+    if (!profile?.home_harbor) return "unset";
+    return profile.home_harbor === v.harbor_id ? null : "mismatch";
+  };
+
+  /* Every reason a NEW pass cannot be claimed, in the order the guard would
+     refuse them, with the door each one opens. Null means the row is open.
+     A pass the member already holds is never swallowed by this — the control
+     reads the note beside the standing instead. */
+  type Lock = { note: string; link?: { href: string; label: string } };
+  const lockFor = (v: Voyage): Lock | null => {
+    if (onHold) return { note: "Your membership is paused. Resume it on your page to claim a pass." };
+    if (pastMyClass(v))
+      return {
+        note: `This sailing runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`,
+      };
+    if ((TIER_RANK[v.min_tier] ?? 0) > myRank)
+      return { note: `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.` };
+    const harbor = harborLock(v);
+    if (harbor === "unset")
+      return {
+        note: "Regional passes sail from your home harbor — choose it on your page.",
+        link: { href: "/you", label: "Choose your harbor" },
+      };
+    if (harbor === "mismatch")
+      return {
+        note: `Regional passes sail from your home harbor — this one leaves from ${
+          (v.harbor_id && harborName.get(v.harbor_id)) || "another harbor"
+        }. National sails every US harbor.`,
+      };
+    return null;
+  };
+
   /* The drop hour, on THIS member's clock: rsvp_guard refuses before
      sale_opens_at less one presale step per tier above regional. NULL is the
      old world — no drop, the plan's window alone. */
@@ -343,6 +388,7 @@ export default async function VoyagesPage() {
         v.status === "scheduled" &&
         (TIER_RANK[v.min_tier] ?? 0) <= myRank &&
         !pastMyClass(v) &&
+        !harborLock(v) &&
         left > 0 &&
         nowMs >= new Date(v.starts_at).getTime() - earlyDays * 86400000 &&
         (opens == null || nowMs >= opens) &&
@@ -386,8 +432,7 @@ export default async function VoyagesPage() {
             const left = cap?.berths_left ?? v.berths_total;
             const aboard = cap?.aboard ?? 0;
             const r = mine.get(v.id) ?? null;
-            const overClass = pastMyClass(v);
-            const locked = (TIER_RANK[v.min_tier] ?? 0) > myRank || overClass || onHold;
+            const lock = lockFor(v);
             /* Booking window: opens early_days ahead of departure, per plan. */
             const start = new Date(v.starts_at);
             const opensMs = start.getTime() - earlyDays * 86400000;
@@ -455,14 +500,9 @@ export default async function VoyagesPage() {
                       passesLeft={left}
                       weatherHold={v.status === "weather_hold"}
                       guestsAllowed={profile?.tier === "global"}
-                      locked={locked}
-                      lockedNote={
-                        onHold
-                          ? "Your membership is paused. Resume it on your page to claim a pass."
-                          : overClass
-                            ? `This sailing runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`
-                            : `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.`
-                      }
+                      locked={!!lock}
+                      lockedNote={lock?.note ?? ""}
+                      lockedLink={lock?.link}
                       windowNote={windowNote}
                       recommended={v.id === recommendedId}
                       priceCents={v.price_cents}

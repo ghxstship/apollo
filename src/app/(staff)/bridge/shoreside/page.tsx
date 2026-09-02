@@ -95,8 +95,10 @@ export default async function ShoresidePage() {
         A member asking a person, not the agent. Answer in your own words.
       </p>
       <p className="hm-note" style={{ marginTop: 10, maxWidth: "60ch" }}>
-        The hand-off is not wired yet: The Producer cannot open a line here, so
-        this stays empty until it can. Replies work the moment a thread arrives.
+        Two ways a line opens: a member writes to Shoreside from their threads,
+        or the Producer runs past its charts and the member confirms the
+        hand-off — the question lands here under their name, already posted.
+        Replies go back to the member as you.
       </p>
       <ShoresideClient threads={cards} />
     </div>

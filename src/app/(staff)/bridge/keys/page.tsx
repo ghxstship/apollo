@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getOperator } from "../../data";
 import { KeysClient, type HookRow, type KeyRow } from "./keys-client";
 import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Keys and hooks" };
 
+/* Behind a setting until a partner needs one (decided 2026-09-02). Nothing
+   reads a key and nothing posts a hook, so a console that offers to cut one is
+   a promise the hull cannot keep. club_settings.keys_console_enabled = 1 opens
+   it — the nav reads the same key, so the tab and the route agree. */
 export default async function KeysPage() {
   const { supabase } = await getOperator();
+
+  const { data: enabled } = await supabase.rpc("club_setting", { p_key: "keys_console_enabled" });
+  if (!enabled) notFound();
 
   const [keysRes, hooksRes, deliveriesRes] = await Promise.all([
     supabase.from("api_keys").select("*").order("created_at", { ascending: false }),

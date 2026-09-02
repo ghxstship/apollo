@@ -29,9 +29,23 @@ A membership club for experiential connection at sea and ashore — Sea Days abo
 
 Magic-link emails use Supabase's built-in SMTP (rate-limited); set a custom SMTP provider for production. The `voyage_capacity` view is intentionally `SECURITY DEFINER` — it exposes only aggregate pass counts to anonymous visitors.
 
+### The domain
+
+The canonical origin is **`https://unhingedsocial.us`** (decided 2026-09-02; `SITE_DOMAIN` in `src/lib/brand.ts`, the sitemap, robots, every og:image and every mailbox already say so — `syrius.social` is a banned term, not a fallback). Production currently answers only on the Vercel aliases (`apollo-topaz.vercel.app` is the open one), so until the domain is attached, canonical links point at a host that does not resolve. Attaching it is three steps outside this repo, in this order:
+
+1. Vercel → project `apollo` → Settings → Domains → add `unhingedsocial.us` and `www.unhingedsocial.us` (redirect www → apex).
+2. At the registrar, the records Vercel prints (an `A` on the apex, a `CNAME` on `www`), then wait for the certificate.
+3. Set `NEXT_PUBLIC_SITE_URL=https://unhingedsocial.us` on the production environment, and `APP_URL` on the `send-outbox` function (one Vault update) so mail links land on the branded host.
+
 ### Card settlement (Stripe)
 
 Members with a negative house-account balance can settle by card through Stripe Checkout. Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` (see `.env.example`); for local webhooks run `stripe listen --forward-to localhost:3000/api/stripe/webhook`. The webhook posts a `payment` row to `account_ledger` (idempotent per Checkout session) and drops a Word. With any key unset the feature disappears cleanly — the portal shows the shore-office note and the API returns 503.
+
+**Go-live runbook (decided 2026-09-02: test mode first, one full cycle, then live).** The seam, the replay guard on `stripe_events` and the draw logic are built and gated; what remains is configuration, so the order matters more than the code:
+
+1. Test mode: set the three keys on a **preview** environment from a Stripe test account; create the price ids on the test account and write them to `membership_plans.stripe_price_id` / `stripe_price_id_annual`; register the webhook endpoint at `<preview-origin>/api/stripe/webhook` for `checkout.session.*`, `customer.subscription.*`, `invoice.paid`, `invoice.payment_failed`, `payment_method.attached`.
+2. Run one full cycle on the preview as the fixture personas: a dues subscription (monthly and annual), a settled house-account balance, a pass over $200 split into draws, a failed payment (Stripe's `4000 0000 0000 0341` card) and its recovery. Each step must land as the matching `account_ledger` rows and Words; `/bridge/reports` must show no failed webhook.
+3. Live: repeat the keys, prices and endpoint from the live Stripe account on the **production** environment. Do not copy test price ids across — they are account-scoped and the plan rows would silently point at nothing.
 
 ### Dues & installments
 
@@ -47,7 +61,7 @@ Every `notifications` row fans out by trigger: into `push_outbox` always, and in
 
 ### Wallet passes
 
-Apple/Google wallet passes require platform signing credentials the project doesn't hold. Until then, `/card` and `/stub/[code]` ship a working "Print or save" flow — `window.print()` with print CSS that strips the chrome and keeps the card's exact colors, which also covers save-as-PDF.
+Apple/Google wallet passes require platform signing credentials the project doesn't hold. Until then, `/card` and `/stub/[code]` ship a working "Print or save" flow — `window.print()` with print CSS that strips the chrome and keeps the card's exact colors, which also covers save-as-PDF. **Deferred on purpose** (2026-09-02): the printed card boards a member and the kiosk scans the on-screen code, so the wallet is a convenience, not a gate. Revisit after the first season says members want it.
 
 ## Site map & route audit
 
@@ -71,7 +85,9 @@ Every change ships only when all of these are green, on the commit (not the work
 | Corpus | `npm run migrations:replay` | the migration corpus rebuilds the database from empty (the only proof of that — `migrations:mirror --adopt` records applied migrations; it does not prove them) |
 | Advisories | `npm audit --audit-level=high` | no high or critical dependency advisories |
 
-Migrations are applied to the live project first (never hand-written), then adopted into `supabase/migrations` with `npm run migrations:mirror -- --adopt`, then proven with `migrations:replay`. Business constants live in `club_settings`, `segments`, `sponsor_tiers`, `leagues` and `club_products` — read them; never restate them in code or copy.
+Migrations are applied to the live project first (never hand-written), then adopted into `supabase/migrations` with `npm run migrations:mirror -- --adopt`, then proven with `migrations:replay`.
+
+The five e2e personas live on the production project and every run leaves residue the suite cannot sweep (ledgers, inbox and outboxes have no DELETE policy for staff). `E2E_PASSWORD=… npm run fixtures:reset` calls `reset_the_fixtures()` — a definer function gated on the staff badge and scoped to the exact `e2e-*@fixtures.invalid` shape — which strikes the fixture sailings, the personas' passes, threads, words, orders and ledgers in an order the triggers allow, and leaves their profiles, signatures and agreements standing. Run it before a demo and before the staging click-through (`docs/STAGING-CLICK-THROUGH.md`); demo members are never matched. Business constants live in `club_settings`, `segments`, `sponsor_tiers`, `leagues` and `club_products` — read them; never restate them in code or copy.
 
 ## Decisions the schema now states
 
@@ -86,7 +102,12 @@ Each of these was an open question the audits kept returning to. They are decide
 - **One waitlist per sailing.** Composition sailings use the numbered line (`waitlist_entries`); everything else uses `rsvps.status = 'waitlist'`; the guard refuses the other on each kind, so the two never coexist on one sailing.
 - **Sponsors give comps and deliver assets.** `comp_a_pass_for_sponsor` writes a comp pass carrying `rsvps.sponsor_id`; `voyage_sponsors.assets_delivered` records the tier's inventory as it is fulfilled.
 - **Errors and the scheduler are on the Bridge.** `app_errors` (written by `instrumentation.ts`) and `scheduler_health()` (pg_net's last responses) render on `/bridge/reports`. An external tracker, when chosen, is fed from `app_errors`.
-- **Not offered, on purpose:** digital or hybrid events. The phones-in-totes ethos is the product.
+- **A Regional pass sails from home.** A Regional member boards only sailings out of their `profiles.home_harbor`, and a Regional member with no harbor set is told to set one before the door opens (`rsvp_guard`). No reciprocity at Regional: the tier ladder is the upsell, and National already answers the away case. National and Global sail every harbor.
+- **A hull above the club's figure names its certificate.** `voyages.hull_ceiling_heads` above `club_settings.hull_ceiling_heads` requires `voyages.hull_certificate` — the vessel, the authority and the certified number (`a_tentpole_names_its_certificate`). A tentpole is allowed; an unnamed one is not.
+- **The Captain's Pass states what it holds.** `club_products.captains_pass.includes`: one sailing and the sandbar, the premium open bar, one guest slot, Radar for the sailing. The daybed and the cabin stay paid add-ons so the pass has one shape and the boat keeps a margin line. Its number stays unpublished, as the membership kit says.
+- **Only the quarterly membership counts against the cap.** `guard_the_membership_cap` counts subscriptions whose plan names a `club_products` row carrying `active_cap` — today only `quarterly_membership` (20). Monthly plans are governed by passes per month and are not double-capped.
+- **The keys console waits for a partner.** `club_settings.keys_console_enabled = 0` hides `/bridge/keys` from the nav and answers 404 on the route. Nothing reads a key and nothing posts a hook; a register that promises nothing is honest, a console that suggests otherwise is not. Set it to 1 when a partner needs one.
+- **Not offered, on purpose:** digital or hybrid events. The phones-in-totes ethos is the product, and every rule in the schema assumes a hull, a gangway and a clock (decided again 2026-09-02).
 
 ## Data model
 

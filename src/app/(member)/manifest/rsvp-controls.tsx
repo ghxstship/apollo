@@ -49,6 +49,9 @@ function policyLine(hours: number): string {
   return `Weather holds are called by 18:00 the night before. Release your pass up to ${hours}h out for full credit — it goes to the waitlist in order.`;
 }
 
+/* The lock's default door — every lock but the missing-harbor one. */
+const MANAGE_MEMBERSHIP = { href: "/portal", label: "Manage membership" };
+
 const rowStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
@@ -116,6 +119,7 @@ export function RsvpControls({
   weatherHold,
   locked,
   lockedNote,
+  lockedLink = MANAGE_MEMBERSHIP,
   windowNote,
   recommended,
   priceCents,
@@ -160,6 +164,10 @@ export function RsvpControls({
   weatherHold: boolean;
   locked: boolean;
   lockedNote: string;
+  /* Where the lock sends the member. Most locks are a membership question and
+     go to the portal; a Regional member with no home harbor chosen is sent to
+     their page, where the picker is. */
+  lockedLink?: { href: string; label: string };
   /* Set when the plan's booking window or the drop hour hasn't opened yet —
      replaces the CTA. */
   windowNote: string | null;
@@ -360,7 +368,7 @@ export function RsvpControls({
     return (
       <div className="voy-foot">
         <span className="voy-lock">
-          {lockedNote} <Link href="/portal">Manage membership</Link>
+          {lockedNote} <Link href={lockedLink.href}>{lockedLink.label}</Link>
         </span>
       </div>
     );

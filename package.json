@@ -13,6 +13,7 @@
     "routes:manifest": "node scripts/generate-route-manifest.mjs",
     "routes:audit": "node scripts/audit-routes.mjs",
     "e2e": "node scripts/e2e-suite.mjs",
+    "fixtures:reset": "node scripts/reset-fixtures.mjs",
     "sms:register": "node scripts/register-sms-templates.mjs",
     "migrations:mirror": "node scripts/mirror-migrations.mjs",
     "migrations:replay": "node scripts/replay-migrations.mjs",

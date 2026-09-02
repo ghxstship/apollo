@@ -54,7 +54,10 @@ function isCurrent(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-export function HmTabs() {
+/* `hidden` names consoles a setting has closed (the keys console until a
+   partner needs one); the layout reads the setting and the page answers 404
+   on the same key, so a tab never points at a door that is shut. */
+export function HmTabs({ hidden = [] }: { hidden?: readonly string[] }) {
   const pathname = usePathname();
   return (
     <nav className="hm-tabs" aria-label="Bridge sections">
@@ -62,7 +65,7 @@ export function HmTabs() {
         {GROUPS.map((group, gi) => (
           <React.Fragment key={gi}>
             {gi > 0 ? <span className="hm-tabs__sep" aria-hidden="true" /> : null}
-            {group.map(([href, label]) => (
+            {group.filter(([href]) => !hidden.includes(href)).map(([href, label]) => (
               <Link
                 key={href}
                 href={href}

@@ -12,6 +12,7 @@ import { logDateTime, price } from "@/lib/format";
 import {
   producerBalance,
   producerNextBerth,
+  producerOpenShoreside,
   producerReleaseBerth,
   producerReleaseBerthBySlug,
   producerSailings,
@@ -21,6 +22,7 @@ import {
 type CardAction =
   | { type: "release"; voyageId: string }
   | { type: "releaseSlug"; slug: string }
+  | { type: "hail"; question: string }
   | { type: "link"; href: string };
 
 type Msg =
@@ -46,8 +48,23 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 type ProducerApiResponse = {
   fallback?: boolean;
   reply?: string;
-  action?: { kind: "reserve" | "release"; voyage_slug: string; title: string; summary: string };
+  action?:
+    | { kind: "reserve" | "release"; voyage_slug: string; title: string; summary: string }
+    | { kind: "hail_shoreside"; question: string; title: string; summary: string };
 };
+
+/* The hand-off card. One shape whether the brain proposed it or dead reckoning
+   ran out of intents: confirming opens the member's Shoreside thread with the
+   question already posted, so a person reads a question rather than a hail. */
+function hailCard(question: string, summary?: string): Msg {
+  return {
+    kind: "card",
+    title: "Hail Shoreside",
+    meta: summary ?? "Opens your Shoreside thread with this question posted. A person answers, usually within the hour.",
+    confirm: "Hail Shoreside",
+    action: { type: "hail", question },
+  };
+}
 
 function intentOf(text: string): Intent {
   const s = text.toLowerCase();
@@ -115,16 +132,19 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const cardFor = (action: NonNullable<ProducerApiResponse["action"]>): Msg => ({
-    kind: "card",
-    title: action.title,
-    meta: action.summary,
-    confirm: action.kind === "release" ? "Release it" : "Reserve",
-    action:
-      action.kind === "release"
-        ? { type: "releaseSlug", slug: action.voyage_slug }
-        : { type: "link", href: "/manifest" },
-  });
+  const cardFor = (action: NonNullable<ProducerApiResponse["action"]>, asked: string): Msg => {
+    if (action.kind === "hail_shoreside") return hailCard(action.question || asked, action.summary);
+    return {
+      kind: "card",
+      title: action.title,
+      meta: action.summary,
+      confirm: action.kind === "release" ? "Release it" : "Reserve",
+      action:
+        action.kind === "release"
+          ? { type: "releaseSlug", slug: action.voyage_slug }
+          : { type: "link", href: "/manifest" },
+    };
+  };
 
   const askProducer = async (text: string) => {
     push({ kind: "user", text });
@@ -141,27 +161,30 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
       if (data.fallback || typeof data.reply !== "string") {
         setTyping(false);
         enterFallback();
-        answer(intentOf(text));
+        answer(intentOf(text), text);
         return;
       }
       apiMessages.current = [...transcript, { role: "assistant", content: data.reply }];
       const out: Msg[] = [{ kind: "bot", text: data.reply }];
-      if (data.action) out.push(cardFor(data.action));
+      if (data.action) out.push(cardFor(data.action, text));
+      /* The brain said the line without proposing the card — an older prompt,
+         or a turn that ran out. The hand-off still stands. */
+      else if (/hail shoreside/i.test(data.reply)) out.push(hailCard(text));
       push(...out);
       setTyping(false);
     } catch {
       setTyping(false);
       enterFallback();
-      answer(intentOf(text));
+      answer(intentOf(text), text);
     }
   };
 
   const handle = (intent: Intent, label: string) => {
     push({ kind: "user", text: label });
-    answer(intent);
+    answer(intent, label);
   };
 
-  const answer = (intent: Intent) => {
+  const answer = (intent: Intent, asked = "") => {
     if (intent === "berth") {
       void run(async () => {
         const res = await producerNextBerth();
@@ -245,17 +268,36 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
         setTyping(false);
         push(
           { kind: "bot", text: "Past my charts — hail Shoreside.", mailto: true },
-          { kind: "sys", text: "CAN'T HELP · OFFERED ESCALATION" }
+          hailCard(asked),
+          { kind: "sys", text: "CAN'T HELP · OFFERED THE HAND-OFF" }
         );
       }, 600);
     }
   };
 
   const confirmCard = (card: Extract<Msg, { kind: "card" }>) => {
-    if (card.action.type !== "release" && card.action.type !== "releaseSlug") return;
+    if (card.action.type === "link") return;
     const action = card.action;
     push({ kind: "user", text: card.confirm });
     void run(async () => {
+      if (action.type === "hail") {
+        const res = await producerOpenShoreside(action.question);
+        if (res.error || !res.threadId) return [{ kind: "bot", text: res.error ?? "That didn't land. Try again." }];
+        return [
+          { kind: "sys", text: "CONFIRMED · HANDED TO SHORESIDE" },
+          {
+            kind: "bot",
+            text: "Shoreside has it, in your name. A person answers in your threads — usually within the hour.",
+          },
+          {
+            kind: "card",
+            title: "Your Shoreside thread",
+            meta: "THE QUESTION IS POSTED · THE ANSWER LANDS HERE",
+            confirm: "Open the thread",
+            action: { type: "link", href: `/threads/${res.threadId}` },
+          },
+        ];
+      }
       const res =
         action.type === "release"
           ? await producerReleaseBerth(action.voyageId)

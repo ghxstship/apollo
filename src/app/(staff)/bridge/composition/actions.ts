@@ -70,14 +70,23 @@ export async function setTheComposition(
    this is the number the ceilings above are checked against. Null hands the
    sailing back to the club default.
 
-   1–400: a "use server" module exports only async functions, so the bounds
-   are stated here and again on the input in composition-client.tsx. */
+   The certificate travels with the ceiling. a_tentpole_names_its_certificate
+   refuses a hull_ceiling_heads above club_setting('hull_ceiling_heads') unless
+   voyages.hull_certificate is set — the vessel, the authority and the certified
+   number — so the two are written in one update: a ceiling saved first and a
+   certificate second would be refused at the first step.
+
+   1–400 and 200 characters: a "use server" module exports only async
+   functions, so the bounds are stated here and again on the inputs in
+   composition-client.tsx. */
 const HULL_CEILING_MIN = 1;
 const HULL_CEILING_MAX = 400;
+const HULL_CERTIFICATE_MAX = 200;
 
 export async function setHullCeiling(
   voyageId: string,
-  heads: number | null
+  heads: number | null,
+  certificate: string | null
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
@@ -95,12 +104,24 @@ export async function setHullCeiling(
     value = heads;
   }
 
+  /* Blank is null, not an empty string: the column's check reads 3–200
+     characters, and "" would be refused as a certificate too short to name
+     anything. Whether one is required at all is the trigger's call. */
+  const named = (certificate ?? "").trim();
+  if (named.length > HULL_CERTIFICATE_MAX) {
+    return {
+      error: `A hull certificate runs to ${HULL_CERTIFICATE_MAX} characters — the vessel, the authority and the certified number is enough.`,
+    };
+  }
+
   const { error } = await supabase
     .from("voyages")
-    .update({ hull_ceiling_heads: value })
+    .update({ hull_ceiling_heads: value, hull_certificate: named === "" ? null : named })
     .eq("id", voyageId);
-  /* A ceiling lowered under a composition already seated meets the same
-     trigger, and its refusal is the one to show. */
+  /* A ceiling lowered under a composition already seated meets
+     the_hull_holds_forty, and a ceiling raised above the club's figure with no
+     certificate meets a_tentpole_names_its_certificate. Either refusal is the
+     one to show, in the words the trigger uses. */
   if (error) return { error: voice(error) };
   return done();
 }

@@ -17,12 +17,12 @@ export default async function StaffLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const { supabase, profile } = await getOperator();
 
-  const { data: harbors } = await supabase
-    .from("harbors")
-    .select("name")
-    .order("position", { ascending: true })
-    .limit(1);
+  const [{ data: harbors }, { data: keysOpen }] = await Promise.all([
+    supabase.from("harbors").select("name").order("position", { ascending: true }).limit(1),
+    supabase.rpc("club_setting", { p_key: "keys_console_enabled" }),
+  ]);
   const harbor = profile.home_harbor ?? harbors?.[0]?.name ?? SURFACES.shoreside;
+  const hidden = keysOpen ? [] : ["/bridge/keys"];
 
   return (
     <div className="hm-shell">
@@ -44,7 +44,7 @@ export default async function StaffLayout({
           </div>
         </div>
       </header>
-      <HmTabs />
+      <HmTabs hidden={hidden} />
       <main id="main" className="hm-main">{children}</main>
     </div>
   );

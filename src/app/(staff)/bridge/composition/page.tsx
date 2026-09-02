@@ -35,7 +35,9 @@ export default async function CompositionPage({
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
   const voyagesRes = await supabase
     .from("voyages")
-    .select("id, title, starts_at, time_zone, berths_total, held_passes, status, hull_ceiling_heads")
+    .select(
+      "id, title, starts_at, time_zone, berths_total, held_passes, status, hull_ceiling_heads, hull_certificate"
+    )
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
     .order("starts_at", { ascending: true });
@@ -133,6 +135,7 @@ export default async function CompositionPage({
         voyageTitle={voyage.title}
         hull={hull}
         hullCeiling={voyage.hull_ceiling_heads}
+        hullCertificate={voyage.hull_certificate}
         clubCeiling={clubCeiling}
         rows={rows}
         lines={lines}

@@ -859,7 +859,12 @@ async function documentRules(p) {
      a signature cannot be deleted, so the test signs a throwaway guest rather
      than the persona's standing waiver — otherwise the second run finds the
      first run's work already done. */
-  const gv = await stf.get("voyages?select=id&class=eq.sea&limit=1");
+  /* A sailing still ahead: a guest cannot sign for one that has gone, and the
+     first sea row by insertion order is a completed crossing once the fixture
+     sailings have been reset away. */
+  const gv = await stf.get(
+    `voyages?select=id&class=eq.sea&status=eq.scheduled&starts_at=gt.${new Date().toISOString()}&order=starts_at.asc&limit=1`
+  );
   const gr = await stf.post("rsvps", {
     voyage_id: gv.data?.[0]?.id, profile_id: uid(p.staff), status: "aboard",
   });
@@ -976,12 +981,20 @@ async function enforcementRules(p) {
        signature. So the gate fixture is one stable guest, reused: signing is
        idempotent per (version, guest), so the suite leaves exactly one row
        however many times it runs. */
-    const existing = await stf.get(`rsvp_guests?select=id,sign_token&name=eq.E2E Gate Guest&limit=1`);
+    const existing = await stf.get(`rsvp_guests?select=id,sign_token,rsvp_id&name=eq.E2E Gate Guest&limit=1`);
     const g = existing.data?.[0]
       ? { data: existing.data }
       : await stf.post("rsvp_guests", { rsvp_id: seatId, name: "E2E Gate Guest" });
     const gId = g.data?.[0]?.id;
     const gTok = g.data?.[0]?.sign_token;
+    /* The pass the guest rode on may be gone — a fixture reset strikes the
+       personas' passes, and rsvp_guests.rsvp_id is SET NULL rather than
+       cascading, because a guest who signed is a matter of record. Re-seat the
+       fixture on the current pass instead of trying to check in a guest who is
+       aboard nothing. */
+    if (gId && g.data[0].rsvp_id !== seatId) {
+      await stf.patch(`rsvp_guests?id=eq.${gId}`, { rsvp_id: seatId });
+    }
     if (gId) {
       await anon.rpc("sign_document_as_guest", {
         p_token: gTok, p_document_code: "guest-waiver", p_consent: true,
@@ -1355,6 +1368,17 @@ async function hardeningRules(p) {
    Round two's findings were mostly round one's fixes applied to one call site
    out of nine. These are the specific shapes that were wrong, so a future
    half-fix fails here instead of in a crawl. */
+/* The regional persona sails from Miami (decided 2026-09-02: a Regional pass
+   sails from home). A picker that boards it must choose home water or a
+   harborless sailing — the earliest real sailing on the manifest is not
+   necessarily one the guard will open, and eight of them leave from Los
+   Angeles. */
+async function homeWater(stf) {
+  const h = await stf.get("harbors?slug=eq.miami&select=id&limit=1");
+  const id = h.data?.[0]?.id;
+  return id ? `&or=(harbor_id.is.null,harbor_id.eq.${id})` : "";
+}
+
 async function roundTwoRules(p) {
   const reg = rest(p.regional), stf = rest(p.staff);
   const me = uid(p.regional);
@@ -1362,7 +1386,7 @@ async function roundTwoRules(p) {
   // — A released pass is paid for again —
   const claimable = await stf.get(
     "voyages?status=eq.scheduled&select=id,price_cents&price_cents=gt.0" +
-      `&starts_at=gt.${new Date().toISOString()}&order=starts_at.asc&limit=1`
+      `&starts_at=gt.${new Date().toISOString()}${await homeWater(stf)}&order=starts_at.asc&limit=1`
   );
   const v = claimable.data?.[0];
   if (v) {
@@ -1526,7 +1550,7 @@ async function roundFiveRules(p) {
   const stf = rest(p.staff), glo = rest(p.global), reg = rest(p.regional);
 
   const ahead = await stf.get(
-    `voyages?status=eq.scheduled&select=id&starts_at=gt.${new Date().toISOString()}&order=starts_at.asc&limit=1`
+    `voyages?status=eq.scheduled&select=id&starts_at=gt.${new Date().toISOString()}${await homeWater(stf)}&order=starts_at.asc&limit=1`
   );
   const vid = ahead.data?.[0]?.id;
   if (!vid) return;
@@ -1665,7 +1689,7 @@ async function roundThreeRules(p) {
   // — The free pass, through every door —
   const ahead = await stf.get(
     "voyages?status=eq.scheduled&select=id,price_cents&price_cents=gt.0" +
-      `&starts_at=gt.${new Date().toISOString()}&order=starts_at.asc&limit=1`
+      `&starts_at=gt.${new Date().toISOString()}${await homeWater(stf)}&order=starts_at.asc&limit=1`
   );
   const v = ahead.data?.[0];
   if (v) {
@@ -1823,9 +1847,18 @@ async function roundThreeRules(p) {
 /* ---------- A. route × role matrix ---------- */
 async function routeMatrix(personas) {
   const memberPages = manifest.routes.filter((r) => r.type === "page" && !r.dynamic && r.access === "member");
+  /* The keys console is behind one dial (decided 2026-09-02): at 0 the route
+     answers 404 to staff and the tab is gone; at 1 it renders. The matrix reads
+     the dial rather than assuming either. */
+  const dial = await rest(personas.staff).get("club_settings?key=eq.keys_console_enabled&select=value_int");
+  const keysOpen = dial.data?.[0]?.value_int !== 0;
   for (const [name, s] of Object.entries(personas)) {
     for (const r of memberPages) {
       const res = await page(s, r.path);
+      if (r.path === "/bridge/keys" && name === "staff" && !keysOpen) {
+        note(name, "the keys console waits for a partner on the matrix too", res.status === 404, `got ${res.status}`);
+        continue;
+      }
       /* /show is a member-group route by file layout and a crew surface by
          rule: the run-of-show board, the deck flags and the Pod queue are read
          on a wet deck by the Cast & Crew, and every table behind it is
@@ -3718,9 +3751,13 @@ async function decisionRules(p) {
     plan.data?.[0]?.label === "Club Lifestyle Membership" && plan.data[0].plan_type === "access", JSON.stringify(plan.data).slice(0, 100));
 
   // — a flotilla names its own ceiling —
+  /* Sixty heads is above the club figure, and since Sept 2 a hull above it
+     names its certificate (decisionsOfSept2 proves the refusal); this one
+     names it so the ceiling check keeps measuring the ceiling. */
   const fmk = await stf.post("voyages", {
     slug: `e2e-tentpole-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
     starts_at: plus30, time_zone: "America/New_York", berths_total: 60, price_cents: 0, hull_ceiling_heads: 60,
+    hull_certificate: "E2E Tentpole · USCG COI · 60 heads",
   });
   const tentVid = fmk.data?.[0]?.id;
   const bigCaps = await stf.post("voyage_segment_caps", [
@@ -3850,6 +3887,130 @@ async function decisionRules(p) {
     `got ${restore.status}/${handBack.status} ${said(handBack).slice(0, 80)}`);
   const fwDel = await stf.del(`voyages?id=eq.${fwVid}`);
   note("staff", "the farewell fixture is struck", fwDel.status < 300, `got ${fwDel.status}`);
+}
+
+/* ---------- W10. the decisions of September 2 ----------
+   A Regional pass sails from home; a hull above the club figure names its
+   certificate; the Captain's Pass states what it holds; the keys console
+   waits for a partner. Everything this section moves — a fixture's home
+   harbor, a sailing's harbor, a hull figure — it puts back. */
+async function decisionsOfSept2(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national), anon = rest(null);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+  const plus30 = new Date(Date.now() + 30 * 24 * 3600e3).toISOString();
+  const said = (r) => String(JSON.stringify(r.data ?? "")).toLowerCase();
+  /* Case kept: the refusal names the harbor as the chart spells it. */
+  const raw = (r) => String(JSON.stringify(r.data ?? ""));
+
+  // — a Regional pass sails from home —
+  const chart = await stf.get("harbors?slug=in.(miami,los-angeles)&select=id,slug,name");
+  const miami = (chart.data ?? []).find((h) => h.slug === "miami")?.id;
+  const la = (chart.data ?? []).find((h) => h.slug === "los-angeles")?.id;
+  note("staff", "miami and los angeles are on the chart", !!miami && !!la, JSON.stringify(chart.data).slice(0, 100));
+  const homes = await stf.get(`profiles?email=like.e2e-*@fixtures.invalid&select=email,home_harbor`);
+  const homeOf = (who) => (homes.data ?? []).find((r) => r.email === `e2e-${who}@fixtures.invalid`)?.home_harbor ?? null;
+  note("regional", "the regional and paused fixtures sail from miami; national and global are unhomed",
+    homeOf("regional") === miami && homeOf("paused") === miami && homeOf("national") === null && homeOf("global") === null,
+    JSON.stringify(homes.data).slice(0, 160));
+
+  const amk = await stf.post("voyages", {
+    slug: `e2e-away-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/Los_Angeles", berths_total: 6, price_cents: 0, status: "scheduled", harbor_id: la,
+  });
+  const awayVid = amk.data?.[0]?.id;
+  note("staff", "an away sailing leaves from los angeles", !!awayVid && amk.data?.[0]?.harbor_id === la, `got ${amk.status} ${said(amk).slice(0, 90)}`);
+
+  const regAway = await reg.post("rsvps", { voyage_id: awayVid, profile_id: uid(p.regional), status: "aboard" });
+  note("regional", "a regional pass sails from home, not from los angeles",
+    regAway.status >= 400 && /home harbor/.test(raw(regAway)) && /Los Angeles/.test(raw(regAway)), raw(regAway).slice(0, 140));
+  if (regAway.status === 201) await stf.del(`rsvps?id=eq.${regAway.data?.[0]?.id}`);
+
+  const natAway = await nat.post("rsvps", { voyage_id: awayVid, profile_id: uid(p.national), status: "aboard" });
+  note("national", "a national pass sails every us harbor", natAway.status === 201, `got ${natAway.status} ${said(natAway).slice(0, 90)}`);
+  const natRel = await nat.del(`rsvps?voyage_id=eq.${awayVid}&profile_id=eq.${uid(p.national)}`);
+  note("national", "and hands the away pass back", natRel.status < 300, `got ${natRel.status}`);
+
+  const toMiami = await stf.patch(`voyages?id=eq.${awayVid}`, { harbor_id: miami });
+  const regHome = await reg.post("rsvps", { voyage_id: awayVid, profile_id: uid(p.regional), status: "aboard" });
+  note("regional", "the same sailing out of miami is home water",
+    toMiami.status < 300 && regHome.status === 201, `got ${toMiami.status}/${regHome.status} ${said(regHome).slice(0, 90)}`);
+  const regRel = await reg.del(`rsvps?voyage_id=eq.${awayVid}&profile_id=eq.${uid(p.regional)}`);
+  note("regional", "and hands the home pass back", regRel.status < 300, `got ${regRel.status}`);
+
+  const toOpen = await stf.patch(`voyages?id=eq.${awayVid}`, { harbor_id: null });
+  const regOpen = await reg.post("rsvps", { voyage_id: awayVid, profile_id: uid(p.regional), status: "aboard" });
+  note("regional", "a sailing with no harbor is open water",
+    toOpen.status < 300 && regOpen.status === 201, `got ${toOpen.status}/${regOpen.status} ${said(regOpen).slice(0, 90)}`);
+  await reg.del(`rsvps?voyage_id=eq.${awayVid}&profile_id=eq.${uid(p.regional)}`);
+  await stf.patch(`voyages?id=eq.${awayVid}`, { harbor_id: miami });
+
+  /* The Bridge corrects a member's record (profiles: "staff correct member
+     records"), so the fixture's home harbor is lifted and put back from there. */
+  const unhomed = await stf.patch(`profiles?id=eq.${uid(p.regional)}`, { home_harbor: null });
+  try {
+    const noHome = await reg.post("rsvps", { voyage_id: awayVid, profile_id: uid(p.regional), status: "aboard" });
+    note("regional", "with no home harbor the pass is sent to choose one on its page",
+      unhomed.status < 300 && noHome.status >= 400 && /choose it on your page/.test(said(noHome)),
+      `got ${unhomed.status}/${noHome.status} ${said(noHome).slice(0, 120)}`);
+    if (noHome.status === 201) await stf.del(`rsvps?id=eq.${noHome.data?.[0]?.id}`);
+  } finally {
+    const rehomed = await stf.patch(`profiles?id=eq.${uid(p.regional)}`, { home_harbor: miami });
+    note("staff", "the regional fixture is homed in miami again",
+      rehomed.status < 300 && rehomed.data?.[0]?.home_harbor === miami, `got ${rehomed.status} ${said(rehomed).slice(0, 80)}`);
+  }
+  const awayDel = await stf.del(`voyages?id=eq.${awayVid}`);
+  note("staff", "the away fixture is struck", awayDel.status < 300, `got ${awayDel.status}`);
+
+  // — a hull above the club figure names its certificate —
+  const cmk = await stf.post("voyages", {
+    slug: `e2e-cert-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, price_cents: 0,
+  });
+  const certVid = cmk.data?.[0]?.id;
+  const noCert = await stf.patch(`voyages?id=eq.${certVid}`, { hull_ceiling_heads: 41 });
+  note("staff", "a hull above the club figure names its certificate",
+    noCert.status >= 400 && /names its certificate/.test(said(noCert)), said(noCert).slice(0, 120));
+  const shortCert = await stf.patch(`voyages?id=eq.${certVid}`, { hull_ceiling_heads: 41, hull_certificate: "ab" });
+  note("staff", "a certificate is more than two letters", shortCert.status >= 400, `got ${shortCert.status} ${said(shortCert).slice(0, 90)}`);
+  const withCert = await stf.patch(`voyages?id=eq.${certVid}`, { hull_ceiling_heads: 41, hull_certificate: "Trident 512 · USCG COI · 49 heads" });
+  note("staff", "and seats past the figure once it is named",
+    withCert.status < 300 && withCert.data?.[0]?.hull_ceiling_heads === 41, `got ${withCert.status} ${said(withCert).slice(0, 90)}`);
+  const below = await stf.patch(`voyages?id=eq.${certVid}`, { hull_ceiling_heads: 32, hull_certificate: null });
+  note("staff", "below the figure the certificate is optional",
+    below.status < 300 && below.data?.[0]?.hull_ceiling_heads === 32 && below.data?.[0]?.hull_certificate === null,
+    `got ${below.status} ${said(below).slice(0, 90)}`);
+  const certBack = await stf.patch(`voyages?id=eq.${certVid}`, { hull_ceiling_heads: null, hull_certificate: null });
+  const certDel = await stf.del(`voyages?id=eq.${certVid}`);
+  note("staff", "the certificate fixture is struck", certBack.status < 300 && certDel.status < 300, `got ${certBack.status}/${certDel.status}`);
+
+  // — the captain's pass states what it holds —
+  const pass = await anon.get("club_products?slug=eq.captains_pass&select=slug,includes,price_cents,published");
+  const holds = Array.isArray(pass.data?.[0]?.includes) ? pass.data[0].includes : [];
+  note("anon", "the captain's pass states what it holds",
+    holds.length === 5 && holds.includes("One guest slot") && holds.includes("Radar for the sailing"),
+    `got ${pass.status} ${JSON.stringify(holds).slice(0, 160)}`);
+  note("anon", "and still names no price, unpublished",
+    pass.data?.[0]?.price_cents === null && pass.data?.[0]?.published === false, JSON.stringify(pass.data).slice(0, 120));
+
+  // — the keys console waits for a partner —
+  /* One dial, read the way the Bridge reads it. The route and the tab follow
+     the dial, so the expectation here follows it too: an operator who opens
+     the console for a partner should not have to touch this file. */
+  const dial = await anon.rpc("club_setting", { p_key: "keys_console_enabled" });
+  note("anon", "the keys console is behind one dial", dial.status < 300 && (dial.data === 0 || dial.data === 1), `got ${dial.status} ${JSON.stringify(dial.data)}`);
+  const consoleOpen = dial.data === 1;
+  const keysPage = await page(p.staff, "/bridge/keys");
+  const bridge = await page(p.staff, "/bridge");
+  const bridgeHtml = await bridge.text();
+  const hasTab = /href="\/bridge\/keys"/.test(bridgeHtml);
+  if (consoleOpen) {
+    note("staff", "the keys console is open and the bridge shows its tab",
+      keysPage.status === 200 && bridge.status === 200 && hasTab, `got ${keysPage.status}/${bridge.status} tab ${hasTab}`);
+  } else {
+    note("staff", "the keys console waits for a partner — off the chart, not an error", keysPage.status === 404, `got ${keysPage.status}`);
+    note("staff", "and the bridge shows no tab for it", bridge.status === 200 && !hasTab,
+      bridge.status === 200 ? 'href="/bridge/keys" is in the nav' : `got ${bridge.status}`);
+  }
 }
 
 async function membershipRules(p) {
@@ -4068,6 +4229,7 @@ async function main() {
   await programRules(personas);
   await crawlRules(personas);
   await decisionRules(personas);
+  await decisionsOfSept2(personas);
   for (const [who, before] of Object.entries(kitBefore)) {
     const after = await knotsFor(personas[who], personas.staff);
     note(who, "activity, charter and membership leave the ledger as they found it",

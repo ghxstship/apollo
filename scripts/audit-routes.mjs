@@ -373,9 +373,53 @@ async function renderCheck(pages) {
   });
   note("(control)", "an invented protected path does NOT render", invented.status === 404, `got ${invented.status}`);
 
+  /* THE KEYS CONSOLE WAITS FOR A PARTNER (decided 2026-09-02). /bridge/keys
+     is in the manifest and in the build, but the page answers notFound() and
+     the Bridge nav drops its tab while club_settings.keys_console_enabled is
+     0 — nothing reads a key and nothing posts a hook, so a console that
+     offers to cut one is a promise the hull cannot keep.
+
+     The expectation is read from the same dial the page reads, live, so an
+     operator who opens the console for a partner does not have to touch this
+     file: at 0 the route must be off the chart (404, never 500, and still a
+     titled page in the club's language); at 1 it must render like any other
+     Bridge screen. A dial that cannot be read is reported as such rather than
+     guessed either way. */
+  const keysOpen = await keysConsoleOpen(staff.access_token);
+  note("/bridge/keys", "the keys dial can be read", keysOpen !== null, "club_settings.keys_console_enabled unreadable");
+
   for (const { path } of pages) {
     const res = await fetch(BASE + path, { headers: { cookie }, redirect: "manual" });
+    if (path === "/bridge/keys" && keysOpen === false) {
+      note(path, "waits for a partner — 404, not 500", res.status === 404, `got ${res.status}`);
+      const html = await res.text();
+      note(path, "has <title>", /<title[^>]*>[^<]+<\/title>/i.test(html));
+      /* A notFound() thrown from a page renders in Next's error shell, which
+         drops the root <html lang> — the same body /preview/documents answers
+         with, and the audit asks nothing of that one. What matters here is
+         that it is the club's 404, not the stock line of text. */
+      note(path, "answers with the club's 404", /Off the chart/i.test(html));
+      continue;
+    }
+    if (path === "/bridge/keys" && keysOpen === null) continue; /* reported above */
     note(path, "renders for someone allowed to see it", res.status === 200, `got ${res.status}`);
+  }
+}
+
+/* club_settings is public reading; the staff token is used because that is
+   the session the page itself reads the dial with. Returns true/false, or null
+   when the row cannot be read — the caller must not turn null into a guess. */
+async function keysConsoleOpen(token) {
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/club_settings?key=eq.keys_console_enabled&select=value_int`, {
+      headers: { apikey: SUPA_KEY, authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || rows.length !== 1 || typeof rows[0].value_int !== "number") return null;
+    return rows[0].value_int > 0;
+  } catch {
+    return null;
   }
 }
 

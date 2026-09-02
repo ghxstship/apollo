@@ -54,6 +54,8 @@ export type VoyageRow = {
   series_id: string | null
   /* A flotilla's certified heads; null reads the club setting. */
   hull_ceiling_heads: number | null
+  /* Vessel, authority and certified number — required above the club figure. */
+  hull_certificate: string | null
 }
 export type SeasonRow = {
   id: string; slug: string; title: string; starts_on: string; ends_on: string

@@ -335,10 +335,42 @@ function checkVocab() {
     total: terms.length, hits: missing.map((t) => ({ term: t })), exempted: [] };
 }
 
+/* ── check: the founding year ─────────────────────────────────────────────── */
+/* The club was founded in 2026 — MMXXVI — and brand.ts holds that in one
+   constant. The offline page inside the service worker still read MMXXIV two
+   rebrands later: it is a template literal in public/sw.js, so it imports
+   nothing, no type checks it, and no page renders it until a member loses
+   signal. Any other roman year written by hand is the same drift waiting to
+   surface somewhere nobody looks. */
+
+function checkFoundingYear() {
+  const brand = readFileSync(join(ROOT, "src/lib/brand.ts"), "utf8");
+  const truth = brand.match(/EST_YEAR_ROMAN\s*=\s*"([MDCLXVI]+)"/)?.[1];
+  const hits = [];
+  if (!truth) {
+    hits.push({ file: rel(join(ROOT, "src/lib/brand.ts")), line: 0, why: "EST_YEAR_ROMAN not found" });
+    return { name: "founding", rule: "every roman founding year matches EST_YEAR_ROMAN", hits, exempted: [] };
+  }
+  const files = CODE.concat(APP_CSS).filter((p) => !/\/brand\.ts$/.test(p));
+  const exempted = [];
+  for (const p of files) {
+    lines(p).forEach((line, i) => {
+      for (const m of line.matchAll(/\bEST\.?\s+(M[MDCLXVI]*)\b/gi)) {
+        if (m[1].toUpperCase() === truth) continue;
+        const why = exempt(line);
+        const hit = { file: rel(p), line: i + 1, why: `reads ${m[1]}, brand says ${truth}` };
+        if (why) exempted.push({ ...hit, declaredAt: why });
+        else hits.push(hit);
+      }
+    });
+  }
+  return { name: "founding", rule: "every roman founding year matches EST_YEAR_ROMAN in brand.ts", hits, exempted };
+}
+
 /* ── report ───────────────────────────────────────────────────────────────── */
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
-const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab()]
+const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear()]
   .filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {

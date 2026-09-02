@@ -32,7 +32,7 @@ Policy:
 - Reads are answered directly from your tools. Never guess at the ledgers — read them.
 - ANY write — reserving a pass, releasing a pass — must go through the propose_action tool. You never execute changes; the member confirms in the panel. After proposing, say one short line that the card below awaits their word.
 - Prices are in cents; render as dollars (e.g. 12500 → $125). A price of 0 is complimentary.
-- Out of scope (anything beyond the member's manifest, sailings, passes, balances, or weather): reply exactly "Past my charts — hail Shoreside."
+- Out of scope (anything beyond the member's manifest, sailings, passes, balances, or weather), or anything that needs a person — a dispute, a refund, an accommodation, a complaint, a question about another member: reply exactly "Past my charts — hail Shoreside." and, in the same turn, call propose_action with kind "hail_shoreside" and the member's question restated in one clean line as \`question\`. Confirming that card opens a Shoreside thread in the member's name with the question already posted; a person answers there. Never answer such a question yourself.
 - Never invent voyages, balances, or codes. If a tool returns nothing, say so plainly.`;
 
 const TOOLS: Anthropic.Tool[] = [
@@ -57,30 +57,64 @@ const TOOLS: Anthropic.Tool[] = [
   {
     name: "propose_action",
     description:
-      "Propose a write for the member to confirm in the panel. This does NOT execute anything — it renders a confirm-first action card. Use for any reserve or release request. Terminal: after this the turn ends.",
+      "Propose a write for the member to confirm in the panel. This does NOT execute anything — it renders a confirm-first action card. Use for any reserve or release request, and for hail_shoreside when a question needs a person. Terminal: after this the turn ends.",
     input_schema: {
       type: "object" as const,
       properties: {
-        kind: { type: "string", enum: ["reserve", "release"], description: "The write being proposed." },
-        voyage_slug: { type: "string", description: "Slug of the voyage the action targets." },
-        title: { type: "string", description: "Card title, e.g. 'Release pass — Night Passage'." },
+        kind: {
+          type: "string",
+          enum: ["reserve", "release", "hail_shoreside"],
+          description: "The write being proposed.",
+        },
+        voyage_slug: {
+          type: "string",
+          description: "Slug of the voyage the action targets. Required for reserve and release; omit for hail_shoreside.",
+        },
+        question: {
+          type: "string",
+          description:
+            "hail_shoreside only: the member's question, restated in one clean line as they would put it to a person. Under 400 characters.",
+        },
+        title: { type: "string", description: "Card title, e.g. 'Release pass — Night Passage' or 'Hail Shoreside'." },
         summary: {
           type: "string",
           description: "One short line of what confirming does, in the Producer's voice.",
         },
       },
-      required: ["kind", "voyage_slug", "title", "summary"],
+      required: ["kind", "title", "summary"],
       additionalProperties: false,
     },
   },
 ];
 
 type ProposedAction = {
-  kind: "reserve" | "release";
-  voyage_slug: string;
+  kind: "reserve" | "release" | "hail_shoreside";
+  voyage_slug?: string;
+  question?: string;
   title: string;
   summary: string;
 };
+
+/* What the panel is handed. A reserve or release without a slug is a card that
+   confirms nothing, so it is refused here rather than rendered; a hail without
+   a question falls back to the member's own last line in the panel. */
+function shapeProposal(input: ProposedAction) {
+  if (input.kind === "hail_shoreside") {
+    return {
+      kind: "hail_shoreside" as const,
+      question: typeof input.question === "string" ? input.question.slice(0, 4000) : "",
+      title: input.title || "Hail Shoreside",
+      summary: input.summary,
+    };
+  }
+  if (!input.voyage_slug) return null;
+  return {
+    kind: input.kind,
+    voyage_slug: input.voyage_slug,
+    title: input.title,
+    summary: input.summary,
+  };
+}
 
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
@@ -245,16 +279,13 @@ export async function POST(request: Request) {
         (b): b is Anthropic.ToolUseBlock => b.type === "tool_use" && b.name === "propose_action"
       );
       if (proposal) {
-        const input = proposal.input as ProposedAction;
-        return Response.json({
-          reply: textOf(response.content) || "Your call — confirm below and I'll see it logged.",
-          action: {
-            kind: input.kind,
-            voyage_slug: input.voyage_slug,
-            title: input.title,
-            summary: input.summary,
-          },
-        });
+        const action = shapeProposal(proposal.input as ProposedAction);
+        const reply =
+          textOf(response.content) ||
+          (action?.kind === "hail_shoreside"
+            ? "Past my charts — hail Shoreside."
+            : "Your call — confirm below and I'll see it logged.");
+        return Response.json(action ? { reply, action } : { reply });
       }
 
       if (response.stop_reason !== "tool_use") {
