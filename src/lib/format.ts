@@ -101,9 +101,11 @@ export function price(cents: number): string {
   })}`;
 }
 
-export function fathoms(n: number): string {
-  return `${n >= 0 ? "" : "−"}${Math.abs(n)} FM`;
-}
+/* fathoms() stood here — exported, never called, and returning a string built
+   from two banned terms. The currency is Knots and knots() in @/lib/brand
+   formats it. A dead formatter for a retired currency is a loaded gun: one
+   autocomplete and a page prints the retired unit past both gates, which read
+   RENDERED text and so can only catch it after it ships. Deleted 2026-09-02. */
 
 const ROMAN: Array<[number, string]> = [
   [1000, "M"], [900, "CM"], [500, "D"], [400, "CD"], [100, "C"], [90, "XC"],
@@ -116,16 +118,15 @@ export function roman(n: number): string {
   return out;
 }
 
-/* Where it happens, and nothing else. Sea Day and Port Day named a filing
-   system rather than a day, and could not describe a pool social at all — what
-   a member reads on a card is now the format's own name and the hours. This
-   pair is the operational fact underneath: afloat or ashore. The sky key
-   survives for legacy rows. */
-export const SETTING_LABEL: Record<string, string> = {
-  sea: "Afloat",
-  shore: "Ashore",
-  sky: "Ashore",
-};
+/* Where it happens, and nothing else: afloat or ashore.
+
+   This map was declared here a second time, byte for byte identical to the one
+   in @/lib/brand — and half the app imported one copy while half imported the
+   other, so a change to the words would have landed on some surfaces and not
+   others with nothing to say which. brand.ts owns display names; this file
+   re-exports so that both import paths keep working and there is one set of
+   words behind them. */
+export { SETTING_LABEL } from "./brand";
 
 export const TIER_LABEL: Record<string, string> = {
   regional: "Regional",

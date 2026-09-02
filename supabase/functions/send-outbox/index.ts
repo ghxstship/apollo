@@ -189,7 +189,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     subject: "Welcome aboard.",
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">Your place in the show is set${p["tier"] ? ` at the ${esc(TIER_LABEL[String(p["tier"])] ?? String(p["tier"]))} tier` : ""}. The manifest arrives each Sunday, and the member app holds the rest.</p>
+        `<p style="margin:0 0 16px;">Your place in the show is set${p["tier"] ? ` at the ${esc(TIER_LABEL[String(p["tier"])] ?? String(p["tier"]))} tier` : ""}. The Log arrives each Sunday, and the member app holds the rest.</p>
 <p style="margin:0 0 20px;">Your first hundred knots are waiting in the ledger — they land the first time you come aboard.</p>
 <p style="margin:0;"><a href="${APP_URL}/gangway" style="color:inherit;">Come aboard →</a></p>`,
       true,
@@ -225,7 +225,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     ),
   }),
   "weather-hold": (p) => ({
-    subject: `Weather hold: ${String(p["voyage"] ?? "your charter")}`,
+    subject: `Weather hold: ${String(p["voyage"] ?? "your episode")}`,
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">${esc(p["voyage"])} is held for weather. Your pass is safe and nothing is charged until we sail.</p>
@@ -252,12 +252,16 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
         `<p style="margin:20px 0 0;">If the tide has turned, release the pass within 48 hours so the next name can take it.</p>`,
     ),
   }),
+  /* Charter survives only as a catalogue label on the Private charter series;
+     it is not a generic noun for an event, and these two letters used it as
+     one in three places. "will not sail" was the same mistake in a verb — half
+     the schedule is ashore, and an episode at a venue does not sail. */
   "voyage-cancelled": (p) => ({
-    subject: `Cancelled: ${String(p["voyage"] ?? "your charter")}`,
+    subject: `Cancelled: ${String(p["voyage"] ?? "your episode")}`,
     html: shell(
       greet(p) +
-        `<p style="margin:0 0 16px;">The club called it. ${esc(p["voyage"] ?? "Your charter")} will not sail${p["starts_at"] ? ` — it was set for ${esc(when(p["starts_at"]))}` : ""}.</p>
-<p style="margin:0;">Your account is credited in full. The manifest holds the next open water.</p>`,
+        `<p style="margin:0 0 16px;">The club called it. ${esc(p["voyage"] ?? "Your episode")} will not run${p["starts_at"] ? ` — it was set for ${esc(when(p["starts_at"]))}` : ""}.</p>
+<p style="margin:0;">Your account is credited in full. The next one is in Passes.</p>`,
     ),
   }),
   "farewell": (p) => ({
@@ -284,10 +288,15 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
     const marks = Array.isArray(p["marks"]) ? (p["marks"] as unknown[]) : [];
     /* `esc(value ?? 0)` turned a MISSING figure into the number nought and
        stated it as fact. That is how every season card ever sent told its
-       member they had made 0 SAILINGS: the payload carries `sailings` and this
-       template read `charters`, a key nothing has ever written. Fourteen of
-       them went out for real. The Bridge's own copy for this feature says "a
-       card reading nought miles is a reproach", which is exactly what it was.
+       member they had made 0 of everything: the template read keys that
+       nothing has ever written — first `charters`, then `sailings` and
+       `harbors` after send_season_cards was renamed out from under it and
+       started building `episodes` and `cities`. Fourteen of them went out for
+       real. The Bridge's own copy for this feature says "a card reading nought
+       miles is a reproach", which is exactly what it was.
+
+       The labels moved with the keys. HARBORS was a banned term set in caps on
+       every card, and SAILINGS was the retired event noun in the same row.
 
        A key that is absent is not a zero. It renders as an em dash — the card
        declines to make a claim it has no basis for — and only a real 0 from
@@ -307,7 +316,7 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
 <div style="font-family:${SERIF};font-size:30px;line-height:1.2;color:#141414;padding:14px 0 6px;">Your season, on the record.</div>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A5560;">The season is closed. This is what the log holds. No scripts. No second takes.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
-<tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["sailings"], "SAILINGS")}${fig(p["harbors"], "HARBORS")}</tr>
+<tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["episodes"], "EPISODES")}${fig(p["cities"], "CITIES")}</tr>
 <tr>${fig(p["crew_met"], "CREW MET")}${fig(p["knots_earned"], "KNOTS BANKED")}<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);"></td></tr>
 </table>` +
           (marks.length
@@ -320,7 +329,7 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
                 .join("")
             : "") +
           (p["longest_title"]
-            ? strap("LONGEST SAILING") +
+            ? strap("LONGEST EPISODE") +
               `<div style="font-family:${SERIF};font-size:17px;color:#141414;padding:8px 0 2px;">${esc(p["longest_title"])}${
                 p["longest_nm"] ? ` — ${esc(p["longest_nm"])} NM` : ""
               }</div>`
@@ -340,21 +349,26 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
           `<p style="margin:0 0 14px;"><b style="font-weight:600;">${esc(it["title"])}</b>${it["dek"] ? `<br/><span style="color:#6B6B70;">${esc(it["dek"])}</span>` : ""}</p>`,
       )
       .join("");
+    /* The Sunday digest names itself. Since the rename an Episode is an EVENT,
+       and the written record — which its own standfirst already called the Log
+       — took that name back. A letter subject-lined "Episodes, Sundays." now
+       promises a schedule and delivers an essay. */
     return {
-      subject: "Episodes, Sundays.",
+      subject: "The Log, Sundays.",
       html: shell(
         greet(p) +
-          `<p style="margin:0 0 16px;letter-spacing:0.22em;font-size:13px;">EPISODES</p>` +
+          `<p style="margin:0 0 16px;letter-spacing:0.22em;font-size:13px;">THE LOG</p>` +
           (list ||
-            `<p style="margin:0 0 16px;">This week's reading is up. Episodes keep what the cameras kept — the latest are in the member app.</p>`) +
-          `<p style="margin:0;">Sunday, as always. The manifest rides along.</p>`,
+            `<p style="margin:0 0 16px;">This week's reading is up. The Log keeps what the cameras kept — the latest are in the member app.</p>`) +
+          `<p style="margin:0;">Sunday, as always. The week ahead rides along.</p>`,
       ),
     };
   },
 };
 
-// The Sunday digest was queued as "dispatch-digest" before the rebrand —
-// legacy keys still render the Episodes digest so queued rows send.
+// The Sunday digest was queued as "dispatch-digest" before the rebrand, and as
+// "episode-digest" before the Log took its name back — legacy keys still
+// render the Log digest so queued rows send.
 templates["dispatch-digest"] = templates["lore-digest"];
 templates["episode-digest"] = templates["lore-digest"];
 

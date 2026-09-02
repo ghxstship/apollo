@@ -43,6 +43,10 @@ const DEV_ROUTES = new Set(["/preview/documents"]);
 const DYNAMIC_SOURCES = {
   "/episodes/[slug]": { table: "episodes", column: "slug" },
   "/log/[slug]": { table: "log_posts", column: "slug" },
+  /* The audit reads this table as anon, and `series` is anon-readable only
+     where `active` — so the expansion is the five live strands and never a
+     stood-down one, which the page 404s on by design. */
+  "/series/[slug]": { table: "series", column: "slug" },
   "/regattas/[slug]": { table: "contests", column: "slug" },
   "/agreements/[code]": { table: "documents", column: "code" },
 };

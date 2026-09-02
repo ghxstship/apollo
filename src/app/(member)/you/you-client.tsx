@@ -116,7 +116,7 @@ export function ProfileForm({
       {showToast ? (
         <Toast
           fixed
-          message="Logged. The manifest reads it your way."
+          message="Logged. It reads your way now."
           tone="positive"
           onDismiss={() => setDismissedState(state)}
         />
@@ -310,7 +310,10 @@ export function ResumeBanner() {
               What is certain from `status` alone is the standing. What happens
               to the money is on /account, which reads the subscription. Say
               only the part this component can actually know. */}
-          <p>Knots and tier keep. The manifest waits for you.</p>
+          {/* A pause touches no pass, which is what this line is for — and
+              "the manifest" was the wrong noun for it: what waits is the set of
+              passes the member holds, across episodes, not one boarding list. */}
+          <p>Knots and tier keep. Your passes wait for you.</p>
           <p style={{ opacity: 0.75 }}>
             Your dues are on your <a href="/account">account page</a>.
           </p>
@@ -437,8 +440,8 @@ export function Offboarding({ status, heldPasses }: { status: string; heldPasses
             of them. Departing is the flow that releases, so the two dialogs
             must not read alike on this point. */}
         <p style={{ marginTop: 10 }}>
-          Passes you hold stay held — release them from the manifest if the tide
-          has turned.
+          Passes you hold stay held — release them from Passes if the tide has
+          turned.
         </p>
         {error && mode === "pause" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: "var(--text-xs)" }}>
@@ -475,19 +478,19 @@ export function Offboarding({ status, heldPasses }: { status: string; heldPasses
             and got another. Both halves are now stated separately, because
             they genuinely differ, and someone deciding whether to leave today
             or at the end of the month needs to know which is which. */}
-        No exit surveys, no retention calls; the manifest remembers you kindly.
+        No exit surveys, no retention calls; the club remembers you kindly.
         Your dues end when the period you have already paid for runs out, and
         nothing further is taken. Booking, posting and the rest close as soon as
         you confirm — so if there is an episode you still want, take it first.
         {/* set_own_standing('departed') releases every aboard pass on an episode
             still ahead, credited in full, by trigger. The member is shown the
             list before they confirm, because a departure that quietly empties
-            the manifest is a surprise, and the credit is the part they would
+            the passes is a surprise, and the credit is the part they would
             otherwise write in to ask about. */}
         {heldPasses.length > 0 ? (
           <div style={{ marginTop: 12 }}>
             <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
-              ON THE MANIFEST
+              PASSES YOU HOLD
             </span>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {heldPasses.map((p) => (
@@ -507,11 +510,11 @@ export function Offboarding({ status, heldPasses }: { status: string; heldPasses
               ))}
             </ul>
             <p style={{ marginTop: 8 }}>
-              These come off the manifest and are credited in full the moment you go.
+              These are released and credited in full the moment you go.
             </p>
           </div>
         ) : (
-          <p style={{ marginTop: 10 }}>Nothing on the manifest to square.</p>
+          <p style={{ marginTop: 10 }}>No passes to square.</p>
         )}
         {error && mode === "depart" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: "var(--text-xs)" }}>

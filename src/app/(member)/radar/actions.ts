@@ -32,7 +32,7 @@ export async function plotCourse(
 ): Promise<RadarResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
-  if (pickerRsvp === pickedRsvp) return { error: "Not yourself." };
+  if (pickerRsvp === pickedRsvp) return { error: "That is you." };
 
   const { error } = await db
     .from("radar_picks")

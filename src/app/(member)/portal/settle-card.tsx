@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button, Toast } from "@/components/ds";
+import { CARD_UNAVAILABLE } from "@/lib/errors";
 
 /* — Settle a negative house-account balance by card via Stripe Checkout.
      Rendered only when the server says the processor is configured. — */
@@ -22,9 +23,9 @@ export function SettleCardButton({ amountLabel }: { amountLabel: string }) {
         window.location.assign(data.url);
         return;
       }
-      setError(data.error ?? "The processor is unavailable. Try again shortly.");
+      setError(data.error ?? CARD_UNAVAILABLE);
     } catch {
-      setError("The processor is unavailable. Try again shortly.");
+      setError(CARD_UNAVAILABLE);
     }
     setPending(false);
   };

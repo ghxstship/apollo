@@ -81,6 +81,7 @@ export default async function AgreementsPage() {
             status="empty"
             icon="FileSignature"
             title="Nothing to sign yet."
+            detail="Agreements land here when an episode calls for one. Nothing is waiting on you."
           />
         </section>
       ) : (

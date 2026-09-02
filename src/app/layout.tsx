@@ -62,8 +62,18 @@ export const metadata: Metadata = {
     default: `${ANCHOR} ${TAGLINE}`,
     template: `%s · ${ANCHOR}`,
   },
+  /* Was: a global club running one weekly seven-hour sailing. The club is in
+     two cities, not the world, and the weekly sailing is the Anchor series —
+     twelve of the season's fifty-two episodes. The other four series are what
+     the club mostly does.
+
+     CAPACITY, PENDING OWNER CONFIRMATION: forty is the seeded fleet — four
+     yachts at ten passes each — and the figure the press boilerplate has always
+     carried. The operating playbook models 100 guests for the flagship. Four
+     public surfaces state this number; all four now say forty, and all four
+     change together when the owner settles it. */
   description:
-    "A global nautical social club. One weekly seven-hour sailing out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards.",
+    "An IRL social club, filmed. Season I is fifty-two episodes across five series, afloat and ashore, out of Miami — forty aboard the flagship. No scripts. No second takes.",
   manifest: "/manifest.webmanifest",
   icons: {
     apple: "/apple-icon.png",

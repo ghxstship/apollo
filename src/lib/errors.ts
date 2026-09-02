@@ -24,12 +24,24 @@ export type PgLikeError = { message?: string | null; code?: string | null };
 /* "Paused", not "on hold": that is the word the column uses, the word the
    action uses, and the word the button a member presses uses. A hold, in this
    product, is a thing that happens to an EPISODE. */
+/* "Your page" named nothing. The destination has a name — You — and the nav
+   label, the tab, the title and the h1 all carry it, so the refusal carries it
+   too rather than sending a member to look for a page nobody calls that. */
 export const HOLD_MESSAGE =
-  "Your membership is paused. Your page has the way back.";
+  "Your membership is paused. Resume it on the You page.";
 
 /* What we can honestly say when the policy refused and we have not asked why. */
 export const REFUSED_MESSAGE =
   "The club's records don't allow that just now. Shoreside can sort it.";
+
+/* Card payments are handed off to Stripe by the /api/stripe/* routes, and when
+   that hand-off does not come back there is one thing to say about it. It was
+   declared three times across two files and said "the processor", which is a
+   word from the engineering side of the wall — a member has a card, not a
+   processor. Named once here, and it names the way out, because dues really
+   are settled with Shoreside while the hand-off is down (see /account). */
+export const CARD_UNAVAILABLE =
+  "Card payments aren't going through just now. Try again shortly, or settle with Shoreside.";
 
 export function isRlsRefusal(error: PgLikeError | null | undefined): boolean {
   return (
@@ -60,7 +72,15 @@ export function voice(error: PgLikeError | null | undefined): string {
      a member who never chose one. */
   if (error.code === "22P02" || error.code === "22007" ||
       /invalid input syntax for type/i.test(error.message ?? "")) {
-    return "That link looks wrong. Try again from your manifest.";
+    /* This used to say "try again from your manifest", which named a retired
+       surface AND aimed at /manifest, a route that 308s to /passes. Sending a
+       member to a moved route is the worst thing a refusal can do.
+
+       It names no route now, on the same reasoning as the 42501 branch above:
+       a malformed id reaches here from the galley, the shop and the agreements
+       as readily as from a pass, so any route named here is right some of the
+       time and confidently wrong the rest of it. */
+    return "That link looks wrong. Start again from the page that offered it.";
   }
 
   const m = (error.message ?? "").trim();

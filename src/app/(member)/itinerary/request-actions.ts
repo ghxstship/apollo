@@ -32,7 +32,7 @@ export async function raiseCharterRequest(
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Sign in first — members enquire from their manifest." };
+  if (!user) return { error: "Sign in first — an enquiry is raised from a member account." };
 
   const series = String(formData.get("series") ?? "").trim();
   const sailing = String(formData.get("sailing") ?? "").trim().slice(0, 120);

@@ -301,7 +301,9 @@ export async function improvePass(episodeId: string, addonIds: string[]): Promis
     .select("starts_at, time_zone")
     .eq("id", episodeId)
     .maybeSingle();
-  if (!episode) return { error: "That episode is off the manifest." };
+  /* Not "off the manifest": the row is missing, which is an episode that is no
+     longer listed, not a boarding list a member has fallen off. */
+  if (!episode) return { error: "That episode is no longer listed. Start again from Passes." };
   const cutoff = new Date(eveningBefore(episode.starts_at, episode.time_zone));
   if (Date.now() >= cutoff.getTime()) {
     return { error: "The add-on window closed at 18:00 the night before." };
@@ -519,7 +521,7 @@ export async function applyPromo(rawCode: string, episodeId: string): Promise<Pr
     .select("price_cents")
     .eq("id", episodeId)
     .maybeSingle();
-  if (!episode) return { ok: false, reason: "That episode is off the manifest." };
+  if (!episode) return { ok: false, reason: "That episode is no longer listed. Start again from Passes." };
 
   return {
     ok: true,

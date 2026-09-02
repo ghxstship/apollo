@@ -133,8 +133,10 @@ export default async function HomePortPage() {
             title="No passes held."
             detail="The season is open. Passes are few by design."
             action={
+              /* The destination's NAME, as the nav sets it — /passes was
+                 reached under three different labels across two pages. */
               <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
-                View passes
+                Passes
               </Link>
             }
           />

@@ -11,6 +11,7 @@ import { getMember, type Episode } from "../data";
 import { readLegs, readStops, type EpisodeLeg, type EpisodeStop } from "../itinerary/data";
 import { Countdown } from "./countdown";
 import { FrameUpload } from "./frame-upload";
+import { YourFrames, type OwnFrame } from "./your-frames";
 import { GalleyOrderForm, type GalleyItem } from "./galley";
 
 export const metadata: Metadata = { title: SURFACES.gateway };
@@ -234,12 +235,12 @@ export default async function LivePage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
                   <Countdown target={next.starts_at} />
                   <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
-                    View the season
+                    Passes
                   </Link>
                 </div>
               ) : (
                 <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
-                  View the season
+                  Passes
                 </Link>
               )
             }
@@ -273,6 +274,24 @@ export default async function LivePage() {
     db.from("episodes").select("deck_state").eq("id", live.id).maybeSingle(),
   ]);
   const aboard = !!myPass;
+
+  /* The member's own frames on this episode. Read through RLS — the policy
+     "members see approved, own, and staff see all" means this returns their
+     own whether cleared or not, which is the point: a frame still with the
+     Bridge is exactly the one somebody is most likely to want back. */
+  const ownFramesRes = aboard
+    ? await supabase
+        .from("episode_media")
+        .select("id, caption, approved")
+        .eq("episode_id", live.id)
+        .eq("uploaded_by", user.id)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+  const ownFrames: OwnFrame[] = (ownFramesRes.data ?? []).map((f) => ({
+    id: f.id,
+    caption: f.caption,
+    approved: f.approved,
+  }));
 
   /* Validated against the model rather than cast blind — the check constraint
      guarantees the four values, but a constraint is not a compiler. */
@@ -449,6 +468,10 @@ export default async function LivePage() {
             FROM THE WATER · CLEARED BY THE BRIDGE BEFORE THE GALLERY
           </p>
           <FrameUpload episodeId={live.id} />
+          {/* What you sent, and the way to take it back. A member could upload
+              from the day the feature shipped and never see one afterwards —
+              the only listing was the Bridge's. */}
+          <YourFrames frames={ownFrames} />
         </div>
       ) : null}
 

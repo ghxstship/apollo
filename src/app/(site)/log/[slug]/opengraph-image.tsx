@@ -17,13 +17,17 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     .eq("slug", slug)
     .maybeSingle();
 
+  /* The fallback card's meta line named a noun the vocabulary does not carry
+     and repeated the eyebrow directly above it, and its title was the boat
+     metaphor the Log itself has now dropped. The Log's own line does both
+     jobs. */
   if (!post) {
     return new ImageResponse(
       (
         <OgFrame
           eyebrow={SURFACES.magazine}
-          title="The ship's log, published."
-          meta={`${SURFACES.magazine} · THE CLUB MAGAZINE`}
+          title="What the cameras kept."
+          meta={`${SURFACES.magazine} · SEASON I`}
         />
       ),
       { ...size }

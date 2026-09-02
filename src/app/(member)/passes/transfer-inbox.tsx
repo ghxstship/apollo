@@ -1,6 +1,6 @@
 "use client";
 
-/* Offers waiting on you, at the top of the manifest. Accepting runs the RPC
+/* Offers waiting on you, at the top of Passes. Accepting runs the RPC
    that reassigns the pass, clears the code and squares both accounts — it
    posts to the Inbox itself, so nothing is notified from here. */
 

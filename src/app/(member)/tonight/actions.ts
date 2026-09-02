@@ -70,7 +70,7 @@ export async function pickFromTable(tableId: string, picked: string): Promise<Se
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
-  if (picked === user.id) return { error: "Not yourself." };
+  if (picked === user.id) return { error: "That is you." };
 
   const { error } = await supabase
     .from("table_picks")

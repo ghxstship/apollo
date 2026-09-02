@@ -46,9 +46,14 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
   [
     "On the day",
     [
+      /* Was a single California dock, stated as though every episode mustered
+         there. Each episode carries its own muster string and no two in Season
+         I are the same — a marina for the ones afloat, a venue for the ones
+         ashore, which is most of them. The answer names where to look instead
+         of naming a place it cannot know. */
       [
         "Where do I muster?",
-        "Gangway B-12, Marina del Rey, thirty minutes before cast off. The gate code rides with your boarding stub.",
+        "Every episode musters in its own place — a marina afloat, a venue ashore. The place and the hour are on the episode's page, and the gate code rides with your boarding stub.",
       ],
       [
         "What if weather turns?",
@@ -110,12 +115,15 @@ export default function SupportPage() {
           </div>
           <div>
             <b>Hours</b>
+            {/* The club's clock is CLUB_ZONE, America/New_York — the desk is
+                in Miami. On PT these hours read three hours early for every
+                member of the home city. */}
             <p className="sp-hours">
-              Mon – Fri · 09:00 – 18:00 PT
+              Mon – Fri · 09:00 – 18:00 ET
               <br />
-              Sat · 08:00 – 14:00 PT
+              Sat · 08:00 – 14:00 ET
               <br />
-              Sailing days · dawn to last line
+              Episode days · dawn to last line
             </p>
           </div>
         </div>

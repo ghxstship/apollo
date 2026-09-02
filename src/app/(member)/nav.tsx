@@ -16,6 +16,17 @@ const LINKS = [
   ["/home", SURFACES.homePort],
   ["/live", SURFACES.gateway],
   ["/passes", "Passes"],
+  /* The one link here that leaves the member shell, and deliberately so.
+     /series was a member route until 2026-09-02, when the copy audit found
+     that the page explaining the five strands was sitting behind the sign-in —
+     unreadable by exactly the people deciding whether to apply. It is public
+     now, and the member page was retired rather than duplicated: the two facts
+     it carried that the public one did not were price and capacity, and under
+     Model C both moved onto the episode.
+
+     Do NOT recreate (member)/series to close the seam. Two pages in different
+     route groups cannot resolve to one path — Next refuses the build outright,
+     which is how this was found. */
   ["/series", SURFACES.series],
   ["/itinerary", "Itinerary"],
   ["/open-deck", SURFACES.openDeck],

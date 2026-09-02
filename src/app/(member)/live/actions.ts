@@ -74,9 +74,15 @@ export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
   const episodeId = String(formData.get("episode_id") ?? "");
   const caption = String(formData.get("caption") ?? "").trim().slice(0, 200) || null;
   const file = formData.get("frame");
-  if (!episodeId || !(file instanceof File) || file.size === 0)
-    return { error: "Pick a frame first." };
+  /* A missing or malformed episode id and a missing file are two different
+     failures and used to share one sentence. "Pick a frame first" told a member
+     who HAD picked a frame that they had not — the confidently wrong message
+     the errors module exists to prevent, and worse here because the member
+     re-picks the same frame and is refused again for the same invisible reason.
+     The id test subsumes the empty case, so the two checks stay two lines. */
   if (!/^[0-9a-f-]{36}$/i.test(episodeId))
+    return { error: "This page has lost the episode. Reload it, then send the frame again." };
+  if (!(file instanceof File) || file.size === 0)
     return { error: "Pick a frame first." };
   /* An allowlist, not a prefix: image/svg+xml passes startsWith("image/") and
      is scriptable content served from the storage origin. */
@@ -105,6 +111,58 @@ export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
     await supabase.storage.from("episode-media").remove([path]);
     return { error: await voiceWith(supabase, error) };
   }
+
+  revalidatePath("/live");
+  revalidatePath("/gallery");
+  return {};
+}
+
+/* Take your own frame back.
+
+   The permission for this has existed since August — the RLS policy "the
+   uploader withdraws their own frame" grants DELETE where uploaded_by is the
+   caller — and until now NOTHING CALLED IT. The only path that removed a frame
+   was the Bridge's, which is staff-only, so the honest answer to "can I take
+   that down" was: write to Shoreside and wait. The hardest half of the problem
+   was already solved at the database line and the easy half was missing.
+
+   The file goes before the row, in that order and deliberately. A row without
+   its file is a broken thumbnail somebody can still find in a listing; a file
+   without its row is unreachable through the app and is swept by the
+   orphaned_media trigger. If this is going to fail halfway, it should fail on
+   the side where the picture is already gone. */
+export async function withdrawFrame(id: string): Promise<GalleyResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  /* Read through RLS rather than trusting the id: a member who did not upload
+     this frame cannot see it here, so the refusal below is the same one they
+     would get from the delete, one round trip earlier. */
+  const { data: frame } = await supabase
+    .from("episode_media")
+    .select("storage_path, uploaded_by")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!frame || frame.uploaded_by !== user.id) {
+    return { error: "That frame is not yours to take down. Shoreside can help." };
+  }
+
+  if (frame.storage_path) {
+    const { error: fileError } = await supabase.storage
+      .from("episode-media")
+      .remove([frame.storage_path]);
+    /* A file that is already gone is not a reason to keep the row. */
+    if (fileError && !/not found/i.test(fileError.message)) {
+      return { error: "The frame didn't come down. Try again; if it holds, hail Shoreside." };
+    }
+  }
+
+  const { error } = await supabase.from("episode_media").delete().eq("id", id);
+  if (error) return { error: await voiceWith(supabase, error) };
 
   revalidatePath("/live");
   revalidatePath("/gallery");

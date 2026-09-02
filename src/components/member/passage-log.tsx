@@ -104,7 +104,11 @@ export function PassageLog({
     : [];
 
   const items: MarkItem[] = marks.map((m) => ({
-    kind: MARK_KIND[m.kind] ?? m.kind,
+    /* Never the raw column value. An unmapped kind used to print the database
+       token straight onto the page — the one place in the log where a member
+       reads schema instead of English. "A mark" is true of every kind there
+       will ever be, which is what a fallback has to be. */
+    kind: MARK_KIND[m.kind] ?? "A mark",
     name: m.name,
     detail: m.blurb,
     held: m.held,

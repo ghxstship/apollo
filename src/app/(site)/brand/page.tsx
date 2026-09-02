@@ -13,8 +13,18 @@ export const metadata: Metadata = {
     "The wordmark, the palette, the type, the voice, and the facts — everything needed to write about, partner with, or sponsor the show.",
 };
 
+/* The boilerplate press copies verbatim, so it has to be the thing a query can
+   settle. It described a weekly yacht charter and stopped there, which named
+   twelve of the season's fifty-two episodes and left the four other series —
+   most of the club, and most of what happens ashore — unmentioned.
+
+   CAPACITY, PENDING OWNER CONFIRMATION: forty is the seeded fleet, four yachts
+   at ten passes each, and the figure this boilerplate has always carried. The
+   operating playbook models 100 guests for the flagship. Three other public
+   surfaces state the same number and carry the same note — the homepage hero,
+   the homepage closing band, and the site description in src/app/layout.tsx. */
 const BOILER =
-  "[un] is a global nautical social club. The anchor experience is a weekly seven-hour episode out of Miami — forty vetted guests, the Haulover Sandbar, and Shore Leave ashore afterwards. Six divisions share one anchor and swap the accent only: [un] Hinged, [un] Bound, [un] Limited, [un] Scripted, [un] Cut and [un] Brand. Membership is by application or invitation.";
+  "[un] is a social club, filmed. Season I runs fifty-two episodes out of Miami, 4 September 2026 to 29 August 2027, across five series: Anchor on the water, Off Soundings past the city limits, Night Watch after hours, Even Keel for fitness and wellness, and Showboat for entertainment. The flagship sails a flotilla of four yachts, forty aboard. Six divisions share one anchor and swap the accent only: [un] Hinged, [un] Bound, [un] Limited, [un] Scripted, [un] Cut and [un] Brand. Membership is by application or invitation. No scripts. No second takes.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--scene-golden)",
@@ -112,9 +122,15 @@ const FACTS: Array<[string, string]> = [
   [`Home ${PLACE.market.toLowerCase()}`, "MIAMI, FLORIDA"],
   [`Home ${PLACE.venue.toLowerCase()}`, "HAULOVER SANDBAR"],
   ["Handle", HANDLE.toUpperCase()],
-  ["What we run", "EPISODES ABOARD · TABLES ASHORE · CAMERAS ON"],
+  /* Was TABLES ASHORE, which named one format and stood for four series and
+     thirty-four episodes. The row now says what the season actually is. */
+  ["What we run", "FIVE SERIES · EPISODES AFLOAT AND ASHORE · CAMERAS ON"],
   ["Casting", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY APPLICATION OR INVITATION"],
-  ["Cadence", "EPISODES, SUNDAYS · SEASON I — CASTING NOW"],
+  /* Was EPISODES, SUNDAYS. Season I opens on Friday 4 September 2026 and runs
+     every day of the week except Monday — nine of the fifty-two are Sundays.
+     A cadence row that states a day the calendar does not keep is worse than
+     one that states the span, so it states the span. */
+  ["Cadence", "52 EPISODES · 4 SEP MMXXVI – 29 AUG MMXXVII · SEASON I — CASTING NOW"],
 ];
 
 export default function BrandKitPage() {
@@ -247,7 +263,9 @@ export default function BrandKitPage() {
               <div className="h">Say</div>
               <div className="ex">No scripts. No second takes.</div>
               <div className="ex">The cameras are on. So is the bar.</div>
-              <div className="ex">12 cabins. 200 applicants.</div>
+              {/* The specimen has to match the page it is a specimen of — the
+                  homepage band said 12 cabins and now says 40 aboard. */}
+              <div className="ex">40 aboard. 200 applicants.</div>
             </div>
             <div className="no">
               <div className="h">Never</div>
@@ -260,10 +278,23 @@ export default function BrandKitPage() {
             Present tense, sentence case. &ldquo;You&rdquo; is the guest,
             &ldquo;we&rdquo; is the crew; cast are first names only. Scarcity is
             stated flatly, never hyped. Numbers, coordinates, and timestamps set
-            in Space Mono — 38°54′N 1°26′E.
+            in Space Mono — 25°46′N 80°12′W.
+            {/* The specimen coordinate was 38°54′N 1°26′E, which is Ibiza — a
+                place the club does not run. A worked example on the reference
+                page is the one that gets copied, so it is the home city's. */}
           </p>
+          {/* The lexicon is the list a writer works from, so a gap here is a
+              writer reaching for a word the product does not use. It was
+              missing every noun the 2026-09 renames introduced — Series,
+              Edition, Season, Special, City, Venue, Home Port, Itinerary,
+              Tonight, Portal, The Shop — and all five Season I series names,
+              while still listing Tables, whose family label went with the
+              two-axis taxonomy. Table now means one thing only, the blind
+              dinner for six, which is a format and not a word in the register.
+              Ordered: what the club runs, the five strands, then the rooms and
+              the ledger. */}
           <div className="bk-lex">
-            {["Episodes", "Tables", "The Manifest", "Passes", "Cabins", "Open Deck", "Knots", "Leagues", "Marks", "Regattas", "Member Card", "Live", "the Bridge", "Shoreside", "The Log", "The Producer", "Aboard", "Weather Hold", "The Gangway"].map((w) => (
+            {["Episodes", "Series", "Season", "Edition", "Special", "City", "Venue", "Home Port", "Itinerary", "The Manifest", "Passes", "Cabins", "Aboard", "Weather Hold", "Anchor", "Off Soundings", "Night Watch", "Even Keel", "Showboat", "Live", "Tonight", "Open Deck", "Portal", "Member Card", "The Gangway", "the Bridge", "Shoreside", "The Producer", "The Log", "The Shop", "Knots", "Leagues", "Marks", "Regattas"].map((w) => (
               <Tag key={w}>{w}</Tag>
             ))}
           </div>

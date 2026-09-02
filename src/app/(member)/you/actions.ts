@@ -33,7 +33,9 @@ export async function updateProfile(
     .filter((i) => allowed.has(i));
   const inDirectory = formData.get("in_directory") === "on";
 
-  if (!fullName) return { error: "A name for the manifest, at least." };
+  /* Not "a name for the manifest": this is the profile, no episode is in view,
+     and the place a member can actually SEE this name is their Member Card. */
+  if (!fullName) return { error: "A name, at least — it goes on your Member Card." };
   if (bio.length > BIO_MAX) return { error: `Keep it under ${BIO_MAX} characters.` };
 
   const { error } = await supabase

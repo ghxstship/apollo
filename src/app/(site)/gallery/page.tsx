@@ -26,21 +26,24 @@ const TILES: Array<{
   tall?: boolean;
   wide?: boolean;
 }> = [
-  { media: "dawn", cap: "First light, Catalina bound", meta: "Afloat · Jul 26", wide: true },
-  { media: "dusk", cap: "Sirens' night, Venice", meta: "Ashore · Jul 10" },
-  { media: "day", cap: "Rail down off Point Dume", meta: "Afloat · Jul 04", tall: true },
-  { media: "day", cap: "Start line, boat two", meta: "Afloat · Jun 28" },
-  /* Named for the cove rather than the settlement: Two Harbors is the real
-     place on Catalina, but the plural is in BANNED_TERMS with the City rename
-     and the gate greps rendered text, so this caption named the anchorage. */
-  { media: "day", cap: "The long table at Isthmus Cove", meta: "Ashore · Jun 21", wide: true },
-  { media: "dawn", cap: "Coffee below deck", meta: "Afloat · Jun 14" },
-  { media: "dusk", cap: "Records on, wind down", meta: "Ashore · May 31", tall: true },
-  { media: "day", cap: "Swim call at anchor", meta: "Afloat · May 17" },
-  { media: "dawn", cap: "Watch change, 05:40", meta: "Afloat · May 24" },
-  { media: "dusk", cap: "The season's toast", meta: "Ashore · May 10" },
-  { media: "dawn", cap: "Fleet leaving the marina", meta: "Afloat · May 03", wide: true },
-  { media: "day", cap: "The committee boat disagrees", meta: "Afloat · Jun 07" },
+/* Reseeded from Season I. Every caption was a Los Angeles scene — Catalina,
+   Point Dume, Venice, Isthmus Cove — dated May to July, months before the
+   club's first episode on 4 September 2026, so the placeholder grid described
+   a season that had not happened in a city the club does not sail from. These
+   are real episodes, with their real settings and dates on the club's clock,
+   and they still say IMAGERY TK until film comes back. */
+  { media: "dawn", cap: "Anchor: the launch", meta: "Afloat · Sep 04", wide: true },
+  { media: "dusk", cap: "Neon dusk", meta: "Ashore · Sep 09" },
+  { media: "day", cap: "Airboat safari", meta: "Afloat · Sep 19", tall: true },
+  { media: "dusk", cap: "Velvet nocturne", meta: "Ashore · Sep 22" },
+  { media: "dusk", cap: "Shadow and silk", meta: "Ashore · Oct 01", wide: true },
+  { media: "day", cap: "Anchor: autumn equinox", meta: "Afloat · Oct 11" },
+  { media: "dusk", cap: "After dark in the sculpture garden", meta: "Ashore · Oct 31", tall: true },
+  { media: "day", cap: "Apex velocity", meta: "Ashore · Nov 05" },
+  { media: "dawn", cap: "Anchor: coastal solstice", meta: "Afloat · Nov 15" },
+  { media: "dusk", cap: "Omakase underground", meta: "Ashore · Nov 28" },
+  { media: "dawn", cap: "Glow paddle", meta: "Afloat · Jan 07", wide: true },
+  { media: "day", cap: "Anchor: the white party", meta: "Afloat · May 15" },
 ];
 
 export default async function GalleryPage() {
@@ -125,11 +128,12 @@ export default async function GalleryPage() {
       )}
 
       <div className="gl-caption">
-        <p>
-          Art direction, when the film comes back: warm, sun-washed water at golden
-          hour, film grain welcome — salt, rope, linen, bodies in motion. Never
-          cool, never clinical, never staged.
-        </p>
+        {/* The art-direction brief is a note to a photographer, not something a
+            reader came here for — it lived on the public page for want of
+            anywhere else. The half that belongs to the reader is the promise at
+            the end of it, and that half stays. The brief itself is on /brand
+            under Imagery, where a photographer will look for it. */}
+        <p>Never cool, never clinical, never staged.</p>
         <span>Member film · credited by name</span>
       </div>
     </div>

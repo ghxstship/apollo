@@ -1077,7 +1077,7 @@ async function enforcementRules(p) {
 
   const fireRule = await stf.post("automations", {
     name: `E2E fire ${stamp}`, trigger_event: "pass_confirmed", conditions: {},
-    action: { kind: "notify", title: `E2E pass ${stamp}`, body: "{member} — {voyage}." },
+    action: { kind: "notify", title: `E2E pass ${stamp}`, body: "{member} — {episode}." },
   });
   const fireId = fireRule.data?.[0]?.id;
 
@@ -1382,13 +1382,44 @@ async function homeWater(stf) {
 async function roundTwoRules(p) {
   const reg = rest(p.regional), stf = rest(p.staff);
   const me = uid(p.regional);
+  /* Carries RUN_TOKEN so the sweep at the top of the file reclaims it, whether
+     this run finishes or dies halfway. */
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
 
   // — A released pass is paid for again —
-  const claimable = await stf.get(
-    "episodes?status=eq.scheduled&select=id,price_cents&price_cents=gt.0" +
-      `&starts_at=gt.${new Date().toISOString()}${await homeWater(stf)}&order=starts_at.asc&limit=1`
-  );
-  const v = claimable.data?.[0];
+  /* This raises its own episode rather than reaching into the catalogue, and
+     that is the correction rather than an optimisation.
+
+     It used to take the earliest scheduled priced episode in home water. That
+     worked only while the catalogue happened to hold something this persona
+     could claim. Season I broke it twice over: pricing every episode made the
+     first hit an Anchor, which is odyssey class and past a regional ceiling;
+     and filing every episode under a series that requires vetting made the
+     next hit refuse at the vetting gate, because this block runs BEFORE the
+     suite clears anyone's vetting file — deliberately, since a later test
+     asserts that an unvetted member is turned away.
+
+     Both refusals read here as "the pass was free", which is the most alarming
+     way for a money test to fail and the least true. A test about what a pass
+     COSTS should not also be a test of what the catalogue currently contains.
+     No series, so no vetting gate; passage, so no ceiling; a price, so there
+     is something to measure. */
+  const cityId = (await stf.get("cities?slug=eq.miami&select=id&limit=1")).data?.[0]?.id;
+  const paidMk = await stf.post("episodes", {
+    slug: `e2e-charge-${stamp}`,
+    title: "E2E fixture episode.",
+    setting: "shore",
+    starts_at: new Date(Date.now() + 30 * 864e5).toISOString(),
+    ends_at: new Date(Date.now() + 30 * 864e5 + 3 * 36e5).toISOString(),
+    time_zone: "America/New_York",
+    city_id: cityId,
+    passes_total: 8,
+    price_cents: 8500,
+    status: "scheduled",
+  });
+  const v = paidMk.data?.[0];
+  note("staff", "raises a priced episode to charge against", !!v?.id,
+    `got ${paidMk.status} ${JSON.stringify(paidMk.data).slice(0, 90)}`);
   if (v) {
     await stf.del(`passes?profile_id=eq.${me}&episode_id=eq.${v.id}`);
     await stf.del(`account_ledger?profile_id=eq.${me}&episode_id=eq.${v.id}`);
@@ -3943,11 +3974,11 @@ async function decisionsOfSept2(p) {
 
   const regAway = await reg.post("passes", { episode_id: awayVid, profile_id: uid(p.regional), status: "aboard" });
   note("regional", "a regional pass sails from home, not from los angeles",
-    regAway.status >= 400 && /home harbor/.test(raw(regAway)) && /Los Angeles/.test(raw(regAway)), raw(regAway).slice(0, 140));
+    regAway.status >= 400 && /home city/.test(raw(regAway)) && /Los Angeles/.test(raw(regAway)), raw(regAway).slice(0, 140));
   if (regAway.status === 201) await stf.del(`passes?id=eq.${regAway.data?.[0]?.id}`);
 
   const natAway = await nat.post("passes", { episode_id: awayVid, profile_id: uid(p.national), status: "aboard" });
-  note("national", "a national pass sails every us harbor", natAway.status === 201, `got ${natAway.status} ${said(natAway).slice(0, 90)}`);
+  note("national", "a national pass sails every us city", natAway.status === 201, `got ${natAway.status} ${said(natAway).slice(0, 90)}`);
   const natRel = await nat.del(`passes?episode_id=eq.${awayVid}&profile_id=eq.${uid(p.national)}`);
   note("national", "and hands the away pass back", natRel.status < 300, `got ${natRel.status}`);
 

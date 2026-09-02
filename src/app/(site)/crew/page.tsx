@@ -60,14 +60,19 @@ export default function CrewPage() {
       <div className="ws-phead">
         <span className="ls-eyebrow">Crew wanted</span>
         <h1>Work the water.</h1>
+        {/* Was "The Cast & Crew run the water" — the cast are the people the
+            cameras follow; they run nothing. Crew run it, which is what this
+            page is hiring for. */}
         <p className="ws-phead__sub">
-          {"The Cast & Crew"} run the water, the cameras, and the welcome —
-          marine safety, media, hospitality. We hire people who&rsquo;d do the
-          job on their day off — and then we make sure they don&rsquo;t have to.
+          Crew run the water, the cameras, and the welcome — marine safety,
+          media, hospitality. We hire people who&rsquo;d do the job on their day
+          off — and then we make sure they don&rsquo;t have to.
         </p>
       </div>
       <div style={{ padding: "64px 0 96px" }}>
-        <SectionHeader eyebrow="Open roles" title="Four seats on the crew side." />
+        {/* A seat is what a member holds on an episode. A job is not one, and
+            using the word for both makes the club's own vocabulary mean less. */}
+        <SectionHeader eyebrow="Open roles" title="Four roles open." />
         {ROLES.map((r) => (
           <div className="ws-ledger-row" key={r.title}>
             <div>

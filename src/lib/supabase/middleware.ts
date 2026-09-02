@@ -4,7 +4,16 @@ import { NextResponse, type NextRequest } from "next/server";
 /* Paths under these prefixes require a signed-in member. */
 /* Legacy paths (/city, /wardroom, /card, /now, /harbormaster, /dispatch)
    need no entries: next.config redirects run before the proxy. */
-const PROTECTED = ["/home", "/passes", "/series", "/itinerary", "/membership/standing", "/open-deck", "/directory", "/threads", "/portal", "/account", "/card", "/inbox", "/you", "/live", "/shop", "/stub", "/regattas", "/tonight", "/matches", "/agreements", "/kiosk", "/bridge", "/vetting", "/radar", "/show"];
+/* /series came OFF this list on 2026-09-02. The catalogue of named strands is
+   the single biggest thing the shore could not read: a visitor met a series
+   only as an uppercase eyebrow on an episode card, and the page that explains
+   what one IS sat behind the gate, in front of the one audience already
+   convinced. It is a public page now, so the proxy must stop bouncing it —
+   with the entry in place every signed-out visitor was redirected to /gangway
+   before the page rendered a word. /the-show needs no entry for the same
+   reason it needs no removal: it was never on this list, and it does not fall
+   under /show, which matches only /show and /show/*. */
+const PROTECTED = ["/home", "/passes", "/itinerary", "/membership/standing", "/open-deck", "/directory", "/threads", "/portal", "/account", "/card", "/inbox", "/you", "/live", "/shop", "/stub", "/regattas", "/tonight", "/matches", "/agreements", "/kiosk", "/bridge", "/vetting", "/radar", "/show"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

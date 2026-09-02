@@ -114,8 +114,17 @@ export default async function HomePage() {
               lowercase phrase on the rule), never Anton alone, because the
               tagline is the one string the display face must not capitalise. */}
           <h1><TaglineMark /></h1>
+          {/* Was "Twelve strangers. One yacht." The flagship sails a flotilla
+              of four hulls at ten passes each, so both halves were wrong and
+              the club stated three different capacities across four surfaces.
+
+              CAPACITY, PENDING OWNER CONFIRMATION: forty matches the seeded
+              fleet and the press boilerplate; the operating playbook models 100
+              guests for the flagship. The other three sites carry the same
+              note — see src/app/layout.tsx, the closing band below, and the
+              boilerplate on /brand. */}
           <p className="ws-hero__sub">
-            Twelve strangers. One yacht. Cameras from boarding to docking —
+            Forty strangers. Four yachts. Cameras from boarding to docking —
             whatever happens after sunset is the show.
           </p>
           <div className="ws-hero__cta">
@@ -322,7 +331,12 @@ export default async function HomePage() {
 
       <section className="ws-band">
         <div className="ls-container">
-          <h2>12 cabins. 200 applicants.</h2>
+          {/* Was "12 cabins. 200 applicants." The four hulls carry eighteen
+              cabins between them, so the number named nothing real. Passes are
+              the unit a reader buys anyway.
+
+              CAPACITY, PENDING OWNER CONFIRMATION — see the hero above. */}
+          <h2>40 aboard. 200 applicants.</h2>
           <p>
             Casting is by application or invitation. Apply once, board a season —
             the cameras do the rest.

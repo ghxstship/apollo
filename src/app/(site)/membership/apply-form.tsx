@@ -54,7 +54,9 @@ export function ApplyForm() {
       <Input
         label="Who sends you?"
         name="referral"
-        placeholder="A member's name, or how you found the water"
+        // Same exclusion as the label below: "how you found the water" asks
+        // about boats on a form most of whose episodes are ashore.
+        placeholder="A member's name, or how you found us"
         defaultValue={state.values.referral}
       />
       <Input
@@ -72,8 +74,11 @@ export function ApplyForm() {
         // code box, since Input keeps `style` on the wrapper, not the input.
         style={{ "--font-sans": "var(--font-mono)" } as React.CSSProperties}
       />
+      {/* Was "Why the water?", which asks an applicant to explain an interest
+          in boats — and thirty-four of the season's fifty-two episodes never
+          leave land. Aboard is the club's word for joining, afloat or not. */}
       <Textarea
-        label="Why the water?"
+        label="Why come aboard?"
         name="note"
         rows={4}
         placeholder="A few honest lines. No résumés."

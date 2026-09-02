@@ -3,11 +3,14 @@
 import React from "react";
 import { Button, Toast } from "@/components/ds";
 import { price } from "@/lib/format";
+import { CARD_UNAVAILABLE } from "@/lib/errors";
 
 /* — Billing islands. Every write goes through the Stripe routes; these only
      hand the member off and report back when the processor is quiet. — */
 
-const UNAVAILABLE = "The processor is unavailable. Try again shortly.";
+/* The sentence itself now lives in @/lib/errors, declared once: it stood three
+   times across two files, and drifting copies of a refusal are how two surfaces
+   end up saying different things about the same outage. */
 
 async function handOff(url: string, body?: unknown): Promise<string> {
   try {
@@ -20,9 +23,9 @@ async function handOff(url: string, body?: unknown): Promise<string> {
       window.location.assign(data.url);
       return "";
     }
-    return data.error ?? UNAVAILABLE;
+    return data.error ?? CARD_UNAVAILABLE;
   } catch {
-    return UNAVAILABLE;
+    return CARD_UNAVAILABLE;
   }
 }
 

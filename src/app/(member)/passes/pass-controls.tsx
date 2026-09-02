@@ -547,7 +547,7 @@ export function PassControls({
             disabled={pending}
             onClick={() => run(() => releasePass(episodeId))}
           >
-            Leave the list
+            Leave the waitlist
           </Button>
           {paused ? (
             /* The switch is an passes UPDATE, refused while paused — shown as
@@ -610,7 +610,7 @@ export function PassControls({
             disabled={pending}
             onClick={() => run(() => setPassStatus(episodeId, "waitlist"))}
           >
-            Join waitlist
+            Join the waitlist
           </Button>
         </>
       ) : (
@@ -653,7 +653,7 @@ export function PassControls({
                 disabled={pending}
                 onClick={() => run(() => setPassStatus(episodeId, "waitlist"))}
               >
-                Join waitlist
+                Join the waitlist
               </Button>
             </>
           ) : null}

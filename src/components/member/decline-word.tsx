@@ -43,7 +43,9 @@ export function DeclineWord({
         </p>
       ) : null}
       {state.error ? (
-        <p className="hm-note" role="status" style={{ marginTop: 8 }}>
+        /* alert, not status — a refusal interrupts; see enquire.tsx. The note
+           above it stays a status: it reports a state, not a failure. */
+        <p className="hm-note" role="alert" style={{ marginTop: 8 }}>
           {state.error}
         </p>
       ) : null}

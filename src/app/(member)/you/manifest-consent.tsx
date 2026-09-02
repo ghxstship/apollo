@@ -22,7 +22,10 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
   return (
     <div className="you-row">
       <div>
-        <b>Show my name on the manifest</b>
+        {/* "the manifest" alone left a member asking which one. A manifest is
+            the boarding list for ONE episode, so the label says so — and the
+            line under it already puts an episode in view. */}
+        <b>Show my name on the episode manifest</b>
         <p>
           {on
             ? "Members looking at an episode you are aboard can see you are sailing."
@@ -35,7 +38,7 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
       <Switch
         checked={on}
         disabled={pending}
-        aria-label="Show my name on the manifest"
+        aria-label="Show my name on the episode manifest"
         onChange={(e) => {
           const v = e.target.checked;
           setOn(v);

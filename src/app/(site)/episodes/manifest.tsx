@@ -244,9 +244,11 @@ export function EpisodeManifest({ items }: { items: ManifestItem[] }) {
                 v.distance,
                 v.week,
                 v.fleet,
-                /* Before the drop hour the count is not an offer — the hour is. */
+                /* Before the drop hour the count is not an offer. The hour now
+                   stands in the action column where the price would be, so
+                   printing it here as well said the same thing twice. */
                 v.onSale
-                  ? v.onSale
+                  ? null
                   : v.passesLeft != null && v.passesLeft > 0
                     ? `${v.passesLeft} ${v.seatsWord} left`
                     : null,
@@ -286,8 +288,17 @@ export function EpisodeManifest({ items }: { items: ManifestItem[] }) {
                       </div>
                     </div>
                     <div className="ws-vrow__act">
+                      {/* No price stands beside a door that is not a sale —
+                          the detail page's rule, which this row did not carry.
+                          price() renders a zero as COMPLIMENTARY, and every
+                          episode of Season I is still priced at zero while its
+                          sale hour is ahead, so the whole listing advertised a
+                          free season. Announced, not on offer: the row says the
+                          hour instead. */}
                       {v.status === "live" ? (
                         <span className="ls-live ws-live-label">Underway</span>
+                      ) : v.onSale ? (
+                        <span className="ws-vrow__price">{v.onSale}</span>
                       ) : (
                         <span className="ws-vrow__price">{v.price}</span>
                       )}

@@ -189,9 +189,20 @@ export function FeedList({ posts }: { posts: FeedPost[] }) {
       ) : null}
       {/* The deck had no zero-state at all: a new member saw a composer and
           then an empty flex column, with nothing to say the deck was empty
-          rather than broken. The kit's own words, so nothing new is invented
-          for a state that is meant to be temporary. */}
-      {posts.length === 0 ? <StateBlock status="empty" /> : null}
+          rather than broken.
+
+          It then fell through to the kit's generic empty block, which talks
+          about water on a page about a deck and offers nothing to do — the one
+          genuine dead end in the product. Its own words now, and they aim at
+          the composer sitting directly above it. */}
+      {posts.length === 0 ? (
+        <StateBlock
+          status="empty"
+          icon="MessageSquare"
+          title="Nothing on the deck yet."
+          detail="The composer is right above. Post the first word and the rest follows."
+        />
+      ) : null}
       {shown.map((post) => (
         <FeedEntry key={post.id} post={post} />
       ))}

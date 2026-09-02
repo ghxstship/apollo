@@ -117,7 +117,9 @@ export async function takeASeat(
     .single();
   if (error) {
     if (/duplicate|already exists/i.test(error.message ?? "")) {
-      return { error: "You are already on this manifest." };
+      /* A duplicate here is a double-tap, not a mistake. "You are already…"
+         reads as a telling-off for one; state the fact instead. */
+      return { error: "That seat is already yours — the manifest has you." };
     }
     /* The triggers raise in the club's voice and say more than a generic line
        can — which segment is full and how many seats it had, that the clearance
@@ -177,7 +179,7 @@ export async function joinTheLine(episodeId: string, segment: string): Promise<V
     .insert({ episode_id: episodeId, profile_id: user.id, segment: segment as Segment });
   if (error) {
     if (/duplicate|already exists/i.test(error.message ?? "")) {
-      return { error: "You are already in this line." };
+      return { error: "That place in the line is already yours — the list holds it." };
     }
     return { error: await voiceWith(supabase, error) };
   }

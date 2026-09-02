@@ -121,7 +121,12 @@ export function SheetPanel({
         </div>
         <p className="vet-note">
           Boundaries drive real operations: seating, the media team&rsquo;s shot list,
-          and the wristband issued at check-in. Setting &ldquo;Being photographed&rdquo; to
+          {/* Capitalised because it is named vocabulary, not a description: the
+              handoff lexicon lists Wristband alongside Boarding pass and
+              Confessional Pod, and check:ds enforces that every named term
+              appears verbatim on some surface. This sentence became its last
+              one when the member-side series catalogue was retired. */}
+          and the Wristband issued at check-in. Setting &ldquo;Being photographed&rdquo; to
           never blurs you in the Confessional Pod, and the crew cannot lift it on deck.
         </p>
       </div>

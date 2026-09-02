@@ -193,7 +193,7 @@ export function HandOff({
           />
           <p style={{ ...noteStyle, marginTop: 12 }}>
             Passes move between members, never for cash — the code of conduct is
-            the code of conduct. They accept on their own manifest; your account
+            the code of conduct. They accept from their own Passes; your account
             squares the moment they do.
           </p>
           <Problem message={error} />

@@ -43,7 +43,9 @@ export async function signDocument(
     if (/consent/i.test(error.message))
       return { error: "Tick the box to agree to sign electronically." };
     if (/not published/i.test(error.message))
-      return { error: "That document isn't ready to sign yet." };
+      /* Said what had happened and nothing about what happens next. Publishing
+         is Shoreside's move, not the member's, so the line says whose it is. */
+      return { error: "That document isn't ready to sign yet. Shoreside publishes it, and it lands here when they do." };
     if (/signature is required/i.test(error.message))
       return { error: "A signature is required." };
     /* Anything the RPC refuses in its own words reaches the member in them —

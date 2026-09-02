@@ -65,7 +65,14 @@ export default async function LoreArticlePage({
           ))}
         </div>
         <div className="dp-art__foot">
-          <span className="dp-art__coords">Filed from 33.98° N — 118.45° W</span>
+          {/* Was 33.98° N — 118.45° W, Marina del Rey, on every article the Log
+              has ever published. log_posts carries no episode_id and no
+              city_id, so there is nothing on the row to read a real position
+              off — the honest fallback is the club's home city, and this is
+              Miami's coordinate exactly as the cities table holds it. Give a
+              post an episode and this line should read that episode's position
+              instead. */}
+          <span className="dp-art__coords">Filed from 25.7617° N — 80.1918° W</span>
           <Link href="/log">Back to the log</Link>
         </div>
       </article>

@@ -13,9 +13,18 @@ import { JoinControl } from "./join-control";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/membership" },
-  title: "Membership",
+  /* Casting, not Membership: the nav, the footer and this title each named the
+     same page differently. Casting is the show's word and the page's own
+     eyebrow already used it.
+
+     The description also said the five plans come "each in three class tiers",
+     which was wrong twice over. Access carries no tiers at all — it is the
+     platform account, passes bought at each episode's listed price — and the
+     three tiers stopped being classes when the taxonomy split in two: they are
+     durations, and the grid has printed their hours since. */
+  title: "Casting",
   description:
-    "Five ways aboard — Access, Regional, National, Global, and Guest passes, each in three class tiers. Membership is by invitation or application.",
+    "Five ways aboard — Access, Regional, National, Global and Guest. Four carry three duration tiers: up to 4 hours, up to 8 hours, any length. Membership is by invitation or application.",
 };
 
 type Plan = Tables<"membership_plans">;
@@ -76,10 +85,14 @@ export default async function MembershipPage() {
         <span className="ls-eyebrow">Casting</span>
         <h1>Five ways aboard.</h1>
         <p className="ws-phead__tag"><TaglineMark /></p>
+        {/* Was "Geography sets where you sail; the class tier sets how far."
+            Wrong on both halves: the tier is a duration ceiling, not a class,
+            and it sets how LONG rather than how far — and most of the season
+            does not sail anywhere. */}
         <p className="ws-phead__sub">
-          Membership is by invitation or application. Geography sets where you
-          sail; the class tier sets how far. Dues keep passes few and tables
-          long.
+          Membership is by invitation or application. Geography sets which
+          cities you can book; the tier sets how long an episode may run. Dues
+          keep passes few.
         </p>
       </div>
 

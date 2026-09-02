@@ -20,14 +20,23 @@ export function SiteFooter({ cities }: { cities: Tables<"cities">[] }) {
             {/* System A: the umbrella is speaking in a footer, and the parent anchor
                 compounds recognition across every division instead of splitting it. */}
             <Wordmark size="lg" suffix={null} inverse />
+            {/* Was "A membership club for experiential connection, at sea and
+                ashore." — an abstraction on every page of the site, and the
+                register the voice rules exist to keep out. A fact, then a line
+                that lands. */}
             <p className="ws-footer__blurb">
-              A membership club for experiential connection, at sea and ashore.
+              Fifty-two episodes a season, afloat and ashore. The cameras stay on.
             </p>
           </div>
           <div className="ws-footer__col">
             <b>The club</b>
             <Link href="/episodes">Episodes</Link>
-            <Link href="/membership">Membership</Link>
+            <Link href="/series">Series</Link>
+            <Link href="/the-show">The show</Link>
+            {/* One name per destination: the nav called this Casting and the
+                footer called it Membership, for the same page. Casting is the
+                show's word and it wins. */}
+            <Link href="/membership">Casting</Link>
             <Link href="/log">The Log</Link>
             <Link href="/gallery">Gallery</Link>
             <Link href="/crew">Crew wanted</Link>
@@ -56,7 +65,9 @@ export function SiteFooter({ cities }: { cities: Tables<"cities">[] }) {
         </div>
         <div className="ws-footer__base">
           <span>© MMXXVI {ANCHOR}</span>
-          <span>Est. {EST_YEAR_ROMAN} · Marina del Rey</span>
+          {/* Marina del Rey is Los Angeles; the club was founded in Miami and
+              /brand's own facts table has said so all along. */}
+          <span>Est. {EST_YEAR_ROMAN} · Miami</span>
         </div>
       </div>
     </footer>

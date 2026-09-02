@@ -11,7 +11,16 @@ export function relTime(iso: string): string {
 }
 
 /* Icon per notification kind. "Waves" is missing from this Lucide set —
-   Droplets stands in for knots (the "fathoms" kind is legacy plumbing). */
+   Droplets stands in for knots.
+
+   The keys are notifications.kind as the DATABASE writes it, not display copy:
+   twenty-eight triggers insert 'manifest' and twelve insert 'fathoms', and a
+   key renamed here alone would stop matching and silently fall back to Radio
+   for every one of them. Both are retired words and both are invisible to the
+   gates, which grep rendered text and strip attributes before they look — so
+   they are the last hand-typed retired lexicon and they cannot be retired from
+   this file. Retiring them is a migration, and it has to move the column
+   values and this map in the same change. */
 export const KIND_ICON: Record<string, string> = {
   word: "Radio",
   manifest: "Ticket",

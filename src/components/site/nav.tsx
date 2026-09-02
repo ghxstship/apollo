@@ -13,8 +13,15 @@ const LINKS: Array<[string, string]> = [
   /* One name per destination. The public listing is Episodes in the nav, the
      footer and its own page title; the written record is the Log. "Manifest"
      is not a name for either — a manifest is the boarding list for a single
-     episode, which is a member surface, not a season listing. */
+     episode, which is a member surface, not a season listing.
+
+     /membership was Casting here and Membership in the footer and the page
+     title — one destination under two names, which teaches a reader they are
+     two places. Casting is the show's word, so Casting is the name everywhere;
+     the page's own eyebrow already read it. */
   ["/episodes", "Episodes"],
+  ["/series", "Series"],
+  ["/the-show", "The show"],
   ["/membership", "Casting"],
   ["/log", "The Log"],
   ["/gallery", "Gallery"],

@@ -27,7 +27,11 @@ export function SendAWord({
         {label}
       </button>
       {state.error ? (
-        <p className="hm-note" role="status" style={{ marginTop: 8 }}>
+        /* alert, not status: a refusal arrives at the worst moment and has to
+           interrupt what a screen reader is saying, the way enquire.tsx already
+           does. A polite region waits its turn, and a member who has moved on
+           never hears it. */
+        <p className="hm-note" role="alert" style={{ marginTop: 8 }}>
           {state.error}
         </p>
       ) : null}

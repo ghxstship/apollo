@@ -32,7 +32,11 @@ export const metadata: Metadata = { title: "You" };
    the browser has an install to offer, and a contents line that leads nowhere
    is worse than a section without one. */
 const SECTIONS: Array<[string, string]> = [
-  ["you-manifest", "The manifest reads"],
+  /* Was "The manifest reads". A manifest is the boarding list for ONE episode,
+     and this section is the profile form — no episode is in view and none of
+     these fields belong to one. The anchor id is untouched on purpose: it is
+     plumbing, and a rename here would break any link already pointing at it. */
+  ["you-manifest", "How you read"],
   ["you-cameras", "The cameras"],
   ["you-appearance", "Appearance"],
   ["you-word", "The word"],
@@ -189,7 +193,7 @@ export default async function YouPage() {
       </div>
 
       <section id="you-manifest">
-        <div className="you-h">The manifest reads</div>
+        <div className="you-h">How you read</div>
         <div className="you-sec" style={{ padding: 18 }}>
           <ProfileForm
             fullName={profile?.full_name ?? ""}

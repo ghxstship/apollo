@@ -70,8 +70,15 @@ export function Progress({
 /* — StateBlock — */
 const STATE_DEFAULTS: Record<string, { icon?: string; title: string; detail: string }> = {
   empty: { icon: "Waves", title: "Nothing on the water.", detail: "When there's something to show, it shows here." },
-  loading: { title: "Hauling it in.", detail: "A moment — the manifest is loading." },
-  error: { icon: "CloudLightning", title: "That didn't land.", detail: "Something broke on our side. Try again; if it holds, hail Shoreside." },
+  /* This default renders on EVERY loading state in the product, so it cannot
+     name one surface: a manifest is the boarding list for a single episode,
+     and most of what loads here is not that. */
+  loading: { title: "Hauling it in.", detail: "A moment — the page is loading." },
+  /* The member error boundary's own wording, adopted as the default so the
+     generic block and the boundary say the same thing. See
+     src/app/(member)/error.tsx — no apology, no blame, and the reference is
+     what Shoreside needs to find it. */
+  error: { icon: "CloudLightning", title: "That didn't land.", detail: "Our end, not yours. Try again — if it holds, hail Shoreside and quote the reference." },
   offline: { icon: "WifiOff", title: "No signal past the breakwater.", detail: "You're offline. What you've loaded keeps working; changes sync when you're back." },
 };
 

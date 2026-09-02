@@ -219,7 +219,7 @@ export function GalleyOrderForm({
             status="offline"
             bare
             title="Order queued."
-            detail="No signal past the breakwater — order queued, sends when you're back."
+            detail="No signal past the breakwater. It sends itself the moment you're back."
           />
         </div>
       ) : null}
