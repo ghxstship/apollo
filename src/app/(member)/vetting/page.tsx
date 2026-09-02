@@ -99,6 +99,19 @@ export default async function VettingPage() {
   const file = (state ?? null) as VettingStateRow | null;
   const seated = (passes ?? []).find((p) => p.status === "aboard");
   const mySegment: Segment | null = seated && isSegment(seated.segment) ? seated.segment : null;
+
+  /* The second head on a couple pass — one rsvp_guests row, kind 'partner'.
+     Read only when there is a couple seat to read it for. */
+  const { data: partnerRow } =
+    seated && mySegment === "couple"
+      ? await supabase
+          .from("rsvp_guests")
+          .select("name")
+          .eq("rsvp_id", seated.id)
+          .eq("kind", "partner")
+          .maybeSingle()
+      : { data: null };
+  const myPartner: string | null = partnerRow?.name ?? null;
   const myLine = ((line ?? []) as WaitlistRow[]).find((l) => !l.released_at) ?? null;
 
   /* The six gates, as the member's own checklist. Same six names the kit's
@@ -183,6 +196,7 @@ export default async function VettingPage() {
             rows={rows}
             hull={Math.max((sailing.berths_total ?? 0) - (sailing.held_passes ?? 0), 0)}
             mySegment={mySegment}
+            myPartner={myPartner}
             myLine={myLine}
           />
         ) : (

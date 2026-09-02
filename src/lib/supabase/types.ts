@@ -23,6 +23,8 @@ export type ProfileRow = {
   /* Who placed the current hold. A member may lift their own and not the
      club's, so the interface has to know which it is looking at. */
   status_set_by: string | null
+  /* Why the club holds it: 'dues' lifts with a payment, the others with a word. */
+  hold_reason: "dues" | "conduct" | "club" | null
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }
@@ -50,6 +52,8 @@ export type VoyageRow = {
   season_id: string | null
   venue_id: string | null
   series_id: string | null
+  /* A flotilla's certified heads; null reads the club setting. */
+  hull_ceiling_heads: number | null
 }
 export type SeasonRow = {
   id: string; slug: string; title: string; starts_on: string; ends_on: string
@@ -81,6 +85,7 @@ export type SponsorRow = {
 }
 export type VoyageSponsorRow = {
   voyage_id: string; sponsor_id: string; placement: string | null; created_at: string
+  assets_delivered: string[]
 }
 export type ClubSettingRow = { key: string; value_int: number; note: string | null }
 export type SegmentRow = { slug: string; label: string; heads: number }
@@ -96,6 +101,10 @@ export type CharterRequestRow = {
   preferred_dates: string | null; note: string | null
   status: "submitted" | "answered" | "declined"
   decided_by: string | null; decided_at: string | null; decision_note: string | null; created_at: string
+}
+export type AppErrorRow = {
+  id: number; at: string; deployment: string | null; name: string | null; message: string
+  digest: string | null; method: string | null; path: string | null; route: string | null; kind: string | null
 }
 export type VoyageDaybedRow = {
   id: string; voyage_id: string; rsvp_id: string; profile_id: string; created_at: string
@@ -125,12 +134,16 @@ export type RsvpRow = {
   boarding_code: string | null; show_on_manifest: boolean; vessel_id: string | null
   comp: boolean; guest_names: string[]; promo_code: string | null; auto_claim: boolean
   cabin_id: string | null
+  /* A comp given on a sponsor's account. */
+  sponsor_id: string | null
 }
 export type MembershipPlanRow = {
   id: string; plan_type: "access" | "regional" | "national" | "global" | "guest"
   tier: number; label: string; price_cents: number; events_per_month: number
   class_ceiling: "voyage" | "expedition" | "odyssey" | null; active: boolean; early_days: number
   stripe_price_id: string | null; stripe_price_id_annual: string | null; annual_price_cents: number | null
+  /* The club_products row this plan sells as; the membership cap counts by it. */
+  product_slug: string | null; published: boolean
 }
 export type VesselRow = {
   id: string; name: string; capacity: number; home_harbor: string | null; active: boolean
@@ -266,6 +279,8 @@ export type RsvpGuestRow = {
   id: string; rsvp_id: string; name: string; boarding_code: string | null
   checked_in_at: string | null; checked_in_by: string | null; created_at: string
   sign_token: string; on_camera: boolean
+  /* 'partner' is a couple pass's own second head; 'guest' a companion. */
+  kind: "guest" | "partner"
 }
 export type PassTransferRow = {
   id: string; rsvp_id: string; from_profile: string; to_profile: string
@@ -413,6 +428,7 @@ export type Database = {
       stripe_events: Table<StripeEventRow, Ins<StripeEventRow, "id" | "type" | "created">>
       audit_log: Table<AuditLogRow, Ins<AuditLogRow, "table_name" | "action">>
       charter_requests: Table<CharterRequestRow, Ins<CharterRequestRow, "profile_id">>
+      app_errors: Table<AppErrorRow, Ins<AppErrorRow, "message">>
       rsvps: Table<RsvpRow, Ins<RsvpRow, "voyage_id" | "profile_id">>
       cabins: Table<CabinRow, Ins<CabinRow, "vessel_id" | "name">>
       episodes: Table<EpisodeRow, Ins<EpisodeRow, "number" | "slug" | "title">>
@@ -580,6 +596,11 @@ export type Database = {
       assign_vessels_evenly: { Args: { p_voyage: string }; Returns: number }
       club_setting: { Args: { p_key: string }; Returns: number }
       passes_left: { Args: { p_voyage: string; p_except_rsvp?: string | null }; Returns: number }
+      scheduler_health: {
+        Args: { p_limit?: number }
+        Returns: Array<{ id: number; status_code: number | null; timed_out: boolean | null; error_msg: string | null; created: string; body: string | null }>
+      }
+      comp_a_pass_for_sponsor: { Args: { p_voyage: string; p_sponsor: string; p_profile: string }; Returns: string }
       sponsor_credits: { Args: { p_voyage: string }; Returns: Array<{ name: string; tier: string }> }
       attach_addons: {
         Args: { p_rsvp: string; p_addons: string[]; p_qty: number }

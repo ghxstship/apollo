@@ -134,6 +134,7 @@ export function RsvpControls({
   members,
   standingOffer,
   guestStubs,
+  partner,
   cabins,
   cabinId,
   crewMine,
@@ -186,8 +187,11 @@ export function RsvpControls({
   members: MemberOption[];
   /* A hand-off you have already offered on this pass. */
   standingOffer: StandingOffer | null;
-  /* Guest stubs cut by the manifest once names are saved. */
+  /* Guest stubs cut by the manifest once names are saved — companions only. */
   guestStubs: GuestStub[];
+  /* The second head on a couple pass. Not a companion: it never counts toward
+     `guests` and the stepper never touches it. */
+  partner: GuestStub | null;
   cabins: Array<{ id: string; name: string; premiumCents: number; left: number }>;
   cabinId: string | null;
   /* Your own open crew request on this sailing. */
@@ -443,7 +447,7 @@ export function RsvpControls({
           >
             Release pass
           </Button>
-          <GuestStubs guests={guestStubs} />
+          <GuestStubs guests={guestStubs} partner={partner} />
           {cabins.length > 0 ? (
             <Select
               label="Your cabin"

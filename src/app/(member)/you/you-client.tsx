@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { MAILBOX } from "@/lib/brand";
 import { Button, Checkbox, Dialog, Input, Select, Switch, Textarea, Toast } from "@/components/ds";
 import { BIO_MAX, INTERESTS } from "./interests";
@@ -257,6 +258,29 @@ export function ClubHoldNotice() {
   );
 }
 
+/* A dues hold is the club's, but it is the one hold the member can lift
+   without a conversation: the club places it when dues lapse and the trigger
+   lifts it when a payment clears. Telling them to hail Shoreside for a hold a
+   card payment ends on its own would send them to the wrong door. */
+export function DuesHoldNotice() {
+  return (
+    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep, #966E22)" }} role="status">
+      <div className="you-row">
+        <div>
+          <b>Held — dues lapsed.</b>
+          <p>
+            Settle in the portal and it lifts on its own. Your log, your ledger
+            and the passes you hold stay as they are.
+          </p>
+        </div>
+        <Link href="/portal" className="ls-btn ls-btn--outline ls-btn--sm">
+          Settle in the portal
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function ResumeBanner() {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -310,8 +334,11 @@ export function ResumeBanner() {
   );
 }
 
+/* A pass on the manifest for a sailing still ahead — what departing settles. */
+export type HeldPass = { id: string; title: string; when: string };
+
 /* — Offboarding: pause or depart, for real — */
-export function Offboarding({ status }: { status: string }) {
+export function Offboarding({ status, heldPasses }: { status: string; heldPasses: HeldPass[] }) {
   const [mode, setMode] = React.useState<null | "pause" | "depart">(null);
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -401,6 +428,13 @@ export function Offboarding({ status }: { status: string }) {
         way. Dues stop here: nothing more is taken while the hold stands, and
         what you have already paid for is not refunded. Resuming starts them
         again on the next cycle.
+        {/* A pause keeps the passes — set_own_standing('paused') touches none
+            of them. Departing is the flow that releases, so the two dialogs
+            must not read alike on this point. */}
+        <p style={{ marginTop: 10 }}>
+          Passes you hold stay held — release them from the manifest if the tide
+          has turned.
+        </p>
         {error && mode === "pause" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}
@@ -440,6 +474,40 @@ export function Offboarding({ status }: { status: string }) {
         Your dues end when the period you have already paid for runs out, and
         nothing further is taken. Booking, posting and the rest close as soon as
         you confirm — so if there is a sailing you still want, take it first.
+        {/* set_own_standing('departed') releases every aboard pass on a sailing
+            still ahead, credited in full, by trigger. The member is shown the
+            list before they confirm, because a departure that quietly empties
+            the manifest is a surprise, and the credit is the part they would
+            otherwise write in to ask about. */}
+        {heldPasses.length > 0 ? (
+          <div style={{ marginTop: 12 }}>
+            <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
+              ON THE MANIFEST
+            </span>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {heldPasses.map((p) => (
+                <li
+                  key={p.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "6px 0",
+                    borderTop: "1px solid var(--line-faint)",
+                  }}
+                >
+                  <span>{p.title}</span>
+                  <span className="mbr-mono">{p.when}</span>
+                </li>
+              ))}
+            </ul>
+            <p style={{ marginTop: 8 }}>
+              These come off the manifest and are credited in full the moment you go.
+            </p>
+          </div>
+        ) : (
+          <p style={{ marginTop: 10 }}>Nothing on the manifest to square.</p>
+        )}
         {error && mode === "depart" ? (
           <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: 12.5 }}>
             {error}

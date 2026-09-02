@@ -1,16 +1,32 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Switch, Table, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, Select, StateBlock, Switch, Table, Toast } from "@/components/ds";
 import { logDate, price } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
   attachSponsor,
+  compAPass,
   createSponsor,
   detachSponsor,
+  setAssetsDelivered,
   setSponsorActive,
   type SponsorTier,
 } from "./actions";
+
+/* One activation — the sponsor on one sailing — with what it has delivered
+   against the tier's checklist and the passes comped on its account. */
+export type Activation = {
+  voyageId: string;
+  label: string;
+  placement: string | null;
+  /** voyage_sponsors.assets_delivered — the ticked entries of the tier's list. */
+  assetsDelivered: string[];
+  /** rsvps stamped with this sponsor on this sailing, by member name. */
+  comps: Array<{ id: string; name: string; status: string }>;
+  /** The sailing can still take a pass, so a comp can be given. */
+  open: boolean;
+};
 
 export type SponsorItem = {
   id: string;
@@ -25,7 +41,7 @@ export type SponsorItem = {
   active: boolean;
   /* Who signed them, by name. Null on rows from before the column existed. */
   signedBy: string | null;
-  activations: Array<{ voyageId: string; label: string; placement: string | null }>;
+  activations: Activation[];
   [key: string]: unknown;
 };
 
@@ -52,10 +68,13 @@ export function SponsorsClient({
   rows,
   tiers,
   voyages,
+  members,
 }: {
   rows: SponsorItem[];
   tiers: TierCard[];
   voyages: Array<{ value: string; label: string }>;
+  /** Members in standing, for the comp picker. */
+  members: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -77,6 +96,37 @@ export function SponsorsClient({
   const pickFor = (id: string) => picks[id] ?? { voyage: "", placement: "" };
   const setPick = (id: string, patch: Partial<{ voyage: string; placement: string }>) =>
     setPicks((p) => ({ ...p, [id]: { ...pickFor(id), ...patch } }));
+
+  /* Per-activation member pick for a comp, keyed voyage:sponsor. */
+  const [compPicks, setCompPicks] = React.useState<Record<string, string>>({});
+  const compKey = (voyageId: string, sponsorId: string) => `${voyageId}:${sponsorId}`;
+
+  const toggleAsset = (s: SponsorItem, a: Activation, asset: string, on: boolean) =>
+    startTransition(async () => {
+      const next = on
+        ? [...a.assetsDelivered.filter((x) => x !== asset), asset]
+        : a.assetsDelivered.filter((x) => x !== asset);
+      const res = await setAssetsDelivered(a.voyageId, s.id, next);
+      if (res.error) show({ msg: res.error, tone: "danger" });
+    });
+
+  const comp = (s: SponsorItem, a: Activation) => {
+    const key = compKey(a.voyageId, s.id);
+    const profileId = compPicks[key] ?? "";
+    const who = members.find((m) => m.value === profileId)?.label ?? "";
+    startTransition(async () => {
+      const res = await compAPass(a.voyageId, s.id, profileId);
+      if (res.error) {
+        show({ msg: res.error, tone: "danger" });
+        return;
+      }
+      setCompPicks((p) => ({ ...p, [key]: "" }));
+      show({
+        msg: "Comped. The pass rides on the sponsor's account.",
+        meta: `${who.toUpperCase()} · ${s.name.toUpperCase()}`,
+      });
+    });
+  };
 
   const columns = [
     {
@@ -179,8 +229,9 @@ export function SponsorsClient({
           <p className="hm-lede" style={{ marginTop: 4 }}>
             An activation puts the name on a sailing — the public page reads it as a
             credit line, presenting partner first. Placement is a note for the crew,
-            not copy for the shore. The tier&rsquo;s assets are listed under each name
-            as the checklist for what the activation owes them.
+            not copy for the shore. Each activation carries the tier&rsquo;s assets as a
+            checklist, ticked as they are delivered, and can comp a member a pass on
+            the sponsor&rsquo;s account.
           </p>
           {rows.map((s) => {
             const pick = pickFor(s.id);
@@ -204,34 +255,133 @@ export function SponsorsClient({
                 ) : null}
 
                 {s.activations.length > 0 ? (
-                  <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
-                    {s.activations.map((a) => (
-                      <div
-                        key={a.voyageId}
-                        style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}
-                      >
-                        <span style={{ fontSize: 13 }}>
-                          {a.label}
-                          {a.placement ? (
-                            <span style={{ color: "var(--text-3)" }}> · {a.placement}</span>
-                          ) : null}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={pending}
-                          onClick={() =>
-                            startTransition(async () => {
-                              const res = await detachSponsor(a.voyageId, s.id);
-                              if (res.error) show({ msg: res.error, tone: "danger" });
-                              else show({ msg: "Taken off the sailing.", meta: s.name.toUpperCase() });
-                            })
-                          }
+                  <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
+                    {s.activations.map((a) => {
+                      const owed = card?.assets ?? [];
+                      const delivered = a.assetsDelivered.filter((x) => owed.includes(x)).length;
+                      const key = compKey(a.voyageId, s.id);
+                      const pickedMember = compPicks[key] ?? "";
+                      return (
+                        <div
+                          key={a.voyageId}
+                          className="hm-item"
+                          style={{ borderTop: "1px solid var(--line)", paddingTop: 10 }}
                         >
-                          Take it off
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="hm-item__head">
+                            <span style={{ fontSize: 13 }}>
+                              {a.label}
+                              {a.placement ? (
+                                <span style={{ color: "var(--text-3)" }}> · {a.placement}</span>
+                              ) : null}
+                            </span>
+                            {owed.length > 0 ? (
+                              <Badge tone={delivered === owed.length ? "positive" : "outline"}>
+                                {delivered === owed.length
+                                  ? "All delivered"
+                                  : `${delivered} of ${owed.length} delivered`}
+                              </Badge>
+                            ) : null}
+                            <span className="hm-item__acts">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={pending}
+                                onClick={() =>
+                                  startTransition(async () => {
+                                    const res = await detachSponsor(a.voyageId, s.id);
+                                    if (res.error) show({ msg: res.error, tone: "danger" });
+                                    else show({ msg: "Taken off the sailing.", meta: s.name.toUpperCase() });
+                                  })
+                                }
+                              >
+                                Take it off
+                              </Button>
+                            </span>
+                          </div>
+
+                          {owed.length > 0 ? (
+                            <div style={{ marginTop: 8 }}>
+                              <span className="hm-mono">ASSETS DELIVERED</span>
+                              <div style={{ display: "flex", gap: "6px 18px", flexWrap: "wrap", marginTop: 4 }}>
+                                {owed.map((asset) => (
+                                  <Checkbox
+                                    key={asset}
+                                    label={asset}
+                                    checked={a.assetsDelivered.includes(asset)}
+                                    disabled={pending}
+                                    onChange={(e) => toggleAsset(s, a, asset, e.target.checked)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <p style={{ marginTop: 8, fontSize: 12.5, color: "var(--text-3)" }}>
+                              This tier lists no assets, so there is nothing to tick off.
+                            </p>
+                          )}
+
+                          <div style={{ marginTop: 10 }}>
+                            <span className="hm-mono">
+                              {a.comps.length === 0
+                                ? "NO PASSES COMPED ON THIS ACCOUNT"
+                                : `${a.comps.length} COMPED ON THIS ACCOUNT`}
+                            </span>
+                            {a.comps.length > 0 ? (
+                              <p style={{ marginTop: 4, fontSize: 13 }}>
+                                {a.comps.map((c, i) => (
+                                  <span key={c.id}>
+                                    {i > 0 ? ", " : ""}
+                                    {c.name}
+                                    {c.status !== "aboard" && c.status !== "confirmed" ? (
+                                      <span style={{ color: "var(--text-3)" }}>
+                                        {" "}({c.status.replace(/_/g, " ")})
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                ))}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          {s.active && a.open ? (
+                            <div
+                              style={{
+                                marginTop: 10,
+                                display: "flex",
+                                gap: 10,
+                                alignItems: "flex-end",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <Select
+                                label="Comp a pass"
+                                hint="A member in standing boards on the sponsor's account."
+                                value={pickedMember}
+                                onChange={(e) =>
+                                  setCompPicks((p) => ({ ...p, [key]: e.target.value }))
+                                }
+                                style={{ minWidth: 260 }}
+                                options={[
+                                  {
+                                    value: "",
+                                    label: members.length ? "Pick the member" : "Nobody in standing to comp",
+                                  },
+                                  ...members,
+                                ]}
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={pending || !pickedMember}
+                                onClick={() => comp(s, a)}
+                              >
+                                Comp a pass
+                              </Button>
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <p style={{ marginTop: 10, fontSize: 13, color: "var(--text-3)" }}>

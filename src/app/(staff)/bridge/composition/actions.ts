@@ -57,6 +57,50 @@ export async function setTheComposition(
   const { error } = await db
     .from("voyage_segment_caps")
     .upsert(rows, { onConflict: "voyage_id,segment" });
+  /* the_hull_holds_forty refuses in the club's voice — "the hull holds 40 —
+     this composition seats 44 heads" — naming both figures, which is the
+     whole of what the operator needs. voice() passes it through as said. */
+  if (error) return { error: voice(error) };
+  return done();
+}
+
+/* The hull's certified heads, per sailing. A flotilla is certified for so many
+   people and the_hull_holds_forty reads coalesce(voyages.hull_ceiling_heads,
+   club_setting('hull_ceiling_heads')) before it lets a composition stand, so
+   this is the number the ceilings above are checked against. Null hands the
+   sailing back to the club default.
+
+   1–400: a "use server" module exports only async functions, so the bounds
+   are stated here and again on the input in composition-client.tsx. */
+const HULL_CEILING_MIN = 1;
+const HULL_CEILING_MAX = 400;
+
+export async function setHullCeiling(
+  voyageId: string,
+  heads: number | null
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  let value: number | null = null;
+  if (heads !== null) {
+    if (!Number.isFinite(heads) || !Number.isInteger(heads)) {
+      return { error: "The hull is certified for a whole number of heads." };
+    }
+    if (heads < HULL_CEILING_MIN || heads > HULL_CEILING_MAX) {
+      return {
+        error: `A hull ceiling runs from ${HULL_CEILING_MIN} to ${HULL_CEILING_MAX} heads. Leave it blank to read the club default.`,
+      };
+    }
+    value = heads;
+  }
+
+  const { error } = await supabase
+    .from("voyages")
+    .update({ hull_ceiling_heads: value })
+    .eq("id", voyageId);
+  /* A ceiling lowered under a composition already seated meets the same
+     trigger, and its refusal is the one to show. */
   if (error) return { error: voice(error) };
   return done();
 }

@@ -13,10 +13,12 @@ import { SettleCardButton } from "../portal/settle-card";
 import {
   ClosedPlaceNotice,
   ClubHoldNotice,
+  DuesHoldNotice,
   NotificationPrefsForm,
   Offboarding,
   ProfileForm,
   ResumeBanner,
+  type HeldPass,
 } from "./you-client";
 import { SignOutForm } from "@/components/sign-out-form";
 import { InstallPrompt } from "@/components/member/install-prompt";
@@ -27,7 +29,8 @@ export const metadata: Metadata = { title: "You" };
 
 export default async function YouPage() {
   const { supabase, user, profile } = await getMember();
-  const [{ data: harbors }, { data: account }, { data: proposals }, { data: formats }] =
+  const nowIso = new Date().toISOString();
+  const [{ data: harbors }, { data: account }, { data: proposals }, { data: formats }, { data: aboard }] =
     await Promise.all([
       supabase.from("harbors").select("*").order("position", { ascending: true }),
       supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
@@ -43,7 +46,29 @@ export default async function YouPage() {
         .select("slug, label")
         .in("slug", ["gathering", "mixer"])
         .order("position"),
+      /* Every pass this member holds. Which of them departing would release is
+         decided below against the sailing's hour — RLS narrows this to their
+         own rows already. */
+      supabase.from("rsvps").select("id, voyage_id").eq("profile_id", user.id).eq("status", "aboard"),
     ]);
+
+  /* Aboard passes on sailings still ahead: the ones set_own_standing('departed')
+     releases with full credit. Listed in the depart dialog before the member
+     confirms, so the manifest does not empty behind their back. */
+  const aboardVoyageIds = (aboard ?? []).map((r) => r.voyage_id);
+  const { data: aheadVoyages } = aboardVoyageIds.length
+    ? await supabase
+        .from("voyages")
+        .select("id, title, starts_at, time_zone")
+        .in("id", aboardVoyageIds)
+        .gt("starts_at", nowIso)
+        .order("starts_at", { ascending: true })
+    : { data: [] };
+  const heldPasses: HeldPass[] = (aheadVoyages ?? []).map((v) => ({
+    id: v.id,
+    title: v.title,
+    when: logDateTime(v.starts_at, v.time_zone),
+  }));
 
   const formatLabels = new Map(
     ((formats ?? []) as Array<{ slug: string; label: string }>).map((f) => [f.slug, f.label])
@@ -102,10 +127,19 @@ export default async function YouPage() {
           to see none of these while the layout banner told them to resume here,
           and a member the club had held could see a Resume button that would
           only ever refuse them. */}
+      {/* A dues hold is read before the generic club hold: it is the club's,
+          but a payment lifts it, so the door it points at is the portal and
+          not Shoreside's inbox. */}
       {status === "departed" ? (
         <ClosedPlaceNotice />
       ) : status === "paused" ? (
-        heldByTheClub ? <ClubHoldNotice /> : <ResumeBanner />
+        profile?.hold_reason === "dues" ? (
+          <DuesHoldNotice />
+        ) : heldByTheClub ? (
+          <ClubHoldNotice />
+        ) : (
+          <ResumeBanner />
+        )
       ) : null}
 
       <div className="you-sec" style={{ marginTop: 0 }}>
@@ -216,7 +250,11 @@ export default async function YouPage() {
             <div>
               <b>{TIER_LABEL[tier]} tier</b>
               <p className="mbr-mono" style={{ marginTop: 4 }}>
-                {status === "paused" ? "PAUSED · " : ""}
+                {status === "paused"
+                  ? profile?.hold_reason === "dues"
+                    ? "HELD — DUES LAPSED · "
+                    : "PAUSED · "
+                  : ""}
                 {balanceCents < 0 ? (
                   <span style={{ color: "var(--siren)" }}>
                     ACCOUNT — ${(Math.abs(balanceCents) / 100).toFixed(2)} DUE
@@ -252,7 +290,7 @@ export default async function YouPage() {
               <b>Pause or depart</b>
               <p>No exit surveys, no retention calls, no games.</p>
             </div>
-            <Offboarding status={status} />
+            <Offboarding status={status} heldPasses={heldPasses} />
           </div>
           <div className="you-row">
             <div>

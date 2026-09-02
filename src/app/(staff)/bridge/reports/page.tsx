@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Stat, Table } from "@/components/ds";
+import { Badge, Stat, Table } from "@/components/ds";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import type { Json } from "@/lib/supabase/types";
@@ -56,6 +56,50 @@ function rowName(before: Json | null, after: Json | null, rowId: string | null):
   return rowId ? rowId.slice(0, 8) : "—";
 }
 
+type ErrorRow = {
+  id: string;
+  at: string;
+  where: string;
+  name: string;
+  message: string;
+  digest: string;
+  [key: string]: unknown;
+};
+
+/* One pg_net response as scheduler_health hands it back. The drains answer
+   207 when a row gave up and 503 when a key is missing; anything else in the
+   500s is the function itself failing. */
+type SchedulerRow = {
+  id: string;
+  created: string;
+  statusCode: number | null;
+  timedOut: boolean;
+  errorMsg: string | null;
+  body: string;
+  [key: string]: unknown;
+};
+
+type SchedulerTone = { tone: "positive" | "caution" | "outline"; label: string; danger: boolean };
+
+function schedulerTone(r: SchedulerRow): SchedulerTone {
+  if (r.timedOut) return { tone: "caution", label: "Timed out", danger: true };
+  const code = r.statusCode;
+  if (code === null) return { tone: "caution", label: r.errorMsg ? "No answer" : "No status", danger: true };
+  if (code === 207) return { tone: "caution", label: "207 · gave up on a row", danger: false };
+  if (code >= 500) {
+    return { tone: "caution", label: `${code} · key missing or failed`, danger: true };
+  }
+  if (code >= 400) return { tone: "caution", label: `${code} · refused`, danger: true };
+  return { tone: "positive", label: String(code), danger: false };
+}
+
+/* The body is JSON from the drain; the first line of it is the excerpt. */
+function excerpt(body: string | null, max = 140): string {
+  if (!body) return "—";
+  const flat = body.replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
+
 type FillRow = {
   id: string;
   title: string;
@@ -103,6 +147,8 @@ export default async function ReportsPage() {
     smsStrandedRes,
     pushStrandedRes,
     changesRes,
+    errorsRes,
+    schedulerRes,
   ] = await Promise.all([
     supabase.from("profiles").select("status, joined_at"),
     supabase.from("voyages").select("id, title, distance_nm, kind, status, starts_at"),
@@ -176,6 +222,12 @@ export default async function ReportsPage() {
     /* The record of who did what — record_the_change() writes it on the
        tables the Bridge keeps; the Bridge reads it. */
     supabase.from("audit_log").select("*").order("at", { ascending: false }).limit(50),
+    /* What the app itself failed on — the error boundary and route handlers
+       write app_errors; the Bridge reads the last fifty. */
+    supabase.from("app_errors").select("*").order("at", { ascending: false }).limit(50),
+    /* The last fifty answers the drains gave pg_net. A quiet 200 is the norm;
+       207 and 503 are the two the drains use to say something is wrong. */
+    supabase.rpc("scheduler_health", { p_limit: 50 }),
   ]);
 
   /* Members */
@@ -274,6 +326,31 @@ export default async function ReportsPage() {
   const smsStranded = must<SmsStranded>(smsStrandedRes as { data: SmsStranded[] | null; error?: { message?: string } | null });
   const pushStranded = must<PushStranded>(pushStrandedRes as { data: PushStranded[] | null; error?: { message?: string } | null });
   const changes = must(changesRes);
+  const appErrors = must(errorsRes);
+  type SchedulerHealth = { id: number; status_code: number | null; timed_out: boolean | null; error_msg: string | null; created: string; body: string | null };
+  const scheduler = mustValue<SchedulerHealth[]>(
+    schedulerRes as { data: SchedulerHealth[] | null; error?: { message?: string } | null },
+    []
+  );
+
+  const errorRows: ErrorRow[] = appErrors.map((e) => ({
+    id: String(e.id),
+    at: logDateTime(e.at, CLUB_ZONE),
+    where: [e.method, e.route ?? e.path].filter(Boolean).join(" ") || "—",
+    name: e.name ?? (e.kind ?? "Error"),
+    message: e.message,
+    digest: e.digest ?? "—",
+  }));
+
+  const schedulerRows: SchedulerRow[] = scheduler.map((r) => ({
+    id: String(r.id),
+    created: logDateTime(r.created, CLUB_ZONE),
+    statusCode: r.status_code,
+    timedOut: !!r.timed_out,
+    errorMsg: r.error_msg,
+    body: excerpt(r.body ?? r.error_msg),
+  }));
+  const schedulerTrouble = schedulerRows.filter((r) => schedulerTone(r).tone !== "positive").length;
 
   /* Names for the people on the pushes and in the log, one read. */
   const nameIds = [
@@ -552,6 +629,84 @@ export default async function ReportsPage() {
           {changeRows.length === 0 ? (
             <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
               Nothing recorded yet.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>Errors.</h2>
+        <p className="hm-note">
+          The last fifty times the app failed on somebody — when, on which route, and
+          what it said. The digest is the code Next prints on the member&apos;s screen,
+          so a member quoting one can be matched to the line here.
+        </p>
+        <div className="hm-panel">
+          <Table
+            rowKey={(r: ErrorRow) => r.id}
+            columns={[
+              { key: "at", label: "When", mono: true, width: 140 },
+              { key: "where", label: "Route", mono: true, width: 220 },
+              { key: "name", label: "Name", width: 140 },
+              { key: "message", label: "Message" },
+              { key: "digest", label: "Digest", mono: true, width: 120 },
+            ]}
+            rows={errorRows}
+          />
+          {errorRows.length === 0 ? (
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+              Nothing has failed that the app knows of.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>Scheduler.</h2>
+        <p className="hm-note">
+          The last fifty answers the drains gave the scheduler. A quiet 200 is the norm.
+          207 means a drain gave up on one row — it is in the outbox list above with a
+          Requeue. A 503 means a key is missing from the vault, and nothing sends until
+          it is put back.
+          {schedulerTrouble > 0 ? ` ${schedulerTrouble} of these ${schedulerTrouble === 1 ? "needs" : "need"} reading.` : ""}
+        </p>
+        <div className="hm-panel">
+          <Table
+            rowKey={(r: SchedulerRow) => r.id}
+            columns={[
+              { key: "created", label: "When", mono: true, width: 140 },
+              {
+                key: "statusCode",
+                label: "Answer",
+                width: 220,
+                render: (r: SchedulerRow) => {
+                  const t = schedulerTone(r);
+                  return (
+                    <Badge
+                      tone={t.tone}
+                      /* The badge set has no danger tone; a failed drain wears
+                         the danger colour on the caution frame. */
+                      style={t.danger ? { color: "var(--danger)", borderColor: "var(--danger)" } : undefined}
+                    >
+                      {t.label}
+                    </Badge>
+                  );
+                },
+              },
+              {
+                key: "body",
+                label: "What it said",
+                mono: true,
+                render: (r: SchedulerRow) => (
+                  <span title={r.errorMsg ?? undefined}>{r.body}</span>
+                ),
+              },
+            ]}
+            rows={schedulerRows}
+          />
+          {schedulerRows.length === 0 ? (
+            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: 13 }}>
+              The scheduler has not answered yet.
             </p>
           ) : null}
         </div>

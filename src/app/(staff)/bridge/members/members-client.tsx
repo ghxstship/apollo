@@ -80,6 +80,21 @@ const STATUS_OPTIONS = [
   { value: "departed", label: "Departed" },
 ];
 
+/* The standing badge in the drawer. A dues hold is named as such, because it
+   is the one hold that lifts on its own — when the dues clear — and the
+   operator should know before they reach for the button that they need not. */
+function standing(detail: MemberDetail): { label: string; tone: "positive" | "caution" | "outline" } {
+  if (detail.status === "departed") return { label: "Departed", tone: "outline" };
+  if (detail.status === "paused") {
+    return detail.holdReason === "dues"
+      ? { label: "Held — dues", tone: "caution" }
+      : { label: "Paused", tone: "caution" };
+  }
+  return { label: "Active", tone: "positive" };
+}
+
+const DUES_HOLD_NOTE = "Lifts when dues clear; a word from the Bridge lifts it now";
+
 const CSV_COLUMNS: Array<[string, (r: MemberRow) => string]> = [
   ["Member", (r) => r.name],
   ["Member no", (r) => r.memberNo],
@@ -404,6 +419,15 @@ export function MembersClient({
         ) : (
           <div className="hm-form">
             <div>
+              <span className="hm-mono">STANDING</span>
+              <p style={{ fontSize: 13, marginTop: 4, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <Badge tone={standing(detail).tone}>{standing(detail).label}</Badge>
+                {detail.holdReason === "dues" ? (
+                  <span style={{ color: "var(--text-2)" }}>{DUES_HOLD_NOTE}.</span>
+                ) : null}
+              </p>
+            </div>
+            <div>
               <span className="hm-mono">CONTACT</span>
               <p style={{ fontSize: 13, marginTop: 4 }}>
                 {detail.email} · {detail.phone}
@@ -474,7 +498,9 @@ export function MembersClient({
                 {detail.status === "departed"
                   ? "Bring them back"
                   : detail.status === "paused"
-                    ? "Resume membership"
+                    ? detail.holdReason === "dues"
+                      ? "Lift the hold now"
+                      : "Resume membership"
                     : "Pause membership"}
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => setAdjusting(true)}>
@@ -508,7 +534,9 @@ export function MembersClient({
           detail?.status === "departed"
             ? "Bring this member back aboard?"
             : detail?.status === "paused"
-              ? "Resume this membership?"
+              ? detail.holdReason === "dues"
+                ? "Lift the dues hold now?"
+                : "Resume this membership?"
               : "Pause this membership?"
         }
         footer={
@@ -535,7 +563,8 @@ export function MembersClient({
                   const res = await setMemberStatus(row.id, next);
                   if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
-                    setDetail((d) => (d ? { ...d, status: next } : d));
+                    /* A lifted hold has no reason left to show. */
+                    setDetail((d) => (d ? { ...d, status: next, holdReason: next === "paused" ? d.holdReason : null } : d));
                     /* The standing landed either way. `note` means the dues did
                        NOT move with it, and the operator is the only person who
                        can put that right — so it replaces the cheerful line
@@ -557,14 +586,20 @@ export function MembersClient({
                 });
               }}
             >
-              {detail?.status === "paused" ? "Resume it" : "Pause it"}
+              {detail?.status === "paused"
+                ? detail.holdReason === "dues"
+                  ? "Lift it now"
+                  : "Resume it"
+                : "Pause it"}
             </Button>
           </>
         }
       >
         <p style={{ fontSize: 13, lineHeight: 1.6 }}>
           {detail?.status === "paused"
-            ? "Booking, posting and contests open back up, and the member is told."
+            ? detail.holdReason === "dues"
+              ? `${DUES_HOLD_NOTE}. Booking, posting and contests open back up, and the member is told.`
+              : "Booking, posting and contests open back up, and the member is told."
             : "Their log and ledger stay open; booking, posting and contests stop until it resumes. The member is told, with no guessing."}
         </p>
       </Dialog>

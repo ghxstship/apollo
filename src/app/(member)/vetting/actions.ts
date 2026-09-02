@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
 import { DRINKS, isSegment, type Segment, type Stance } from "@/lib/vetting";
+import { isPartnerName } from "./partner";
 
 /* Vetting — the member's side of the funnel.
 
@@ -91,14 +92,29 @@ export async function setBoundary(topic: string, stance: Stance): Promise<Vettin
    ratio gate and the vetting gate are triggers on that table, so the same rules
    apply to this call, to a staff booking, and to a curl request against
    PostgREST. There is no path that reaches the manifest without passing them. */
-export async function takeASeat(voyageId: string, segment: string): Promise<VettingResult> {
+export async function takeASeat(
+  voyageId: string,
+  segment: string,
+  partnerName?: string
+): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
   if (!isSegment(segment)) return { error: "Pick a seat first." };
 
-  const { error } = await db
+  /* A couple is one row and two heads, and the second head is a person with a
+     name, a boarding code and a waiver of their own. The seat is not taken
+     until the name is there — taking it first and asking afterwards would
+     leave a two-head pass with one head on the manifest. */
+  const partner = (partnerName ?? "").trim();
+  if (segment === "couple" && !isPartnerName(partner)) {
+    return { error: "A couple pass names its second head — two to eighty characters." };
+  }
+
+  const { data: seat, error } = await db
     .from("rsvps")
-    .insert({ voyage_id: voyageId, profile_id: user.id, status: "aboard", segment });
+    .insert({ voyage_id: voyageId, profile_id: user.id, status: "aboard", segment })
+    .select("id")
+    .single();
   if (error) {
     if (/duplicate|already exists/i.test(error.message ?? "")) {
       return { error: "You are already on this manifest." };
@@ -116,6 +132,30 @@ export async function takeASeat(voyageId: string, segment: string): Promise<Vett
           : said,
     };
   }
+
+  /* The second head rides the guest machinery — its own rsvp_guests row, kind
+     'partner', which the manifest cuts a boarding code and a sign token for.
+     It never counts as a guest and guest-name edits never prune it; the
+     database refuses a partner on a non-couple pass, and that refusal is
+     passed through in its own words. */
+  if (segment === "couple" && seat) {
+    const { error: headError } = await supabase
+      .from("rsvp_guests")
+      .insert({ rsvp_id: seat.id, name: partner, kind: "partner" });
+    if (headError) {
+      revalidatePath("/vetting");
+      revalidatePath("/manifest");
+      /* The seat stands — the insert above committed. Say so, say what did
+         not land, and name the way out. */
+      return {
+        error: `Your seat is taken, but the second head did not land — ${await voiceWith(
+          supabase,
+          headError
+        )} Shoreside can add them to the pass.`,
+      };
+    }
+  }
+
   revalidatePath("/vetting");
   revalidatePath("/manifest");
   return { ok: true };

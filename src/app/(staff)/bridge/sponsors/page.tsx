@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CLUB_ZONE } from "@/lib/brand";
 import { logDate, price } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
 import { SponsorsClient, type SponsorItem, type TierCard } from "./sponsors-client";
@@ -22,7 +23,7 @@ function clubToday(): string {
 export default async function SponsorsPage() {
   const { supabase } = await getOperator();
 
-  const [sponsorsRes, activationsRes, voyagesRes, tiersRes] = await Promise.all([
+  const [sponsorsRes, activationsRes, voyagesRes, tiersRes, compsRes, membersRes] = await Promise.all([
     supabase.from("sponsors").select("*").order("created_at", { ascending: true }),
     supabase.from("voyage_sponsors").select("*"),
     /* One voyages read serves both jobs: titles for whatever is already
@@ -34,21 +35,54 @@ export default async function SponsorsPage() {
       .order("starts_at", { ascending: true }),
     /* The rate card is a table now, not a constant in the client. */
     supabase.from("sponsor_tiers").select("*").order("position", { ascending: true }),
+    /* Passes comped on a sponsor's account — rsvps.sponsor_id is stamped by
+       comp_a_pass_for_sponsor and by nothing else. */
+    supabase
+      .from("rsvps")
+      .select("id, voyage_id, sponsor_id, profile_id, status, created_at")
+      .not("sponsor_id", "is", null)
+      .order("created_at", { ascending: true }),
+    /* The member picker for a comp: members in standing, by name. */
+    supabase
+      .from("profiles")
+      .select("id, full_name, member_no")
+      .eq("status", "active")
+      .order("full_name", { ascending: true }),
   ]);
 
   const sponsors = must(sponsorsRes);
   const activations = must(activationsRes);
   const voyages = must(voyagesRes);
   const tiers = must(tiersRes);
+  const comps = must(compsRes);
+  const members = must(membersRes);
   const voyageById = new Map(voyages.map((v) => [v.id, v]));
   const tierBySlug = new Map(tiers.map((t) => [t.slug, t]));
 
-  /* Who signed them — a name on the row, not a uuid. */
-  const signerIds = [...new Set(sponsors.map((s) => s.created_by).filter((id): id is string => !!id))];
-  const signersRes = signerIds.length
-    ? await supabase.from("profiles").select("id, full_name").in("id", signerIds)
+  /* Who signed them, and who was comped — names on the row, not uuids. One
+     profiles read for both; the comped may include a member no longer active,
+     who is not in the picker list. */
+  const nameIds = [
+    ...new Set([
+      ...sponsors.map((s) => s.created_by).filter((id): id is string => !!id),
+      ...comps.map((c) => c.profile_id),
+    ]),
+  ];
+  const namesRes = nameIds.length
+    ? await supabase.from("profiles").select("id, full_name, member_no").in("id", nameIds)
     : { data: [] };
-  const signerName = new Map(must(signersRes).map((p) => [p.id, p.full_name ?? "Bridge"]));
+  const named = must(namesRes);
+  const signerName = new Map(named.map((p) => [p.id, p.full_name ?? "Bridge"]));
+  const memberName = new Map(named.map((p) => [p.id, p.full_name || memberMark(p.member_no) || "A member"]));
+
+  const compsFor = new Map<string, SponsorItem["activations"][number]["comps"]>();
+  for (const c of comps) {
+    if (!c.sponsor_id) continue;
+    const key = `${c.voyage_id}:${c.sponsor_id}`;
+    const list = compsFor.get(key) ?? [];
+    list.push({ id: c.id, name: memberName.get(c.profile_id) ?? "A member", status: c.status });
+    compsFor.set(key, list);
+  }
 
   const bySponsor = new Map<string, SponsorItem["activations"]>();
   for (const a of activations) {
@@ -58,6 +92,11 @@ export default async function SponsorsPage() {
       voyageId: a.voyage_id,
       label: v ? `${v.title} · ${logDate(v.starts_at, v.time_zone)}` : "A sailing off the board",
       placement: a.placement,
+      assetsDelivered: a.assets_delivered ?? [],
+      comps: compsFor.get(`${a.voyage_id}:${a.sponsor_id}`) ?? [],
+      /* A comp is a pass on a sailing, so only a sailing still on the board
+         can take one; the credit itself stays whatever the sailing's state. */
+      open: v ? v.status === "scheduled" || v.status === "live" : false,
     });
     bySponsor.set(a.sponsor_id, list);
   }
@@ -116,6 +155,10 @@ export default async function SponsorsPage() {
       <SponsorsClient
         rows={items}
         tiers={cards}
+        members={members.map((m) => ({
+          value: m.id,
+          label: [m.full_name ?? "Unnamed member", memberMark(m.member_no)].filter(Boolean).join(" · "),
+        }))}
         voyages={voyages
           .filter((v) => v.status === "scheduled" || v.status === "live")
           .map((v) => ({

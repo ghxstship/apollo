@@ -350,10 +350,13 @@ export async function setGuests(
     .maybeSingle();
 
   if (myRsvp) {
+    /* Companions only: a couple's second head is a partner row, not a guest,
+       and its signature must not pin the companion count. */
     const { data: signedGuests } = await supabase
       .from("rsvp_guests")
       .select("id, name, signatures!inner(id)")
-      .eq("rsvp_id", myRsvp.id);
+      .eq("rsvp_id", myRsvp.id)
+      .eq("kind", "guest");
     const signedCount = (signedGuests ?? []).length;
     if (clamped < signedCount) {
       const who = (signedGuests ?? []).map((g) => g.name).join(" and ");

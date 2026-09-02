@@ -205,15 +205,35 @@ export function HandOff({
 
 /* — 3. Per-guest stubs, cut by the manifest as soon as names are saved — */
 
-export function GuestStubs({ guests }: { guests: GuestStub[] }) {
+/* The second head on a couple pass rides the same stub, code and waiver
+   machinery as a guest and is listed here with them — under its own line,
+   because it is not a companion and must not read as one. */
+export function GuestStubs({ guests, partner = null }: { guests: GuestStub[]; partner?: GuestStub | null }) {
   const cut = guests.filter((g) => g.code);
-  if (cut.length === 0) return null;
-  const unsigned = cut.filter((g) => !g.signed);
+  const head = partner?.code ? partner : null;
+  if (cut.length === 0 && !head) return null;
+  const unsigned = [...(head ? [head] : []), ...cut].filter((g) => !g.signed);
   return (
     <div style={blockStyle}>
-      <span className="mbr-mono" style={monoLine}>
-        GUEST STUBS
-      </span>
+      {head ? (
+        <span style={monoLine}>
+          <Link
+            href={`/stub/${head.code}`}
+            className="mbr-mono"
+            style={{ color: "var(--text-link)", textDecoration: "none" }}
+          >
+            SECOND HEAD — {head.name.toUpperCase()} · CODE {head.code}
+          </Link>
+          <span className="mbr-mono" style={{ marginInlineStart: 10 }}>
+            {head.signed ? "WAIVER SIGNED" : "WAIVER OUTSTANDING"}
+          </span>
+        </span>
+      ) : null}
+      {cut.length > 0 ? (
+        <span className="mbr-mono" style={head ? { ...monoLine, marginTop: 10 } : monoLine}>
+          GUEST STUBS
+        </span>
+      ) : null}
       {cut.map((g) => (
         <span key={g.code} style={monoLine}>
           <Link

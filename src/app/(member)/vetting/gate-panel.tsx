@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ds";
+import { Button, Input } from "@/components/ds";
 import {
   SEGMENTS,
   SEGMENT_CHOICE,
@@ -15,6 +15,7 @@ import {
   type WaitlistRow,
 } from "@/lib/vetting";
 import { claimYourPlace, joinTheLine, leaveTheLine, takeASeat } from "./actions";
+import { PARTNER_NAME_MAX, isPartnerName } from "./partner";
 
 /* The ratio gate, guest side. Two rules from the kit are load-bearing here and
    both are about what this component does NOT do:
@@ -34,6 +35,7 @@ export function GatePanel({
   rows,
   hull,
   mySegment,
+  myPartner,
   myLine,
 }: {
   voyageId: string;
@@ -44,11 +46,18 @@ export function GatePanel({
       guard_the_ratio refuses against. */
   hull: number;
   mySegment: Segment | null;
+  /** The second head on a couple pass, as the manifest reads it. */
+  myPartner: string | null;
   myLine: WaitlistRow | null;
 }) {
   const [choice, setChoice] = React.useState<Segment | null>(mySegment);
+  /* The second head. A couple is two people on one pass; the seat is not
+     offered until the other one is named. */
+  const [partner, setPartner] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [pending, start] = React.useTransition();
+  const needsPartner = choice === "couple";
+  const partnerReady = !needsPartner || isPartnerName(partner);
 
   const byId = new Map(rows.map((r) => [r.segment, r]));
   const chosen = choice ? byId.get(choice) ?? null : null;
@@ -105,8 +114,9 @@ export function GatePanel({
           <span className="vet-strip__badge">On the manifest</span>
           <span className="vet-strip__title">You are aboard.</span>
           <p className="vet-strip__body">
-            Your pass is a {SEGMENT_CHOICE[mySegment].toLowerCase()}. Radar opens at 17:15,
-            on open water.
+            Your pass is a {SEGMENT_CHOICE[mySegment].toLowerCase()}.
+            {mySegment === "couple" && myPartner ? ` Second head — ${myPartner}.` : ""} Radar
+            opens at 17:15, on open water.
           </p>
         </div>
       ) : myLine ? (
@@ -166,15 +176,33 @@ export function GatePanel({
               </div>
             </div>
           ) : (
-            <div className="vet-acts">
-              <Button
-                size="sm"
-                onClick={() => choice && run(() => takeASeat(voyageId, choice))}
-                disabled={pending || !choice}
-              >
-                Take the seat
-              </Button>
-            </div>
+            <>
+              {needsPartner ? (
+                /* Asked before the seat, not after: a couple pass with one head
+                   named is a pass the gangway cannot fully admit. The name gets
+                   its own boarding code and its own waiver link, and it never
+                   counts as a guest. */
+                <Input
+                  label="Second head — as the manifest reads it"
+                  required
+                  value={partner}
+                  maxLength={PARTNER_NAME_MAX}
+                  autoComplete="off"
+                  onChange={(e) => setPartner(e.target.value)}
+                  hint="They get their own boarding code and sign their own waiver."
+                  style={{ marginTop: "var(--space-3)" }}
+                />
+              ) : null}
+              <div className="vet-acts">
+                <Button
+                  size="sm"
+                  onClick={() => choice && run(() => takeASeat(voyageId, choice, partner))}
+                  disabled={pending || !choice || !partnerReady}
+                >
+                  Take the seat
+                </Button>
+              </div>
+            </>
           )}
         </>
       )}

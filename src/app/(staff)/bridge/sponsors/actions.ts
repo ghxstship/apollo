@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { voice } from "@/lib/errors";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 /* A tier is a row on the rate card (sponsor_tiers), not a list in this file.
@@ -122,5 +123,71 @@ export async function detachSponsor(voyageId: string, sponsorId: string): Promis
     .eq("voyage_id", voyageId)
     .eq("sponsor_id", sponsorId);
   if (error) return { error: ERR_LAND };
+  return done();
+}
+
+/* What the activation has actually handed over, against what the tier
+   promises. voyage_sponsors.assets_delivered is the ticked list; the
+   checklist itself is sponsor_tiers.assets for the sponsor's tier, read here
+   so a stale screen cannot record an asset the card no longer carries. */
+export async function setAssetsDelivered(
+  voyageId: string,
+  sponsorId: string,
+  delivered: string[]
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+
+  const { data: sponsor, error: sponsorError } = await supabase
+    .from("sponsors")
+    .select("tier")
+    .eq("id", sponsorId)
+    .maybeSingle();
+  if (sponsorError) return { error: ERR_LAND };
+  if (!sponsor) return { error: "That sponsor is not on the book." };
+
+  const { data: tierRow, error: tierError } = await supabase
+    .from("sponsor_tiers")
+    .select("assets")
+    .eq("slug", sponsor.tier)
+    .maybeSingle();
+  if (tierError) return { error: ERR_LAND };
+  const owed = new Set(tierRow?.assets ?? []);
+  const kept = [...new Set(delivered)].filter((a) => owed.has(a));
+
+  const { data: updated, error } = await supabase
+    .from("voyage_sponsors")
+    .update({ assets_delivered: kept })
+    .eq("voyage_id", voyageId)
+    .eq("sponsor_id", sponsorId)
+    .select("voyage_id");
+  if (error) return { error: ERR_LAND };
+  if (!updated?.length) {
+    return { error: "That sponsor is not on this sailing — place the activation first." };
+  }
+  return done();
+}
+
+/* A complimentary pass on the sponsor's account. comp_a_pass_for_sponsor is
+   staff-checked inside and refuses unless the sponsor is placed on that
+   sailing — "that sponsor is not on this sailing — place the activation
+   first" — so the refusal already names the way out and passes as said. */
+export async function compAPass(
+  voyageId: string,
+  sponsorId: string,
+  profileId: string
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!profileId) return { error: "Pick the member the pass is for." };
+
+  const { error } = await supabase.rpc("comp_a_pass_for_sponsor", {
+    p_voyage: voyageId,
+    p_sponsor: sponsorId,
+    p_profile: profileId,
+  });
+  if (error) return { error: voice(error) };
+  /* A comp is a pass, so the manifest for that sailing moved too. */
+  revalidatePath("/bridge/manifests");
   return done();
 }

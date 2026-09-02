@@ -12,7 +12,12 @@ import {
 } from "@/lib/vetting";
 import { offerTheNextPlace } from "../../../(member)/vetting/actions";
 import { useToast } from "../../ui";
-import { liftTheComposition, setTheComposition } from "./actions";
+import { liftTheComposition, setHullCeiling, setTheComposition } from "./actions";
+
+/* The bounds setHullCeiling enforces; a "use server" module cannot export
+   them, so they are stated on both sides of the wire. */
+const HULL_CEILING_MIN = 1;
+const HULL_CEILING_MAX = 400;
 
 export type QueueLine = {
   segment: Segment;
@@ -48,6 +53,8 @@ export function CompositionPanel({
   voyageId,
   voyageTitle,
   hull,
+  hullCeiling,
+  clubCeiling,
   rows,
   lines,
 }: {
@@ -56,12 +63,28 @@ export function CompositionPanel({
   /** Heads the hull carries net of operator holds — the number guard_the_ratio
       refuses against, and the only honest denominator for the head total. */
   hull: number;
+  /** voyages.hull_ceiling_heads — this flotilla's certified heads, or null to
+      read the club's figure. */
+  hullCeiling: number | null;
+  /** club_setting('hull_ceiling_heads') — what the trigger reads when the
+      sailing carries no ceiling of its own. */
+  clubCeiling: number;
   rows: SegmentCapacityRow[];
   lines: QueueLine[];
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [confirmLift, setConfirmLift] = React.useState(false);
+
+  /* The ceiling field holds a string so that blank can mean "club default"
+     rather than nought. Mounted under key={voyage.id} like the rest. */
+  const [ceilingDraft, setCeilingDraft] = React.useState(
+    hullCeiling === null ? "" : String(hullCeiling)
+  );
+  const ceilingDirty = ceilingDraft.trim() !== (hullCeiling === null ? "" : String(hullCeiling));
+  /* What the_hull_holds_forty will check the composition against: the
+     sailing's own figure when it has one, the club's otherwise. */
+  const effectiveCeiling = hullCeiling ?? clubCeiling;
 
   /* The draft ceilings belong to the sailing on screen, and the page mounts
      this panel under key={voyage.id} so switching the picker starts a fresh
@@ -85,7 +108,9 @@ export function CompositionPanel({
   const unsegmented = rows[0]?.unsegmented_aboard ?? 0;
   const seatedHeads =
     rows.reduce((n, r) => n + r.units * SEGMENT_HEADS[r.segment], 0) + unsegmented;
-  const overHull = hull > 0 && draftHeads > hull;
+  /* Over the hull means over the certified ceiling — the figure the trigger
+     refuses against — not over the berths on sale. */
+  const overHull = effectiveCeiling > 0 && draftHeads > effectiveCeiling;
   const dirty = SEGMENTS.some((s) => draft[s] !== capOf(s));
   /* A ceiling below the seats already sold does not unseat anybody — the
      capacity view floors `remaining` at nought — but it does mean the segment
@@ -104,6 +129,22 @@ export function CompositionPanel({
         show({
           msg: gated ? "Composition set." : "Composition set. This sailing is now ratio-gated.",
           meta: `${draftHeads} HEADS OF ${hull || draftHeads}`,
+        });
+    });
+
+  const saveCeiling = () =>
+    startTransition(async () => {
+      const raw = ceilingDraft.trim();
+      const heads = raw === "" ? null : Number(raw);
+      const res = await setHullCeiling(voyageId, heads);
+      if (res.error) show({ msg: res.error, tone: "danger" });
+      else
+        show({
+          msg:
+            heads === null
+              ? "Ceiling cleared. This sailing reads the club default."
+              : "Ceiling set. Compositions on this sailing are checked against it.",
+          meta: `THE HULL HOLDS ${heads ?? clubCeiling}`,
         });
     });
 
@@ -160,9 +201,54 @@ export function CompositionPanel({
           size="sm"
           label="Composition"
           value={`${draftHeads} heads`}
-          sub={overHull ? "OVER THE HULL" : "AT THESE CEILINGS"}
+          sub={overHull ? `OVER THE HULL OF ${effectiveCeiling}` : "AT THESE CEILINGS"}
         />
       </div>
+
+      <section className="hm-sec">
+        <div className="hm-head">
+          <h2>The hull.</h2>
+          <span className="hm-acts">
+            <Button variant="outline" size="sm" disabled={pending || !ceilingDirty} onClick={saveCeiling}>
+              Save the ceiling
+            </Button>
+          </span>
+        </div>
+        <p className="hm-note">
+          The heads this flotilla is certified for. A composition that seats more
+          than this is refused at the database, before anyone can be sold a seat
+          the hull cannot hold. Blank reads the club&apos;s figure, {clubCeiling} heads.
+        </p>
+        <div className="hm-form" style={{ marginTop: 18, maxWidth: 720 }}>
+          <div className="hm-item">
+            <div className="hm-item__head">
+              <b>Ceiling</b>
+              <Badge tone={hullCeiling === null ? "outline" : "ink"}>
+                {hullCeiling === null ? `Club default · ${clubCeiling}` : `${hullCeiling} heads`}
+              </Badge>
+              <span className="hm-item__acts">
+                <Input
+                  label="Heads"
+                  type="number"
+                  inputMode="numeric"
+                  min={HULL_CEILING_MIN}
+                  max={HULL_CEILING_MAX}
+                  placeholder={String(clubCeiling)}
+                  value={ceilingDraft}
+                  onChange={(e) => setCeilingDraft(e.target.value)}
+                  style={{ width: 110 }}
+                />
+              </span>
+            </div>
+            <div className="hm-item__meta">
+              <span>
+                {HULL_CEILING_MIN}–{HULL_CEILING_MAX} · BLANK READS THE CLUB DEFAULT
+              </span>
+              <span>{hull} PASSES ON SALE NET OF HOLDS</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="hm-sec">
         <div className="hm-head">
@@ -241,9 +327,10 @@ export function CompositionPanel({
 
         {overHull ? (
           <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
-            {draftHeads} heads against a hull of {hull}. The gate refuses the
-            overflow at checkout, which is the worst place for a member to find
-            out — raise the berths on the Voyages tab or lower a ceiling.
+            {draftHeads} heads against a hull certified for {effectiveCeiling}
+            {hullCeiling === null ? " (the club default)" : ""}. The database
+            refuses this composition as it stands — lower a ceiling, or raise
+            the hull above if the flotilla is certified for more.
           </p>
         ) : null}
         {underSold.length ? (

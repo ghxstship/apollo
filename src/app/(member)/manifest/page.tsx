@@ -180,17 +180,25 @@ export default async function VoyagesPage() {
     ? await supabase.rpc("claimed_cabins", { p_cabins: cabinIds })
     : { data: [] as Array<{ cabin_id: string; voyage_id: string }> };
 
+  /* A couple pass's second head is one rsvp_guests row with kind 'partner'. It
+     rides the same machinery — its own code, sign token and camera consent —
+     but it is not a companion: it never counts against the guest allowance and
+     the guest stepper must not read it as one. Separated here, once, so every
+     control below sees companions as companions. */
   const guestsByRsvp = new Map<string, GuestStub[]>();
+  const partnerByRsvp = new Map<string, GuestStub>();
   for (const g of guestRes.data ?? []) {
-    guestsByRsvp.set(g.rsvp_id, [
-      ...(guestsByRsvp.get(g.rsvp_id) ?? []),
-      {
-        name: g.name,
-        code: g.boarding_code,
-        signToken: g.sign_token,
-        signed: signedGuests.has(g.id),
-      },
-    ]);
+    const stub: GuestStub = {
+      name: g.name,
+      code: g.boarding_code,
+      signToken: g.sign_token,
+      signed: signedGuests.has(g.id),
+    };
+    if (g.kind === "partner") {
+      partnerByRsvp.set(g.rsvp_id, stub);
+      continue;
+    }
+    guestsByRsvp.set(g.rsvp_id, [...(guestsByRsvp.get(g.rsvp_id) ?? []), stub]);
   }
 
   /* Waitlist order, one line per list you're holding. */
@@ -479,6 +487,7 @@ export default async function VoyagesPage() {
                       members={members}
                       standingOffer={r ? offeredByRsvp.get(r.id) ?? null : null}
                       guestStubs={r ? guestsByRsvp.get(r.id) ?? [] : []}
+                      partner={r ? partnerByRsvp.get(r.id) ?? null : null}
                       crewMine={crewMineByVoyage.get(v.id) ?? null}
                       crewSeekers={crewOthersByVoyage.get(v.id) ?? []}
                       splitOffered={splitOffered}

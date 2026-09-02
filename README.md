@@ -73,6 +73,21 @@ Every change ships only when all of these are green, on the commit (not the work
 
 Migrations are applied to the live project first (never hand-written), then adopted into `supabase/migrations` with `npm run migrations:mirror -- --adopt`, then proven with `migrations:replay`. Business constants live in `club_settings`, `segments`, `sponsor_tiers`, `leagues` and `club_products` — read them; never restate them in code or copy.
 
+## Decisions the schema now states
+
+Each of these was an open question the audits kept returning to. They are decided in code, with the reasoning in the migration that carries them, and every one is reversible by a migration that says otherwise.
+
+- **Lapsed dues hold the membership.** `past_due` keeps its grace; `canceled`/`unpaid` places a club hold with `profiles.hold_reason = 'dues'` that a clearing payment lifts on its own (`handle_subscription_status`). A member cannot lift a dues hold themselves.
+- **A pause keeps the passes; a departure squares them.** Paused members keep future passes (paid, releasable). `set_own_standing('departed')` releases every future pass with full credit whatever the window (`handle_profile_status`).
+- **The quarterly membership is a plan the cap can count.** `membership_plans` row "Club Lifestyle Membership" (`plan_type = 'access'`, `product_slug = 'quarterly_membership'`) — an access plan, not a tier — so `guard_the_membership_cap` enforces the 20 active seats.
+- **A couple names its second head.** `rsvp_guests.kind = 'partner'`: one per couple pass, any tier, own code and waiver and consent, never a companion, never pruned.
+- **A flotilla names its own ceiling.** `voyages.hull_ceiling_heads` overrides `club_settings.hull_ceiling_heads` for a multi-hull sailing; the ratio gate is unchanged.
+- **The taxonomy agrees by construction.** A format decides the class, the class the default kind, the stated length the sub-class (`a_sailing_keeps_its_taxonomy`).
+- **One waitlist per sailing.** Composition sailings use the numbered line (`waitlist_entries`); everything else uses `rsvps.status = 'waitlist'`; the guard refuses the other on each kind, so the two never coexist on one sailing.
+- **Sponsors give comps and deliver assets.** `comp_a_pass_for_sponsor` writes a comp pass carrying `rsvps.sponsor_id`; `voyage_sponsors.assets_delivered` records the tier's inventory as it is fulfilled.
+- **Errors and the scheduler are on the Bridge.** `app_errors` (written by `instrumentation.ts`) and `scheduler_health()` (pg_net's last responses) render on `/bridge/reports`. An external tracker, when chosen, is fed from `app_errors`.
+- **Not offered, on purpose:** digital or hybrid events. The phones-in-totes ethos is the product.
+
 ## Data model
 
 Members: `profiles` (1:1 with `auth.users`, auto-created by trigger) · `member_roll` · `invites` · `membership_plans` · `subscriptions` / `invoices` / `payment_methods` / `installment_plans` · views `member_league`, `member_engagement`, `member_affinity`, `member_pass_usage`.

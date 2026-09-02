@@ -58,6 +58,9 @@ export type MemberDetail = {
   passes: Array<{ id: string; title: string; when: string; zone: string; status: string }>;
   balanceCents: number;
   status: string;
+  /** Why the club holds it. 'dues' lifts on its own when the dues clear, or
+      on a word from the Bridge; the others lift only on a word. */
+  holdReason: "dues" | "conduct" | "club" | null;
 };
 
 /* Pulled on row click rather than shipped with every row — fourteen members
@@ -161,6 +164,7 @@ export async function loadMember(
       })),
       balanceCents: accountRes.data?.balance_cents ?? 0,
       status: profile.status ?? "active",
+      holdReason: profile.status === "paused" ? profile.hold_reason : null,
     },
   };
 }

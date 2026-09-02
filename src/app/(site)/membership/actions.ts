@@ -54,6 +54,8 @@ export async function submitApplication(
          the form, same as the plain path below. */
       const paced = error.code === "53400" && error.message ? error.message.replace(/^[^:]*:\s*/, "") : null;
       if (paced) return { ok: false, errors: { form: paced }, values };
+      if (error.code === "23505")
+        return { ok: false, errors: { form: "Your application is already with Shoreside — one is enough, and a person reads it next." }, values };
       /* Anything else — unknown code, spent code — the RPC refuses in the
          brand's voice; hand its words to the field the applicant can fix. */
       return { ok: false, errors: { invite: voice(error) }, values };
@@ -73,9 +75,10 @@ export async function submitApplication(
          legitimate re-applicant a dead end — the gangway and status lookups
          already pass their pacing through; the front door now does too. */
       const paced = error.code === "53400" && error.message ? error.message.replace(/^[^:]*:\s*/, "") : null;
+      const twice = error.code === "23505" ? "Your application is already with Shoreside — one is enough, and a person reads it next." : null;
       return {
         ok: false,
-        errors: { form: paced ?? "That didn't land. Try again; if it holds, hail Shoreside." },
+        errors: { form: paced ?? twice ?? "That didn't land. Try again; if it holds, hail Shoreside." },
         values,
       };
     }

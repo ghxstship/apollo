@@ -3698,6 +3698,160 @@ async function crawlRules(p) {
   note("regional", "the stripe log is sealed to the wardroom", (stripeSealed.data ?? []).length === 0, `got ${stripeSealed.status}`);
 }
 
+
+/* ---------- W9. the decisions, made and tested ----------
+   Dues that lapse hold the membership; a departure squares the manifest; the
+   quarterly membership is a plan the cap can count; a couple names its second
+   head; a flotilla names its ceiling; a sailing keeps its taxonomy; an add-on
+   follows the heads; one open application to an address; the Bridge sees its
+   errors and its scheduler; a sponsor has passes to give. */
+async function decisionRules(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national),
+        glo = rest(p.global), pau = rest(p.paused), anon = rest(null);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+  const plus30 = new Date(Date.now() + 30 * 24 * 3600e3).toISOString();
+  const said = (r) => String(JSON.stringify(r.data ?? "")).toLowerCase();
+
+  // — the quarterly membership is a plan the cap can see —
+  const plan = await stf.get("membership_plans?product_slug=eq.quarterly_membership&select=label,events_per_month,plan_type");
+  note("staff", "the quarterly membership is a plan the cap can count",
+    plan.data?.[0]?.label === "Club Lifestyle Membership" && plan.data[0].plan_type === "access", JSON.stringify(plan.data).slice(0, 100));
+
+  // — a flotilla names its own ceiling —
+  const fmk = await stf.post("voyages", {
+    slug: `e2e-tentpole-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 60, price_cents: 0, hull_ceiling_heads: 60,
+  });
+  const tentVid = fmk.data?.[0]?.id;
+  const bigCaps = await stf.post("voyage_segment_caps", [
+    { voyage_id: tentVid, segment: "single_woman", cap: 25 },
+    { voyage_id: tentVid, segment: "single_man", cap: 25 },
+  ]);
+  note("staff", "a flotilla seats past forty when it names its ceiling", bigCaps.status === 201, `got ${bigCaps.status} ${said(bigCaps).slice(0, 90)}`);
+  const overTent = await stf.post("voyage_segment_caps", { voyage_id: tentVid, segment: "couple", cap: 10 });
+  note("staff", "and holds at the ceiling it named", overTent.status >= 400 && /hull holds 60/.test(said(overTent)), said(overTent).slice(0, 90));
+  const tentDel = await stf.del(`voyages?id=eq.${tentVid}`);
+  note("staff", "the tentpole fixture is struck", tentDel.status < 300, `got ${tentDel.status}`);
+
+  // — a sailing keeps its taxonomy —
+  const tmk = await stf.post("voyages", {
+    slug: `e2e-taxo-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day", format: "pool_social",
+    starts_at: plus30, ends_at: new Date(Date.parse(plus30) + 10 * 3600e3).toISOString(),
+    time_zone: "America/New_York", berths_total: 4, price_cents: 0,
+  });
+  note("staff", "a port format is a shore sailing, and ten hours is an odyssey",
+    tmk.data?.[0]?.class === "shore" && tmk.data?.[0]?.kind === "port_day" && tmk.data?.[0]?.sub_class === "odyssey",
+    JSON.stringify({ c: tmk.data?.[0]?.class, k: tmk.data?.[0]?.kind, s: tmk.data?.[0]?.sub_class }));
+  await stf.del(`voyages?id=eq.${tmk.data?.[0]?.id}`);
+
+  // — a couple names its second head; a guest still rides Global alone —
+  const cmk = await stf.post("voyages", {
+    slug: `e2e-couple-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 6, price_cents: 0,
+  });
+  const cplVid = cmk.data?.[0]?.id;
+  const cplPass = await stf.post("rsvps", { voyage_id: cplVid, profile_id: uid(p.regional), status: "aboard", segment: "couple" });
+  const partner = await reg.post("rsvp_guests", { rsvp_id: cplPass.data?.[0]?.id, name: "E2E Partner", kind: "partner" });
+  note("regional", "a couple names its second head", partner.status === 201 && !!partner.data?.[0]?.boarding_code, `got ${partner.status} ${said(partner).slice(0, 90)}`);
+  const partnerTwice = await reg.post("rsvp_guests", { rsvp_id: cplPass.data?.[0]?.id, name: "E2E Other", kind: "partner" });
+  note("regional", "a couple has one second head", partnerTwice.status >= 400, `got ${partnerTwice.status}`);
+  const soloPass = await stf.post("rsvps", { voyage_id: cplVid, profile_id: uid(p.national), status: "aboard", segment: "single_man" });
+  const soloPartner = await nat.post("rsvp_guests", { rsvp_id: soloPass.data?.[0]?.id, name: "E2E Nobody", kind: "partner" });
+  note("national", "a single pass seats one", soloPartner.status >= 400 && /seats one/.test(said(soloPartner)), said(soloPartner).slice(0, 90));
+  const guestOnRegional = await reg.post("rsvp_guests", { rsvp_id: cplPass.data?.[0]?.id, name: "E2E Guest" });
+  note("regional", "a guest still rides a Global membership", guestOnRegional.status >= 400 && /global/i.test(said(guestOnRegional)), said(guestOnRegional).slice(0, 90));
+  const cplDel = await stf.del(`voyages?id=eq.${cplVid}`);
+  note("staff", "the couple fixture is struck", cplDel.status < 300, `got ${cplDel.status}`);
+
+  // — an add-on follows the heads —
+  const amk = await stf.post("voyages", {
+    slug: `e2e-heads-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 6, price_cents: 0,
+  });
+  const headVid = amk.data?.[0]?.id;
+  const gloPass = await glo.post("rsvps", { voyage_id: headVid, profile_id: uid(p.global), status: "aboard", guests: 2, guest_names: ["E2E One", "E2E Two"] });
+  const shelf = await glo.get("addons?select=id,price_cents&active=eq.true&limit=1");
+  const addonId = shelf.data?.[0]?.id;
+  await glo.rpc("attach_addons", { p_rsvp: gloPass.data?.[0]?.id, p_addons: [addonId], p_qty: 3 });
+  await glo.patch(`rsvps?id=eq.${gloPass.data?.[0]?.id}`, { guests: 1, guest_names: ["E2E One"] });
+  const trimmed = await glo.get(`rsvp_addons?rsvp_id=eq.${gloPass.data?.[0]?.id}&select=qty`);
+  const back = await glo.get(`account_ledger?rsvp_id=eq.${gloPass.data?.[0]?.id}&kind=eq.credit&memo=like.*fewer aboard&select=delta_cents`);
+  note("global", "an add-on follows the heads and credits the difference",
+    trimmed.data?.[0]?.qty === 2 && back.data?.[0]?.delta_cents === shelf.data?.[0]?.price_cents,
+    `qty ${JSON.stringify(trimmed.data)} credit ${JSON.stringify(back.data)}`);
+  const headDel = await stf.del(`voyages?id=eq.${headVid}`);
+  note("staff", "the heads fixture is struck", headDel.status < 300, `got ${headDel.status}`);
+
+  // — a sponsor has passes to give —
+  const spMk = await stf.post("sponsors", { name: `E2E Presenting ${stamp}`, tier: "presenting_partner", monthly_cents: 1000000 });
+  const smk = await stf.post("voyages", {
+    slug: `e2e-sponsored-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 6, price_cents: 1000,
+  });
+  const spVid = smk.data?.[0]?.id;
+  const noAct = await stf.rpc("comp_a_pass_for_sponsor", { p_voyage: spVid, p_sponsor: spMk.data?.[0]?.id, p_profile: uid(p.national) });
+  note("staff", "a comp needs the sponsor on the sailing first", noAct.status >= 400 && /activation/.test(said(noAct)), said(noAct).slice(0, 90));
+  await stf.post("voyage_sponsors", { voyage_id: spVid, sponsor_id: spMk.data?.[0]?.id });
+  const comp = await stf.rpc("comp_a_pass_for_sponsor", { p_voyage: spVid, p_sponsor: spMk.data?.[0]?.id, p_profile: uid(p.national) });
+  const compRow = await stf.get(`rsvps?voyage_id=eq.${spVid}&profile_id=eq.${uid(p.national)}&select=comp,sponsor_id`);
+  const compCharge = await nat.get(`account_ledger?voyage_id=eq.${spVid}&kind=eq.berth&select=delta_cents`);
+  note("staff", "a sponsor's comp is a comp, on the sponsor's account",
+    comp.status < 300 && compRow.data?.[0]?.comp === true && compRow.data[0].sponsor_id === spMk.data?.[0]?.id && (compCharge.data ?? []).length === 0,
+    `got ${comp.status} ${JSON.stringify(compRow.data).slice(0, 80)} charges ${(compCharge.data ?? []).length}`);
+  const memberComp = await nat.rpc("comp_a_pass_for_sponsor", { p_voyage: spVid, p_sponsor: spMk.data?.[0]?.id, p_profile: uid(p.national) });
+  note("national", "comps are the bridge's to give", memberComp.status >= 400, `got ${memberComp.status}`);
+
+  // — the new columns joined the guards —
+  const selfLift = await reg.patch(`profiles?id=eq.${uid(p.regional)}`, { hold_reason: null });
+  const holdRow = await reg.get(`profiles?id=eq.${uid(p.regional)}&select=hold_reason`);
+  note("regional", "a hold's reason is not the member's to write", selfLift.status >= 400 || holdRow.status === 200, `got ${selfLift.status}`);
+  const selfSponsor = await glo.post("rsvps", { voyage_id: spVid, profile_id: uid(p.global), status: "waitlist", sponsor_id: spMk.data?.[0]?.id });
+  note("global", "a sponsor's account is not the member's to name", selfSponsor.status >= 400 && /bridge/.test(said(selfSponsor)), said(selfSponsor).slice(0, 90));
+  await stf.del(`voyages?id=eq.${spVid}`);
+  const spDel = await stf.del(`sponsors?id=eq.${spMk.data?.[0]?.id}`);
+  note("staff", "the sponsored fixture is struck", spDel.status < 300, `got ${spDel.status}`);
+
+  // — one open application to an address —
+  const addr = `e2e-anon-twice-${stamp}@fixtures.invalid`;
+  /* Minimal, as the public funnel sends it: an applicant cannot read the
+     applications table back, and a representation insert is refused whole. */
+  const first = await anon.postMinimal("applications", { full_name: "E2E Twice", email: addr, city: "Miami" });
+  const second = await anon.postMinimal("applications", { full_name: "E2E Twice", email: addr.toUpperCase(), city: "Miami" });
+  note("anon", "one open application to an address", first.status === 201 && second.status === 409, `got ${first.status}/${second.status}`);
+
+  // — the bridge sees its errors and its scheduler; nobody else does —
+  const errs = await reg.get("app_errors?select=id&limit=1");
+  note("regional", "the error log is the bridge's reading", (errs.data ?? []).length === 0, `got ${errs.status}`);
+  const sched = await reg.rpc("scheduler_health", { p_limit: 5 });
+  note("regional", "the scheduler's health is the bridge's reading", (Array.isArray(sched.data) ? sched.data.length : 0) === 0, `got ${sched.status}`);
+  const schedStaff = await stf.rpc("scheduler_health", { p_limit: 5 });
+  note("staff", "the bridge reads the scheduler's last responses", schedStaff.status < 300 && Array.isArray(schedStaff.data), `got ${schedStaff.status} ${Array.isArray(schedStaff.data) ? schedStaff.data.length : "?"} rows`);
+
+  // — a departure squares the manifest (the paused persona leaves, then is restored) —
+  const dmk = await stf.post("voyages", {
+    slug: `e2e-farewell-${stamp}`, title: "E2E fixture sailing.", class: "sea", kind: "sea_day",
+    starts_at: plus30, time_zone: "America/New_York", berths_total: 4, price_cents: 1000,
+  });
+  const fwVid = dmk.data?.[0]?.id;
+  await stf.post("rsvps", { voyage_id: fwVid, profile_id: uid(p.paused), status: "aboard" });
+  const charged = await stf.get(`account_ledger?voyage_id=eq.${fwVid}&profile_id=eq.${uid(p.paused)}&kind=eq.berth&select=delta_cents`);
+  const leave = await pau.rpc("set_own_standing", { p_status: "departed" });
+  const gone = await stf.get(`rsvps?voyage_id=eq.${fwVid}&profile_id=eq.${uid(p.paused)}&select=status`);
+  const squared = await stf.get(`account_ledger?voyage_id=eq.${fwVid}&profile_id=eq.${uid(p.paused)}&kind=eq.credit&memo=like.Departed*&select=delta_cents`);
+  note("paused", "a departure squares the manifest in full",
+    leave.status < 300 && gone.data?.[0]?.status === "not_going" && squared.data?.[0]?.delta_cents === -(charged.data?.[0]?.delta_cents ?? 0),
+    `got ${leave.status} ${JSON.stringify(gone.data)} ${JSON.stringify(squared.data)}`);
+  /* Two writes, on purpose: the status change is stamped with the staff hand
+     that made it, and a club-held pause is one the member cannot resume —
+     which the membership section asserts they can. The hold is handed back. */
+  const restore = await stf.patch(`profiles?id=eq.${uid(p.paused)}`, { status: "paused" });
+  const handBack = await stf.patch(`profiles?id=eq.${uid(p.paused)}`, { status_set_by: uid(p.paused), hold_reason: null });
+  note("staff", "the paused persona is restored, holding its own pause", restore.status < 300 && handBack.status < 300,
+    `got ${restore.status}/${handBack.status} ${said(handBack).slice(0, 80)}`);
+  const fwDel = await stf.del(`voyages?id=eq.${fwVid}`);
+  note("staff", "the farewell fixture is struck", fwDel.status < 300, `got ${fwDel.status}`);
+}
+
 async function membershipRules(p) {
   const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national);
   const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
@@ -3913,6 +4067,7 @@ async function main() {
   await remediationRules(personas);
   await programRules(personas);
   await crawlRules(personas);
+  await decisionRules(personas);
   for (const [who, before] of Object.entries(kitBefore)) {
     const after = await knotsFor(personas[who], personas.staff);
     note(who, "activity, charter and membership leave the ledger as they found it",

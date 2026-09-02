@@ -3,7 +3,7 @@ import { logDate, logTime } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { SEGMENTS, type Segment, type SegmentCapacityRow } from "@/lib/vetting";
 import { getOperator } from "../../data";
-import { must } from "../../staff";
+import { must, mustValue } from "../../staff";
 import {
   CompositionPanel,
   NoSailings,
@@ -35,7 +35,7 @@ export default async function CompositionPage({
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
   const voyagesRes = await supabase
     .from("voyages")
-    .select("id, title, starts_at, time_zone, berths_total, held_passes, status")
+    .select("id, title, starts_at, time_zone, berths_total, held_passes, status, hull_ceiling_heads")
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
     .order("starts_at", { ascending: true });
@@ -55,16 +55,24 @@ export default async function CompositionPage({
 
   const voyage = voyages.find((v) => v.id === sp.voyage) ?? voyages[0];
 
-  const [capsRes, queueRes] = await Promise.all([
+  const [capsRes, queueRes, defaultCeilingRes] = await Promise.all([
     db.from("voyage_segment_capacity").select("*").eq("voyage_id", voyage.id),
     db
       .from("waitlist_entries")
       .select("segment, offered_at, claim_expires_at, claimed_at, released_at")
       .eq("voyage_id", voyage.id),
+    /* The club's certified heads, read rather than retyped: the trigger reads
+       coalesce(voyage.hull_ceiling_heads, club_setting('hull_ceiling_heads')),
+       and the screen has to show the same figure it will be refused against. */
+    supabase.rpc("club_setting", { p_key: "hull_ceiling_heads" }),
   ]);
 
   const rows = (must(capsRes as { data: SegmentCapacityRow[] | null; error: null })).slice();
   const entries = must(queueRes as { data: QueueEntry[] | null; error: null });
+  const clubCeiling = mustValue<number>(
+    defaultCeilingRes as { data: number | null; error?: { message?: string } | null },
+    0
+  );
 
   /* Waiting: in the line, never offered, still live. Offered: written to and
      the six hours are still running. Counted apart because a segment with one
@@ -124,6 +132,8 @@ export default async function CompositionPage({
         voyageId={voyage.id}
         voyageTitle={voyage.title}
         hull={hull}
+        hullCeiling={voyage.hull_ceiling_heads}
+        clubCeiling={clubCeiling}
         rows={rows}
         lines={lines}
       />
