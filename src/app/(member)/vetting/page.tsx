@@ -136,14 +136,41 @@ export default async function VettingPage() {
         </p>
       </div>
 
+      {/* Acceptance carries the mark. The kit sets the parent anchor on the
+          acceptance card — the umbrella speaking, not a division — so the
+          suffix is null here. */}
+      {mySegment && sailing ? (
+        <section className="mbr-sec">
+          <div className="vet-panel" style={{ maxWidth: 420 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span className="vet-eyebrow" style={{ color: "var(--text-accent)" }}>
+                Accepted · {sailing.title}
+              </span>
+              <Wordmark size="sm" suffix={null} />
+            </div>
+            <p className="mbr-h1" style={{ fontSize: "var(--text-2xl)" }}>You are on the manifest</p>
+            <p className="vet-note">
+              Waiver and Riviera Code open 48 hours out. The marina pin drops 24
+              hours out, encrypted.
+            </p>
+          </div>
+        </section>
+      ) : null}
+
       <div className="vet-grid">
         {/* Your file */}
         <div className="vet-panel">
           <span className="vet-eyebrow">Your file · six gates</span>
+          {/* The answer, before the checklist. A member opens this page to find
+              out how far along they are, and had to count six rows to learn it. */}
+          <p className="vet-cleared">
+            {gates.filter(([, done]) => done).length} of {gates.length} cleared
+          </p>
           <div>
-            {gates.map(([label, done]) => (
+            {gates.map(([label, done], i) => (
               <div className="vet-row" key={label}>
-                <span className="vet-row__value" style={{ flex: 1 }}>{label}</span>
+                <span className="vet-row__label">{String(i + 1).padStart(2, "0")}</span>
+                <span className="vet-gate">{label}</span>
                 <span
                   className="vet-row__token"
                   style={{ color: done ? "var(--positive)" : "var(--text-faint)" }}
@@ -235,26 +262,6 @@ export default async function VettingPage() {
         />
       </section>
 
-      {/* Acceptance carries the mark. The kit sets the parent anchor on the
-          acceptance card — the umbrella speaking, not a division — so the
-          suffix is null here. */}
-      {mySegment && sailing ? (
-        <section className="mbr-sec">
-          <div className="vet-panel" style={{ maxWidth: 420 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <span className="vet-eyebrow" style={{ color: "var(--text-accent)" }}>
-                Accepted · {sailing.title}
-              </span>
-              <Wordmark size="sm" suffix={null} />
-            </div>
-            <p className="mbr-h1" style={{ fontSize: "var(--text-2xl)" }}>You are on the manifest</p>
-            <p className="vet-note">
-              Waiver and Riviera Code open 48 hours out. The marina pin drops 24
-              hours out, encrypted.
-            </p>
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

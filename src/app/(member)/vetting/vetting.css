@@ -60,6 +60,14 @@
    comes up to body. */
 .vet-gate { flex: 1; font: var(--type-body); color: var(--text-body); }
 
+/* The count the checklist only implied. Sits directly under the eyebrow so the
+   member reads how far along they are before reading which six things. */
+.vet-cleared {
+  font: var(--type-heading);
+  color: var(--text-body);
+  margin: var(--space-2) 0 var(--space-3);
+}
+
 .vet-eyebrow {
   font: var(--type-label);
   letter-spacing: var(--tracking-label);

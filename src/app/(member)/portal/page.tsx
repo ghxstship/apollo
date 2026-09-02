@@ -107,9 +107,13 @@ export default async function PortalPage({
             inverse
             thick
             label={nextReward ? `Toward ${nextReward.name.toLowerCase()}` : "The horizon"}
+            /* The ratio said "523 / 1000 KN" in 10px beside a 36px balance
+               already saying 523 — the page stated the same number twice at
+               wildly different weights and never stated the one a member
+               actually wants, which is how many are left to go. */
             detail={
               nextReward
-                ? `${balance} / ${nextReward.cost_fm} ${CURRENCY.code}`
+                ? `${Math.max(0, nextReward.cost_fm - balance)} ${CURRENCY.code} TO GO · ${nextReward.cost_fm} ${CURRENCY.code}`
                 : `${balance} ${CURRENCY.code}`
             }
             value={progress}

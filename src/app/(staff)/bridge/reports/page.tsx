@@ -486,6 +486,39 @@ export default async function ReportsPage() {
       <span className="hm-eyebrow">Reports</span>
       <h1 className="hm-h1">The season, in numbers.</h1>
 
+      {/* What needs reading, before what is merely true. Holds, past-due dues,
+          failed letters and an unhappy scheduler were each a small Stat in the
+          same weight as Complimentary passes, and the scheduler's trouble was a
+          trailing clause in a paragraph six screens down. A season that is
+          entirely well shows nothing here at all. */}
+      {(() => {
+        const failedLetters =
+          outboxCount("failed") + tally("push", "failed") + tally("sms", "failed");
+        const attention: Array<[string, number, string]> = [
+          ["Weather holds live", holdsLive, "caution"],
+          ["Dues past due", duesAtRisk, "danger"],
+          ["Letters gave up", failedLetters, "danger"],
+          ["Drains needing a read", schedulerTrouble, "caution"],
+        ];
+        const live = attention.filter(([, n]) => n > 0);
+        if (live.length === 0) return null;
+        return (
+          <div className="hm-attention" role="status">
+            <span className="hm-attention__label">Needs reading</span>
+            <div className="hm-row">
+              {live.map(([label, n, tone]) => (
+                <Stat
+                  key={label}
+                  size="sm"
+                  label={label}
+                  value={<span style={{ color: `var(--${tone})` }}>{n}</span>}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="hm-row">
         <Stat
           label="Members"

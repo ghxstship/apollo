@@ -131,9 +131,22 @@ export default function BrandKitPage() {
             <p>{BOILER}</p>
             <CopyTextButton label="Boilerplate" text={BOILER} size="sm">Copy</CopyTextButton>
           </div>
+          {/* The one page guaranteed to be read out of order — press want the
+              facts, a partner wants the colour — and it was a 434-line scroll
+              with no way in. The 96-line legal page had anchors and this did
+              not. Same rail, same class. */}
+          <nav className="lg-anchors" aria-label="The brand kit">
+            <a href="#wordmark">01 Wordmark</a>
+            <a href="#color">02 Color</a>
+            <a href="#type">03 Type</a>
+            <a href="#voice">04 Voice</a>
+            <a href="#rooms">05 Rooms</a>
+            <a href="#imagery">06 Imagery</a>
+            <a href="#facts">07 The facts</a>
+          </nav>
         </div>
 
-        <section className="bk-sec">
+        <section id="wordmark" className="bk-sec">
           <SectionHeader eyebrow="01 — The wordmark" title="Type only. There is no logo." />
           <div className="bk-lockups">
             <div className="bk-lock" style={{ background: "var(--surface-card)" }}>
@@ -156,7 +169,7 @@ export default function BrandKitPage() {
           </ul>
         </section>
 
-        <section className="bk-sec">
+        <section id="color" className="bk-sec">
           <SectionHeader
             eyebrow="02 — Color"
             title="Paper by default; one accent per view."
@@ -209,7 +222,7 @@ export default function BrandKitPage() {
           </p>
         </section>
 
-        <section className="bk-sec">
+        <section id="type" className="bk-sec">
           <SectionHeader eyebrow="03 — Type" title="Four voices, one stage." />
           <div className="bk-typegrid">
             {TYPE_VOICES.map(([family, name, use, href, label]) => (
@@ -223,7 +236,7 @@ export default function BrandKitPage() {
           </div>
         </section>
 
-        <section className="bk-sec">
+        <section id="voice" className="bk-sec">
           <SectionHeader eyebrow="04 — Voice" title="A producer who respects the audience." />
           <div className="bk-voice">
             <div>
@@ -252,7 +265,7 @@ export default function BrandKitPage() {
           </div>
         </section>
 
-        <section className="bk-sec bk-rooms">
+        <section id="rooms" className="bk-sec bk-rooms">
           <SectionHeader eyebrow="05 — One stage, different spotlights" title="The umbrella and its rooms." />
           <p className="bk-note" style={{ marginTop: 0 }}>
             Divisions never get their own logos, colours beyond the accent, or
@@ -361,7 +374,7 @@ export default function BrandKitPage() {
           </div>
         </section>
 
-        <section className="bk-sec">
+        <section id="imagery" className="bk-sec">
           <SectionHeader
             eyebrow="06 — Imagery"
             title="Warm, candid, grainy night-flash."
@@ -384,7 +397,7 @@ export default function BrandKitPage() {
           </p>
         </section>
 
-        <section className="bk-sec" style={{ paddingBottom: 0 }}>
+        <section id="facts" className="bk-sec" style={{ paddingBottom: 0 }}>
           <SectionHeader eyebrow="07 — The facts" title="For the record." />
           <div className="bk-facts">
             {FACTS.map(([k, v]) => (

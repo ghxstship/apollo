@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Badge, Button, Checkbox, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, Select, Stat, StateBlock, Table, Tag, Toast } from "@/components/ds";
 import { CLUB_ZONE, LEAGUES, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -130,6 +130,26 @@ export function MembersClient({
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [f, setF] = React.useState<SegmentFilters>(EMPTY);
+  /* Six selects, a search, a checkbox and four buttons stood above the roster
+     with no narrow-screen rule at all — about 350px of chrome before row one on
+     a phone. Below 900px they fold behind a summary of what is actually set. */
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+
+  /* What the folded bar says it is doing. Reads the filter object rather than a
+     second list, so a filter added later cannot be silently left out of the
+     summary. */
+  const activeFilters = React.useMemo(() => {
+    const out: string[] = [];
+    if (f.harbor) out.push(harbors.find((h) => h.slug === f.harbor)?.label ?? f.harbor);
+    if (f.tier) out.push(f.tier);
+    if (f.plan) out.push("Plan set");
+    if (f.league) out.push(`League ${f.league}`);
+    if (f.status) out.push(f.status);
+    if (f.dues) out.push(f.dues);
+    if (f.recent) out.push("Sailed in 90 days");
+    if (f.q.trim()) out.push(`“${f.q.trim()}”`);
+    return out;
+  }, [f, harbors]);
   const [segmentId, setSegmentId] = React.useState("");
   const [naming, setNaming] = React.useState(false);
   const [segmentName, setSegmentName] = React.useState("");
@@ -246,7 +266,18 @@ export function MembersClient({
 
   return (
     <>
-      <div className="hm-filters">
+      <div className={"hm-filters" + (filtersOpen ? " is-open" : "")}>
+        <div className="hm-filters__summary">
+          <Button variant="outline" size="sm" onClick={() => setFiltersOpen((v) => !v)}>
+            {filtersOpen ? "Hide filters" : "Filter"}
+          </Button>
+          {activeFilters.length ? (
+            activeFilters.map((label) => <Tag key={label}>{label}</Tag>)
+          ) : (
+            <span className="hm-count">NO FILTER SET</span>
+          )}
+        </div>
+        <div className="hm-filters__body">
         <Select
           label="Harbor"
           value={f.harbor}
@@ -340,11 +371,14 @@ export function MembersClient({
             Export CSV
           </Button>
         </div>
+        </div>
       </div>
 
-      <span className="hm-count">
-        {filtered.length} OF {rows.length} ON THE ROLL
-      </span>
+      {/* The count was 10px mono in the faintest token on the sheet — the one
+          figure that says whether the filters did anything. */}
+      <div className="hm-row">
+        <Stat size="sm" label="On the roll" value={filtered.length} sub={`OF ${rows.length}`} />
+      </div>
 
       {filtered.length ? (
         <div className="hm-panel">

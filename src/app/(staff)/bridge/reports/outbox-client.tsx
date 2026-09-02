@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Toast } from "@/components/ds";
+import { Badge, Button, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { requeueOutbox, type OutboxTable } from "./actions";
 
@@ -27,6 +27,24 @@ const STATE_LABEL: Record<StrandedRow["status"], string> = {
   sending: "In flight",
 };
 
+/* State is the one column an operator scans this table for, and it was body
+   text: "Gave up" and "Skipped" and "In flight" in the same weight and colour
+   as the letter beside them, down fifty near-identical rows. A tone reads
+   before the word does. */
+const STATE_TONE: Record<StrandedRow["status"], "danger" | "caution" | "outline"> = {
+  failed: "danger",
+  skipped: "caution",
+  sending: "outline",
+};
+
+/* And the row carries it too, so a run of failures is findable by shape at
+   arm's length without reading a single cell. */
+const STATE_STRIPE: Record<StrandedRow["status"], string> = {
+  failed: "var(--danger)",
+  skipped: "var(--caution)",
+  sending: "transparent",
+};
+
 export function OutboxTable({ rows }: { rows: StrandedRow[] }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -42,20 +60,25 @@ export function OutboxTable({ rows }: { rows: StrandedRow[] }) {
               <th scope="col">To</th>
               <th scope="col">State</th>
               <th scope="col">What went wrong</th>
-              <th scope="col">Tries</th>
+              <th scope="col" className="num--end">Tries</th>
               <th scope="col">Queued</th>
               <th scope="col"></th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.key}>
+              <tr
+                key={row.key}
+                style={{ borderInlineStart: `3px solid ${STATE_STRIPE[row.status]}` }}
+              >
                 <td>{row.channel}</td>
                 <td>{row.letter}</td>
                 <td className="num">{row.recipient}</td>
-                <td>{STATE_LABEL[row.status]}</td>
+                <td>
+                  <Badge tone={STATE_TONE[row.status]}>{STATE_LABEL[row.status]}</Badge>
+                </td>
                 <td>{row.lastError ?? "—"}</td>
-                <td className="num">{row.attempts}</td>
+                <td className="num num--end">{row.attempts}</td>
                 <td className="num">{row.queued}</td>
                 <td>
                   {row.status !== "sending" ? (

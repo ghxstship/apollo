@@ -67,6 +67,13 @@
 .hm-sec{margin-top:36px}
 .hm-sec>h2{font-family:var(--font-display);font-size:var(--text-display-xs);margin-bottom:4px;text-transform:uppercase}
 .hm-row{display:flex;gap:32px;margin:20px 0 4px;flex-wrap:wrap}
+/* The attention band. Semantic status colour, not the house accent — what is
+   wrong is a different fact from what the club is, and the two must not
+   compete. Renders only when something is actually non-zero, so a clean season
+   costs no space and the band's presence is itself the signal. */
+.hm-attention{margin-top:20px;padding:14px 18px;border:1px solid color-mix(in srgb, var(--caution) 45%, transparent);background:color-mix(in srgb, var(--caution) 7%, transparent)}
+.hm-attention__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--caution)}
+.hm-attention .hm-row{margin:10px 0 0}
 .hm-panel{background:var(--surface-card);border:1px solid var(--line-faint);padding:8px 20px 12px;margin-top:20px}
 .hm-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .hm-note{font-size:12px;color:var(--text-3);margin-top:8px}

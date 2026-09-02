@@ -28,6 +28,19 @@ export default async function LorePage() {
         <p className="dp-mast__sub">The ship&rsquo;s log, published.</p>
       </div>
       <div className="dp-list">
+        {/* An empty log used to render the masthead, the standfirst and then the
+            grey mailto footnote with nothing between them — which reads as a
+            page that failed rather than a season that has not been written yet.
+            The gallery states its own emptiness properly; this now does too. */}
+        {(posts ?? []).length === 0 ? (
+          <div className="ws-dp-row" style={{ display: "block" }}>
+            <div className="ws-dp-row__t">Nothing filed yet.</div>
+            <p className="ws-dp-row__dek">
+              The log opens with the first sailing of the season. What the
+              cameras keep is written up here, credited by name.
+            </p>
+          </div>
+        ) : null}
         {(posts ?? []).map((p) => (
           <Link
             key={p.id}
