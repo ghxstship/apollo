@@ -50,8 +50,10 @@ export default async function AgreementsPage() {
 
   return (
     <div className="ls-fade">
-      <span className="mbr-eyebrow">Agreements</span>
-      <h1 className="mbr-h1">What you&rsquo;ve put your name to.</h1>
+      {/* Name in the h1, editorial line in the eyebrow — see the note on
+          Account. The nav says Agreements and so must the heading. */}
+      <span className="mbr-eyebrow">What you&rsquo;ve put your name to</span>
+      <h1 className="mbr-h1">Agreements.</h1>
       <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "58ch" }}>
         Each one is kept with the exact wording you agreed to and the date you
         agreed to it. When the wording changes, you&rsquo;ll be asked again — the

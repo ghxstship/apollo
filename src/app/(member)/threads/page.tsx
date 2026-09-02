@@ -120,9 +120,11 @@ export default async function ThreadsPage() {
   return (
     <div style={{ maxWidth: 720, marginInline: "auto" }}>
       <ThreadsRealtime />
-      <span className="mbr-eyebrow">Threads</span>
+      {/* Name in the h1, editorial line in the eyebrow — see the note on
+          Account. The nav says Threads and so must the heading. */}
+      <span className="mbr-eyebrow">A word between us</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        A word between us.
+        Threads.
       </h1>
       <p className="dir-lede">
         Crew threads open when you go aboard and close after the debrief. Direct

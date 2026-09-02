@@ -132,9 +132,11 @@ export default async function YouPage() {
     <div className="you-page">
       <div className="you-col">
       <div>
-        <span className="mbr-eyebrow">You</span>
+        {/* Name in the h1, editorial line in the eyebrow — see the note on
+            Account. The nav says You and so must the heading. */}
+        <span className="mbr-eyebrow">The ship&apos;s papers</span>
         <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          The ship&apos;s papers.
+          You.
         </h1>
       </div>
 

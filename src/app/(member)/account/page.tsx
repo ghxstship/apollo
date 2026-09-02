@@ -125,9 +125,14 @@ export default async function AccountPage({
 
   return (
     <div>
-      <span className="mbr-eyebrow">Account</span>
+      {/* Name in the h1, editorial line in the eyebrow — the Portal pattern,
+          and the owner rule that a route, its nav label, its title and its
+          heading all say the same word. This page had the two swapped, so a
+          member who followed a nav item called Account landed on a page whose
+          only heading said Dues and receipts. */}
+      <span className="mbr-eyebrow">Dues · receipts · the card</span>
       <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Dues and receipts.
+        Account.
       </h1>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
         What the club draws, when it draws it, and the card it draws on. Change

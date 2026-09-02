@@ -44,8 +44,11 @@ export default async function RegattasPage() {
 
   return (
     <div className="ls-fade">
-      <span className="mbr-eyebrow">{LOGBOOK.regattas}</span>
-      <h1 className="mbr-h1">Bounded, and then over.</h1>
+      {/* Name in the h1, editorial line in the eyebrow — see the note on
+          Account. The nav reads this same LOGBOOK word, so the heading takes
+          it and the standing line moves up. */}
+      <span className="mbr-eyebrow">Bounded, and then over</span>
+      <h1 className="mbr-h1">{LOGBOOK.regattas}.</h1>
       <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "58ch" }}>
         A regatta ranks the boats that entered it. A challenge asks for a number
         and you either reach it or you don&rsquo;t. Both close on a date — the

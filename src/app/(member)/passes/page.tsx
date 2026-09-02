@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Card, StateBlock } from "@/components/ds";
-import { PLACE, SURFACES } from "@/lib/brand";
+import { PLACE } from "@/lib/brand";
 import {
+  SETTING_LABEL,
   TIER_LABEL,
   eveningBefore,
   logDate,
@@ -490,11 +491,13 @@ export default async function PassesPage() {
             const knotsOnCompletion =
               baseFm != null ? Math.round(baseFm * (v.fathoms_multiplier ?? 1)) : null;
             /* The badge names the series and how long it runs — the card says
-               what this is, not how it is filed. An episode belonging to no
-               series is a Special; an episode with no stated end drops the
+               what this is, not how it is filed. Where there is no series it
+               names the setting; Special was tried and marked every card,
+               because a null series today means unfiled rather than
+               deliberately standalone. An episode with no stated end drops the
                hours rather than guessing them. */
             const hours = durationChip(v.starts_at, v.ends_at);
-            const badge = [format?.label ?? SURFACES.special, hours]
+            const badge = [format?.label ?? SETTING_LABEL[v.class] ?? "Afloat", hours]
               .filter(Boolean)
               .join(" · ");
             const meta = [

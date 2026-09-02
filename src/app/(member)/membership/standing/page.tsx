@@ -93,8 +93,10 @@ export default async function StandingPage() {
 
   return (
     <div className="std">
+      {/* Your standing carried the name but not the shape — every other member
+          heading is the bare name and a full stop. */}
       <span className="mbr-eyebrow">Membership · the card and the record</span>
-      <h1 className="mbr-h1">Your standing</h1>
+      <h1 className="mbr-h1">Standing.</h1>
       <p className="std-lede">
         One card, two media. The printed one is static and gate-checked; this one
         rotates. Both carry the same number, and the number stays yours through a

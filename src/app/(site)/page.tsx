@@ -4,8 +4,8 @@ import { Badge, Card, Icon } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
 import { TaglineMark } from "@/components/site/logo";
 import { SectionHeader } from "@/components/site/section-header";
-import { ANCHOR, CLUB_ZONE, CITY_CODES, PLACE, SURFACES, TAGLINE } from "@/lib/brand";
-import { logMeta, roman } from "@/lib/format";
+import { ANCHOR, CLUB_ZONE, CITY_CODES, PLACE, TAGLINE } from "@/lib/brand";
+import { SETTING_LABEL, logMeta, roman } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
 import {
@@ -162,12 +162,20 @@ export default async function HomePage() {
               const left = cap?.berths_left ?? null;
               const seats = "passes";
               /* The badge: what this actually is, and how long it runs. The
-                 series names itself; an episode filed under no series is a
-                 Special, which is an honest answer rather than a blank or a
-                 restatement of the setting. Hours are omitted rather than
-                 guessed when the episode has no stated end. */
+                 series names itself; hours are omitted rather than guessed
+                 when the episode has no stated end.
+
+                 The fallback is the SETTING, not Special. Special was tried
+                 and shipped a homepage on which all three cards read SPECIAL,
+                 because every episode in the catalogue still has a null
+                 series — so the word marked nothing and meant nothing. A null
+                 series today means unfiled, which is not the same fact as
+                 deliberately outside every series, and the card cannot tell
+                 the two apart. Afloat or Ashore is always true. Special stays
+                 in the Bridge, where leaving the series blank is a choice an
+                 operator actually makes. */
               const formatLabel =
-                (v.format && formatLabelOf.get(v.format)) || SURFACES.special;
+                (v.format && formatLabelOf.get(v.format)) || SETTING_LABEL[v.class] || "Afloat";
               const hours = durationChip(v.starts_at, v.ends_at);
               /* Ship's-log chips: which week, how many hulls, what holds a
                  pass. Nothing that scores or hurries the reader. */

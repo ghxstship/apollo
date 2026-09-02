@@ -171,12 +171,16 @@ export default async function VoyagePage({
   const full = left === 0;
 
   /* The badge: the series' own name and the hours it runs — "SANDBAR SOCIAL ·
-     7 HRS". An episode belonging to no series is a Special, which the Series
-     row below then says rather than repeating the Setting row underneath it.
-     An episode with no stated end drops the hours rather than inventing them. */
+     7 HRS". Where the episode has no series the badge names the setting
+     instead. Special was tried here and on the three listings, and it marked
+     every episode in the catalogue, because a null series means unfiled today
+     rather than deliberately standalone — the two are different facts and the
+     page cannot tell them apart. The word stays in the Bridge, where blanking
+     the series is a choice an operator makes on purpose. An episode with no
+     stated end drops the hours rather than inventing them. */
   const settingLabel = SETTING_LABEL[voyage.class] ?? "Afloat";
   const hours = durationChip(voyage.starts_at, voyage.ends_at);
-  const badge = [format?.label ?? SURFACES.special, hours].filter(Boolean).join(" · ");
+  const badge = [format?.label ?? settingLabel, hours].filter(Boolean).join(" · ");
 
   /* An episode in the past, or one the club called off, is a log entry — not a
      pass on sale. The panel below branched only on weather_hold/live/full, so
@@ -539,10 +543,18 @@ export default async function VoyagePage({
                 </span>
               </div>
             </div>
-            <div>
-              <span>{SURFACES.series}</span>
-              <span>{badge.toUpperCase()}</span>
-            </div>
+            {/* The Series row appears only when there is a series to name.
+                Printing the badge here unconditionally restated the Setting
+                row directly beneath it — AFLOAT above AFLOAT — because the
+                badge falls back to the setting when an episode is unfiled. A
+                spec table that says the same fact twice teaches a reader the
+                rows are decoration. */}
+            {format?.label ? (
+              <div>
+                <span>{SURFACES.series}</span>
+                <span>{format.label.toUpperCase()}</span>
+              </div>
+            ) : null}
             <div>
               <span>Setting</span>
               <span>{settingLabel.toUpperCase()}</span>

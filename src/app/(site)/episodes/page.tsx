@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { CITY_CODES, SURFACES } from "@/lib/brand";
-import { logDate, logTime, price } from "@/lib/format";
+import { CITY_CODES } from "@/lib/brand";
+import { SETTING_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
 import {
@@ -87,10 +87,12 @@ export default async function VoyagesPage() {
       slug: v.slug,
       title: v.title,
       cls: v.class,
-      /* The badge names the series and how long it runs. An episode filed
-         under no series is a Special — never a blank, and never a
-         filing-system phrase. */
-      formatLabel: (v.format && formatBySlug.get(v.format)?.label) || SURFACES.special,
+      /* The badge names the series and how long it runs. Where an episode has
+         no series it names the setting instead — see the note on the homepage
+         card: a null series means unfiled, not deliberately standalone, and
+         falling back to Special printed SPECIAL on every card in the list. */
+      formatLabel:
+        (v.format && formatBySlug.get(v.format)?.label) || SETTING_LABEL[v.class] || "Afloat",
       /* Omitted rather than guessed when the episode has no end. */
       hours: durationChip(v.starts_at, v.ends_at) ?? "",
       status: v.status,
