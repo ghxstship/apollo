@@ -11,9 +11,9 @@ import {
   price,
 } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
-import { durationChip } from "@/components/site/voyage-chips";
-import { TIER_RANK, getMember, type Rsvp, type Voyage, type VoyageCapacity } from "../data";
-import { RsvpControls, type DaybedOffer } from "./rsvp-controls";
+import { durationChip } from "@/components/site/episode-chips";
+import { TIER_RANK, getMember, type Pass, type Episode, type EpisodeCapacity } from "../data";
+import { PassControls, type DaybedOffer } from "./pass-controls";
 import type { CrewSeeker, GuestStub, MemberOption, StandingOffer } from "./pass-extras";
 import { TransferInbox, type IncomingOffer } from "./transfer-inbox";
 
@@ -26,9 +26,9 @@ export default async function PassesPage() {
   const nowMs = now.getTime();
 
   const [
-    voyagesRes,
+    episodesRes,
     capacityRes,
-    rsvpsRes,
+    passesRes,
     addonsRes,
     planRes,
     usageRes,
@@ -38,18 +38,18 @@ export default async function PassesPage() {
     rollRes,
     daybedProductRes,
     segmentCapRes,
-    formatRes,
+    seriesRes,
     creditHoursRes,
-    harborsRes,
+    citiesRes,
   ] = await Promise.all([
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("*")
       .gte("starts_at", nowIso)
       .in("status", ["scheduled", "live", "weather_hold"])
       .order("starts_at", { ascending: true }),
-    supabase.from("voyage_capacity").select("*"),
-    supabase.from("rsvps").select("*").eq("profile_id", user.id),
+    supabase.from("episode_capacity").select("*"),
+    supabase.from("passes").select("*").eq("profile_id", user.id),
     supabase.from("addons").select("*").eq("active", true).order("name", { ascending: true }),
     profile?.plan_id
       ? supabase.from("membership_plans").select("*").eq("id", profile.plan_id).maybeSingle()
@@ -82,19 +82,19 @@ export default async function PassesPage() {
     /* An episode with segment caps is a composition episode: its door is the
        vetting page, and an rsvp written here without a segment would be
        refused — or worse, seated outside the ratio. */
-    moduleTables(supabase).from("voyage_segment_caps").select("voyage_id"),
+    moduleTables(supabase).from("episode_segment_caps").select("episode_id"),
     /* Category decides whether the daybed is even a thing on this water;
        access decides whether a pass is on sale at all; the label is what the
        card actually reads. Read once and mapped by slug below — never per
        row. */
-    moduleTables(supabase).from("activity_formats").select("slug, label, category, access"),
+    moduleTables(supabase).from("series").select("slug, label, category, access"),
     /* The release window is the club's own figure, read rather than retyped. */
     supabase.rpc("club_setting", { p_key: "release_credit_hours" }),
-    /* Names for the harbor lock's refusal — read once, not per row. */
-    supabase.from("harbors").select("id,name"),
+    /* Names for the city lock's refusal — read once, not per row. */
+    supabase.from("cities").select("id,name"),
   ]);
 
-  const voyages: Voyage[] = voyagesRes.data ?? [];
+  const episodes: Episode[] = episodesRes.data ?? [];
 
   const daybedRow = daybedProductRes.data as
     | { price_cents: number | null; per_sailing_cap: number | null; party_size: number | null; published: boolean }
@@ -108,11 +108,11 @@ export default async function PassesPage() {
         }
       : null;
   const compositionIds = new Set(
-    ((segmentCapRes.data ?? []) as Array<{ voyage_id: string }>).map((r) => r.voyage_id)
+    ((segmentCapRes.data ?? []) as Array<{ episode_id: string }>).map((r) => r.episode_id)
   );
-  const formatBySlug = new Map(
+  const seriesBySlug = new Map(
     (
-      (formatRes.data ?? []) as Array<{
+      (seriesRes.data ?? []) as Array<{
         slug: string;
         label: string;
         category: string;
@@ -128,34 +128,34 @@ export default async function PassesPage() {
     name: a.name,
     price_cents: a.price_cents,
   }));
-  const capacity = new Map<string, VoyageCapacity>(
+  const capacity = new Map<string, EpisodeCapacity>(
     (capacityRes.data ?? [])
-      .filter((c): c is VoyageCapacity & { voyage_id: string } => !!c.voyage_id)
-      .map((c) => [c.voyage_id, c])
+      .filter((c): c is EpisodeCapacity & { episode_id: string } => !!c.episode_id)
+      .map((c) => [c.episode_id, c])
   );
-  const mine = new Map<string, Rsvp>(
-    (rsvpsRes.data ?? []).map((r) => [r.voyage_id, r])
+  const mine = new Map<string, Pass>(
+    (passesRes.data ?? []).map((r) => [r.episode_id, r])
   );
 
   /* Add-ons already riding on my aboard passes, for the upsell dialog. */
-  const aboardRsvpIds = (rsvpsRes.data ?? [])
+  const aboardPassIds = (passesRes.data ?? [])
     .filter((r) => r.status === "aboard")
     .map((r) => r.id);
   const [attachedRes, guestRes, daybedRes] =
-    aboardRsvpIds.length > 0
+    aboardPassIds.length > 0
       ? await Promise.all([
-          supabase.from("rsvp_addons").select("rsvp_id, addon_id").in("rsvp_id", aboardRsvpIds),
-          supabase.from("rsvp_guests").select("*").in("rsvp_id", aboardRsvpIds),
+          supabase.from("pass_addons").select("rsvp_id, addon_id").in("rsvp_id", aboardPassIds),
+          supabase.from("pass_guests").select("*").in("rsvp_id", aboardPassIds),
           /* Bow daybeds already riding on my passes — the claim block flips
              to "held" instead of offering the button twice. */
-          supabase.from("voyage_daybeds").select("rsvp_id").in("rsvp_id", aboardRsvpIds),
+          supabase.from("episode_daybeds").select("rsvp_id").in("rsvp_id", aboardPassIds),
         ])
       : [{ data: [] }, { data: [] }, { data: [] }];
-  const daybedRsvps = new Set((daybedRes.data ?? []).map((d) => d.rsvp_id));
+  const daybedPasses = new Set((daybedRes.data ?? []).map((d) => d.rsvp_id));
   const attachedRows = attachedRes.data ?? [];
-  const attachedByRsvp = new Map<string, string[]>();
+  const attachedByPass = new Map<string, string[]>();
   for (const row of attachedRows) {
-    attachedByRsvp.set(row.rsvp_id, [...(attachedByRsvp.get(row.rsvp_id) ?? []), row.addon_id]);
+    attachedByPass.set(row.rsvp_id, [...(attachedByPass.get(row.rsvp_id) ?? []), row.addon_id]);
   }
 
   /* Per-guest stubs — the manifest cuts these from guest_names by trigger.
@@ -180,25 +180,25 @@ export default async function PassesPage() {
 
   /* Cabin plans for my assigned hulls, with live remaining-berth counts. */
   const myVesselIds = [...new Set(
-    (rsvpsRes.data ?? []).filter((r) => r.status === "aboard" && r.vessel_id).map((r) => r.vessel_id as string)
+    (passesRes.data ?? []).filter((r) => r.status === "aboard" && r.vessel_id).map((r) => r.vessel_id as string)
   )];
   const { data: cabinRows } = myVesselIds.length
     ? await supabase.from("cabins").select("*").in("vessel_id", myVesselIds).eq("active", true).order("position")
     : { data: [] };
   const cabinIds = (cabinRows ?? []).map((c) => c.id);
-  /* Through a definer: rsvps is `profile_id = auth.uid()`, so reading other
+  /* Through a definer: passes is `profile_id = auth.uid()`, so reading other
      members' claims directly returned nothing and every cabin rendered free. */
   const { data: cabinClaims } = cabinIds.length
     ? await supabase.rpc("claimed_cabins", { p_cabins: cabinIds })
-    : { data: [] as Array<{ cabin_id: string; voyage_id: string }> };
+    : { data: [] as Array<{ cabin_id: string; episode_id: string }> };
 
-  /* A couple pass's second head is one rsvp_guests row with kind 'partner'. It
+  /* A couple pass's second head is one pass_guests row with kind 'partner'. It
      rides the same machinery — its own code, sign token and camera consent —
      but it is not a companion: it never counts against the guest allowance and
      the guest stepper must not read it as one. Separated here, once, so every
      control below sees companions as companions. */
-  const guestsByRsvp = new Map<string, GuestStub[]>();
-  const partnerByRsvp = new Map<string, GuestStub>();
+  const guestsByPass = new Map<string, GuestStub[]>();
+  const partnerByPass = new Map<string, GuestStub>();
   for (const g of guestRes.data ?? []) {
     const stub: GuestStub = {
       name: g.name,
@@ -207,16 +207,16 @@ export default async function PassesPage() {
       signed: signedGuests.has(g.id),
     };
     if (g.kind === "partner") {
-      partnerByRsvp.set(g.rsvp_id, stub);
+      partnerByPass.set(g.rsvp_id, stub);
       continue;
     }
-    guestsByRsvp.set(g.rsvp_id, [...(guestsByRsvp.get(g.rsvp_id) ?? []), stub]);
+    guestsByPass.set(g.rsvp_id, [...(guestsByPass.get(g.rsvp_id) ?? []), stub]);
   }
 
   /* Waitlist order, one line per list you're holding. */
-  const positionByVoyage = new Map<string, number>();
+  const positionByEpisode = new Map<string, number>();
   for (const p of positionRes.data ?? []) {
-    if (p.voyage_id && p.position != null) positionByVoyage.set(p.voyage_id, p.position);
+    if (p.episode_id && p.position != null) positionByEpisode.set(p.episode_id, p.position);
   }
 
   /* The roll, for a hand-off and for putting names to crew requests. */
@@ -253,17 +253,17 @@ export default async function PassesPage() {
 
   /* Hand-offs: what you've offered, and what's been offered to you. */
   const transfers = transferRes.data ?? [];
-  const offeredByRsvp = new Map<string, StandingOffer>();
+  const offeredByPass = new Map<string, StandingOffer>();
   for (const t of transfers) {
     if (t.from_profile === user.id) {
-      offeredByRsvp.set(t.rsvp_id, { id: t.id, name: nameOf.get(t.to_profile) ?? "A member" });
+      offeredByPass.set(t.rsvp_id, { id: t.id, name: nameOf.get(t.to_profile) ?? "A member" });
     }
   }
   const inboundRows = transfers.filter((t) => t.to_profile === user.id);
   let inbound: IncomingOffer[] = [];
   if (inboundRows.length > 0) {
     /* Naming the episode behind an offer means reading the OFFERER's rsvp, and
-       rsvps is `profile_id = auth.uid()`. The old code resolved it directly,
+       passes is `profile_id = auth.uid()`. The old code resolved it directly,
        always got zero rows, and returned [] — so an offer could be made and
        never seen, and acceptOffer/declineOffer were unreachable. */
     const { data: offers } = await supabase.rpc("incoming_transfers");
@@ -276,8 +276,8 @@ export default async function PassesPage() {
   }
 
   /* Crew forming — yours on one side, everyone else's on the other. */
-  const crewMineByVoyage = new Map<string, CrewSeeker>();
-  const crewOthersByVoyage = new Map<string, CrewSeeker[]>();
+  const crewMineByEpisode = new Map<string, CrewSeeker>();
+  const crewOthersByEpisode = new Map<string, CrewSeeker[]>();
   for (const c of crewRes.data ?? []) {
     const seeker: CrewSeeker = {
       id: c.id,
@@ -285,8 +285,8 @@ export default async function PassesPage() {
       handle: c.profile_id === user.id ? null : handleOf.get(c.profile_id) ?? null,
       note: c.note,
     };
-    if (c.profile_id === user.id) crewMineByVoyage.set(c.voyage_id, seeker);
-    else crewOthersByVoyage.set(c.voyage_id, [...(crewOthersByVoyage.get(c.voyage_id) ?? []), seeker]);
+    if (c.profile_id === user.id) crewMineByEpisode.set(c.episode_id, seeker);
+    else crewOthersByEpisode.set(c.episode_id, [...(crewOthersByEpisode.get(c.episode_id) ?? []), seeker]);
   }
 
   /* Pass meter. The allowance is spent against an episode's DEPARTURE month —
@@ -295,7 +295,7 @@ export default async function PassesPage() {
      allowance while September's was gone. It follows the next episode they
      could actually claim, and says which month it is talking about. */
   const plan = planRes.data;
-  const nextAhead = voyages
+  const nextAhead = episodes
     .filter((v) => new Date(v.starts_at).getTime() > nowMs)
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())[0];
   const meterMonth = nextAhead ? new Date(nextAhead.starts_at) : now;
@@ -321,9 +321,9 @@ export default async function PassesPage() {
      submit ("this episode runs past your class tier"). A pass you cannot claim
      should read as locked, not as an invitation. */
   const CLASS_RANK: Record<string, number> = {
-    excursion: 0, voyage: 0, overland: 1, expedition: 1, trek: 2, odyssey: 2,
+    excursion: 0, passage: 0, overland: 1, expedition: 1, trek: 2, odyssey: 2,
   };
-  const myCeiling = CLASS_RANK[plan?.class_ceiling ?? "voyage"] ?? 0;
+  const myCeiling = CLASS_RANK[plan?.class_ceiling ?? "passage"] ?? 0;
   const pastMyClass = (v: { sub_class: string | null }) =>
     v.sub_class ? (CLASS_RANK[v.sub_class] ?? 0) > myCeiling : false;
 
@@ -334,15 +334,15 @@ export default async function PassesPage() {
      only on an episode that leaves from their home city; an episode with no
      city is open to everyone, National and Global sail every city, and staff
      pass through. Two refusals, each said here before the guard says it: no
-     city chosen yet, or the wrong one. The column is still home_harbor. */
+     city chosen yet, or the wrong one. The column is still home_city. */
   const CITY = PLACE.market.toLowerCase();
   const harborName = new Map<string, string>(
-    (harborsRes.data ?? []).map((h) => [h.id, h.name] as const)
+    (citiesRes.data ?? []).map((h) => [h.id, h.name] as const)
   );
-  const harborLock = (v: { harbor_id: string | null }): "unset" | "mismatch" | null => {
-    if (myTier !== "regional" || profile?.is_staff || !v.harbor_id) return null;
-    if (!profile?.home_harbor) return "unset";
-    return profile.home_harbor === v.harbor_id ? null : "mismatch";
+  const cityLock = (v: { city_id: string | null }): "unset" | "mismatch" | null => {
+    if (myTier !== "regional" || profile?.is_staff || !v.city_id) return null;
+    if (!profile?.home_city) return "unset";
+    return profile.home_city === v.city_id ? null : "mismatch";
   };
 
   /* Every reason a NEW pass cannot be claimed, in the order the guard would
@@ -350,7 +350,7 @@ export default async function PassesPage() {
      A pass the member already holds is never swallowed by this — the control
      reads the note beside the standing instead. */
   type Lock = { note: string; link?: { href: string; label: string } };
-  const lockFor = (v: Voyage): Lock | null => {
+  const lockFor = (v: Episode): Lock | null => {
     if (onHold) return { note: "Your membership is paused. Resume it on your page to claim a pass." };
     if (pastMyClass(v))
       return {
@@ -358,16 +358,16 @@ export default async function PassesPage() {
       };
     if ((TIER_RANK[v.min_tier] ?? 0) > myRank)
       return { note: `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.` };
-    const harbor = harborLock(v);
-    if (harbor === "unset")
+    const city = cityLock(v);
+    if (city === "unset")
       return {
         note: `Regional passes sail from your home ${CITY} — choose it on your page.`,
         link: { href: "/you", label: `Choose your ${CITY}` },
       };
-    if (harbor === "mismatch")
+    if (city === "mismatch")
       return {
         note: `Regional passes sail from your home ${CITY} — this one leaves from ${
-          (v.harbor_id && harborName.get(v.harbor_id)) || `another ${CITY}`
+          (v.city_id && harborName.get(v.city_id)) || `another ${CITY}`
         }. National sails every US ${CITY}.`,
       };
     return null;
@@ -376,10 +376,10 @@ export default async function PassesPage() {
   /* The drop hour, on THIS member's clock: rsvp_guard refuses before
      sale_opens_at less one presale step per tier above regional. NULL is the
      old world — no drop, the plan's window alone. */
-  const tierOpensMs = (v: Voyage): number | null =>
+  const tierOpensMs = (v: Episode): number | null =>
     v.sale_opens_at ? Date.parse(v.sale_opens_at) - myRank * v.presale_hours * 3600 * 1000 : null;
-  const formatOf = (v: Voyage) => (v.format ? formatBySlug.get(v.format) ?? null : null);
-  const sellsPasses = (v: Voyage) => {
+  const formatOf = (v: Episode) => (v.series ? seriesBySlug.get(v.series) ?? null : null);
+  const sellsPasses = (v: Episode) => {
     const access = formatOf(v)?.access;
     return access !== "invite" && access !== "on_request";
   };
@@ -389,16 +389,16 @@ export default async function PassesPage() {
 
   /* The single recommended pass: soonest open, unclaimed, within tier and window. */
   const recommendedId =
-    voyages.find((v) => {
+    episodes.find((v) => {
       const cap = capacity.get(v.id);
-      const left = cap?.berths_left ?? v.berths_total;
+      const left = cap?.passes_left ?? v.passes_total;
       const r = mine.get(v.id);
       const opens = tierOpensMs(v);
       return (
         v.status === "scheduled" &&
         (TIER_RANK[v.min_tier] ?? 0) <= myRank &&
         !pastMyClass(v) &&
-        !harborLock(v) &&
+        !cityLock(v) &&
         left > 0 &&
         nowMs >= new Date(v.starts_at).getTime() - earlyDays * 86400000 &&
         (opens == null || nowMs >= opens) &&
@@ -433,7 +433,7 @@ export default async function PassesPage() {
 
       <TransferInbox offers={inbound} />
 
-      {voyages.length === 0 ? (
+      {episodes.length === 0 ? (
         <div className="mbr-sec">
           <StateBlock
             status="empty"
@@ -444,9 +444,9 @@ export default async function PassesPage() {
         </div>
       ) : (
         <div className="voy-list">
-          {voyages.map((v, i) => {
+          {episodes.map((v, i) => {
             const cap = capacity.get(v.id);
-            const left = cap?.berths_left ?? v.berths_total;
+            const left = cap?.passes_left ?? v.passes_total;
             const aboard = cap?.aboard ?? 0;
             const r = mine.get(v.id) ?? null;
             const lock = lockFor(v);
@@ -480,7 +480,7 @@ export default async function PassesPage() {
             /* The bow daybed rides on Sea formats. An unfiled episode (no
                format yet) falls back to its class, which is the same question
                asked of an older column. */
-            const daybedWater = format ? format.category === "sea" : v.class === "sea";
+            const daybedWater = format ? format.category === "sea" : v.setting === "sea";
             /* Add-on upsell stays open until 18:00 the night before. */
             /* 18:00 on the harbour's wall the night before — not 18:00 wherever
                this page happens to be rendered. */
@@ -489,7 +489,7 @@ export default async function PassesPage() {
             const baseFm =
               v.kind === "port_day" ? 40 : v.distance_nm != null ? v.distance_nm * 10 : null;
             const knotsOnCompletion =
-              baseFm != null ? Math.round(baseFm * (v.fathoms_multiplier ?? 1)) : null;
+              baseFm != null ? Math.round(baseFm * (v.knots_multiplier ?? 1)) : null;
             /* The badge names the series and how long it runs — the card says
                what this is, not how it is filed. Where there is no series it
                names the setting; Special was tried and marked every card,
@@ -497,7 +497,7 @@ export default async function PassesPage() {
                deliberately standalone. An episode with no stated end drops the
                hours rather than guessing them. */
             const hours = durationChip(v.starts_at, v.ends_at);
-            const badge = [format?.label ?? SETTING_LABEL[v.class] ?? "Afloat", hours]
+            const badge = [format?.label ?? SETTING_LABEL[v.setting] ?? "Afloat", hours]
               .filter(Boolean)
               .join(" · ");
             const meta = [
@@ -517,8 +517,8 @@ export default async function PassesPage() {
                   title={v.title}
                   meta={meta}
                   footer={
-                    <RsvpControls
-                      voyageId={v.id}
+                    <PassControls
+                      episodeId={v.id}
                       voyageTitle={v.title}
                       myStatus={r?.status ?? null}
                       guests={r?.guests ?? 0}
@@ -534,9 +534,9 @@ export default async function PassesPage() {
                       priceCents={v.price_cents}
                       depositRequired={v.deposit_required}
                       depositCents={v.deposit_cents}
-                      daybedHeld={r ? daybedRsvps.has(r.id) : false}
+                      daybedHeld={r ? daybedPasses.has(r.id) : false}
                       addons={addons}
-                      attachedAddonIds={r ? attachedByRsvp.get(r.id) ?? [] : []}
+                      attachedAddonIds={r ? attachedByPass.get(r.id) ?? [] : []}
                       addonWindowOpen={nowMs < addonCutoff.getTime()}
                       knotsOnCompletion={knotsOnCompletion}
                       fullCredit={start.getTime() - nowMs > creditWindowMs}
@@ -547,15 +547,15 @@ export default async function PassesPage() {
                       enquiryHref={format?.access === "on_request" ? `/episodes/${v.slug}` : null}
                       inviteOnly={format?.access === "invite"}
                       boardingCode={r?.status === "aboard" ? r.boarding_code : null}
-                      rsvpId={r?.id ?? null}
-                      waitlistPosition={positionByVoyage.get(v.id) ?? null}
+                      passId={r?.id ?? null}
+                      waitlistPosition={positionByEpisode.get(v.id) ?? null}
                       autoClaim={r?.auto_claim ?? true}
                       members={members}
-                      standingOffer={r ? offeredByRsvp.get(r.id) ?? null : null}
-                      guestStubs={r ? guestsByRsvp.get(r.id) ?? [] : []}
-                      partner={r ? partnerByRsvp.get(r.id) ?? null : null}
-                      crewMine={crewMineByVoyage.get(v.id) ?? null}
-                      crewSeekers={crewOthersByVoyage.get(v.id) ?? []}
+                      standingOffer={r ? offeredByPass.get(r.id) ?? null : null}
+                      guestStubs={r ? guestsByPass.get(r.id) ?? [] : []}
+                      partner={r ? partnerByPass.get(r.id) ?? null : null}
+                      crewMine={crewMineByEpisode.get(v.id) ?? null}
+                      crewSeekers={crewOthersByEpisode.get(v.id) ?? []}
                       splitOffered={splitOffered}
                       cabins={
                         r?.status === "aboard" && r.vessel_id
@@ -566,9 +566,9 @@ export default async function PassesPage() {
                                 name: c.name,
                                 premiumCents: c.premium_cents,
                                 left:
-                                  c.berths -
+                                  c.sleeps -
                                   (cabinClaims ?? []).filter(
-                                    (cl) => cl.cabin_id === c.id && cl.voyage_id === v.id
+                                    (cl) => cl.cabin_id === c.id && cl.episode_id === v.id
                                   ).length,
                               }))
                           : []

@@ -27,7 +27,7 @@ export type NewSeries = {
   title: string;
   slug: string;
   cadenceDays: number;
-  templateVoyageId: string | null;
+  templateEpisodeId: string | null;
 };
 
 /* Extending a series raises real episodes, so the result carries the tally the
@@ -37,14 +37,14 @@ export type ExtendResult = ActionResult & { raised?: number };
 function done(): ActionResult {
   revalidatePath("/bridge/program");
   /* The Episodes composer offers seasons, venues, and series in its pickers. */
-  revalidatePath("/bridge/voyages");
+  revalidatePath("/bridge/episodes");
   return {};
 }
 
 /* An extension puts new episodes on the board, and the board is everywhere. */
 function doneWithSailings(): void {
   revalidatePath("/bridge/program");
-  revalidatePath("/bridge/voyages");
+  revalidatePath("/bridge/episodes");
   revalidatePath("/bridge/manifests");
   revalidatePath("/passes");
   revalidatePath("/home");
@@ -123,7 +123,7 @@ export async function createVenue(input: NewVenue): Promise<ActionResult> {
     slug,
     name,
     kind: input.kind,
-    harbor_id: input.harborId || null,
+    city_id: input.harborId || null,
     address: input.address.trim() || null,
   });
   if (error) {
@@ -161,14 +161,14 @@ export async function createSeries(input: NewSeries): Promise<ActionResult> {
   if (!Number.isFinite(cadence) || cadence < 1 || cadence > 92)
     return { error: "Cadence runs 1 to 92 days — pick a number inside that window." };
 
-  if (!input.templateVoyageId)
+  if (!input.templateEpisodeId)
     return { error: "A series clones one episode forward — pick the template episode." };
 
-  const { error } = await supabase.from("voyage_series").insert({
+  const { error } = await supabase.from("editions").insert({
     slug,
     title,
     cadence_days: cadence,
-    template_voyage_id: input.templateVoyageId,
+    template_episode_id: input.templateEpisodeId,
   });
   if (error) {
     return {
@@ -183,7 +183,7 @@ export async function createSeries(input: NewSeries): Promise<ActionResult> {
 export async function setSeriesActive(id: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase.from("voyage_series").update({ active }).eq("id", id);
+  const { error } = await supabase.from("editions").update({ active }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
 }

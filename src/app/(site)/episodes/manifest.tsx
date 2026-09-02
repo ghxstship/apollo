@@ -12,7 +12,7 @@ export interface ManifestItem {
   cls: "sea" | "shore" | "sky";
   /** The series' own name — "Sandbar Social" — or Special when the episode
       belongs to no series. Never a filing-system phrase. */
-  formatLabel: string;
+  seriesLabel: string;
   /** "7 HRS", or empty when the episode has no stated end. */
   hours: string;
   status: string;
@@ -30,7 +30,7 @@ export interface ManifestItem {
   fleet: string | null;
   deposit: string | null;
   harborId: string | null;
-  harborLabel: string | null;
+  cityLabel: string | null;
   seasonId: string | null;
   seasonLabel: string | null;
   /** Title of the series this episode belongs to, when it belongs to one. */
@@ -58,9 +58,9 @@ function monthLabel(key: string, showYear: boolean): string {
   return showYear ? `${name} ${year.slice(2)}` : name;
 }
 
-export function VoyageManifest({ items }: { items: ManifestItem[] }) {
+export function EpisodeManifest({ items }: { items: ManifestItem[] }) {
   const [cls, setCls] = React.useState("all");
-  const [harbor, setHarbor] = React.useState("all");
+  const [city, setCity] = React.useState("all");
   const [season, setSeason] = React.useState("all");
   const [month, setMonth] = React.useState("all");
   const [sort, setSort] = React.useState<"soonest" | "furthest">("soonest");
@@ -71,18 +71,18 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
 
   const clearFilters = () => {
     setCls("all");
-    setHarbor("all");
+    setCity("all");
     setSeason("all");
     setMonth("all");
   };
 
-  /* Controls read the calendar rather than a hardcoded list — a harbor or a
+  /* Controls read the calendar rather than a hardcoded list — a city or a
      month appears only once something is actually sailing from it. */
-  const harborOptions = React.useMemo(() => {
+  const cityOptions = React.useMemo(() => {
     const seen = new Map<string, string>();
     for (const v of items) {
-      if (v.harborId && v.harborLabel && !seen.has(v.harborId)) {
-        seen.set(v.harborId, v.harborLabel);
+      if (v.harborId && v.cityLabel && !seen.has(v.harborId)) {
+        seen.set(v.harborId, v.cityLabel);
       }
     }
     return Array.from(seen, ([id, label]) => ({ id, label }));
@@ -111,14 +111,14 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
     const filtered = items.filter(
       (v) =>
         (cls === "all" || v.cls === cls || (cls === "shore" && v.cls === "sky")) &&
-        (harbor === "all" || v.harborId === harbor) &&
+        (city === "all" || v.harborId === city) &&
         (season === "all" || v.seasonId === season) &&
         (month === "all" || v.monthKey === month)
     );
     return filtered.sort((a, b) =>
       sort === "soonest" ? a.startsMs - b.startsMs : b.startsMs - a.startsMs
     );
-  }, [items, cls, harbor, season, month, sort]);
+  }, [items, cls, city, season, month, sort]);
 
   /* Rows in month order already; the groups are the runs of one month. Fifty
      episodes emitted as one column of identical stripes gave the reader no
@@ -149,7 +149,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
   /* What the folded axes are holding, when they are folded. */
   const axesSummary =
     [
-      harborOptions.find((h) => h.id === harbor)?.label,
+      cityOptions.find((h) => h.id === city)?.label,
       seasonOptions.find((s) => s.id === season)?.label,
       monthOptions.find((m) => m.id === month)?.label,
     ]
@@ -183,14 +183,14 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
           id="ws-vsecondary"
           className={"ws-vsecondary" + (axesOpen ? " ws-vsecondary--open" : "")}
         >
-        {harborOptions.length > 1 ? (
+        {cityOptions.length > 1 ? (
           <div className="ws-vfilters">
             <span className="ws-vfilters__label">{PLACE.market}</span>
-            <Tag active={harbor === "all"} onClick={() => setHarbor("all")}>
+            <Tag active={city === "all"} onClick={() => setCity("all")}>
               All
             </Tag>
-            {harborOptions.map((h) => (
-              <Tag key={h.id} active={harbor === h.id} onClick={() => setHarbor(h.id)}>
+            {cityOptions.map((h) => (
+              <Tag key={h.id} active={city === h.id} onClick={() => setCity(h.id)}>
                 {h.label}
               </Tag>
             ))}
@@ -265,7 +265,7 @@ export function VoyageManifest({ items }: { items: ManifestItem[] }) {
                     </div>
                     <div>
                       <span className="ls-eyebrow ws-vrow__eyebrow">
-                        {v.formatLabel}
+                        {v.seriesLabel}
                         {v.hours ? ` · ${v.hours}` : ""}
                       </span>
                       <div className="ws-vrow__title">

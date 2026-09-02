@@ -8,7 +8,7 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
 /* The composition — the three segment ceilings an episode seats to.
 
-   voyage_segment_caps had no writer anywhere in src/, and the presence of rows
+   episode_segment_caps had no writer anywhere in src/, and the presence of rows
    in it is what makes an episode ratio-gated: guard_the_ratio returns early
    when
    there are none, guard_the_vetting returns early when there are none, and the
@@ -36,7 +36,7 @@ function done(): ActionResult {
    the worst possible place to find out. 96 is the same bound setBerthsTotal
    uses when there is no hull figure to clamp against. */
 export async function setTheComposition(
-  voyageId: string,
+  episodeId: string,
   caps: CapInput
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
@@ -44,7 +44,7 @@ export async function setTheComposition(
   const db = moduleTables(supabase);
 
   const rows = SEGMENTS.map((segment) => ({
-    voyage_id: voyageId,
+    episode_id: episodeId,
     segment,
     cap: Math.max(0, Math.min(96, Math.round(Number(caps[segment]) || 0))),
   }));
@@ -57,8 +57,8 @@ export async function setTheComposition(
   }
 
   const { error } = await db
-    .from("voyage_segment_caps")
-    .upsert(rows, { onConflict: "voyage_id,segment" });
+    .from("episode_segment_caps")
+    .upsert(rows, { onConflict: "episode_id,segment" });
   /* the_hull_holds_forty refuses in the club's voice — "the hull holds 40 —
      this composition seats 44 heads" — naming both figures, which is the
      whole of what the operator needs. voice() passes it through as said. */
@@ -67,14 +67,14 @@ export async function setTheComposition(
 }
 
 /* The hull's certified heads, per episode. A flotilla is certified for so many
-   people and the_hull_holds_forty reads coalesce(voyages.hull_ceiling_heads,
+   people and the_hull_holds_forty reads coalesce(episodes.hull_ceiling_heads,
    club_setting('hull_ceiling_heads')) before it lets a composition stand, so
    this is the number the ceilings above are checked against. Null hands the
    episode back to the club default.
 
    The certificate travels with the ceiling. a_tentpole_names_its_certificate
    refuses a hull_ceiling_heads above club_setting('hull_ceiling_heads') unless
-   voyages.hull_certificate is set — the vessel, the authority and the certified
+   episodes.hull_certificate is set — the vessel, the authority and the certified
    number — so the two are written in one update: a ceiling saved first and a
    certificate second would be refused at the first step.
 
@@ -86,7 +86,7 @@ const HULL_CEILING_MAX = 400;
 const HULL_CERTIFICATE_MAX = 200;
 
 export async function setHullCeiling(
-  voyageId: string,
+  episodeId: string,
   heads: number | null,
   certificate: string | null
 ): Promise<ActionResult> {
@@ -117,9 +117,9 @@ export async function setHullCeiling(
   }
 
   const { error } = await supabase
-    .from("voyages")
+    .from("episodes")
     .update({ hull_ceiling_heads: value, hull_certificate: named === "" ? null : named })
-    .eq("id", voyageId);
+    .eq("id", episodeId);
   /* A ceiling lowered under a composition already seated meets
      the_hull_holds_forty, and a ceiling raised above the club's figure with no
      certificate meets a_tentpole_names_its_certificate. Either refusal is the
@@ -145,7 +145,7 @@ export async function setHullCeiling(
    lifting means: the ceilings are gone, and a queue against a ceiling that no
    longer exists is not a queue. The count is returned so the surface can say
    plainly how many people were let go rather than doing it silently. */
-export async function liftTheComposition(voyageId: string): Promise<ActionResult> {
+export async function liftTheComposition(episodeId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const db = moduleTables(supabase);
@@ -153,13 +153,13 @@ export async function liftTheComposition(voyageId: string): Promise<ActionResult
   const { data: released, error: releaseError } = await db
     .from("waitlist_entries")
     .update({ released_at: new Date().toISOString() })
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .is("claimed_at", null)
     .is("released_at", null)
     .select("id");
   if (releaseError) return { error: voice(releaseError) };
 
-  const { error } = await db.from("voyage_segment_caps").delete().eq("voyage_id", voyageId);
+  const { error } = await db.from("episode_segment_caps").delete().eq("episode_id", episodeId);
   if (error) return { error: voice(error) };
   const letGo = (released ?? []).length;
   return letGo > 0

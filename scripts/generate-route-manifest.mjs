@@ -41,8 +41,8 @@ const CREDENTIAL_ROUTES = new Set(["/sign/[token]"]);
 const DEV_ROUTES = new Set(["/preview/documents"]);
 
 const DYNAMIC_SOURCES = {
-  "/episodes/[slug]": { table: "voyages", column: "slug" },
-  "/log/[slug]": { table: "dispatch_posts", column: "slug" },
+  "/episodes/[slug]": { table: "episodes", column: "slug" },
+  "/log/[slug]": { table: "log_posts", column: "slug" },
   "/regattas/[slug]": { table: "contests", column: "slug" },
   "/agreements/[code]": { table: "documents", column: "code" },
 };

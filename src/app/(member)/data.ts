@@ -7,11 +7,11 @@ export type Profile = Tables<"profiles">;
 /* What one member sees of another — narrower than their own Profile on
    purpose: no email, phone, calendar token, stripe id or plan. */
 export type DirectoryMember = Tables<"member_directory">;
-export type Harbor = Tables<"harbors">;
-export type Voyage = Tables<"voyages">;
-export type Rsvp = Tables<"rsvps">;
+export type City = Tables<"cities">;
+export type Episode = Tables<"episodes">;
+export type Pass = Tables<"passes">;
 export type Notification = Tables<"notifications">;
-export type VoyageCapacity = Tables<"voyage_capacity">;
+export type EpisodeCapacity = Tables<"episode_capacity">;
 
 export const TIER_RANK: Record<string, number> = {
   regional: 0,

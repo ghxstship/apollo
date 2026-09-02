@@ -28,9 +28,9 @@ const TITLE_MIN = 3;
 const TITLE_MAX = 120;
 const NOTE_MAX = 2000;
 
-/* The two shapes a member can raise. Their labels come off activity_formats;
+/* The two shapes a member can raise. Their labels come off series;
    this set is the guard on what the form may send. */
-const MEMBER_FORMATS = new Set(["gathering", "mixer"]);
+const MEMBER_SERIES = new Set(["gathering", "mixer"]);
 
 export async function raiseAProposal(
   _prev: ProposalFormState,
@@ -43,7 +43,7 @@ export async function raiseAProposal(
   if (!user) return { error: "Sign in first." };
 
   const title = String(formData.get("title") ?? "").trim();
-  const format = String(formData.get("format") ?? "");
+  const series = String(formData.get("series") ?? "");
   const proposedFor = String(formData.get("proposed_for") ?? "");
   const note = String(formData.get("note") ?? "").trim();
 
@@ -60,7 +60,7 @@ export async function raiseAProposal(
   const { error } = await supabase.from("member_event_proposals").insert({
     proposer_id: user.id,
     title,
-    format: MEMBER_FORMATS.has(format) ? format : null,
+    series: MEMBER_SERIES.has(series) ? series : null,
     proposed_for: /^\d{4}-\d{2}-\d{2}$/.test(proposedFor) ? proposedFor : null,
     note: note || null,
   });

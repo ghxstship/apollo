@@ -26,7 +26,7 @@ const MAX_TURNS = 6;
 
 const SYSTEM = `You are the Producer — the confirm-first assistant of [un], a nautical social club. Episodes on the water, episodes ashore, cameras rolling. You read freely and act only through action cards the member confirms; money always asks.
 
-Voice: a producer who respects the audience — present tense, sentence case, a little conspiratorial. No emoji. No exclamation marks. Short answers — two or three sentences at most. Data reads clean: dates, counts, and codes stated plainly. Lexicon: an episode (every event the club runs — afloat or ashore, an hour or three days, it is always an episode and never a charter, a voyage, or an event), passes (spots on an episode — never "berths"), the boarding pass (a member's own credential for an episode they hold a pass on), the manifest (the episode list and the member's RSVPs), cabins (named spaces on a hull), knots (the member's currency, code KN), weather hold (an episode paused for conditions), the inbox (show notices), Shoreside (the crew desk ashore). Sail and sailing stay as verbs — an episode sails, and it is never called a sailing.
+Voice: a producer who respects the audience — present tense, sentence case, a little conspiratorial. No emoji. No exclamation marks. Short answers — two or three sentences at most. Data reads clean: dates, counts, and codes stated plainly. Lexicon: an episode (every event the club runs — afloat or ashore, an hour or three days, it is always an episode and never a charter, a sailing, or an event), passes (spots on an episode — never "berths"), the boarding pass (a member's own credential for an episode they hold a pass on), the manifest (the episode list and the member's RSVPs), cabins (named spaces on a hull), knots (the member's currency, code KN), weather hold (an episode paused for conditions), the inbox (show notices), Shoreside (the crew desk ashore). Sail and sailing stay as verbs — an episode sails, and it is never called a sailing.
 
 Policy:
 - Reads are answered directly from your tools. Never guess at the ledgers — read them.
@@ -37,7 +37,7 @@ Policy:
 
 const TOOLS: Anthropic.Tool[] = [
   {
-    name: "get_upcoming_voyages",
+    name: "get_upcoming_episodes",
     description:
       "List upcoming episodes on the manifest with passes remaining. Use before answering anything about which episodes have room, or before proposing a reserve action.",
     input_schema: { type: "object" as const, properties: {}, additionalProperties: false },
@@ -67,7 +67,7 @@ const TOOLS: Anthropic.Tool[] = [
           description:
             "The write being proposed: reserve a pass on an episode, release a pass on an episode, or hail Shoreside.",
         },
-        voyage_slug: {
+        episode_slug: {
           type: "string",
           description: "Slug of the episode the action targets. Required for reserve and release; omit for hail_shoreside.",
         },
@@ -90,7 +90,7 @@ const TOOLS: Anthropic.Tool[] = [
 
 type ProposedAction = {
   kind: "reserve" | "release" | "hail_shoreside";
-  voyage_slug?: string;
+  episode_slug?: string;
   question?: string;
   title: string;
   summary: string;
@@ -108,10 +108,10 @@ function shapeProposal(input: ProposedAction) {
       summary: input.summary,
     };
   }
-  if (!input.voyage_slug) return null;
+  if (!input.episode_slug) return null;
   return {
     kind: input.kind,
-    voyage_slug: input.voyage_slug,
+    episode_slug: input.episode_slug,
     title: input.title,
     summary: input.summary,
   };
@@ -119,60 +119,60 @@ function shapeProposal(input: ProposedAction) {
 
 type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
-async function getUpcomingVoyages(supabase: SupabaseServer, userId: string) {
+async function getUpcomingEpisodes(supabase: SupabaseServer, userId: string) {
   void userId;
   const nowIso = new Date().toISOString();
-  const [voyagesRes, capacityRes] = await Promise.all([
+  const [episodesRes, capacityRes] = await Promise.all([
     supabase
-      .from("voyages")
-      .select("slug,title,class,kind,starts_at,price_cents,min_tier,status,berths_total,id")
+      .from("episodes")
+      .select("slug,title,setting,kind,starts_at,price_cents,min_tier,status,passes_total,id")
       .in("status", ["scheduled", "live", "weather_hold"])
       .gte("starts_at", nowIso)
       .order("starts_at", { ascending: true })
       .limit(8),
-    supabase.from("voyage_capacity").select("*"),
+    supabase.from("episode_capacity").select("*"),
   ]);
   const left = new Map(
     (capacityRes.data ?? [])
-      .filter((c): c is typeof c & { voyage_id: string } => !!c.voyage_id)
-      .map((c) => [c.voyage_id, c.berths_left ?? 0])
+      .filter((c): c is typeof c & { episode_id: string } => !!c.episode_id)
+      .map((c) => [c.episode_id, c.passes_left ?? 0])
   );
-  return (voyagesRes.data ?? []).map((v) => ({
+  return (episodesRes.data ?? []).map((v) => ({
     slug: v.slug,
     title: v.title,
-    class: v.class,
+    class: v.setting,
     kind: v.kind,
     starts_at: v.starts_at,
     price_cents: v.price_cents,
-    berths_left: left.get(v.id) ?? v.berths_total,
+    passes_left: left.get(v.id) ?? v.passes_total,
     min_tier: v.min_tier,
     status: v.status,
   }));
 }
 
 async function getMyManifest(supabase: SupabaseServer, userId: string) {
-  const { data: rsvps } = await supabase
-    .from("rsvps")
-    .select("voyage_id,status,guests,boarding_code")
+  const { data: passes } = await supabase
+    .from("passes")
+    .select("episode_id,status,guests,boarding_code")
     .eq("profile_id", userId);
-  const ids = (rsvps ?? []).map((r) => r.voyage_id);
+  const ids = (passes ?? []).map((r) => r.episode_id);
   if (ids.length === 0) return [];
-  const { data: voyages } = await supabase
-    .from("voyages")
+  const { data: episodes } = await supabase
+    .from("episodes")
     .select("id,slug,title,starts_at,status")
     .in("id", ids)
     .order("starts_at", { ascending: true });
-  const byId = new Map((voyages ?? []).map((v) => [v.id, v]));
-  return (rsvps ?? [])
+  const byId = new Map((episodes ?? []).map((v) => [v.id, v]));
+  return (passes ?? [])
     .map((r) => {
-      const v = byId.get(r.voyage_id);
+      const v = byId.get(r.episode_id);
       if (!v) return null;
       return {
-        voyage_slug: v.slug,
+        episode_slug: v.slug,
         title: v.title,
         starts_at: v.starts_at,
-        voyage_status: v.status,
-        rsvp_status: r.status,
+        episode_status: v.status,
+        pass_status: r.status,
         guests: r.guests,
         boarding_code: r.boarding_code,
       };
@@ -182,7 +182,7 @@ async function getMyManifest(supabase: SupabaseServer, userId: string) {
 
 async function getMyBalances(supabase: SupabaseServer, userId: string) {
   const [knRes, accRes] = await Promise.all([
-    supabase.from("fathoms_balance").select("*").eq("profile_id", userId).maybeSingle(),
+    supabase.from("knots_balance").select("*").eq("profile_id", userId).maybeSingle(),
     supabase.from("account_balance").select("*").eq("profile_id", userId).maybeSingle(),
   ]);
   return {
@@ -302,7 +302,7 @@ export async function POST(request: Request) {
       for (const tu of toolUses) {
         let out: unknown;
         try {
-          if (tu.name === "get_upcoming_voyages") out = await getUpcomingVoyages(supabase, user.id);
+          if (tu.name === "get_upcoming_episodes") out = await getUpcomingEpisodes(supabase, user.id);
           else if (tu.name === "get_my_manifest") out = await getMyManifest(supabase, user.id);
           else if (tu.name === "get_my_balances") out = await getMyBalances(supabase, user.id);
           else out = { error: `Unknown tool: ${tu.name}` };

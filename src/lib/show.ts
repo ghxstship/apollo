@@ -125,7 +125,7 @@ export const WEATHER_LINE: Record<WeatherClass, string> = {
    Only the columns these surfaces read. */
 export interface RunOfShowRow {
   id: string;
-  voyage_id: string;
+  episode_id: string;
   position: number;
   window_start: string;
   window_end: string | null;
@@ -140,7 +140,7 @@ export interface RunOfShowRow {
 
 export interface PodSessionRow {
   id: string;
-  voyage_id: string;
+  episode_id: string;
   rsvp_id: string;
   position: number;
   state: PodState;

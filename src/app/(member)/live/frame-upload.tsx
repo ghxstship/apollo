@@ -7,7 +7,7 @@ import { uploadFrame } from "./actions";
 /* One frame at a time, straight to the Bridge's queue. No local queue here —
    a photograph is not a check-in: if the water swallows the send, the member
    still holds the original and sends it again when the bars come back. */
-export function FrameUpload({ voyageId }: { voyageId: string }) {
+export function FrameUpload({ episodeId }: { episodeId: string }) {
   const [pending, setPending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [sent, setSent] = React.useState(false);
@@ -30,7 +30,7 @@ export function FrameUpload({ voyageId }: { voyageId: string }) {
 
   return (
     <form onSubmit={submit}>
-      <input type="hidden" name="voyage_id" value={voyageId} />
+      <input type="hidden" name="episode_id" value={episodeId} />
       <div style={{ display: "grid", gap: 10 }}>
         {/* Visible labels, not aria-label alone: the sighted member was
             guessing at an unlabelled file control and a bare text box. */}

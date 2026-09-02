@@ -16,13 +16,13 @@ function done(): ActionResult {
 }
 
 export async function createTable(
-  voyageId: string,
+  episodeId: string,
   number: number,
   seats: number
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!voyageId) return { error: "Pick the night first." };
+  if (!episodeId) return { error: "Pick the night first." };
 
   const n = Math.round(number);
   if (!Number.isFinite(n) || n < 1) return { error: "A table needs a number, one or higher." };
@@ -33,19 +33,19 @@ export async function createTable(
     return { error: "A table seats between two and twelve." };
 
   const { data: night, error: nightError } = await supabase
-    .from("voyages")
-    .select("id, class, status")
-    .eq("id", voyageId)
+    .from("episodes")
+    .select("id, setting, status")
+    .eq("id", episodeId)
     .maybeSingle();
   if (nightError) return { error: ERR_LAND };
   if (!night) return { error: "That night is not on the board." };
-  if (night.class !== "shore") return { error: "Tables are laid ashore only — pick a night ashore." };
+  if (night.setting !== "shore") return { error: "Tables are laid ashore only — pick a night ashore." };
   if (night.status !== "scheduled" && night.status !== "live")
     return { error: "That night is off the board. Tables go on a scheduled or live night." };
 
   const { error } = await supabase
-    .from("dating_tables")
-    .insert({ voyage_id: voyageId, number: n, seats: s });
+    .from("tables")
+    .insert({ episode_id: episodeId, number: n, seats: s });
   if (error) {
     return {
       error: /duplicate|unique/i.test(error.message)
@@ -75,7 +75,7 @@ export async function deleteTable(id: string): Promise<ActionResult> {
     };
   }
 
-  const { error } = await supabase.from("dating_tables").delete().eq("id", id);
+  const { error } = await supabase.from("tables").delete().eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
 }

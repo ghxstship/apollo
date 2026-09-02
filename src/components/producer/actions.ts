@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
 
-export type ProducerHold = { voyageId: string; title: string; startsAt: string; zone: string };
+export type ProducerHold = { episodeId: string; title: string; startsAt: string; zone: string };
 export type ProducerSailing = { id: string; title: string; startsAt: string; zone: string; berthsLeft: number };
 
 async function member() {
@@ -19,22 +19,22 @@ async function member() {
 export async function producerNextBerth(): Promise<{ error?: string; berth?: ProducerHold | null }> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  const { data: rsvps } = await supabase
-    .from("rsvps")
-    .select("voyage_id")
+  const { data: passes } = await supabase
+    .from("passes")
+    .select("episode_id")
     .eq("profile_id", userId)
     .eq("status", "aboard");
-  const ids = (rsvps ?? []).map((r) => r.voyage_id);
+  const ids = (passes ?? []).map((r) => r.episode_id);
   if (ids.length === 0) return { berth: null };
-  const { data: voyages } = await supabase
-    .from("voyages")
+  const { data: episodes } = await supabase
+    .from("episodes")
     .select("id,title,starts_at,time_zone")
     .in("id", ids)
     .gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true })
     .limit(1);
-  const v = voyages?.[0];
-  return { berth: v ? { voyageId: v.id, title: v.title, startsAt: v.starts_at, zone: v.time_zone } : null };
+  const v = episodes?.[0];
+  return { berth: v ? { episodeId: v.id, title: v.title, startsAt: v.starts_at, zone: v.time_zone } : null };
 }
 
 /* Three soonest episodes this member can ACTUALLY take.
@@ -45,16 +45,16 @@ export async function producerNextBerth(): Promise<{ error?: string; berth?: Pro
    contradicting the product it is embedded in is worse than the assistant
    saying nothing: the member believes the assistant and finds the door shut.
    Same tests the manifest applies — tier rank, class ceiling, the plan's
-   booking window, and the home harbor: rsvp_guard boards a Regional member
-   only on an episode that leaves from their home harbor (an episode with no
-   harbor is open to all; National and Global sail every harbor; staff pass). */
+   booking window, and the home city: rsvp_guard boards a Regional member
+   only on an episode that leaves from their home city (an episode with no
+   city is open to all; National and Global sail every city; staff pass). */
 export async function producerSailings(): Promise<{ error?: string; sailings?: ProducerSailing[] }> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("tier,status,plan_id,home_harbor,is_staff")
+    .select("tier,status,plan_id,home_city,is_staff")
     .eq("id", userId)
     .maybeSingle();
   const { data: plan } = me?.plan_id
@@ -70,59 +70,59 @@ export async function producerSailings(): Promise<{ error?: string; sailings?: P
   const onHold = me?.status !== "active";
   const earlyDays = plan?.early_days ?? 0;
   const ceiling = plan?.class_ceiling ?? null;
-  const CLASS_RANK: Record<string, number> = { voyage: 1, expedition: 2, odyssey: 3 };
-  /* Regional sails from home. With no home harbor chosen, only harborless
+  const CLASS_RANK: Record<string, number> = { episode: 1, expedition: 2, odyssey: 3 };
+  /* Regional sails from home. With no home city chosen, only harborless
      episodes are open — the guard refuses every other one. */
   const harborBound = (me?.tier ?? "regional") === "regional" && !me?.is_staff;
-  const homeHarbor = me?.home_harbor ?? null;
+  const homeCity = me?.home_city ?? null;
 
-  const [voyagesRes, capacityRes] = await Promise.all([
+  const [episodesRes, capacityRes] = await Promise.all([
     supabase
-      .from("voyages")
-      .select("id,title,starts_at,berths_total,time_zone,min_tier,sub_class,harbor_id")
+      .from("episodes")
+      .select("id,title,starts_at,passes_total,time_zone,min_tier,sub_class,city_id")
       .eq("status", "scheduled")
       .gte("starts_at", new Date().toISOString())
       .order("starts_at", { ascending: true })
       .limit(12),
-    supabase.from("voyage_capacity").select("*"),
+    supabase.from("episode_capacity").select("*"),
   ]);
   const left = new Map(
     (capacityRes.data ?? [])
-      .filter((c): c is typeof c & { voyage_id: string } => !!c.voyage_id)
-      .map((c) => [c.voyage_id, c.berths_left ?? 0])
+      .filter((c): c is typeof c & { episode_id: string } => !!c.episode_id)
+      .map((c) => [c.episode_id, c.passes_left ?? 0])
   );
   /* A member on hold can take nothing, so say nothing rather than offer. */
   if (onHold) return { sailings: [] };
 
   const nowMs = Date.now();
   return {
-    sailings: (voyagesRes.data ?? [])
+    sailings: (episodesRes.data ?? [])
       .filter((v) => (RANK[v.min_tier] ?? 0) <= myRank)
       .filter((v) => {
         if (!ceiling || !v.sub_class || !(v.sub_class in CLASS_RANK)) return true;
         return (CLASS_RANK[v.sub_class] ?? 0) <= (CLASS_RANK[ceiling] ?? 3);
       })
       .filter((v) => nowMs >= new Date(v.starts_at).getTime() - earlyDays * 86400000)
-      .filter((v) => !harborBound || !v.harbor_id || v.harbor_id === homeHarbor)
-      .filter((v) => (left.get(v.id) ?? v.berths_total) > 0)
+      .filter((v) => !harborBound || !v.city_id || v.city_id === homeCity)
+      .filter((v) => (left.get(v.id) ?? v.passes_total) > 0)
       .slice(0, 3)
       .map((v) => ({
         id: v.id,
         title: v.title,
         startsAt: v.starts_at, zone: v.time_zone,
-        berthsLeft: left.get(v.id) ?? v.berths_total,
+        berthsLeft: left.get(v.id) ?? v.passes_total,
       })),
   };
 }
 
 /* Release my berth — same semantics as the manifest's release action. */
-export async function producerReleaseBerth(voyageId: string): Promise<{ error?: string }> {
+export async function producerReleaseBerth(episodeId: string): Promise<{ error?: string }> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
   const { error } = await supabase
-    .from("rsvps")
+    .from("passes")
     .delete()
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .eq("profile_id", userId);
   if (error) return { error: "That didn't land. Try again." };
   revalidatePath("/passes");
@@ -135,16 +135,16 @@ export async function producerReleaseBerth(voyageId: string): Promise<{ error?: 
 export async function producerReleaseBerthBySlug(slug: string): Promise<{ error?: string }> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  const { data: voyage } = await supabase
-    .from("voyages")
+  const { data: episode } = await supabase
+    .from("episodes")
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
-  if (!voyage) return { error: "No such episode on the manifest." };
-  return producerReleaseBerth(voyage.id);
+  if (!episode) return { error: "No such episode on the manifest." };
+  return producerReleaseBerth(episode.id);
 }
 
-/* Knots + member account, straight off the ledgers. (fathoms_balance is the
+/* Knots + member account, straight off the ledgers. (knots_balance is the
    legacy DB name — display is Knots.) */
 export async function producerBalance(): Promise<{
   error?: string;
@@ -154,7 +154,7 @@ export async function producerBalance(): Promise<{
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
   const [knRes, accRes] = await Promise.all([
-    supabase.from("fathoms_balance").select("*").eq("profile_id", userId).maybeSingle(),
+    supabase.from("knots_balance").select("*").eq("profile_id", userId).maybeSingle(),
     supabase.from("account_balance").select("*").eq("profile_id", userId).maybeSingle(),
   ]);
   return {
@@ -222,20 +222,20 @@ export async function producerWeather(): Promise<{
 }> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  const { data: rsvps } = await supabase
-    .from("rsvps")
-    .select("voyage_id,status")
+  const { data: passes } = await supabase
+    .from("passes")
+    .select("episode_id,status")
     .eq("profile_id", userId)
     .in("status", ["aboard", "waitlist"]);
-  const ids = (rsvps ?? []).map((r) => r.voyage_id);
+  const ids = (passes ?? []).map((r) => r.episode_id);
   if (ids.length === 0) return { holds: [] };
-  const { data: voyages } = await supabase
-    .from("voyages")
+  const { data: episodes } = await supabase
+    .from("episodes")
     .select("title,starts_at,time_zone")
     .in("id", ids)
     .eq("status", "weather_hold")
     .order("starts_at", { ascending: true });
   return {
-    holds: (voyages ?? []).map((v) => ({ title: v.title, startsAt: v.starts_at, zone: v.time_zone })),
+    holds: (episodes ?? []).map((v) => ({ title: v.title, startsAt: v.starts_at, zone: v.time_zone })),
   };
 }

@@ -11,13 +11,13 @@ import { gangwayCheckIn, gangwayFlush } from "./actions";
 import { CameraScanner } from "./camera-scanner";
 
 export type GangwayRow = {
-  rsvpId: string;
+  passId: string;
   code: string;
   name: string;
   memberNo: string;
   vessel: string;
   guestNames: string[];
-  /* Per-guest aboard state from rsvp_guests.checked_in_at — the evacuation
+  /* Per-guest aboard state from pass_guests.checked_in_at — the evacuation
      list is read from this, so a guest who scanned their own stub must print
      as aboard, not as an undifferentiated name on the host's row. Optional so
      a roster cached before this field existed still parses. */
@@ -58,7 +58,7 @@ type Scan = {
      holding a real pass, and had no idea what to do about it. */
   /* "unsure" is the one the dock most needed and did not have: the cached
      roster has no match, and the cached roster CANNOT ANSWER for at least four
-     legitimate passes — a guest stub (guest codes live in rsvp_guests and are
+     legitimate passes — a guest stub (guest codes live in pass_guests and are
      only resolvable server-side), a pass for a different episode (online the
      action falls back across upcoming episodes and even names one that has
      already gone), anyone whose RSVP is not `aboard` (the roster filters on
@@ -77,13 +77,13 @@ type Scan = {
      roster — a daybed holder is told where to go at the door, not after. */
   berth?: string;
   time?: string;
-  otherVoyage?: string;
+  otherEpisode?: string;
   queued?: boolean;
 };
 
 type QueueItem = {
-  rsvpId: string;
-  voyageId: string;
+  passId: string;
+  episodeId: string;
   code: string;
   at: string;
   /* How many times the database has refused this for a reason we could not
@@ -134,7 +134,7 @@ function csvCell(v: string): string {
 }
 
 export function GangwayConsole({
-  voyageId,
+  episodeId,
   voyageTitle,
   identity,
   departs,
@@ -143,7 +143,7 @@ export function GangwayConsole({
   options,
   rows: serverRows,
 }: {
-  voyageId: string;
+  episodeId: string;
   voyageTitle: string;
   /* What this episode is, as a member reads it: the series' own name, or
      where it happens when it belongs to no series. It replaced the class-family
@@ -183,10 +183,10 @@ export function GangwayConsole({
       setMounted(true);
       const q = readQueue();
       setQueued(q.length);
-      const marks = new Map(q.map((item) => [item.rsvpId, item.at]));
+      const marks = new Map(q.map((item) => [item.passId, item.at]));
       setRows(
         serverRows.map((r) =>
-          !r.checkedInAt && marks.has(r.rsvpId) ? { ...r, checkedInAt: marks.get(r.rsvpId)! } : r
+          !r.checkedInAt && marks.has(r.passId) ? { ...r, checkedInAt: marks.get(r.passId)! } : r
         )
       );
     });
@@ -196,11 +196,11 @@ export function GangwayConsole({
   /* Cache the roster so the gangway keeps working past the breakwater. */
   React.useEffect(() => {
     try {
-      localStorage.setItem(ROSTER_KEY + voyageId, JSON.stringify(serverRows));
+      localStorage.setItem(ROSTER_KEY + episodeId, JSON.stringify(serverRows));
     } catch {
       /* cache is best-effort */
     }
-  }, [voyageId, serverRows]);
+  }, [episodeId, serverRows]);
 
   const flush = React.useCallback(async () => {
     if (flushing.current) return;
@@ -208,20 +208,20 @@ export function GangwayConsole({
     try {
       /* Iterate over the ids present when we started, but never write a stale
          list back: each branch below re-reads the queue through mutateQueue. */
-      const startingIds = readQueue().map((x) => x.rsvpId);
-      for (const rsvpId of startingIds) {
-        const item = readQueue().find((x) => x.rsvpId === rsvpId);
+      const startingIds = readQueue().map((x) => x.passId);
+      for (const passId of startingIds) {
+        const item = readQueue().find((x) => x.passId === passId);
         if (!item) continue; /* dropped by another pass */
         try {
-          const res = await gangwayFlush(item.rsvpId, item.at);
+          const res = await gangwayFlush(item.passId, item.at);
           if (!res.error) {
-            setQueued(mutateQueue((q) => q.filter((x) => x.rsvpId !== rsvpId)).length);
+            setQueued(mutateQueue((q) => q.filter((x) => x.passId !== passId)).length);
           } else if (res.final) {
             /* A refusal that will not change on a retry: they have not signed,
                or the pass was already boarded on another device. Drop it and
                say so — retrying forever told the operator only that something
                was "waiting to sync". */
-            setQueued(mutateQueue((q) => q.filter((x) => x.rsvpId !== rsvpId)).length);
+            setQueued(mutateQueue((q) => q.filter((x) => x.passId !== passId)).length);
             setRejected((prev) => [...prev, { code: item.code, reason: res.error! }]);
           } else {
             /* Anything else is indeterminate — a staff session that blinked, a
@@ -231,9 +231,9 @@ export function GangwayConsole({
                is read from. Count the attempts and surface it after a few, so
                the operator learns about it without it being thrown away. */
             const q = mutateQueue((items) =>
-              items.map((x) => (x.rsvpId === rsvpId ? { ...x, tries: (x.tries ?? 0) + 1 } : x))
+              items.map((x) => (x.passId === passId ? { ...x, tries: (x.tries ?? 0) + 1 } : x))
             );
-            const tries = q.find((x) => x.rsvpId === rsvpId)?.tries ?? 0;
+            const tries = q.find((x) => x.passId === passId)?.tries ?? 0;
             if (tries >= 3) {
               setStuck((prev) =>
                 prev.some((s) => s.code === item.code)
@@ -276,19 +276,19 @@ export function GangwayConsole({
     };
   }, [flush]);
 
-  const markRow = (rsvpId: string, at: string) =>
-    setRows((prev) => prev.map((r) => (r.rsvpId === rsvpId ? { ...r, checkedInAt: at } : r)));
+  const markRow = (passId: string, at: string) =>
+    setRows((prev) => prev.map((r) => (r.passId === passId ? { ...r, checkedInAt: at } : r)));
 
   /* Offline path — resolve against the cached roster and queue the stamp. */
   const localScan = (raw: string): Scan => {
     let pool = rows;
     try {
-      const cached = localStorage.getItem(ROSTER_KEY + voyageId);
+      const cached = localStorage.getItem(ROSTER_KEY + episodeId);
       if (cached) {
         const parsed = JSON.parse(cached) as GangwayRow[];
         if (Array.isArray(parsed) && parsed.length) {
-          const marks = new Map(rows.map((r) => [r.rsvpId, r.checkedInAt]));
-          pool = parsed.map((r) => ({ ...r, checkedInAt: marks.get(r.rsvpId) ?? r.checkedInAt }));
+          const marks = new Map(rows.map((r) => [r.passId, r.checkedInAt]));
+          pool = parsed.map((r) => ({ ...r, checkedInAt: marks.get(r.passId) ?? r.checkedInAt }));
         }
       }
     } catch {
@@ -324,11 +324,11 @@ export function GangwayConsole({
       };
     }
     const at = new Date().toISOString();
-    const q = readQueue().filter((x) => x.rsvpId !== hit.rsvpId);
-    q.push({ rsvpId: hit.rsvpId, voyageId, code: hit.code, at });
+    const q = readQueue().filter((x) => x.passId !== hit.passId);
+    q.push({ passId: hit.passId, episodeId, code: hit.code, at });
     writeQueue(q);
     setQueued(q.length);
-    markRow(hit.rsvpId, at);
+    markRow(hit.passId, at);
     return { kind: "aboard", ...base, time: at, queued: true };
   };
 
@@ -352,7 +352,7 @@ export function GangwayConsole({
         setScan(localScan(raw));
       } else {
         try {
-          const res = await gangwayCheckIn(raw, voyageId);
+          const res = await gangwayCheckIn(raw, episodeId);
           if (res.error) {
             /* boardingError() already turned this into something the skipper
                can act on — "…is outstanding — send them the link to sign, then
@@ -374,13 +374,13 @@ export function GangwayConsole({
               vessel: res.vessel,
               guestNames: res.guestNames,
               guestOf: res.guestOf,
-              berth: hit && !res.otherVoyage && held !== "—" ? held : undefined,
+              berth: hit && !res.otherEpisode && held !== "—" ? held : undefined,
               time: res.checkedInAt,
-              otherVoyage: res.otherVoyage,
+              otherEpisode: res.otherEpisode,
             };
             setScan(s);
-            if (res.outcome === "aboard" && !res.otherVoyage && hit) {
-              markRow(hit.rsvpId, res.checkedInAt ?? new Date().toISOString());
+            if (res.outcome === "aboard" && !res.otherEpisode && hit) {
+              markRow(hit.passId, res.checkedInAt ?? new Date().toISOString());
             }
           }
         } catch {
@@ -437,8 +437,8 @@ export function GangwayConsole({
         <Select
           label="Episode"
           options={options}
-          value={voyageId}
-          onChange={(e) => router.replace(`/bridge/gangway?voyage=${e.target.value}`)}
+          value={episodeId}
+          onChange={(e) => router.replace(`/bridge/gangway?episode=${e.target.value}`)}
           style={{ maxWidth: 420 }}
         />
       </div>
@@ -486,8 +486,8 @@ export function GangwayConsole({
                 </b>
                 {scan.berth ? <span>Holds: {scan.berth}</span> : null}
                 {guestsLine(scan) ? <span>{guestsLine(scan)}</span> : null}
-                {scan.otherVoyage ? (
-                  <span>On another manifest — checked in for {scan.otherVoyage}.</span>
+                {scan.otherEpisode ? (
+                  <span>On another manifest — checked in for {scan.otherEpisode}.</span>
                 ) : null}
               </>
             ) : scan.kind === "already" ? (
@@ -629,7 +629,7 @@ export function GangwayConsole({
                 </thead>
                 <tbody>
                   {rows.map((r) => (
-                    <tr key={r.rsvpId}>
+                    <tr key={r.passId}>
                       <td>{r.name}</td>
                       <td>{r.memberNo}</td>
                       <td>{r.code || "—"}</td>

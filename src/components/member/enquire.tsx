@@ -21,11 +21,11 @@ const NOTE_MAX = 2000;
 export function Enquire({
   sailingTitle,
   formatSlug,
-  formatLabel,
+  seriesLabel,
 }: {
   sailingTitle: string;
   formatSlug: string | null;
-  formatLabel: string | null;
+  seriesLabel: string | null;
 }) {
   const [state, formAction, pending] = React.useActionState<CharterRequestState, FormData>(
     raiseCharterRequest,
@@ -45,9 +45,9 @@ export function Enquire({
     <>
       <form ref={formRef} action={formAction}>
         <input type="hidden" name="sailing" value={sailingTitle} />
-        {formatSlug ? <input type="hidden" name="format" value={formatSlug} /> : null}
+        {formatSlug ? <input type="hidden" name="series" value={formatSlug} /> : null}
         <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginBottom: 12 }}>
-          {formatLabel ?? "This one"} is on request. Say who and when; the Bridge
+          {seriesLabel ?? "This one"} is on request. Say who and when; the Bridge
           answers by word.
         </p>
         <div style={{ display: "grid", gap: 10 }}>

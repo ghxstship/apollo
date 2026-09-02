@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { depositChip } from "@/components/site/voyage-chips";
+import { depositChip } from "@/components/site/episode-chips";
 
 describe("depositChip", () => {
   it("states the episode's own figure", () => {

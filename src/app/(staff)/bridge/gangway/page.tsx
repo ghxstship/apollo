@@ -15,22 +15,22 @@ type CabinRow = { id: string; name: string; muster: string | null };
 export default async function GangwayPage({
   searchParams,
 }: {
-  searchParams: Promise<{ voyage?: string }>;
+  searchParams: Promise<{ episode?: string }>;
 }) {
   const { supabase } = await getOperator();
   const sp = await searchParams;
 
   /* Today's departures stay on the board for 24 hours; upcoming line up after. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
-  const voyagesRes = await supabase
-    .from("voyages")
+  const episodesRes = await supabase
+    .from("episodes")
     .select("*")
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
     .order("starts_at", { ascending: true });
-  const voyages = must(voyagesRes);
+  const episodes = must(episodesRes);
 
-  if (voyages.length === 0) {
+  if (episodes.length === 0) {
     return (
       <div>
         <span className="hm-eyebrow">Gangway</span>
@@ -47,17 +47,17 @@ export default async function GangwayPage({
     );
   }
 
-  const voyage = voyages.find((v) => v.id === sp.voyage) ?? voyages[0];
+  const episode = episodes.find((v) => v.id === sp.episode) ?? episodes[0];
 
-  const rsvpsRes = await supabase
-    .from("rsvps")
+  const passesRes = await supabase
+    .from("passes")
     .select("*")
-    .eq("voyage_id", voyage.id)
+    .eq("episode_id", episode.id)
     .eq("status", "aboard")
     .order("created_at", { ascending: true });
-  const rsvps = must(rsvpsRes);
+  const passes = must(passesRes);
 
-  const profileIds = rsvps.map((r) => r.profile_id);
+  const profileIds = passes.map((r) => r.profile_id);
   const profilesRes = profileIds.length
     ? await supabase
         .from("profiles")
@@ -78,40 +78,40 @@ export default async function GangwayPage({
     (must(waiverRes)).map((w) => [w.profile_id, Boolean(w.current)])
   );
 
-  const vesselIds = [...new Set(rsvps.map((r) => r.vessel_id).filter((id): id is string => !!id))];
+  const vesselIds = [...new Set(passes.map((r) => r.vessel_id).filter((id): id is string => !!id))];
   const vesselsRes = vesselIds.length
     ? await supabase.from("vessels").select("id, name").in("id", vesselIds)
     : { data: [] };
   const vesselById = new Map((must(vesselsRes)).map((v) => [v.id, v.name]));
 
-  /* Guests from rsvp_guests, WITH their own checked_in_at. The roster used to
+  /* Guests from pass_guests, WITH their own checked_in_at. The roster used to
      render only the host row's guest_names strings, so a guest who scanned
      their own -G1 stub was aboard in the database and ashore on the printed
      list — and the printed list is what an evacuation is read from. */
-  const rsvpIds = rsvps.map((r) => r.id);
+  const rsvpIds = passes.map((r) => r.id);
   const guestsRes = rsvpIds.length
     ? await supabase
-        .from("rsvp_guests")
+        .from("pass_guests")
         .select("rsvp_id, name, checked_in_at")
         .in("rsvp_id", rsvpIds)
     : { data: [] };
-  const guestsByRsvp = new Map<string, { name: string; aboard: boolean }[]>();
+  const guestsByPass = new Map<string, { name: string; aboard: boolean }[]>();
   for (const g of must(guestsRes)) {
-    const list = guestsByRsvp.get(g.rsvp_id) ?? [];
+    const list = guestsByPass.get(g.rsvp_id) ?? [];
     list.push({ name: g.name, aboard: Boolean(g.checked_in_at) });
-    guestsByRsvp.set(g.rsvp_id, list);
+    guestsByPass.set(g.rsvp_id, list);
   }
 
   /* A daybed is a claim on the episode, not on the pass — the door needs to
      know who holds one so the crew can point them to it. */
   const daybedsRes = await supabase
-    .from("voyage_daybeds")
+    .from("episode_daybeds")
     .select("rsvp_id")
-    .eq("voyage_id", voyage.id);
-  const daybedRsvps = new Set(must(daybedsRes).map((d) => d.rsvp_id));
+    .eq("episode_id", episode.id);
+  const daybedPasses = new Set(must(daybedsRes).map((d) => d.rsvp_id));
 
   /* A cabin card prints its own muster station; the pass carries the cabin. */
-  const cabinIds = [...new Set(rsvps.map((r) => r.cabin_id).filter((id): id is string => !!id))];
+  const cabinIds = [...new Set(passes.map((r) => r.cabin_id).filter((id): id is string => !!id))];
   const cabinsRes = cabinIds.length
     ? await moduleTables(supabase).from("cabins").select("id, name, muster").in("id", cabinIds)
     : { data: [] as CabinRow[], error: null };
@@ -125,12 +125,12 @@ export default async function GangwayPage({
      on a member's card. An episode with no series falls back to where it
      happens — afloat or ashore — which is the fact the crew at the top of the
      gangway actually needs. */
-  let identity = SETTING_LABEL[voyage.class] ?? SETTING_LABEL.shore;
-  if (voyage.format) {
+  let identity = SETTING_LABEL[episode.setting] ?? SETTING_LABEL.shore;
+  if (episode.series) {
     const { data: formatRow } = await moduleTables(supabase)
-      .from("activity_formats")
+      .from("series")
       .select("label")
-      .eq("slug", voyage.format)
+      .eq("slug", episode.series)
       .maybeSingle();
     const label = (formatRow as { label?: string } | null)?.label;
     if (label) identity = label;
@@ -138,22 +138,22 @@ export default async function GangwayPage({
 
   /* The door's muster line. A shore night musters at its venue — name and
      address — where an afloat episode musters at the slip it names. */
-  let muster: string | null = voyage.muster ?? null;
-  if (voyage.class === "shore" && voyage.venue_id) {
+  let muster: string | null = episode.muster ?? null;
+  if (episode.setting === "shore" && episode.venue_id) {
     const { data: venue } = await supabase
       .from("venues")
       .select("name, address")
-      .eq("id", voyage.venue_id)
+      .eq("id", episode.venue_id)
       .maybeSingle();
     if (venue) muster = venue.address ? `${venue.name} · ${venue.address}` : venue.name;
   }
 
-  const rows: GangwayRow[] = rsvps.map((r) => {
+  const rows: GangwayRow[] = passes.map((r) => {
     const p = profiles.get(r.profile_id);
-    const guestList = guestsByRsvp.get(r.id) ?? (r.guest_names ?? []).map((name: string) => ({ name, aboard: false }));
+    const guestList = guestsByPass.get(r.id) ?? (r.guest_names ?? []).map((name: string) => ({ name, aboard: false }));
     const cabin = r.cabin_id ? cabinById.get(r.cabin_id) : undefined;
     return {
-      rsvpId: r.id,
+      passId: r.id,
       code: r.boarding_code ?? "",
       name: p?.full_name ?? "Unknown sailor",
       memberNo: p?.member_no ?? "GUEST",
@@ -163,7 +163,7 @@ export default async function GangwayPage({
       guests: r.guests,
       waiverSigned: waiverCurrent.get(r.profile_id) ?? false,
       checkedInAt: r.checked_in_at,
-      daybed: daybedRsvps.has(r.id),
+      daybed: daybedPasses.has(r.id),
       cabin: cabin?.name ?? null,
       cabinMuster: cabin?.muster ?? null,
     };
@@ -178,13 +178,13 @@ export default async function GangwayPage({
       <p className="hm-lede">Scan a pass or type its code.</p>
 
       <GangwayConsole
-        voyageId={voyage.id}
-        voyageTitle={voyage.title}
+        episodeId={episode.id}
+        voyageTitle={episode.title}
         identity={identity}
-        departs={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`}
-        timeZone={voyage.time_zone}
+        departs={`${logDate(episode.starts_at, episode.time_zone)} · ${logTime(episode.starts_at, episode.time_zone)}`}
+        timeZone={episode.time_zone}
         muster={muster}
-        options={voyages.map((v) => ({
+        options={episodes.map((v) => ({
           value: v.id,
           label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,
         }))}

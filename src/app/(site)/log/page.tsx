@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default async function LorePage() {
   const supabase = await createClient();
   const { data: posts } = await supabase
-    .from("dispatch_posts")
+    .from("log_posts")
     .select("*")
     .order("published_at", { ascending: false });
 

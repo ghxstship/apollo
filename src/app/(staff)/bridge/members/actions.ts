@@ -11,7 +11,7 @@ import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staf
 /* The filter set is stored verbatim as the segment's jsonb — one shape, so a
    saved view reloads exactly as it was left. */
 export type SegmentFilters = {
-  harbor: string;
+  city: string;
   tier: string;
   plan: string;
   league: string;
@@ -74,20 +74,20 @@ export async function loadMember(
   const [profileRes, knotsRes, balanceRes, accountRes, passesRes, subRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", profileId).maybeSingle(),
     supabase
-      .from("fathoms_ledger")
+      .from("knots_ledger")
       .select("id, delta, reason, created_at")
       .eq("profile_id", profileId)
       .order("created_at", { ascending: false })
       .limit(6),
-    supabase.from("fathoms_balance").select("balance").eq("profile_id", profileId).maybeSingle(),
+    supabase.from("knots_balance").select("balance").eq("profile_id", profileId).maybeSingle(),
     supabase
       .from("account_balance")
       .select("balance_cents")
       .eq("profile_id", profileId)
       .maybeSingle(),
     supabase
-      .from("rsvps")
-      .select("id, status, created_at, voyage_id")
+      .from("passes")
+      .select("id, status, created_at, episode_id")
       .eq("profile_id", profileId)
       .order("created_at", { ascending: false })
       .limit(6),
@@ -101,11 +101,11 @@ export async function loadMember(
   const profile = profileRes.data;
   if (!profile) return { error: "No such member on the roll." };
 
-  const voyageIds = [...new Set((passesRes.data ?? []).map((r) => r.voyage_id))];
-  const { data: voyagesData } = voyageIds.length
-    ? await supabase.from("voyages").select("id, title, starts_at, time_zone").in("id", voyageIds)
+  const episodeIds = [...new Set((passesRes.data ?? []).map((r) => r.episode_id))];
+  const { data: voyagesData } = episodeIds.length
+    ? await supabase.from("episodes").select("id, title, starts_at, time_zone").in("id", episodeIds)
     : { data: [] as Array<{ id: string; title: string; starts_at: string; time_zone: string }> };
-  const voyages = new Map((voyagesData ?? []).map((v) => [v.id, v]));
+  const episodes = new Map((voyagesData ?? []).map((v) => [v.id, v]));
 
   const planId = subRes?.plan_id ?? profile.plan_id;
   const { data: plan } = planId
@@ -155,11 +155,11 @@ export async function loadMember(
       })),
       passes: (passesRes.data ?? []).map((r) => ({
         id: r.id,
-        title: voyages.get(r.voyage_id)?.title ?? "Episode off the books",
-        when: voyages.get(r.voyage_id)?.starts_at ?? r.created_at,
+        title: episodes.get(r.episode_id)?.title ?? "Episode off the books",
+        when: episodes.get(r.episode_id)?.starts_at ?? r.created_at,
         /* The drawer used to read this on the operator's clock, disagreeing
            with every other Bridge console about the same episode. */
-        zone: voyages.get(r.voyage_id)?.time_zone ?? "",
+        zone: episodes.get(r.episode_id)?.time_zone ?? "",
         status: r.status,
       })),
       balanceCents: accountRes.data?.balance_cents ?? 0,

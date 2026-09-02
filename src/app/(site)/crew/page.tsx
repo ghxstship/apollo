@@ -12,14 +12,14 @@ const ROLES: Array<{
   title: string;
   dept: string;
   type: string;
-  port: string;
+  city: string;
   blurb: string;
 }> = [
   {
     title: "Deckhand",
     dept: "Deck",
     type: "Part time",
-    port: "Miami",
+    city: "Miami",
     blurb:
       "Rig, teach, tell the truth about the weather. ASA cert or equivalent scar tissue.",
   },
@@ -27,7 +27,7 @@ const ROLES: Array<{
     title: "Shore lead",
     dept: "Ashore",
     type: "Full time",
-    port: "Los Angeles",
+    city: "Los Angeles",
     blurb:
       "Own the land half of the club — long tables, records, the golden hour. Hospitality background, allergic to boring rooms.",
   },
@@ -40,7 +40,7 @@ const ROLES: Array<{
     title: "Gangway ops",
     dept: "Shoreside",
     type: "Full time",
-    port: "Miami",
+    city: "Miami",
     blurb:
       "Run the manifest, the gangway, and the weather calls. The first voice a member hears and the last one off the dock.",
   },
@@ -48,7 +48,7 @@ const ROLES: Array<{
     title: "The Producer engineering",
     dept: "Engineering",
     type: "Full time",
-    port: "Remote",
+    city: "Remote",
     blurb:
       "Build the ledger, the manifest, and The Producer — the agent that minds them. TypeScript on the surface, judgment underneath.",
   },
@@ -77,13 +77,13 @@ export default function CrewPage() {
                 <span>·</span>
                 <span>{r.type}</span>
                 <span>·</span>
-                <span>{r.port}</span>
+                <span>{r.city}</span>
               </div>
               <p className="ws-ledger-row__body">{r.blurb}</p>
             </div>
             <a
               className="ls-btn ls-btn--outline ls-btn--sm"
-              href={`mailto:${MAILBOX.crew}?subject=${encodeURIComponent(`Crew wanted — ${r.title}, ${r.port}`)}`}
+              href={`mailto:${MAILBOX.crew}?subject=${encodeURIComponent(`Crew wanted — ${r.title}, ${r.city}`)}`}
             >
               Apply
             </a>

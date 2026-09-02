@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { EventClass, MembershipTier, VoyageStatus } from "@/lib/supabase/types";
+import type { EpisodeSetting, MembershipTier, EpisodeStatus } from "@/lib/supabase/types";
 import type { ExperienceClassId } from "@/lib/brand";
 import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 
 function done(): ActionResult {
-  revalidatePath("/bridge/voyages");
+  revalidatePath("/bridge/episodes");
   revalidatePath("/bridge/manifests");
   revalidatePath("/passes");
   revalidatePath("/home");
@@ -16,31 +16,31 @@ function done(): ActionResult {
   return {};
 }
 
-/* Status transitions fan out via triggers — weather_hold reaches every berth
+/* Status transitions fan out via triggers — weather_hold reaches every pass
    by email and in the member's inbox; completed banks the knots. Confirm-first UI. */
-export async function setVoyageStatus(
-  voyageId: string,
-  status: VoyageStatus
+export async function setEpisodeStatus(
+  episodeId: string,
+  status: EpisodeStatus
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase.from("voyages").update({ status }).eq("id", voyageId);
+  const { error } = await supabase.from("episodes").update({ status }).eq("id", episodeId);
   if (error) return { error: ERR_LAND };
   return done();
 }
 
-export async function setBerthsTotal(voyageId: string, berths: number): Promise<ActionResult> {
+export async function setPassesTotal(episodeId: string, passes: number): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const clamped = Math.max(0, Math.min(96, Math.round(berths)));
+  const clamped = Math.max(0, Math.min(96, Math.round(passes)));
   const { error } = await supabase
-    .from("voyages")
-    .update({ berths_total: clamped })
-    .eq("id", voyageId);
+    .from("episodes")
+    .update({ passes_total: clamped })
+    .eq("id", episodeId);
   if (error) {
     /* The holds CHECK is the one refusal an operator can act on from here —
        hand them the arithmetic, not "that didn't land". The taxonomy trigger
-       also watches berths_total (a series seats so many), and speaks for
+       also watches passes_total (a series seats so many), and speaks for
        itself. */
     if (/holds_fit_the_hull|held_passes/.test(error.message ?? ""))
       return { error: "The hull cannot shrink under its holds — release held passes first, then lower the capacity." };
@@ -50,27 +50,27 @@ export async function setBerthsTotal(voyageId: string, berths: number): Promise<
 }
 
 /* Operator holds — held passes come off sale, so capacity for sale is
-   berths_total − held_passes. Clamped to what the episode actually carries. */
-export async function setHeldPasses(voyageId: string, held: number): Promise<ActionResult> {
+   passes_total − held_passes. Clamped to what the episode actually carries. */
+export async function setHeldPasses(episodeId: string, held: number): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { data: voyage } = await supabase
-    .from("voyages")
-    .select("berths_total")
-    .eq("id", voyageId)
+  const { data: episode } = await supabase
+    .from("episodes")
+    .select("passes_total")
+    .eq("id", episodeId)
     .maybeSingle();
-  if (!voyage) return { error: ERR_LAND };
-  const clamped = Math.max(0, Math.min(voyage.berths_total, Math.round(held)));
+  if (!episode) return { error: ERR_LAND };
+  const clamped = Math.max(0, Math.min(episode.passes_total, Math.round(held)));
   const { error } = await supabase
-    .from("voyages")
+    .from("episodes")
     .update({ held_passes: clamped })
-    .eq("id", voyageId);
+    .eq("id", episodeId);
   if (error) return { error: ERR_LAND };
   return done();
 }
 
-export async function saveVoyageOps(
-  voyageId: string,
+export async function saveEpisodeOps(
+  episodeId: string,
   conditions: { wind: string; swell: string; heading: string; speed: string },
   muster: string
 ): Promise<ActionResult> {
@@ -82,14 +82,14 @@ export async function saveVoyageOps(
       .filter(([, v]) => v)
   );
   const { error } = await supabase
-    .from("voyages")
+    .from("episodes")
     .update({ conditions: clean, muster: muster.trim() || null })
-    .eq("id", voyageId);
+    .eq("id", episodeId);
   if (error) return { error: ERR_LAND };
   return done();
 }
 
-/* — The flotilla. voyage_vessels has had readers since the fleet landed
+/* — The flotilla. episode_vessels has had readers since the fleet landed
      ("the flotilla is public") and a "staff write flotilla" ALL policy
      (is_staff USING and WITH CHECK) that no code ever exercised — so the
      manifests screen's "spread across the flotilla" dead-ended on "No yachts
@@ -97,7 +97,7 @@ export async function saveVoyageOps(
      policy's writer. — */
 
 export async function assignVessel(
-  voyageId: string,
+  episodeId: string,
   vesselId: string,
   position: number
 ): Promise<ActionResult> {
@@ -105,13 +105,13 @@ export async function assignVessel(
   if (!staffId) return { error: ERR_STAFF };
   if (!vesselId) return { error: "Pick a hull first." };
 
-  const { error } = await supabase.from("voyage_vessels").insert({
-    voyage_id: voyageId,
+  const { error } = await supabase.from("episode_vessels").insert({
+    episode_id: episodeId,
     vessel_id: vesselId,
     position: Math.max(1, Math.round(position) || 1),
   });
   if (error) {
-    /* The primary key is (voyage_id, vessel_id) — the only duplicate this
+    /* The primary key is (episode_id, vessel_id) — the only duplicate this
        shape can raise is the same hull twice. */
     if (error.code === "23505") return { error: "That hull is already on this episode." };
     return { error: ERR_LAND };
@@ -119,13 +119,13 @@ export async function assignVessel(
   return done();
 }
 
-export async function removeVessel(voyageId: string, vesselId: string): Promise<ActionResult> {
+export async function removeVessel(episodeId: string, vesselId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const { error } = await supabase
-    .from("voyage_vessels")
+    .from("episode_vessels")
     .delete()
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .eq("vessel_id", vesselId);
   /* a_hull_with_claimed_cabins_stays refuses in the club's voice — "members
      hold cabins on that hull — move them first" — and names the way out. */
@@ -134,34 +134,35 @@ export async function removeVessel(voyageId: string, vesselId: string): Promise<
 }
 
 /* The three the CHECK still admits. Trek, excursion and overland were dropped
-   with the two-axis taxonomy — offering one here would only earn a refusal. */
-export type SubClass = "voyage" | "expedition" | "odyssey";
+   with the two-axis taxonomy, and voyage became passage when the last retired
+   noun left the schema — offering any of them here would only earn a refusal. */
+export type SubClass = "passage" | "expedition" | "odyssey";
 export type ItineraryLeg = { offset: number; title: string; note: string };
 
-export type NewVoyageInput = {
+export type NewEpisodeInput = {
   slug: string;
   title: string;
-  cls: EventClass;
+  setting: EpisodeSetting;
   subClass: SubClass | null;
   /* What kind of thing it is. Only load-bearing while the episode is unfiled
      — a_sailing_keeps_its_taxonomy overwrites it from the series the moment
      one is named. */
   experienceClass: ExperienceClassId;
   kind: string;
-  harborId: string | null;
+  cityId: string | null;
   startsAt: string;
   endsAt: string;
   distanceNm: number | null;
-  berths: number;
+  passes: number;
   priceCents: number;
   minTier: MembershipTier;
   media: string;
   depositRequired: boolean;
   /* What actually holds the pass — per episode now, not club-wide. */
   depositCents: number;
-  /* Filing under a series (activity_formats.slug), or unfiled — an episode
+  /* Filing under a series (series.slug), or unfiled — an episode
      that belongs to no series is a Special. */
-  format: string | null;
+  series: string | null;
   /* Wall clock on the city, or null = on sale the moment it is set. */
   saleOpensAt: string | null;
   /* Each deeper tier enters this many hours earlier — rsvp_guard enforces it. */
@@ -199,7 +200,7 @@ function programRefusal(error: { message?: string | null; code?: string | null }
 
 /* One <input type="datetime-local"> value, resolved on a named clock. Null when
    the string is not a wall clock at all — the caller says which field it was. */
-function onHarbourClock(local: string, zone: string): Date | null {
+function onCityClock(local: string, zone: string): Date | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(local);
   if (!m) return null;
   const at = new Date(
@@ -212,7 +213,7 @@ function onHarbourClock(local: string, zone: string): Date | null {
   return Number.isNaN(at.getTime()) ? null : at;
 }
 
-export async function createVoyage(input: NewVoyageInput): Promise<ActionResult> {
+export async function createEpisode(input: NewEpisodeInput): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
@@ -228,12 +229,12 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
      a guess the operator has to leave us to make — they know when the boat is
      due back at the moment they set the departure. */
   if (!input.endsAt) return { error: "Set a return time — the marks are measured in hours." };
-  if (!input.harborId) return { error: "Pick a city — the departure time is read on its clock." };
+  if (!input.cityId) return { error: "Pick a city — the departure time is read on its clock." };
 
   /* The form's <input type="datetime-local"> yields "2027-05-15T19:00" with NO
      OFFSET, so `new Date()` resolves it in the NODE SERVER'S zone — while the
      City select sits in the same row of the same form, and a trigger stamps
-     the voyage with that city's zone milliseconds later. Every surface then
+     the episode with that city's zone milliseconds later. Every surface then
      renders the instant on the city's clock.
 
      On a UTC production host an operator scheduling Chicago 19:00 stored 19:00Z
@@ -241,14 +242,14 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
      episode page, the ICS feed, the manifest, the boarding code's MMDD, and
      every 48h/window/18:00 boundary derived from it. The city's zone is
      known at the moment of authoring; it just was not consulted. */
-  const { data: harbor } = await supabase
-    .from("harbors")
+  const { data: city } = await supabase
+    .from("cities")
     .select("time_zone")
-    .eq("id", input.harborId)
+    .eq("id", input.cityId)
     .maybeSingle();
-  if (!harbor) return { error: "That city is not on the chart." };
+  if (!city) return { error: "That city is not on the chart." };
 
-  const startsAt = onHarbourClock(input.startsAt, harbor.time_zone);
+  const startsAt = onCityClock(input.startsAt, city.time_zone);
   if (!startsAt) return { error: "That departure time doesn't parse." };
   /* Read on the SAME clock as the departure. Mix the two — one on the city's
      wall, one on the server's — and the stored passage is off by the offset
@@ -256,7 +257,7 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
      goes unrounded. wallClockInZone also carries both readings across a DST
      night, so a sail that leaves before the clocks move and returns after them
      is the length it actually was. */
-  const endsAt = onHarbourClock(input.endsAt, harbor.time_zone);
+  const endsAt = onCityClock(input.endsAt, city.time_zone);
   if (!endsAt) return { error: "That return time doesn't parse." };
   if (endsAt.getTime() <= startsAt.getTime())
     return { error: "The return has to come after the departure." };
@@ -265,7 +266,7 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
      means on sale immediately — null, not an invented instant. */
   let saleOpensAt: Date | null = null;
   if (input.saleOpensAt) {
-    saleOpensAt = onHarbourClock(input.saleOpensAt, harbor.time_zone);
+    saleOpensAt = onCityClock(input.saleOpensAt, city.time_zone);
     if (!saleOpensAt) return { error: "That on-sale hour doesn't parse." };
     /* A drop that opens after the boat has left is an episode nobody can
        book. */
@@ -284,28 +285,28 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
     }))
     .filter((leg) => leg.title);
 
-  const { error } = await supabase.from("voyages").insert({
+  const { error } = await supabase.from("episodes").insert({
     slug,
     title,
-    class: input.cls,
+    setting: input.setting,
     sub_class: input.subClass,
     /* Written either way. When a series is named the trigger reads it straight
        back off the series a moment later, which is the intended outcome — the
        catalogue is the authority, and this is the answer for the unfiled. */
     experience_class: input.experienceClass,
     itinerary,
-    kind: input.kind.trim() || (input.cls === "shore" ? "port_day" : "sea_day"),
-    harbor_id: input.harborId,
+    kind: input.kind.trim() || (input.setting === "shore" ? "port_day" : "sea_day"),
+    city_id: input.cityId,
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
     distance_nm: input.distanceNm,
-    berths_total: Math.max(1, Math.min(96, Math.round(input.berths))),
+    passes_total: Math.max(1, Math.min(96, Math.round(input.passes))),
     price_cents: Math.max(0, Math.round(input.priceCents)),
     min_tier: input.minTier,
     media: input.media,
     deposit_required: input.depositRequired,
     deposit_cents: depositCents,
-    format: input.format || null,
+    series: input.series || null,
     sale_opens_at: saleOpensAt ? saleOpensAt.toISOString() : null,
     presale_hours: clampPresaleHours(input.presaleHours),
     season_id: input.seasonId || null,
@@ -315,8 +316,8 @@ export async function createVoyage(input: NewVoyageInput): Promise<ActionResult>
   return done();
 }
 
-export type VoyageProgramInput = {
-  format: string | null;
+export type EpisodeProgramInput = {
+  series: string | null;
   /* Same standing as on a new episode: the operator's answer for an unfiled
      episode, and overwritten from the series for a filed one. */
   experienceClass: ExperienceClassId;
@@ -331,27 +332,27 @@ export type VoyageProgramInput = {
 /* Assign an existing episode to the program — series, season, venue, the
    on-sale hour and what a pass costs to hold. The columns landed after most
    episodes did, so this is how the board catches up. */
-export async function saveVoyageProgram(
-  voyageId: string,
-  program: VoyageProgramInput
+export async function saveEpisodeProgram(
+  episodeId: string,
+  program: EpisodeProgramInput
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
   /* The episode carries its city's zone — the on-sale hour is read on that
      clock, exactly as the departure was when the episode was set. */
-  const { data: voyage } = await supabase
-    .from("voyages")
+  const { data: episode } = await supabase
+    .from("episodes")
     .select("time_zone, starts_at")
-    .eq("id", voyageId)
+    .eq("id", episodeId)
     .maybeSingle();
-  if (!voyage) return { error: "That episode is not on the board." };
+  if (!episode) return { error: "That episode is not on the board." };
 
   let saleOpensAt: Date | null = null;
   if (program.saleOpensAt) {
-    saleOpensAt = onHarbourClock(program.saleOpensAt, voyage.time_zone);
+    saleOpensAt = onCityClock(program.saleOpensAt, episode.time_zone);
     if (!saleOpensAt) return { error: "That on-sale hour doesn't parse." };
-    if (saleOpensAt.getTime() > new Date(voyage.starts_at).getTime())
+    if (saleOpensAt.getTime() > new Date(episode.starts_at).getTime())
       return { error: ERR_DROP_AFTER_DEPARTURE };
   }
 
@@ -359,9 +360,9 @@ export async function saveVoyageProgram(
   if (depositCents > DEPOSIT_CEILING_CENTS) return { error: ERR_DEPOSIT_CEILING };
 
   const { error } = await supabase
-    .from("voyages")
+    .from("episodes")
     .update({
-      format: program.format || null,
+      series: program.series || null,
       experience_class: program.experienceClass,
       season_id: program.seasonId || null,
       venue_id: program.venueId || null,
@@ -369,7 +370,7 @@ export async function saveVoyageProgram(
       presale_hours: clampPresaleHours(program.presaleHours),
       deposit_cents: depositCents,
     })
-    .eq("id", voyageId);
+    .eq("id", episodeId);
   if (error) return { error: programRefusal(error) };
   return done();
 }

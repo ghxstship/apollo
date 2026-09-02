@@ -22,7 +22,7 @@ export async function removeAndNotify(
   const line = reason.trim() || "Against the code of conduct.";
 
   const { error: flagError } = await supabase
-    .from("wardroom_flags")
+    .from("open_deck_flags")
     .update({ status: "removed", resolved_by: staffId })
     .eq("id", flagId);
   if (flagError) return { error: ERR_LAND };
@@ -43,7 +43,7 @@ export async function removeAndNotify(
   /* The post may already be gone — the author can strike their own. Resolving
      the flag is still the point. */
   if (postId) {
-    const { error: deleteError } = await supabase.from("wardroom_posts").delete().eq("id", postId);
+    const { error: deleteError } = await supabase.from("open_deck_posts").delete().eq("id", postId);
     if (deleteError) return { error: ERR_LAND };
   }
 
@@ -55,7 +55,7 @@ export async function leaveUp(flagId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const { error } = await supabase
-    .from("wardroom_flags")
+    .from("open_deck_flags")
     .update({ status: "left_up", resolved_by: staffId })
     .eq("id", flagId);
   if (error) return { error: ERR_LAND };

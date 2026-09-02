@@ -28,8 +28,8 @@ export type MemberRow = {
   planLabel: string;
   league: number;
   leagueName: string;
-  harborSlug: string;
-  harborCode: string;
+  citySlug: string;
+  cityCode: string;
   status: string;
   dues: string;
   duesLabel: string;
@@ -44,7 +44,7 @@ export type MemberRow = {
 export type SegmentOption = { id: string; name: string; filters: SegmentFilters };
 
 const EMPTY: SegmentFilters = {
-  harbor: "",
+  city: "",
   tier: "",
   plan: "",
   league: "",
@@ -102,7 +102,7 @@ const CSV_COLUMNS: Array<[string, (r: MemberRow) => string]> = [
   ["Tier", (r) => r.tierLabel],
   ["Plan", (r) => r.planLabel],
   ["League", (r) => r.leagueName],
-  [PLACE.market, (r) => r.harborCode],
+  [PLACE.market, (r) => r.cityCode],
   ["Passes", (r) => String(r.passes)],
   ["Attended", (r) => String(r.attended)],
   ["Knots", (r) => String(r.knots)],
@@ -117,13 +117,13 @@ function csvCell(value: string): string {
 export function MembersClient({
   rows,
   segments,
-  harbors,
+  cities,
   plans,
   recentCutoff,
 }: {
   rows: MemberRow[];
   segments: SegmentOption[];
-  harbors: Array<{ slug: string; label: string }>;
+  cities: Array<{ slug: string; label: string }>;
   plans: Array<{ id: string; label: string }>;
   recentCutoff: string;
 }) {
@@ -140,7 +140,7 @@ export function MembersClient({
      summary. */
   const activeFilters = React.useMemo(() => {
     const out: string[] = [];
-    if (f.harbor) out.push(harbors.find((h) => h.slug === f.harbor)?.label ?? f.harbor);
+    if (f.city) out.push(cities.find((h) => h.slug === f.city)?.label ?? f.city);
     if (f.tier) out.push(f.tier);
     if (f.plan) out.push("Plan set");
     if (f.league) out.push(`League ${f.league}`);
@@ -149,7 +149,7 @@ export function MembersClient({
     if (f.recent) out.push("Sailed in 90 days");
     if (f.q.trim()) out.push(`“${f.q.trim()}”`);
     return out;
-  }, [f, harbors]);
+  }, [f, cities]);
   const [segmentId, setSegmentId] = React.useState("");
   const [naming, setNaming] = React.useState(false);
   const [segmentName, setSegmentName] = React.useState("");
@@ -170,7 +170,7 @@ export function MembersClient({
   const filtered = React.useMemo(() => {
     const q = f.q.trim().toLowerCase();
     return rows.filter((r) => {
-      if (f.harbor && r.harborSlug !== f.harbor) return false;
+      if (f.city && r.citySlug !== f.city) return false;
       if (f.tier && r.tier !== f.tier) return false;
       if (f.plan && r.planId !== f.plan) return false;
       if (f.league && String(r.league) !== f.league) return false;
@@ -239,7 +239,7 @@ export function MembersClient({
       mono: true,
       render: (r: MemberRow) => <span title={r.leagueName}>{`L${r.league}`}</span>,
     },
-    { key: "harborCode", label: PLACE.market, width: 80, mono: true },
+    { key: "cityCode", label: PLACE.market, width: 80, mono: true },
     { key: "passes", label: "Passes", width: 70, mono: true },
     { key: "attended", label: "Aboard", width: 70, mono: true },
     {
@@ -280,9 +280,9 @@ export function MembersClient({
         <div className="hm-filters__body">
         <Select
           label={PLACE.market}
-          value={f.harbor}
-          onChange={(e) => set("harbor", e.target.value)}
-          options={[{ value: "", label: "Every city" }, ...harbors.map((h) => ({ value: h.slug, label: h.label }))]}
+          value={f.city}
+          onChange={(e) => set("city", e.target.value)}
+          options={[{ value: "", label: "Every city" }, ...cities.map((h) => ({ value: h.slug, label: h.label }))]}
         />
         <Select
           label="Tier"

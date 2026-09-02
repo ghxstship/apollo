@@ -6,8 +6,8 @@ import { SURFACES } from "@/lib/brand";
 import { SETTING_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
-import { durationChip, onSaleChip, vesselSpec } from "@/components/site/voyage-chips";
-import { fleetFor, framesFor } from "@/components/site/voyage-data";
+import { durationChip, onSaleChip, vesselSpec } from "@/components/site/episode-chips";
+import { fleetFor, framesFor } from "@/components/site/episode-data";
 import { readLegs, readStops } from "@/app/(member)/itinerary/data";
 import { Enquire } from "@/components/member/enquire";
 
@@ -74,44 +74,44 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: voyage } = await supabase
-    .from("voyages")
+  const { data: episode } = await supabase
+    .from("episodes")
     .select("title, blurb")
     .eq("slug", slug)
     .maybeSingle();
   return {
     alternates: { canonical: `/episodes/${slug}` },
-    title: voyage?.title ?? "Episodes",
-    description: voyage?.blurb ?? undefined,
+    title: episode?.title ?? "Episodes",
+    description: episode?.blurb ?? undefined,
   };
 }
 
-export default async function VoyagePage({
+export default async function EpisodePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: voyage } = await supabase
-    .from("voyages")
+  const { data: episode } = await supabase
+    .from("episodes")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
-  if (!voyage) notFound();
+  if (!episode) notFound();
 
   const [{ data: cap }, { data: { user } }, { data: formatRow }] = await Promise.all([
-    supabase.from("voyage_capacity").select("*").eq("voyage_id", voyage.id).maybeSingle(),
+    supabase.from("episode_capacity").select("*").eq("episode_id", episode.id).maybeSingle(),
     supabase.auth.getUser(),
     /* The format decides the door. 'open' formats sell a pass; 'on_request'
        ones take an enquiry; 'invite' ones take nothing from this page. Another
        module's table, reached through the moduleTables seam and typed at the
        boundary. */
-    voyage.format
+    episode.series
       ? moduleTables(supabase)
-          .from("activity_formats")
+          .from("series")
           .select("slug, label, access, category")
-          .eq("slug", voyage.format)
+          .eq("slug", episode.series)
           .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
@@ -120,20 +120,20 @@ export default async function VoyagePage({
     | null;
   const onRequest = format?.access === "on_request";
   const byInvitation = format?.access === "invite";
-  /* An episode is announced on its harbor's clock, which it carries itself. */
-  const zone = voyage.time_zone;
+  /* An episode is announced on its city's clock, which it carries itself. */
+  const zone = episode.time_zone;
 
   /* Real names ride with consent, and only for signed-in members —
      profiles aren't readable from the shore. */
   let crew: Array<{ name: string; tone: "gold" | "sea" | "ink" | "sand" }> = [];
   let guestCount = 0;
   if (user) {
-    /* Through a definer, because rsvps is `profile_id = auth.uid()`: reading
+    /* Through a definer, because passes is `profile_id = auth.uid()`: reading
        the roster directly returned only the viewer's own row, so this list was
        empty for every member and guestCount was always 0 — the feature had
        never worked for anyone but staff. Consent is the gate here, not
        ownership; show_on_manifest is the member saying yes. */
-    const { data: aboard } = await supabase.rpc("voyage_manifest", { p_voyage: voyage.id });
+    const { data: aboard } = await supabase.rpc("episode_manifest", { p_episode: episode.id });
     guestCount = (aboard ?? []).reduce((sum, r) => sum + (r.guests ?? 0), 0);
     crew = (aboard ?? [])
       .slice(0, 12)
@@ -146,12 +146,12 @@ export default async function VoyagePage({
   }
 
   const aboard = cap?.aboard ?? 0;
-  const left = cap?.berths_left ?? null;
+  const left = cap?.passes_left ?? null;
   /* Boarding was pinned at thirty minutes before cast off regardless of the
      episode's own plan, so an episode whose first stop is at −15 published two
      different boarding times on one page — and the ICS repeated the wrong one.
      The itinerary leads when it has something to say. */
-  const firstStopOffset = (Array.isArray(voyage.itinerary) ? voyage.itinerary : [])
+  const firstStopOffset = (Array.isArray(episode.itinerary) ? episode.itinerary : [])
     .map((raw) =>
       raw && typeof raw === "object" && !Array.isArray(raw)
         ? (raw as { offset?: unknown }).offset
@@ -161,12 +161,12 @@ export default async function VoyagePage({
     .sort((a, b) => a - b)[0];
   const boardsOffsetMin = firstStopOffset ?? -30;
   const boards = new Date(
-    new Date(voyage.starts_at).getTime() + boardsOffsetMin * 60 * 1000
+    new Date(episode.starts_at).getTime() + boardsOffsetMin * 60 * 1000
   ).toISOString();
-  const paragraphs = (voyage.description ?? voyage.blurb ?? "")
+  const paragraphs = (episode.description ?? episode.blurb ?? "")
     .split(/\n\n+/)
     .filter(Boolean);
-  const faq = FAQS[voyage.class] ?? FAQS.sea;
+  const faq = FAQS[episode.setting] ?? FAQS.sea;
   const seatsWord = "passes";
   const full = left === 0;
 
@@ -178,8 +178,8 @@ export default async function VoyagePage({
      page cannot tell them apart. The word stays in the Bridge, where blanking
      the series is a choice an operator makes on purpose. An episode with no
      stated end drops the hours rather than inventing them. */
-  const settingLabel = SETTING_LABEL[voyage.class] ?? "Afloat";
-  const hours = durationChip(voyage.starts_at, voyage.ends_at);
+  const settingLabel = SETTING_LABEL[episode.setting] ?? "Afloat";
+  const hours = durationChip(episode.starts_at, episode.ends_at);
   const badge = [format?.label ?? settingLabel, hours].filter(Boolean).join(" · ");
 
   /* An episode in the past, or one the club called off, is a log entry — not a
@@ -188,19 +188,19 @@ export default async function VoyagePage({
   /* Server-rendered per request, so "now" is request time — captured once,
      the way the listing does it. */
   const nowMs = new Date().getTime();
-  const cancelled = voyage.status === "cancelled";
+  const cancelled = episode.status === "cancelled";
   const sailed =
     !cancelled &&
-    (voyage.status === "completed" || new Date(voyage.starts_at).getTime() < nowMs);
+    (episode.status === "completed" || new Date(episode.starts_at).getTime() < nowMs);
   const closed = cancelled || sailed;
   /* The drop hour. Before it the episode is announced, not on offer — the
      guard refuses the booking, so the page must not invite it. Deeper tiers
      walk in presale_hours earlier per step; the public hour is the one shown. */
-  const notYetOnSale = !closed && !!voyage.sale_opens_at && Date.parse(voyage.sale_opens_at) > nowMs;
-  const onSaleLine = notYetOnSale && voyage.sale_opens_at ? onSaleChip(voyage.sale_opens_at, zone) : null;
+  const notYetOnSale = !closed && !!episode.sale_opens_at && Date.parse(episode.sale_opens_at) > nowMs;
+  const onSaleLine = notYetOnSale && episode.sale_opens_at ? onSaleChip(episode.sale_opens_at, zone) : null;
 
   /* The plan — itinerary stops as offsets (minutes) from cast off. */
-  const stops = (Array.isArray(voyage.itinerary) ? voyage.itinerary : []).flatMap((raw) => {
+  const stops = (Array.isArray(episode.itinerary) ? episode.itinerary : []).flatMap((raw) => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
     const s = raw as { [key: string]: unknown };
     return typeof s.offset === "number" && typeof s.title === "string"
@@ -208,7 +208,7 @@ export default async function VoyagePage({
       : [];
   });
   const stopTime = (offset: number) =>
-    logTime(new Date(new Date(voyage.starts_at).getTime() + offset * 60 * 1000).toISOString(), zone);
+    logTime(new Date(new Date(episode.starts_at).getTime() + offset * 60 * 1000).toISOString(), zone);
 
   const firstNames = crew.map((c) => c.name.split(" ")[0]);
 
@@ -224,44 +224,44 @@ export default async function VoyagePage({
      that have never been given rows. Two systems, one authority: rows when
      rows exist. */
   const [fleet, frames, legs, portStops, creditsRes, venueRes] = await Promise.all([
-    fleetFor(voyage.id),
-    framesFor(voyage.id),
-    readLegs(supabase, voyage.id),
-    readStops(supabase, voyage.id),
+    fleetFor(episode.id),
+    framesFor(episode.id),
+    readLegs(supabase, episode.id),
+    readStops(supabase, episode.id),
     /* The sponsor book is staff-sealed; this definer is the one window through
        it and returns only what the shore may read — names and tiers, ordered
        presenting partner first. A credit, never an ad, and never the money. */
-    supabase.rpc("sponsor_credits", { p_voyage: voyage.id }),
-    voyage.venue_id
-      ? supabase.from("venues").select("name").eq("id", voyage.venue_id).maybeSingle()
+    supabase.rpc("sponsor_credits", { p_episode: episode.id }),
+    episode.venue_id
+      ? supabase.from("venues").select("name").eq("id", episode.venue_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
   const credits = creditsRes.data ?? [];
   const venueName = venueRes.data?.name ?? null;
 
   return (
-    <div data-theme={voyage.class}>
+    <div data-theme={episode.setting}>
       <header className="ev-hero">
-        <div className="ev-hero__bg" style={{ background: SEAS[voyage.media] ?? SEAS.dusk }}></div>
+        <div className="ev-hero__bg" style={{ background: SEAS[episode.media] ?? SEAS.dusk }}></div>
         <div className="ls-container ev-hero__in">
           <span className="ls-eyebrow">{badge}</span>
-          <h1>{voyage.title}</h1>
+          <h1>{episode.title}</h1>
           <div className="ev-hero__meta">
             <span>{settingLabel.toUpperCase()}</span>
             <span>·</span>
-            <span>{logDate(voyage.starts_at, zone)}</span>
+            <span>{logDate(episode.starts_at, zone)}</span>
             <span>·</span>
-            <span>{logTime(voyage.starts_at, zone)}</span>
-            {voyage.coordinates ? (
+            <span>{logTime(episode.starts_at, zone)}</span>
+            {episode.coordinates ? (
               <>
                 <span>·</span>
-                <span>{voyage.coordinates}</span>
+                <span>{episode.coordinates}</span>
               </>
             ) : null}
-            {voyage.distance_nm != null ? (
+            {episode.distance_nm != null ? (
               <>
                 <span>·</span>
-                <span>{voyage.distance_nm} NM</span>
+                <span>{episode.distance_nm} NM</span>
               </>
             ) : null}
           </div>
@@ -270,8 +270,8 @@ export default async function VoyagePage({
 
       <div className="ls-container ev-body">
         <div>
-          {voyage.blurb ? (
-            <p style={{ fontSize: "var(--text-body-l)", maxWidth: "56ch" }}>{voyage.blurb}</p>
+          {episode.blurb ? (
+            <p style={{ fontSize: "var(--text-body-l)", maxWidth: "56ch" }}>{episode.blurb}</p>
           ) : null}
           <div className="ev-desc">
             {paragraphs.map((p, i) => (
@@ -286,7 +286,7 @@ export default async function VoyagePage({
                   <span className="ev-plan__t">Day {String(leg.day).padStart(2, "0")}</span>
                   <div>
                     <div className="ev-plan__title">
-                      {leg.port}
+                      {leg.place}
                       {leg.starts_at ? ` — ${logTime(leg.starts_at, zone)}` : ""}
                     </div>
                     {leg.note ? <p className="ev-plan__note">{leg.note}</p> : null}
@@ -373,14 +373,14 @@ export default async function VoyagePage({
                     key={f.id}
                     className="ev-frames__img"
                     src={f.url}
-                    alt={f.caption ?? `${voyage.title} — a frame from the sail`}
+                    alt={f.caption ?? `${episode.title} — a frame from the sail`}
                   />
                 ))}
               </div>
             ) : (
               <div
                 className="ev-frames__tk"
-                style={{ background: SEAS[voyage.media] ?? SEAS.dusk }}
+                style={{ background: SEAS[episode.media] ?? SEAS.dusk }}
               >
                 <span>Imagery TK — frames post after the sail, credited by name.</span>
               </div>
@@ -405,9 +405,9 @@ export default async function VoyagePage({
                 <Badge tone="caution">Cancelled</Badge>
               ) : sailed ? (
                 <Badge tone="outline">Sailed</Badge>
-              ) : voyage.status === "weather_hold" ? (
+              ) : episode.status === "weather_hold" ? (
                 <Badge tone="caution">Weather hold</Badge>
-              ) : voyage.status === "live" ? (
+              ) : episode.status === "live" ? (
                 <span className="ls-live ws-live-label">Underway</span>
               ) : onRequest ? (
                 <Badge tone="outline">On request</Badge>
@@ -430,12 +430,12 @@ export default async function VoyagePage({
               <p className="ev-note">
                 This one has sailed. What the cameras kept is in The Log.
               </p>
-            ) : voyage.status === "weather_hold" ? (
+            ) : episode.status === "weather_hold" ? (
               <p className="ev-note">
                 A hold is a postponement, not a cancellation. The new date arrives in
                 The Log, and every reserved pass carries forward in full.
               </p>
-            ) : voyage.status === "live" ? (
+            ) : episode.status === "live" ? (
               <p className="ev-note">
                 This one is on the water. Follow along on the Open Deck, or find the
                 next episode of the season.
@@ -445,9 +445,9 @@ export default async function VoyagePage({
                  told where members ask from, and given the gangway. */
               user ? (
                 <Enquire
-                  sailingTitle={voyage.title}
+                  sailingTitle={episode.title}
                   formatSlug={format?.slug ?? null}
-                  formatLabel={format?.label ?? null}
+                  seriesLabel={format?.label ?? null}
                 />
               ) : (
                 <>
@@ -455,7 +455,7 @@ export default async function VoyagePage({
                     Members enquire from their manifest. Sign in and the form is here.
                   </p>
                   <LinkButton
-                    href={`/gangway?next=/episodes/${voyage.slug}`}
+                    href={`/gangway?next=/episodes/${episode.slug}`}
                     variant="outline"
                     fullWidth
                   >
@@ -475,7 +475,7 @@ export default async function VoyagePage({
                   walk in earlier — the manifest shows your own.
                 </p>
                 <LinkButton
-                  href={user ? "/passes" : `/gangway?next=/episodes/${voyage.slug}`}
+                  href={user ? "/passes" : `/gangway?next=/episodes/${episode.slug}`}
                   variant="outline"
                   fullWidth
                 >
@@ -489,7 +489,7 @@ export default async function VoyagePage({
                   you&rsquo;ll get the word first.
                 </p>
                 <LinkButton
-                  href={user ? "/passes" : `/gangway?next=/episodes/${voyage.slug}`}
+                  href={user ? "/passes" : `/gangway?next=/episodes/${episode.slug}`}
                   variant="outline"
                   fullWidth
                 >
@@ -502,7 +502,7 @@ export default async function VoyagePage({
               </LinkButton>
             ) : (
               <LinkButton
-                href={`/gangway?next=/episodes/${voyage.slug}`}
+                href={`/gangway?next=/episodes/${episode.slug}`}
                 variant="gold"
                 fullWidth
               >
@@ -512,11 +512,11 @@ export default async function VoyagePage({
             {closed ? null : onRequest || byInvitation ? (
               /* "On request" is a complete answer, never a placeholder — no
                  price stands beside a door that is not a sale. */
-              <p className="ev-mono-note">{TIER_LABEL[voyage.min_tier]} tier and up</p>
+              <p className="ev-mono-note">{TIER_LABEL[episode.min_tier]} tier and up</p>
             ) : (
               <p className="ev-mono-note">
                 {onSaleLine ? <>{onSaleLine} · </> : null}
-                {price(voyage.price_cents)} · {TIER_LABEL[voyage.min_tier]} tier and up
+                {price(episode.price_cents)} · {TIER_LABEL[episode.min_tier]} tier and up
               </p>
             )}
           </div>
@@ -528,7 +528,7 @@ export default async function VoyagePage({
             <div className="ev-log__lead">
               <div>
                 <span>Cast off</span>
-                <span>{logTime(voyage.starts_at, zone)}</span>
+                <span>{logTime(episode.starts_at, zone)}</span>
               </div>
               <div>
                 <span>{seatsWord}</span>
@@ -538,8 +538,8 @@ export default async function VoyagePage({
                     : onSaleLine
                       ? onSaleLine
                       : left != null
-                        ? `${left} OF ${cap?.berths_total ?? voyage.berths_total} LEFT`
-                        : voyage.berths_total}
+                        ? `${left} OF ${cap?.passes_total ?? episode.passes_total} LEFT`
+                        : episode.passes_total}
                 </span>
               </div>
             </div>
@@ -561,16 +561,16 @@ export default async function VoyagePage({
             </div>
             <div>
               <span>Date</span>
-              <span>{logDate(voyage.starts_at, zone)}</span>
+              <span>{logDate(episode.starts_at, zone)}</span>
             </div>
             <div>
               <span>Boards</span>
               <span>{logTime(boards, zone)}</span>
             </div>
-            {voyage.coordinates ? (
+            {episode.coordinates ? (
               <div>
                 <span>Position</span>
-                <span>{voyage.coordinates}</span>
+                <span>{episode.coordinates}</span>
               </div>
             ) : null}
             {venueName ? (
@@ -579,21 +579,21 @@ export default async function VoyagePage({
                 <span>{venueName}</span>
               </div>
             ) : null}
-            {voyage.distance_nm != null ? (
+            {episode.distance_nm != null ? (
               <div>
                 <span>Distance</span>
-                <span>{voyage.distance_nm} NM</span>
+                <span>{episode.distance_nm} NM</span>
               </div>
             ) : null}
             <div>
               <span>Tier</span>
-              <span>{TIER_LABEL[voyage.min_tier]}+</span>
+              <span>{TIER_LABEL[episode.min_tier]}+</span>
             </div>
             <div>
               <span>Calendar</span>
               <span>
                 <a
-                  href={`/api/calendar/voyage/${voyage.slug}`}
+                  href={`/api/calendar/episode/${episode.slug}`}
                   style={{ color: "inherit", textDecoration: "underline" }}
                 >
                   Add to calendar

@@ -48,17 +48,17 @@ export default async function ThreadPage({
     peopleIds.length
       ? supabase.from("member_directory").select("*").in("id", peopleIds)
       : Promise.resolve({ data: null }),
-    thread.voyage_id
+    thread.episode_id
       ? supabase
-          .from("voyages")
-          .select("id,title,class,starts_at")
-          .eq("id", thread.voyage_id)
+          .from("episodes")
+          .select("id,title,setting,starts_at")
+          .eq("id", thread.episode_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
   const peopleById = new Map<string, DirectoryMember>((peopleRes.data ?? []).map((p) => [p.id, p]));
-  const voyage = voyageRes.data;
+  const episode = voyageRes.data;
 
   const others = (roster ?? [])
     .filter((r) => r.profile_id !== user.id)
@@ -84,14 +84,14 @@ export default async function ThreadPage({
 
   const title =
     thread.kind === "crew"
-      ? `${voyage?.title ?? thread.title ?? "An episode"} — crew`
+      ? `${episode?.title ?? thread.title ?? "An episode"} — crew`
       : thread.kind === "direct"
         ? others[0]?.full_name ?? departedName ?? "A member"
         : thread.title ?? "Shoreside";
   /* The thread header states where the episode happens, not how it is filed. */
   const eyebrow =
     thread.kind === "crew"
-      ? SETTING_LABEL[voyage?.class ?? "sea"] ?? "Afloat"
+      ? SETTING_LABEL[episode?.setting ?? "sea"] ?? "Afloat"
       : thread.kind === "direct"
         ? "Direct"
         : "Shoreside";

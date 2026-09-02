@@ -26,7 +26,7 @@ import { useToast } from "../../ui";
    else. */
 
 export type EnvelopeRow = {
-  rsvpId: string;
+  passId: string;
   name: string;
   memberNo: string;
   boardingCode: string;
@@ -35,7 +35,7 @@ export type EnvelopeRow = {
   [key: string]: unknown;
 };
 
-export function VoyagePicker({
+export function EpisodePicker({
   options,
   value,
 }: {
@@ -48,21 +48,21 @@ export function VoyagePicker({
       label="Episode"
       options={options}
       value={value}
-      onChange={(e) => router.replace(`/bridge/envelopes?voyage=${e.target.value}`)}
+      onChange={(e) => router.replace(`/bridge/envelopes?episode=${e.target.value}`)}
       style={{ maxWidth: 420 }}
     />
   );
 }
 
 export function EnvelopesClient({
-  voyageId,
+  episodeId,
   voyageTitle,
   departs,
   aboard,
   radarOpen,
   rows,
 }: {
-  voyageId: string;
+  episodeId: string;
   voyageTitle: string;
   departs: string;
   aboard: number;
@@ -85,7 +85,7 @@ export function EnvelopesClient({
 
   const issue = () =>
     startTransition(async () => {
-      const res = await issueTheEnvelopes(voyageId);
+      const res = await issueTheEnvelopes(episodeId);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -187,7 +187,7 @@ export function EnvelopesClient({
           />
         ) : (
           <>
-            <Table columns={columns} rows={rows} rowKey={(r) => r.rsvpId} />
+            <Table columns={columns} rows={rows} rowKey={(r) => r.passId} />
             <span className="hm-count">
               {rows.length} envelope{rows.length === 1 ? "" : "s"} · {opened} opened
             </span>
@@ -204,7 +204,7 @@ export function EnvelopesClient({
               </p>
               <div className="hm-envelopes__grid">
                 {rows.map((r) => (
-                  <div className="hm-envelopes__card" key={r.rsvpId}>
+                  <div className="hm-envelopes__card" key={r.passId}>
                     <b>{r.name}</b>
                     <span>{r.memberNo}{r.boardingCode ? ` · ${r.boardingCode}` : ""}</span>
                     <code>{r.token}</code>

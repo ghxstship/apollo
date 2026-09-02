@@ -22,7 +22,7 @@ export type GalleyResult = { error?: string };
    aboard that episode, and refuses a membership on hold — each in its own
    words, which now reach the member instead of a generic line. */
 export async function placeGalleyOrder(
-  voyageId: string,
+  episodeId: string,
   lines: GalleyLine[],
   /* The offline queue re-sends this unchanged. A request that reached the
      galley and was charged, but whose response the boat wifi swallowed, used to
@@ -42,7 +42,7 @@ export async function placeGalleyOrder(
   if (clean.length === 0) return { error: "Nothing in the order yet." };
 
   const { error } = await supabase.rpc("place_galley_order", {
-    p_voyage: voyageId,
+    p_episode: episodeId,
     /* "itemId", camelCase — that is the key jsonb_to_recordset destructures
        inside the RPC, and there is a whole migration named after getting this
        wrong on the shop's twin. */
@@ -58,8 +58,8 @@ export async function placeGalleyOrder(
 /* A frame from the water, into the Bridge's queue.
 
    The policies invited this write from the start — storage's "aboard members
-   upload voyage media" (path must open with the member's own id) and
-   voyage_media's "aboard members upload" (own row, aboard that episode,
+   upload episode media" (path must open with the member's own id) and
+   episode_media's "aboard members upload" (own row, aboard that episode,
    approved false) — and no product surface ever called them: the gallery's
    member half was fed by staff uploads alone. The file goes first; a row
    that fails after leaves nothing fetchable, and the object is removed so
@@ -71,12 +71,12 @@ export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  const voyageId = String(formData.get("voyage_id") ?? "");
+  const episodeId = String(formData.get("episode_id") ?? "");
   const caption = String(formData.get("caption") ?? "").trim().slice(0, 200) || null;
   const file = formData.get("frame");
-  if (!voyageId || !(file instanceof File) || file.size === 0)
+  if (!episodeId || !(file instanceof File) || file.size === 0)
     return { error: "Pick a frame first." };
-  if (!/^[0-9a-f-]{36}$/i.test(voyageId))
+  if (!/^[0-9a-f-]{36}$/i.test(episodeId))
     return { error: "Pick a frame first." };
   /* An allowlist, not a prefix: image/svg+xml passes startsWith("image/") and
      is scriptable content served from the storage origin. */
@@ -86,10 +86,10 @@ export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
     return { error: "That frame is over 12MB — send a smaller cut." };
 
   const ext = (file.type.split("/")[1] ?? "jpg").replace(/[^a-z0-9]/gi, "").slice(0, 8) || "jpg";
-  const path = `${user.id}/${voyageId}/${crypto.randomUUID()}.${ext}`;
+  const path = `${user.id}/${episodeId}/${crypto.randomUUID()}.${ext}`;
 
   const { error: fileError } = await supabase.storage
-    .from("voyage-media")
+    .from("episode-media")
     .upload(path, file, { contentType: file.type });
   if (fileError)
     return {
@@ -99,10 +99,10 @@ export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
     };
 
   const { error } = await supabase
-    .from("voyage_media")
-    .insert({ voyage_id: voyageId, storage_path: path, caption, uploaded_by: user.id });
+    .from("episode_media")
+    .insert({ episode_id: episodeId, storage_path: path, caption, uploaded_by: user.id });
   if (error) {
-    await supabase.storage.from("voyage-media").remove([path]);
+    await supabase.storage.from("episode-media").remove([path]);
     return { error: await voiceWith(supabase, error) };
   }
 

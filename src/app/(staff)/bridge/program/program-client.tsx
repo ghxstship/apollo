@@ -22,7 +22,7 @@ export type SeasonPanelRow = {
   startsOn: string;
   endsOn: string;
   active: boolean;
-  voyages: number;
+  episodes: number;
   [key: string]: unknown;
 };
 
@@ -31,7 +31,7 @@ export type VenuePanelRow = {
   slug: string;
   name: string;
   kind: VenueKind;
-  harbor: string | null;
+  city: string | null;
   active: boolean;
   [key: string]: unknown;
 };
@@ -75,13 +75,13 @@ export function ProgramClient({
   seasons,
   venues,
   series,
-  harbors,
+  cities,
   templates,
 }: {
   seasons: SeasonPanelRow[];
   venues: VenuePanelRow[];
   series: SeriesPanelRow[];
-  harbors: Option[];
+  cities: Option[];
   templates: Option[];
 }) {
   const [pending, startTransition] = React.useTransition();
@@ -102,7 +102,7 @@ export function ProgramClient({
   const [vName, setVName] = React.useState("");
   const [vSlug, setVSlug] = React.useState("");
   const [vKind, setVKind] = React.useState<VenueKind>("marina");
-  const [vHarbor, setVHarbor] = React.useState("");
+  const [vCity, setVCity] = React.useState("");
   const [vAddress, setVAddress] = React.useState("");
 
   /* Series composer. */
@@ -146,7 +146,7 @@ export function ProgramClient({
       mono: true,
       render: (r: SeasonPanelRow) => `${onDay(r.startsOn)} — ${onDay(r.endsOn)}`,
     },
-    { key: "voyages", label: "Episodes", width: 90, mono: true },
+    { key: "episodes", label: "Episodes", width: 90, mono: true },
     {
       key: "active",
       label: "State",
@@ -186,10 +186,10 @@ export function ProgramClient({
       render: (r: VenuePanelRow) => VENUE_KIND[r.kind] ?? r.kind,
     },
     {
-      key: "harbor",
+      key: "city",
       label: PLACE.market,
       width: 160,
-      render: (r: VenuePanelRow) => r.harbor ?? "—",
+      render: (r: VenuePanelRow) => r.city ?? "—",
     },
     {
       key: "active",
@@ -468,7 +468,7 @@ export function ProgramClient({
                     name: vName,
                     slug: vSlug,
                     kind: vKind,
-                    harborId: vHarbor || null,
+                    harborId: vCity || null,
                     address: vAddress,
                   });
                   if (res.error) {
@@ -479,7 +479,7 @@ export function ProgramClient({
                   setVName("");
                   setVSlug("");
                   setVKind("marina");
-                  setVHarbor("");
+                  setVCity("");
                   setVAddress("");
                   show({ msg: "Charted.", meta: "VENUE ON THE PROGRAM" });
                 })
@@ -508,9 +508,9 @@ export function ProgramClient({
           <Select
             label={PLACE.market}
             hint="Where it sits. A venue can stand free of any city."
-            value={vHarbor}
-            onChange={(e) => setVHarbor(e.target.value)}
-            options={[{ value: "", label: "No city — freestanding" }, ...harbors]}
+            value={vCity}
+            onChange={(e) => setVCity(e.target.value)}
+            options={[{ value: "", label: "No city — freestanding" }, ...cities]}
           />
           <Input
             label="Street address"
@@ -540,7 +540,7 @@ export function ProgramClient({
                     title: rTitle,
                     slug: rSlug,
                     cadenceDays: Number(rCadence) || 0,
-                    templateVoyageId: rTemplate || null,
+                    templateEpisodeId: rTemplate || null,
                   });
                   if (res.error) {
                     show({ msg: res.error, tone: "danger" });

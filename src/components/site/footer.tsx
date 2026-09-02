@@ -10,7 +10,7 @@ const HARBOR_STATUS: Record<string, string> = {
   soon: "Soon",
 };
 
-export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
+export function SiteFooter({ cities }: { cities: Tables<"cities">[] }) {
   return (
     <footer className="ws-footer">
       <div className="ls-container">
@@ -34,7 +34,7 @@ export function SiteFooter({ harbors }: { harbors: Tables<"harbors">[] }) {
           </div>
           <div className="ws-footer__col">
             <b>{PLACE.markets}</b>
-            {harbors.map((h) => (
+            {cities.map((h) => (
               <div className="ws-footer__harbor" key={h.id}>
                 {h.name}
                 <span>

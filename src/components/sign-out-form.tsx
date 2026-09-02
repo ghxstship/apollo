@@ -28,7 +28,7 @@ export function SignOutForm({
         try {
           /* Cache Storage was cleared here and localStorage was not, so the
              gangway's cached roster — member names, member numbers and LIVE
-             BOARDING CODES — stayed on the phone forever, for every voyage it
+             BOARDING CODES — stayed on the phone forever, for every episode it
              had ever opened. */
           const waiting = unflushedCount();
           if (waiting > 0) {

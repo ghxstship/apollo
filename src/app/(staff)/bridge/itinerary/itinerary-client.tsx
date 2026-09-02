@@ -16,7 +16,7 @@ import {
 export type LegRow = {
   id: string;
   day: number;
-  port: string;
+  place: string;
   note: string | null;
   /** Pre-formatted on the episode's clock, and the wall-clock form for the field. */
   when: string | null;
@@ -38,7 +38,7 @@ export type StopRow = {
   notes: string | null;
 };
 
-export function VoyagePicker({
+export function EpisodePicker({
   options,
   value,
 }: {
@@ -51,13 +51,13 @@ export function VoyagePicker({
       label="Episode"
       options={options}
       value={value}
-      onChange={(e) => router.replace(`/bridge/itinerary?voyage=${e.target.value}`)}
+      onChange={(e) => router.replace(`/bridge/itinerary?episode=${e.target.value}`)}
       style={{ maxWidth: 420 }}
     />
   );
 }
 
-const BLANK_LEG = { day: "1", port: "", note: "", startsAt: "" };
+const BLANK_LEG = { day: "1", place: "", note: "", startsAt: "" };
 const BLANK_STOP = { position: "1", name: "", legId: "", tenderAt: "", lastReturn: "", notes: "" };
 const BLANK_HOLD = { reason: "", newPlan: "", unchanged: "" };
 
@@ -68,11 +68,11 @@ function statusTone(s: LegRow["status"]): "positive" | "caution" | "outline" {
 }
 
 export function ItineraryClient({
-  voyageId,
+  episodeId,
   legs,
   stops,
 }: {
-  voyageId: string;
+  episodeId: string;
   legs: LegRow[];
   stops: StopRow[];
 }) {
@@ -91,7 +91,7 @@ export function ItineraryClient({
 
   const legOptions = [
     { value: "", label: "Not filed under a leg" },
-    ...legs.map((l) => ({ value: l.id, label: `Day ${l.day} — ${l.port}` })),
+    ...legs.map((l) => ({ value: l.id, label: `Day ${l.day} — ${l.place}` })),
   ];
 
   const run = (fn: () => Promise<{ error?: string }>, said: string, after?: () => void) =>
@@ -151,7 +151,7 @@ export function ItineraryClient({
             <div className="hm-item" key={leg.id}>
               <div className="hm-item__head">
                 <b>
-                  Day {leg.day} — {leg.port}
+                  Day {leg.day} — {leg.place}
                 </b>
                 <Badge tone={statusTone(leg.status)}>
                   {leg.status === "held" ? "Held" : leg.status === "revised" ? "Revised" : "Planned"}
@@ -198,7 +198,7 @@ export function ItineraryClient({
                         id: leg.id,
                         f: {
                           day: String(leg.day),
-                          port: leg.port,
+                          place: leg.place,
                           note: leg.note ?? "",
                           startsAt: leg.whenLocal,
                         },
@@ -301,7 +301,7 @@ export function ItineraryClient({
                 <span>{stop.lastReturn ? `LAST BACK ${stop.lastReturn}` : "NO LAST RETURN"}</span>
                 <span>
                   {stop.legId
-                    ? (legs.find((l) => l.id === stop.legId)?.port ?? "UNDER A LEG").toUpperCase()
+                    ? (legs.find((l) => l.id === stop.legId)?.place ?? "UNDER A LEG").toUpperCase()
                     : "UNFILED"}
                 </span>
               </div>
@@ -330,9 +330,9 @@ export function ItineraryClient({
                 legForm &&
                 run(
                   () =>
-                    saveLeg(voyageId, legForm.id, {
+                    saveLeg(episodeId, legForm.id, {
                       day: Number(legForm.f.day),
-                      port: legForm.f.port,
+                      place: legForm.f.place,
                       note: legForm.f.note,
                       startsAt: legForm.f.startsAt,
                     }),
@@ -366,8 +366,8 @@ export function ItineraryClient({
             </div>
             <Input
               label="Port"
-              value={legForm.f.port}
-              onChange={(e) => setLegForm({ ...legForm, f: { ...legForm.f, port: e.target.value } })}
+              value={legForm.f.place}
+              onChange={(e) => setLegForm({ ...legForm, f: { ...legForm.f, place: e.target.value } })}
             />
             <Textarea
               label="Note"
@@ -399,7 +399,7 @@ export function ItineraryClient({
                 stopForm &&
                 run(
                   () =>
-                    saveStop(voyageId, stopForm.id, {
+                    saveStop(episodeId, stopForm.id, {
                       position: Number(stopForm.f.position),
                       name: stopForm.f.name,
                       legId: stopForm.f.legId || null,
@@ -468,7 +468,7 @@ export function ItineraryClient({
         open={!!holdFor}
         onClose={() => setHoldFor(null)}
         width={560}
-        eyebrow={holdFor ? `Day ${holdFor.day} — ${holdFor.port}` : undefined}
+        eyebrow={holdFor ? `Day ${holdFor.day} — ${holdFor.place}` : undefined}
         title="Post a hold"
         footer={
           <>
@@ -544,7 +544,7 @@ export function ItineraryClient({
         }
       >
         <p className="hm-body">
-          Day {confirmLeg?.day} — {confirmLeg?.port} comes off the itinerary
+          Day {confirmLeg?.day} — {confirmLeg?.place} comes off the itinerary
           every pass-holder reads.
           {confirmLeg?.stops
             ? ` Its ${confirmLeg.stops} port-guide stop${confirmLeg.stops === 1 ? "" : "s"} go with it.`

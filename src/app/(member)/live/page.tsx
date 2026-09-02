@@ -7,8 +7,8 @@ import { logDateTime, logTime, price } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { DECK_FLAGS, DECK_STATES, type DeckState } from "@/lib/show";
 import type { Json } from "@/lib/supabase/types";
-import { getMember, type Voyage } from "../data";
-import { readLegs, readStops, type VoyageLeg, type VoyageStop } from "../itinerary/data";
+import { getMember, type Episode } from "../data";
+import { readLegs, readStops, type EpisodeLeg, type EpisodeStop } from "../itinerary/data";
 import { Countdown } from "./countdown";
 import { FrameUpload } from "./frame-upload";
 import { GalleyOrderForm, type GalleyItem } from "./galley";
@@ -16,7 +16,7 @@ import { GalleyOrderForm, type GalleyItem } from "./galley";
 export const metadata: Metadata = { title: SURFACES.gateway };
 
 /* — the standard sea-day legs, offsets in minutes from cast-off. The LAST
-   resort: the crew's posted legs come first, the voyage's itinerary jsonb
+   resort: the crew's posted legs come first, the episode's itinerary jsonb
    second, and this only when both are silent — a member should never read a
    stock schedule while the crew has posted a real one. — */
 const LEGS = [
@@ -43,7 +43,7 @@ type Leg = {
 /* Postgres `time` comes out as "11:00:00"; the seconds are noise here. */
 const hm = (t: string) => t.slice(0, 5);
 
-function stopLine(s: VoyageStop): string {
+function stopLine(s: EpisodeStop): string {
   return [
     s.name,
     s.tender_at ? `tender ${hm(s.tender_at)}` : null,
@@ -53,12 +53,12 @@ function stopLine(s: VoyageStop): string {
     .join(" · ");
 }
 
-function legsFromRows(legs: VoyageLeg[], stops: VoyageStop[], tz: string | null): Leg[] {
+function legsFromRows(legs: EpisodeLeg[], stops: EpisodeStop[], tz: string | null): Leg[] {
   const out: Leg[] = legs.map((leg) => ({
     key: leg.id,
     at: leg.starts_at ? Date.parse(leg.starts_at) : null,
     timeLabel: leg.starts_at ? logTime(leg.starts_at, tz) : `Day ${leg.day}`,
-    title: leg.port,
+    title: leg.place,
     detail: leg.note,
     /* The constraint guarantees all three fields on a held leg; the guard is
        only for a cached row from before it existed. */
@@ -170,7 +170,7 @@ function DeckStateStrip({ state }: { state: DeckState }) {
   );
 }
 
-/* Read a live condition off the voyage's conditions jsonb — never fake it. */
+/* Read a live condition off the episode's conditions jsonb — never fake it. */
 function condition(conditions: Json | null, keys: string[]): string | null {
   if (!conditions || typeof conditions !== "object" || Array.isArray(conditions)) return null;
   const rec = conditions as { [key: string]: Json | undefined };
@@ -195,13 +195,13 @@ export default async function LivePage() {
 
   const [liveRes, nextRes] = await Promise.all([
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("*")
       .eq("status", "live")
       .order("starts_at", { ascending: true })
       .limit(1),
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("*")
       .eq("status", "scheduled")
       .gte("starts_at", nowIso)
@@ -209,8 +209,8 @@ export default async function LivePage() {
       .limit(1),
   ]);
 
-  const live: Voyage | null = liveRes.data?.[0] ?? null;
-  const next: Voyage | null = nextRes.data?.[0] ?? null;
+  const live: Episode | null = liveRes.data?.[0] ?? null;
+  const next: Episode | null = nextRes.data?.[0] ?? null;
 
   if (!live) {
     return (
@@ -250,29 +250,29 @@ export default async function LivePage() {
   }
 
   /* Am I aboard? The galley only serves the crew on the water. Alongside it:
-     the voyage's posted legs, its stops, and the deck state.
+     the episode's posted legs, its stops, and the deck state.
 
      RLS reality, read before writing this (supabase/migrations/20260825065942):
-     voyage_legs and voyage_stops carry `for select … using (true)` for both
-     anon and authenticated — a member reads them directly. voyages.deck_state
-     (20260825070340) rides the public voyages select policy; its column
+     episode_legs and episode_stops carry `for select … using (true)` for both
+     anon and authenticated — a member reads them directly. episodes.deck_state
+     (20260825070340) rides the public episodes select policy; its column
      comment says guests are meant to read it. Nothing here needs a definer or
      a wider policy. moduleTables() only because the shared type file predates
      these tables and this column — see src/lib/module-tables.ts. */
   const db = moduleTables(supabase);
-  const [{ data: myRsvp }, legRows, stopRows, deckRes] = await Promise.all([
+  const [{ data: myPass }, legRows, stopRows, deckRes] = await Promise.all([
     supabase
-      .from("rsvps")
+      .from("passes")
       .select("id,status")
-      .eq("voyage_id", live.id)
+      .eq("episode_id", live.id)
       .eq("profile_id", user.id)
       .eq("status", "aboard")
       .maybeSingle(),
     readLegs(supabase, live.id),
     readStops(supabase, live.id),
-    db.from("voyages").select("deck_state").eq("id", live.id).maybeSingle(),
+    db.from("episodes").select("deck_state").eq("id", live.id).maybeSingle(),
   ]);
-  const aboard = !!myRsvp;
+  const aboard = !!myPass;
 
   /* Validated against the model rather than cast blind — the check constraint
      guarantees the four values, but a constraint is not a compiler. */
@@ -280,7 +280,7 @@ export default async function LivePage() {
   const deckState: DeckState | null =
     deckRaw && (DECK_STATES as readonly string[]).includes(deckRaw) ? (deckRaw as DeckState) : null;
 
-  /* Galley shelf + my orders for this voyage. */
+  /* Galley shelf + my orders for this episode. */
   const [itemsRes, ordersRes] = aboard
     ? await Promise.all([
         supabase.from("galley_items").select("*").eq("active", true).order("name"),
@@ -288,7 +288,7 @@ export default async function LivePage() {
           .from("galley_orders")
           .select("*")
           .eq("profile_id", user.id)
-          .eq("voyage_id", live.id)
+          .eq("episode_id", live.id)
           .neq("status", "cancelled")
           .order("created_at", { ascending: false }),
       ])
@@ -343,7 +343,7 @@ export default async function LivePage() {
      state of their own. */
   const currentIdx = legs.reduce((acc, l, i) => (l.at !== null && l.at <= nowMs ? i : acc), -1);
 
-  /* Live conditions off the voyage record — "—" when the log is silent. */
+  /* Live conditions off the episode record — "—" when the log is silent. */
   const cond = live.conditions;
   const wind = condition(cond, ["wind"]);
   const swell = condition(cond, ["swell"]);
@@ -419,7 +419,7 @@ export default async function LivePage() {
       {aboard && galleyItems.length > 0 ? (
         <div className="now-panel ls-rise-1">
           <h3>The galley</h3>
-          <GalleyOrderForm voyageId={live.id} items={galleyItems} />
+          <GalleyOrderForm episodeId={live.id} items={galleyItems} />
           {myOrders.length > 0 ? (
             <div style={{ marginTop: 18 }}>
               <span className="mbr-mono">MY ORDERS</span>
@@ -448,7 +448,7 @@ export default async function LivePage() {
           <p className="mbr-mono" style={{ marginBottom: 10 }}>
             FROM THE WATER · CLEARED BY THE BRIDGE BEFORE THE GALLERY
           </p>
-          <FrameUpload voyageId={live.id} />
+          <FrameUpload episodeId={live.id} />
         </div>
       ) : null}
 

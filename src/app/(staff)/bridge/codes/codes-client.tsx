@@ -38,10 +38,10 @@ function valueLine(kind: CodeKind, value: number): string {
 
 export function CodesClient({
   rows,
-  voyages,
+  episodes,
 }: {
   rows: CodeRow[];
-  voyages: Array<{ id: string; title: string }>;
+  episodes: Array<{ id: string; title: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -52,7 +52,7 @@ export function CodesClient({
   const [code, setCode] = React.useState("");
   const [kind, setKind] = React.useState<CodeKind>("percent");
   const [value, setValue] = React.useState("10");
-  const [voyageId, setVoyageId] = React.useState("");
+  const [episodeId, setEpisodeId] = React.useState("");
   const [maxUses, setMaxUses] = React.useState("1");
   const [expires, setExpires] = React.useState("");
   const [note, setNote] = React.useState("");
@@ -205,7 +205,7 @@ export function CodesClient({
                     kind === "amount"
                       ? Math.round((Number(value) || 0) * 100)
                       : Number(value) || 0,
-                  voyageId,
+                  episodeId,
                   maxUses: Number(maxUses) || 1,
                   expiresAt: expires,
                   note,
@@ -257,11 +257,11 @@ export function CodesClient({
           </div>
           <Select
             label="Scope"
-            value={voyageId}
-            onChange={(e) => setVoyageId(e.target.value)}
+            value={episodeId}
+            onChange={(e) => setEpisodeId(e.target.value)}
             options={[
               { value: "", label: "Any episode" },
-              ...voyages.map((v) => ({ value: v.id, label: v.title })),
+              ...episodes.map((v) => ({ value: v.id, label: v.title })),
             ]}
           />
           <div className="hm-form__row">

@@ -88,12 +88,12 @@ export async function setBoundary(topic: string, stance: Stance): Promise<Vettin
   return { ok: true };
 }
 
-/* Taking a seat. This is a plain insert into `rsvps` and that is the point: the
+/* Taking a seat. This is a plain insert into `passes` and that is the point: the
    ratio gate and the vetting gate are triggers on that table, so the same rules
    apply to this call, to a staff booking, and to a curl request against
    PostgREST. There is no path that reaches the manifest without passing them. */
 export async function takeASeat(
-  voyageId: string,
+  episodeId: string,
   segment: string,
   partnerName?: string
 ): Promise<VettingResult> {
@@ -111,8 +111,8 @@ export async function takeASeat(
   }
 
   const { data: seat, error } = await db
-    .from("rsvps")
-    .insert({ voyage_id: voyageId, profile_id: user.id, status: "aboard", segment })
+    .from("passes")
+    .insert({ episode_id: episodeId, profile_id: user.id, status: "aboard", segment })
     .select("id")
     .single();
   if (error) {
@@ -133,14 +133,14 @@ export async function takeASeat(
     };
   }
 
-  /* The second head rides the guest machinery — its own rsvp_guests row, kind
+  /* The second head rides the guest machinery — its own pass_guests row, kind
      'partner', which the manifest cuts a boarding code and a sign token for.
      It never counts as a guest and guest-name edits never prune it; the
      database refuses a partner on a non-couple pass, and that refusal is
      passed through in its own words. */
   if (segment === "couple" && seat) {
     const { error: headError } = await supabase
-      .from("rsvp_guests")
+      .from("pass_guests")
       .insert({ rsvp_id: seat.id, name: partner, kind: "partner" });
     if (headError) {
       revalidatePath("/vetting");
@@ -164,7 +164,7 @@ export async function takeASeat(
 /* A full segment offers the waitlist, never an upsell to another segment. That
    rule is the reason this function takes the segment the member asked for and
    has no parameter that could carry a different one. */
-export async function joinTheLine(voyageId: string, segment: string): Promise<VettingResult> {
+export async function joinTheLine(episodeId: string, segment: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
   if (!isSegment(segment)) return { error: "Pick a seat first." };
@@ -174,7 +174,7 @@ export async function joinTheLine(voyageId: string, segment: string): Promise<Ve
      refreshing the same full episode would both compute. */
   const { error } = await db
     .from("waitlist_entries")
-    .insert({ voyage_id: voyageId, profile_id: user.id, segment: segment as Segment });
+    .insert({ episode_id: episodeId, profile_id: user.id, segment: segment as Segment });
   if (error) {
     if (/duplicate|already exists/i.test(error.message ?? "")) {
       return { error: "You are already in this line." };
@@ -228,14 +228,14 @@ export async function leaveTheLine(entryId: string): Promise<VettingResult> {
    The RPC is staff-only and checks the room exists before it promises it, so
    the button cannot write to somebody once and then refuse them at the gate six
    hours later. */
-export async function offerTheNextPlace(voyageId: string, segment: string): Promise<VettingResult> {
+export async function offerTheNextPlace(episodeId: string, segment: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
   const { data: staff } = await supabase.rpc("is_staff");
   if (!staff) return { error: "Offering the next place is the Bridge's to do." };
   if (!isSegment(segment)) return { error: "Pick a segment first." };
 
-  const { error } = await db.rpc("offer_the_next_place", { p_voyage: voyageId, p_segment: segment });
+  const { error } = await db.rpc("offer_the_next_place", { p_episode: episodeId, p_segment: segment });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/vetting");
   /* The Bridge's Composition screen calls this same function against an episode

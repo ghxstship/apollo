@@ -45,11 +45,11 @@ const CLASS_OPTIONS = [
   { value: "shore", label: SETTING_LABEL.shore },
 ];
 
-function conditionLine(c: RuleConditions, harborLabel: (slug: string) => string): string {
+function conditionLine(c: RuleConditions, cityLabel: (slug: string) => string): string {
   const parts: string[] = [];
   if (c.tier) parts.push(c.tier.toUpperCase());
-  if (c.harbor) parts.push(harborLabel(c.harbor).toUpperCase());
-  if (c.class) parts.push((SETTING_LABEL[c.class] ?? SETTING_LABEL.shore).toUpperCase());
+  if (c.city) parts.push(cityLabel(c.city).toUpperCase());
+  if (c.setting) parts.push((SETTING_LABEL[c.setting] ?? SETTING_LABEL.shore).toUpperCase());
   return parts.length ? parts.join(" · ") : "EVERYONE";
 }
 
@@ -61,11 +61,11 @@ function actionLine(a: RuleAction): string {
 
 export function AutomationsClient({
   rows,
-  harbors,
+  cities,
   smsTemplates,
 }: {
   rows: RuleRow[];
-  harbors: Array<{ slug: string; label: string }>;
+  cities: Array<{ slug: string; label: string }>;
   /* Texts are template-only at the provider; the rule picks from what is
      registered rather than typing a code that will bounce on send. */
   smsTemplates: string[];
@@ -77,14 +77,14 @@ export function AutomationsClient({
   const [name, setName] = React.useState("");
   const [trigger, setTrigger] = React.useState<TriggerEvent>("pass_confirmed");
   const [tier, setTier] = React.useState("");
-  const [harbor, setHarbor] = React.useState("");
+  const [city, setCity] = React.useState("");
   const [klass, setKlass] = React.useState("");
   const [actionKind, setActionKind] = React.useState<"notify" | "email" | "sms">("notify");
   const [title, setTitle] = React.useState("");
   const [body, setBody] = React.useState("");
   const [template, setTemplate] = React.useState("");
 
-  const harborLabel = (slug: string) => harbors.find((h) => h.slug === slug)?.label ?? slug;
+  const cityLabel = (slug: string) => cities.find((h) => h.slug === slug)?.label ?? slug;
 
   return (
     <>
@@ -128,7 +128,7 @@ export function AutomationsClient({
             <div className="hm-item__meta">
               <span>WHEN {TRIGGER_LABEL[r.trigger].toUpperCase()}</span>
               <span>·</span>
-              <span>IF {conditionLine(r.conditions, harborLabel)}</span>
+              <span>IF {conditionLine(r.conditions, cityLabel)}</span>
               <span>·</span>
               <span>LAST RUN {r.lastRunAt ? logDateTime(r.lastRunAt, CLUB_ZONE).toUpperCase() : "NEVER"}</span>
             </div>
@@ -171,8 +171,8 @@ export function AutomationsClient({
                   trigger,
                   conditions: {
                     tier: tier || undefined,
-                    harbor: harbor || undefined,
-                    class: klass || undefined,
+                    city: city || undefined,
+                    setting: klass || undefined,
                   },
                   action,
                 };
@@ -220,11 +220,11 @@ export function AutomationsClient({
             />
             <Select
               label={PLACE.market}
-              value={harbor}
-              onChange={(e) => setHarbor(e.target.value)}
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
               options={[
                 { value: "", label: "Any city" },
-                ...harbors.map((h) => ({ value: h.slug, label: h.label })),
+                ...cities.map((h) => ({ value: h.slug, label: h.label })),
               ]}
             />
           </div>

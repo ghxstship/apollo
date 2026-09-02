@@ -18,18 +18,18 @@ import {
 export function ProfileForm({
   fullName,
   handle,
-  homeHarbor,
+  homeCity,
   avatarTone,
-  harbors,
+  cities,
   bio,
   interests,
   inDirectory,
 }: {
   fullName: string;
   handle: string;
-  homeHarbor: string;
+  homeCity: string;
   avatarTone: string;
-  harbors: Array<{ value: string; label: string }>;
+  cities: Array<{ value: string; label: string }>;
   bio: string;
   interests: string[];
   inDirectory: boolean;
@@ -54,9 +54,9 @@ export function ProfileForm({
         <Input label="Handle" name="handle" defaultValue={handle} placeholder="how the crew hails you" />
         <Select
           label={`Home ${PLACE.market.toLowerCase()}`}
-          name="home_harbor"
-          defaultValue={homeHarbor}
-          options={harbors}
+          name="home_city"
+          defaultValue={homeCity}
+          options={cities}
           placeholder={`Choose a ${PLACE.market.toLowerCase()}`}
         />
         <Select

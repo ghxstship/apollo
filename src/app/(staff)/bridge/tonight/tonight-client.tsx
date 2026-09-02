@@ -18,11 +18,11 @@ export type TableRow = {
 };
 
 export function TablesClient({
-  voyageId,
+  episodeId,
   options,
   rows,
 }: {
-  voyageId: string;
+  episodeId: string;
   options: Array<{ value: string; label: string }>;
   rows: TableRow[];
 }) {
@@ -99,8 +99,8 @@ export function TablesClient({
         <Select
           label="Night"
           options={options}
-          value={voyageId}
-          onChange={(e) => router.replace(`/bridge/tonight?voyage=${e.target.value}`)}
+          value={episodeId}
+          onChange={(e) => router.replace(`/bridge/tonight?episode=${e.target.value}`)}
           style={{ maxWidth: 420 }}
         />
       </div>
@@ -149,7 +149,7 @@ export function TablesClient({
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
-                  const res = await createTable(voyageId, Number(number), Number(seats));
+                  const res = await createTable(episodeId, Number(number), Number(seats));
                   if (res.error) {
                     show({ msg: res.error, tone: "danger" });
                     return;

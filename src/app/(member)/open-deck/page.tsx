@@ -3,7 +3,7 @@ import { SURFACES } from "@/lib/brand";
 import { memberMark } from "@/lib/membership";
 import { getMember, type DirectoryMember } from "../data";
 import { relTime } from "../relative";
-import { Composer, FeedList, type FeedPost, type VoyageOption } from "./feed";
+import { Composer, FeedList, type FeedPost, type EpisodeOption } from "./feed";
 import { OpenDeckRealtime } from "./realtime";
 
 export const metadata: Metadata = { title: SURFACES.openDeck };
@@ -26,14 +26,14 @@ export default async function OpenDeckPage() {
 
   const [postsRes, taggableRes] = await Promise.all([
     supabase
-      .from("wardroom_posts")
-      .select("id,author_id,author_name,body,voyage_id,created_at")
+      .from("open_deck_posts")
+      .select("id,author_id,author_name,body,episode_id,created_at")
       .order("created_at", { ascending: false })
       .limit(PAGE_SIZE),
-    /* Taggable voyages for the composer: live now, or still ahead. Filtered
+    /* Taggable episodes for the composer: live now, or still ahead. Filtered
        at the database rather than after reading every episode ever raised. */
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("id,title,starts_at")
       .or(`status.eq.live,and(status.in.(scheduled,weather_hold),starts_at.gte.${nowIso})`)
       .order("starts_at", { ascending: true })
@@ -42,19 +42,19 @@ export default async function OpenDeckPage() {
 
   const posts = postsRes.data ?? [];
   const postIds = posts.map((p) => p.id);
-  const taggable: VoyageOption[] = (taggableRes.data ?? []).map((v) => ({ id: v.id, title: v.title }));
+  const taggable: EpisodeOption[] = (taggableRes.data ?? []).map((v) => ({ id: v.id, title: v.title }));
 
   /* Hails, comments and episode titles only for the posts on the page. */
-  const postVoyageIds = Array.from(
-    new Set(posts.map((p) => p.voyage_id).filter((id): id is string => !!id))
+  const postEpisodeIds = Array.from(
+    new Set(posts.map((p) => p.episode_id).filter((id): id is string => !!id))
   );
-  const [hailsRes, commentsRes, voyagesRes] = await Promise.all([
+  const [hailsRes, commentsRes, episodesRes] = await Promise.all([
     postIds.length
-      ? supabase.from("wardroom_hails").select("post_id,profile_id").in("post_id", postIds)
+      ? supabase.from("open_deck_hails").select("post_id,profile_id").in("post_id", postIds)
       : Promise.resolve({ data: [] as Array<{ post_id: string; profile_id: string }> }),
     postIds.length
       ? supabase
-          .from("wardroom_comments")
+          .from("open_deck_comments")
           .select("id,post_id,author_id,author_name,body")
           .in("post_id", postIds)
           .order("created_at", { ascending: true })
@@ -67,14 +67,14 @@ export default async function OpenDeckPage() {
             body: string;
           }>,
         }),
-    postVoyageIds.length
-      ? supabase.from("voyages").select("id,title").in("id", postVoyageIds)
+    postEpisodeIds.length
+      ? supabase.from("episodes").select("id,title").in("id", postEpisodeIds)
       : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
   ]);
 
   const hails = hailsRes.data ?? [];
   const comments = commentsRes.data ?? [];
-  const voyageTitles = new Map((voyagesRes.data ?? []).map((v) => [v.id, v.title]));
+  const episodeTitles = new Map((episodesRes.data ?? []).map((v) => [v.id, v.title]));
 
   /* Resolve author profiles in one pass. */
   const authorIds = Array.from(
@@ -126,8 +126,8 @@ export default async function OpenDeckPage() {
       tone: toneOf(author),
       meta,
       body: p.body,
-      voyageId: p.voyage_id,
-      voyageTitle: p.voyage_id ? voyageTitles.get(p.voyage_id) ?? null : null,
+      episodeId: p.episode_id,
+      voyageTitle: p.episode_id ? episodeTitles.get(p.episode_id) ?? null : null,
       hails: postHails.length,
       myHail: postHails.some((h) => h.profile_id === user.id),
       mine: p.author_id === user.id,
@@ -167,7 +167,7 @@ export default async function OpenDeckPage() {
       <Composer
         authorName={profile?.full_name ?? "You"}
         tone={toneOf(profile)}
-        voyages={taggable}
+        episodes={taggable}
         onHold={onHold}
       />
       <FeedList posts={feed} />

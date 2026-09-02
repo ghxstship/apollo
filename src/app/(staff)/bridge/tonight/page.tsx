@@ -19,7 +19,7 @@ export const metadata: Metadata = { title: "Tonight" };
 export default async function TablesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ voyage?: string }>;
+  searchParams: Promise<{ episode?: string }>;
 }) {
   const { supabase } = await getOperator();
   const sp = await searchParams;
@@ -28,9 +28,9 @@ export default async function TablesPage({
      up after it. Shore nights only — a table is laid in a room. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
   const nightsRes = await supabase
-    .from("voyages")
-    .select("id, title, starts_at, time_zone, status, class")
-    .eq("class", "shore")
+    .from("episodes")
+    .select("id, title, starts_at, time_zone, status, setting")
+    .eq("setting", "shore")
     .in("status", ["scheduled", "live"])
     .gte("starts_at", cutoff)
     .order("starts_at", { ascending: true });
@@ -51,12 +51,12 @@ export default async function TablesPage({
     );
   }
 
-  const night = nights.find((n) => n.id === sp.voyage) ?? nights[0];
+  const night = nights.find((n) => n.id === sp.episode) ?? nights[0];
 
   const tablesRes = await supabase
-    .from("dating_tables")
+    .from("tables")
     .select("*")
-    .eq("voyage_id", night.id)
+    .eq("episode_id", night.id)
     .order("number", { ascending: true });
   const tables = must(tablesRes);
 
@@ -107,7 +107,7 @@ export default async function TablesPage({
         {rows.length === 1 ? "table" : "tables"} · {filled}/{laid} seats taken
       </p>
       <TablesClient
-        voyageId={night.id}
+        episodeId={night.id}
         options={nights.map((n) => ({
           value: n.id,
           label: `${logDate(n.starts_at, n.time_zone)} · ${logTime(n.starts_at, n.time_zone)} — ${n.title}`,

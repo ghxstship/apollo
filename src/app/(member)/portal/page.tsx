@@ -37,9 +37,9 @@ export default async function PortalPage({
 
   const [balanceRes, ledgerRes, rewardsRes, redemptionsRes, inviteRes, accountRes, accountBalRes, leagueRes] =
     await Promise.all([
-      supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+      supabase.from("knots_balance").select("*").eq("profile_id", user.id).maybeSingle(),
       supabase
-        .from("fathoms_ledger")
+        .from("knots_ledger")
         .select("*")
         .eq("profile_id", user.id)
         .order("created_at", { ascending: false })

@@ -5,13 +5,13 @@
    whole schema and two modules are writing to this database at once.
 
    The load-bearing fact about this module is that its actor is the PASS, not the
-   person. `rsvps` is unique on (voyage, profile) and a couple is one pass, so
+   person. `passes` is unique on (episode, profile) and a couple is one pass, so
    "couples plot course as one pin and appear as one anchor" is a primary key
    rather than a filter a future surface can forget. Every id in this file that
    names a participant is an rsvp id. */
 
 export interface RadarClock {
-  voyage_id: string;
+  episode_id: string;
   opens_at: string;
   locks_at: string;
   anchors_unlock_at: string;
@@ -21,7 +21,7 @@ export interface RadarClock {
 }
 
 export interface RadarPickRow {
-  voyage_id: string;
+  episode_id: string;
   picker_rsvp: string;
   picked_rsvp: string;
   created_at: string;
@@ -29,7 +29,7 @@ export interface RadarPickRow {
 
 export interface SharedAnchorRow {
   id: string;
-  voyage_id: string;
+  episode_id: string;
   rsvp_a: string;
   rsvp_b: string;
   unlocked_at: string | null;
@@ -41,7 +41,7 @@ export interface SharedAnchorRow {
    makes that structural: there is nowhere here to put an age even if a surface
    wanted one. `couple` is what turns two people into one pin. */
 export interface RadarPin {
-  rsvpId: string;
+  passId: string;
   name: string;
   couple: boolean;
   plotted: boolean;

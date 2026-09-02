@@ -140,19 +140,21 @@ for (const doc of documents) {
   }
 
   const renderings = [];
-  for (const cls of CONTEXTS) {
+  for (const setting of CONTEXTS) {
     const body = await post("/rest/v1/rpc/render_document", token, {
       p_document_version_id: versionId,
-      p_context: { class: cls },
+      /* The wire key stays `class`: document_clauses.condition is keyed that
+         way and render_document matches by containment. */
+      p_context: { class: setting },
     });
     if (!body) continue;
-    if (typeof body !== "string") die(`render_document(${doc.code}, ${cls}) returned ${typeof body}`);
+    if (typeof body !== "string") die(`render_document(${doc.code}, ${setting}) returned ${typeof body}`);
     if (renderings.some((r) => r.body === body)) continue;
 
     /* The same containment test the renderer applies, so the manifest lists the
        clauses this rendering actually holds rather than every candidate. */
     const clauses = composed
-      .filter((row) => Object.entries(row.condition ?? {}).every(([k, v]) => k === "class" && v === cls))
+      .filter((row) => Object.entries(row.condition ?? {}).every(([k, v]) => k === "class" && v === setting))
       .map((row) => ({
         clause_code: row.clause_versions?.clause_code ?? "",
         title: row.clause_versions?.clauses?.title ?? "",
@@ -162,7 +164,7 @@ for (const doc of documents) {
         condition: row.condition ?? {},
       }));
 
-    renderings.push({ class: cls, body, clauses });
+    renderings.push({ setting, body, clauses });
   }
   if (renderings.length === 0) { console.warn(`  skip ${doc.code} — renders empty`); continue; }
 

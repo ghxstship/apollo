@@ -44,41 +44,41 @@ const SECTIONS: Array<[string, string]> = [
 export default async function YouPage() {
   const { supabase, user, profile } = await getMember();
   const nowIso = new Date().toISOString();
-  const [{ data: harbors }, { data: account }, { data: proposals }, { data: formats }, { data: aboard }] =
+  const [{ data: cities }, { data: account }, { data: proposals }, { data: formats }, { data: aboard }] =
     await Promise.all([
-      supabase.from("harbors").select("*").order("position", { ascending: true }),
+      supabase.from("cities").select("*").order("position", { ascending: true }),
       supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
       /* RLS narrows this to the member's own rows; newest raised, first read. */
       supabase
         .from("member_event_proposals")
         .select("*")
         .order("created_at", { ascending: false }),
-      /* The two shapes a member may raise. activity_formats is another
+      /* The two shapes a member may raise. series is another
          module's table, reached through the moduleTables seam. */
       moduleTables(supabase)
-        .from("activity_formats")
+        .from("series")
         .select("slug, label")
         .in("slug", ["gathering", "mixer"])
         .order("position"),
       /* Every pass this member holds. Which of them departing would release is
          decided below against the episode's hour — RLS narrows this to their
          own rows already. */
-      supabase.from("rsvps").select("id, voyage_id").eq("profile_id", user.id).eq("status", "aboard"),
+      supabase.from("passes").select("id, episode_id").eq("profile_id", user.id).eq("status", "aboard"),
     ]);
 
   /* Aboard passes on episodes still ahead: the ones set_own_standing('departed')
      releases with full credit. Listed in the depart dialog before the member
      confirms, so the manifest does not empty behind their back. */
-  const aboardVoyageIds = (aboard ?? []).map((r) => r.voyage_id);
-  const { data: aheadVoyages } = aboardVoyageIds.length
+  const aboardEpisodeIds = (aboard ?? []).map((r) => r.episode_id);
+  const { data: aheadEpisodes } = aboardEpisodeIds.length
     ? await supabase
-        .from("voyages")
+        .from("episodes")
         .select("id, title, starts_at, time_zone")
-        .in("id", aboardVoyageIds)
+        .in("id", aboardEpisodeIds)
         .gt("starts_at", nowIso)
         .order("starts_at", { ascending: true })
     : { data: [] };
-  const heldPasses: HeldPass[] = (aheadVoyages ?? []).map((v) => ({
+  const heldPasses: HeldPass[] = (aheadEpisodes ?? []).map((v) => ({
     id: v.id,
     title: v.title,
     when: logDateTime(v.starts_at, v.time_zone),
@@ -92,13 +92,13 @@ export default async function YouPage() {
      on the card, with its hour on the harbour's clock, so "On the calendar"
      points at something. */
   const linkedIds = (proposals ?? [])
-    .map((p) => p.voyage_id)
+    .map((p) => p.episode_id)
     .filter((id): id is string => !!id);
-  const { data: linkedVoyages } = linkedIds.length
-    ? await supabase.from("voyages").select("id, title, slug, starts_at, time_zone").in("id", linkedIds)
+  const { data: linkedEpisodes } = linkedIds.length
+    ? await supabase.from("episodes").select("id, title, slug, starts_at, time_zone").in("id", linkedIds)
     : { data: [] };
   const sailingById = new Map(
-    (linkedVoyages ?? []).map((v) => [
+    (linkedEpisodes ?? []).map((v) => [
       v.id,
       { title: v.title, slug: v.slug, when: logDateTime(v.starts_at, v.time_zone) },
     ])
@@ -107,11 +107,11 @@ export default async function YouPage() {
   const proposalCards: ProposalCard[] = (proposals ?? []).map((p) => ({
     id: p.id,
     title: p.title,
-    formatLabel: p.format ? (formatLabels.get(p.format) ?? p.format) : null,
+    seriesLabel: p.series ? (formatLabels.get(p.series) ?? p.series) : null,
     proposedFor: p.proposed_for,
     status: p.status,
     decisionNote: p.decision_note,
-    sailing: p.voyage_id ? (sailingById.get(p.voyage_id) ?? null) : null,
+    sailing: p.episode_id ? (sailingById.get(p.episode_id) ?? null) : null,
   }));
 
   const tier = profile?.tier ?? "regional";
@@ -194,9 +194,9 @@ export default async function YouPage() {
           <ProfileForm
             fullName={profile?.full_name ?? ""}
             handle={profile?.handle ?? ""}
-            homeHarbor={profile?.home_harbor ?? ""}
+            homeCity={profile?.home_city ?? ""}
             avatarTone={profile?.avatar_tone ?? "ink"}
-            harbors={(harbors ?? []).map((h) => ({ value: h.id, label: h.name }))}
+            cities={(cities ?? []).map((h) => ({ value: h.id, label: h.name }))}
             bio={profile?.bio ?? ""}
             interests={profile?.interests ?? []}
             inDirectory={profile?.in_directory ?? true}

@@ -7,7 +7,7 @@ import {
   voyageSummary,
   voyageWindow, icsStatus } from "../../ics";
 
-/* GET /api/calendar/voyage/[slug] — one public episode, no sign-in.
+/* GET /api/calendar/episode/[slug] — one public episode, no sign-in.
    The path segment is legacy plumbing, like the table it reads. The same row
    the episode page already shows the shore, in a form a calendar will hold
    onto. */
@@ -22,17 +22,17 @@ export async function GET(
 ) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: voyage } = await supabase
-    .from("voyages")
+  const { data: episode } = await supabase
+    .from("episodes")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
-  if (!voyage) return new Response("Not found", { status: 404 });
+  if (!episode) return new Response("Not found", { status: 404 });
 
-  const { start, end } = voyageWindow(voyage);
-  const url = `${SITE_URL}/episodes/${voyage.slug}`;
+  const { start, end } = voyageWindow(episode);
+  const url = `${SITE_URL}/episodes/${episode.slug}`;
   const description = [
-    voyage.blurb ?? "",
+    episode.blurb ?? "",
     "Boards thirty minutes before cast off.",
     "Weather holds are called by 18:00 the night before.",
     url,
@@ -40,19 +40,19 @@ export async function GET(
     .filter(Boolean)
     .join("\n");
 
-  const body = buildCalendar(voyage.title, [
+  const body = buildCalendar(episode.title, [
     {
-      uid: `voyage-${voyage.id}@${SITE_DOMAIN}`,
+      uid: `episode-${episode.id}@${SITE_DOMAIN}`,
       start,
       end,
-      summary: voyageSummary(voyage),
-      location: voyageLocation(voyage),
+      summary: voyageSummary(episode),
+      location: voyageLocation(episode),
       description,
       url,
-      alarm: `${voyage.title} — tomorrow. Boards thirty minutes before cast off.`,
-      status: icsStatus(voyage.status),
+      alarm: `${episode.title} — tomorrow. Boards thirty minutes before cast off.`,
+      status: icsStatus(episode.status),
     },
   ]);
 
-  return icsResponse(body, `${voyage.slug}.ics`);
+  return icsResponse(body, `${episode.slug}.ics`);
 }

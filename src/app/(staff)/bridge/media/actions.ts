@@ -12,7 +12,7 @@ function done(): ActionResult {
 export async function approveMedia(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase.from("voyage_media").update({ approved: true }).eq("id", id);
+  const { error } = await supabase.from("episode_media").update({ approved: true }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
 }
@@ -20,7 +20,7 @@ export async function approveMedia(id: string): Promise<ActionResult> {
 export async function unapproveMedia(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase.from("voyage_media").update({ approved: false }).eq("id", id);
+  const { error } = await supabase.from("episode_media").update({ approved: false }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
 }
@@ -35,20 +35,20 @@ export async function removeMedia(id: string): Promise<ActionResult> {
   if (!staffId) return { error: ERR_STAFF };
 
   const { data: frame } = await supabase
-    .from("voyage_media")
+    .from("episode_media")
     .select("storage_path")
     .eq("id", id)
     .maybeSingle();
 
   if (frame?.storage_path) {
     const { error: fileError } = await supabase.storage
-      .from("voyage-media")
+      .from("episode-media")
       .remove([frame.storage_path]);
     /* A file that was never uploaded is not a reason to keep the row. */
     if (fileError && !/not found/i.test(fileError.message)) return { error: ERR_LAND };
   }
 
-  const { error } = await supabase.from("voyage_media").delete().eq("id", id);
+  const { error } = await supabase.from("episode_media").delete().eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
 }

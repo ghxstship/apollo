@@ -13,7 +13,7 @@ import {
   readLegs,
   readMyOption,
   readStops,
-  type VoyageLeg,
+  type EpisodeLeg,
 } from "./data";
 import "./charter.css";
 
@@ -24,7 +24,7 @@ export const metadata: Metadata = { title: "Itinerary" };
 
    The manifest is deliberately absent from this page. The charter kit draws one
    with surnames and three aboard states, and apollo already has it twice over:
-   voyage_manifest() for members and the Bridge's roster for crew, both of which
+   episode_manifest() for members and the Bridge's roster for crew, both of which
    honour a member's right to be off it — a right the kit's manifest does not
    have. Rebuilding the kit's version here would be a third manifest and the
    only one of the three that ignores the opt-out. */
@@ -36,25 +36,25 @@ export default async function ItineraryPage() {
   /* The episode in front of you. One at a time, because the itinerary
      one-pager, the cabin card and the port guide are all artefacts OF an
      episode — a list of them is a manifest, which is a different page. */
-  /* `voyages!inner(...)` was ambiguous and the whole module went dark.
-     radar_picks arrived carrying picker_rsvp → rsvps, picked_rsvp → rsvps AND
-     voyage_id → voyages, which manufactures two more rsvps↔voyages paths
+  /* `episodes!inner(...)` was ambiguous and the whole module went dark.
+     radar_picks arrived carrying picker_rsvp → passes, picked_rsvp → passes AND
+     episode_id → episodes, which manufactures two more passes↔episodes paths
      alongside the real one. PostgREST refuses an embed it cannot resolve —
      PGRST201, "more than one relationship was found" — so this returned
      nothing and the page fell to its "No episode ahead" empty state for every
      member with a booking. Naming the constraint pins it to the pass's own
-     voyage and no future foreign key can make it ambiguous again.
+     episode and no future foreign key can make it ambiguous again.
 
      `error` is destructured now too. It was not, so a refused query was
      indistinguishable from an empty result: nothing reached the browser, the
      console, the server log, or the member. Silent is worse than ugly. */
   const { data: booked, error: bookedError } = await db
-    .from("rsvps")
-    .select("id,voyage_id,cabin_id,boarding_code,status,voyages!rsvps_voyage_id_fkey!inner(id,slug,title,starts_at,ends_at,status,time_zone,muster,distance_nm)")
+    .from("passes")
+    .select("id,episode_id,cabin_id,boarding_code,status,episodes!rsvps_voyage_id_fkey!inner(id,slug,title,starts_at,ends_at,status,time_zone,muster,distance_nm)")
     .eq("profile_id", user.id)
     .eq("status", "aboard")
-    .gte("voyages.starts_at", new Date().toISOString())
-    .order("starts_at", { foreignTable: "voyages", ascending: true })
+    .gte("episodes.starts_at", new Date().toISOString())
+    .order("starts_at", { foreignTable: "episodes", ascending: true })
     .limit(1);
 
   /* A refused query is not an empty manifest, and must never render as one. */
@@ -67,10 +67,10 @@ export default async function ItineraryPage() {
   const row = (booked ?? [])[0] as unknown as
     | {
         id: string;
-        voyage_id: string;
+        episode_id: string;
         cabin_id: string | null;
         boarding_code: string | null;
-        voyages: {
+        episodes: {
           id: string; slug: string; title: string; starts_at: string;
           ends_at: string | null; status: string; time_zone: string;
           muster: string | null; distance_nm: number | null;
@@ -93,7 +93,7 @@ export default async function ItineraryPage() {
     );
   }
 
-  const v = row.voyages;
+  const v = row.episodes;
   const [legs, stops, places, option, cabin] = await Promise.all([
     readLegs(supabase, v.id),
     readStops(supabase, v.id),
@@ -168,7 +168,7 @@ export default async function ItineraryPage() {
               </div>
               <div className="cht-card__facts">
                 <span>
-                  Sleeps<b>{cabin.berths}</b>
+                  Sleeps<b>{cabin.sleeps}</b>
                 </span>
                 <span>
                   Muster<b>{cabin.muster ?? v.muster ?? "Posted on board"}</b>
@@ -194,7 +194,7 @@ export default async function ItineraryPage() {
         <section className="mbr-sec" aria-labelledby="cht-plan">
           <span className="mbr-eyebrow" id="cht-plan">The cabin plan</span>
           <CabinPlan
-            voyageId={v.id}
+            episodeId={v.id}
             cabins={cabinRows}
             option={
               option
@@ -241,13 +241,13 @@ export default async function ItineraryPage() {
   );
 }
 
-function Leg({ leg, zone }: { leg: VoyageLeg; zone: string }) {
+function Leg({ leg, zone }: { leg: EpisodeLeg; zone: string }) {
   return (
     <div className="cht-leg">
       <span className="cht-leg__day">Day {String(leg.day).padStart(2, "0")}</span>
       <div className="cht-leg__body">
         <span className="cht-leg__port">
-          <b>{leg.port}</b>
+          <b>{leg.place}</b>
           {leg.note ? ` — ${leg.note}` : ""}
           {leg.starts_at ? ` — ${logTime(leg.starts_at, zone)}` : ""}
         </span>

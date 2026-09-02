@@ -24,7 +24,7 @@ export default async function ReferralsPage() {
   const [invitesRes, rollRes, knotsRes] = await Promise.all([
     supabase.from("invites").select("*").order("created_at", { ascending: false }),
     supabase.from("member_roll").select("email, invite_code, created_at").not("invite_code", "is", null),
-    supabase.from("fathoms_ledger").select("profile_id, delta, reason").ilike("reason", "Referral signature%"),
+    supabase.from("knots_ledger").select("profile_id, delta, reason").ilike("reason", "Referral signature%"),
   ]);
 
   const invites = must(invitesRes);

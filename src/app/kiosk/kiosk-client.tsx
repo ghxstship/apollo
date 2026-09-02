@@ -23,8 +23,8 @@ import { gangwayCheckIn, gangwayFlush, type ScanResult } from "../(staff)/bridge
 /* One pass the kiosk can answer for with no signal. Held in memory only —
    see the note in page.tsx. */
 export type KioskPass = {
-  rsvpId: string;
-  voyageId: string;
+  passId: string;
+  episodeId: string;
   code: string;
   name: string;
   waiverSigned: boolean;
@@ -37,8 +37,8 @@ export type KioskPass = {
    console reads them (device-storage for the key, gangwayFlush for what a
    flush consumes). */
 type QueueItem = {
-  rsvpId: string;
-  voyageId: string;
+  passId: string;
+  episodeId: string;
   code: string;
   at: string;
   /* How many times the database has refused this for a reason we could not
@@ -104,19 +104,19 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
      own idiom. */
   React.useEffect(() => {
     const raf = requestAnimationFrame(() => {
-      const marks = new Map(readQueue().map((item) => [item.rsvpId, item.at]));
+      const marks = new Map(readQueue().map((item) => [item.passId, item.at]));
       setQueuedCount(marks.size);
       setPasses(
         serverPasses.map((p) =>
-          !p.checkedInAt && marks.has(p.rsvpId) ? { ...p, checkedInAt: marks.get(p.rsvpId)! } : p
+          !p.checkedInAt && marks.has(p.passId) ? { ...p, checkedInAt: marks.get(p.passId)! } : p
         )
       );
     });
     return () => cancelAnimationFrame(raf);
   }, [serverPasses]);
 
-  const markAboard = React.useCallback((rsvpId: string, at: string) => {
-    setPasses((prev) => prev.map((p) => (p.rsvpId === rsvpId ? { ...p, checkedInAt: at } : p)));
+  const markAboard = React.useCallback((passId: string, at: string) => {
+    setPasses((prev) => prev.map((p) => (p.passId === passId ? { ...p, checkedInAt: at } : p)));
   }, []);
 
   /* The gangway's flush, verbatim in discipline: iterate the ids present at
@@ -128,24 +128,24 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
     if (flushing.current) return;
     flushing.current = true;
     try {
-      const startingIds = readQueue().map((x) => x.rsvpId);
-      for (const rsvpId of startingIds) {
-        const item = readQueue().find((x) => x.rsvpId === rsvpId);
+      const startingIds = readQueue().map((x) => x.passId);
+      for (const passId of startingIds) {
+        const item = readQueue().find((x) => x.passId === passId);
         if (!item) continue; /* dropped by another pass */
         try {
-          const res = await gangwayFlush(item.rsvpId, item.at);
+          const res = await gangwayFlush(item.passId, item.at);
           if (!res.error) {
-            setQueuedCount(mutateQueue((q) => q.filter((x) => x.rsvpId !== rsvpId)).length);
+            setQueuedCount(mutateQueue((q) => q.filter((x) => x.passId !== passId)).length);
           } else if (res.final) {
             /* A refusal that will not change on a retry. Done with the queue,
                but not done with the crew. */
-            setQueuedCount(mutateQueue((q) => q.filter((x) => x.rsvpId !== rsvpId)).length);
+            setQueuedCount(mutateQueue((q) => q.filter((x) => x.passId !== passId)).length);
             setNeedsCrew((n) => n + 1);
           } else {
             /* Indeterminate — the stamp stays, the attempt is counted, and the
                gangway console surfaces it if it keeps not landing. */
             mutateQueue((items) =>
-              items.map((x) => (x.rsvpId === rsvpId ? { ...x, tries: (x.tries ?? 0) + 1 } : x))
+              items.map((x) => (x.passId === passId ? { ...x, tries: (x.tries ?? 0) + 1 } : x))
             );
           }
         } catch {
@@ -209,11 +209,11 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
       const at = new Date().toISOString();
       setQueuedCount(
         mutateQueue((q) => [
-          ...q.filter((x) => x.rsvpId !== hit.rsvpId),
-          { rsvpId: hit.rsvpId, voyageId: hit.voyageId, code: hit.code, at },
+          ...q.filter((x) => x.passId !== hit.passId),
+          { passId: hit.passId, episodeId: hit.episodeId, code: hit.code, at },
         ]).length
       );
-      markAboard(hit.rsvpId, at);
+      markAboard(hit.passId, at);
       return { kind: "confirm", result: { outcome: "aboard", name: hit.name }, queued: true };
     },
     [passes, markAboard]
@@ -228,8 +228,8 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
           setScreen(localResolve(code));
         } else {
           try {
-            /* Empty voyageId: the action resolves the code against upcoming
-               episodes and reports otherVoyage when it lands elsewhere. */
+            /* Empty episodeId: the action resolves the code against upcoming
+               episodes and reports otherEpisode when it lands elsewhere. */
             const result = await gangwayCheckIn(code, "00000000-0000-0000-0000-000000000000");
             setScreen({ kind: "confirm", result });
             if (result.outcome === "aboard" && !result.error) {
@@ -238,7 +238,7 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
                  second stamp. */
               const scanned = literalCode(code);
               const hit = passes.find((p) => p.code && literalCode(p.code) === scanned);
-              if (hit) markAboard(hit.rsvpId, result.checkedInAt ?? new Date().toISOString());
+              if (hit) markAboard(hit.passId, result.checkedInAt ?? new Date().toISOString());
             }
           } catch {
             /* This was unguarded, and one dropped request bricked the device

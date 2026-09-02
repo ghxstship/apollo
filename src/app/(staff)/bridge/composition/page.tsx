@@ -7,7 +7,7 @@ import { must, mustValue } from "../../staff";
 import {
   CompositionPanel,
   NoSailings,
-  VoyagePicker,
+  EpisodePicker,
   type QueueLine,
 } from "./composition-client";
 
@@ -24,7 +24,7 @@ interface QueueEntry {
 export default async function CompositionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ voyage?: string }>;
+  searchParams: Promise<{ episode?: string }>;
 }) {
   const { supabase } = await getOperator();
   const db = moduleTables(supabase);
@@ -33,17 +33,17 @@ export default async function CompositionPage({
   /* Episodes that can still take a seat. A composition on a completed episode
      changes nothing anyone can act on, so the picker does not offer one. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
-  const voyagesRes = await supabase
-    .from("voyages")
+  const episodesRes = await supabase
+    .from("episodes")
     .select(
-      "id, title, starts_at, time_zone, berths_total, held_passes, status, hull_ceiling_heads, hull_certificate"
+      "id, title, starts_at, time_zone, passes_total, held_passes, status, hull_ceiling_heads, hull_certificate"
     )
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
     .order("starts_at", { ascending: true });
-  const voyages = must(voyagesRes);
+  const episodes = must(episodesRes);
 
-  if (voyages.length === 0) {
+  if (episodes.length === 0) {
     return (
       <div>
         <span className="hm-eyebrow">Composition</span>
@@ -55,16 +55,16 @@ export default async function CompositionPage({
     );
   }
 
-  const voyage = voyages.find((v) => v.id === sp.voyage) ?? voyages[0];
+  const episode = episodes.find((v) => v.id === sp.episode) ?? episodes[0];
 
   const [capsRes, queueRes, defaultCeilingRes] = await Promise.all([
-    db.from("voyage_segment_capacity").select("*").eq("voyage_id", voyage.id),
+    db.from("episode_segment_capacity").select("*").eq("episode_id", episode.id),
     db
       .from("waitlist_entries")
       .select("segment, offered_at, claim_expires_at, claimed_at, released_at")
-      .eq("voyage_id", voyage.id),
+      .eq("episode_id", episode.id),
     /* The club's certified heads, read rather than retyped: the trigger reads
-       coalesce(voyage.hull_ceiling_heads, club_setting('hull_ceiling_heads')),
+       coalesce(episode.hull_ceiling_heads, club_setting('hull_ceiling_heads')),
        and the screen has to show the same figure it will be refused against. */
     supabase.rpc("club_setting", { p_key: "hull_ceiling_heads" }),
   ]);
@@ -106,7 +106,7 @@ export default async function CompositionPage({
     };
   });
 
-  const hull = Math.max((voyage.berths_total ?? 0) - (voyage.held_passes ?? 0), 0);
+  const hull = Math.max((episode.passes_total ?? 0) - (episode.held_passes ?? 0), 0);
 
   return (
     <div>
@@ -120,22 +120,22 @@ export default async function CompositionPage({
       </p>
 
       <div className="hm-sec">
-        <VoyagePicker
-          options={voyages.map((v) => ({
+        <EpisodePicker
+          options={episodes.map((v) => ({
             value: v.id,
             label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,
           }))}
-          value={voyage.id}
+          value={episode.id}
         />
       </div>
 
       <CompositionPanel
-        key={voyage.id}
-        voyageId={voyage.id}
-        voyageTitle={voyage.title}
+        key={episode.id}
+        episodeId={episode.id}
+        voyageTitle={episode.title}
         hull={hull}
-        hullCeiling={voyage.hull_ceiling_heads}
-        hullCertificate={voyage.hull_certificate}
+        hullCeiling={episode.hull_ceiling_heads}
+        hullCertificate={episode.hull_certificate}
         clubCeiling={clubCeiling}
         rows={rows}
         lines={lines}

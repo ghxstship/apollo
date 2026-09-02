@@ -497,7 +497,7 @@ export function DocumentsClient({
             /* Ticked at a version that is no longer the newest wording. Say so,
                rather than letting it read as though the draft is up to date. */
             const stale = !!chosen && chosen.clauseVersionId !== c.latestVersionId;
-            const cond = chosen?.condition?.class ?? "";
+            const cond = chosen?.condition?.setting ?? "";
             return (
               <div
                 key={c.code}

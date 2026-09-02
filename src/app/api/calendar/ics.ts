@@ -1,5 +1,5 @@
 import { SETTING_LABEL } from "@/lib/brand";
-import type { VoyageRow } from "@/lib/supabase/types";
+import type { EpisodeRow } from "@/lib/supabase/types";
 
 /* iCalendar plumbing — RFC 5545 to the letter the calendars actually read:
    CRLF endings, escaped text, UTC stamps, 75-octet folding. */
@@ -60,25 +60,25 @@ export function icsStatus(status: string | null | undefined): "CONFIRMED" | "TEN
   return "CONFIRMED";
 }
 
-export function voyageWindow(voyage: Pick<VoyageRow, "starts_at" | "ends_at">): {
+export function voyageWindow(episode: Pick<EpisodeRow, "starts_at" | "ends_at">): {
   start: string;
   end: string;
 } {
-  const start = new Date(voyage.starts_at);
-  const end = voyage.ends_at
-    ? new Date(voyage.ends_at)
+  const start = new Date(episode.starts_at);
+  const end = episode.ends_at
+    ? new Date(episode.ends_at)
     : new Date(start.getTime() + DEFAULT_HOURS * 60 * 60 * 1000);
   return { start: stamp(start), end: stamp(end) };
 }
 
-export function voyageSummary(voyage: Pick<VoyageRow, "title" | "class">): string {
-  return `${voyage.title} — ${SETTING_LABEL[voyage.class] ?? SETTING_LABEL.sea}`;
+export function voyageSummary(episode: Pick<EpisodeRow, "title" | "setting">): string {
+  return `${episode.title} — ${SETTING_LABEL[episode.setting] ?? SETTING_LABEL.sea}`;
 }
 
 export function voyageLocation(
-  voyage: Pick<VoyageRow, "coordinates" | "muster">
+  episode: Pick<EpisodeRow, "coordinates" | "muster">
 ): string | null {
-  return [voyage.muster, voyage.coordinates].filter(Boolean).join(" · ") || null;
+  return [episode.muster, episode.coordinates].filter(Boolean).join(" · ") || null;
 }
 
 export function buildCalendar(name: string, events: CalendarEvent[]): string {

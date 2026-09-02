@@ -29,7 +29,7 @@ import { PARTNER_NAME_MAX, isPartnerName } from "./partner";
       different life than the one they asked for. */
 
 export function GatePanel({
-  voyageId,
+  episodeId,
   title,
   when,
   rows,
@@ -38,7 +38,7 @@ export function GatePanel({
   myPartner,
   myLine,
 }: {
-  voyageId: string;
+  episodeId: string;
   title: string;
   when: string;
   rows: SegmentCapacityRow[];
@@ -170,7 +170,7 @@ export function GatePanel({
                 {chosen.cap} seats, {chosen.units} taken. The waitlist runs in order.
               </p>
               <div className="vet-acts">
-                <Button size="sm" onClick={() => run(() => joinTheLine(voyageId, chosen.segment))} disabled={pending}>
+                <Button size="sm" onClick={() => run(() => joinTheLine(episodeId, chosen.segment))} disabled={pending}>
                   Join the line
                 </Button>
               </div>
@@ -196,7 +196,7 @@ export function GatePanel({
               <div className="vet-acts">
                 <Button
                   size="sm"
-                  onClick={() => choice && run(() => takeASeat(voyageId, choice, partner))}
+                  onClick={() => choice && run(() => takeASeat(episodeId, choice, partner))}
                   disabled={pending || !choice || !partnerReady}
                 >
                   Take the seat

@@ -23,17 +23,17 @@ import {
   SURFACES,
   type ExperienceClassId,
 } from "@/lib/brand";
-import type { EventClass, MembershipTier, VoyageStatus } from "@/lib/supabase/types";
+import type { EpisodeSetting, MembershipTier, EpisodeStatus } from "@/lib/supabase/types";
 import { useToast } from "../../ui";
 import {
   assignVessel,
-  createVoyage,
+  createEpisode,
   removeVessel,
-  saveVoyageOps,
-  saveVoyageProgram,
-  setBerthsTotal,
+  saveEpisodeOps,
+  saveEpisodeProgram,
+  setPassesTotal,
   setHeldPasses,
-  setVoyageStatus,
+  setEpisodeStatus,
   type ItineraryLeg,
   type SubClass,
 } from "./actions";
@@ -47,10 +47,10 @@ export type AssignedHull = {
 
 export type FleetVessel = { id: string; name: string; capacity: number };
 
-export type VoyageOpsRow = {
+export type EpisodeOpsRow = {
   id: string;
   title: string;
-  cls: string;
+  setting: string;
   subClass: string | null;
   /* open | club | premium | exotic — the second axis. */
   experienceClass: string;
@@ -63,24 +63,24 @@ export type VoyageOpsRow = {
   vessels: number;
   hulls: AssignedHull[];
   aboard: number;
-  berths: number;
+  passes: number;
   held: number;
   price: string;
   priceCents: number;
-  status: VoyageStatus;
-  /* Where this episode stands in a series: the template a series clones
+  status: EpisodeStatus;
+  /* Where this episode stands in an edition: the template an edition clones
      forward, an occurrence raised from one, or neither. */
-  series: { role: "template" | "occurrence"; title: string; occurrences: number } | null;
+  edition: { role: "template" | "occurrence"; title: string; occurrences: number } | null;
   muster: string;
   wind: string;
   swell: string;
   heading: string;
   speed: string;
   /* — the program: filing, season, venue, sale window, deposit — */
-  format: string | null;
+  series: string | null;
   /* The catalogue's name for that filing — what the board leads with, because
      it is what a member reads on the card. Null when the episode is unfiled. */
-  formatLabel: string | null;
+  seriesLabel: string | null;
   seasonId: string | null;
   venueId: string | null;
   /* Wall clock on the city, as a datetime-local value; "" = on sale now. */
@@ -94,7 +94,7 @@ export type VoyageOpsRow = {
    offers only the live ones for a new filing. */
 export type ProgramOption = { value: string; label: string; retired?: boolean };
 
-export type FormatOption = ProgramOption & {
+export type SeriesOption = ProgramOption & {
   category: string;
   /* What this series files an episode as. Naming the series hands the column
      over to the trigger, so the composer shows this instead of pretending the
@@ -109,31 +109,31 @@ export type FormatOption = ProgramOption & {
 
 /* sky was folded into shore when the setting axis landed; the enum still
    carries it, so it takes the ashore default. */
-const DEFAULT_KIND: Record<EventClass, string> = { sea: "sea_day", shore: "port_day", sky: "port_day" };
+const DEFAULT_KIND: Record<EpisodeSetting, string> = { sea: "sea_day", shore: "port_day", sky: "port_day" };
 
 /* A series' category settles the setting: port → ashore, sea → afloat. The
    category column now holds only those two — how far the club goes moved to
    experience_class — so anything else leaves the setting as the operator set
    it rather than guessing. */
-function classForCategory(category: string, current: EventClass): EventClass {
+function settingForCategory(category: string, current: EpisodeSetting): EpisodeSetting {
   if (category === "port") return "shore";
   if (category === "sea") return "sea";
   return current;
 }
 
-/* What a_sailing_honours_its_format will refuse, said here before the submit
+/* What a_sailing_honours_its_series will refuse, said here before the submit
    rather than by the trigger after it. Each names the way out. */
-function formatConflicts(format: FormatOption | undefined, berths: number, priceCents: number): string[] {
-  if (!format) return [];
+function seriesConflicts(series: SeriesOption | undefined, passes: number, priceCents: number): string[] {
+  if (!series) return [];
   const out: string[] = [];
-  if (format.access === "included" && priceCents > 0) {
+  if (series.access === "included" && priceCents > 0) {
     out.push(
-      `${format.label} is included with a pass and never sold alone — the board will refuse a price. Clear the price, or file it under another series.`
+      `${series.label} is included with a pass and never sold alone — the board will refuse a price. Clear the price, or file it under another series.`
     );
   }
-  if (format.capacity !== null && berths > format.capacity) {
+  if (series.capacity !== null && passes > series.capacity) {
     out.push(
-      `A ${format.label} seats ${format.capacity} — the board will refuse ${berths} passes. Lower the capacity, or file it under another series.`
+      `A ${series.label} seats ${series.capacity} — the board will refuse ${passes} passes. Lower the capacity, or file it under another series.`
     );
   }
   return out;
@@ -149,8 +149,8 @@ function dropAfterDeparture(saleOpensAt: string, startsAt: string): boolean {
   return !!saleOpensAt && !!startsAt && saleOpensAt > startsAt;
 }
 
-function formatOptions(formats: FormatOption[], blank: string): ProgramOption[] {
-  return [{ value: "", label: blank }, ...formats.map((f) => ({ value: f.value, label: `${f.label} · ${f.accessLine}` }))];
+function seriesOptions(all: SeriesOption[], blank: string): ProgramOption[] {
+  return [{ value: "", label: blank }, ...all.map((f) => ({ value: f.value, label: `${f.label} · ${f.accessLine}` }))];
 }
 
 /* The four rungs of the second axis, in ladder order. */
@@ -163,11 +163,11 @@ const EXPERIENCE_OPTIONS = EXPERIENCE_CLASS_IDS.map((id) => ({
    while the episode is unfiled. a_sailing_keeps_its_taxonomy copies it off the
    series on every write that names one, so a control that looked live under a
    chosen series would be promising an edit the board will undo. */
-function experienceClassHint(format: FormatOption | undefined): string {
-  if (!format) return "Yours to set while this episode is unfiled.";
-  const files = EXPERIENCE_CLASSES[format.experienceClass as ExperienceClassId];
+function experienceClassHint(series: SeriesOption | undefined): string {
+  if (!series) return "Yours to set while this episode is unfiled.";
+  const files = EXPERIENCE_CLASSES[series.experienceClass as ExperienceClassId];
   return files
-    ? `Follows the series — ${format.label} files as ${files.label}.`
+    ? `Follows the series — ${series.label} files as ${files.label}.`
     : "Follows the series.";
 }
 
@@ -176,24 +176,24 @@ function experienceClassHint(format: FormatOption | undefined): string {
    class and the ladder key used to print here instead, which named the filing
    system rather than the thing. */
 function identityLine(row: {
-  formatLabel: string | null;
-  cls: string;
+  seriesLabel: string | null;
+  setting: string;
   subClass: string | null;
   experienceClass: string;
 }): string[] {
   const hours = row.subClass ? SUB_CLASSES[row.subClass]?.label : null;
   const experience = EXPERIENCE_CLASSES[row.experienceClass as ExperienceClassId]?.label;
   return [
-    row.formatLabel ?? SETTING_LABEL[row.cls] ?? row.cls,
+    row.seriesLabel ?? SETTING_LABEL[row.setting] ?? row.setting,
     ...(hours ? [hours] : []),
     ...(experience ? [experience] : []),
   ];
 }
 
-/* The 3rd-yacht rule as product logic — a flotilla forms at 30 berths. */
+/* The 3rd-yacht rule as product logic — a flotilla forms at 30 passes. */
 const FLOTILLA_FORMS_AT = 30;
 
-function insideT72(row: VoyageOpsRow): boolean {
+function insideT72(row: EpisodeOpsRow): boolean {
   const ms = new Date(row.startsAtIso).getTime() - Date.now();
   return ms > 0 && ms <= 72 * 3600 * 1000;
 }
@@ -201,9 +201,9 @@ function insideT72(row: VoyageOpsRow): boolean {
 /* Short of the flotilla line inside 72 hours, on an episode that is still going
    out — the one state on this screen that costs the club money if nobody looks.
    Read twice: once for the meter's severity, once for the board's tally. */
-function holdingShort(row: VoyageOpsRow): boolean {
+function holdingShort(row: EpisodeOpsRow): boolean {
   return (
-    row.cls === "sea" &&
+    row.setting === "sea" &&
     row.vessels > 0 &&
     row.aboard < FLOTILLA_FORMS_AT &&
     insideT72(row) &&
@@ -211,8 +211,8 @@ function holdingShort(row: VoyageOpsRow): boolean {
   );
 }
 
-function FlotillaMeter({ row }: { row: VoyageOpsRow }) {
-  if (row.cls !== "sea" || row.vessels === 0) return null;
+function FlotillaMeter({ row }: { row: EpisodeOpsRow }) {
+  if (row.setting !== "sea" || row.vessels === 0) return null;
   const holding = holdingShort(row);
   /* The bar carried the brand accent whatever it read, so an episode at 8 of 30
      inside T-72 was the same colour as one at 30 of 30. Severity on the fill:
@@ -241,7 +241,7 @@ function FlotillaMeter({ row }: { row: VoyageOpsRow }) {
   );
 }
 
-const STATUS_TONE: Record<VoyageStatus, "gold" | "ink" | "positive" | "caution" | "outline"> = {
+const STATUS_TONE: Record<EpisodeStatus, "gold" | "ink" | "positive" | "caution" | "outline"> = {
   scheduled: "outline",
   live: "gold",
   weather_hold: "caution",
@@ -249,7 +249,7 @@ const STATUS_TONE: Record<VoyageStatus, "gold" | "ink" | "positive" | "caution" 
   cancelled: "ink",
 };
 
-const STATUS_LABEL: Record<VoyageStatus, string> = {
+const STATUS_LABEL: Record<EpisodeStatus, string> = {
   scheduled: "Scheduled",
   live: "Live",
   weather_hold: "Weather hold",
@@ -260,7 +260,7 @@ const STATUS_LABEL: Record<VoyageStatus, string> = {
 /* The board carries every episode it has ever raised, and the two an operator
    is usually after are the live one and the one on hold. Same shape as the
    ledger's filter on Orders. */
-type StatusFilter = "all" | VoyageStatus;
+type StatusFilter = "all" | EpisodeStatus;
 
 const STATUS_FILTERS: Array<[StatusFilter, string]> = [
   ["all", "All"],
@@ -272,7 +272,7 @@ const STATUS_FILTERS: Array<[StatusFilter, string]> = [
 ];
 
 type StatusMove = {
-  to: VoyageStatus;
+  to: EpisodeStatus;
   label: string;
   title: string;
   body: string;
@@ -286,7 +286,7 @@ type StatusMove = {
   destructive?: boolean;
 };
 
-function movesFor(status: VoyageStatus): StatusMove[] {
+function movesFor(status: EpisodeStatus): StatusMove[] {
   const hold: StatusMove = {
     to: "weather_hold",
     label: "Call weather hold",
@@ -327,7 +327,7 @@ function movesFor(status: VoyageStatus): StatusMove[] {
 }
 
 type ProgramForm = {
-  format: string;
+  series: string;
   experienceClass: ExperienceClassId;
   seasonId: string;
   venueId: string;
@@ -336,29 +336,29 @@ type ProgramForm = {
   deposit: string;
 };
 
-export function VoyagesClient({
+export function EpisodesClient({
   rows,
-  harbors,
+  cities,
   seasons,
   venues,
-  formats,
+  seriesList,
   fleet,
 }: {
-  rows: VoyageOpsRow[];
-  harbors: Array<{ value: string; label: string }>;
+  rows: EpisodeOpsRow[];
+  cities: Array<{ value: string; label: string }>;
   seasons: ProgramOption[];
   venues: ProgramOption[];
-  formats: FormatOption[];
+  seriesList: SeriesOption[];
   fleet: FleetVessel[];
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
-  const [move, setMove] = React.useState<{ row: VoyageOpsRow; m: StatusMove } | null>(null);
-  const [ops, setOps] = React.useState<VoyageOpsRow | null>(null);
+  const [move, setMove] = React.useState<{ row: EpisodeOpsRow; m: StatusMove } | null>(null);
+  const [ops, setOps] = React.useState<EpisodeOpsRow | null>(null);
   const [opsForm, setOpsForm] = React.useState({ wind: "", swell: "", heading: "", speed: "", muster: "" });
-  const [program, setProgram] = React.useState<VoyageOpsRow | null>(null);
+  const [program, setProgram] = React.useState<EpisodeOpsRow | null>(null);
   const [programForm, setProgramForm] = React.useState<ProgramForm>({
-    format: "",
+    series: "",
     experienceClass: "club",
     seasonId: "",
     venueId: "",
@@ -378,8 +378,8 @@ export function VoyagesClient({
      moved with the filter would be answering a different question each time. */
   const shown = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
   const totals = rows.reduce(
-    (t, r) => ({ aboard: t.aboard + r.aboard, berths: t.berths + r.berths }),
-    { aboard: 0, berths: 0 }
+    (t, r) => ({ aboard: t.aboard + r.aboard, passes: t.passes + r.passes }),
+    { aboard: 0, passes: 0 }
   );
   const shortInsideT72 = rows.filter(holdingShort).length;
 
@@ -391,14 +391,14 @@ export function VoyagesClient({
     });
   };
 
-  const openOps = (row: VoyageOpsRow) => {
+  const openOps = (row: EpisodeOpsRow) => {
     setOpsForm({ wind: row.wind, swell: row.swell, heading: row.heading, speed: row.speed, muster: row.muster });
     setOps(row);
   };
 
-  const openProgram = (row: VoyageOpsRow) => {
+  const openProgram = (row: EpisodeOpsRow) => {
     setProgramForm({
-      format: row.format ?? "",
+      series: row.series ?? "",
       experienceClass: (EXPERIENCE_CLASS_IDS as readonly string[]).includes(row.experienceClass)
         ? (row.experienceClass as ExperienceClassId)
         : "club",
@@ -414,10 +414,10 @@ export function VoyagesClient({
   /* The Program dialog's own refusals, worked out before the save so the
      button says why rather than the toast afterwards. The series ones are the
      trigger's; the deposit and drop ones are the CHECKs'. */
-  const programFormat = formats.find((f) => f.value === programForm.format);
-  const formatRefusals = program ? formatConflicts(programFormat, program.berths, program.priceCents) : [];
+  const programSeries = seriesList.find((f) => f.value === programForm.series);
+  const seriesRefusals = program ? seriesConflicts(programSeries, program.passes, program.priceCents) : [];
   const programRefusals = [
-    ...formatRefusals,
+    ...seriesRefusals,
     ...(Number(programForm.deposit || "0") > DEPOSIT_CEILING ? [ERR_DEPOSIT_CEILING] : []),
     ...(program && dropAfterDeparture(programForm.saleOpensAt, program.startsAtLocal) ? [ERR_DROP_AFTER_DEPARTURE] : []),
   ];
@@ -438,7 +438,7 @@ export function VoyagesClient({
         <Stat
           size="sm"
           label="Aboard"
-          value={`${totals.aboard} / ${totals.berths}`}
+          value={`${totals.aboard} / ${totals.passes}`}
           sub="ABOARD VS CAPACITY"
         />
         <Stat size="sm" label="Under 30 inside T-72" value={shortInsideT72} />
@@ -481,19 +481,19 @@ export function VoyagesClient({
             ))}
             <span>·</span>
             <span>
-              {v.aboard} ABOARD / {v.berths} PASSES
+              {v.aboard} ABOARD / {v.passes} PASSES
             </span>
             <span>·</span>
             <span>
-              {v.held} HELD · {Math.max(0, v.berths - v.held)} FOR SALE
+              {v.held} HELD · {Math.max(0, v.passes - v.held)} FOR SALE
             </span>
             <span>·</span>
             <span>{v.price}</span>
-            {v.series ? (
+            {v.edition ? (
               <>
                 <span>·</span>
-                <span title={v.series.role === "template" ? "The episode a series clones forward" : "Raised from a series template"}>
-                  {v.series.role === "template" ? "SERIES TEMPLATE" : "SERIES OCCURRENCE"} · {v.series.title.toUpperCase()}
+                <span title={v.edition.role === "template" ? "The episode an edition clones forward" : "Raised from an edition template"}>
+                  {v.edition.role === "template" ? "SERIES TEMPLATE" : "SERIES OCCURRENCE"} · {v.edition.title.toUpperCase()}
                 </span>
               </>
             ) : null}
@@ -512,10 +512,10 @@ export function VoyagesClient({
                 size="sm"
                 min={Math.max(0, v.aboard)}
                 max={96}
-                value={v.berths}
+                value={v.passes}
                 onChange={(n) =>
                   run(
-                    () => setBerthsTotal(v.id, n),
+                    () => setPassesTotal(v.id, n),
                     () => show({ msg: "Capacity set.", meta: `${v.title.toUpperCase()} · ${n} PASSES` })
                   )
                 }
@@ -526,7 +526,7 @@ export function VoyagesClient({
               <Stepper
                 size="sm"
                 min={0}
-                max={v.berths}
+                max={v.passes}
                 value={v.held}
                 onChange={(n) =>
                   run(
@@ -534,7 +534,7 @@ export function VoyagesClient({
                     () =>
                       show({
                         msg: "Holds set.",
-                        meta: `${v.title.toUpperCase()} · ${n} HELD · ${Math.max(0, v.berths - n)} FOR SALE`,
+                        meta: `${v.title.toUpperCase()} · ${n} HELD · ${Math.max(0, v.passes - n)} FOR SALE`,
                       })
                   )
                 }
@@ -591,7 +591,7 @@ export function VoyagesClient({
                   const { row, m } = move;
                   setMove(null);
                   run(
-                    () => setVoyageStatus(row.id, m.to),
+                    () => setEpisodeStatus(row.id, m.to),
                     () =>
                       show({
                         msg: `${STATUS_LABEL[m.to]} — ${row.title}.`,
@@ -630,7 +630,7 @@ export function VoyagesClient({
                   setOps(null);
                   run(
                     () =>
-                      saveVoyageOps(
+                      saveEpisodeOps(
                         row.id,
                         {
                           wind: opsForm.wind,
@@ -711,8 +711,8 @@ export function VoyagesClient({
                   setProgram(null);
                   run(
                     () =>
-                      saveVoyageProgram(row.id, {
-                        format: programForm.format || null,
+                      saveEpisodeProgram(row.id, {
+                        series: programForm.series || null,
                         experienceClass: programForm.experienceClass,
                         seasonId: programForm.seasonId || null,
                         venueId: programForm.venueId || null,
@@ -731,22 +731,22 @@ export function VoyagesClient({
         }
       >
         <div className="hm-form">
-          {program?.series?.role === "template" ? (
+          {program?.edition?.role === "template" ? (
             <p className="hm-note" style={{ marginTop: 0 }}>
-              {program.series.occurrences === 1
+              {program.edition.occurrences === 1
                 ? "1 occurrence will not follow this change"
-                : `${program.series.occurrences} occurrences will not follow this change`}{" "}
-              — a series copies its template forward when it is extended, not when the template is edited.
+                : `${program.edition.occurrences} occurrences will not follow this change`}{" "}
+              — an edition copies its template forward when it is extended, not when the template is edited.
             </p>
           ) : null}
           <div className="hm-form__row">
             <Select
               label={SURFACES.series}
-              options={formatOptions(formats, SURFACES.special)}
-              value={programForm.format}
-              hint={programFormat ? programFormat.accessLine : undefined}
-              error={formatRefusals.length ? formatRefusals.join(" ") : undefined}
-              onChange={(e) => setProgramForm((f) => ({ ...f, format: e.target.value }))}
+              options={seriesOptions(seriesList, SURFACES.special)}
+              value={programForm.series}
+              hint={programSeries ? programSeries.accessLine : undefined}
+              error={seriesRefusals.length ? seriesRefusals.join(" ") : undefined}
+              onChange={(e) => setProgramForm((f) => ({ ...f, series: e.target.value }))}
             />
             {/* Next to the series, because the series is what decides it the
                 moment one is named. */}
@@ -754,8 +754,8 @@ export function VoyagesClient({
               label="Experience class"
               options={EXPERIENCE_OPTIONS}
               value={programForm.experienceClass}
-              hint={experienceClassHint(programFormat)}
-              disabled={Boolean(programFormat)}
+              hint={experienceClassHint(programSeries)}
+              disabled={Boolean(programSeries)}
               onChange={(e) =>
                 setProgramForm((f) => ({ ...f, experienceClass: e.target.value as ExperienceClassId }))
               }
@@ -832,17 +832,17 @@ export function VoyagesClient({
         ) : null}
       </Dialog>
 
-      <NewVoyageDialog
+      <NewEpisodeDialog
         open={creating}
         onClose={() => setCreating(false)}
-        harbors={harbors}
+        cities={cities}
         seasons={seasons}
         venues={venues}
-        formats={formats}
+        seriesList={seriesList}
         pending={pending}
         onCreate={(input, title) =>
           run(
-            () => createVoyage(input),
+            () => createEpisode(input),
             () => {
               setCreating(false);
               show({ msg: "Episode on the board.", meta: title.toUpperCase(), tone: "positive" });
@@ -859,7 +859,7 @@ export function VoyagesClient({
 }
 
 /* Hull assignment, through the "staff write flotilla" policy that has been on
-   voyage_vessels since the fleet landed and never had a writer. Assigning is
+   episode_vessels since the fleet landed and never had a writer. Assigning is
    plain; removing asks first, because the manifests screen spreads passes onto
    these hulls and a hull that vanishes under a spread manifest is an
    operational surprise. */
@@ -870,7 +870,7 @@ function FlotillaBody({
   onRun,
   notify,
 }: {
-  row: VoyageOpsRow;
+  row: EpisodeOpsRow;
   fleet: FleetVessel[];
   pending: boolean;
   onRun: (fn: () => Promise<{ error?: string }>, ok: () => void) => void;
@@ -979,24 +979,24 @@ function FlotillaBody({
 
 type ItineraryDraft = { offset: string; title: string; note: string };
 
-type NewVoyageForm = {
+type NewEpisodeForm = {
   title: string;
   slug: string;
-  cls: EventClass;
+  setting: EpisodeSetting;
   subClass: string;
   experienceClass: ExperienceClassId;
   kind: string;
-  harborId: string;
+  cityId: string;
   startsAt: string;
   endsAt: string;
   distance: string;
-  berths: number;
+  passes: number;
   price: string;
   minTier: MembershipTier;
   media: string;
   deposit: boolean;
   depositAmount: string;
-  format: string;
+  series: string;
   saleOpensAt: string;
   presaleHours: string;
   seasonId: string;
@@ -1004,26 +1004,26 @@ type NewVoyageForm = {
   itinerary: ItineraryDraft[];
 };
 
-const BLANK: NewVoyageForm = {
+const BLANK: NewEpisodeForm = {
   title: "",
   slug: "",
-  cls: "sea",
-  subClass: "voyage",
+  setting: "sea",
+  subClass: "passage",
   /* The members' standard is the honest default — most of what the club raises
      is a club episode, and the operator says so when it is not. */
   experienceClass: "club",
   kind: "sea_day",
-  harborId: "",
+  cityId: "",
   startsAt: "",
   endsAt: "",
   distance: "",
-  berths: 24,
+  passes: 24,
   price: "",
   minTier: "regional",
   media: "dawn",
   deposit: false,
   depositAmount: "50",
-  format: "",
+  series: "",
   saleOpensAt: "",
   presaleHours: "24",
   seasonId: "",
@@ -1039,67 +1039,67 @@ function subClassOptions(): Array<{ value: string; label: string }> {
   return Object.entries(SUB_CLASSES).map(([value, s]) => ({ value, label: s.label }));
 }
 
-function NewVoyageDialog({
+function NewEpisodeDialog({
   open,
   onClose,
-  harbors,
+  cities,
   seasons,
   venues,
-  formats,
+  seriesList,
   pending,
   onCreate,
 }: {
   open: boolean;
   onClose: () => void;
-  harbors: Array<{ value: string; label: string }>;
+  cities: Array<{ value: string; label: string }>;
   seasons: ProgramOption[];
   venues: ProgramOption[];
-  formats: FormatOption[];
+  seriesList: SeriesOption[];
   pending: boolean;
-  onCreate: (input: Parameters<typeof createVoyage>[0], title: string) => void;
+  onCreate: (input: Parameters<typeof createEpisode>[0], title: string) => void;
 }) {
-  const [f, setF] = React.useState<NewVoyageForm>(BLANK);
-  const set = <K extends keyof NewVoyageForm>(k: K, v: NewVoyageForm[K]) =>
+  const [f, setF] = React.useState<NewEpisodeForm>(BLANK);
+  const set = <K extends keyof NewEpisodeForm>(k: K, v: NewEpisodeForm[K]) =>
     setF((prev) => ({ ...prev, [k]: v }));
 
   /* A new filing goes under a live season, venue or series — the retired ones
      are in the lists only so existing episodes can still show theirs. */
   const liveSeasons = seasons.filter((s) => !s.retired);
   const liveVenues = venues.filter((v) => !v.retired);
-  const liveFormats = formats.filter((x) => !x.retired);
+  const liveSeries = seriesList.filter((x) => !x.retired);
 
   /* The setting picks the duration ladder — keep the two in step. The kind
      follows the setting while it is still the other setting's default, and is
      left alone once the operator has typed their own. */
-  const withClass = (prev: NewVoyageForm, cls: EventClass): NewVoyageForm => {
+  const withSetting = (prev: NewEpisodeForm, setting: EpisodeSetting): NewEpisodeForm => {
     const wasDefault = !prev.kind.trim() || Object.values(DEFAULT_KIND).includes(prev.kind.trim());
     return {
       ...prev,
-      cls,
-      kind: wasDefault ? DEFAULT_KIND[cls] : prev.kind,
+      setting,
+      kind: wasDefault ? DEFAULT_KIND[setting] : prev.kind,
       subClass: prev.subClass || (subClassOptions()[0]?.value ?? ""),
     };
   };
-  const setClass = (cls: EventClass) => setF((prev) => withClass(prev, cls));
+  const setSetting = (setting: EpisodeSetting) => setF((prev) => withSetting(prev, setting));
 
   /* Choosing a series settles the setting from its category — a port series
      runs ashore, a sea series afloat. It settles the experience class too, at
      the board, which is why that control goes quiet once one is named. */
-  const setFormat = (slug: string) =>
+  const setSeries = (slug: string) =>
     setF((prev) => {
-      const chosen = liveFormats.find((x) => x.value === slug);
-      const next = { ...prev, format: slug };
+      const chosen = liveSeries.find((x) => x.value === slug);
+      const next = { ...prev, series: slug };
       if (!chosen) return next;
-      const cls = classForCategory(chosen.category, prev.cls);
-      return cls === prev.cls ? next : withClass(next, cls);
+      const setting = settingForCategory(chosen.category, prev.setting);
+      return setting === prev.setting ? next : withSetting(next, setting);
     });
 
-  const chosenFormat = liveFormats.find((x) => x.value === f.format);
+  const chosenSeries = liveSeries.find((x) => x.value === f.series);
   const priceCents = f.price.trim() ? Math.round(Number(f.price) * 100) : 0;
-  const formatRefusals = formatConflicts(chosenFormat, f.berths, priceCents);
+  const seriesRefusals = seriesConflicts(chosenSeries, f.passes, priceCents);
   const depositOver = f.deposit && Number(f.depositAmount || "0") > DEPOSIT_CEILING;
   const dropLate = dropAfterDeparture(f.saleOpensAt, f.startsAt);
-  const refused = formatRefusals.length > 0 || depositOver || dropLate;
+  const refused = seriesRefusals.length > 0 || depositOver || dropLate;
 
   const setLeg = (i: number, patch: Partial<ItineraryDraft>) =>
     setF((prev) => ({
@@ -1123,21 +1123,21 @@ function NewVoyageDialog({
       {
         slug: f.slug || f.title,
         title: f.title,
-        cls: f.cls,
+        setting: f.setting,
         subClass: (f.subClass || null) as SubClass | null,
         experienceClass: f.experienceClass,
         kind: f.kind,
-        harborId: f.harborId || null,
+        cityId: f.cityId || null,
         startsAt: f.startsAt,
         endsAt: f.endsAt,
         distanceNm: f.distance.trim() ? Number(f.distance) : null,
-        berths: f.berths,
+        passes: f.passes,
         priceCents: f.price.trim() ? Math.round(Number(f.price) * 100) : 0,
         minTier: f.minTier,
         media: f.media,
         depositRequired: f.deposit,
         depositCents: f.depositAmount.trim() ? Math.round(Number(f.depositAmount) * 100) : 5000,
-        format: f.format || null,
+        series: f.series || null,
         saleOpensAt: f.saleOpensAt || null,
         presaleHours: Number(f.presaleHours) || 0,
         seasonId: f.seasonId || null,
@@ -1185,8 +1185,8 @@ function NewVoyageDialog({
               { value: "shore", label: SETTING_LABEL.shore },
             ]}
             hint="Where it happens. Only ashore admits an unvetted guest."
-            value={f.cls}
-            onChange={(e) => setClass(e.target.value as EventClass)}
+            value={f.setting}
+            onChange={(e) => setSetting(e.target.value as EpisodeSetting)}
           />
           <Select
             label="Duration"
@@ -1200,15 +1200,15 @@ function NewVoyageDialog({
         <div className="hm-form__row">
           <Select
             label={SURFACES.series}
-            options={formatOptions(liveFormats, SURFACES.special)}
-            value={f.format}
+            options={seriesOptions(liveSeries, SURFACES.special)}
+            value={f.series}
             hint={
-              chosenFormat
-                ? `${chosenFormat.accessLine} · the series sets the setting from its category`
+              chosenSeries
+                ? `${chosenSeries.accessLine} · the series sets the setting from its category`
                 : `The series sets the setting from its category. Left blank, the episode is a ${SURFACES.special}.`
             }
-            error={formatRefusals.length ? formatRefusals.join(" ") : undefined}
-            onChange={(e) => setFormat(e.target.value)}
+            error={seriesRefusals.length ? seriesRefusals.join(" ") : undefined}
+            onChange={(e) => setSeries(e.target.value)}
           />
           {/* The other axis. Live only for an unfiled episode — naming a series
               hands the column to the taxonomy trigger, and the hint says so
@@ -1217,8 +1217,8 @@ function NewVoyageDialog({
             label="Experience class"
             options={EXPERIENCE_OPTIONS}
             value={f.experienceClass}
-            hint={experienceClassHint(chosenFormat)}
-            disabled={Boolean(chosenFormat)}
+            hint={experienceClassHint(chosenSeries)}
+            disabled={Boolean(chosenSeries)}
             onChange={(e) => set("experienceClass", e.target.value as ExperienceClassId)}
           />
         </div>
@@ -1234,9 +1234,9 @@ function NewVoyageDialog({
         <div className="hm-form__row">
           <Select
             label={PLACE.market}
-            options={[{ value: "", label: "Unassigned" }, ...harbors]}
-            value={f.harborId}
-            onChange={(e) => set("harborId", e.target.value)}
+            options={[{ value: "", label: "Unassigned" }, ...cities]}
+            value={f.cityId}
+            onChange={(e) => set("cityId", e.target.value)}
           />
           <Input label="Departs" type="datetime-local" value={f.startsAt} onChange={(e) => set("startsAt", e.target.value)} />
         </div>
@@ -1316,7 +1316,7 @@ function NewVoyageDialog({
         <div className="hm-form__row" style={{ alignItems: "center" }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
             <span className="hm-mono">CAPACITY</span>
-            <Stepper size="sm" min={1} max={96} value={f.berths} onChange={(n) => set("berths", n)} />
+            <Stepper size="sm" min={1} max={96} value={f.passes} onChange={(n) => set("passes", n)} />
           </span>
           <Checkbox
             label="Deposit required"

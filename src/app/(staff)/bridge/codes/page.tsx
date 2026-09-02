@@ -8,24 +8,24 @@ export const metadata: Metadata = { title: "Codes" };
 export default async function CodesPage() {
   const { supabase } = await getOperator();
 
-  const [codesRes, voyagesRes] = await Promise.all([
+  const [codesRes, episodesRes] = await Promise.all([
     supabase.from("promo_codes").select("*").order("created_at", { ascending: false }),
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("id, title, starts_at, status")
       .neq("status", "cancelled")
       .order("starts_at", { ascending: false })
       .limit(60),
   ]);
 
-  const voyages = must(voyagesRes);
-  const titles = new Map(voyages.map((v) => [v.id, v.title]));
+  const episodes = must(episodesRes);
+  const titles = new Map(episodes.map((v) => [v.id, v.title]));
 
   const rows: CodeRow[] = (must(codesRes)).map((c) => ({
     code: c.code,
     kind: c.kind,
     value: c.value,
-    scope: c.voyage_id ? (titles.get(c.voyage_id) ?? "One sailing") : "Any sailing",
+    scope: c.episode_id ? (titles.get(c.episode_id) ?? "One sailing") : "Any sailing",
     uses: c.uses,
     maxUses: c.max_uses,
     expiresAt: c.expires_at,
@@ -43,7 +43,7 @@ export default async function CodesPage() {
       </p>
       <CodesClient
         rows={rows}
-        voyages={voyages.map((v) => ({ id: v.id, title: v.title }))}
+        episodes={episodes.map((v) => ({ id: v.id, title: v.title }))}
       />
     </div>
   );

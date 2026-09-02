@@ -4,14 +4,14 @@ import { logDate, logTime } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
-import { ItineraryClient, VoyagePicker, type LegRow, type StopRow } from "./itinerary-client";
+import { ItineraryClient, EpisodePicker, type LegRow, type StopRow } from "./itinerary-client";
 
 export const metadata: Metadata = { title: "Itinerary" };
 
 interface LegRecord {
   id: string;
   day: number;
-  port: string;
+  place: string;
   note: string | null;
   starts_at: string | null;
   status: "planned" | "revised" | "held";
@@ -53,22 +53,22 @@ const clock = (t: string | null) => (t ? t.slice(0, 5) : "");
 export default async function ItineraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ voyage?: string }>;
+  searchParams: Promise<{ episode?: string }>;
 }) {
   const { supabase } = await getOperator();
   const db = moduleTables(supabase);
   const sp = await searchParams;
 
   const cutoff = new Date(new Date().getTime() - 30 * 24 * 3600 * 1000).toISOString();
-  const voyagesRes = await supabase
-    .from("voyages")
+  const episodesRes = await supabase
+    .from("episodes")
     .select("id, title, starts_at, time_zone, status")
     .gte("starts_at", cutoff)
     .neq("status", "cancelled")
     .order("starts_at", { ascending: true });
-  const voyages = must(voyagesRes);
+  const episodes = must(episodesRes);
 
-  if (voyages.length === 0) {
+  if (episodes.length === 0) {
     return (
       <div>
         <span className="hm-eyebrow">Itinerary</span>
@@ -85,18 +85,18 @@ export default async function ItineraryPage({
     );
   }
 
-  const voyage = voyages.find((v) => v.id === sp.voyage) ?? voyages[0];
+  const episode = episodes.find((v) => v.id === sp.episode) ?? episodes[0];
 
   const [legsRes, stopsRes] = await Promise.all([
     db
-      .from("voyage_legs")
-      .select("id, day, port, note, starts_at, status, hold_reason, hold_new_plan, hold_unchanged")
-      .eq("voyage_id", voyage.id)
+      .from("episode_legs")
+      .select("id, day, place, note, starts_at, status, hold_reason, hold_new_plan, hold_unchanged")
+      .eq("episode_id", episode.id)
       .order("day"),
     db
-      .from("voyage_stops")
+      .from("episode_stops")
       .select("id, leg_id, position, name, tender_at, last_return, notes")
-      .eq("voyage_id", voyage.id)
+      .eq("episode_id", episode.id)
       .order("position"),
   ]);
 
@@ -112,10 +112,10 @@ export default async function ItineraryPage({
   const legs: LegRow[] = legRecords.map((l) => ({
     id: l.id,
     day: l.day,
-    port: l.port,
+    place: l.place,
     note: l.note,
-    when: l.starts_at ? `${logDate(l.starts_at, voyage.time_zone)} ${logTime(l.starts_at, voyage.time_zone)}` : null,
-    whenLocal: wallClockField(l.starts_at, voyage.time_zone),
+    when: l.starts_at ? `${logDate(l.starts_at, episode.time_zone)} ${logTime(l.starts_at, episode.time_zone)}` : null,
+    whenLocal: wallClockField(l.starts_at, episode.time_zone),
     status: l.status,
     holdReason: l.hold_reason,
     holdNewPlan: l.hold_new_plan,
@@ -145,16 +145,16 @@ export default async function ItineraryPage({
       </p>
 
       <div className="hm-sec">
-        <VoyagePicker
-          options={voyages.map((v) => ({
+        <EpisodePicker
+          options={episodes.map((v) => ({
             value: v.id,
             label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,
           }))}
-          value={voyage.id}
+          value={episode.id}
         />
       </div>
 
-      <ItineraryClient voyageId={voyage.id} legs={legs} stops={stops} />
+      <ItineraryClient episodeId={episode.id} legs={legs} stops={stops} />
     </div>
   );
 }

@@ -25,7 +25,7 @@ const QUEUE_KEY = GALLEY_QUEUE_KEY;
 /* `key` is minted once, when the order is first attempted, and travels with it
    through every retry — that is the whole point. Minting it at send time would
    produce a new key per attempt and dedupe nothing. */
-type QueuedOrder = { voyageId: string; lines: GalleyLine[]; key: string };
+type QueuedOrder = { episodeId: string; lines: GalleyLine[]; key: string };
 
 function mintKey(): string {
   try {
@@ -64,10 +64,10 @@ function writeQueue(q: QueuedOrder[]) {
 }
 
 export function GalleyOrderForm({
-  voyageId,
+  episodeId,
   items,
 }: {
-  voyageId: string;
+  episodeId: string;
   items: GalleyItem[];
 }) {
   const router = useRouter();
@@ -95,7 +95,7 @@ export function GalleyOrderForm({
         const order = readQueue().find((o) => o.key === key);
         if (!order) continue;
         try {
-          const res = await placeGalleyOrder(order.voyageId, order.lines, order.key);
+          const res = await placeGalleyOrder(order.episodeId, order.lines, order.key);
           if (res.error) {
             /* Dropped, but SAID. This used to `continue` silently on any error,
                so a member's order could vanish between the boat and the galley
@@ -145,7 +145,7 @@ export function GalleyOrderForm({
     setPending(true);
     setError(null);
     try {
-      const res = await placeGalleyOrder(voyageId, lines, key);
+      const res = await placeGalleyOrder(episodeId, lines, key);
       if (res.error) {
         setError(res.error);
       } else {
@@ -155,7 +155,7 @@ export function GalleyOrderForm({
       }
     } catch {
       /* Offline or the request never landed — queue it for later. */
-      mutateQueue((q) => [...q, { voyageId, lines, key }]);
+      mutateQueue((q) => [...q, { episodeId, lines, key }]);
       setQty({});
       setQueued(true);
     } finally {

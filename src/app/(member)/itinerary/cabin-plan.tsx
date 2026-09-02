@@ -20,11 +20,11 @@ export type CabinRow = {
    is why the number on screen going stale costs nothing and why nothing on this
    component is allowed to decide whether a hold is still live. */
 export function CabinPlan({
-  voyageId,
+  episodeId,
   cabins,
   option,
 }: {
-  voyageId: string;
+  episodeId: string;
   cabins: CabinRow[];
   option: { id: string; cabinId: string; expiresLabel: string } | null;
 }) {
@@ -70,7 +70,7 @@ export function CabinPlan({
                   size="sm"
                   variant="ghost"
                   disabled={pending || !!option}
-                  onClick={() => act(() => holdCabinOnOption(voyageId, c.id))}
+                  onClick={() => act(() => holdCabinOnOption(episodeId, c.id))}
                 >
                   Hold 72 hours
                 </Button>

@@ -31,7 +31,7 @@ type ChangeRow = {
 /* The handful of columns whose name is not the word an operator reads. The log
    named raw columns, which is defensible for an audit trail and stops being so
    the moment the display word and the column word are different things: an
-   operator reading "format" on a console that says Series everywhere else has
+   operator reading "series" on a console that says Series everywhere else has
    to hold two vocabularies at once to know what moved.
 
    Deliberately short. Every column not listed here prints its own name, which
@@ -39,8 +39,8 @@ type ChangeRow = {
    renames introduced, not to prettify the schema. */
 const FIELD_LABEL: Record<string, string> = {
   format: "series",
-  experience_class: "class",
-  harbor_id: "city",
+  experience_class: "setting",
+  city_id: "city",
   venue_id: "venue",
   series_id: "edition",
 };
@@ -61,7 +61,7 @@ function diffLine(action: string, before: Json | null, after: Json | null): stri
 }
 
 /* The row's own name, when it has one — a title, a name, a label, a key —
-   so the log reads "voyages · Night Sail" rather than a uuid. */
+   so the log reads "episodes · Night Sail" rather than a uuid. */
 function rowName(before: Json | null, after: Json | null, rowId: string | null): string {
   const src = (after ?? before) as Record<string, Json | undefined> | null;
   if (src && typeof src === "object" && !Array.isArray(src)) {
@@ -144,7 +144,7 @@ export default async function ReportsPage() {
 
   const [
     profilesRes,
-    voyagesRes,
+    episodesRes,
     capacityRes,
     ledgerRes,
     rollRes,
@@ -168,15 +168,15 @@ export default async function ReportsPage() {
     schedulerRes,
   ] = await Promise.all([
     supabase.from("profiles").select("status, joined_at"),
-    supabase.from("voyages").select("id, title, distance_nm, kind, status, starts_at"),
-    supabase.from("voyage_capacity").select("*"),
+    supabase.from("episodes").select("id, title, distance_nm, kind, status, starts_at"),
+    supabase.from("episode_capacity").select("*"),
     supabase
       .from("account_ledger")
       .select("delta_cents, created_at")
       .lt("delta_cents", 0)
       .gte("created_at", seasonStart),
     supabase.from("member_roll").select("invite_code"),
-    supabase.from("fathoms_ledger").select("voyage_id, delta").not("voyage_id", "is", null),
+    supabase.from("knots_ledger").select("episode_id, delta").not("episode_id", "is", null),
     /* notifications is member-private and has no staff policy, so counting it
        directly returned the operator's own notices — 0 weather, while 14 had
        gone out. The definer returns the number and never the rows. */
@@ -184,17 +184,17 @@ export default async function ReportsPage() {
     /* Counted in the database: PostgREST caps a response at 1000, and these
        queues are past it, so counting fetched rows froze every figure. */
     supabase.rpc("delivery_health"),
-    supabase.from("voyage_vessels").select("voyage_id, vessel_id, position"),
+    supabase.from("episode_vessels").select("episode_id, vessel_id, position"),
     supabase.from("vessels").select("id, capacity"),
     supabase
-      .from("rsvps")
-      .select("voyage_id, vessel_id")
+      .from("passes")
+      .select("episode_id, vessel_id")
       .eq("status", "aboard")
       .not("vessel_id", "is", null),
     supabase
       .from("account_ledger")
-      .select("voyage_id, delta_cents")
-      .not("voyage_id", "is", null),
+      .select("episode_id, delta_cents")
+      .not("episode_id", "is", null),
     supabase.from("subscriptions").select("status, interval, plan_id, updated_at"),
     supabase.from("membership_plans").select("id, price_cents, annual_price_cents"),
     supabase
@@ -202,7 +202,7 @@ export default async function ReportsPage() {
       .select("total_cents, down_payment_cents, installments, paid_count, status"),
 
     supabase.from("pass_transfers").select("status"),
-    supabase.from("rsvps").select("id", { count: "exact", head: true }).eq("comp", true),
+    supabase.from("passes").select("id", { count: "exact", head: true }).eq("comp", true),
     /* A failed letter was a number and nothing else. `failed` is terminal — the
        drain reads only `pending` — so a row that gave up sat there with no
        address, no template and no reason on any screen, and the migration that
@@ -253,18 +253,18 @@ export default async function ReportsPage() {
   const newThisSeason = profiles.filter((p) => p.joined_at >= seasonStart).length;
 
   /* Berth fill — past + live, non-cancelled */
-  const voyages = must(voyagesRes);
+  const episodes = must(episodesRes);
   const capacity = new Map(
-    (must(capacityRes)).filter((c) => c.voyage_id).map((c) => [c.voyage_id as string, c])
+    (must(capacityRes)).filter((c) => c.episode_id).map((c) => [c.episode_id as string, c])
   );
-  const sailed = voyages.filter(
+  const sailed = episodes.filter(
     (v) =>
       v.status !== "cancelled" &&
       (v.status === "completed" || v.status === "live" || v.starts_at <= nowIso)
   );
   const sailedAboard = sailed.reduce((t, v) => t + (capacity.get(v.id)?.aboard ?? 0), 0);
   const sailedBerths = sailed.reduce(
-    (t, v) => t + (capacity.get(v.id)?.berths_total ?? 0),
+    (t, v) => t + (capacity.get(v.id)?.passes_total ?? 0),
     0
   );
   const fillPct = sailedBerths ? Math.round((sailedAboard / sailedBerths) * 100) : 0;
@@ -278,46 +278,46 @@ export default async function ReportsPage() {
   const referralPct = roll.length ? Math.round((referred / roll.length) * 100) : 0;
 
   /* Knots paid per episode (the ledger table keeps its legacy name) */
-  const knotsByVoyage = new Map<string, number>();
+  const knotsByEpisode = new Map<string, number>();
   for (const f of must(knotsRes)) {
-    if (!f.voyage_id || f.delta <= 0) continue;
-    knotsByVoyage.set(f.voyage_id, (knotsByVoyage.get(f.voyage_id) ?? 0) + f.delta);
+    if (!f.episode_id || f.delta <= 0) continue;
+    knotsByEpisode.set(f.episode_id, (knotsByEpisode.get(f.episode_id) ?? 0) + f.delta);
   }
 
   /* Per-yacht fill — flotilla episodes only. */
   const vesselCapacity = new Map((must(vesselsRes)).map((v) => [v.id, v.capacity]));
   const berthsByVessel = new Map<string, number>();
   for (const r of must(berthRes)) {
-    const key = `${r.voyage_id}:${r.vessel_id}`;
+    const key = `${r.episode_id}:${r.vessel_id}`;
     berthsByVessel.set(key, (berthsByVessel.get(key) ?? 0) + 1);
   }
-  const flotillaByVoyage = new Map<string, Array<{ vessel_id: string; position: number }>>();
+  const flotillaByEpisode = new Map<string, Array<{ vessel_id: string; position: number }>>();
   for (const vv of must(flotillaRes)) {
-    const list = flotillaByVoyage.get(vv.voyage_id) ?? [];
+    const list = flotillaByEpisode.get(vv.episode_id) ?? [];
     list.push(vv);
-    flotillaByVoyage.set(vv.voyage_id, list);
+    flotillaByEpisode.set(vv.episode_id, list);
   }
-  const perYachtLine = (voyageId: string): string => {
-    const list = (flotillaByVoyage.get(voyageId) ?? []).sort((a, b) => a.position - b.position);
+  const perYachtLine = (episodeId: string): string => {
+    const list = (flotillaByEpisode.get(episodeId) ?? []).sort((a, b) => a.position - b.position);
     if (list.length === 0) return "—";
     return list
       .map(
         (vv) =>
-          `${berthsByVessel.get(`${voyageId}:${vv.vessel_id}`) ?? 0}/${vesselCapacity.get(vv.vessel_id) ?? 0}`
+          `${berthsByVessel.get(`${episodeId}:${vv.vessel_id}`) ?? 0}/${vesselCapacity.get(vv.vessel_id) ?? 0}`
       )
       .join(" · ");
   };
 
   /* Net revenue per episode — pass and deposit charges, add-ons, credits,
-     and refunds all carry the voyage_id; the sum is the net. */
-  const revenueByVoyage = new Map<string, number>();
+     and refunds all carry the episode_id; the sum is the net. */
+  const revenueByEpisode = new Map<string, number>();
   for (const l of must(voyageLedgerRes)) {
-    if (!l.voyage_id) continue;
-    revenueByVoyage.set(l.voyage_id, (revenueByVoyage.get(l.voyage_id) ?? 0) + l.delta_cents);
+    if (!l.episode_id) continue;
+    revenueByEpisode.set(l.episode_id, (revenueByEpisode.get(l.episode_id) ?? 0) + l.delta_cents);
   }
 
   /* Holds */
-  const holdsLive = voyages.filter((v) => v.status === "weather_hold").length;
+  const holdsLive = episodes.filter((v) => v.status === "weather_hold").length;
   const weatherNotices = mustValue<number>(weatherRes as { data: number | null; error?: { message?: string } | null }, 0);
 
   /* Outbox health, counted in the database rather than in the first page of
@@ -482,7 +482,7 @@ export default async function ReportsPage() {
   const transfersOffered = transfers.filter((t) => t.status === "offered").length;
   const compedPasses = compsRes.count ?? 0;
 
-  const fillRows: FillRow[] = voyages
+  const fillRows: FillRow[] = episodes
     .filter((v) => v.status !== "cancelled")
     .sort((a, b) => (a.starts_at < b.starts_at ? 1 : -1))
     .map((v) => {
@@ -490,11 +490,11 @@ export default async function ReportsPage() {
       return {
         id: v.id,
         title: v.title,
-        fill: `${c?.aboard ?? 0}/${c?.berths_total ?? 0}`,
+        fill: `${c?.aboard ?? 0}/${c?.passes_total ?? 0}`,
         perYacht: perYachtLine(v.id),
         nm: v.distance_nm != null ? String(v.distance_nm) : "—",
-        knots: (knotsByVoyage.get(v.id) ?? 0).toLocaleString("en-US"),
-        revenue: netDollars(revenueByVoyage.get(v.id) ?? 0),
+        knots: (knotsByEpisode.get(v.id) ?? 0).toLocaleString("en-US"),
+        revenue: netDollars(revenueByEpisode.get(v.id) ?? 0),
       };
     });
 

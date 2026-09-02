@@ -26,12 +26,12 @@ export interface QueueRow {
 }
 
 export function QueuePanel({
-  voyageId,
+  episodeId,
   rows,
   capacity,
   asOf,
 }: {
-  voyageId: string;
+  episodeId: string;
   rows: QueueRow[];
   capacity: SegmentCapacityRow[];
   /** Request time, read on the server and passed down. The expiry comparison
@@ -70,7 +70,7 @@ export function QueuePanel({
     start(async () => {
       setError(null);
       setSaid(null);
-      const res = await offerTheNextPlace(voyageId, s);
+      const res = await offerTheNextPlace(episodeId, s);
       if (res.error) setError(res.error);
       else setSaid(`Offered to position one in ${SEGMENT_LABEL[s].toLowerCase()}. One notice, six hours.`);
     });

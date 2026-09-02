@@ -9,7 +9,7 @@ import { approveMedia, removeMedia, unapproveMedia } from "./actions";
 
 export type MediaCard = {
   id: string;
-  voyageId: string;
+  episodeId: string;
   voyageTitle: string;
   uploader: string;
   caption: string;
@@ -22,19 +22,19 @@ export type MediaCard = {
 
 export function MediaClient({
   cards,
-  voyages,
+  episodes,
 }: {
   cards: MediaCard[];
-  voyages: Array<{ id: string; title: string }>;
+  episodes: Array<{ id: string; title: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
-  const [voyageId, setVoyageId] = React.useState("");
+  const [episodeId, setEpisodeId] = React.useState("");
   const [state, setState] = React.useState("pending");
   const [removing, setRemoving] = React.useState<MediaCard | null>(null);
 
   const shown = cards.filter((c) => {
-    if (voyageId && c.voyageId !== voyageId) return false;
+    if (episodeId && c.episodeId !== episodeId) return false;
     if (state === "pending" && c.approved) return false;
     if (state === "approved" && !c.approved) return false;
     return true;
@@ -53,11 +53,11 @@ export function MediaClient({
       <div className="hm-filters">
         <Select
           label="Episode"
-          value={voyageId}
-          onChange={(e) => setVoyageId(e.target.value)}
+          value={episodeId}
+          onChange={(e) => setEpisodeId(e.target.value)}
           options={[
             { value: "", label: "Every episode" },
-            ...voyages.map((v) => ({ value: v.id, label: v.title })),
+            ...episodes.map((v) => ({ value: v.id, label: v.title })),
           ]}
         />
         <Select

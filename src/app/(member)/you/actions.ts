@@ -23,7 +23,7 @@ export async function updateProfile(
 
   const fullName = String(formData.get("full_name") ?? "").trim();
   const handle = String(formData.get("handle") ?? "").trim();
-  const homeHarbor = String(formData.get("home_harbor") ?? "");
+  const homeCity = String(formData.get("home_city") ?? "");
   const avatarTone = String(formData.get("avatar_tone") ?? "ink");
   const bio = String(formData.get("bio") ?? "").trim();
   const allowed = new Set<string>(INTERESTS);
@@ -41,7 +41,7 @@ export async function updateProfile(
     .update({
       full_name: fullName,
       handle: handle || null,
-      home_harbor: homeHarbor || null,
+      home_city: homeCity || null,
       avatar_tone: TONES.has(avatarTone) ? avatarTone : "ink",
       bio: bio || null,
       interests,

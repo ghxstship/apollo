@@ -18,14 +18,14 @@ export type ProposalRow = {
   proposerMark: string | null;
   title: string;
   format: string | null;
-  formatLabel: string | null;
+  seriesLabel: string | null;
   note: string | null;
   proposedFor: string | null;
   status: "submitted" | "considering" | "approved" | "declined";
   decisionNote: string | null;
   raisedAt: string;
   /* The episode this became, once the Bridge raised it and linked it. */
-  voyageId: string | null;
+  episodeId: string | null;
   voyageLabel: string | null;
   [key: string]: unknown;
 };
@@ -34,7 +34,7 @@ export type CharterRow = {
   id: string;
   proposer: string;
   proposerMark: string | null;
-  formatLabel: string | null;
+  seriesLabel: string | null;
   partySize: number | null;
   preferredDates: string | null;
   note: string | null;
@@ -80,18 +80,18 @@ function plainDate(yyyyMmDd: string): string {
 export function ProposalsClient({
   rows,
   charters,
-  voyages,
+  episodes,
 }: {
   rows: ProposalRow[];
   charters: CharterRow[];
-  voyages: Array<{ value: string; label: string }>;
+  episodes: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [declining, setDeclining] = React.useState<ProposalRow | null>(null);
   const [declineNote, setDeclineNote] = React.useState("");
   const [approving, setApproving] = React.useState<ProposalRow | null>(null);
-  const [approveVoyage, setApproveVoyage] = React.useState("");
+  const [approveEpisode, setApproveEpisode] = React.useState("");
   /* Per-row re-link picks for approved proposals not yet tied to an episode. */
   const [links, setLinks] = React.useState<Record<string, string>>({});
 
@@ -131,10 +131,10 @@ export function ProposalsClient({
       ),
     },
     {
-      key: "format",
+      key: "series",
       label: "Shape",
       width: 120,
-      render: (r: ProposalRow) => r.formatLabel ?? "Open",
+      render: (r: ProposalRow) => r.seriesLabel ?? "Open",
     },
     {
       key: "proposedFor",
@@ -187,7 +187,7 @@ export function ProposalsClient({
               variant="ghost"
               disabled={pending}
               onClick={() => {
-                setApproveVoyage("");
+                setApproveEpisode("");
                 setApproving(r);
               }}
             >
@@ -205,7 +205,7 @@ export function ProposalsClient({
               Decline
             </Button>
           </span>
-        ) : r.status === "approved" && !r.voyageId ? (
+        ) : r.status === "approved" && !r.episodeId ? (
           <span style={{ display: "flex", gap: 6, alignItems: "flex-end", flexWrap: "wrap" }}>
             <Select
               aria-label={`Episode for ${r.title}`}
@@ -213,8 +213,8 @@ export function ProposalsClient({
               onChange={(e) => setLinks((p) => ({ ...p, [r.id]: e.target.value }))}
               style={{ minWidth: 180 }}
               options={[
-                { value: "", label: voyages.length ? "Link the episode" : "Nothing on the board" },
-                ...voyages,
+                { value: "", label: episodes.length ? "Link the episode" : "Nothing on the board" },
+                ...episodes,
               ]}
             />
             <Button
@@ -256,10 +256,10 @@ export function ProposalsClient({
       ),
     },
     {
-      key: "format",
+      key: "series",
       label: "Shape",
       width: 130,
-      render: (r: CharterRow) => r.formatLabel ?? "Open",
+      render: (r: CharterRow) => r.seriesLabel ?? "Open",
     },
     {
       key: "party",
@@ -328,7 +328,7 @@ export function ProposalsClient({
      operator opens this screen for, and it was nowhere on it. */
   const waiting = rows.filter((r) => r.status === "submitted" || r.status === "considering").length;
   const chartersWaiting = charters.filter((r) => r.status === "submitted").length;
-  const unlinked = rows.filter((r) => r.status === "approved" && !r.voyageId).length;
+  const unlinked = rows.filter((r) => r.status === "approved" && !r.episodeId).length;
 
   return (
     <>
@@ -400,7 +400,7 @@ export function ProposalsClient({
                 disabled={pending}
                 onClick={() => {
                   const r = approving;
-                  const v = approveVoyage || null;
+                  const v = approveEpisode || null;
                   setApproving(null);
                   run(
                     () => decideProposal(r.id, "approved", undefined, v),
@@ -415,7 +415,7 @@ export function ProposalsClient({
                   );
                 }}
               >
-                {approveVoyage ? "Approve + link" : "Approve"}
+                {approveEpisode ? "Approve + link" : "Approve"}
               </Button>
             </>
           ) : null
@@ -429,11 +429,11 @@ export function ProposalsClient({
           <Select
             label="The episode it became"
             hint="Optional — leave it if the episode is not raised yet."
-            value={approveVoyage}
-            onChange={(e) => setApproveVoyage(e.target.value)}
+            value={approveEpisode}
+            onChange={(e) => setApproveEpisode(e.target.value)}
             options={[
-              { value: "", label: voyages.length ? "Not yet raised" : "Nothing on the board" },
-              ...voyages,
+              { value: "", label: episodes.length ? "Not yet raised" : "Nothing on the board" },
+              ...episodes,
             ]}
           />
         </div>

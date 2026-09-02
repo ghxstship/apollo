@@ -12,7 +12,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { slug } = await params;
   const supabase = await createClient();
   const { data: post } = await supabase
-    .from("dispatch_posts")
+    .from("log_posts")
     .select("title, dek, tag, published_at")
     .eq("slug", slug)
     .maybeSingle();

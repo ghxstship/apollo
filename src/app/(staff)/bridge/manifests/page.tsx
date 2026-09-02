@@ -8,7 +8,7 @@ import {
   AddToManifest,
   FleetStrip,
   RosterTable,
-  VoyagePicker,
+  EpisodePicker,
   type FleetVessel,
   type RosterRow,
 } from "./roster-client";
@@ -18,22 +18,22 @@ export const metadata: Metadata = { title: "Manifests" };
 export default async function ManifestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ voyage?: string }>;
+  searchParams: Promise<{ episode?: string }>;
 }) {
   const { supabase } = await getOperator();
   const sp = await searchParams;
 
   /* Upcoming episodes — keep today's earlier departures on the board. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
-  const voyagesRes = await supabase
-    .from("voyages")
+  const episodesRes = await supabase
+    .from("episodes")
     .select("*")
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
     .order("starts_at", { ascending: true });
-  const voyages = must(voyagesRes);
+  const episodes = must(episodesRes);
 
-  if (voyages.length === 0) {
+  if (episodes.length === 0) {
     return (
       <div>
         <span className="hm-eyebrow">Manifests</span>
@@ -50,17 +50,17 @@ export default async function ManifestsPage({
     );
   }
 
-  const voyage = voyages.find((v) => v.id === sp.voyage) ?? voyages[0];
+  const episode = episodes.find((v) => v.id === sp.episode) ?? episodes[0];
 
-  const rsvpsRes = await supabase
-    .from("rsvps")
+  const passesRes = await supabase
+    .from("passes")
     .select("*")
-    .eq("voyage_id", voyage.id)
+    .eq("episode_id", episode.id)
     .neq("status", "not_going")
     .order("created_at", { ascending: true });
-  const rsvps = must(rsvpsRes);
+  const passes = must(passesRes);
 
-  const profileIds = rsvps.map((r) => r.profile_id);
+  const profileIds = passes.map((r) => r.profile_id);
   const profilesRes = profileIds.length
     ? await supabase
         .from("profiles")
@@ -92,11 +92,11 @@ export default async function ManifestsPage({
   }));
 
   /* The flotilla for this episode — yachts in position order, fill from
-     rsvps.vessel_id (aboard berths only). */
+     passes.vessel_id (aboard berths only). */
   const voyageVesselsRes = await supabase
-    .from("voyage_vessels")
+    .from("episode_vessels")
     .select("vessel_id, position")
-    .eq("voyage_id", voyage.id)
+    .eq("episode_id", episode.id)
     .order("position", { ascending: true });
   const vesselIds = (must(voyageVesselsRes)).map((vv) => vv.vessel_id);
   const vesselsRes = vesselIds.length
@@ -107,23 +107,23 @@ export default async function ManifestsPage({
   /* Per-guest filming consent, captured when the guest signed. The sheet used
      to derive off-camera from the HOST's profile alone, so a guest who declined
      never reached the floor at all. */
-  const rsvpIds = rsvps.map((r) => r.id);
+  const rsvpIds = passes.map((r) => r.id);
   const guestRowsRes = rsvpIds.length
     ? await supabase
-        .from("rsvp_guests")
+        .from("pass_guests")
         .select("rsvp_id, name, on_camera")
         .in("rsvp_id", rsvpIds)
     : { data: [] };
-  const guestsByRsvp = new Map<string, Array<{ name: string; onCamera: boolean }>>();
+  const guestsByPass = new Map<string, Array<{ name: string; onCamera: boolean }>>();
   for (const g of must(guestRowsRes)) {
     if (!g.rsvp_id) continue;
-    guestsByRsvp.set(g.rsvp_id, [
-      ...(guestsByRsvp.get(g.rsvp_id) ?? []),
+    guestsByPass.set(g.rsvp_id, [
+      ...(guestsByPass.get(g.rsvp_id) ?? []),
       { name: g.name, onCamera: g.on_camera !== false },
     ]);
   }
 
-  const aboardRsvps = rsvps.filter((r) => r.status === "aboard");
+  const aboardPasses = passes.filter((r) => r.status === "aboard");
   const fleet: FleetVessel[] = (must(voyageVesselsRes))
     .map((vv) => vesselById.get(vv.vessel_id))
     .filter((v): v is NonNullable<typeof v> => Boolean(v))
@@ -131,25 +131,25 @@ export default async function ManifestsPage({
       id: v.id,
       name: v.name,
       capacity: v.capacity,
-      filled: aboardRsvps.filter((r) => r.vessel_id === v.id).length,
+      filled: aboardPasses.filter((r) => r.vessel_id === v.id).length,
     }));
-  const unassigned = aboardRsvps.filter((r) => !r.vessel_id).length;
+  const unassigned = aboardPasses.filter((r) => !r.vessel_id).length;
 
   const ordered = [
-    ...rsvps.filter((r) => r.status === "aboard"),
-    ...rsvps.filter((r) => r.status === "waitlist"),
+    ...passes.filter((r) => r.status === "aboard"),
+    ...passes.filter((r) => r.status === "waitlist"),
   ];
 
   const rows: RosterRow[] = ordered.map((r) => {
     const p = profiles.get(r.profile_id);
     return {
-      rsvpId: r.id,
+      passId: r.id,
       name: p?.full_name ?? "Unknown sailor",
       tone: p?.avatar_tone ?? "sand",
       memberNo: memberMark(p?.member_no) || "GUEST",
       guests: r.guests,
       guestNames: r.guest_names ?? [],
-      guestParty: guestsByRsvp.get(r.id) ?? [],
+      guestParty: guestsByPass.get(r.id) ?? [],
       comp: r.comp,
       boardingCode: r.boarding_code ?? "",
       status: r.status as "aboard" | "waitlist",
@@ -160,29 +160,29 @@ export default async function ManifestsPage({
     };
   });
 
-  const aboard = rsvps.filter((r) => r.status === "aboard");
+  const aboard = passes.filter((r) => r.status === "aboard");
   const checked = aboard.filter((r) => r.checked_in_at).length;
-  const waitlist = rsvps.filter((r) => r.status === "waitlist");
+  const waitlist = passes.filter((r) => r.status === "waitlist");
   const firstInOrder = waitlist.length
     ? (profiles.get(waitlist[0].profile_id)?.full_name ?? "Unknown sailor")
     : null;
-  const muster = voyage.muster ?? "—";
-  const conditions = readConditions(voyage.conditions);
+  const muster = episode.muster ?? "—";
+  const conditions = readConditions(episode.conditions);
 
   return (
     <div>
       <span className="hm-eyebrow">Manifests</span>
       <h1 className="hm-h1">
-        {logDate(voyage.starts_at, voyage.time_zone)}&apos;s manifest — {voyage.title.replace(/\.+$/, "")}.
+        {logDate(episode.starts_at, episode.time_zone)}&apos;s manifest — {episode.title.replace(/\.+$/, "")}.
       </h1>
 
       <div className="hm-sec" style={{ marginTop: 20 }}>
-        <VoyagePicker
-          options={voyages.map((v) => ({
+        <EpisodePicker
+          options={episodes.map((v) => ({
             value: v.id,
             label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,
           }))}
-          value={voyage.id}
+          value={episode.id}
         />
       </div>
 
@@ -207,9 +207,9 @@ export default async function ManifestsPage({
         />
       </div>
 
-      <FleetStrip voyageId={voyage.id} vessels={fleet} unassigned={unassigned} />
+      <FleetStrip episodeId={episode.id} vessels={fleet} unassigned={unassigned} />
 
-      <AddToManifest voyageId={voyage.id} voyageTitle={voyage.title} members={memberOptions} />
+      <AddToManifest episodeId={episode.id} voyageTitle={episode.title} members={memberOptions} />
 
       <RosterTable rows={rows} muster={muster} vessels={fleet} />
     </div>

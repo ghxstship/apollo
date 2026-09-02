@@ -20,7 +20,7 @@ import { voiceWith } from "@/lib/errors";
 
 export type OptionResult = { error?: string; heldUntil?: string };
 
-export async function holdCabinOnOption(voyageId: string, cabinId: string): Promise<OptionResult> {
+export async function holdCabinOnOption(episodeId: string, cabinId: string): Promise<OptionResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,7 +29,7 @@ export async function holdCabinOnOption(voyageId: string, cabinId: string): Prom
 
   const db = moduleTables(supabase);
   const { data, error } = await db.rpc("hold_a_cabin_on_option", {
-    p_voyage: voyageId,
+    p_episode: episodeId,
     p_cabin: cabinId,
   });
   /* The function already refuses in the club's register and says more than a

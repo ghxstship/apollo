@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
-import { signFrames } from "@/components/site/voyage-data";
+import { signFrames } from "@/components/site/episode-data";
 import { MediaClient, type MediaCard } from "./media-client";
 import { must } from "../../staff";
 
@@ -10,19 +10,19 @@ export default async function MediaPage() {
   const { supabase } = await getOperator();
 
   const mediaRes = await supabase
-    .from("voyage_media")
+    .from("episode_media")
     .select("*")
     .order("created_at", { ascending: false });
   const media = must(mediaRes);
 
-  const voyageIds = [...new Set(media.map((m) => m.voyage_id))];
+  const episodeIds = [...new Set(media.map((m) => m.episode_id))];
   const uploaderIds = [
     ...new Set(media.map((m) => m.uploaded_by).filter((id): id is string => !!id)),
   ];
 
-  const [voyagesRes, uploadersRes] = await Promise.all([
-    voyageIds.length
-      ? supabase.from("voyages").select("id, title, starts_at").in("id", voyageIds)
+  const [episodesRes, uploadersRes] = await Promise.all([
+    episodeIds.length
+      ? supabase.from("episodes").select("id, title, starts_at").in("id", episodeIds)
       : Promise.resolve({ data: [] as Array<{ id: string; title: string; starts_at: string }> }),
     uploaderIds.length
       ? supabase.from("profiles").select("id, full_name, member_no").in("id", uploaderIds)
@@ -31,7 +31,7 @@ export default async function MediaPage() {
         }),
   ]);
 
-  const voyages = new Map((must(voyagesRes)).map((v) => [v.id, v]));
+  const episodes = new Map((must(episodesRes)).map((v) => [v.id, v]));
   const uploaders = new Map((must(uploadersRes)).map((p) => [p.id, p]));
 
   /* The bucket is private, so the path is not a URL — this screen built one
@@ -45,13 +45,13 @@ export default async function MediaPage() {
   const signed = await signFrames(supabase, media.map((m) => m.storage_path));
 
   const cards: MediaCard[] = media.map((m) => {
-    const voyage = voyages.get(m.voyage_id);
+    const episode = episodes.get(m.episode_id);
     const uploader = m.uploaded_by ? uploaders.get(m.uploaded_by) : undefined;
     const uploaderName = uploader?.full_name ?? "Unknown hand";
     return {
       id: m.id,
-      voyageId: m.voyage_id,
-      voyageTitle: voyage?.title ?? "Voyage off the books",
+      episodeId: m.episode_id,
+      voyageTitle: episode?.title ?? "Episode off the books",
       uploader: uploader?.member_no ? `${uploaderName} · ${uploader.member_no}` : uploaderName,
       caption: m.caption ?? "",
       approved: m.approved,
@@ -60,7 +60,7 @@ export default async function MediaPage() {
     };
   });
 
-  const voyageOptions = [...voyages.values()]
+  const voyageOptions = [...episodes.values()]
     .sort((a, b) => (a.starts_at < b.starts_at ? 1 : -1))
     .map((v) => ({ id: v.id, title: v.title }));
 
@@ -72,7 +72,7 @@ export default async function MediaPage() {
         Members aboard send frames up; nothing shows until it is cleared here. Look at the faces
         before you clear it — consent is the whole test.
       </p>
-      <MediaClient cards={cards} voyages={voyageOptions} />
+      <MediaClient cards={cards} episodes={voyageOptions} />
     </div>
   );
 }

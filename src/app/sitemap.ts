@@ -35,30 +35,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   const supabase = await createClient();
-  const [{ data: voyages }, { data: posts }] = await Promise.all([
-    /* The listing shows scheduled/live/held sailings; the sitemap used to
-       publish every row, which put E2E fixtures and cancelled voyages in front
+  const [{ data: episodes }, { data: posts }] = await Promise.all([
+    /* The listing shows scheduled/live/held episodes; the sitemap used to
+       publish every row, which put E2E fixtures and cancelled episodes in front
        of search engines. One rule, both places. */
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("slug, created_at")
       .in("status", ["scheduled", "live", "weather_hold", "completed"]),
-    supabase.from("dispatch_posts").select("slug, published_at"),
+    supabase.from("log_posts").select("slug, published_at"),
   ]);
 
-  const voyageEntries: MetadataRoute.Sitemap = (voyages ?? []).map((v) => ({
+  const episodeEntries: MetadataRoute.Sitemap = (episodes ?? []).map((v) => ({
     url: `${SITE_URL}/episodes/${v.slug}`,
     lastModified: new Date(v.created_at),
     changeFrequency: "daily",
     priority: 0.8,
   }));
 
-  const dispatchEntries: MetadataRoute.Sitemap = (posts ?? []).map((p) => ({
+  const logEntries: MetadataRoute.Sitemap = (posts ?? []).map((p) => ({
     url: `${SITE_URL}/log/${p.slug}`,
     lastModified: new Date(p.published_at),
     changeFrequency: "monthly",
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...voyageEntries, ...dispatchEntries];
+  return [...staticEntries, ...episodeEntries, ...logEntries];
 }

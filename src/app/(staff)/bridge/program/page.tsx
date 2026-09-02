@@ -14,32 +14,32 @@ export const metadata: Metadata = { title: "Program" };
 export default async function ProgramPage() {
   const { supabase } = await getOperator();
 
-  const [seasonsRes, venuesRes, seriesRes, harborsRes, voyagesRes, upcomingRes] =
+  const [seasonsRes, venuesRes, seriesRes, citiesRes, episodesRes, upcomingRes] =
     await Promise.all([
       supabase.from("seasons").select("*").order("starts_on", { ascending: false }),
       supabase.from("venues").select("*").order("name", { ascending: true }),
-      supabase.from("voyage_series").select("*").order("created_at", { ascending: false }),
-      supabase.from("harbors").select("id, name").order("position", { ascending: true }),
+      supabase.from("editions").select("*").order("created_at", { ascending: false }),
+      supabase.from("cities").select("id, name").order("position", { ascending: true }),
       /* One read, three lookups: the per-season and per-series tallies, and the
          template titles for series rows — a template may already have sailed,
          so the upcoming picker below cannot answer for it. */
-      supabase.from("voyages").select("id, title, season_id, series_id"),
+      supabase.from("episodes").select("id, title, season_id, edition_id"),
       /* The template picker. A template seeds occurrences from its own start
          date forward, so only episodes still on the board are offered. */
       supabase
-        .from("voyages")
+        .from("episodes")
         .select("id, title, starts_at, time_zone")
         .in("status", ["scheduled", "live"])
         .order("starts_at", { ascending: true }),
     ]);
 
   const seasonCounts = new Map<string, number>();
-  const seriesCounts = new Map<string, number>();
-  const voyageTitles = new Map<string, string>();
-  for (const v of must(voyagesRes)) {
-    voyageTitles.set(v.id, v.title);
+  const editionCounts = new Map<string, number>();
+  const episodeTitles = new Map<string, string>();
+  for (const v of must(episodesRes)) {
+    episodeTitles.set(v.id, v.title);
     if (v.season_id) seasonCounts.set(v.season_id, (seasonCounts.get(v.season_id) ?? 0) + 1);
-    if (v.series_id) seriesCounts.set(v.series_id, (seriesCounts.get(v.series_id) ?? 0) + 1);
+    if (v.edition_id) editionCounts.set(v.edition_id, (editionCounts.get(v.edition_id) ?? 0) + 1);
   }
 
   const seasons: SeasonPanelRow[] = must(seasonsRes).map((s) => ({
@@ -49,16 +49,16 @@ export default async function ProgramPage() {
     startsOn: s.starts_on,
     endsOn: s.ends_on,
     active: s.active,
-    voyages: seasonCounts.get(s.id) ?? 0,
+    episodes: seasonCounts.get(s.id) ?? 0,
   }));
 
-  const harborNames = new Map(must(harborsRes).map((h) => [h.id, h.name]));
+  const harborNames = new Map(must(citiesRes).map((h) => [h.id, h.name]));
   const venues: VenuePanelRow[] = must(venuesRes).map((v) => ({
     id: v.id,
     slug: v.slug,
     name: v.name,
     kind: v.kind,
-    harbor: v.harbor_id ? (harborNames.get(v.harbor_id) ?? null) : null,
+    city: v.city_id ? (harborNames.get(v.city_id) ?? null) : null,
     active: v.active,
   }));
 
@@ -67,12 +67,12 @@ export default async function ProgramPage() {
     slug: s.slug,
     title: s.title,
     cadenceDays: s.cadence_days,
-    /* template_voyage_id went nullable when editions became nameable before
+    /* template_episode_id went nullable when editions became nameable before
        their first episode — an edition you cannot name until something is
        already scheduled into it is backwards. A run with no template yet
        prints the em dash the lookup miss already printed. */
-    template: (s.template_voyage_id ? voyageTitles.get(s.template_voyage_id) : null) ?? "—",
-    occurrences: seriesCounts.get(s.id) ?? 0,
+    template: (s.template_episode_id ? episodeTitles.get(s.template_episode_id) : null) ?? "—",
+    occurrences: editionCounts.get(s.id) ?? 0,
     active: s.active,
   }));
 
@@ -94,7 +94,7 @@ export default async function ProgramPage() {
         seasons={seasons}
         venues={venues}
         series={series}
-        harbors={must(harborsRes).map((h) => ({ value: h.id, label: h.name }))}
+        cities={must(citiesRes).map((h) => ({ value: h.id, label: h.name }))}
         templates={must(upcomingRes).map((v) => ({
           value: v.id,
           label: `${v.title} · ${logDate(v.starts_at, v.time_zone)}`,

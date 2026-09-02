@@ -71,8 +71,8 @@
       "access": "public"
     },
     {
-      "path": "/api/calendar/voyage/[slug]",
-      "file": "src/app/api/calendar/voyage/[slug]/route.ts",
+      "path": "/api/calendar/episode/[slug]",
+      "file": "src/app/api/calendar/episode/[slug]/route.ts",
       "type": "handler",
       "methods": [
         "GET"
@@ -221,6 +221,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/episodes",
+      "file": "src/app/(staff)/bridge/episodes/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/galley",
       "file": "src/app/(staff)/bridge/galley/page.tsx",
       "type": "page",
@@ -354,13 +361,6 @@
       "access": "member"
     },
     {
-      "path": "/bridge/voyages",
-      "file": "src/app/(staff)/bridge/voyages/page.tsx",
-      "type": "page",
-      "dynamic": false,
-      "access": "member"
-    },
-    {
       "path": "/card",
       "file": "src/app/(member)/card/page.tsx",
       "type": "page",
@@ -402,7 +402,7 @@
       "dynamic": true,
       "access": "public",
       "source": {
-        "table": "voyages",
+        "table": "episodes",
         "column": "slug"
       }
     },
@@ -476,7 +476,7 @@
       "dynamic": true,
       "access": "public",
       "source": {
-        "table": "dispatch_posts",
+        "table": "log_posts",
         "column": "slug"
       }
     },

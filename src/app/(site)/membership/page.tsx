@@ -36,7 +36,7 @@ const PLAN_TYPES: Array<{ type: Plan["plan_type"]; name: string; blurb: string }
    gates the ceiling — it just does not print. The cell's own note keeps the
    precise range, which is the half of the old string that was doing the work. */
 const TIER_HEADS: Array<[string, string]> = [
-  ["I", SUB_CLASSES.voyage.label],
+  ["I", SUB_CLASSES.passage.label],
   ["II", SUB_CLASSES.expedition.label],
   ["III", SUB_CLASSES.odyssey.label],
 ];

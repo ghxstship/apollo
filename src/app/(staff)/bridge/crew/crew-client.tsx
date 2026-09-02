@@ -8,7 +8,7 @@ import { setCandidateStage, setRoleOpen, type CrewStage } from "./actions";
 export type RoleRow = {
   id: string;
   title: string;
-  port: string;
+  city: string;
   meta: string;
   open: boolean;
 };
@@ -134,7 +134,7 @@ export function CrewClient({
                 <b>{r.title}</b>
                 <span>
                   {r.meta ? `${r.meta.toUpperCase()} · ` : ""}
-                  {r.port.toUpperCase()} · {inPipe} IN PIPE
+                  {r.city.toUpperCase()} · {inPipe} IN PIPE
                 </span>
               </button>
             );
@@ -146,7 +146,7 @@ export function CrewClient({
             <>
               <div className="hm-head">
                 <div>
-                  <span className="hm-eyebrow">{role.port}</span>
+                  <span className="hm-eyebrow">{role.city}</span>
                   <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-display-xs)", marginTop: 4 }}>
                     {role.title}
                   </h2>

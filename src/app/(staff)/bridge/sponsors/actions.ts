@@ -91,16 +91,16 @@ export async function setSponsorActive(id: string, active: boolean): Promise<Act
 /* Activation: the join row is what puts a name on an episode. Placement is a
    note for the crew — where the asset actually sits — not public copy. */
 export async function attachSponsor(
-  voyageId: string,
+  episodeId: string,
   sponsorId: string,
   placement: string
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!voyageId) return { error: "Pick the episode it rides on." };
+  if (!episodeId) return { error: "Pick the episode it rides on." };
 
-  const { error } = await supabase.from("voyage_sponsors").insert({
-    voyage_id: voyageId,
+  const { error } = await supabase.from("episode_sponsors").insert({
+    episode_id: episodeId,
     sponsor_id: sponsorId,
     placement: placement.trim() || null,
   });
@@ -114,24 +114,24 @@ export async function attachSponsor(
   return done();
 }
 
-export async function detachSponsor(voyageId: string, sponsorId: string): Promise<ActionResult> {
+export async function detachSponsor(episodeId: string, sponsorId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const { error } = await supabase
-    .from("voyage_sponsors")
+    .from("episode_sponsors")
     .delete()
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .eq("sponsor_id", sponsorId);
   if (error) return { error: ERR_LAND };
   return done();
 }
 
 /* What the activation has actually handed over, against what the tier
-   promises. voyage_sponsors.assets_delivered is the ticked list; the
+   promises. episode_sponsors.assets_delivered is the ticked list; the
    checklist itself is sponsor_tiers.assets for the sponsor's tier, read here
    so a stale screen cannot record an asset the card no longer carries. */
 export async function setAssetsDelivered(
-  voyageId: string,
+  episodeId: string,
   sponsorId: string,
   delivered: string[]
 ): Promise<ActionResult> {
@@ -156,11 +156,11 @@ export async function setAssetsDelivered(
   const kept = [...new Set(delivered)].filter((a) => owed.has(a));
 
   const { data: updated, error } = await supabase
-    .from("voyage_sponsors")
+    .from("episode_sponsors")
     .update({ assets_delivered: kept })
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .eq("sponsor_id", sponsorId)
-    .select("voyage_id");
+    .select("episode_id");
   if (error) return { error: ERR_LAND };
   if (!updated?.length) {
     return { error: "That sponsor is not on this episode — place the activation first." };
@@ -173,7 +173,7 @@ export async function setAssetsDelivered(
    sailing — "that sponsor is not on this sailing — place the activation
    first" — so the refusal already names the way out and passes as said. */
 export async function compAPass(
-  voyageId: string,
+  episodeId: string,
   sponsorId: string,
   profileId: string
 ): Promise<ActionResult> {
@@ -182,7 +182,7 @@ export async function compAPass(
   if (!profileId) return { error: "Pick the member the pass is for." };
 
   const { error } = await supabase.rpc("comp_a_pass_for_sponsor", {
-    p_voyage: voyageId,
+    p_episode: episodeId,
     p_sponsor: sponsorId,
     p_profile: profileId,
   });

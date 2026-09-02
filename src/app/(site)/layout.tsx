@@ -8,8 +8,8 @@ export default async function SiteLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const supabase = await createClient();
-  const { data: harbors } = await supabase
-    .from("harbors")
+  const { data: cities } = await supabase
+    .from("cities")
     .select("*")
     .order("position", { ascending: true });
 
@@ -17,7 +17,7 @@ export default async function SiteLayout({
     <>
       <SiteNav />
       <main id="main">{children}</main>
-      <SiteFooter harbors={harbors ?? []} />
+      <SiteFooter cities={cities ?? []} />
       <ProducerGate />
     </>
   );

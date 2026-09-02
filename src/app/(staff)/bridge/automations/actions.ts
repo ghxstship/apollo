@@ -10,7 +10,7 @@ export type TriggerEvent =
   | "member_joined"
   | "dues_failed";
 
-export type RuleConditions = { tier?: string; harbor?: string; class?: string };
+export type RuleConditions = { tier?: string; city?: string; setting?: string };
 export type RuleAction =
   | { kind: "notify"; title: string; body: string }
   | { kind: "email"; template: string }

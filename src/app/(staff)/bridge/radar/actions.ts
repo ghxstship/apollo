@@ -9,7 +9,7 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
    `open_the_radar` has existed since the module landed and had no caller
    anywhere — not in src/, not from a trigger, not from a function. It is the
-   only writer of voyage_radar, so voyage_radar had no rows, so /radar answered
+   only writer of episode_radar, so episode_radar had no rows, so /radar answered
    "Dark" to every member on every episode, radar_sweep and hold_the_radar_lock
    both refused with "radar does not run on this sailing", radar_picks and
    shared_anchors could never be written, and settle_the_match_guarantee
@@ -28,15 +28,15 @@ function done(): ActionResult {
   return {};
 }
 
-export async function openTheRadar(voyageId: string): Promise<ActionResult> {
+export async function openTheRadar(episodeId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  /* Through the RPC, never by writing voyage_radar directly. The four
+  /* Through the RPC, never by writing episode_radar directly. The four
      timestamps have to be read off the EPISODE'S zone — a clock built from the
      operator's browser would lock a Los Angeles episode at 17:30 Eastern — and
      the function is the one place that arithmetic is written down. */
-  const { error } = await moduleTables(supabase).rpc("open_the_radar", { p_voyage: voyageId });
+  const { error } = await moduleTables(supabase).rpc("open_the_radar", { p_episode: episodeId });
   if (error) return { error: voice(error) };
   return done();
 }
@@ -50,7 +50,7 @@ export type CutResult = { error?: string; cut?: number };
    an_anchor_is_never_extended trigger — expires_at may only ever come forward,
    so this write can end a contact and can never quietly re-open one.
 
-   It is a per-voyage cut, not a per-anchor one, and that is deliberate. Staff
+   It is a per-episode cut, not a per-anchor one, and that is deliberate. Staff
    can count anchors (the select policy admits is_staff), but a per-anchor
    control would have to render the pair — who anchored with whom — on a crew
    screen, and this page's own copy says a member's contacts are not crew
@@ -61,7 +61,7 @@ export type CutResult = { error?: string; cut?: number };
    write to anchors that are still alive, and it keeps already-expired rows out
    from under the never-extend trigger — setting an expired row to now() would
    count as an extension and abort the whole statement. */
-export async function cutAnchorsShort(voyageId: string): Promise<CutResult> {
+export async function cutAnchorsShort(episodeId: string): Promise<CutResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
@@ -69,7 +69,7 @@ export async function cutAnchorsShort(voyageId: string): Promise<CutResult> {
   const { data, error } = await moduleTables(supabase)
     .from("shared_anchors")
     .update({ expires_at: now })
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .gt("expires_at", now)
     .select("id");
   if (error) return { error: voice(error) };

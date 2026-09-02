@@ -17,11 +17,11 @@ export default async function StaffLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const { supabase, profile } = await getOperator();
 
-  const [{ data: harbors }, { data: keysOpen }] = await Promise.all([
-    supabase.from("harbors").select("name").order("position", { ascending: true }).limit(1),
+  const [{ data: cities }, { data: keysOpen }] = await Promise.all([
+    supabase.from("cities").select("name").order("position", { ascending: true }).limit(1),
     supabase.rpc("club_setting", { p_key: "keys_console_enabled" }),
   ]);
-  const harbor = profile.home_harbor ?? harbors?.[0]?.name ?? SURFACES.shoreside;
+  const city = profile.home_city ?? cities?.[0]?.name ?? SURFACES.shoreside;
   const hidden = keysOpen ? [] : ["/bridge/keys"];
 
   return (
@@ -30,7 +30,7 @@ export default async function StaffLayout({
         <div className="hm-top__in">
           <div>
             <Wordmark size="sm" suffix={null} />
-            <span className="hm-top__sub">{SURFACES.bridge} — {harbor}</span>
+            <span className="hm-top__sub">{SURFACES.bridge} — {city}</span>
           </div>
           <HmClock />
           <div className="hm-top__op">

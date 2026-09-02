@@ -15,7 +15,7 @@ const GROUPS = [
     ["/bridge/manifests", "Manifests"],
     /* The route segment is legacy plumbing, like the table it reads; the tab
        says what the console is for. */
-    ["/bridge/voyages", "Episodes"],
+    ["/bridge/episodes", "Episodes"],
     ["/bridge/itinerary", "Itinerary"],
     ["/bridge/composition", "Composition"],
     ["/bridge/program", "Program"],

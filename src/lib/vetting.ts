@@ -128,7 +128,7 @@ export const DRINKS = ["Zero proof", "Tequila", "Gin", "Wine", "Rum", "Whisky", 
    rather than typed as unknown, so an added column is a compile error at the
    one place that starts using it. */
 export interface SegmentCapacityRow {
-  voyage_id: string;
+  episode_id: string;
   segment: Segment;
   cap: number;
   units: number;
@@ -168,7 +168,7 @@ export interface BoundaryRow {
 
 export interface WaitlistRow {
   id: string;
-  voyage_id: string;
+  episode_id: string;
   segment: Segment;
   place: number;
   offered_at: string | null;

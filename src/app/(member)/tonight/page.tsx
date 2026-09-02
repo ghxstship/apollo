@@ -16,9 +16,9 @@ export default async function TablesPage() {
   const { supabase, user } = await getMember();
 
   const { data: nights } = await supabase
-    .from("voyages")
+    .from("episodes")
     .select("*")
-    .eq("class", "shore")
+    .eq("setting", "shore")
     .in("status", ["scheduled", "live"])
     .order("starts_at", { ascending: true })
     .limit(2);
@@ -26,7 +26,7 @@ export default async function TablesPage() {
   const nightIds = (nights ?? []).map((n) => n.id);
   const [{ data: tables }, { data: myPicks }] = await Promise.all([
     nightIds.length
-      ? supabase.from("dating_tables").select("*").in("voyage_id", nightIds).order("number")
+      ? supabase.from("tables").select("*").in("episode_id", nightIds).order("number")
       : Promise.resolve({ data: [] }),
     supabase.from("table_picks").select("*").eq("picker", user.id),
   ]);
@@ -51,7 +51,7 @@ export default async function TablesPage() {
   const nameOf = new Map((people ?? []).map((p) => [p.id, (p.full_name ?? "A guest").split(" ")[0]]));
 
   const views: TableView[] = (tables ?? []).map((t) => {
-    const night = (nights ?? []).find((n) => n.id === t.voyage_id);
+    const night = (nights ?? []).find((n) => n.id === t.episode_id);
     const mine = (seats ?? []).find((s) => s.table_id === t.id && s.profile_id === user.id);
     const taken = (seats ?? []).filter((s) => s.table_id === t.id && live(s));
     const started = night ? new Date(night.starts_at).getTime() < now : false;

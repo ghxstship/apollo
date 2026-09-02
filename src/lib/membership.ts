@@ -25,7 +25,7 @@
 
    THE DATA WAS TOUCHED, and this comment used to say it must not be. That was
    true when it was written and is not true now: the retired prefix was rewritten
-   out of profiles.member_no, rsvps.boarding_code, rsvp_guests.boarding_code and
+   out of profiles.member_no, passes.boarding_code, pass_guests.boarding_code and
    invites.code in the shared database, and the mint now emits the current one.
 
    Two worktrees then held opposite doctrines against one database — this file

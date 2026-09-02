@@ -12,7 +12,7 @@ export type DirectoryMember = {
   tone: "ink" | "sea" | "gold" | "sand";
   harborId: string;
   harborName: string;
-  harborCode: string;
+  cityCode: string;
   league: number;
   leagueName: string;
   passes: number;
@@ -22,7 +22,7 @@ export type DirectoryMember = {
   self: boolean;
 };
 
-export type HarborOption = { id: string; name: string };
+export type CityOption = { id: string; name: string };
 
 const LEAGUES = [1, 2, 3, 4, 5];
 
@@ -37,7 +37,7 @@ function RowBody({ m }: { m: DirectoryMember }) {
         </div>
         <div className="dir-row__where">
           {m.harborName}
-          {m.harborCode ? <span className="dir-row__code">{m.harborCode}</span> : null}
+          {m.cityCode ? <span className="dir-row__code">{m.cityCode}</span> : null}
           <span className="dir-row__dot">·</span>
           {m.leagueName}
         </div>
@@ -62,24 +62,24 @@ function RowBody({ m }: { m: DirectoryMember }) {
 
 export function DirectoryList({
   members,
-  harbors,
+  cities,
   total,
 }: {
   members: DirectoryMember[];
-  harbors: HarborOption[];
+  cities: CityOption[];
   /* Everyone listed, which may be more than the page has loaded. */
   total?: number;
 }) {
   const listed = total ?? members.length;
   const partial = listed > members.length;
   const [query, setQuery] = React.useState("");
-  const [harbor, setHarbor] = React.useState("all");
+  const [city, setCity] = React.useState("all");
   const [league, setLeague] = React.useState("all");
 
   const shown = React.useMemo(() => {
     const needle = query.trim().toLowerCase();
     return members.filter((m) => {
-      if (harbor !== "all" && m.harborId !== harbor) return false;
+      if (city !== "all" && m.harborId !== city) return false;
       if (league !== "all" && String(m.league) !== league) return false;
       if (!needle) return true;
       return (
@@ -88,7 +88,7 @@ export function DirectoryList({
         m.interests.some((i) => i.toLowerCase().includes(needle))
       );
     });
-  }, [members, query, harbor, league]);
+  }, [members, query, city, league]);
 
   return (
     <div className="dir">
@@ -101,11 +101,11 @@ export function DirectoryList({
       />
 
       <div className="dir-filters" role="group" aria-label={`Filter by ${PLACE.market}`}>
-        <Tag active={harbor === "all"} onClick={() => setHarbor("all")}>
+        <Tag active={city === "all"} onClick={() => setCity("all")}>
           All {PLACE.markets.toLowerCase()}
         </Tag>
-        {harbors.map((h) => (
-          <Tag key={h.id} active={harbor === h.id} onClick={() => setHarbor(h.id)}>
+        {cities.map((h) => (
+          <Tag key={h.id} active={city === h.id} onClick={() => setCity(h.id)}>
             {h.name}
           </Tag>
         ))}

@@ -18,7 +18,7 @@ export default async function CrewPage() {
   const roles: RoleRow[] = (must(rolesRes)).map((r) => ({
     id: r.id,
     title: r.title,
-    port: r.port,
+    city: r.city,
     meta: r.meta ?? "",
     open: r.open,
   }));

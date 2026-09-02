@@ -5,22 +5,22 @@ import { moduleTables } from "@/lib/module-tables";
 
    Almost everything the charter kit draws already exists here under another
    name, and where that is true this module renames rather than rebuilds:
-   the manifest is voyage_manifest(), the cabin is `cabins` under
-   guard_cabin_capacity(), the boarding stub is rsvps.boarding_code, and the
-   itinerary has lived in voyages.itinerary since the first migration.
+   the manifest is episode_manifest(), the cabin is `cabins` under
+   guard_cabin_capacity(), the boarding stub is passes.boarding_code, and the
+   itinerary has lived in episodes.itinerary since the first migration.
 
    Three things are genuinely new and only three: legs as rows (so a leg can be
-   revised and a revision can be timestamped), stops as rows (the 4×6 port guide
+   revised and a revision can be timestamped), stops as rows (the 4×6 place guide
    card, which is not a leg — a leg can have none), and the OPTION hold, which
    is the one charter state with no counterpart anywhere in the schema. */
 
 export type LegStatus = "planned" | "revised" | "held";
 
-export interface VoyageLeg {
+export interface EpisodeLeg {
   id: string;
-  voyage_id: string;
+  episode_id: string;
   day: number;
-  port: string;
+  place: string;
   note: string | null;
   starts_at: string | null;
   status: LegStatus;
@@ -31,9 +31,9 @@ export interface VoyageLeg {
   posted_at: string;
 }
 
-export interface VoyageStop {
+export interface EpisodeStop {
   id: string;
-  voyage_id: string;
+  episode_id: string;
   leg_id: string | null;
   position: number;
   name: string;
@@ -52,7 +52,7 @@ export interface CabinPlace {
 
 export interface CharterOption {
   id: string;
-  voyage_id: string;
+  episode_id: string;
   cabin_id: string;
   expires_at: string;
   taken_at: string;
@@ -61,15 +61,15 @@ export interface CharterOption {
 export interface CabinCard {
   id: string;
   name: string;
-  berths: number;
+  sleeps: number;
   deck: string | null;
   side: string | null;
   muster: string | null;
 }
 
 /* The kit's four episode states. CONFIRMED, WAITLIST and CLOSED are already
-   rsvp_status and voyage_status under other names; OPTION is the new one, and
-   it is a separate table rather than a fifth value on rsvp_status because eight
+   pass_status and episode_status under other names; OPTION is the new one, and
+   it is a separate table rather than a fifth value on pass_status because eight
    triggers switch on that enum and every one of them would have to learn that
    this value is not a booking. */
 export const CHARTER_STATES: Array<[string, string, string]> = [
@@ -85,42 +85,42 @@ export const SIDE_LABEL: Record<string, string> = {
   centre: "Centre",
 };
 
-export async function readLegs(supabase: unknown, voyageId: string): Promise<VoyageLeg[]> {
+export async function readLegs(supabase: unknown, episodeId: string): Promise<EpisodeLeg[]> {
   const db = moduleTables(supabase);
   const { data } = await db
-    .from("voyage_legs")
-    .select("id,voyage_id,day,port,note,starts_at,status,hold_reason,hold_new_plan,hold_unchanged,hold_posted_at,posted_at")
-    .eq("voyage_id", voyageId)
+    .from("episode_legs")
+    .select("id,episode_id,day,place,note,starts_at,status,hold_reason,hold_new_plan,hold_unchanged,hold_posted_at,posted_at")
+    .eq("episode_id", episodeId)
     .order("day");
-  return (data ?? []) as VoyageLeg[];
+  return (data ?? []) as EpisodeLeg[];
 }
 
-export async function readStops(supabase: unknown, voyageId: string): Promise<VoyageStop[]> {
+export async function readStops(supabase: unknown, episodeId: string): Promise<EpisodeStop[]> {
   const db = moduleTables(supabase);
   const { data } = await db
-    .from("voyage_stops")
-    .select("id,voyage_id,leg_id,position,name,tender_at,last_return,notes")
-    .eq("voyage_id", voyageId)
+    .from("episode_stops")
+    .select("id,episode_id,leg_id,position,name,tender_at,last_return,notes")
+    .eq("episode_id", episodeId)
     .order("position");
-  return (data ?? []) as VoyageStop[];
+  return (data ?? []) as EpisodeStop[];
 }
 
 /* Counted through a definer, never by reading charter_options directly. The
    difference is the difference between "Cabin 06 has one place left" and
    "Mara is thinking about Cabin 06" — a member is owed the first and owed none
    of the second. */
-export async function readCabinPlaces(supabase: unknown, voyageId: string): Promise<CabinPlace[]> {
+export async function readCabinPlaces(supabase: unknown, episodeId: string): Promise<CabinPlace[]> {
   const db = moduleTables(supabase);
-  const { data } = await db.rpc("cabin_places_open", { p_voyage: voyageId });
+  const { data } = await db.rpc("cabin_places_open", { p_episode: episodeId });
   return (data ?? []) as CabinPlace[];
 }
 
-export async function readMyOption(supabase: unknown, voyageId: string): Promise<CharterOption | null> {
+export async function readMyOption(supabase: unknown, episodeId: string): Promise<CharterOption | null> {
   const db = moduleTables(supabase);
   const { data } = await db
     .from("charter_options")
-    .select("id,voyage_id,cabin_id,expires_at,taken_at")
-    .eq("voyage_id", voyageId)
+    .select("id,episode_id,cabin_id,expires_at,taken_at")
+    .eq("episode_id", episodeId)
     .is("released_at", null)
     .is("confirmed_at", null)
     .gt("expires_at", new Date().toISOString())
@@ -132,7 +132,7 @@ export async function readCabin(supabase: unknown, cabinId: string): Promise<Cab
   const db = moduleTables(supabase);
   const { data } = await db
     .from("cabins")
-    .select("id,name,berths,deck,side,muster")
+    .select("id,name,sleeps,deck,side,muster")
     .eq("id", cabinId)
     .maybeSingle();
   return (data ?? null) as CabinCard | null;

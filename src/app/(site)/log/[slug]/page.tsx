@@ -13,7 +13,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const supabase = await createClient();
   const { data: post } = await supabase
-    .from("dispatch_posts")
+    .from("log_posts")
     .select("title, dek")
     .eq("slug", slug)
     .maybeSingle();
@@ -32,7 +32,7 @@ export default async function LoreArticlePage({
   const { slug } = await params;
   const supabase = await createClient();
   const { data: post } = await supabase
-    .from("dispatch_posts")
+    .from("log_posts")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();

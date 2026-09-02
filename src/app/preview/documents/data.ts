@@ -20,7 +20,7 @@ export type Clause = {
   condition: Record<string, unknown>;
 };
 
-export type Rendering = { class: string; body: string; clauses: Clause[] };
+export type Rendering = { setting: string; body: string; clauses: Clause[] };
 
 export type PreviewDocument = {
   code: string;
@@ -86,16 +86,20 @@ export async function readLibrary(): Promise<Library> {
       ]);
 
       const renderings: Rendering[] = [];
-      for (const cls of CONTEXTS) {
+      for (const setting of CONTEXTS) {
         const { data: body } = await supabase.rpc("render_document", {
           p_document_version_id: versionId,
-          p_context: { class: cls },
+          /* The wire key stays `class`: render_document matches p_context
+             against document_clauses.condition by containment, and every
+             stored condition is keyed {"class": ...}. The episodes column
+             became `setting`; this JSON key did not. */
+          p_context: { class: setting },
         });
         if (!body) continue;
         /* Two contexts that assemble identically are one rendering, not two —
            the crew agreement carries no conditional clause at all. */
         if (renderings.some((r) => r.body === body)) continue;
-        renderings.push({ class: cls, body, clauses: await readClauses(supabase, versionId, cls) });
+        renderings.push({ setting, body, clauses: await readClauses(supabase, versionId, setting) });
       }
       if (renderings.length === 0) continue;
 
@@ -125,7 +129,7 @@ type AdminClient = ReturnType<typeof createAdminClient>;
 async function readClauses(
   supabase: AdminClient,
   versionId: string,
-  cls: string
+  setting: string
 ): Promise<Clause[]> {
   const { data } = await supabase
     .from("document_clauses")
@@ -154,6 +158,8 @@ async function readClauses(
     .filter((c) => {
       const keys = Object.keys(c.condition);
       if (keys.length === 0) return true;
-      return keys.every((k) => (c.condition as Record<string, string>)[k] === (k === "class" ? cls : undefined));
+      /* Stored conditions are keyed `class`, not `setting` — the column was
+         renamed, this JSON key was not. */
+      return keys.every((k) => (c.condition as Record<string, string>)[k] === (k === "class" ? setting : undefined));
     });
 }

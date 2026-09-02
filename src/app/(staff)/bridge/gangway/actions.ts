@@ -21,7 +21,7 @@ export type ScanResult = {
   checkedInAt?: string;
   /* Set when the code matched a different upcoming episode than the one
      selected — the panel says which. */
-  otherVoyage?: string;
+  otherEpisode?: string;
 };
 
 const UPCOMING_STATUSES: Array<"scheduled" | "live" | "weather_hold"> = [
@@ -42,7 +42,7 @@ function upcomingCutoff(): string {
   return new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 }
 
-export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise<ScanResult> {
+export async function gangwayCheckIn(rawCode: string, episodeId: string): Promise<ScanResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
@@ -51,45 +51,45 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
 
   /* Selected episode first; fall back to any upcoming episode. */
   let { data: rsvp } = await supabase
-    .from("rsvps")
+    .from("passes")
     .select("*")
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .eq("boarding_code", code)
     .neq("status", "not_going")
     .maybeSingle();
 
-  let otherVoyage: string | undefined;
+  let otherEpisode: string | undefined;
   if (!rsvp) {
     const { data: upcoming } = await supabase
-      .from("voyages")
+      .from("episodes")
       .select("id, title")
       .gte("starts_at", upcomingCutoff())
       .in("status", UPCOMING_STATUSES);
-    const ids = (upcoming ?? []).map((v) => v.id).filter((id) => id !== voyageId);
+    const ids = (upcoming ?? []).map((v) => v.id).filter((id) => id !== episodeId);
     if (ids.length) {
       const { data: fallback } = await supabase
-        .from("rsvps")
+        .from("passes")
         .select("*")
-        .in("voyage_id", ids)
+        .in("episode_id", ids)
         .eq("boarding_code", code)
         .neq("status", "not_going")
         .maybeSingle();
       if (fallback) {
         rsvp = fallback;
-        otherVoyage = (upcoming ?? []).find((v) => v.id === fallback.voyage_id)?.title;
+        otherEpisode = (upcoming ?? []).find((v) => v.id === fallback.episode_id)?.title;
       }
     }
   }
 
   /* A guest stub carries its own code (…-G1) and its own signature gate. The
-     scanner could only ever resolve rsvps.boarding_code, so every guest stub
+     scanner could only ever resolve passes.boarding_code, so every guest stub
      the product issues — printed on the host's manifest, rendered as a QR, and
      captioned "Present at the gangway" — came back as "No pass under that
-     code", and the guest waiver gate (a trigger on rsvp_guests.checked_in_at)
+     code", and the guest waiver gate (a trigger on pass_guests.checked_in_at)
      never fired because nothing in the product ever wrote that column. */
   if (!rsvp) {
     const { data: guest } = await supabase
-      .from("rsvp_guests")
+      .from("pass_guests")
       .select("*")
       .eq("boarding_code", code)
       .maybeSingle();
@@ -103,15 +103,15 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
        to the dock in general. */
     if (guest) {
       const { data: host } = await supabase
-        .from("rsvps")
-        .select("voyage_id")
+        .from("passes")
+        .select("episode_id")
         .eq("id", guest.rsvp_id)
         .maybeSingle();
       const { data: gv } = host
         ? await supabase
-            .from("voyages")
+            .from("episodes")
             .select("title, starts_at, time_zone, status")
-            .eq("id", host.voyage_id)
+            .eq("id", host.episode_id)
             .maybeSingle()
         : { data: null };
       const sailed =
@@ -139,15 +139,15 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
          in front of somebody holding a real pass and being told it is not real.
          Look it up unscoped and say which episode it was for. */
       const { data: old } = await supabase
-        .from("rsvps")
-        .select("voyage_id")
+        .from("passes")
+        .select("episode_id")
         .eq("boarding_code", code)
         .maybeSingle();
       if (old) {
         const { data: v } = await supabase
-          .from("voyages")
+          .from("episodes")
           .select("title, starts_at, time_zone, status")
-          .eq("id", old.voyage_id)
+          .eq("id", old.episode_id)
           .maybeSingle();
         if (v) {
           return {
@@ -161,23 +161,23 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
       return { outcome: "not_found" };
     }
 
-    const { data: guestRsvp } = await supabase
-      .from("rsvps")
+    const { data: guestPass } = await supabase
+      .from("passes")
       .select("*")
       .eq("id", guest.rsvp_id)
       .maybeSingle();
 
     /* The guest rides on the host's pass: no pass, no boarding. Without this
        the scanner walked aboard a guest whose host had already released. */
-    if (!guestRsvp || guestRsvp.status !== "aboard") {
+    if (!guestPass || guestPass.status !== "aboard") {
       return { error: "That guest's host is not aboard — no pass, no boarding." };
     }
 
-    const { data: host } = guestRsvp
+    const { data: host } = guestPass
       ? await supabase
           .from("profiles")
           .select("full_name")
-          .eq("id", guestRsvp.profile_id)
+          .eq("id", guestPass.profile_id)
           .maybeSingle()
       : { data: null };
 
@@ -194,7 +194,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
 
     const guestAt = new Date().toISOString();
     const { error: guestError } = await supabase
-      .from("rsvp_guests")
+      .from("pass_guests")
       .update({ checked_in_at: guestAt, checked_in_by: staffId })
       .eq("id", guest.id);
 
@@ -227,7 +227,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     memberNo: memberMark(profile?.member_no) || "GUEST",
     vessel: vesselName,
     guestNames: rsvp.guest_names ?? [],
-    otherVoyage,
+    otherEpisode,
   };
 
   if (rsvp.checked_in_at) return { ...base, outcome: "already", checkedInAt: rsvp.checked_in_at };
@@ -239,7 +239,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
      done this since it was written; this path had not. */
   const checkedInAt = new Date().toISOString();
   const { data: stamped, error } = await supabase
-    .from("rsvps")
+    .from("passes")
     .update({ checked_in_at: checkedInAt, checked_in_by: staffId })
     .eq("id", rsvp.id)
     .is("checked_in_at", null)
@@ -249,7 +249,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
     /* Somebody stamped it between our read and our write. Not our stamp, and
        not a failure — the person is aboard. */
     const { data: fresh } = await supabase
-      .from("rsvps")
+      .from("passes")
       .select("checked_in_at")
       .eq("id", rsvp.id)
       .maybeSingle();
@@ -270,7 +270,7 @@ export async function gangwayCheckIn(rawCode: string, voyageId: string): Promise
    record that somebody physically walked aboard, and losing one means the
    manifest says they are ashore. */
 export async function gangwayFlush(
-  rsvpId: string,
+  passId: string,
   atIso: string
 ): Promise<{ error?: string; final?: boolean }> {
   const { supabase, staffId } = await staffContext();
@@ -278,9 +278,9 @@ export async function gangwayFlush(
   const at = new Date(atIso);
   const stamp = Number.isNaN(at.getTime()) ? new Date().toISOString() : at.toISOString();
   const { data: landed, error } = await supabase
-    .from("rsvps")
+    .from("passes")
     .update({ checked_in_at: stamp, checked_in_by: staffId })
-    .eq("id", rsvpId)
+    .eq("id", passId)
     .is("checked_in_at", null)
     .select("id");
   if (error) {
@@ -305,9 +305,9 @@ export async function gangwayFlush(
        in the queue. Indeterminate: never drop it silently. */
   if (!landed || landed.length === 0) {
     const { data: row } = await supabase
-      .from("rsvps")
+      .from("passes")
       .select("checked_in_at")
-      .eq("id", rsvpId)
+      .eq("id", passId)
       .maybeSingle();
     if (row?.checked_in_at) {
       return { error: "Already boarded on another device — that pass is aboard.", final: true };

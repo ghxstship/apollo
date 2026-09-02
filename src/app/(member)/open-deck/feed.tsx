@@ -22,7 +22,7 @@ export type FeedPost = {
   tone: "ink" | "sea" | "gold" | "sand";
   meta: string;
   body: string;
-  voyageId: string | null;
+  episodeId: string | null;
   voyageTitle: string | null;
   hails: number;
   myHail: boolean;
@@ -30,17 +30,17 @@ export type FeedPost = {
   comments: FeedComment[];
 };
 
-export type VoyageOption = { id: string; title: string };
+export type EpisodeOption = { id: string; title: string };
 
 /* — Composer — the kit's card: borderless textarea, episode attach, gold
    "Post to the deck". The confession-booth motif lives here, in the voice. */
 export function Composer({
-  voyages,
+  episodes,
   onHold = false,
 }: {
   authorName: string;
   tone: string;
-  voyages: VoyageOption[];
+  episodes: EpisodeOption[];
   /* A held membership cannot post; the deck says so rather than taking the
      words and refusing them at the door. */
   onHold?: boolean;
@@ -115,15 +115,15 @@ export function Composer({
         </p>
       ) : null}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {attaching && voyages.length > 0 ? (
+        {attaching && episodes.length > 0 ? (
           <Select
-            name="voyage_id"
+            name="episode_id"
             aria-label="Attach an episode"
             placeholder="Pick the episode"
-            options={voyages.map((v) => ({ value: v.id, label: v.title }))}
+            options={episodes.map((v) => ({ value: v.id, label: v.title }))}
             style={{ minWidth: 200 }}
           />
-        ) : voyages.length > 0 ? (
+        ) : episodes.length > 0 ? (
           <button
       className="ls-bare"
             type="button"
@@ -160,14 +160,14 @@ export function FeedList({ posts }: { posts: FeedPost[] }) {
   const threads = React.useMemo(() => {
     const seen = new Map<string, string>();
     for (const p of posts) {
-      if (p.voyageId && p.voyageTitle && !seen.has(p.voyageId)) {
-        seen.set(p.voyageId, p.voyageTitle);
+      if (p.episodeId && p.voyageTitle && !seen.has(p.episodeId)) {
+        seen.set(p.episodeId, p.voyageTitle);
       }
     }
     return Array.from(seen, ([id, title]) => ({ id, title }));
   }, [posts]);
 
-  const shown = filter ? posts.filter((p) => p.voyageId === filter) : posts;
+  const shown = filter ? posts.filter((p) => p.episodeId === filter) : posts;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -220,7 +220,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
   const [toasting, setToasting] = React.useState(false);
 
   /* Three of the four actions on a post threw their result away. RLS on
-     wardroom_hails, wardroom_comments and wardroom_flags all carry is_active(),
+     open_deck_hails, open_deck_comments and open_deck_flags all carry is_active(),
      so a member on hold pressed HAIL and nothing happened; opened REPLY, typed,
      pressed Reply, and the post still read "No words yet." with their text
      sitting in the box and no explanation anywhere — while the composer three

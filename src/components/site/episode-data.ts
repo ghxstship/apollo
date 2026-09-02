@@ -18,18 +18,18 @@ export interface FleetVessel {
 
 export interface Frame {
   id: string;
-  voyageId: string;
+  episodeId: string;
   url: string;
   caption: string | null;
 }
 
 export interface FrameGroup {
-  voyageId: string;
+  episodeId: string;
   slug: string;
   title: string;
   startsAt: string;
   cls: string;
-  harborCode: string | null;
+  cityCode: string | null;
   frames: Frame[];
 }
 
@@ -47,7 +47,7 @@ export async function signFrames(
   const signed = new Map<string, string>();
   if (paths.length === 0) return signed;
   const { data } = await supabase.storage
-    .from("voyage-media")
+    .from("episode-media")
     .createSignedUrls(paths, FRAME_URL_TTL_SECONDS);
   for (const row of data ?? []) {
     if (row.path && row.signedUrl) signed.set(row.path, row.signedUrl);
@@ -56,19 +56,19 @@ export async function signFrames(
 }
 
 /* Flotilla assignments for a set of episodes, in the Bridge's own order. */
-export async function fleetByVoyage(
-  voyageIds: string[]
+export async function fleetByEpisode(
+  episodeIds: string[]
 ): Promise<Map<string, FleetVessel[]>> {
-  const byVoyage = new Map<string, FleetVessel[]>();
-  if (voyageIds.length === 0) return byVoyage;
+  const byEpisode = new Map<string, FleetVessel[]>();
+  if (episodeIds.length === 0) return byEpisode;
   try {
     const supabase = await createClient();
     const { data: links } = await supabase
-      .from("voyage_vessels")
-      .select("voyage_id,vessel_id,position")
-      .in("voyage_id", voyageIds)
+      .from("episode_vessels")
+      .select("episode_id,vessel_id,position")
+      .in("episode_id", episodeIds)
       .order("position", { ascending: true });
-    if (!links || links.length === 0) return byVoyage;
+    if (!links || links.length === 0) return byEpisode;
     const { data: vessels } = await supabase
       .from("vessels")
       .select("id,name,capacity,length_ft,year,cabins")
@@ -77,7 +77,7 @@ export async function fleetByVoyage(
     for (const link of links) {
       const v = byId.get(link.vessel_id);
       if (!v) continue;
-      const list = byVoyage.get(link.voyage_id) ?? [];
+      const list = byEpisode.get(link.episode_id) ?? [];
       list.push({
         id: v.id,
         name: v.name,
@@ -86,26 +86,26 @@ export async function fleetByVoyage(
         year: v.year,
         cabins: v.cabins,
       });
-      byVoyage.set(link.voyage_id, list);
+      byEpisode.set(link.episode_id, list);
     }
   } catch {
     /* Unreachable data is not invented data — the fleet goes unstated. */
   }
-  return byVoyage;
+  return byEpisode;
 }
 
-export async function fleetFor(voyageId: string): Promise<FleetVessel[]> {
-  return (await fleetByVoyage([voyageId])).get(voyageId) ?? [];
+export async function fleetFor(episodeId: string): Promise<FleetVessel[]> {
+  return (await fleetByEpisode([episodeId])).get(episodeId) ?? [];
 }
 
 /* Approved frames for one episode, oldest first — the roll as it was shot. */
-export async function framesFor(voyageId: string): Promise<Frame[]> {
+export async function framesFor(episodeId: string): Promise<Frame[]> {
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("voyage_media")
-      .select("id,voyage_id,storage_path,caption")
-      .eq("voyage_id", voyageId)
+      .from("episode_media")
+      .select("id,episode_id,storage_path,caption")
+      .eq("episode_id", episodeId)
       .eq("approved", true)
       .order("created_at", { ascending: true });
     const signed = await signFrames(supabase, (data ?? []).map((m) => m.storage_path));
@@ -113,7 +113,7 @@ export async function framesFor(voyageId: string): Promise<Frame[]> {
       .filter((m) => signed.has(m.storage_path))
       .map((m) => ({
         id: m.id,
-        voyageId: m.voyage_id,
+        episodeId: m.episode_id,
         url: signed.get(m.storage_path) as string,
         caption: m.caption,
       }));
@@ -134,8 +134,8 @@ export async function frameGroups(limit = GALLERY_FRAME_LIMIT): Promise<FrameGro
   try {
     const supabase = await createClient();
     const { data: media } = await supabase
-      .from("voyage_media")
-      .select("id,voyage_id,storage_path,caption")
+      .from("episode_media")
+      .select("id,episode_id,storage_path,caption")
       .eq("approved", true)
       .order("created_at", { ascending: false })
       .limit(limit);
@@ -143,31 +143,31 @@ export async function frameGroups(limit = GALLERY_FRAME_LIMIT): Promise<FrameGro
     /* Newest-first is the cut; oldest-first is the reading order. */
     media.reverse();
 
-    const voyageIds = Array.from(new Set(media.map((m) => m.voyage_id)));
-    const { data: voyages } = await supabase
-      .from("voyages")
-      .select("id,slug,title,starts_at,class,harbor_id")
-      .in("id", voyageIds);
-    if (!voyages || voyages.length === 0) return [];
+    const episodeIds = Array.from(new Set(media.map((m) => m.episode_id)));
+    const { data: episodes } = await supabase
+      .from("episodes")
+      .select("id,slug,title,starts_at,setting,city_id")
+      .in("id", episodeIds);
+    if (!episodes || episodes.length === 0) return [];
 
     const harborIds = Array.from(
-      new Set(voyages.map((v) => v.harbor_id).filter((id): id is string => !!id))
+      new Set(episodes.map((v) => v.city_id).filter((id): id is string => !!id))
     );
-    const { data: harbors } = harborIds.length
-      ? await supabase.from("harbors").select("id,slug").in("id", harborIds)
+    const { data: cities } = harborIds.length
+      ? await supabase.from("cities").select("id,slug").in("id", harborIds)
       : { data: [] as Array<{ id: string; slug: string }> };
-    const harborSlug = new Map((harbors ?? []).map((h) => [h.id, h.slug] as const));
+    const citySlug = new Map((cities ?? []).map((h) => [h.id, h.slug] as const));
 
     const groups = new Map<string, FrameGroup>();
-    for (const v of voyages) {
-      const slug = v.harbor_id ? harborSlug.get(v.harbor_id) : null;
+    for (const v of episodes) {
+      const slug = v.city_id ? citySlug.get(v.city_id) : null;
       groups.set(v.id, {
-        voyageId: v.id,
+        episodeId: v.id,
         slug: v.slug,
         title: v.title,
         startsAt: v.starts_at,
-        cls: v.class,
-        harborCode: (slug && CITY_CODES[slug]) || null,
+        cls: v.setting,
+        cityCode: (slug && CITY_CODES[slug]) || null,
         frames: [],
       });
     }
@@ -175,9 +175,9 @@ export async function frameGroups(limit = GALLERY_FRAME_LIMIT): Promise<FrameGro
     for (const m of media) {
       const url = signedAll.get(m.storage_path);
       if (!url) continue;
-      groups.get(m.voyage_id)?.frames.push({
+      groups.get(m.episode_id)?.frames.push({
         id: m.id,
-        voyageId: m.voyage_id,
+        episodeId: m.episode_id,
         url,
         caption: m.caption,
       });

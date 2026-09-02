@@ -14,7 +14,7 @@ export function onSaleChip(saleOpensAt: string, zone: Zone): string {
   return `ON SALE ${logDateTime(saleOpensAt, zone)}`;
 }
 
-/* The deposit figure is the episode's own — voyages.deposit_cents — rendered
+/* The deposit figure is the episode's own — episodes.deposit_cents — rendered
    through price() so a zero would read as Complimentary rather than "$0".
    There is no club-wide figure: a surface that shows a deposit reads the row. */
 export function depositChip(cents: number): string {

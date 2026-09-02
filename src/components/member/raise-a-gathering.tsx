@@ -21,7 +21,7 @@ import {
 export type ProposalCard = {
   id: string;
   title: string;
-  formatLabel: string | null;
+  seriesLabel: string | null;
   proposedFor: string | null;
   status: "submitted" | "considering" | "approved" | "declined";
   decisionNote: string | null;
@@ -91,7 +91,7 @@ export function RaiseAGathering({
           />
           <Select
             label="Shape"
-            name="format"
+            name="series"
             options={formats}
             placeholder="Pick the shape"
           />
@@ -138,7 +138,7 @@ export function RaiseAGathering({
               <div style={{ minWidth: 0 }}>
                 <b>{p.title}</b>
                 <p className="mbr-mono" style={{ marginTop: 4 }}>
-                  {[p.formatLabel?.toUpperCase(), p.proposedFor ? plainDate(p.proposedFor) : null]
+                  {[p.seriesLabel?.toUpperCase(), p.proposedFor ? plainDate(p.proposedFor) : null]
                     .filter(Boolean)
                     .join(" · ") || "SHAPE OPEN"}
                 </p>

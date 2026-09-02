@@ -23,7 +23,7 @@ const KIND_LABEL: Record<string, string> = {
   policy: "Policy",
 };
 
-const CLASS_LABEL: Record<string, string> = {
+const SETTING_LABEL: Record<string, string> = {
   sea: "Afloat — aboard",
   shore: "Ashore — a shore night",
 };
@@ -128,8 +128,8 @@ function DocumentSection({ doc }: { doc: PreviewDocument }) {
       </div>
 
       {doc.renderings.map((r) => (
-        <div className="pv-render" key={r.class}>
-          <h3>{CLASS_LABEL[r.class] ?? r.class}</h3>
+        <div className="pv-render" key={r.setting}>
+          <h3>{SETTING_LABEL[r.setting] ?? r.setting}</h3>
           <ul className="pv-manifest">
             {r.clauses.map((c) => (
               <li key={`${c.clause_code}-${c.position}`}>

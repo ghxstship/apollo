@@ -19,7 +19,7 @@ function readConditions(raw: unknown): RuleConditions {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   const o = raw as Record<string, unknown>;
   const pick = (k: string) => (typeof o[k] === "string" && o[k] ? (o[k] as string) : undefined);
-  return { tier: pick("tier"), harbor: pick("harbor"), class: pick("class") };
+  return { tier: pick("tier"), city: pick("city"), setting: pick("setting") };
 }
 
 function readAction(raw: unknown): RuleAction {
@@ -41,9 +41,9 @@ function readAction(raw: unknown): RuleAction {
 export default async function AutomationsPage() {
   const { supabase } = await getOperator();
 
-  const [rulesRes, harborsRes, smsRes] = await Promise.all([
+  const [rulesRes, citiesRes, smsRes] = await Promise.all([
     supabase.from("automations").select("*").order("created_at", { ascending: false }),
-    supabase.from("harbors").select("slug, name").order("position", { ascending: true }),
+    supabase.from("cities").select("slug, name").order("position", { ascending: true }),
     supabase.from("sms_templates").select("code").eq("active", true).order("code"),
   ]);
 
@@ -59,7 +59,7 @@ export default async function AutomationsPage() {
     lastRunAt: a.last_run_at,
   }));
 
-  const harbors = (must(harborsRes)).map((h) => ({
+  const cities = (must(citiesRes)).map((h) => ({
     slug: h.slug,
     label: `${CITY_CODES[h.slug] ?? h.name.slice(0, 3).toUpperCase()} — ${h.name}`,
   }));
@@ -74,7 +74,7 @@ export default async function AutomationsPage() {
       </p>
       <AutomationsClient
         rows={rows}
-        harbors={harbors}
+        cities={cities}
         smsTemplates={(must(smsRes)).map((t) => t.code)}
       />
     </div>

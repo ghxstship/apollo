@@ -63,25 +63,25 @@ export default async function ThreadsPage() {
   const latest = new Map<string, { body: string; created_at: string; author_id: string | null }>();
   for (const m of messages) if (!latest.has(m.thread_id)) latest.set(m.thread_id, m);
 
-  const voyageIds = threads.map((t) => t.voyage_id).filter((v): v is string => !!v);
+  const episodeIds = threads.map((t) => t.episode_id).filter((v): v is string => !!v);
   const otherIds = roster.filter((r) => r.profile_id !== user.id).map((r) => r.profile_id);
 
-  const [voyagesRes, peopleRes] = await Promise.all([
-    voyageIds.length
-      ? supabase.from("voyages").select("id,title,class,starts_at").in("id", voyageIds)
+  const [episodesRes, peopleRes] = await Promise.all([
+    episodeIds.length
+      ? supabase.from("episodes").select("id,title,setting,starts_at").in("id", episodeIds)
       : Promise.resolve({ data: null }),
     otherIds.length
       ? supabase.from("member_directory").select("*").in("id", Array.from(new Set(otherIds)))
       : Promise.resolve({ data: null }),
   ]);
 
-  const voyageById = new Map((voyagesRes.data ?? []).map((v) => [v.id, v]));
+  const episodeById = new Map((episodesRes.data ?? []).map((v) => [v.id, v]));
   const peopleById = new Map<string, DirectoryMember>((peopleRes.data ?? []).map((p) => [p.id, p]));
 
   const rows = threads
     .map((t) => {
       const last = latest.get(t.id) ?? null;
-      const voyage = t.voyage_id ? voyageById.get(t.voyage_id) ?? null : null;
+      const episode = t.episode_id ? episodeById.get(t.episode_id) ?? null : null;
       const others = roster
         .filter((r) => r.thread_id === t.id && r.profile_id !== user.id)
         .map((r) => peopleById.get(r.profile_id))
@@ -91,7 +91,7 @@ export default async function ThreadsPage() {
       const unread = !!last && (!read || Date.parse(last.created_at) > Date.parse(read));
       const title =
         t.kind === "crew"
-          ? `${voyage?.title ?? t.title ?? "An episode"} — crew`
+          ? `${episode?.title ?? t.title ?? "An episode"} — crew`
           : t.kind === "direct"
             ? other?.full_name ?? "A member"
             : t.title ?? "Shoreside";
@@ -99,7 +99,7 @@ export default async function ThreadsPage() {
          is where it happens — afloat or ashore. */
       const eyebrow =
         t.kind === "crew"
-          ? SETTING_LABEL[voyage?.class ?? "sea"] ?? "Afloat"
+          ? SETTING_LABEL[episode?.setting ?? "sea"] ?? "Afloat"
           : t.kind === "direct"
             ? "Direct"
             : "Shoreside";

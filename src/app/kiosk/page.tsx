@@ -37,23 +37,23 @@ export default async function KioskPage() {
   /* The same board the gangway console and the check-in action work from:
      today's departures stay for 24 hours, upcoming line up after. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
-  const { data: voyages } = await supabase
-    .from("voyages")
+  const { data: episodes } = await supabase
+    .from("episodes")
     .select("id")
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"]);
-  const voyageIds = (voyages ?? []).map((v) => v.id);
+  const episodeIds = (episodes ?? []).map((v) => v.id);
 
   let passes: KioskPass[] = [];
-  if (voyageIds.length) {
-    const { data: rsvps } = await supabase
-      .from("rsvps")
-      .select("id, voyage_id, profile_id, boarding_code, checked_in_at")
-      .in("voyage_id", voyageIds)
+  if (episodeIds.length) {
+    const { data: passRows } = await supabase
+      .from("passes")
+      .select("id, episode_id, profile_id, boarding_code, checked_in_at")
+      .in("episode_id", episodeIds)
       .eq("status", "aboard")
       .not("boarding_code", "is", null);
 
-    const profileIds = [...new Set((rsvps ?? []).map((r) => r.profile_id))];
+    const profileIds = [...new Set((passRows ?? []).map((r) => r.profile_id))];
     const [profilesRes, waiverRes] = profileIds.length
       ? await Promise.all([
           supabase.from("profiles").select("id, full_name").in("id", profileIds),
@@ -70,9 +70,9 @@ export default async function KioskPage() {
       (waiverRes.data ?? []).map((w) => [w.profile_id, Boolean(w.current)])
     );
 
-    passes = (rsvps ?? []).map((r) => ({
-      rsvpId: r.id,
-      voyageId: r.voyage_id,
+    passes = (passRows ?? []).map((r) => ({
+      passId: r.id,
+      episodeId: r.episode_id,
       code: r.boarding_code ?? "",
       name: nameOf.get(r.profile_id) ?? "Sailor",
       waiverSigned: waiverCurrent.get(r.profile_id) ?? false,

@@ -6,7 +6,7 @@ import { setManifestVisibility } from "./actions";
 
 /* Every member was on every manifest, visible to the whole club, having never
    been asked. The consent this relies on existed as a column with a default of
-   true that nothing in the product ever wrote — and the rsvps update policy
+   true that nothing in the product ever wrote — and the passes update policy
    carried is_active(), so a member the club had placed on hold could not change
    it even through the API. The person most likely to want off a list was the
    one blocked from leaving it.

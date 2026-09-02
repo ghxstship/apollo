@@ -18,10 +18,10 @@ import { advancePod, enqueuePod, issueTheEnvelopes, seedTheBoard, setDeckState }
    so what these controls do is choose, not permit. */
 
 export function SignalFlags({
-  voyageId,
+  episodeId,
   flying,
 }: {
-  voyageId: string;
+  episodeId: string;
   flying: DeckState | null;
 }) {
   const [error, setError] = React.useState<string | null>(null);
@@ -30,7 +30,7 @@ export function SignalFlags({
   const raise = (state: DeckState | null) =>
     start(async () => {
       setError(null);
-      const res = await setDeckState(voyageId, state);
+      const res = await setDeckState(episodeId, state);
       if (res.error) setError(res.error);
     });
 
@@ -81,12 +81,12 @@ export function SignalFlags({
 }
 
 export function PodQueue({
-  voyageId,
+  episodeId,
   sessions,
   names,
   candidates,
 }: {
-  voyageId: string;
+  episodeId: string;
   sessions: PodSessionRow[];
   names: Record<string, string>;
   /** Aboard passes not yet in the queue — the only rows enqueuePod can add. */
@@ -109,7 +109,7 @@ export function PodQueue({
   const add = () =>
     start(async () => {
       setError(null);
-      const res = await enqueuePod(voyageId, pick);
+      const res = await enqueuePod(episodeId, pick);
       if (res.error) setError(res.error);
       else setPick("");
     });
@@ -214,7 +214,7 @@ export function PodQueue({
   );
 }
 
-export function BoardControls({ voyageId, empty }: { voyageId: string; empty: boolean }) {
+export function BoardControls({ episodeId, empty }: { episodeId: string; empty: boolean }) {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, start] = React.useTransition();
 
@@ -228,11 +228,11 @@ export function BoardControls({ voyageId, empty }: { voyageId: string; empty: bo
   return (
     <div className="shw-acts">
       {empty ? (
-        <Button size="sm" disabled={pending} onClick={() => run(() => seedTheBoard(voyageId))}>
+        <Button size="sm" disabled={pending} onClick={() => run(() => seedTheBoard(episodeId))}>
           Lay out the run of show
         </Button>
       ) : null}
-      <Button variant="outline" size="sm" disabled={pending} onClick={() => run(() => issueTheEnvelopes(voyageId))}>
+      <Button variant="outline" size="sm" disabled={pending} onClick={() => run(() => issueTheEnvelopes(episodeId))}>
         Issue the envelopes
       </Button>
       {error ? (

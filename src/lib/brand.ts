@@ -35,8 +35,25 @@
    - Agent = the Producer (confirm-first; money always asks). The engine is
      Aurora, the shared ATLVS intelligence — the Producer is its [un] face;
      Aurora is never named in member-facing copy (see BANNED_TERMS).
-   - Internal DB names (voyages, fathoms_ledger, wardroom_*, rsvps…) are legacy
-     plumbing; display names come from here. */
+   - The plumbing is no longer exempt. Until 2026-09-02 this file ended by
+     saying that internal DB names (voyages, fathoms_ledger, wardroom_*, rsvps)
+     were legacy plumbing and that display names came from here. The owner
+     overturned that and asked for full alignment, so the schema was renamed to
+     match: voyages became episodes, harbors became cities, activity_formats
+     became series, rsvps became passes, and the stored values berth and
+     chandlery became pass and shop.
+
+     This file did NOT become redundant. It still owns capitalisation, the
+     article, the plural, and every phrase a column cannot hold — Home Port is
+     not home_city, The Bridge is not bridge, and Special is a word no column
+     stores at all. What changed is that a reader and a query now use the same
+     nouns, so the maps below are translations of case and not of meaning.
+
+     Note for anyone running a mechanical rename again: THIS FILE MUST BE
+     EXEMPT. It was included once, and the pass rewrote BANNED_TERMS itself —
+     turning the entry "harbor " into "city ", which bans the very word the
+     rename adopted. The gate would have failed the whole site on the new
+     vocabulary. Edit it by hand. */
 
 /* ── The anchor ─────────────────────────────────────────────────────────────
    Exported as a constant rather than typed at each call site so that "drop the
@@ -244,7 +261,7 @@ export const SURFACES = {
      word a viewer already owns, it carries the promise that another one is
      coming, and it collapses two near-identical ideas — the catalogue of kinds
      and the recurrence mechanism — into the one thing they always were.
-     activity_formats keeps its column names; they are plumbing. */
+     The table is called series now too — the plumbing was aligned on the same day. */
   series: "Series",
   /* An episode belonging to no series. Television calls a one-off exactly
      this, which is why series_id staying nullable is a feature rather than a
@@ -257,15 +274,19 @@ export const SURFACES = {
   galley: "The Galley",
 } as const;
 
-/* account_ledger.kind keeps its legacy values (berth, chandlery) because the
-   column is written by triggers all over the schema. What a member or an
-   operator reads is this. */
+/* The keys are account_ledger.kind and they now say what the labels say. Two of
+   them used to disagree — the column stored berth and chandlery, both banned
+   words, and this map quietly translated them on every render. That is the
+   arrangement the owner ended on 2026-09-02: the plumbing speaks the same
+   language as the page, so this map is a capitalisation table and nothing more.
+   It stays because a display name is still not a column name. */
 export const LEDGER_KIND: Record<string, string> = {
-  berth: "Pass",
+  pass: "Pass",
   deposit: "Deposit",
   addon: "Add-on",
   galley: "Galley",
-  chandlery: "Shop",
+  shop: "Shop",
+  dues: "Dues",
   credit: "Credit",
   refund: "Refund",
   payment: "Payment",
@@ -338,12 +359,14 @@ export const MARK_KIND: Record<string, string> = {
 
 export const CONTEST_METRIC: Record<string, string> = {
   nm: "nautical miles",
-  sailings: "episodes",
-  /* The key is the contest_metric enum value and stays; the label is what the
-     Bridge prints in its call-a-contest select and in the target line, so it
-     follows the city rename. This one is rendered unconditionally with no
-     contest data at all, which is why it fails the gate rather than hiding. */
-  harbors: "cities",
+  /* The keys are contests.metric and they moved with the column values on
+     2026-09-02: sailings became episodes and harbors became cities in the CHECK
+     and in the rows. This map is what the Bridge prints in its call-a-contest
+     select and in the target line, rendered unconditionally with no contest
+     data at all — which is why a stale key here fails the gate rather than
+     hiding until someone calls a contest. */
+  episodes: "episodes",
+  cities: "cities",
   vessels: "hulls",
   crew_met: "cast met",
   frames: "frames posted",
@@ -413,7 +436,11 @@ export const EXPERIENCE_CLASSES: Record<ExperienceClassId, { label: string; what
    rest of this brand is careful to avoid. The key is plumbing; the label is
    what a member reads. */
 export const SUB_CLASSES: Record<string, { label: string; note: string }> = {
-  voyage: { label: "Up to 4 hours", note: "Under 4 hours" },
+  /* passage, not voyage: an episode cannot also be one third of its own
+     duration ladder, and voyage is a retired display noun. The key reaches a
+     reader in exactly one place — the refusal that tells a member their plan
+     stops short capitalises it — which is why it was not exempt. */
+  passage: { label: "Up to 4 hours", note: "Under 4 hours" },
   expedition: { label: "Up to 8 hours", note: "4–8 hours" },
   odyssey: { label: "Any length", note: "Over 8 hours" },
 };
@@ -450,7 +477,7 @@ export function editionName(series: string, city?: string | null): string {
    year — and never held a dock, which is why Harbor read wrong the moment the
    club started running episodes ashore. A city has both water and streets.
 
-   The place an episode actually happens is the VENUE (voyages.venue_id), which
+   The place an episode actually happens is the VENUE (episodes.venue_id), which
    is the hospitality word and works identically for a marina and a rooftop.
    Site was considered and dropped: it duplicates venue, it collides with the
    (site) route group, and it is a production word like call sheet. */
@@ -589,7 +616,7 @@ export const BANNED_TERMS = [
   "harbor ",
   /* Retired 2026-09-02 with the Series rename. Format is a production word in
      the same family as call sheet and a member never sees one; Series is the
-     word a viewer already owns. The activity_formats table, voyages.format and
+     word a viewer already owns. The series table, episodes.series and
      every guard that reads them keep their names, because the gate greps
      VISIBLE TEXT only - tags and attributes are stripped before the match, so
      plumbing is structurally exempt and the bare word can be banned outright.

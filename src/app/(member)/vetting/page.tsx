@@ -42,12 +42,12 @@ export const metadata: Metadata = { title: "Vetting" };
    name, so the rename is partway through the set and a kit is not on its own
    authority for a brand string. */
 
-interface VoyageRow {
+interface EpisodeRow {
   id: string;
   title: string;
   starts_at: string;
   time_zone: string;
-  berths_total: number;
+  passes_total: number;
   held_passes: number;
 }
 
@@ -60,8 +60,8 @@ export default async function VettingPage() {
      belong to and then takes the soonest — no second column to fall out of sync
      with the ceilings it is meant to describe. */
   const { data: upcoming } = await supabase
-    .from("voyages")
-    .select("id, title, starts_at, time_zone, berths_total, held_passes")
+    .from("episodes")
+    .select("id, title, starts_at, time_zone, passes_total, held_passes")
     .in("status", ["scheduled", "live"])
     .gte("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true })
@@ -69,12 +69,12 @@ export default async function VettingPage() {
 
   const ids = (upcoming ?? []).map((v) => v.id);
   const { data: caps } = ids.length
-    ? await db.from("voyage_segment_capacity").select("*").in("voyage_id", ids)
+    ? await db.from("episode_segment_capacity").select("*").in("episode_id", ids)
     : { data: [] as SegmentCapacityRow[] };
 
-  const gatedId = (upcoming ?? []).find((v) => (caps ?? []).some((c) => c.voyage_id === v.id))?.id ?? null;
-  const sailing = ((upcoming ?? []) as VoyageRow[]).find((v) => v.id === gatedId) ?? null;
-  const rows = ((caps ?? []) as SegmentCapacityRow[]).filter((c) => c.voyage_id === gatedId);
+  const gatedId = (upcoming ?? []).find((v) => (caps ?? []).some((c) => c.episode_id === v.id))?.id ?? null;
+  const sailing = ((upcoming ?? []) as EpisodeRow[]).find((v) => v.id === gatedId) ?? null;
+  const rows = ((caps ?? []) as SegmentCapacityRow[]).filter((c) => c.episode_id === gatedId);
 
   const [{ data: state }, { data: sheet }, { data: boundaries }, { data: passes }, { data: line }] =
     await Promise.all([
@@ -82,10 +82,10 @@ export default async function VettingPage() {
       db.from("preference_sheets").select("*").eq("profile_id", user.id).maybeSingle(),
       db.from("preference_boundaries").select("*").eq("profile_id", user.id),
       gatedId
-        ? db.from("rsvps").select("id, segment, status").eq("profile_id", user.id).eq("voyage_id", gatedId)
+        ? db.from("passes").select("id, segment, status").eq("profile_id", user.id).eq("episode_id", gatedId)
         : Promise.resolve({ data: [] }),
       gatedId
-        ? db.from("waitlist_entries").select("*").eq("profile_id", user.id).eq("voyage_id", gatedId)
+        ? db.from("waitlist_entries").select("*").eq("profile_id", user.id).eq("episode_id", gatedId)
         : Promise.resolve({ data: [] }),
     ]);
 
@@ -93,19 +93,19 @@ export default async function VettingPage() {
      RLS would return their own row and nothing else to a member, so an
      unconditional query would quietly render an empty crew panel to everybody. */
   const { data: queue } = profile?.is_staff && gatedId
-    ? await db.from("waitlist_entries").select("id, segment, place, offered_at, claim_expires_at, claimed_at, released_at").eq("voyage_id", gatedId).order("place")
+    ? await db.from("waitlist_entries").select("id, segment, place, offered_at, claim_expires_at, claimed_at, released_at").eq("episode_id", gatedId).order("place")
     : { data: [] };
 
   const file = (state ?? null) as VettingStateRow | null;
   const seated = (passes ?? []).find((p) => p.status === "aboard");
   const mySegment: Segment | null = seated && isSegment(seated.segment) ? seated.segment : null;
 
-  /* The second head on a couple pass — one rsvp_guests row, kind 'partner'.
+  /* The second head on a couple pass — one pass_guests row, kind 'partner'.
      Read only when there is a couple seat to read it for. */
   const { data: partnerRow } =
     seated && mySegment === "couple"
       ? await supabase
-          .from("rsvp_guests")
+          .from("pass_guests")
           .select("name")
           .eq("rsvp_id", seated.id)
           .eq("kind", "partner")
@@ -217,11 +217,11 @@ export default async function VettingPage() {
         {/* The gate, or the reason there is nothing to gate */}
         {sailing && rows.length ? (
           <GatePanel
-            voyageId={sailing.id}
+            episodeId={sailing.id}
             title={sailing.title}
             when={`${logDate(sailing.starts_at, sailing.time_zone)} · ${logTime(sailing.starts_at, sailing.time_zone)}`}
             rows={rows}
-            hull={Math.max((sailing.berths_total ?? 0) - (sailing.held_passes ?? 0), 0)}
+            hull={Math.max((sailing.passes_total ?? 0) - (sailing.held_passes ?? 0), 0)}
             mySegment={mySegment}
             myPartner={myPartner}
             myLine={myLine}
@@ -242,7 +242,7 @@ export default async function VettingPage() {
       {profile?.is_staff && sailing && rows.length ? (
         <section className="mbr-sec">
           <QueuePanel
-            voyageId={sailing.id}
+            episodeId={sailing.id}
             rows={(queue ?? []) as QueueRow[]}
             capacity={rows}
             asOf={new Date().getTime()}

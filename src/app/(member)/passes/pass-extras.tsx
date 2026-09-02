@@ -1,7 +1,7 @@
 "use client";
 
 /* Ticketing polish, kept in its own file so the Review & confirm dialog in
-   rsvp-controls.tsx stays legible: waitlist auto-claim, member-to-member
+   pass-controls.tsx stays legible: waitlist auto-claim, member-to-member
    hand-offs, per-guest stubs, codes at checkout, and crew forming. */
 
 import React from "react";
@@ -45,11 +45,11 @@ function Problem({ message }: { message: string | null }) {
 /* — 1. Waitlist: where you stand, and whether we claim for you — */
 
 export function WaitlistClaim({
-  voyageId,
+  episodeId,
   position,
   autoClaim,
 }: {
-  voyageId: string;
+  episodeId: string;
   position: number | null;
   autoClaim: boolean;
 }) {
@@ -61,7 +61,7 @@ export function WaitlistClaim({
     setOn(next);
     setError(null);
     startTransition(async () => {
-      const res = await setAutoClaim(voyageId, next);
+      const res = await setAutoClaim(episodeId, next);
       if (res.error) {
         setOn(!next);
         setError(res.error);
@@ -100,12 +100,12 @@ export function WaitlistClaim({
 /* — 2. Hand-off: a pass moves between members, never for cash — */
 
 export function HandOff({
-  rsvpId,
+  passId,
   voyageTitle,
   members,
   offer,
 }: {
-  rsvpId: string | null;
+  passId: string | null;
   voyageTitle: string;
   members: MemberOption[];
   offer: StandingOffer | null;
@@ -144,7 +144,7 @@ export function HandOff({
     );
   }
 
-  if (!rsvpId) return null;
+  if (!passId) return null;
 
   return (
     <>
@@ -169,7 +169,7 @@ export function HandOff({
               onClick={() => {
                 setError(null);
                 startTransition(async () => {
-                  const res = await offerPass(rsvpId, choice);
+                  const res = await offerPass(passId, choice);
                   if (res.error) setError(res.error);
                   else {
                     setOpen(false);
@@ -272,12 +272,12 @@ export function GuestStubs({ guests, partner = null }: { guests: GuestStub[]; pa
 /* — 4. A code at checkout. The Bridge issues them; we only ever check. — */
 
 export function PromoField({
-  voyageId,
+  episodeId,
   applied,
   onApplied,
   onCleared,
 }: {
-  voyageId: string;
+  episodeId: string;
   applied: AppliedPromo | null;
   onApplied: (promo: AppliedPromo) => void;
   onCleared: () => void;
@@ -310,7 +310,7 @@ export function PromoField({
   const submit = () => {
     setError(null);
     startTransition(async () => {
-      const res = await applyPromo(raw, voyageId);
+      const res = await applyPromo(raw, episodeId);
       if (res.ok) {
         onApplied({ code: res.code, kind: res.kind, value: res.value, passCents: res.passCents });
         setRaw("");
@@ -353,12 +353,12 @@ export function PromoField({
 /* — 5. Crew forming: say you're sailing solo, or find who else is — */
 
 export function CrewCall({
-  voyageId,
+  episodeId,
   mine,
   seekers,
   canPost = true,
 }: {
-  voyageId: string;
+  episodeId: string;
   /* The member's own open request on this episode, if they posted one. */
   mine: CrewSeeker | null;
   /* Everyone else's open requests — shown once you're aboard. */
@@ -374,7 +374,7 @@ export function CrewCall({
   const withdraw = () => {
     setError(null);
     startTransition(async () => {
-      const res = await withdrawCrewRequest(voyageId);
+      const res = await withdrawCrewRequest(episodeId);
       if (res.error) setError(res.error);
     });
   };
@@ -445,7 +445,7 @@ export function CrewCall({
               onClick={() => {
                 setError(null);
                 startTransition(async () => {
-                  const res = await postCrewRequest(voyageId, note);
+                  const res = await postCrewRequest(episodeId, note);
                   if (res.error) setError(res.error);
                   else {
                     setOpen(false);

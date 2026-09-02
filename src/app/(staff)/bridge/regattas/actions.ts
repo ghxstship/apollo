@@ -5,7 +5,7 @@ import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staf
 
 export type ContestShape = "regatta" | "challenge";
 export type ContestScope = "member" | "crew";
-export type ContestMetric = "nm" | "sailings" | "harbors" | "vessels" | "crew_met" | "frames";
+export type ContestMetric = "nm" | "episodes" | "cities" | "vessels" | "crew_met" | "frames";
 
 export type NewContest = {
   title: string;
@@ -14,7 +14,7 @@ export type NewContest = {
   shape: ContestShape;
   scope: ContestScope;
   /** Required when scope is crew — crew_scope_has_voyage is a check constraint. */
-  voyageId: string | null;
+  episodeId: string | null;
   metric: ContestMetric;
   target: number;
   prize: string;
@@ -59,11 +59,11 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
     return { error: "A challenge needs a number to reach." };
 
   /* Crew scope was complete server-side long before this composer could send
-     it: the check constraint (crew_scope_has_voyage) requires the voyage, and
+     it: the check constraint (crew_scope_has_voyage) requires the episode, and
      the "enter yourself" policy on contest_entries already admits only that
      episode's aboard passes. As with the target, the database enforces this
      too; the message here is the readable one. */
-  if (input.scope === "crew" && !input.voyageId)
+  if (input.scope === "crew" && !input.episodeId)
     return { error: "A crew contest runs on one episode — pick it first." };
 
   const { error } = await supabase.from("contests").insert({
@@ -72,7 +72,7 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
     blurb: input.blurb.trim() || null,
     shape: input.shape,
     scope: input.scope,
-    voyage_id: input.scope === "crew" ? input.voyageId : null,
+    episode_id: input.scope === "crew" ? input.episodeId : null,
     metric: input.metric,
     target: input.shape === "challenge" ? Math.round(input.target) : null,
     prize: input.prize.trim() || null,

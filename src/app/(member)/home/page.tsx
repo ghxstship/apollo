@@ -16,14 +16,14 @@ export default async function HomePortPage() {
   const { supabase, user, profile, zone } = await getMember();
   const nowIso = new Date().toISOString();
 
-  const [harborRes, rsvpsRes, liveRes, balanceRes, wordRes, planRes, usageRes] =
+  const [cityRes, passesRes, liveRes, balanceRes, wordRes, planRes, usageRes] =
     await Promise.all([
-      profile?.home_harbor
-        ? supabase.from("harbors").select("name,coordinates").eq("id", profile.home_harbor).maybeSingle()
+      profile?.home_city
+        ? supabase.from("cities").select("name,coordinates").eq("id", profile.home_city).maybeSingle()
         : Promise.resolve({ data: null }),
-      supabase.from("rsvps").select("voyage_id").eq("profile_id", user.id).eq("status", "aboard"),
-      supabase.from("voyages").select("id,title").eq("status", "live").limit(LIVE_LIMIT),
-      supabase.from("fathoms_balance").select("balance").eq("profile_id", user.id).maybeSingle(),
+      supabase.from("passes").select("episode_id").eq("profile_id", user.id).eq("status", "aboard"),
+      supabase.from("episodes").select("id,title").eq("status", "live").limit(LIVE_LIMIT),
+      supabase.from("knots_balance").select("balance").eq("profile_id", user.id).maybeSingle(),
       supabase
         .from("notifications")
         .select("id,kind,title,body,read,created_at")
@@ -39,10 +39,10 @@ export default async function HomePortPage() {
   /* The next pass is the soonest upcoming episode this member is aboard —
      asked for by id, rather than reading every upcoming episode in the club
      and searching it for one of theirs. */
-  const aboardIds = (rsvpsRes.data ?? []).map((r) => r.voyage_id);
+  const aboardIds = (passesRes.data ?? []).map((r) => r.episode_id);
   const nextBerthRes = aboardIds.length
     ? await supabase
-        .from("voyages")
+        .from("episodes")
         .select("id,title,media,blurb,starts_at,distance_nm,time_zone")
         .in("id", aboardIds)
         .gte("starts_at", nowIso)
@@ -52,7 +52,7 @@ export default async function HomePortPage() {
         .maybeSingle()
     : { data: null };
 
-  const harbor = harborRes.data;
+  const city = cityRes.data;
   const nextBerth = nextBerthRes.data ?? null;
   const live = liveRes.data ?? [];
   const balance = balanceRes.data?.balance ?? 0;
@@ -92,12 +92,12 @@ export default async function HomePortPage() {
         </h1>
         <div className="mbr-mono" style={{ marginTop: 8 }}>
           {/* The club's own city is not the member's. Every fixture with a
-              null home_harbor was being told theirs was Marina del Rey. The
+              null home_city was being told theirs was Marina del Rey. The
               column keeps its name; the label reads the lexicon. */}
-          {harbor?.name
-            ? harbor.name.toUpperCase()
+          {city?.name
+            ? city.name.toUpperCase()
             : `NO HOME ${PLACE.market.toUpperCase()} YET`}
-          {harbor?.coordinates ? ` · ${harbor.coordinates}` : ""}
+          {city?.coordinates ? ` · ${city.coordinates}` : ""}
         </div>
       </div>
 

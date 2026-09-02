@@ -31,7 +31,7 @@ export type QueueLine = {
   claimed: number;
 };
 
-export function VoyagePicker({
+export function EpisodePicker({
   options,
   value,
 }: {
@@ -44,14 +44,14 @@ export function VoyagePicker({
       label="Episode"
       options={options}
       value={value}
-      onChange={(e) => router.replace(`/bridge/composition?voyage=${e.target.value}`)}
+      onChange={(e) => router.replace(`/bridge/composition?episode=${e.target.value}`)}
       style={{ maxWidth: 420 }}
     />
   );
 }
 
 export function CompositionPanel({
-  voyageId,
+  episodeId,
   voyageTitle,
   hull,
   hullCeiling,
@@ -60,15 +60,15 @@ export function CompositionPanel({
   rows,
   lines,
 }: {
-  voyageId: string;
+  episodeId: string;
   voyageTitle: string;
   /** Heads the hull carries net of operator holds — the number guard_the_ratio
       refuses against, and the only honest denominator for the head total. */
   hull: number;
-  /** voyages.hull_ceiling_heads — this flotilla's certified heads, or null to
+  /** episodes.hull_ceiling_heads — this flotilla's certified heads, or null to
       read the club's figure. */
   hullCeiling: number | null;
-  /** voyages.hull_certificate — the vessel, the authority and the certified
+  /** episodes.hull_certificate — the vessel, the authority and the certified
       number. a_tentpole_names_its_certificate requires it for any ceiling
       above the club's figure; below that it is a note. */
   hullCertificate: string | null;
@@ -83,7 +83,7 @@ export function CompositionPanel({
   const [confirmLift, setConfirmLift] = React.useState(false);
 
   /* The ceiling field holds a string so that blank can mean "club default"
-     rather than nought. Mounted under key={voyage.id} like the rest. */
+     rather than nought. Mounted under key={episode.id} like the rest. */
   const [ceilingDraft, setCeilingDraft] = React.useState(
     hullCeiling === null ? "" : String(hullCeiling)
   );
@@ -109,7 +109,7 @@ export function CompositionPanel({
   const effectiveCeiling = hullCeiling ?? clubCeiling;
 
   /* The draft ceilings belong to the episode on screen, and the page mounts
-     this panel under key={voyage.id} so switching the picker starts a fresh
+     this panel under key={episode.id} so switching the picker starts a fresh
      one. The alternative — resetting the draft from an effect — left the
      previous episode's ceilings in the fields under the new episode's name for
      one render, and that render is the one where somebody clicks Save. */
@@ -145,7 +145,7 @@ export function CompositionPanel({
 
   const save = () =>
     startTransition(async () => {
-      const res = await setTheComposition(voyageId, draft);
+      const res = await setTheComposition(episodeId, draft);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -159,7 +159,7 @@ export function CompositionPanel({
       const raw = ceilingDraft.trim();
       const heads = raw === "" ? null : Number(raw);
       const named = certificateDraft.trim();
-      const res = await setHullCeiling(voyageId, heads, named === "" ? null : named);
+      const res = await setHullCeiling(episodeId, heads, named === "" ? null : named);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -173,7 +173,7 @@ export function CompositionPanel({
 
   const lift = () =>
     startTransition(async () => {
-      const res = await liftTheComposition(voyageId);
+      const res = await liftTheComposition(episodeId);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         /* res.note names anyone released from the line. Lifting the ceilings
@@ -190,7 +190,7 @@ export function CompositionPanel({
 
   const offer = (s: Segment) =>
     startTransition(async () => {
-      const res = await offerTheNextPlace(voyageId, s);
+      const res = await offerTheNextPlace(episodeId, s);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({

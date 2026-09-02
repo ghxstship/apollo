@@ -20,7 +20,7 @@ import {
 } from "./actions";
 
 type CardAction =
-  | { type: "release"; voyageId: string }
+  | { type: "release"; episodeId: string }
   | { type: "releaseSlug"; slug: string }
   | { type: "hail"; question: string }
   | { type: "link"; href: string };
@@ -49,7 +49,7 @@ type ProducerApiResponse = {
   fallback?: boolean;
   reply?: string;
   action?:
-    | { kind: "reserve" | "release"; voyage_slug: string; title: string; summary: string }
+    | { kind: "reserve" | "release"; episode_slug: string; title: string; summary: string }
     | { kind: "hail_shoreside"; question: string; title: string; summary: string };
 };
 
@@ -70,7 +70,7 @@ function intentOf(text: string): Intent {
   const s = text.toLowerCase();
   if (/release|cancel|drop|give (up|back)/.test(s)) return "release";
   if (/next|my berth|my pass|aboard|when/.test(s)) return "berth";
-  if (/find|episode|sail|voyage|book|reserve|manifest/.test(s)) return "sailings";
+  if (/find|episode|sail|episode|book|reserve|manifest/.test(s)) return "sailings";
   if (/balance|knot|fathom|ledger|account|owe/.test(s)) return "balance";
   if (/weather|hold|wind|storm/.test(s)) return "weather";
   return null;
@@ -141,7 +141,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
       confirm: action.kind === "release" ? "Release it" : "Reserve",
       action:
         action.kind === "release"
-          ? { type: "releaseSlug", slug: action.voyage_slug }
+          ? { type: "releaseSlug", slug: action.episode_slug }
           : { type: "link", href: "/passes" },
     };
   };
@@ -232,7 +232,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
             title: `Release pass — ${res.berth.title}`,
             meta: `${logDateTime(res.berth.startsAt, res.berth.zone).toUpperCase()} · RELEASES 1 PASS TO THE WAITLIST`,
             confirm: "Release it",
-            action: { type: "release", voyageId: res.berth.voyageId },
+            action: { type: "release", episodeId: res.berth.episodeId },
           },
         ];
       });
@@ -300,7 +300,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
       }
       const res =
         action.type === "release"
-          ? await producerReleaseBerth(action.voyageId)
+          ? await producerReleaseBerth(action.episodeId)
           : await producerReleaseBerthBySlug(action.slug);
       if (res.error) return [{ kind: "bot", text: res.error }];
       return [

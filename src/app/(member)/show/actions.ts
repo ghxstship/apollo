@@ -8,7 +8,7 @@ import { DECK_STATES, POD_MAX_SECONDS, POD_STATES, type DeckState, type PodState
 
 /* Show — the crew's writes. Every one of these is refused for a non-staff caller
    by RLS on the table it touches (`is_staff()` on run_of_show, pod_sessions, and
-   the staff-write policy on voyages), so the checks here are for the message and
+   the staff-write policy on episodes), so the checks here are for the message and
    not for the authority.
 
    One thing is deliberately absent: there is no action that sets blur_required.
@@ -35,7 +35,7 @@ async function crew() {
 /* One flag flies at a time, which is a single-valued column rather than a table
    of hoisted flags — so "raise this one" is an update and lowering the previous
    one is not a separate act that can be forgotten. */
-export async function setDeckState(voyageId: string, state: string | null): Promise<ShowResult> {
+export async function setDeckState(episodeId: string, state: string | null): Promise<ShowResult> {
   const { supabase, db, user } = await crew();
   if (!user) return { error: "Sign in first." };
   if (state !== null && !(DECK_STATES as readonly string[]).includes(state)) {
@@ -43,9 +43,9 @@ export async function setDeckState(voyageId: string, state: string | null): Prom
   }
 
   const { error } = await db
-    .from("voyages")
+    .from("episodes")
     .update({ deck_state: state as DeckState | null })
-    .eq("id", voyageId);
+    .eq("id", episodeId);
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/show");
   return { ok: true };
@@ -54,11 +54,11 @@ export async function setDeckState(voyageId: string, state: string | null): Prom
 /* The eight canonical windows from operations.md, through the RPC so the board
    is the run of show rather than eight rows somebody retypes at 06:00 with one
    BPM wrong. */
-export async function seedTheBoard(voyageId: string): Promise<ShowResult> {
+export async function seedTheBoard(episodeId: string): Promise<ShowResult> {
   const { supabase, db, user } = await crew();
   if (!user) return { error: "Sign in first." };
 
-  const { error } = await db.rpc("seed_the_run_of_show", { p_voyage: voyageId });
+  const { error } = await db.rpc("seed_the_run_of_show", { p_episode: episodeId });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/show");
   return { ok: true };
@@ -69,7 +69,7 @@ export async function seedTheBoard(voyageId: string): Promise<ShowResult> {
    path inserted one, and the queue was empty on every episode there has ever
    been.
 
-   The insert is deliberately minimal — voyage, pass, position. `state` defaults
+   The insert is deliberately minimal — episode, pass, position. `state` defaults
    to 'waiting', which is the queue's entry state; `vip_priority` defaults
    false; and `blur_required` is not sent at all, because the
    a_pod_session_keeps_its_blur trigger derives it from blur_is_required() on
@@ -77,17 +77,17 @@ export async function seedTheBoard(voyageId: string): Promise<ShowResult> {
    supplying something for the trigger to overrule. Authority is the
    "the queue is the crew's" ALL policy (is_staff), same as every other write
    on this surface. */
-export async function enqueuePod(voyageId: string, rsvpId: string): Promise<ShowResult> {
+export async function enqueuePod(episodeId: string, passId: string): Promise<ShowResult> {
   const { supabase, db, user } = await crew();
   if (!user) return { error: "Sign in first." };
-  if (!rsvpId) return { error: "Pick a guest first." };
+  if (!passId) return { error: "Pick a guest first." };
 
   /* Next position. The ceiling aboard is forty souls, so one small read is
-     fine; the unique (voyage_id, position) index catches the race below. */
+     fine; the unique (episode_id, position) index catches the race below. */
   const { data: tail, error: readError } = await db
     .from("pod_sessions")
     .select("position")
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .order("position", { ascending: false })
     .limit(1);
   if (readError) return { error: await voiceWith(supabase, readError) };
@@ -95,11 +95,11 @@ export async function enqueuePod(voyageId: string, rsvpId: string): Promise<Show
 
   const { error } = await db
     .from("pod_sessions")
-    .insert({ voyage_id: voyageId, rsvp_id: rsvpId, position });
+    .insert({ episode_id: episodeId, rsvp_id: passId, position });
   if (error) {
     if (error.code === "23505") {
-      /* Two unique indexes can refuse this. (voyage_id, rsvp_id) means the
-         guest is already queued; (voyage_id, position) means two tablets hit
+      /* Two unique indexes can refuse this. (episode_id, rsvp_id) means the
+         guest is already queued; (episode_id, position) means two tablets hit
          the queue in the same moment. */
       return /position/i.test(error.message ?? "")
         ? { error: "Two crew reached for the queue at once. Press it again." }
@@ -144,7 +144,7 @@ export async function advancePod(
 
 /* Forty gold-foil envelopes, printed at once. An unissued one is a guest at the
    dock with nothing in their hand and no way into their own anchors at 19:00. */
-export async function issueTheEnvelopes(voyageId: string): Promise<ShowResult> {
+export async function issueTheEnvelopes(episodeId: string): Promise<ShowResult> {
   const { supabase, db, user } = await crew();
   if (!user) return { error: "Sign in first." };
 
@@ -153,7 +153,7 @@ export async function issueTheEnvelopes(voyageId: string): Promise<ShowResult> {
      captured before the click — so a second operator pressing the button was
      told "3 envelopes minted" when nothing was. Same shape as the "$150 credit
      applied" defect: a number asserted rather than read. */
-  const { data: minted, error } = await db.rpc("issue_the_envelopes", { p_voyage: voyageId });
+  const { data: minted, error } = await db.rpc("issue_the_envelopes", { p_episode: episodeId });
   if (error) return { error: await voiceWith(supabase, error) };
   revalidatePath("/show");
   /* The Bridge's Envelopes screen is the surface that can actually READ the

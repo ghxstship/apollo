@@ -58,12 +58,12 @@ export default async function StubPage({
 
   /* A code is either a member's own pass or one of their guests'. */
   const [memberPassRes, guestRes] = await Promise.all([
-    supabase.from("rsvps").select("*").eq("boarding_code", code).maybeSingle(),
-    supabase.from("rsvp_guests").select("*").eq("boarding_code", code).maybeSingle(),
+    supabase.from("passes").select("*").eq("boarding_code", code).maybeSingle(),
+    supabase.from("pass_guests").select("*").eq("boarding_code", code).maybeSingle(),
   ]);
   const guest = memberPassRes.data ? null : guestRes.data;
   const { data: rsvp } = guest
-    ? await supabase.from("rsvps").select("*").eq("id", guest.rsvp_id).maybeSingle()
+    ? await supabase.from("passes").select("*").eq("id", guest.rsvp_id).maybeSingle()
     : memberPassRes;
 
   /* Members read the whole manifest; a stub belongs to its host alone. */
@@ -111,11 +111,11 @@ export default async function StubPage({
           .maybeSingle();
 
   const [voyageRes, capRes, addonRowsRes] = await Promise.all([
-    supabase.from("voyages").select("*").eq("id", rsvp.voyage_id).maybeSingle(),
-    supabase.from("voyage_capacity").select("*").eq("voyage_id", rsvp.voyage_id).maybeSingle(),
-    supabase.from("rsvp_addons").select("*").eq("rsvp_id", rsvp.id),
+    supabase.from("episodes").select("*").eq("id", rsvp.episode_id).maybeSingle(),
+    supabase.from("episode_capacity").select("*").eq("episode_id", rsvp.episode_id).maybeSingle(),
+    supabase.from("pass_addons").select("*").eq("rsvp_id", rsvp.id),
   ]);
-  const voyage = voyageRes.data;
+  const episode = voyageRes.data;
 
   /* A stub is a boarding pass you can present. It was rendered live — QR, muster time,
      "Present at the gangway" — for a pass that had been released and for
@@ -129,25 +129,25 @@ export default async function StubPage({
      rsvp here is the host's either way, so one rule covers both. */
   const passHeld = rsvp.status === "aboard";
   const voyageOver =
-    voyage &&
-    (voyage.status === "cancelled" ||
-      voyage.status === "completed" ||
-      new Date(voyage.starts_at).getTime() < nowMs);
-  if (voyage && (!passHeld || voyageOver)) {
+    episode &&
+    (episode.status === "cancelled" ||
+      episode.status === "completed" ||
+      new Date(episode.starts_at).getTime() < nowMs);
+  if (episode && (!passHeld || voyageOver)) {
     return (
       <div className="mbr-sec">
         <StateBlock
           status="empty"
           icon="Ticket"
           title={
-            voyage.status === "cancelled"
+            episode.status === "cancelled"
               ? "That episode was called off."
               : voyageOver
                 ? "That episode is in the log."
                 : "That boarding pass is no longer held."
           }
           detail={
-            voyage.status === "cancelled"
+            episode.status === "cancelled"
               ? "Anything reserved against it was credited in full. The Passes page holds the next open water."
               : voyageOver
                 ? `The stub is spent. What the cameras kept is in ${SURFACES.magazine}.`
@@ -158,7 +158,7 @@ export default async function StubPage({
     );
   }
 
-  if (!voyage) {
+  if (!episode) {
     return (
       <div className="mbr-sec">
         <StateBlock
@@ -182,7 +182,7 @@ export default async function StubPage({
   }));
 
   const aboard = capRes.data?.aboard ?? 0;
-  const berthsTotal = capRes.data?.berths_total ?? voyage.berths_total;
+  const berthsTotal = capRes.data?.passes_total ?? episode.passes_total;
   const qr = await qrDataUrl(code);
   const name = host?.full_name ?? "A member";
   const memberNo = host?.member_no ?? "UN-0000";
@@ -220,12 +220,12 @@ export default async function StubPage({
               marginTop: 14,
             }}
           >
-            {voyage.title}
+            {episode.title}
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <Row label="DEPARTS" value={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`} />
-            <Row label="MUSTER" value={voyage.muster ?? "GANGWAY B-12"} />
+            <Row label="DEPARTS" value={`${logDate(episode.starts_at, episode.time_zone)} · ${logTime(episode.starts_at, episode.time_zone)}`} />
+            <Row label="MUSTER" value={episode.muster ?? "GANGWAY B-12"} />
             <Row label="MANIFEST" value={`${aboard}/${berthsTotal} ABOARD`} />
             {guest ? (
               <>

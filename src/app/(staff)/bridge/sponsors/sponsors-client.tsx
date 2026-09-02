@@ -17,12 +17,12 @@ import {
 /* One activation — the sponsor on one episode — with what it has delivered
    against the tier's checklist and the passes comped on its account. */
 export type Activation = {
-  voyageId: string;
+  episodeId: string;
   label: string;
   placement: string | null;
-  /** voyage_sponsors.assets_delivered — the ticked entries of the tier's list. */
+  /** episode_sponsors.assets_delivered — the ticked entries of the tier's list. */
   assetsDelivered: string[];
-  /** rsvps stamped with this sponsor on this episode, by member name. */
+  /** passes stamped with this sponsor on this episode, by member name. */
   comps: Array<{ id: string; name: string; status: string }>;
   /** The episode can still take a pass, so a comp can be given. */
   open: boolean;
@@ -67,12 +67,12 @@ function termLine(s: SponsorItem): string {
 export function SponsorsClient({
   rows,
   tiers,
-  voyages,
+  episodes,
   members,
 }: {
   rows: SponsorItem[];
   tiers: TierCard[];
-  voyages: Array<{ value: string; label: string }>;
+  episodes: Array<{ value: string; label: string }>;
   /** Members in standing, for the comp picker. */
   members: Array<{ value: string; label: string }>;
 }) {
@@ -89,7 +89,7 @@ export function SponsorsClient({
 
   const detach = (sponsor: SponsorItem, act: Activation) =>
     startTransition(async () => {
-      const res = await detachSponsor(act.voyageId, sponsor.id);
+      const res = await detachSponsor(act.episodeId, sponsor.id);
       setDetaching(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: "Taken off the episode.", meta: sponsor.name.toUpperCase(), tone: "caution" });
@@ -107,30 +107,30 @@ export function SponsorsClient({
   const [notes, setNotes] = React.useState("");
 
   /* Per-sponsor picks for the activation control below the book. */
-  const [picks, setPicks] = React.useState<Record<string, { voyage: string; placement: string }>>({});
-  const pickFor = (id: string) => picks[id] ?? { voyage: "", placement: "" };
-  const setPick = (id: string, patch: Partial<{ voyage: string; placement: string }>) =>
+  const [picks, setPicks] = React.useState<Record<string, { episode: string; placement: string }>>({});
+  const pickFor = (id: string) => picks[id] ?? { episode: "", placement: "" };
+  const setPick = (id: string, patch: Partial<{ episode: string; placement: string }>) =>
     setPicks((p) => ({ ...p, [id]: { ...pickFor(id), ...patch } }));
 
-  /* Per-activation member pick for a comp, keyed voyage:sponsor. */
+  /* Per-activation member pick for a comp, keyed episode:sponsor. */
   const [compPicks, setCompPicks] = React.useState<Record<string, string>>({});
-  const compKey = (voyageId: string, sponsorId: string) => `${voyageId}:${sponsorId}`;
+  const compKey = (episodeId: string, sponsorId: string) => `${episodeId}:${sponsorId}`;
 
   const toggleAsset = (s: SponsorItem, a: Activation, asset: string, on: boolean) =>
     startTransition(async () => {
       const next = on
         ? [...a.assetsDelivered.filter((x) => x !== asset), asset]
         : a.assetsDelivered.filter((x) => x !== asset);
-      const res = await setAssetsDelivered(a.voyageId, s.id, next);
+      const res = await setAssetsDelivered(a.episodeId, s.id, next);
       if (res.error) show({ msg: res.error, tone: "danger" });
     });
 
   const comp = (s: SponsorItem, a: Activation) => {
-    const key = compKey(a.voyageId, s.id);
+    const key = compKey(a.episodeId, s.id);
     const profileId = compPicks[key] ?? "";
     const who = members.find((m) => m.value === profileId)?.label ?? "";
     startTransition(async () => {
-      const res = await compAPass(a.voyageId, s.id, profileId);
+      const res = await compAPass(a.episodeId, s.id, profileId);
       if (res.error) {
         show({ msg: res.error, tone: "danger" });
         return;
@@ -250,8 +250,8 @@ export function SponsorsClient({
           </p>
           {rows.map((s) => {
             const pick = pickFor(s.id);
-            const taken = new Set(s.activations.map((a) => a.voyageId));
-            const open = voyages.filter((v) => !taken.has(v.value));
+            const taken = new Set(s.activations.map((a) => a.episodeId));
+            const open = episodes.filter((v) => !taken.has(v.value));
             const card = cardFor(s.tier);
             return (
               <div key={s.id} className="hm-panel" style={{ padding: "16px 20px" }}>
@@ -274,11 +274,11 @@ export function SponsorsClient({
                     {s.activations.map((a) => {
                       const owed = card?.assets ?? [];
                       const delivered = a.assetsDelivered.filter((x) => owed.includes(x)).length;
-                      const key = compKey(a.voyageId, s.id);
+                      const key = compKey(a.episodeId, s.id);
                       const pickedMember = compPicks[key] ?? "";
                       return (
                         <div
-                          key={a.voyageId}
+                          key={a.episodeId}
                           className="hm-item"
                           style={{ borderTop: "1px solid var(--line)", paddingTop: 10 }}
                         >
@@ -410,8 +410,8 @@ export function SponsorsClient({
                   >
                     <Select
                       label="Episode"
-                      value={pick.voyage}
-                      onChange={(e) => setPick(s.id, { voyage: e.target.value })}
+                      value={pick.episode}
+                      onChange={(e) => setPick(s.id, { episode: e.target.value })}
                       style={{ minWidth: 260 }}
                       options={[
                         {
@@ -430,15 +430,15 @@ export function SponsorsClient({
                     />
                     <Button
                       variant="outline"
-                      disabled={pending || !pick.voyage}
+                      disabled={pending || !pick.episode}
                       onClick={() =>
                         startTransition(async () => {
-                          const res = await attachSponsor(pick.voyage, s.id, pick.placement);
+                          const res = await attachSponsor(pick.episode, s.id, pick.placement);
                           if (res.error) {
                             show({ msg: res.error, tone: "danger" });
                             return;
                           }
-                          setPick(s.id, { voyage: "", placement: "" });
+                          setPick(s.id, { episode: "", placement: "" });
                           show({ msg: "Placed. The credit rides with the episode.", meta: s.name.toUpperCase() });
                         })
                       }

@@ -20,9 +20,9 @@ import {
   claimDaybed,
   confirmBerth,
   improvePass,
-  releaseBerth,
+  releasePass,
   setGuests,
-  setRsvpStatus,
+  setPassStatus,
 } from "./actions";
 import {
   CrewCall,
@@ -49,7 +49,7 @@ function policyLine(hours: number): string {
   return `Weather holds are called by 18:00 the night before. Release your pass up to ${hours}h out for full credit — it goes to the waitlist in order.`;
 }
 
-/* The lock's default door — every lock but the missing-harbor one. */
+/* The lock's default door — every lock but the missing-city one. */
 const MANAGE_MEMBERSHIP = { href: "/portal", label: "Manage membership" };
 
 const rowStyle: React.CSSProperties = {
@@ -109,8 +109,8 @@ function GuestNameInputs({
   );
 }
 
-export function RsvpControls({
-  voyageId,
+export function PassControls({
+  episodeId,
   voyageTitle,
   myStatus,
   guests,
@@ -132,7 +132,7 @@ export function RsvpControls({
   fullCredit,
   creditHours,
   boardingCode,
-  rsvpId,
+  passId,
   waitlistPosition,
   autoClaim,
   members,
@@ -152,7 +152,7 @@ export function RsvpControls({
   enquiryHref,
   inviteOnly,
 }: {
-  voyageId: string;
+  episodeId: string;
   voyageTitle: string;
   /* Guest passes ride on Global memberships; the control is hidden otherwise
      rather than offered and refused at submit. */
@@ -165,7 +165,7 @@ export function RsvpControls({
   locked: boolean;
   lockedNote: string;
   /* Where the lock sends the member. Most locks are a membership question and
-     go to the portal; a Regional member with no home harbor chosen is sent to
+     go to the portal; a Regional member with no home city chosen is sent to
      their page, where the picker is. */
   lockedLink?: { href: string; label: string };
   /* Set when the plan's booking window or the drop hour hasn't opened yet —
@@ -174,7 +174,7 @@ export function RsvpControls({
   recommended: boolean;
   priceCents: number;
   depositRequired: boolean;
-  /* The voyage's own figure — voyages.deposit_cents, no longer club-wide. */
+  /* The episode's own figure — episodes.deposit_cents, no longer club-wide. */
   depositCents: number;
   addons: AddonOption[];
   attachedAddonIds: string[];
@@ -187,7 +187,7 @@ export function RsvpControls({
   creditHours: number;
   boardingCode: string | null;
   /* — ticketing polish — */
-  rsvpId: string | null;
+  passId: string | null;
   /* Place in the waitlist for this episode, 1 = next. */
   waitlistPosition: number | null;
   autoClaim: boolean;
@@ -212,7 +212,7 @@ export function RsvpControls({
   daybedHeld: boolean;
   /* The daybed on offer, from club_products; null when this water has none. */
   daybed: DaybedOffer | null;
-  /* profile.status !== 'active'. rsvps UPDATE is refused for a paused member
+  /* profile.status !== 'active'. passes UPDATE is refused for a paused member
      (WITH CHECK is_active()), so every control that would update is disabled
      with the one line that says why. Release is a DELETE and still works. */
   paused: boolean;
@@ -328,7 +328,7 @@ export function RsvpControls({
   const onGuestStep = (n: number) => {
     if (n <= guests) {
       /* Shrinking the party — truncate the names to match. */
-      run(() => setGuests(voyageId, n, guestNames.slice(0, n)));
+      run(() => setGuests(episodeId, n, guestNames.slice(0, n)));
     } else {
       /* Growing it — ask for the new names before writing. */
       setError(null);
@@ -347,7 +347,7 @@ export function RsvpControls({
               variant="outline"
               size="sm"
               disabled={pending}
-              onClick={() => run(() => setRsvpStatus(voyageId, "waitlist"), onWaitlist)}
+              onClick={() => run(() => setPassStatus(episodeId, "waitlist"), onWaitlist)}
             >
               Join the waitlist
             </Button>
@@ -420,12 +420,12 @@ export function RsvpControls({
               not offered while paused. */}
           {standingOffer || !paused ? (
             <HandOff
-              rsvpId={rsvpId}
+              passId={passId}
               voyageTitle={voyageTitle}
               members={members}
               offer={standingOffer}
             />
-          ) : rsvpId ? (
+          ) : passId ? (
             <Button variant="ghost" size="sm" disabled>
               Hand it to a member
             </Button>
@@ -466,7 +466,7 @@ export function RsvpControls({
                 const v = e.target.value || null;
                 /* Refusals land in the card's own error line, not a browser
                    alert the page cannot style or a reader cannot find again. */
-                run(() => chooseCabin(voyageId, v));
+                run(() => chooseCabin(episodeId, v));
               }}
             >
               <option value="">Assigned at the dock</option>
@@ -482,7 +482,7 @@ export function RsvpControls({
           {/* — The bow daybed. One claim per pass, the cap per episode — the
               RPC holds both lines and answers refusals in its own voice. The
               figures are the product's own; the block is absent off Sea. */}
-          {rsvpId && daybed ? (
+          {passId && daybed ? (
             <div style={{ marginTop: 14 }}>
               <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
                 BOW DAYBED
@@ -514,7 +514,7 @@ export function RsvpControls({
           ) : null}
           {crewSeekers.length > 0 || crewMine ? (
             <CrewCall
-              voyageId={voyageId}
+              episodeId={episodeId}
               mine={crewMine}
               seekers={crewSeekers}
               canPost={false}
@@ -535,7 +535,7 @@ export function RsvpControls({
               size="sm"
               disabled={pending || paused}
               onClick={() =>
-                needsReview ? openCheckout() : run(() => setRsvpStatus(voyageId, "aboard"))
+                needsReview ? openCheckout() : run(() => setPassStatus(episodeId, "aboard"))
               }
             >
               Confirm your pass
@@ -545,12 +545,12 @@ export function RsvpControls({
             variant="ghost"
             size="sm"
             disabled={pending}
-            onClick={() => run(() => releaseBerth(voyageId))}
+            onClick={() => run(() => releasePass(episodeId))}
           >
             Leave the list
           </Button>
           {paused ? (
-            /* The switch is an rsvps UPDATE, refused while paused — shown as
+            /* The switch is an passes UPDATE, refused while paused — shown as
                it stands, and not offered. */
             <div style={{ width: "100%", marginTop: 4 }}>
               {waitlistPosition != null ? (
@@ -568,12 +568,12 @@ export function RsvpControls({
             </div>
           ) : (
             <WaitlistClaim
-              voyageId={voyageId}
+              episodeId={episodeId}
               position={waitlistPosition}
               autoClaim={autoClaim}
             />
           )}
-          <CrewCall voyageId={voyageId} mine={crewMine} seekers={[]} />
+          <CrewCall episodeId={episodeId} mine={crewMine} seekers={[]} />
         </>
       ) : composition ? (
         <>
@@ -608,7 +608,7 @@ export function RsvpControls({
             variant="outline"
             size="sm"
             disabled={pending}
-            onClick={() => run(() => setRsvpStatus(voyageId, "waitlist"))}
+            onClick={() => run(() => setPassStatus(episodeId, "waitlist"))}
           >
             Join waitlist
           </Button>
@@ -622,7 +622,7 @@ export function RsvpControls({
               variant="ghost"
               size="sm"
               disabled={pending}
-              onClick={() => run(() => setRsvpStatus(voyageId, "not_going"))}
+              onClick={() => run(() => setPassStatus(episodeId, "not_going"))}
             >
               Not this one
             </Button>
@@ -632,12 +632,12 @@ export function RsvpControls({
             size="sm"
             disabled={pending}
             onClick={() =>
-              needsReview ? openCheckout() : run(() => setRsvpStatus(voyageId, "aboard"))
+              needsReview ? openCheckout() : run(() => setPassStatus(episodeId, "aboard"))
             }
           >
             Confirm your pass
           </Button>
-          <CrewCall voyageId={voyageId} mine={crewMine} seekers={[]} />
+          <CrewCall episodeId={episodeId} mine={crewMine} seekers={[]} />
         </>
       )}
 
@@ -651,7 +651,7 @@ export function RsvpControls({
                 variant="outline"
                 size="sm"
                 disabled={pending}
-                onClick={() => run(() => setRsvpStatus(voyageId, "waitlist"))}
+                onClick={() => run(() => setPassStatus(episodeId, "waitlist"))}
               >
                 Join waitlist
               </Button>
@@ -664,7 +664,7 @@ export function RsvpControls({
         <Toast fixed tone="positive" message={toast} onDismiss={() => setToast(null)} />
       ) : null}
 
-      {/* — Review & confirm: priced voyages — */}
+      {/* — Review & confirm: priced episodes — */}
       <Dialog
         open={checkout}
         onClose={() => setCheckout(false)}
@@ -684,7 +684,7 @@ export function RsvpControls({
                 run(
                   () =>
                     confirmBerth(
-                      voyageId,
+                      episodeId,
                       Array.from(chosen),
                       coGuests,
                       checkoutNames,
@@ -767,7 +767,7 @@ export function RsvpControls({
             </div>
           ))}
           <PromoField
-            voyageId={voyageId}
+            episodeId={episodeId}
             applied={promo}
             onApplied={setPromo}
             onCleared={() => setPromo(null)}
@@ -840,11 +840,11 @@ export function RsvpControls({
               <Button
                 variant="gold"
                 size="sm"
-                disabled={pending || !rsvpId}
+                disabled={pending || !passId}
                 onClick={() =>
-                  rsvpId &&
+                  passId &&
                   run(
-                    () => claimDaybed(rsvpId),
+                    () => claimDaybed(passId),
                     () => {
                       setClaimingDaybed(false);
                       setToast("Bow daybed held — the steward knows your name.");
@@ -909,7 +909,7 @@ export function RsvpControls({
               onClick={() =>
                 guestEdit &&
                 run(
-                  () => setGuests(voyageId, guestEdit.count, guestEdit.names),
+                  () => setGuests(episodeId, guestEdit.count, guestEdit.names),
                   () => setGuestEdit(null)
                 )
               }
@@ -952,7 +952,7 @@ export function RsvpControls({
               disabled={pending || improveChosen.size === 0}
               onClick={() =>
                 run(
-                  () => improvePass(voyageId, Array.from(improveChosen)),
+                  () => improvePass(episodeId, Array.from(improveChosen)),
                   () => setImproving(false)
                 )
               }
@@ -1012,7 +1012,7 @@ export function RsvpControls({
               disabled={pending}
               onClick={() =>
                 run(
-                  () => releaseBerth(voyageId),
+                  () => releasePass(episodeId),
                   () => setReleasing(false)
                 )
               }

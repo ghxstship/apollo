@@ -24,23 +24,23 @@ function clubToday(): string {
 export default async function SponsorsPage() {
   const { supabase } = await getOperator();
 
-  const [sponsorsRes, activationsRes, voyagesRes, tiersRes, compsRes, membersRes] = await Promise.all([
+  const [sponsorsRes, activationsRes, episodesRes, tiersRes, compsRes, membersRes] = await Promise.all([
     supabase.from("sponsors").select("*").order("created_at", { ascending: true }),
-    supabase.from("voyage_sponsors").select("*"),
-    /* One voyages read serves both jobs: titles for whatever is already
+    supabase.from("episode_sponsors").select("*"),
+    /* One episodes read serves both jobs: titles for whatever is already
        placed — a credit may sit on an episode that has since sailed — and the
        picker below, which offers only episodes that can still carry one. */
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("id, title, starts_at, time_zone, status")
       .order("starts_at", { ascending: true }),
     /* The rate card is a table now, not a constant in the client. */
     supabase.from("sponsor_tiers").select("*").order("position", { ascending: true }),
-    /* Passes comped on a sponsor's account — rsvps.sponsor_id is stamped by
+    /* Passes comped on a sponsor's account — passes.sponsor_id is stamped by
        comp_a_pass_for_sponsor and by nothing else. */
     supabase
-      .from("rsvps")
-      .select("id, voyage_id, sponsor_id, profile_id, status, created_at")
+      .from("passes")
+      .select("id, episode_id, sponsor_id, profile_id, status, created_at")
       .not("sponsor_id", "is", null)
       .order("created_at", { ascending: true }),
     /* The member picker for a comp: members in standing, by name. */
@@ -53,11 +53,11 @@ export default async function SponsorsPage() {
 
   const sponsors = must(sponsorsRes);
   const activations = must(activationsRes);
-  const voyages = must(voyagesRes);
+  const episodes = must(episodesRes);
   const tiers = must(tiersRes);
   const comps = must(compsRes);
   const members = must(membersRes);
-  const voyageById = new Map(voyages.map((v) => [v.id, v]));
+  const episodeById = new Map(episodes.map((v) => [v.id, v]));
   const tierBySlug = new Map(tiers.map((t) => [t.slug, t]));
 
   /* Who signed them, and who was comped — names on the row, not uuids. One
@@ -79,7 +79,7 @@ export default async function SponsorsPage() {
   const compsFor = new Map<string, SponsorItem["activations"][number]["comps"]>();
   for (const c of comps) {
     if (!c.sponsor_id) continue;
-    const key = `${c.voyage_id}:${c.sponsor_id}`;
+    const key = `${c.episode_id}:${c.sponsor_id}`;
     const list = compsFor.get(key) ?? [];
     list.push({ id: c.id, name: memberName.get(c.profile_id) ?? "A member", status: c.status });
     compsFor.set(key, list);
@@ -87,14 +87,14 @@ export default async function SponsorsPage() {
 
   const bySponsor = new Map<string, SponsorItem["activations"]>();
   for (const a of activations) {
-    const v = voyageById.get(a.voyage_id);
+    const v = episodeById.get(a.episode_id);
     const list = bySponsor.get(a.sponsor_id) ?? [];
     list.push({
-      voyageId: a.voyage_id,
+      episodeId: a.episode_id,
       label: v ? `${v.title} · ${logDate(v.starts_at, v.time_zone)}` : "An episode off the board",
       placement: a.placement,
       assetsDelivered: a.assets_delivered ?? [],
-      comps: compsFor.get(`${a.voyage_id}:${a.sponsor_id}`) ?? [],
+      comps: compsFor.get(`${a.episode_id}:${a.sponsor_id}`) ?? [],
       /* A comp is a pass on an episode, so only an episode still on the board
          can take one; the credit itself stays whatever the episode's state. */
       open: v ? v.status === "scheduled" || v.status === "live" : false,
@@ -170,7 +170,7 @@ export default async function SponsorsPage() {
           value: m.id,
           label: [m.full_name ?? "Unnamed member", memberMark(m.member_no)].filter(Boolean).join(" · "),
         }))}
-        voyages={voyages
+        episodes={episodes
           .filter((v) => v.status === "scheduled" || v.status === "live")
           .map((v) => ({
             value: v.id,

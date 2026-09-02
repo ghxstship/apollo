@@ -11,7 +11,7 @@ export type NewCode = {
   code: string;
   kind: CodeKind;
   value: number;
-  voyageId: string;
+  episodeId: string;
   maxUses: number;
   expiresAt: string;
   note: string;
@@ -36,7 +36,7 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
     code,
     kind: input.kind,
     value: input.kind === "comp" ? 0 : Math.round(input.value),
-    voyage_id: input.voyageId || null,
+    episode_id: input.episodeId || null,
     max_uses: Math.max(1, Math.round(input.maxUses)),
     /* The form is <input type="date">, so this used to become UTC midnight:
        a code an operator cut as "expires Sep 1" died at Aug 31, 20:00 EDT —
@@ -77,10 +77,10 @@ export async function reconcileUses(): Promise<{ error?: string; adjusted?: numb
   if (!staffId) return { error: ERR_STAFF };
 
   const [codesRes, rsvpRes] = await Promise.all([
-    supabase.from("promo_codes").select("code, uses, voyage_id"),
+    supabase.from("promo_codes").select("code, uses, episode_id"),
     supabase
-      .from("rsvps")
-      .select("promo_code, voyage_id")
+      .from("passes")
+      .select("promo_code, episode_id")
       .not("promo_code", "is", null)
       .eq("status", "aboard"),
   ]);
@@ -99,7 +99,7 @@ export async function reconcileUses(): Promise<{ error?: string; adjusted?: numb
     const real = aboard.filter(
       (r) =>
         (r.promo_code ?? "").toUpperCase() === c.code.toUpperCase() &&
-        (c.voyage_id == null || r.voyage_id === c.voyage_id)
+        (c.episode_id == null || r.episode_id === c.episode_id)
     ).length;
     if (real === c.uses) continue;
 

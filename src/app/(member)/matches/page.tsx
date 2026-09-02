@@ -30,7 +30,7 @@ export default async function MatchesPage() {
       ? supabase.from("member_directory").select("id, full_name, avatar_tone, bio").in("id", otherIds)
       : Promise.resolve({ data: [] }),
     tableIds.length
-      ? supabase.from("dating_tables").select("id, number, voyage_id").in("id", tableIds)
+      ? supabase.from("tables").select("id, number, episode_id").in("id", tableIds)
       : Promise.resolve({ data: [] }),
   ]);
   const personOf = new Map((people ?? []).map((p) => [p.id, p]));
@@ -48,8 +48,8 @@ export default async function MatchesPage() {
      to my own passes matters only for staff, whom the policy does not scope. */
   const db = moduleTables(supabase);
   const { data: myPasses } = await supabase
-    .from("rsvps")
-    .select("id, voyage_id")
+    .from("passes")
+    .select("id, episode_id")
     .eq("profile_id", user.id)
     .eq("status", "aboard");
   const passIds = (myPasses ?? []).map((p) => p.id);
@@ -68,10 +68,10 @@ export default async function MatchesPage() {
     );
   }
 
-  const anchorVoyageIds = [...new Set(anchors.map((a) => a.voyage_id))];
-  const [{ data: anchorVoyages }, sweeps] = await Promise.all([
-    anchorVoyageIds.length
-      ? supabase.from("voyages").select("id, title").in("id", anchorVoyageIds)
+  const anchorEpisodeIds = [...new Set(anchors.map((a) => a.episode_id))];
+  const [{ data: anchorEpisodes }, sweeps] = await Promise.all([
+    anchorEpisodeIds.length
+      ? supabase.from("episodes").select("id, title").in("id", anchorEpisodeIds)
       : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
     /* Names come from the sweep, the way radar draws them: first names only,
        a couple as one pin, and nothing else about anybody. The sweep is a
@@ -79,13 +79,13 @@ export default async function MatchesPage() {
        holding and the card falls back to "A guest" rather than to a lookup
        that could return a surname. */
     Promise.all(
-      anchorVoyageIds.map(async (vid) => {
-        const { data: pins } = await db.rpc("radar_sweep", { p_voyage: vid });
+      anchorEpisodeIds.map(async (vid) => {
+        const { data: pins } = await db.rpc("radar_sweep", { p_episode: vid });
         return (pins ?? []) as Array<{ rsvp_id: string; name: string; couple: boolean }>;
       })
     ),
   ]);
-  const anchorVoyageOf = new Map((anchorVoyages ?? []).map((v) => [v.id, v.title]));
+  const anchorEpisodeOf = new Map((anchorEpisodes ?? []).map((v) => [v.id, v.title]));
   const anchorNameOf = new Map<string, string>();
   for (const pins of sweeps) {
     for (const p of pins) anchorNameOf.set(p.rsvp_id, p.couple ? `${p.name} + 1` : p.name);
@@ -180,7 +180,7 @@ export default async function MatchesPage() {
                       {name}
                     </b>
                     <p className="mbr-mono" style={{ marginTop: 3 }}>
-                      ANCHORED · {anchorVoyageOf.get(a.voyage_id) ?? "An episode"}
+                      ANCHORED · {anchorEpisodeOf.get(a.episode_id) ?? "An episode"}
                       {left ? ` · ${left}` : ""}
                     </p>
                   </div>

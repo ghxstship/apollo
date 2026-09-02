@@ -14,8 +14,8 @@ import {
   EXPERIENCE_ACCENT,
   formatPrice,
   readFiledSailings,
-  readFormats,
-  type ActivityFormat,
+  readSeries,
+  type SeriesRecord,
 } from "./data";
 import "./activity.css";
 
@@ -31,7 +31,7 @@ export const metadata: Metadata = { title: SURFACES.series };
    the kit only says in prose and this product enforces in the booking guard:
    whether the series asks for vetting at all.
 
-   The word on screen is Series as of 2026-09-02; activity_formats, the format
+   The word on screen is Series as of 2026-09-02; series, the format
    column and every identifier below keep their names, which are plumbing. */
 
 /* operations.md §2, the seven-hour arc, with the guest-facing Five-A phase the
@@ -51,12 +51,12 @@ const ANCHOR_ARC: Array<[string, string, string]> = [
 export default async function ExperiencesPage() {
   const { supabase } = await getMember();
   const [formats, filed] = await Promise.all([
-    readFormats(supabase),
+    readSeries(supabase),
     readFiledSailings(supabase),
   ]);
 
   const byClass = (c: ExperienceClassId) => formats.filter((f) => f.experience_class === c);
-  const sailingsFor = (slug: string) => filed.filter((v) => v.format === slug);
+  const sailingsFor = (slug: string) => filed.filter((v) => v.series === slug);
 
   return (
     <div className="act">
@@ -109,7 +109,7 @@ export default async function ExperiencesPage() {
             {inClass.length ? (
               <div className="act-grid">
                 {inClass.map((f) => (
-                  <FormatTile key={f.slug} format={f} sailings={sailingsFor(f.slug)} />
+                  <SeriesTile key={f.slug} format={f} sailings={sailingsFor(f.slug)} />
                 ))}
               </div>
             ) : (
@@ -130,11 +130,11 @@ export default async function ExperiencesPage() {
   );
 }
 
-function FormatTile({
+function SeriesTile({
   format,
   sailings,
 }: {
-  format: ActivityFormat;
+  format: SeriesRecord;
   sailings: Array<{ id: string; slug: string; title: string; starts_at: string; time_zone: string }>;
 }) {
   const price = formatPrice(format);
@@ -146,7 +146,10 @@ function FormatTile({
       </div>
       <p className="act-tile__blurb">{format.blurb}</p>
       <div className="act-tile__facts">
-        <span>{SETTING_LABEL[format.category]}</span>
+        {/* A series with no category runs both settings — Off Soundings is an
+            airboat one month and a polo field the next. Saying so is more use
+            than picking one and being wrong half the year. */}
+        <span>{format.category ? SETTING_LABEL[format.category] : "Afloat and ashore"}</span>
         <span>{format.capacity ? `Holds ${format.capacity}` : "Rides the episode"}</span>
         <span>{format.requires_vetting ? "Vetting required" : "No vetting required"}</span>
       </div>

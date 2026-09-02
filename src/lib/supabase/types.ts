@@ -7,14 +7,14 @@ type Row<T> = T
 type Ins<T, Req extends keyof T = never> = Partial<T> & Pick<T, Req>
 
 export type MembershipTier = "regional" | "national" | "global"
-export type EventClass = "sea" | "shore" | "sky"
-export type VoyageStatus = "scheduled" | "live" | "weather_hold" | "completed" | "cancelled"
-export type RsvpStatus = "aboard" | "waitlist" | "not_going"
+export type EpisodeSetting = "sea" | "shore" | "sky"
+export type EpisodeStatus = "scheduled" | "live" | "weather_hold" | "completed" | "cancelled"
+export type PassStatus = "aboard" | "waitlist" | "not_going"
 export type ApplicationStatus = "received" | "review" | "invited" | "aboard" | "declined"
 
 export type ProfileRow = {
   id: string; member_no: string | null; full_name: string | null; handle: string | null
-  email: string | null; tier: MembershipTier; home_harbor: string | null; avatar_tone: string
+  email: string | null; tier: MembershipTier; home_city: string | null; avatar_tone: string
   is_staff: boolean; joined_at: string; status: "active" | "paused" | "departed"
   notification_prefs: Json; plan_id: string | null
   on_camera: boolean; on_manifest: boolean; camera_withdrawn_at: string | null
@@ -28,38 +28,42 @@ export type ProfileRow = {
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
 }
-export type HarborRow = {
+export type CityRow = {
   id: string; slug: string; name: string; status: string; coordinates: string | null
   launch_year: number | null; position: number
-  /* IANA zone the harbor keeps — departures read on this clock. */
+  /* IANA zone the city keeps — departures read on this clock. */
   time_zone: string
 }
-export type VoyageRow = {
-  id: string; slug: string; title: string; class: EventClass; kind: string
-  harbor_id: string | null; starts_at: string; ends_at: string | null; coordinates: string | null
-  distance_nm: number | null; berths_total: number; price_cents: number; status: VoyageStatus
-  /* The second taxonomy axis. `class` says WHERE (afloat or ashore); this says
-     WHAT KIND — open | club | premium | exotic, NOT NULL. An episode filed
-     under a format does not get to disagree with it: a_sailing_keeps_its_taxonomy
-     copies the format's class down on every write that names a format, so this
-     is only the operator's to set while the episode is unfiled. Widened to
-     string rather than the union in brand.ts, the way `kind` is — the enum
-     lives there, and the row type mirrors the column. */
+export type EpisodeRow = {
+  id: string; slug: string; title: string; setting: EpisodeSetting; kind: string
+  city_id: string | null; starts_at: string; ends_at: string | null; coordinates: string | null
+  distance_nm: number | null; passes_total: number; price_cents: number; status: EpisodeStatus
+  /* The second taxonomy axis. `setting` says WHERE (afloat or ashore); this says
+     WHAT KIND — open | club | premium | exotic, NOT NULL. A series DEFAULTS it:
+     an_episode_keeps_its_taxonomy fills this from the series only when the
+     episode left it null, so one strand may run at more than one class and the
+     unfiled episode still leaves with one. Widened to string rather than the
+     union in brand.ts, the way `kind` is — the enum lives there, and the row
+     type mirrors the column. */
   experience_class: string
   blurb: string | null; description: string | null; media: string; min_tier: MembershipTier
   created_at: string; deposit_required: boolean; muster: string | null; conditions: Json | null
-  fathoms_multiplier: number; held_passes: number
-  sub_class: "voyage" | "expedition" | "odyssey" | "trek" | "excursion" | "overland" | null
+  knots_multiplier: number; held_passes: number
+  /* The duration ladder. episodes_sub_class_check admits these three only —
+     trek, excursion and overland went with the two-axis taxonomy, and voyage
+     became passage when the last retired noun left the schema. */
+  sub_class: "passage" | "expedition" | "odyssey" | null
   itinerary: Json
-  /* The harbor's IANA clock, carried on the episode. */
+  /* The city's IANA clock, carried on the episode. */
   time_zone: string
-  format: string | null
+  series: string | null
   deposit_cents: number
   sale_opens_at: string | null
   presale_hours: number
   season_id: string | null
   venue_id: string | null
-  series_id: string | null
+  /* The edition (series in one city) this episode is an occurrence of. */
+  edition_id: string | null
   /* A flotilla's certified heads; null reads the club setting. */
   hull_ceiling_heads: number | null
   /* Vessel, authority and certified number — required above the club figure. */
@@ -68,31 +72,31 @@ export type VoyageRow = {
 export type SeasonRow = {
   id: string; slug: string; title: string; starts_on: string; ends_on: string
   blurb: string | null; active: boolean; created_at: string
-  /* A season belongs to an edition, not to the club — Miami can be in its
+  /* A season belongs to a city, not to the club — Miami can be in its
      second while Chicago is in its first. Null is a club-wide season. */
-  series_id: string | null
+  city_id: string | null
 }
 export type VenueRow = {
-  id: string; slug: string; name: string; harbor_id: string | null
+  id: string; slug: string; name: string; city_id: string | null
   kind: "marina" | "club" | "restaurant" | "beach" | "pool" | "partner"
   address: string | null; notes: string | null; active: boolean; created_at: string
 }
 /* An edition: one series running in one city, with its own cadence. Sandbar
    Social Miami and Sandbar Social LA are two rows here and one series.
-   template_voyage_id is nullable because an edition must be nameable before
+   template_episode_id is nullable because an edition must be nameable before
    its first episode exists. */
-export type VoyageSeriesRow = {
+export type EditionRow = {
   id: string; slug: string; title: string; cadence_days: number
-  template_voyage_id: string | null; active: boolean; created_at: string
-  harbor_id: string | null; format: string | null
+  template_episode_id: string | null; active: boolean; created_at: string
+  city_id: string | null; series: string | null
 }
 export type MemberEventProposalRow = {
-  id: string; proposer_id: string; title: string; format: string | null
+  id: string; proposer_id: string; title: string; series: string | null
   note: string | null; proposed_for: string | null
   status: "submitted" | "considering" | "approved" | "declined"
   decided_by: string | null; decided_at: string | null; decision_note: string | null
   created_at: string
-  voyage_id: string | null
+  episode_id: string | null
 }
 export type SponsorRow = {
   id: string; name: string
@@ -101,8 +105,8 @@ export type SponsorRow = {
   starts_on: string | null; ends_on: string | null; notes: string | null
   active: boolean; created_at: string; created_by: string | null
 }
-export type VoyageSponsorRow = {
-  voyage_id: string; sponsor_id: string; placement: string | null; created_at: string
+export type EpisodeSponsorRow = {
+  episode_id: string; sponsor_id: string; placement: string | null; created_at: string
   assets_delivered: string[]
 }
 export type ClubSettingRow = { key: string; value_int: number; note: string | null }
@@ -115,7 +119,7 @@ export type AuditLogRow = {
   actor_id: string | null; before: Json | null; after: Json | null; at: string
 }
 export type CharterRequestRow = {
-  id: string; profile_id: string; format: string | null; party_size: number | null
+  id: string; profile_id: string; series: string | null; party_size: number | null
   preferred_dates: string | null; note: string | null
   status: "submitted" | "answered" | "declined"
   decided_by: string | null; decided_at: string | null; decision_note: string | null; created_at: string
@@ -124,11 +128,11 @@ export type AppErrorRow = {
   id: number; at: string; deployment: string | null; name: string | null; message: string
   digest: string | null; method: string | null; path: string | null; route: string | null; kind: string | null
 }
-export type VoyageDaybedRow = {
-  id: string; voyage_id: string; rsvp_id: string; profile_id: string; created_at: string
+export type EpisodeDaybedRow = {
+  id: string; episode_id: string; rsvp_id: string; profile_id: string; created_at: string
 }
-export type DatingTableRow = {
-  id: string; voyage_id: string; number: number; seats: number
+export type TableRow = {
+  id: string; episode_id: string; number: number; seats: number
 }
 export type TableSeatRow = {
   table_id: string; profile_id: string; state: "held" | "confirmed"
@@ -139,15 +143,15 @@ export type MatchRow = {
   id: string; table_id: string; profile_a: string; profile_b: string; created_at: string
 }
 export type CabinRow = {
-  id: string; vessel_id: string; name: string; berths: number
+  id: string; vessel_id: string; name: string; sleeps: number
   premium_cents: number; position: number; active: boolean
 }
-export type EpisodeRow = {
-  id: string; voyage_id: string | null; number: number; slug: string
+export type EpisodeCutRow = {
+  id: string; episode_id: string | null; number: number; slug: string
   title: string; dek: string | null; state: "draft" | "published"; aired_at: string | null
 }
-export type RsvpRow = {
-  id: string; voyage_id: string; profile_id: string; status: RsvpStatus; guests: number
+export type PassRow = {
+  id: string; episode_id: string; profile_id: string; status: PassStatus; guests: number
   created_at: string; checked_in_at: string | null; checked_in_by: string | null
   boarding_code: string | null; show_on_manifest: boolean; vessel_id: string | null
   comp: boolean; guest_names: string[]; promo_code: string | null; auto_claim: boolean
@@ -158,32 +162,32 @@ export type RsvpRow = {
 export type MembershipPlanRow = {
   id: string; plan_type: "access" | "regional" | "national" | "global" | "guest"
   tier: number; label: string; price_cents: number; events_per_month: number
-  class_ceiling: "voyage" | "expedition" | "odyssey" | null; active: boolean; early_days: number
+  class_ceiling: "passage" | "expedition" | "odyssey" | null; active: boolean; early_days: number
   stripe_price_id: string | null; stripe_price_id_annual: string | null; annual_price_cents: number | null
   /* The club_products row this plan sells as; the membership cap counts by it. */
   product_slug: string | null; published: boolean
 }
 export type VesselRow = {
-  id: string; name: string; capacity: number; home_harbor: string | null; active: boolean
+  id: string; name: string; capacity: number; home_city: string | null; active: boolean
   length_ft: number | null; year: number | null; cabins: number | null
 }
-export type VoyageVesselRow = { voyage_id: string; vessel_id: string; position: number }
-export type FathomsRow = {
-  id: string; profile_id: string; delta: number; reason: string; voyage_id: string | null; created_at: string
+export type EpisodeVesselRow = { episode_id: string; vessel_id: string; position: number }
+export type KnotsRow = {
+  id: string; profile_id: string; delta: number; reason: string; episode_id: string | null; created_at: string
 }
-export type WardroomPostRow = {
+export type OpenDeckPostRow = {
   id: string; author_id: string | null; author_name: string | null; body: string
-  voyage_id: string | null; created_at: string
+  episode_id: string | null; created_at: string
 }
-export type WardroomHailRow = { post_id: string; profile_id: string; created_at: string }
-export type WardroomCommentRow = {
+export type OpenDeckHailRow = { post_id: string; profile_id: string; created_at: string }
+export type OpenDeckCommentRow = {
   id: string; post_id: string; author_id: string | null; author_name: string | null; body: string; created_at: string
 }
-export type WardroomFlagRow = {
+export type OpenDeckFlagRow = {
   id: string; post_id: string; flagger_id: string; reason: string
   status: "open" | "removed" | "left_up"; resolved_by: string | null; created_at: string
 }
-export type DispatchRow = {
+export type LogPostRow = {
   id: string; slug: string; title: string; dek: string | null; body: string | null
   tag: string | null; published_at: string
 }
@@ -198,10 +202,10 @@ export type NotificationRow = {
   read: boolean; created_at: string
   /* The episode a Word is about, when it is about one — the idempotency key
      for the day-of Words since series occurrences share a title. */
-  voyage_id: string | null
+  episode_id: string | null
 }
 export type MemberRollRow = {
-  email: string; tier: MembershipTier; home_harbor: string | null; source: string
+  email: string; tier: MembershipTier; home_city: string | null; source: string
   invite_code: string | null; approved_by: string | null; created_at: string
 }
 export type InviteRow = {
@@ -209,13 +213,13 @@ export type InviteRow = {
 }
 export type AccountLedgerRow = {
   id: string; profile_id: string; delta_cents: number; kind: string; memo: string | null
-  voyage_id: string | null; rsvp_id: string | null; created_by: string | null; created_at: string
+  episode_id: string | null; rsvp_id: string | null; created_by: string | null; created_at: string
   /* Names the external event this row settles. Unique when present, so a
      repeated webhook delivery cannot post the same money twice. */
   idem_key: string | null
 }
 export type AddonRow = { id: string; slug: string; name: string; price_cents: number; active: boolean }
-export type RsvpAddonRow = { rsvp_id: string; addon_id: string; qty: number }
+export type PassAddonRow = { rsvp_id: string; addon_id: string; qty: number }
 export type RewardRow = {
   id: string; name: string; detail: string | null; cost_fm: number
   active: boolean; position: number; stock: number | null
@@ -234,7 +238,7 @@ export type GalleyItemRow = {
   id: string; category: "bar" | "galley" | "merch"; name: string; price_cents: number; active: boolean
 }
 export type GalleyOrderRow = {
-  id: string; profile_id: string; voyage_id: string | null; source: "self" | "pos"
+  id: string; profile_id: string; episode_id: string | null; source: "self" | "pos"
   status: "placed" | "ready" | "delivered" | "cancelled"; total_cents: number; created_at: string
 }
 export type GalleyOrderItemRow = { order_id: string; item_id: string; qty: number; price_cents: number }
@@ -250,7 +254,7 @@ export type ShopOrderItemRow = {
   order_id: string; product_id: string; qty: number; size: string | null; price_cents: number
 }
 export type CrewRoleRow = {
-  id: string; title: string; port: string; meta: string | null; blurb: string | null
+  id: string; title: string; city: string; meta: string | null; blurb: string | null
   open: boolean; position: number
 }
 export type CrewCandidateRow = {
@@ -279,21 +283,21 @@ export type InstallmentPlanRow = {
   next_charge_at: string | null; status: "active" | "complete" | "defaulted" | "cancelled"; created_at: string
 }
 export type ThreadRow = {
-  id: string; kind: "crew" | "direct" | "shoreside"; voyage_id: string | null
+  id: string; kind: "crew" | "direct" | "shoreside"; episode_id: string | null
   title: string | null; closed_at: string | null; created_at: string
 }
 export type ThreadMemberRow = { thread_id: string; profile_id: string; last_read_at: string | null; joined_at: string }
 export type MessageRow = {
   id: string; thread_id: string; author_id: string | null; body: string; created_at: string
 }
-export type VoyageMediaRow = {
-  id: string; voyage_id: string; storage_path: string; caption: string | null
+export type EpisodeMediaRow = {
+  id: string; episode_id: string; storage_path: string; caption: string | null
   uploaded_by: string | null; approved: boolean; created_at: string
 }
 export type CrewRequestRow = {
-  id: string; voyage_id: string; profile_id: string; note: string | null; open: boolean; created_at: string
+  id: string; episode_id: string; profile_id: string; note: string | null; open: boolean; created_at: string
 }
-export type RsvpGuestRow = {
+export type PassGuestRow = {
   id: string; rsvp_id: string; name: string; boarding_code: string | null
   checked_in_at: string | null; checked_in_by: string | null; created_at: string
   sign_token: string; on_camera: boolean
@@ -305,7 +309,7 @@ export type PassTransferRow = {
   status: "offered" | "accepted" | "declined" | "cancelled" | "void"; created_at: string; responded_at: string | null
 }
 export type PromoCodeRow = {
-  code: string; kind: "percent" | "amount" | "comp"; value: number; voyage_id: string | null
+  code: string; kind: "percent" | "amount" | "comp"; value: number; episode_id: string | null
   max_uses: number; uses: number; expires_at: string | null; active: boolean
   note: string | null; created_by: string | null; created_at: string
 }
@@ -363,13 +367,13 @@ export type MarkRow = {
 }
 export type MemberMarkRow = { profile_id: string; mark_code: string; conferred_at: string }
 export type ContestShape = "regatta" | "challenge"
-export type ContestMetric = "nm" | "sailings" | "harbors" | "vessels" | "crew_met" | "frames"
+export type ContestMetric = "nm" | "episodes" | "cities" | "vessels" | "crew_met" | "frames"
 export type ContestRow = {
   id: string; slug: string; shape: ContestShape; scope: "member" | "crew"
   title: string; blurb: string | null; metric: ContestMetric; target: number | null
   prize: string | null; knots_award: number
   starts_at: string; ends_at: string; status: "draft" | "open" | "settled"
-  voyage_id: string | null; settled_at: string | null; created_at: string
+  episode_id: string | null; settled_at: string | null; created_at: string
 }
 export type ContestEntryRow = { contest_id: string; profile_id: string; joined_at: string }
 export type ContestResultRow = {
@@ -430,17 +434,17 @@ export type Database = {
   public: {
     Tables: {
       profiles: Table<ProfileRow, Ins<ProfileRow, "id">>
-      harbors: Table<HarborRow, Ins<HarborRow, "slug" | "name">>
-      voyages: Table<VoyageRow, Ins<VoyageRow, "slug" | "title" | "class" | "starts_at">>
+      cities: Table<CityRow, Ins<CityRow, "slug" | "name">>
+      episodes: Table<EpisodeRow, Ins<EpisodeRow, "slug" | "title" | "setting" | "starts_at">>
       seasons: Table<SeasonRow, Ins<SeasonRow, "slug" | "title" | "starts_on" | "ends_on">>
       venues: Table<VenueRow, Ins<VenueRow, "slug" | "name">>
-      /* template_voyage_id left the required set when it dropped NOT NULL: an
+      /* template_episode_id left the required set when it dropped NOT NULL: an
          edition has to be nameable before its first episode is scheduled. */
-      voyage_series: Table<VoyageSeriesRow, Ins<VoyageSeriesRow, "slug" | "title">>
+      editions: Table<EditionRow, Ins<EditionRow, "slug" | "title">>
       member_event_proposals: Table<MemberEventProposalRow, Ins<MemberEventProposalRow, "proposer_id" | "title">>
       sponsors: Table<SponsorRow, Ins<SponsorRow, "name" | "tier" | "monthly_cents">>
-      voyage_sponsors: Table<VoyageSponsorRow, Ins<VoyageSponsorRow, "voyage_id" | "sponsor_id">>
-      voyage_daybeds: Table<VoyageDaybedRow, Ins<VoyageDaybedRow, "voyage_id" | "rsvp_id" | "profile_id">>
+      episode_sponsors: Table<EpisodeSponsorRow, Ins<EpisodeSponsorRow, "episode_id" | "sponsor_id">>
+      episode_daybeds: Table<EpisodeDaybedRow, Ins<EpisodeDaybedRow, "episode_id" | "rsvp_id" | "profile_id">>
       club_settings: Table<ClubSettingRow, Ins<ClubSettingRow, "key" | "value_int">>
       segments: Table<SegmentRow, Ins<SegmentRow, "slug" | "label" | "heads">>
       sponsor_tiers: Table<SponsorTierRow, Ins<SponsorTierRow, "slug" | "label" | "position" | "rate_cents">>
@@ -449,32 +453,32 @@ export type Database = {
       audit_log: Table<AuditLogRow, Ins<AuditLogRow, "table_name" | "action">>
       charter_requests: Table<CharterRequestRow, Ins<CharterRequestRow, "profile_id">>
       app_errors: Table<AppErrorRow, Ins<AppErrorRow, "message">>
-      rsvps: Table<RsvpRow, Ins<RsvpRow, "voyage_id" | "profile_id">>
+      passes: Table<PassRow, Ins<PassRow, "episode_id" | "profile_id">>
       cabins: Table<CabinRow, Ins<CabinRow, "vessel_id" | "name">>
-      episodes: Table<EpisodeRow, Ins<EpisodeRow, "number" | "slug" | "title">>
-      dating_tables: Table<DatingTableRow, Ins<DatingTableRow, "voyage_id" | "number">>
+      episode_cuts: Table<EpisodeCutRow, Ins<EpisodeCutRow, "number" | "slug" | "title">>
+      tables: Table<TableRow, Ins<TableRow, "episode_id" | "number">>
       table_seats: Table<TableSeatRow, Ins<TableSeatRow, "table_id" | "profile_id">>
       table_picks: Table<TablePickRow, Ins<TablePickRow, "table_id" | "picker" | "picked">>
       matches: Table<MatchRow, Ins<MatchRow, "table_id" | "profile_a" | "profile_b">>
-      fathoms_ledger: Table<FathomsRow, Ins<FathomsRow, "profile_id" | "delta" | "reason">>
-      wardroom_posts: Table<WardroomPostRow, Ins<WardroomPostRow, "body">>
-      wardroom_hails: Table<WardroomHailRow, Ins<WardroomHailRow, "post_id" | "profile_id">>
-      wardroom_comments: Table<WardroomCommentRow, Ins<WardroomCommentRow, "post_id" | "body">>
-      wardroom_flags: Table<WardroomFlagRow, Ins<WardroomFlagRow, "post_id" | "flagger_id" | "reason">>
-      dispatch_posts: Table<DispatchRow, Ins<DispatchRow, "slug" | "title">>
+      knots_ledger: Table<KnotsRow, Ins<KnotsRow, "profile_id" | "delta" | "reason">>
+      open_deck_posts: Table<OpenDeckPostRow, Ins<OpenDeckPostRow, "body">>
+      open_deck_hails: Table<OpenDeckHailRow, Ins<OpenDeckHailRow, "post_id" | "profile_id">>
+      open_deck_comments: Table<OpenDeckCommentRow, Ins<OpenDeckCommentRow, "post_id" | "body">>
+      open_deck_flags: Table<OpenDeckFlagRow, Ins<OpenDeckFlagRow, "post_id" | "flagger_id" | "reason">>
+      log_posts: Table<LogPostRow, Ins<LogPostRow, "slug" | "title">>
       applications: Table<ApplicationRow, Ins<ApplicationRow, "email" | "full_name">>
       notifications: Table<NotificationRow, Ins<NotificationRow, "profile_id" | "title">>
       member_roll: Table<MemberRollRow, Ins<MemberRollRow, "email">>
       invites: Table<InviteRow, Ins<InviteRow, "code" | "inviter_id">>
       account_ledger: Table<AccountLedgerRow, Ins<AccountLedgerRow, "profile_id" | "delta_cents" | "kind">>
       addons: Table<AddonRow, Ins<AddonRow, "slug" | "name" | "price_cents">>
-      rsvp_addons: Table<RsvpAddonRow, Ins<RsvpAddonRow, "rsvp_id" | "addon_id">>
+      pass_addons: Table<PassAddonRow, Ins<PassAddonRow, "rsvp_id" | "addon_id">>
       rewards: Table<RewardRow, Ins<RewardRow, "name" | "cost_fm">>
       reward_redemptions: Table<RewardRedemptionRow, Ins<RewardRedemptionRow, "profile_id" | "reward_id">>
       email_outbox: Table<EmailOutboxRow, Ins<EmailOutboxRow, "to_email" | "template">>
       membership_plans: Table<MembershipPlanRow, Ins<MembershipPlanRow, "plan_type" | "tier" | "label" | "price_cents">>
       vessels: Table<VesselRow, Ins<VesselRow, "name">>
-      voyage_vessels: Table<VoyageVesselRow, Ins<VoyageVesselRow, "voyage_id" | "vessel_id">>
+      episode_vessels: Table<EpisodeVesselRow, Ins<EpisodeVesselRow, "episode_id" | "vessel_id">>
       galley_items: Table<GalleyItemRow, Ins<GalleyItemRow, "category" | "name" | "price_cents">>
       galley_orders: Table<GalleyOrderRow, Ins<GalleyOrderRow, "profile_id">>
       galley_order_items: Table<GalleyOrderItemRow, Ins<GalleyOrderItemRow, "order_id" | "item_id" | "price_cents">>
@@ -488,9 +492,9 @@ export type Database = {
       threads: Table<ThreadRow, Ins<ThreadRow, "kind">>
       thread_members: Table<ThreadMemberRow, Ins<ThreadMemberRow, "thread_id" | "profile_id">>
       messages: Table<MessageRow, Ins<MessageRow, "thread_id" | "body">>
-      voyage_media: Table<VoyageMediaRow, Ins<VoyageMediaRow, "voyage_id" | "storage_path">>
-      crew_requests: Table<CrewRequestRow, Ins<CrewRequestRow, "voyage_id" | "profile_id">>
-      rsvp_guests: Table<RsvpGuestRow, Ins<RsvpGuestRow, "rsvp_id" | "name">>
+      episode_media: Table<EpisodeMediaRow, Ins<EpisodeMediaRow, "episode_id" | "storage_path">>
+      crew_requests: Table<CrewRequestRow, Ins<CrewRequestRow, "episode_id" | "profile_id">>
+      pass_guests: Table<PassGuestRow, Ins<PassGuestRow, "rsvp_id" | "name">>
       pass_transfers: Table<PassTransferRow, Ins<PassTransferRow, "rsvp_id" | "from_profile" | "to_profile">>
       promo_codes: Table<PromoCodeRow, Ins<PromoCodeRow, "code" | "kind">>
       push_subscriptions: Table<PushSubscriptionRow, Ins<PushSubscriptionRow, "profile_id" | "endpoint" | "p256dh" | "auth">>
@@ -502,7 +506,7 @@ export type Database = {
       webhooks: Table<WebhookRow, Ins<WebhookRow, "url" | "secret">>
       webhook_deliveries: Table<WebhookDeliveryRow, Ins<WebhookDeliveryRow, "webhook_id" | "event" | "payload">>
       automations: Table<AutomationRow, Ins<AutomationRow, "name" | "trigger_event">>
-      crew_roles: Table<CrewRoleRow, Ins<CrewRoleRow, "title" | "port">>
+      crew_roles: Table<CrewRoleRow, Ins<CrewRoleRow, "title" | "city">>
       crew_candidates: Table<CrewCandidateRow, Ins<CrewCandidateRow, "role_id" | "full_name" | "email">>
       marks: Table<MarkRow, Ins<MarkRow, "code" | "name" | "blurb" | "kind">>
       member_marks: Table<MemberMarkRow, Ins<MemberMarkRow, "profile_id" | "mark_code">>
@@ -526,20 +530,20 @@ export type Database = {
           /* id is NOT NULL on the table beneath, so it is not null here. */
           id: string; member_no: string | null; full_name: string | null
           handle: string | null; tier: "regional" | "national" | "global" | null
-          home_harbor: string | null; avatar_tone: string | null; is_staff: boolean | null
+          home_city: string | null; avatar_tone: string | null; is_staff: boolean | null
           joined_at: string | null; status: string | null; bio: string | null
           in_directory: boolean | null; interests: string[] | null; on_camera: boolean | null
         }
         Relationships: []
       }
-      voyage_capacity: {
+      episode_capacity: {
         Row: {
-          voyage_id: string | null; berths_total: number | null; aboard: number | null
-          waitlisted: number | null; berths_left: number | null
+          episode_id: string | null; passes_total: number | null; aboard: number | null
+          waitlisted: number | null; passes_left: number | null
         }
         Relationships: []
       }
-      fathoms_balance: {
+      knots_balance: {
         Row: { profile_id: string | null; balance: number | null }
         Relationships: []
       }
@@ -556,7 +560,7 @@ export type Database = {
         Relationships: []
       }
       waitlist_position: {
-        Row: { rsvp_id: string | null; voyage_id: string | null; profile_id: string | null; position: number | null }
+        Row: { rsvp_id: string | null; episode_id: string | null; profile_id: string | null; position: number | null }
         Relationships: []
       }
       member_engagement: {
@@ -610,20 +614,20 @@ export type Database = {
         Args: { p_id: string; p_status: "considering" | "approved" | "declined"; p_note?: string | null }
         Returns: undefined
       }
-      claim_a_daybed: { Args: { p_rsvp: string }; Returns: undefined }
+      claim_a_daybed: { Args: { p_pass: string }; Returns: undefined }
       export_my_data: { Args: Record<string, never>; Returns: Json }
       requeue_outbox_row: { Args: { p_table: "email_outbox" | "sms_outbox" | "push_outbox"; p_id: string }; Returns: undefined }
-      assign_vessels_evenly: { Args: { p_voyage: string }; Returns: number }
+      assign_vessels_evenly: { Args: { p_episode: string }; Returns: number }
       club_setting: { Args: { p_key: string }; Returns: number }
-      passes_left: { Args: { p_voyage: string; p_except_rsvp?: string | null }; Returns: number }
+      passes_left: { Args: { p_episode: string; p_except_pass?: string | null }; Returns: number }
       scheduler_health: {
         Args: { p_limit?: number }
         Returns: Array<{ id: number; status_code: number | null; timed_out: boolean | null; error_msg: string | null; created: string; body: string | null }>
       }
-      comp_a_pass_for_sponsor: { Args: { p_voyage: string; p_sponsor: string; p_profile: string }; Returns: string }
-      sponsor_credits: { Args: { p_voyage: string }; Returns: Array<{ name: string; tier: string }> }
+      comp_a_pass_for_sponsor: { Args: { p_episode: string; p_sponsor: string; p_profile: string }; Returns: string }
+      sponsor_credits: { Args: { p_episode: string }; Returns: Array<{ name: string; tier: string }> }
       attach_addons: {
-        Args: { p_rsvp: string; p_addons: string[]; p_qty: number }
+        Args: { p_pass: string; p_addons: string[]; p_qty: number }
         Returns: number
       }
       /* Hand-added after 20260901151953 — regenerate types to fold in. */
@@ -647,7 +651,7 @@ export type Database = {
       accept_application: { Args: { p_id: string }; Returns: undefined }
       open_direct_thread: { Args: { p_other: string }; Returns: string }
       accept_pass_transfer: { Args: { p_id: string }; Returns: undefined }
-      check_promo: { Args: { p_code: string; p_voyage: string }; Returns: Json }
+      check_promo: { Args: { p_code: string; p_episode: string }; Returns: Json }
       redeem_reward: { Args: { p_reward: string }; Returns: undefined }
       claim_stripe_customer: { Args: { p_customer_id: string }; Returns: undefined }
       claim_table_seat: { Args: { p_table: string }; Returns: string }
@@ -683,7 +687,7 @@ export type Database = {
          the only path past the calendar_token guard. Returns the new token; the
          page re-reads the profile anyway. */
       rotate_calendar_token: { Args: Record<string, never>; Returns: string }
-      shared_voyages: { Args: { p_other: string }; Returns: Array<{ voyage_id: string }> }
+      shared_episodes: { Args: { p_other: string }; Returns: Array<{ episode_id: string }> }
       adjust_knots: {
         Args: { p_profile: string; p_delta: number; p_reason: string }
         Returns: null
@@ -699,7 +703,7 @@ export type Database = {
       season_card: {
         Args: { p_profile_id: string; p_from: string; p_to: string }
         Returns: Array<{
-          sailings: number; nm_logged: number; harbors: number; crew_met: number
+          sailings: number; nm_logged: number; cities: number; crew_met: number
           knots_earned: number; marks_won: string[]; longest_nm: number | null
           longest_title: string | null
         }>
@@ -749,7 +753,7 @@ export type Database = {
         Args: { p_token: string }
         Returns: Array<{
           rsvp_id: string; boarding_code: string | null; guests: number
-          slug: string; title: string; class: EventClass; blurb: string | null
+          slug: string; title: string; setting: EpisodeSetting; blurb: string | null
           starts_at: string; ends_at: string | null; coordinates: string | null; muster: string | null
           status: string
         }>
@@ -766,7 +770,7 @@ export type Database = {
       }
       place_galley_order: {
         Args: {
-          p_voyage: string
+          p_episode: string
           p_lines: Array<{ itemId: string; qty: number }>
           /* Minted once per order by the client and re-sent unchanged on every
              offline retry, so a replay is recognised rather than charged. */
@@ -784,25 +788,25 @@ export type Database = {
       incoming_transfers: {
         Args: Record<string, never>
         Returns: Array<{
-          transfer_id: string; from_name: string; voyage_id: string
+          transfer_id: string; from_name: string; episode_id: string
           title: string; starts_at: string; time_zone: string
         }>
       }
-      voyage_manifest: {
-        Args: { p_voyage: string }
+      episode_manifest: {
+        Args: { p_episode: string }
         Returns: Array<{ full_name: string; avatar_tone: string; guests: number }>
       }
       claimed_cabins: {
         Args: { p_cabins: string[] }
-        Returns: Array<{ cabin_id: string; voyage_id: string }>
+        Returns: Array<{ cabin_id: string; episode_id: string }>
       }
     }
     Enums: {
       application_status: ApplicationStatus
-      event_class: EventClass
+      setting: EpisodeSetting
       membership_tier: MembershipTier
-      rsvp_status: RsvpStatus
-      voyage_status: VoyageStatus
+      pass_status: PassStatus
+      episode_status: EpisodeStatus
     }
     CompositeTypes: { [_ in never]: never }
   }
@@ -825,10 +829,10 @@ export const Constants = {
   public: {
     Enums: {
       application_status: ["received", "review", "invited", "aboard", "declined"],
-      event_class: ["sea", "shore", "sky"],
+      setting: ["sea", "shore", "sky"],
       membership_tier: ["regional", "national", "global"],
-      rsvp_status: ["aboard", "waitlist", "not_going"],
-      voyage_status: ["scheduled", "live", "weather_hold", "completed", "cancelled"],
+      pass_status: ["aboard", "waitlist", "not_going"],
+      episode_status: ["scheduled", "live", "weather_hold", "completed", "cancelled"],
     },
   },
 } as const

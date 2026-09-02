@@ -60,7 +60,7 @@ export default async function ContestPage({
   const open = contest.status === "open";
 
   /* A crew-scoped contest belongs to one episode, and contest_entries' INSERT
-     policy says so: scope 'crew' requires an aboard pass on contest.voyage_id.
+     policy says so: scope 'crew' requires an aboard pass on contest.episode_id.
      This page never asked. A member with no pass on that episode was shown
      Enter, pressed it, and the insert was refused by RLS — and the action threw
      the refusal away, so the page came back identical with no entry on it. Twice
@@ -73,16 +73,16 @@ export default async function ContestPage({
   const crewOnly = contest.scope === "crew";
   let aboard = false;
   let sailing: { title: string; slug: string } | null = null;
-  if (crewOnly && contest.voyage_id) {
+  if (crewOnly && contest.episode_id) {
     const [passRes, voyageRes] = await Promise.all([
       supabase
-        .from("rsvps")
+        .from("passes")
         .select("id")
-        .eq("voyage_id", contest.voyage_id)
+        .eq("episode_id", contest.episode_id)
         .eq("profile_id", user.id)
         .eq("status", "aboard")
         .maybeSingle(),
-      supabase.from("voyages").select("title, slug").eq("id", contest.voyage_id).maybeSingle(),
+      supabase.from("episodes").select("title, slug").eq("id", contest.episode_id).maybeSingle(),
     ]);
     aboard = Boolean(passRes.data);
     sailing = voyageRes.data ?? null;

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CLUB_ZONE, CITY_CODES, PLACE } from "@/lib/brand";
 import { roman, yearIn } from "@/lib/format";
 import { getMember } from "../data";
-import { DirectoryList, type DirectoryMember, type HarborOption } from "./roster";
+import { DirectoryList, type DirectoryMember, type CityOption } from "./roster";
 
 export const metadata: Metadata = { title: "Directory" };
 
@@ -31,15 +31,15 @@ export default async function DirectoryPage({
   const pages = Math.min(MAX_PAGES, Math.max(1, Math.floor(Number(show)) || 1));
   const limit = PAGE_SIZE * pages;
 
-  const [profilesRes, harborsRes, affinityRes] = await Promise.all([
+  const [profilesRes, citiesRes, affinityRes] = await Promise.all([
     supabase
       .from("member_directory")
-      .select("id,full_name,handle,avatar_tone,home_harbor,joined_at,interests", { count: "exact" })
+      .select("id,full_name,handle,avatar_tone,home_city,joined_at,interests", { count: "exact" })
       .eq("in_directory", true)
       .eq("status", "active")
       .order("full_name", { ascending: true })
       .range(0, limit - 1),
-    supabase.from("harbors").select("id,slug,name").order("position", { ascending: true }),
+    supabase.from("cities").select("id,slug,name").order("position", { ascending: true }),
     supabase.from("member_affinity").select("other_id,shared").eq("profile_id", user.id),
   ]);
 
@@ -59,8 +59,8 @@ export default async function DirectoryPage({
       : Promise.resolve({ data: [] as Array<{ profile_id: string | null; passes: number | null }> }),
   ]);
 
-  const harbors = harborsRes.data ?? [];
-  const harborById = new Map(harbors.map((h) => [h.id, h]));
+  const cities = citiesRes.data ?? [];
+  const cityById = new Map(cities.map((h) => [h.id, h]));
   const leagueById = new Map(
     (leagueRes.data ?? [])
       .filter((r) => r.profile_id)
@@ -78,16 +78,16 @@ export default async function DirectoryPage({
   );
 
   const members: DirectoryMember[] = profiles.map((p) => {
-    const harbor = p.home_harbor ? harborById.get(p.home_harbor) : null;
+    const city = p.home_city ? cityById.get(p.home_city) : null;
     const joinedYear = p.joined_at ? yearIn(p.joined_at, CLUB_ZONE) : yearIn(new Date().toISOString(), CLUB_ZONE);
     return {
       id: p.id,
       name: p.full_name ?? "A member",
       handle: p.handle,
       tone: toneOf(p.avatar_tone),
-      harborId: harbor?.id ?? "",
-      harborName: harbor?.name ?? `No home ${PLACE.market.toLowerCase()}`,
-      harborCode: harbor ? CITY_CODES[harbor.slug] ?? "" : "",
+      harborId: city?.id ?? "",
+      harborName: city?.name ?? `No home ${PLACE.market.toLowerCase()}`,
+      cityCode: city ? CITY_CODES[city.slug] ?? "" : "",
       league: leagueById.get(p.id)?.league ?? 1,
       leagueName: leagueById.get(p.id)?.league_name ?? "First League — Harborline",
       passes: passesById.get(p.id) ?? 0,
@@ -98,7 +98,7 @@ export default async function DirectoryPage({
     };
   });
 
-  const harborOptions: HarborOption[] = harbors.map((h) => ({ id: h.id, name: h.name }));
+  const cityOptions: CityOption[] = cities.map((h) => ({ id: h.id, name: h.name }));
   const more = total > members.length && pages < MAX_PAGES;
 
   return (
@@ -113,7 +113,7 @@ export default async function DirectoryPage({
         The roster — everyone who chose to be listed. Search a name, a handle, or
         what they turn up for.
       </p>
-      <DirectoryList members={members} harbors={harborOptions} total={total} />
+      <DirectoryList members={members} cities={cityOptions} total={total} />
       {more ? (
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 20, flexWrap: "wrap" }}>
           <Link

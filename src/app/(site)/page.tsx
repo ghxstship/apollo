@@ -13,8 +13,8 @@ import {
   durationChip,
   fleetChip,
   weekChip,
-} from "@/components/site/voyage-chips";
-import { fleetByVoyage } from "@/components/site/voyage-data";
+} from "@/components/site/episode-chips";
+import { fleetByEpisode } from "@/components/site/episode-data";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -32,16 +32,16 @@ const STEPS: Array<[string, string]> = [
 export default async function HomePage() {
   const supabase = await createClient();
   const [
-    { data: voyages },
-    { data: harbors },
-    { data: posts },
     { data: episodes },
-    { data: formatRows },
+    { data: cities },
+    { data: posts },
+    { data: cuts },
+    { data: seriesRows },
   ] = await Promise.all([
       supabase
-        .from("voyages")
+        .from("episodes")
         .select(
-          "id,slug,title,class,format,status,starts_at,ends_at,distance_nm,time_zone,media,blurb,deposit_required,deposit_cents"
+          "id,slug,title,setting,series,status,starts_at,ends_at,distance_nm,time_zone,media,blurb,deposit_required,deposit_cents"
         )
         .in("status", ["scheduled", "live", "weather_hold"])
       /* An episode that has cast off is not on offer, whatever its status
@@ -52,16 +52,16 @@ export default async function HomePage() {
            calendar's worth of underway episodes without reading the year. */
         .limit(12),
       supabase
-        .from("harbors")
+        .from("cities")
         .select("id,slug,name,status,coordinates,launch_year")
         .order("position", { ascending: true }),
       supabase
-        .from("dispatch_posts")
+        .from("log_posts")
         .select("id,slug,title,dek,tag,published_at")
         .order("published_at", { ascending: false })
         .limit(2),
       supabase
-        .from("episodes")
+        .from("episode_cuts")
         .select("id,number,title,dek,aired_at")
         .eq("state", "published")
         .order("number", { ascending: true })
@@ -69,39 +69,39 @@ export default async function HomePage() {
       /* The formats, once, mapped by slug below — a card reads the format's own
          name, and reading the table per row would be one round trip per card.
          Another module's table, reached through the moduleTables seam. */
-      moduleTables(supabase).from("activity_formats").select("slug, label"),
+      moduleTables(supabase).from("series").select("slug, label"),
     ]);
 
-  const formatLabelOf = new Map(
-    ((formatRows ?? []) as Array<{ slug: string; label: string }>).map(
+  const seriesLabelOf = new Map(
+    ((seriesRows ?? []) as Array<{ slug: string; label: string }>).map(
       (f) => [f.slug, f.label] as const
     )
   );
 
-  /* The cities line, said by the data. The table is still called harbors and
+  /* The cities line, said by the data. The table is still called cities and
      the identifiers below still say so; the word a reader gets is City. */
   const CITY = PLACE.market.toLowerCase();
   const CITIES = PLACE.markets.toLowerCase();
   const WORDS = [`No ${CITIES}`, `One ${CITY}`, `Two ${CITIES}`, `Three ${CITIES}`, `Four ${CITIES}`];
-  const openHarbors = (harbors ?? []).filter((h) => h.status === "open");
-  const nextHarbor = (harbors ?? []).find((h) => h.status !== "open");
-  const harborsLine = `${WORDS[openHarbors.length] ?? `${openHarbors.length} ${CITIES}`} now.${
-    nextHarbor ? ` ${nextHarbor.name} is next.` : ""
+  const openCities = (cities ?? []).filter((h) => h.status === "open");
+  const nextCity = (cities ?? []).find((h) => h.status !== "open");
+  const citiesLine = `${WORDS[openCities.length] ?? `${openCities.length} ${CITIES}`} now.${
+    nextCity ? ` ${nextCity.name} is next.` : ""
   }`;
 
-  const live = (voyages ?? []).filter((v) => v.status === "live");
-  const nextUp = (voyages ?? []).filter((v) => v.status !== "live").slice(0, 3);
+  const live = (episodes ?? []).filter((v) => v.status === "live");
+  const nextUp = (episodes ?? []).filter((v) => v.status !== "live").slice(0, 3);
   /* Berth counts and hulls for the three cards only — the capacity view was
      being read for every episode the club has ever raised. */
   const nextUpIds = nextUp.map((v) => v.id);
   const [{ data: capacity }, fleets] = await Promise.all([
     nextUpIds.length
-      ? supabase.from("voyage_capacity").select("voyage_id,berths_left").in("voyage_id", nextUpIds)
-      : Promise.resolve({ data: [] as Array<{ voyage_id: string | null; berths_left: number | null }> }),
-    fleetByVoyage(nextUpIds),
+      ? supabase.from("episode_capacity").select("episode_id,passes_left").in("episode_id", nextUpIds)
+      : Promise.resolve({ data: [] as Array<{ episode_id: string | null; passes_left: number | null }> }),
+    fleetByEpisode(nextUpIds),
   ]);
   const capacityById = new Map(
-    (capacity ?? []).map((c) => [c.voyage_id, c] as const)
+    (capacity ?? []).map((c) => [c.episode_id, c] as const)
   );
 
   return (
@@ -159,7 +159,7 @@ export default async function HomePage() {
           <div className="ls-grid-3">
             {nextUp.map((v, i) => {
               const cap = capacityById.get(v.id);
-              const left = cap?.berths_left ?? null;
+              const left = cap?.passes_left ?? null;
               const seats = "passes";
               /* The badge: what this actually is, and how long it runs. The
                  series names itself; hours are omitted rather than guessed
@@ -174,15 +174,15 @@ export default async function HomePage() {
                  the two apart. Afloat or Ashore is always true. Special stays
                  in the Bridge, where leaving the series blank is a choice an
                  operator actually makes. */
-              const formatLabel =
-                (v.format && formatLabelOf.get(v.format)) || SETTING_LABEL[v.class] || "Afloat";
+              const seriesLabel =
+                (v.series && seriesLabelOf.get(v.series)) || SETTING_LABEL[v.setting] || "Afloat";
               const hours = durationChip(v.starts_at, v.ends_at);
               /* Ship's-log chips: which week, how many hulls, what holds a
                  pass. Nothing that scores or hurries the reader. */
               const meta = [
                 ...logMeta(v.starts_at, v.distance_nm, v.time_zone),
                 weekChip(v.starts_at),
-                v.class === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
+                v.setting === "sea" ? fleetChip(fleets.get(v.id) ?? []) : null,
                 v.deposit_required ? depositChip(v.deposit_cents) : null,
               ].filter((m): m is string => Boolean(m));
               return (
@@ -194,7 +194,7 @@ export default async function HomePage() {
                 >
                   <Card
                     media={v.media}
-                    eyebrow={`${formatLabel}${hours ? ` · ${hours}` : ""}`}
+                    eyebrow={`${seriesLabel}${hours ? ` · ${hours}` : ""}`}
                     title={v.title}
                     meta={meta}
                     footer={
@@ -241,13 +241,13 @@ export default async function HomePage() {
 
       <section className="ls-section">
         <div className="ls-container">
-          {/* Read from the harbors table rather than hardcoded: the copy used to
+          {/* Read from the cities table rather than hardcoded: the copy used to
               promise the Balearics, which is not a city the club has, directly
               above a list naming Chicago and New York as the ones coming. */}
-          <SectionHeader eyebrow={PLACE.markets} title={harborsLine} />
+          <SectionHeader eyebrow={PLACE.markets} title={citiesLine} />
           <div>
-            {(harbors ?? []).map((h) => (
-              <div className="ws-harbor-row" key={h.id}>
+            {(cities ?? []).map((h) => (
+              <div className="ws-city-row" key={h.id}>
                 <h3>{h.name}</h3>
                 <span className="hm">
                   {CITY_CODES[h.slug] ? `${CITY_CODES[h.slug]} · ` : ""}
@@ -262,7 +262,7 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-          <p className="ws-harbor-note">
+          <p className="ws-city-note">
             Founding passes in new {CITIES} go to the waitlist first —{" "}
             <Link href="/membership#apply">get on the list</Link>.
           </p>
@@ -282,9 +282,9 @@ export default async function HomePage() {
               </LinkButton>
             }
           />
-          {(episodes ?? []).length > 0 ? (
+          {(cuts ?? []).length > 0 ? (
             <div className="ls-grid-3" style={{ marginBottom: 28 }}>
-              {(episodes ?? []).map((ep, i) => (
+              {(cuts ?? []).map((ep, i) => (
                 <Card
                   key={ep.id}
                   media={(["day", "dusk", "dawn"] as const)[i % 3]}

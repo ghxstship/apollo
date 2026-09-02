@@ -9,8 +9,8 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 /* Legs and stops — the episode itinerary and the port guide.
 
    Both tables are read by the episode page and neither had a writer anywhere
-   in src/. voyage_legs was empty, so the itinerary block on an episode never
-   rendered at all; voyage_stops was empty, so the port guide card was silently
+   in src/. episode_legs was empty, so the itinerary block on an episode never
+   rendered at all; episode_stops was empty, so the port guide card was silently
    omitted from every episode page there has ever been. post_a_leg_hold and
    lift_a_leg_hold — the two functions that carry the one episode state with no
    counterpart elsewhere in the schema — had zero callers.
@@ -32,14 +32,14 @@ function done(): ActionResult {
 }
 
 /* The episode's own clock, read from the episode. A leg time typed on the
-   Bridge and resolved in the node server's zone is the bug createVoyage
+   Bridge and resolved in the node server's zone is the bug createEpisode
    documents at length: on a UTC host, a Chicago tender at 09:00 is published
    as 04:00 CDT. The zone is never taken from the browser. */
-async function voyageZone(
+async function episodeZone(
   db: ReturnType<typeof moduleTables>,
-  voyageId: string
+  episodeId: string
 ): Promise<string | null> {
-  const { data } = await db.from("voyages").select("time_zone").eq("id", voyageId).maybeSingle();
+  const { data } = await db.from("episodes").select("time_zone").eq("id", episodeId).maybeSingle();
   return (data as { time_zone?: string } | null)?.time_zone ?? null;
 }
 
@@ -54,7 +54,7 @@ function instantIn(local: string, zone: string): string | null {
 
 export type LegInput = {
   day: number;
-  port: string;
+  place: string;
   note: string;
   /** Wall clock from <input type="datetime-local">, or "" for a leg with no
       stated time. */
@@ -62,7 +62,7 @@ export type LegInput = {
 };
 
 export async function saveLeg(
-  voyageId: string,
+  episodeId: string,
   legId: string | null,
   input: LegInput
 ): Promise<ActionResult> {
@@ -70,22 +70,22 @@ export async function saveLeg(
   if (!staffId) return { error: ERR_STAFF };
   const db = moduleTables(supabase);
 
-  const port = input.port.trim();
-  if (!port) return { error: "A leg needs a port." };
+  const place = input.place.trim();
+  if (!place) return { error: "A leg needs a place." };
   const day = Math.max(1, Math.round(Number(input.day) || 0));
 
   let startsAt: string | null = null;
   if (input.startsAt) {
-    const zone = await voyageZone(db, voyageId);
+    const zone = await episodeZone(db, episodeId);
     if (!zone) return { error: "That episode is not on the chart." };
     startsAt = instantIn(input.startsAt, zone);
     if (!startsAt) return { error: "That time doesn't parse." };
   }
 
-  const patch = { port, note: input.note.trim() || null, starts_at: startsAt };
+  const patch = { place, note: input.note.trim() || null, starts_at: startsAt };
 
   if (legId) {
-    const { error } = await db.from("voyage_legs").update({ ...patch, day }).eq("id", legId);
+    const { error } = await db.from("episode_legs").update({ ...patch, day }).eq("id", legId);
     if (error) {
       if (/voyage_legs_voyage_id_day_key|duplicate/i.test(error.message ?? "")) {
         return { error: `Day ${day} is already a leg on this episode.` };
@@ -95,7 +95,7 @@ export async function saveLeg(
     return done();
   }
 
-  const { error } = await db.from("voyage_legs").insert({ voyage_id: voyageId, day, ...patch });
+  const { error } = await db.from("episode_legs").insert({ episode_id: episodeId, day, ...patch });
   if (error) {
     if (/voyage_legs_voyage_id_day_key|duplicate/i.test(error.message ?? "")) {
       return { error: `Day ${day} is already a leg on this episode.` };
@@ -111,7 +111,7 @@ export async function saveLeg(
 export async function removeLeg(legId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await moduleTables(supabase).from("voyage_legs").delete().eq("id", legId);
+  const { error } = await moduleTables(supabase).from("episode_legs").delete().eq("id", legId);
   if (error) return { error: voice(error) };
   return done();
 }
@@ -161,7 +161,7 @@ export type StopInput = {
 };
 
 export async function saveStop(
-  voyageId: string,
+  episodeId: string,
   stopId: string | null,
   input: StopInput
 ): Promise<ActionResult> {
@@ -189,8 +189,8 @@ export async function saveStop(
   };
 
   const res = stopId
-    ? await db.from("voyage_stops").update(patch).eq("id", stopId)
-    : await db.from("voyage_stops").insert({ voyage_id: voyageId, ...patch });
+    ? await db.from("episode_stops").update(patch).eq("id", stopId)
+    : await db.from("episode_stops").insert({ episode_id: episodeId, ...patch });
   if (res.error) {
     if (/voyage_stops_voyage_id_position_key|duplicate/i.test(res.error.message ?? "")) {
       return { error: `Position ${position} is already taken in this port guide.` };
@@ -203,7 +203,7 @@ export async function saveStop(
 export async function removeStop(stopId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await moduleTables(supabase).from("voyage_stops").delete().eq("id", stopId);
+  const { error } = await moduleTables(supabase).from("episode_stops").delete().eq("id", stopId);
   if (error) return { error: voice(error) };
   return done();
 }

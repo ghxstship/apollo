@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
 
-/* — An enquiry for an on-request format.
+/* — An enquiry for an on-request series.
 
-   A private charter, a member gathering with the club's own crew: formats
+   A private charter, a member gathering with the club's own crew: series
    whose access is 'on_request' have no pass to confirm — rsvp_guard refuses
    the booking outright — so the door is a request the Bridge answers. The
    member inserts their own charter_requests row (RLS: own profile, active,
@@ -34,7 +34,7 @@ export async function raiseCharterRequest(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first — members enquire from their manifest." };
 
-  const format = String(formData.get("format") ?? "").trim();
+  const series = String(formData.get("series") ?? "").trim();
   const sailing = String(formData.get("sailing") ?? "").trim().slice(0, 120);
   const partyRaw = String(formData.get("party_size") ?? "").trim();
   const preferredDates = String(formData.get("preferred_dates") ?? "").trim();
@@ -52,7 +52,7 @@ export async function raiseCharterRequest(
     return { error: `Keep the dates under ${DATES_MAX} characters.`, field: "dates" };
   }
   /* The episode the enquiry was raised from rides at the head of the note —
-     the table keeps no voyage column, and the Bridge should not have to guess
+     the table keeps no episode column, and the Bridge should not have to guess
      which episode page the member was reading. */
   const note = [sailing ? `Re: ${sailing}` : null, noteRaw || null].filter(Boolean).join("\n\n");
   if (note.length > NOTE_MAX) {
@@ -61,7 +61,7 @@ export async function raiseCharterRequest(
 
   const { error } = await supabase.from("charter_requests").insert({
     profile_id: user.id,
-    format: format || null,
+    series: series || null,
     party_size: partySize,
     preferred_dates: preferredDates || null,
     note: note || null,

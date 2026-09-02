@@ -26,7 +26,7 @@ function readFilters(raw: unknown): SegmentFilters | null {
   const o = raw as Record<string, unknown>;
   const str = (k: string) => (typeof o[k] === "string" ? (o[k] as string) : "");
   return {
-    harbor: str("harbor"),
+    city: str("city"),
     tier: str("tier"),
     plan: str("plan"),
     league: str("league"),
@@ -47,7 +47,7 @@ export default async function MembersPage() {
 
   const [
     profilesRes,
-    harborsRes,
+    citiesRes,
     plansRes,
     engagementRes,
     leagueRes,
@@ -55,7 +55,7 @@ export default async function MembersPage() {
     segmentsRes,
   ] = await Promise.all([
     supabase.from("profiles").select("*").order("joined_at", { ascending: false }),
-    supabase.from("harbors").select("id, slug, name").order("position", { ascending: true }),
+    supabase.from("cities").select("id, slug, name").order("position", { ascending: true }),
     supabase.from("membership_plans").select("id, label, price_cents, annual_price_cents"),
     supabase.from("member_engagement").select("*"),
     supabase.from("member_league").select("*"),
@@ -63,8 +63,8 @@ export default async function MembersPage() {
     supabase.from("saved_segments").select("*").order("created_at", { ascending: false }),
   ]);
 
-  const harbors = must(harborsRes);
-  const harborById = new Map(harbors.map((h) => [h.id, h]));
+  const cities = must(citiesRes);
+  const cityById = new Map(cities.map((h) => [h.id, h]));
   const plans = must(plansRes);
   const planById = new Map(plans.map((p) => [p.id, p]));
 
@@ -86,7 +86,7 @@ export default async function MembersPage() {
   }
 
   const rows: MemberRow[] = (must(profilesRes)).map((p) => {
-    const harbor = p.home_harbor ? harborById.get(p.home_harbor) : undefined;
+    const city = p.home_city ? cityById.get(p.home_city) : undefined;
     const sub = subs.get(p.id);
     const planId = sub?.plan_id ?? p.plan_id;
     const plan = planId ? planById.get(planId) : undefined;
@@ -104,8 +104,8 @@ export default async function MembersPage() {
       planLabel: plan?.label ?? "—",
       league: lg?.league ?? 1,
       leagueName: lg?.league_name ?? "First League — Harborline",
-      harborSlug: harbor?.slug ?? "",
-      harborCode: harbor ? (CITY_CODES[harbor.slug] ?? harbor.name.slice(0, 3).toUpperCase()) : "—",
+      citySlug: city?.slug ?? "",
+      cityCode: city ? (CITY_CODES[city.slug] ?? city.name.slice(0, 3).toUpperCase()) : "—",
       status: p.status,
       dues,
       duesLabel: DUES_LABEL[dues] ?? dues,
@@ -135,7 +135,7 @@ export default async function MembersPage() {
       <MembersClient
         rows={rows}
         segments={segments}
-        harbors={harbors.map((h) => ({
+        cities={cities.map((h) => ({
           slug: h.slug,
           label: `${CITY_CODES[h.slug] ?? h.name.slice(0, 3).toUpperCase()} — ${h.name}`,
         }))}

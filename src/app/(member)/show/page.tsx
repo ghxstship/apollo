@@ -76,7 +76,7 @@ export default async function ShowPage() {
   if (!profile?.is_staff) redirect("/home");
 
   const { data: sailings } = await db
-    .from("voyages")
+    .from("episodes")
     .select("id, title, starts_at, time_zone, deck_state")
     .in("status", ["live", "scheduled"])
     .order("starts_at", { ascending: true })
@@ -86,10 +86,10 @@ export default async function ShowPage() {
 
   const [{ data: board }, { data: pods }, { data: elements }, { data: subs }] = await Promise.all([
     sailing
-      ? db.from("run_of_show").select("*").eq("voyage_id", sailing.id).order("position")
+      ? db.from("run_of_show").select("*").eq("episode_id", sailing.id).order("position")
       : Promise.resolve({ data: [] }),
     sailing
-      ? db.from("pod_sessions").select("*").eq("voyage_id", sailing.id).order("position")
+      ? db.from("pod_sessions").select("*").eq("episode_id", sailing.id).order("position")
       : Promise.resolve({ data: [] }),
     db.from("elements").select("id, element_id, urid, name, department, five_a, weather, element_state, critical_path, total_cost_usd").order("element_id"),
     db.from("element_substitutes").select("element_id, context"),
@@ -105,14 +105,14 @@ export default async function ShowPage() {
      where a silently empty column is worse than one extra round trip.
 
      The aboard read is the enqueue control's whole world: pod_sessions is
-     unique on (voyage_id, rsvp_id), so a pass already queued is not offered
+     unique on (episode_id, rsvp_id), so a pass already queued is not offered
      again, and a pass that is not aboard is not offered at all. */
   const queuedIds = new Set(queue.map((q) => q.rsvp_id));
   const { data: aboard } = sailing
     ? await supabase
-        .from("rsvps")
+        .from("passes")
         .select("id, profile_id")
-        .eq("voyage_id", sailing.id)
+        .eq("episode_id", sailing.id)
         .eq("status", "aboard")
     : { data: [] };
   const aboardIds = new Set((aboard ?? []).map((p) => p.id));
@@ -120,7 +120,7 @@ export default async function ShowPage() {
      name on the board. */
   const strayIds = [...queuedIds].filter((id) => !aboardIds.has(id));
   const { data: strays } = strayIds.length
-    ? await supabase.from("rsvps").select("id, profile_id").in("id", strayIds)
+    ? await supabase.from("passes").select("id, profile_id").in("id", strayIds)
     : { data: [] };
   const passes = [...(aboard ?? []), ...(strays ?? [])];
   const profileIds = passes.map((p) => p.profile_id);
@@ -202,7 +202,7 @@ export default async function ShowPage() {
               <p className="shw-note">No board laid out for this episode yet.</p>
             )}
 
-            <BoardControls voyageId={sailing.id} empty={rows.length === 0} />
+            <BoardControls episodeId={sailing.id} empty={rows.length === 0} />
 
             <p className="shw-note">
               CP marks critical path — the episode cannot proceed without it.
@@ -222,7 +222,7 @@ export default async function ShowPage() {
                 geometry carries the meaning, never a division hue
               </span>
             </div>
-            <SignalFlags voyageId={sailing.id} flying={sailing.deck_state} />
+            <SignalFlags episodeId={sailing.id} flying={sailing.deck_state} />
           </div>
 
           {/* Confessional Pod */}
@@ -234,7 +234,7 @@ export default async function ShowPage() {
                 a preference
               </span>
             </div>
-            <PodQueue voyageId={sailing.id} sessions={queue} names={names} candidates={candidates} />
+            <PodQueue episodeId={sailing.id} sessions={queue} names={names} candidates={candidates} />
           </div>
         </>
       )}

@@ -26,7 +26,7 @@ async function me() {
 }
 
 export async function plotCourse(
-  voyageId: string,
+  episodeId: string,
   pickerRsvp: string,
   pickedRsvp: string
 ): Promise<RadarResult> {
@@ -36,7 +36,7 @@ export async function plotCourse(
 
   const { error } = await db
     .from("radar_picks")
-    .insert({ voyage_id: voyageId, picker_rsvp: pickerRsvp, picked_rsvp: pickedRsvp });
+    .insert({ episode_id: episodeId, picker_rsvp: pickerRsvp, picked_rsvp: pickedRsvp });
   if (error) {
     /* Plotting the same pin twice is not a failure — the slot is already filled
        with exactly what the member asked for, and an error here would report a
@@ -57,7 +57,7 @@ export async function plotCourse(
    a mutual anchor at 19:00 could quietly unplot at 18:59 and the other side's
    anchor would evaporate with no trace and no explanation. */
 export async function unplotCourse(
-  voyageId: string,
+  episodeId: string,
   pickerRsvp: string,
   pickedRsvp: string
 ): Promise<RadarResult> {
@@ -67,7 +67,7 @@ export async function unplotCourse(
   const { error } = await db
     .from("radar_picks")
     .delete()
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .eq("picker_rsvp", pickerRsvp)
     .eq("picked_rsvp", pickedRsvp);
   if (error) return { error: await voiceWith(supabase, error) };

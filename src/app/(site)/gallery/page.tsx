@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CLUB_ZONE } from "@/lib/brand";
 import { SETTING_LABEL, logDate, roman } from "@/lib/format";
-import { frameGroups, GALLERY_FRAME_LIMIT } from "@/components/site/voyage-data";
+import { frameGroups, GALLERY_FRAME_LIMIT } from "@/components/site/episode-data";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/gallery" },
@@ -65,7 +65,7 @@ export default async function GalleryPage() {
 
       {groups.length > 0 ? (
         groups.map((g) => (
-          <section className="gl-group" key={g.voyageId}>
+          <section className="gl-group" key={g.episodeId}>
             <div className="gl-group__head">
               <h2>
                 <Link href={`/episodes/${g.slug}`}>{g.title}</Link>
@@ -77,7 +77,7 @@ export default async function GalleryPage() {
                   SETTING_LABEL[g.cls],
                   logDate(g.startsAt, CLUB_ZONE),
                   roman(new Date(g.startsAt).getFullYear()),
-                  g.harborCode,
+                  g.cityCode,
                 ]
                   .filter(Boolean)
                   .join(" · ")}

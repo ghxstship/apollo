@@ -10,14 +10,14 @@ export const metadata: Metadata = { title: LOGBOOK.regattas };
 export default async function RegattasPage() {
   const { supabase } = await getOperator();
 
-  const [contestsRes, entriesRes, voyagesRes] = await Promise.all([
+  const [contestsRes, entriesRes, episodesRes] = await Promise.all([
     supabase.from("contests").select("*").order("ends_at", { ascending: false }),
     supabase.from("contest_entries").select("contest_id"),
     /* The crew-scope picker. A crew contest runs within one episode's crew, so
        only episodes that could still hold one are offered — completed and
        cancelled episodes have no crew to enter it. */
     supabase
-      .from("voyages")
+      .from("episodes")
       .select("id, title, starts_at, time_zone")
       .in("status", ["scheduled", "live"])
       .order("starts_at", { ascending: true }),
@@ -53,7 +53,7 @@ export default async function RegattasPage() {
       </p>
       <RegattasClient
         rows={rows}
-        voyages={must(voyagesRes).map((v) => ({
+        episodes={must(episodesRes).map((v) => ({
           value: v.id,
           label: `${v.title} · ${logDate(v.starts_at, v.time_zone)}`,
         }))}

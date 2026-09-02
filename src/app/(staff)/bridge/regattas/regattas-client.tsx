@@ -29,7 +29,7 @@ export type ContestRow = {
   [key: string]: unknown;
 };
 
-const METRICS: ContestMetric[] = ["nm", "sailings", "harbors", "vessels", "crew_met", "frames"];
+const METRICS: ContestMetric[] = ["nm", "episodes", "cities", "vessels", "crew_met", "frames"];
 
 function statusTone(s: ContestRow["status"]): "positive" | "caution" | "outline" {
   if (s === "open") return "positive";
@@ -39,10 +39,10 @@ function statusTone(s: ContestRow["status"]): "positive" | "caution" | "outline"
 
 export function RegattasClient({
   rows,
-  voyages,
+  episodes,
 }: {
   rows: ContestRow[];
-  voyages: Array<{ value: string; label: string }>;
+  episodes: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -54,7 +54,7 @@ export function RegattasClient({
   const [blurb, setBlurb] = React.useState("");
   const [shape, setShape] = React.useState<ContestShape>("regatta");
   const [scope, setScope] = React.useState<ContestScope>("member");
-  const [voyageId, setVoyageId] = React.useState("");
+  const [episodeId, setEpisodeId] = React.useState("");
   const [metric, setMetric] = React.useState<ContestMetric>("nm");
   const [target, setTarget] = React.useState("100");
   const [prize, setPrize] = React.useState("");
@@ -181,7 +181,7 @@ export function RegattasClient({
                     blurb,
                     shape,
                     scope,
-                    voyageId: scope === "crew" ? voyageId || null : null,
+                    episodeId: scope === "crew" ? episodeId || null : null,
                     metric,
                     target: Number(target) || 0,
                     prize,
@@ -199,7 +199,7 @@ export function RegattasClient({
                   setBlurb("");
                   setPrize("");
                   setScope("member");
-                  setVoyageId("");
+                  setEpisodeId("");
                   show({ msg: "Called.", meta: "DRAFT · OPEN IT WHEN READY" });
                 })
               }
@@ -233,7 +233,7 @@ export function RegattasClient({
             />
           </div>
           {/* Scope. Crew contests have been complete server-side since
-              20260819145000 — the constraint requires the voyage and the entry
+              20260819145000 — the constraint requires the episode and the entry
               policy admits only its aboard crew; the composer just could never
               say anything but member. */}
           <div role="radiogroup" aria-label="Scope" style={{ display: "flex", gap: 18 }}>
@@ -254,11 +254,11 @@ export function RegattasClient({
             <Select
               label="Episode"
               hint="Only those aboard this episode can enter."
-              value={voyageId}
-              onChange={(e) => setVoyageId(e.target.value)}
+              value={episodeId}
+              onChange={(e) => setEpisodeId(e.target.value)}
               options={[
-                { value: "", label: voyages.length ? "Pick the episode" : "Nothing on the board to run it on" },
-                ...voyages,
+                { value: "", label: episodes.length ? "Pick the episode" : "Nothing on the board to run it on" },
+                ...episodes,
               ]}
             />
           ) : null}

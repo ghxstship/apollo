@@ -4,7 +4,7 @@ import { memberMark } from "@/lib/membership";
 import { moduleTables } from "@/lib/module-tables";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
-import { EnvelopesClient, VoyagePicker, type EnvelopeRow } from "./envelopes-client";
+import { EnvelopesClient, EpisodePicker, type EnvelopeRow } from "./envelopes-client";
 import { StateBlock } from "@/components/ds";
 
 export const metadata: Metadata = { title: "Envelopes" };
@@ -18,7 +18,7 @@ interface EnvelopeRecord {
 export default async function EnvelopesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ voyage?: string }>;
+  searchParams: Promise<{ episode?: string }>;
 }) {
   const { supabase } = await getOperator();
   const db = moduleTables(supabase);
@@ -29,15 +29,15 @@ export default async function EnvelopesPage({
      envelopes are still live and still worth reprinting for a guest who lost
      their card. */
   const cutoff = new Date(new Date().getTime() - 3 * 24 * 3600 * 1000).toISOString();
-  const voyagesRes = await supabase
-    .from("voyages")
+  const episodesRes = await supabase
+    .from("episodes")
     .select("id, title, starts_at, time_zone, status")
     .gte("starts_at", cutoff)
     .neq("status", "cancelled")
     .order("starts_at", { ascending: true });
-  const voyages = must(voyagesRes);
+  const episodes = must(episodesRes);
 
-  if (voyages.length === 0) {
+  if (episodes.length === 0) {
     return (
       <div>
         <span className="hm-eyebrow">Envelopes</span>
@@ -54,12 +54,12 @@ export default async function EnvelopesPage({
     );
   }
 
-  const voyage = voyages.find((v) => v.id === sp.voyage) ?? voyages[0];
+  const episode = episodes.find((v) => v.id === sp.episode) ?? episodes[0];
 
   const passesRes = await supabase
-    .from("rsvps")
+    .from("passes")
     .select("id, profile_id, boarding_code, status")
-    .eq("voyage_id", voyage.id)
+    .eq("episode_id", episode.id)
     .eq("status", "aboard")
     .order("created_at", { ascending: true });
   const passes = must(passesRes);
@@ -72,7 +72,7 @@ export default async function EnvelopesPage({
     passes.length
       ? supabase.from("profiles").select("id, full_name, member_no").in("id", passes.map((p) => p.profile_id))
       : Promise.resolve({ data: [], error: null }),
-    db.from("voyage_radar").select("voyage_id").eq("voyage_id", voyage.id).maybeSingle(),
+    db.from("episode_radar").select("episode_id").eq("episode_id", episode.id).maybeSingle(),
   ]);
 
   const envelopes = new Map(
@@ -95,13 +95,13 @@ export default async function EnvelopesPage({
       if (!env) return null;
       const person = people.get(p.profile_id);
       return {
-        rsvpId: p.id,
+        passId: p.id,
         name: person?.full_name ?? "A guest",
         memberNo: memberMark(person?.member_no) || "GUEST",
         boardingCode: p.boarding_code ?? "",
         token: env.token,
         opened: env.opened_at
-          ? `${logDate(env.opened_at, voyage.time_zone)} ${logTime(env.opened_at, voyage.time_zone)}`
+          ? `${logDate(env.opened_at, episode.time_zone)} ${logTime(env.opened_at, episode.time_zone)}`
           : null,
       } satisfies EnvelopeRow;
     })
@@ -119,19 +119,19 @@ export default async function EnvelopesPage({
       </p>
 
       <div className="hm-sec">
-        <VoyagePicker
-          options={voyages.map((v) => ({
+        <EpisodePicker
+          options={episodes.map((v) => ({
             value: v.id,
             label: `${logDate(v.starts_at, v.time_zone)} · ${logTime(v.starts_at, v.time_zone)} — ${v.title}`,
           }))}
-          value={voyage.id}
+          value={episode.id}
         />
       </div>
 
       <EnvelopesClient
-        voyageId={voyage.id}
-        voyageTitle={voyage.title}
-        departs={`${logDate(voyage.starts_at, voyage.time_zone)} · ${logTime(voyage.starts_at, voyage.time_zone)}`}
+        episodeId={episode.id}
+        voyageTitle={episode.title}
+        departs={`${logDate(episode.starts_at, episode.time_zone)} · ${logTime(episode.starts_at, episode.time_zone)}`}
         aboard={passes.length}
         radarOpen={radarOpen}
         rows={rows}

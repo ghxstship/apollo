@@ -11,13 +11,13 @@ export const contentType = OG_CONTENT_TYPE;
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: voyage } = await supabase
-    .from("voyages")
+  const { data: episode } = await supabase
+    .from("episodes")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
 
-  if (!voyage) {
+  if (!episode) {
     return new ImageResponse(
       (
         <OgFrame
@@ -30,17 +30,17 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     );
   }
 
-  const { data: harbor } = voyage.harbor_id
-    ? await supabase.from("harbors").select("slug").eq("id", voyage.harbor_id).maybeSingle()
+  const { data: city } = episode.city_id
+    ? await supabase.from("cities").select("slug").eq("id", episode.city_id).maybeSingle()
     : { data: null };
 
-  const setting = SETTING_LABEL[voyage.class] ?? SETTING_LABEL.sea;
-  const sub = voyage.sub_class ? SUB_CLASSES[voyage.sub_class] : null;
+  const setting = SETTING_LABEL[episode.setting] ?? SETTING_LABEL.sea;
+  const sub = episode.sub_class ? SUB_CLASSES[episode.sub_class] : null;
   const meta = [
     setting,
     sub?.label,
-    logDate(voyage.starts_at, voyage.time_zone),
-    harbor?.slug ? CITY_CODES[harbor.slug] : null,
+    logDate(episode.starts_at, episode.time_zone),
+    city?.slug ? CITY_CODES[city.slug] : null,
   ]
     .filter(Boolean)
     .join(" · ")
@@ -50,8 +50,8 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     (
       <OgFrame
         eyebrow={setting.toUpperCase()}
-        title={voyage.title}
-        standfirst={voyage.blurb}
+        title={episode.title}
+        standfirst={episode.blurb}
         meta={meta}
       />
     ),

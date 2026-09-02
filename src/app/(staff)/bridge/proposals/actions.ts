@@ -18,7 +18,7 @@ export async function decideProposal(
   id: string,
   ruling: ProposalRuling,
   note?: string,
-  voyageId?: string | null
+  episodeId?: string | null
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
@@ -33,10 +33,10 @@ export async function decideProposal(
   }
 
   let linkNote: string | undefined;
-  if (ruling === "approved" && voyageId) {
+  if (ruling === "approved" && episodeId) {
     const { error: linkError } = await supabase
       .from("member_event_proposals")
-      .update({ voyage_id: voyageId })
+      .update({ episode_id: episodeId })
       .eq("id", id);
     if (linkError) {
       linkNote = "Approved and the proposer told, but the episode did not link. Pick it again from the row.";
@@ -50,12 +50,12 @@ export async function decideProposal(
 }
 
 /* Link (or re-link) an approved proposal to the episode it became. */
-export async function linkProposal(id: string, voyageId: string | null): Promise<ActionResult> {
+export async function linkProposal(id: string, episodeId: string | null): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const { error } = await supabase
     .from("member_event_proposals")
-    .update({ voyage_id: voyageId })
+    .update({ episode_id: episodeId })
     .eq("id", id)
     .eq("status", "approved");
   if (error) return { error: ERR_LAND };
@@ -93,7 +93,7 @@ export async function decideCharter(
 
   const { data: request, error: readError } = await supabase
     .from("charter_requests")
-    .select("id, profile_id, status, format, party_size")
+    .select("id, profile_id, status, series, party_size")
     .eq("id", id)
     .maybeSingle();
   if (readError) return { error: ERR_LAND };

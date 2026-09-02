@@ -32,14 +32,14 @@ const initials = (name: string, couple: boolean) =>
   couple ? `${name[0] ?? "?"}+` : (name[0] ?? "?").toUpperCase();
 
 export function Sweep({
-  voyageId,
-  myRsvp,
+  episodeId,
+  myPass,
   clock,
   pins,
   listed,
 }: {
-  voyageId: string;
-  myRsvp: string;
+  episodeId: string;
+  myPass: string;
   clock: RadarClock | null;
   pins: RadarPin[];
   listed: boolean;
@@ -103,7 +103,7 @@ export function Sweep({
           <span className="rdr-self" aria-hidden="true" />
           {pins.map((pin, i) => (
             <button
-              key={pin.rsvpId}
+              key={pin.passId}
               type="button"
               className={`rdr-pin${pin.plotted ? " rdr-pin--plotted" : ""}`}
               style={place(i, pins.length)}
@@ -112,8 +112,8 @@ export function Sweep({
               onClick={() =>
                 run(() =>
                   pin.plotted
-                    ? unplotCourse(voyageId, myRsvp, pin.rsvpId)
-                    : plotCourse(voyageId, myRsvp, pin.rsvpId)
+                    ? unplotCourse(episodeId, myPass, pin.passId)
+                    : plotCourse(episodeId, myPass, pin.passId)
                 )
               }
             >
@@ -164,7 +164,7 @@ export function Sweep({
                   variant="ghost"
                   size="sm"
                   disabled={pending}
-                  onClick={() => run(() => unplotCourse(voyageId, myRsvp, slot.pin!.rsvpId))}
+                  onClick={() => run(() => unplotCourse(episodeId, myPass, slot.pin!.passId))}
                 >
                   Change
                 </Button>

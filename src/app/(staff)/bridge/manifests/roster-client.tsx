@@ -16,9 +16,9 @@ import {
   type TableColumn,
 } from "@/components/ds";
 import { avatarTone, useToast } from "../../ui";
-import { addToManifest, assignVesselsEvenly, checkInRsvp, setRsvpVessel } from "./actions";
+import { addToManifest, assignVesselsEvenly, checkInPass, setPassVessel } from "./actions";
 
-export function VoyagePicker({
+export function EpisodePicker({
   options,
   value,
 }: {
@@ -31,7 +31,7 @@ export function VoyagePicker({
       label="Episode"
       options={options}
       value={value}
-      onChange={(e) => router.replace(`/bridge/manifests?voyage=${e.target.value}`)}
+      onChange={(e) => router.replace(`/bridge/manifests?episode=${e.target.value}`)}
       style={{ maxWidth: 380 }}
     />
   );
@@ -47,11 +47,11 @@ export type FleetVessel = {
 /* The flotilla at a glance — one card per yacht, berths filled over capacity,
    plus whoever is still on the dock. */
 export function FleetStrip({
-  voyageId,
+  episodeId,
   vessels,
   unassigned,
 }: {
-  voyageId: string;
+  episodeId: string;
   vessels: FleetVessel[];
   unassigned: number;
 }) {
@@ -62,7 +62,7 @@ export function FleetStrip({
 
   const distribute = () => {
     startTransition(async () => {
-      const res = await assignVesselsEvenly(voyageId);
+      const res = await assignVesselsEvenly(episodeId);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: "Passes spread across the flotilla.", tone: "positive" });
     });
@@ -109,11 +109,11 @@ export function FleetStrip({
 
 /* Box office — walk a member onto the manifest with guests, comped or not. */
 export function AddToManifest({
-  voyageId,
+  episodeId,
   voyageTitle,
   members,
 }: {
-  voyageId: string;
+  episodeId: string;
   voyageTitle: string;
   members: Array<{ value: string; label: string }>;
 }) {
@@ -134,7 +134,7 @@ export function AddToManifest({
 
   const submit = () => {
     startTransition(async () => {
-      const res = await addToManifest(voyageId, profileId, comp, guestNames.slice(0, guests));
+      const res = await addToManifest(episodeId, profileId, comp, guestNames.slice(0, guests));
       if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         setOpen(false);
@@ -214,7 +214,7 @@ export function AddToManifest({
 }
 
 export type RosterRow = {
-  rsvpId: string;
+  passId: string;
   name: string;
   tone: string;
   memberNo: string;
@@ -246,7 +246,7 @@ export function RosterTable({
 
   const checkIn = (r: RosterRow) => {
     startTransition(async () => {
-      const res = await checkInRsvp(r.rsvpId);
+      const res = await checkInPass(r.passId);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -259,7 +259,7 @@ export function RosterTable({
 
   const moveTo = (r: RosterRow, vesselId: string | null) => {
     startTransition(async () => {
-      const res = await setRsvpVessel(r.rsvpId, vesselId);
+      const res = await setPassVessel(r.passId, vesselId);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         const name = vessels.find((v) => v.id === vesselId)?.name;
@@ -380,7 +380,7 @@ export function RosterTable({
   return (
     <>
       <div className="hm-panel">
-        <Table rowKey={(r: RosterRow) => r.rsvpId} columns={columns} rows={rows} />
+        <Table rowKey={(r: RosterRow) => r.passId} columns={columns} rows={rows} />
         {rows.length === 0 ? (
           <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
             No passes claimed yet. The roster fills as RSVPs land.

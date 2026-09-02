@@ -1,7 +1,7 @@
 /* Ship's-log formatting — mono caps data per the design system.
    "JUL 26 · 06:00 · 26 NM", "33.9803° N — 118.4517° W", EST. MMXXVI.
 
-   An episode happens on its harbor's clock, a member reads their account on
+   An episode happens on its city's clock, a member reads their account on
    theirs, and the club keeps its own ashore. `zone` is REQUIRED — it used to be
    optional, falling back to whatever zone the rendering machine sat in, which
    the old comment here already called "only ever right by luck".

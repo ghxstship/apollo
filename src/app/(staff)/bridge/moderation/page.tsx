@@ -9,7 +9,7 @@ export default async function ModerationPage() {
   const { supabase } = await getOperator();
 
   const flagsRes = await supabase
-    .from("wardroom_flags")
+    .from("open_deck_flags")
     .select("*")
     .eq("status", "open")
     .order("created_at", { ascending: true });
@@ -24,7 +24,7 @@ export default async function ModerationPage() {
     ...new Set(flags.map((f) => f.post_id).filter((id): id is string => !!id)),
   ];
   const { data: postsData, error: postsError } = postIds.length
-    ? await supabase.from("wardroom_posts").select("*").in("id", postIds)
+    ? await supabase.from("open_deck_posts").select("*").in("id", postIds)
     : { data: [], error: null };
   if (postsError) throw new Error(`the flag queue could not read its posts: ${postsError.message}`);
   const posts = new Map((postsData ?? []).map((p) => [p.id, p]));

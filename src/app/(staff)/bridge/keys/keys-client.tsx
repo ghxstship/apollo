@@ -40,7 +40,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
 
   const [cuttingKey, setCuttingKey] = React.useState(false);
   const [label, setLabel] = React.useState("");
-  const [scopes, setScopes] = React.useState<string[]>(["read:voyages"]);
+  const [scopes, setScopes] = React.useState<string[]>(["read:episodes"]);
   const [minted, setMinted] = React.useState<string | null>(null);
   const [revoking, setRevoking] = React.useState<KeyRow | null>(null);
 

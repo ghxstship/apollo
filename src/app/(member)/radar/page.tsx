@@ -41,17 +41,17 @@ export default async function RadarPage() {
   const db = moduleTables(supabase);
 
   /* The episode Radar might be running on: one I hold a seat on, whose clock
-     exists. Passes first — rsvps is "own passes or staff", so this reads only
+     exists. Passes first — passes is "own passes or staff", so this reads only
      mine and no wider query is possible from here. */
   const { data: myPasses } = await supabase
-    .from("rsvps")
-    .select("id, voyage_id, status, checked_in_at, show_on_manifest")
+    .from("passes")
+    .select("id, episode_id, status, checked_in_at, show_on_manifest")
     .eq("profile_id", user.id)
     .eq("status", "aboard");
 
-  const ids = (myPasses ?? []).map((p) => p.voyage_id);
+  const ids = (myPasses ?? []).map((p) => p.episode_id);
   const { data: clocks } = ids.length
-    ? await db.from("voyage_radar").select("*").in("voyage_id", ids)
+    ? await db.from("episode_radar").select("*").in("episode_id", ids)
     : { data: [] as RadarClock[] };
 
   /* The soonest episode whose anchors have not expired. A member on three
@@ -66,21 +66,21 @@ export default async function RadarPage() {
       .filter((c) => new Date(c.anchors_expire_at).getTime() > now)
       .sort((a, b) => +new Date(a.opens_at) - +new Date(b.opens_at))[0] ?? null;
 
-  const pass = (myPasses ?? []).find((p) => p.voyage_id === clock?.voyage_id) ?? null;
+  const pass = (myPasses ?? []).find((p) => p.episode_id === clock?.episode_id) ?? null;
   const { data: sailingRows } = clock
-    ? await supabase.from("voyages").select("id, title, status").eq("id", clock.voyage_id)
+    ? await supabase.from("episodes").select("id, title, status").eq("id", clock.episode_id)
     : { data: [] };
   const sailing = ((sailingRows ?? []) as SailingRow[])[0] ?? null;
 
   const phase = radarPhase(clock);
 
-  /* The sweep is a definer RPC: `rsvps` is "own passes or staff", and widening
+  /* The sweep is a definer RPC: `passes` is "own passes or staff", and widening
      it so members could read each other would hand out whole manifests to draw
      three pins. It refuses anyone not aboard, so a null here is a rule holding
      rather than a query failing. */
   let pins: RadarPin[] = [];
   if (clock && pass?.checked_in_at) {
-    const { data } = await db.rpc("radar_sweep", { p_voyage: clock.voyage_id });
+    const { data } = await db.rpc("radar_sweep", { p_episode: clock.episode_id });
     pins = (data ?? []) as RadarPin[];
   }
 
@@ -88,7 +88,7 @@ export default async function RadarPage() {
      not even staff — so this cannot return anybody else's however it is
      written. */
   const { data: myPicks } = clock
-    ? await db.from("radar_picks").select("picked_rsvp").eq("voyage_id", clock.voyage_id).eq("picker_rsvp", pass?.id ?? "")
+    ? await db.from("radar_picks").select("picked_rsvp").eq("episode_id", clock.episode_id).eq("picker_rsvp", pass?.id ?? "")
     : { data: [] };
 
   /* Anchors. The policy hides them until an envelope has been opened and drops
@@ -96,14 +96,14 @@ export default async function RadarPage() {
      means "not yet" and after expiry means "gone" — the page has to say which,
      and reads the phase to know. */
   const { data: anchors } = clock
-    ? await db.from("shared_anchors").select("*").eq("voyage_id", clock.voyage_id)
+    ? await db.from("shared_anchors").select("*").eq("episode_id", clock.episode_id)
     : { data: [] };
   const mine = ((anchors ?? []) as SharedAnchorRow[]).filter((a) => a.unlocked_at);
 
   /* Names for the other side of each anchor come from the same sweep — one
      query, first names only, and no separate directory lookup that could
      return a surname to a guest surface. */
-  const nameOf = new Map(pins.map((p) => [p.rsvpId, p.couple ? `${p.name} + 1` : p.name]));
+  const nameOf = new Map(pins.map((p) => [p.passId, p.couple ? `${p.name} + 1` : p.name]));
 
   const picksPlotted = (myPicks ?? []).length;
 
@@ -141,8 +141,8 @@ export default async function RadarPage() {
       <div className="rdr-grid">
         {pass?.checked_in_at ? (
           <Sweep
-            voyageId={clock.voyage_id}
-            myRsvp={pass.id}
+            episodeId={clock.episode_id}
+            myPass={pass.id}
             clock={clock}
             pins={pins}
             listed={pass.show_on_manifest !== false}

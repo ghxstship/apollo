@@ -15,13 +15,13 @@ function done(): ActionResult {
    pair is the audit record for an incident: who let this person aboard, and
    when. The gangway's flush path has done this since it was written; this one
    and the scanner both did not. */
-export async function checkInRsvp(rsvpId: string): Promise<ActionResult> {
+export async function checkInPass(passId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const { data: stamped, error } = await supabase
-    .from("rsvps")
+    .from("passes")
     .update({ checked_in_at: new Date().toISOString(), checked_in_by: staffId })
-    .eq("id", rsvpId)
+    .eq("id", passId)
     .is("checked_in_at", null)
     .select("id");
   if (error) return { error: boardingError(error) };
@@ -30,9 +30,9 @@ export async function checkInRsvp(rsvpId: string): Promise<ActionResult> {
        right outcome is "they are aboard", not an error — or the pass is gone.
        Tell them apart rather than reporting success for both. */
     const { data: row } = await supabase
-      .from("rsvps")
+      .from("passes")
       .select("checked_in_at")
-      .eq("id", rsvpId)
+      .eq("id", passId)
       .maybeSingle();
     if (!row) return { error: "That pass is no longer on the manifest." };
     if (!row.checked_in_at) return { error: ERR_LAND };
@@ -45,7 +45,7 @@ export async function checkInRsvp(rsvpId: string): Promise<ActionResult> {
    insert means the trigger skips the house charge; the DB guard already
    exempts staff from booking limits. */
 export async function addToManifest(
-  voyageId: string,
+  episodeId: string,
   profileId: string,
   comp: boolean,
   guestNames: string[]
@@ -62,9 +62,9 @@ export async function addToManifest(
      and — since contest_standing scores aboard rows on completed episodes —
      quietly moves regatta standings. The box office checks the clock itself. */
   const { data: target } = await supabase
-    .from("voyages")
+    .from("episodes")
     .select("status, starts_at, title")
-    .eq("id", voyageId)
+    .eq("id", episodeId)
     .maybeSingle();
   if (!target) return { error: "No such episode." };
   if (target.status === "cancelled") return { error: "That episode was called off." };
@@ -73,16 +73,16 @@ export async function addToManifest(
   }
 
   const { data: existing } = await supabase
-    .from("rsvps")
+    .from("passes")
     .select("id, status")
-    .eq("voyage_id", voyageId)
+    .eq("episode_id", episodeId)
     .eq("profile_id", profileId)
     .neq("status", "not_going")
     .maybeSingle();
   if (existing) return { error: "Already on this manifest." };
 
-  const { error } = await supabase.from("rsvps").insert({
-    voyage_id: voyageId,
+  const { error } = await supabase.from("passes").insert({
+    episode_id: episodeId,
     profile_id: profileId,
     status: "aboard",
     comp,
@@ -95,16 +95,16 @@ export async function addToManifest(
 }
 
 /* Put a pass on a yacht — or take it back off (vesselId null). */
-export async function setRsvpVessel(
-  rsvpId: string,
+export async function setPassVessel(
+  passId: string,
   vesselId: string | null
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const { error } = await supabase
-    .from("rsvps")
+    .from("passes")
     .update({ vessel_id: vesselId })
-    .eq("id", rsvpId);
+    .eq("id", passId);
   if (error) return { error: ERR_LAND };
   return done();
 }
@@ -115,11 +115,11 @@ export async function setRsvpVessel(
    loop this replaced could be interrupted halfway and leave a flotilla
    half-levelled with no word. Passes holding a cabin already have a hull and
    are left where they are. */
-export async function assignVesselsEvenly(voyageId: string): Promise<ActionResult> {
+export async function assignVesselsEvenly(episodeId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const { data: moved, error } = await supabase.rpc("assign_vessels_evenly", { p_voyage: voyageId });
+  const { data: moved, error } = await supabase.rpc("assign_vessels_evenly", { p_episode: episodeId });
   if (error) return { error: error.code === "P0001" && error.message ? error.message : ERR_LAND };
   if (!moved) {
     /* Zero rows is one of two things — no hull to deal onto, or nothing loose

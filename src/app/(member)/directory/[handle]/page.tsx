@@ -16,7 +16,7 @@ function toneOf(t: string | null | undefined): "ink" | "sea" | "gold" | "sand" {
   return t && TONES.has(t) ? (t as "ink" | "sea" | "gold" | "sand") : "ink";
 }
 
-type SharedVoyage = { id: string; title: string; class: string; starts_at: string };
+type SharedEpisode = { id: string; title: string; setting: string; starts_at: string };
 
 export async function generateMetadata({
   params,
@@ -65,10 +65,10 @@ export default async function MemberPage({
     blocked = !!block;
   }
 
-  const [harborRes, leagueRes, engagementRes, affinityRes, rsvpsRes, balanceRes] =
+  const [cityRes, leagueRes, engagementRes, affinityRes, passesRes, balanceRes] =
     await Promise.all([
-      member.home_harbor
-        ? supabase.from("harbors").select("*").eq("id", member.home_harbor).maybeSingle()
+      member.home_city
+        ? supabase.from("cities").select("*").eq("id", member.home_city).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from("member_league").select("*").eq("profile_id", member.id).maybeSingle(),
       supabase
@@ -84,12 +84,12 @@ export default async function MemberPage({
         .maybeSingle(),
       /* A pass row is its owner's; the shared list comes from a definer that
          answers only "which episodes were you both on". */
-      supabase.rpc("shared_voyages", { p_other: member.id }),
-      supabase.from("fathoms_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+      supabase.rpc("shared_episodes", { p_other: member.id }),
+      supabase.from("knots_balance").select("*").eq("profile_id", user.id).maybeSingle(),
     ]);
 
-  const harbor = harborRes.data;
-  const harborCode = harbor ? CITY_CODES[harbor.slug] ?? "" : "";
+  const city = cityRes.data;
+  const cityCode = city ? CITY_CODES[city.slug] ?? "" : "";
   const leagueName = leagueRes.data?.league_name ?? "First League — Harborline";
   const passes = engagementRes.data?.passes ?? 0;
   const shared = affinityRes.data?.shared ?? 0;
@@ -98,18 +98,18 @@ export default async function MemberPage({
     : new Date().getFullYear();
 
   /* Episodes both were aboard for — the affinity count, made concrete. */
-  let both: SharedVoyage[] = [];
+  let both: SharedEpisode[] = [];
   if (!own) {
-    const rows = rsvpsRes.data ?? [];
+    const rows = passesRes.data ?? [];
     const bothIds = Array.from(
       new Set(
-        rows.map((r) => r.voyage_id)
+        rows.map((r) => r.episode_id)
       )
     );
     if (bothIds.length) {
       const { data } = await supabase
-        .from("voyages")
-        .select("id,title,class,starts_at")
+        .from("episodes")
+        .select("id,title,setting,starts_at")
         .in("id", bothIds)
         .order("starts_at", { ascending: false });
       both = data ?? [];
@@ -132,8 +132,8 @@ export default async function MemberPage({
           <p className="dir-head__where">
             {leagueName}
             <span className="dir-row__dot">·</span>
-            {harbor?.name ?? `No home ${PLACE.market.toLowerCase()}`}
-            {harborCode ? <span className="dir-row__code">{harborCode}</span> : null}
+            {city?.name ?? `No home ${PLACE.market.toLowerCase()}`}
+            {cityCode ? <span className="dir-row__code">{cityCode}</span> : null}
           </p>
           <p className="mbr-mono dir-head__no">
             {member.member_no ?? "UN-0000"} · member since {roman(joinedYear)}
@@ -182,7 +182,7 @@ export default async function MemberPage({
                 {both.map((v) => (
                   <li key={v.id}>
                     {/* Shared water, so the fact is where it happened. */}
-                    <span className="mbr-mono">{SETTING_LABEL[v.class] ?? "Afloat"}</span>
+                    <span className="mbr-mono">{SETTING_LABEL[v.setting] ?? "Afloat"}</span>
                     <b>{v.title}</b>
                     <span className="mbr-mono">{logDate(v.starts_at, zone)}</span>
                   </li>
