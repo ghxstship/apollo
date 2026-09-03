@@ -3,6 +3,10 @@ export { Card, Badge, Tag, Avatar, AvatarGroup, Stat, Table, Wordmark, LockupTex
 export type { TableColumn } from "./display";
 export { Input, Textarea, Select, Checkbox, Radio, Switch, Stepper } from "./forms";
 export { Dialog, Progress, StateBlock, Toast, Tooltip } from "./feedback";
+export { FilterPills } from "./filters";
+export type { FilterOption } from "./filters";
+export { ListToolbar } from "./toolbar";
+export type { SortOption, ToolbarChip } from "./toolbar";
 export { Tabs } from "./navigation";
 export type { TabItem } from "./navigation";
 export { PassageLog as KitPassageLog, MarksList, ContestCard, StandingsTable, KnotsLedger } from "./logbook";

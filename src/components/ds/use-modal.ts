@@ -82,7 +82,16 @@ export function useModal(
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     if (modal) document.body.style.overflow = "hidden";
-    box?.focus();
+    /* preventScroll, because focusing an element scrolls it into view and every
+       surface this hook serves is already where the reader is looking: a dialog
+       is centred in the viewport, a sheet is pinned to an edge, and an anchored
+       panel sits six pixels under the button that opened it.
+
+       It was invisible while every consumer was position:fixed — the browser
+       had nothing to scroll to. The moment the filter panel became anchored,
+       opening it jumped the page 204px, which reads as the page moving out from
+       under you at the exact instant you asked to narrow it. */
+    box?.focus({ preventScroll: true });
 
     return () => {
       document.removeEventListener("keydown", onKey);

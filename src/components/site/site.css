@@ -166,22 +166,16 @@ main .ls-section + .ls-section{padding-top:0}
 @media (max-width:960px){.ws-band{padding-block:var(--rhythm-section-tight)}}
 
 /* ————— voyages manifest ————— */
-.ws-vcontrols{display:flex;flex-direction:column;gap:10px;margin-top:32px}
-.ws-vfilters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.ws-vfilters__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);flex:none;min-width:54px}
 /* How many sailings the filters left, and the months they span — the answer to
    the question the controls above it just asked. Rides in the Sort row. */
 .ws-vcount{margin-left:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
-/* — the narrow-screen filter stack. Five axes stacked in a column, each label
-     forced onto its own line, put 400–500px of chrome above the first sailing
-     on a 390px screen. Setting and Sort stay out; the three calendar axes go
-     behind one disclosure, with what they currently hold summarised on its
-     own line while it is closed. — */
-.ws-vdisc{display:none}
-.ws-vdisc__sum{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;min-width:0;overflow-wrap:anywhere}
+/* The bespoke disclosure that used to sit here — .ws-vdisc and .ws-vsecondary —
+   is gone, replaced by the kit's FilterTray, which every list in the app now
+   shares. It does the same job properly: a panel over the results rather than
+   beside them, the count moving live on its foot, and the axes it holds shown
+   above the list as removable chips instead of summarised in a line of text. */
+.ws-vrow__link{color:inherit;text-decoration:none;display:block}
 @media (max-width:640px){
-  .ws-vdisc{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .ws-vsecondary:not(.ws-vsecondary--open){display:none}
   .ws-vcount{margin-left:0;width:100%}
 }
 .ws-vsecondary{display:flex;flex-direction:column;gap:10px}
@@ -475,3 +469,45 @@ main .ls-section + .ls-section{padding-top:0}
 .sp-contact p{font-size:var(--text-sm);color:var(--text-2)}
 .sp-hours{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase;line-height:2}
 @media (max-width:640px){.sp-contact>div{grid-template-columns:1fr}}
+
+/* — the Log's year spine, the same device the manifest uses for months: fifty
+     dispatches in one unbroken column give the reader no landmark at all. — */
+.dp-year{position:sticky;top:72px;z-index:1;background:var(--surface-page);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase;padding:14px 0 8px}
+@media (max-width:960px){.dp-year{top:64px}}
+.dp-link{color:inherit;text-decoration:none;display:block}
+.ws-dp-row--flat{display:block}
+.dp-footnote{padding:40px 0 48px;font-size:var(--text-xs);color:var(--text-3);max-width:58ch}
+
+/* — the standing view controls. A standing filter that cannot be seen is a bug
+     report waiting to happen, so the manifest says it is in force and puts the
+     way out on the same line as the way in. — */
+.ws-standing{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ws-standing__on{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--gold-deep)}
+.ws-standing__err{font-size:var(--text-xs);color:var(--danger)}
+
+/* — one control line. Setting, the Filters button, Sort and the count share a
+     row and wrap together; everything else is behind the button. The four
+     stacked label rows this replaced put more chrome above the first episode
+     than the month pills had before they were deleted. — */
+/* Empty until something is in force, and it takes no room while it is —
+   :empty cannot see through the two wrappers, so the gap is the child's. */
+@media (max-width:640px){
+}
+
+/* The manifest's hand-rolled control block — .ws-vcontrols and the rows inside
+   it — is gone. It is the kit's ListToolbar now, the same one the roster, the
+   Shop, the deck and the Log use, so a filter looks and behaves identically on
+   every list in the app rather than five times differently. */
+
+/* One rule between a masthead and the list it heads, and it belongs UNDER the
+   controls. The boundary a reader needs is controls-from-results; there is no
+   boundary between a masthead and the controls that serve it. Drawing both put
+   the toolbar in a cage of two hairlines of equal weight, three lines deep on
+   the Log because its masthead rule is a double.
+
+   So the masthead yields where a toolbar follows it and the toolbar's own
+   border takes the job over. The padding goes with it — the toolbar carries its
+   own 32px, and 40 + 32 is a hole rather than a rhythm. The Log's dispatch
+   pages keep the double rule: they have no toolbar, so this never matches. */
+.dp-head:has(+ .dp-list .ls-toolbar){border-bottom:none;padding-bottom:0}
+.dp-head:has(+ .dp-list .ls-toolbar):after{content:none}

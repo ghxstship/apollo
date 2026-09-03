@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Dialog, Select, StateBlock, Tag, Textarea, Toast } from "@/components/ds";
+import { Button, Dialog, FilterPills, ListToolbar, Select, StateBlock, Textarea, Toast } from "@/components/ds";
 import {
   PostCard as DeckPost,
   Hail,
@@ -9,6 +9,7 @@ import {
   FlagButton,
 } from "@/components/ds/feed";
 import { addComment, createPost, deletePost, flagPost, toggleHail, type OpenDeckResult } from "./actions";
+import { useFilterParams } from "@/lib/use-filter-params";
 
 export type FeedComment = {
   id: string;
@@ -155,7 +156,9 @@ export function Composer({
 
 /* — Crew-thread filter + feed — */
 export function FeedList({ posts }: { posts: FeedPost[] }) {
-  const [filter, setFilter] = React.useState<string | null>(null);
+  /* In the URL like every other list, so a member can link a crew thread. */
+  const { values, set } = useFilterParams({ thread: "all" });
+  const filter = values.thread;
 
   const threads = React.useMemo(() => {
     const seen = new Map<string, string>();
@@ -167,25 +170,42 @@ export function FeedList({ posts }: { posts: FeedPost[] }) {
     return Array.from(seen, ([id, title]) => ({ id, title }));
   }, [posts]);
 
-  const shown = filter ? posts.filter((p) => p.episodeId === filter) : posts;
+  const shown = filter === "all" ? posts : posts.filter((p) => p.episodeId === filter);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div className="deck-feed">
       {threads.length > 0 ? (
-        <div className="wd-filter" role="group" aria-label="Crew threads">
-          <Tag active={filter === null} onClick={() => setFilter(null)}>
-            All
-          </Tag>
-          {threads.map((t) => (
-            <Tag
-              key={t.id}
-              active={filter === t.id}
-              onClick={() => setFilter(filter === t.id ? null : t.id)}
-            >
-              {t.title}
-            </Tag>
-          ))}
-        </div>
+        <ListToolbar
+          filterCount={filter === "all" ? 0 : 1}
+          resultCount={shown.length}
+          resultNoun="post"
+          chips={
+            filter === "all"
+              ? []
+              : [
+                  {
+                    key: "thread",
+                    label: "Thread",
+                    value: threads.find((t) => t.id === filter)?.title ?? filter,
+                  },
+                ]
+          }
+          onDropChip={() => set("thread", "all")}
+          onClear={() => set("thread", "all")}
+          filters={
+            <FilterPills
+              label="Thread"
+              value={filter}
+              onChange={(next) => set("thread", next)}
+              allCount={posts.length}
+              options={threads.map((t) => ({
+                id: t.id,
+                label: t.title,
+                count: posts.filter((p) => p.episodeId === t.id).length,
+              }))}
+            />
+          }
+        />
       ) : null}
       {/* The deck had no zero-state at all: a new member saw a composer and
           then an empty flex column, with nothing to say the deck was empty

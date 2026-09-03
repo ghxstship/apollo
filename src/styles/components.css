@@ -147,7 +147,7 @@
    marker rather than a section header inside a column flex parent). The end
    padding subtracts the tracking, which is applied after the last glyph too and
    would otherwise sit the text half a step left of centre. */
-.ls-badge{font:var(--type-label);display:inline-flex;align-items:center;gap:6px;height:22px;padding-inline:12px calc(12px - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid transparent;letter-spacing:var(--tracking-label);text-transform:uppercase;white-space:nowrap;max-width:max-content}
+.ls-badge{font:var(--type-label);display:inline-flex;align-items:center;gap:6px;min-height:28px;padding-inline:12px calc(12px - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid transparent;letter-spacing:var(--tracking-label);text-transform:uppercase;white-space:nowrap;max-width:max-content}
 /* Identity. The family's only fills, and the only pills.
    --lava is gone from here: it is the accent SEAM (the 3–8px bands on the
    member card, the gangway, the site header), a gradient whose stops are
@@ -200,7 +200,7 @@
 
    Doubled class for the same reason the badge has one: Tag is a bare <span>
    too. */
-.ls-tag{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;height:28px;padding-inline:12px calc(12px - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid var(--line);background:var(--surface-card);letter-spacing:var(--tracking-label);color:var(--text-2);text-transform:uppercase;cursor:default;max-width:max-content;transition:border-color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
+.ls-tag{font:var(--type-label);display:inline-flex;align-items:center;gap:6px;min-height:28px;padding-inline:12px calc(12px - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid var(--line);letter-spacing:var(--tracking-label);color:var(--text-1);text-transform:uppercase;cursor:default;max-width:max-content;white-space:nowrap;transition:border-color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
 .ls-tag.ls-tag--active{background:var(--action-primary);border-color:var(--action-primary);color:var(--action-on-primary)}
 .ls-tag.ls-tag--click{cursor:pointer}
 .ls-tag.ls-tag--click:hover{border-color:var(--line-strong)}
@@ -534,3 +534,169 @@
 .sgn-done h2{font-family:var(--font-display);font-weight:400;font-size:var(--text-xl);letter-spacing:var(--track-display);text-transform:uppercase;margin:0 0 8px}
 .sgn-done p{font-size:14px;color:var(--text-2);max-width:52ch;line-height:1.7}
 
+
+/* ————— filters: the two shapes ————— */
+/* Pills and a tray, and nothing else. Both write a URL through
+   useFilterParams, so what a reader narrows is what they can send. */
+.ls-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ls-filters__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);flex:none;min-width:54px}
+/* The count a pill leads to. Mono, dimmer than the label, and it inherits the
+   pill's colour when the pill is active so it cannot go invisible on the ink
+   fill — the reason it is currentColor at half opacity rather than a token. */
+.ls-tag__n{margin-inline-start:6px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--tracking-label);color:currentColor;opacity:.55;font-variant-numeric:tabular-nums}
+
+/* — the chips above the list — */
+
+/* — the tray — */
+/* Translucent, not opaque: the results stay legible underneath, which is the
+   difference between a tray and a second page. Below the panel in the stack,
+   and below the site header so the reader keeps their bearings. */
+/* Fixed to the foot so the count stays in view however far down the axes the
+   reader has scrolled — the one rule the mobile research is firmest about. */
+/* On a phone it comes up from the bottom and stops short of the top, so the
+   results are still visible above it rather than replaced by it. */
+@media (max-width:640px){
+}
+
+/* — Badge and Tag are ONE size, 2026-09-02.
+     They were 22px and 28px, and on an episode row the two sat fourteen pixels
+     apart on the same line: same face, same tracking, same corner, same border
+     value (--line and --line-strong both alias --border-strong, so the two
+     border weights this kit believed it had were always one). Six pixels of
+     height, two of gap and a card fill were the entire difference, which reads
+     as a mistake rather than as hierarchy — because it is one.
+
+     They meet at 28 rather than 22 because only one of the two numbers was ever
+     argued for: a Tag can be pressed and can carry a remove button, and 22px
+     puts that target under the 24px floor of WCAG 2.5.8. min-height rather than
+     height, so a chip that wraps grows instead of clipping.
+
+     What still separates them is meaning, which is where the difference
+     belonged all along: a Badge is something the system asserts and nobody
+     presses; a Tag is a value the data carries, and it fills only when it is
+     an active filter. — */
+/* A dense Bridge table is ~37px of content per row, so a 28px chip would become
+   the row-height driver and lengthen a two-hundred-row roster visibly. The
+   status chips in a table are never pressed, so the tap floor does not apply. */
+.ls-table .ls-badge{min-height:24px}
+
+/* ————— the global search slate ————— */
+/* Not a page and not a dropdown: a slate that lands near the top of the view,
+   where the eye already is, with the results under the field rather than
+   beside it. Modal, unlike the filter tray — this one IS the task. */
+.gs-veil{position:fixed;inset:0;z-index:1000;background:var(--veil);backdrop-filter:var(--blur-glass);-webkit-backdrop-filter:var(--blur-glass);display:flex;align-items:flex-start;justify-content:center;padding:10vh 24px 24px;overflow-y:auto;animation:ls-fade var(--dur-2) var(--ease-swell)}
+.gs{width:min(640px,100%);background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);display:flex;flex-direction:column;max-height:76vh;overflow:hidden;animation:ls-rise var(--dur-2) var(--ease-out)}
+.gs:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.gs__field{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line-faint);flex:none;color:var(--text-3)}
+.gs__input{flex:1;min-width:0;all:unset;font-family:var(--font-sans);font-size:var(--text-md);color:var(--text-1);min-height:28px}
+.gs__input::placeholder{color:var(--text-3)}
+.gs__body{overflow-y:auto;padding:8px 0 10px}
+.gs__hint{padding:22px 20px 26px;font-size:var(--text-sm);color:var(--text-3);max-width:52ch}
+.gs__sec{padding:6px 0}
+/* The section heading IS the privacy boundary — Yours reads as a place, not as
+   a badge stuck on a row — so it gets a rule of its own rather than a colour. */
+.gs__seclabel{display:block;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);padding:8px 20px 8px;border-top:1px solid var(--line-faint)}
+.gs__sec:first-child .gs__seclabel{border-top:none}
+.gs__hit{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:12px;width:100%;padding:9px 20px;cursor:pointer;min-height:40px}
+.gs__hit--on{background:var(--surface-sunk)}
+.gs__hit:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+.gs__hitt{font-size:var(--text-sm);color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs__hitm{margin-inline-start:auto;flex:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
+@media (max-width:640px){
+  .gs-veil{padding:0}
+  .gs{width:100%;max-height:100dvh;height:100dvh;border:none;border-radius:0}
+  .gs__body{flex:1}
+}
+
+/* ————— the list toolbar ————— */
+/* One row for every list in the app: what you type, what you narrow by, what
+   order it comes in, and how many there are. Below it, only when something is
+   in force, the chips that say so. */
+/* The toolbar owns the space around itself, on the scale, in one place.
+
+   It shipped with none — the hand-rolled block it replaced carried
+   margin-top:32px and that went out with it, so the bar sat hard against the
+   standfirst above it on every surface at once. Putting it on the component
+   rather than on each of the five wrappers is the point: a rhythm that five
+   pages each set for themselves is a rhythm that drifts, and this one already
+   had (.dir set 22px, .dp-list and the Shop set nothing).
+
+   Asymmetric on purpose. More room above than below, because the space above
+   separates the toolbar from a different thing — a standfirst, a composer —
+   while the space below separates it from the list it governs, which it should
+   stay visually attached to. */
+.ls-toolbar{display:flex;flex-direction:column;gap:12px;margin-block:var(--space-8) var(--space-5)}
+.ls-toolbar__bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line-faint)}
+.ls-toolbar__q{flex:1 1 200px;min-width:0;max-width:420px}
+/* The count is the answer to everything to its left, so it sits at the far end
+   of the line and holds the same mono register as the rest of the data. */
+.ls-toolbar__count{margin-inline-start:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ls-toolbar__n{margin-inline-start:6px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--tracking-label);font-variant-numeric:tabular-nums}
+.ls-toolbar__under{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap}
+.ls-toolbar__chip{padding-inline-end:9px}
+.ls-toolbar__chipk{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3);margin-inline-end:6px}
+.ls-toolbar__clear{all:unset;cursor:pointer;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:underline;text-underline-offset:3px;min-height:28px;display:inline-flex;align-items:center}
+.ls-toolbar__clear:hover{color:var(--text-1)}
+.ls-toolbar__clear:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.ls-toolbar__trail{margin-inline-start:auto}
+@media (max-width:640px){
+  .ls-toolbar__q{flex-basis:100%;max-width:none}
+  .ls-toolbar__count{margin-inline-start:0;width:100%}
+  .ls-toolbar__trail{margin-inline-start:0}
+}
+
+/* — the sort menu. Anchored to its button rather than portalled: a menu
+     belongs to the control that opened it, and the toolbar sets no overflow
+     that could clip it. — */
+
+/* The .ls-active chips row that used to live here is gone with the bespoke
+   filter blocks it served — the toolbar renders its own chips, in one place,
+   for every list. */
+
+/* ————— the toolbar's two panels ————— */
+/* Filter and Sort are ONE object at two sizes. They were not: Sort dropped
+   from its button while Filter arrived from the screen edge as a full-height
+   drawer behind a scrim — two identical-looking buttons opening two unrelated
+   surfaces. The drawer is an e-commerce mobile pattern, and at desktop its
+   scrim dimmed the results the panel exists to let you watch change.
+
+   Anchored absolutely inside the button's own wrapper rather than fixed to the
+   viewport, which also settles the containing-block question for good: absolute
+   resolves against this wrapper, never against whichever ancestor happens to be
+   mid-animation. */
+.ls-pop{position:relative;display:inline-flex}
+/* Invisible, and deliberately not a veil: the results underneath are the point. */
+.ls-pop__catch{position:fixed;inset:0;z-index:930}
+.ls-pop__panel{position:absolute;z-index:940;top:calc(100% + 6px);inset-inline-start:0;background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);animation:ls-rise var(--dur-1) var(--ease-out)}
+.ls-pop__panel:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+/* Both panels hang from their button's START edge, so a reader's eye travels
+   the same way from either control. The end-anchored variant is kept for a
+   button that ends up near the viewport edge, where a start-anchored panel
+   would open off the side of the page. */
+.ls-pop__panel--end{inset-inline-start:auto;inset-inline-end:0}
+
+.ls-sortmenu{min-width:190px;padding:5px;display:flex;flex-direction:column}
+.ls-sortmenu__opt{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;min-height:36px;padding:0 12px;border-radius:var(--radius-sharp);font-size:var(--text-sm);color:var(--text-2)}
+.ls-sortmenu__opt:hover{background:var(--surface-sunk);color:var(--text-1)}
+.ls-sortmenu__opt--on{color:var(--text-1)}
+.ls-sortmenu__opt:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+
+/* Wider and taller than the menu because it holds axes rather than a list, and
+   it has no head: the button that opened it is six pixels away and already
+   says Filter. */
+.ls-filterpanel{width:min(420px,calc(100vw - 32px));max-height:min(70vh,560px);display:flex;flex-direction:column}
+.ls-filterpanel__body{overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:20px}
+/* Fixed to the foot so the count stays in view however far down the axes the
+   reader has scrolled — the rule the mobile research is firmest about. */
+.ls-filterpanel__foot{flex:none;display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid var(--line-faint)}
+.ls-filterpanel__foot>:last-child{margin-inline-start:auto}
+
+/* On a phone both become bottom sheets, which is the one place a sheet is the
+   right pattern — the thumb is at the bottom of the screen and an anchored
+   panel would open off the edge of a 375px viewport. */
+@media (max-width:640px){
+  .ls-pop{position:static}
+  .ls-pop__panel{position:fixed;inset:auto 0 0 0;top:auto;width:auto;max-width:none;border-inline:none;border-bottom:none;border-radius:var(--radius-md) var(--radius-md) 0 0;animation-name:ls-sheet-up}
+  .ls-filterpanel{width:auto;max-height:78vh}
+  @keyframes ls-sheet-up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+}

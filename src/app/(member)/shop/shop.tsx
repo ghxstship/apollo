@@ -2,10 +2,11 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Dialog, Icon, Select, Stepper, Tag, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, FilterPills, Icon, ListToolbar, Select, Stepper, Toast } from "@/components/ds";
 import { logDate, price } from "@/lib/format";
 import { SURFACES } from "@/lib/brand";
 import { useModal } from "@/components/ds/use-modal";
+import { useFilterParams } from "@/lib/use-filter-params";
 import { placeShopOrder, requestRefund, type CrateLine } from "./actions";
 
 export type ShopProduct = {
@@ -31,6 +32,13 @@ const CATEGORIES = [
   { id: "galley", label: "Galley" },
   { id: "wardrobe", label: "Wardrobe" },
 ] as const;
+
+const SORTS = [
+  { id: "featured", label: "As arranged" },
+  { id: "price-low", label: "Price: low to high" },
+  { id: "price-high", label: "Price: high to low" },
+  { id: "az", label: "A – Z" },
+];
 
 const CATEGORY_SEA: Record<string, string> = {
   deck: "var(--sea-dawn)",
@@ -63,7 +71,10 @@ export function Shop({
   orders: ShopOrderView[];
 }) {
   const router = useRouter();
-  const [filter, setFilter] = React.useState<string | null>(null);
+  /* The shelf a member is looking at is now in the URL, so it can be sent. */
+  const { values, set } = useFilterParams({ shelf: "all", sort: "featured" });
+  const filter = values.shelf;
+  const sort = SORTS.some((s) => s.id === values.sort) ? values.sort : "featured";
   const [open, setOpen] = React.useState<ShopProduct | null>(null);
   const [size, setSize] = React.useState("");
   const [qty, setQty] = React.useState(1);
@@ -82,7 +93,19 @@ export function Shop({
     return () => clearTimeout(t);
   }, [toast]);
 
-  const shown = filter ? products.filter((p) => p.category === filter) : products;
+  const shown = React.useMemo(() => {
+    const rows = filter === "all" ? products : products.filter((p) => p.category === filter);
+    /* "As arranged" is the order the Bridge put the shelf in, so it sorts by
+       nothing and returns the rows untouched — a shop's own arrangement is a
+       merchandising decision and the default should not overrule it. */
+    if (sort === "featured") return rows;
+    const byName = (a: ShopProduct, b: ShopProduct) => a.name.localeCompare(b.name);
+    return [...rows].sort((a, b) => {
+      if (sort === "price-low") return a.price_cents - b.price_cents || byName(a, b);
+      if (sort === "price-high") return b.price_cents - a.price_cents || byName(a, b);
+      return byName(a, b);
+    });
+  }, [products, filter, sort]);
 
   const openProduct = (p: ShopProduct) => {
     setOpen(p);
@@ -171,26 +194,46 @@ export function Shop({
 
   return (
     <div>
-      <div className="chd-bar">
-        <div className="wd-filter" role="group" aria-label="Categories">
-          <Tag active={filter === null} onClick={() => setFilter(null)}>
-            All
-          </Tag>
-          {CATEGORIES.map((c) => (
-            <Tag
-              key={c.id}
-              active={filter === c.id}
-              onClick={() => setFilter(filter === c.id ? null : c.id)}
-            >
-              {c.label}
-            </Tag>
-          ))}
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setDrawer(true)}>
-          <Icon name="ShoppingBasket" size={14} style={{ marginRight: 7 }} />
-          The crate{cart.length ? ` · ${cart.reduce((n, l) => n + l.qty, 0)}` : ""}
-        </Button>
-      </div>
+      <ListToolbar
+        filterCount={filter === "all" ? 0 : 1}
+        sortValue={sort}
+        sortOptions={SORTS}
+        onSort={(id) => set("sort", id)}
+        resultCount={shown.length}
+        resultNoun="piece"
+        chips={
+          filter === "all"
+            ? []
+            : [
+                {
+                  key: "shelf",
+                  label: "Shelf",
+                  value: CATEGORIES.find((c) => c.id === filter)?.label ?? filter,
+                },
+              ]
+        }
+        onDropChip={() => set("shelf", "all")}
+        onClear={() => set("shelf", "all")}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => setDrawer(true)}>
+            <Icon name="ShoppingBasket" size={14} />
+            The crate{cart.length ? ` · ${cart.reduce((n, l) => n + l.qty, 0)}` : ""}
+          </Button>
+        }
+        filters={
+          <FilterPills
+            label="Shelf"
+            value={filter}
+            onChange={(next) => set("shelf", next)}
+            allCount={products.length}
+            options={CATEGORIES.map((c) => ({
+              id: c.id,
+              label: c.label,
+              count: products.filter((p) => p.category === c.id).length,
+            }))}
+          />
+        }
+      />
 
       <div className="chd-grid">
         {shown.map((p) => (

@@ -92,6 +92,9 @@ export default async function DirectoryPage({
       leagueName: leagueById.get(p.id)?.league_name ?? "First League — Harborline",
       passes: passesById.get(p.id) ?? 0,
       joined: roman(joinedYear),
+      /* The roster prints a Roman year and sorts on the real date — the
+         printed form loses the month, and "newest aboard" needs it. */
+      joinedMs: p.joined_at ? Date.parse(p.joined_at) : 0,
       interests: p.interests ?? [],
       shared: sharedById.get(p.id) ?? 0,
       self: p.id === user.id,

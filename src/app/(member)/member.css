@@ -173,11 +173,8 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .wd-cmt__form{display:flex;gap:10px;margin-top:14px}
 
 /* — open deck: crew-thread filter — */
-.wd-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 
 /* — the chandlery — */
-.chd-bar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.chd-bar .wd-filter{margin-bottom:0}
 .chd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
 @media (max-width:960px){.chd-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.chd-grid{grid-template-columns:1fr}}
@@ -289,8 +286,8 @@ legend.you-h{padding-bottom:0;border-bottom:0}
 
 /* — directory — */
 .dir-lede{font-size:var(--text-xs);color:var(--text-3);margin-top:10px;max-width:56ch}
-.dir{margin-top:22px}
-.dir-filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+/* The roster's top space is the toolbar's now — see .ls-toolbar. */
+.dir{margin-top:0}
 .dir-count{margin-top:16px;text-transform:uppercase}
 .dir-list{display:flex;flex-direction:column;margin-top:6px}
 .dir-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:16px 2px;border-top:1px solid var(--line-faint);text-decoration:none;color:inherit;transition:background var(--dur-1) var(--ease-swell)}
@@ -346,7 +343,7 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .thr-row__body p{font-size:var(--text-xs);color:var(--text-2);margin-top:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2}
 .thr-row__quiet{color:var(--text-3)}
 .thr-row__closed{display:block;margin-top:6px;text-transform:uppercase;color:var(--text-3)}
-.thr-row__meta{display:flex;align-items:center;gap:8px;text-transform:uppercase;padding-top:4px;white-space:nowrap}
+.thr-row__meta{display:flex;align-items:center;gap:8px;text-transform:uppercase;padding-top:4px;white-space:nowrap;flex-wrap:wrap}
 
 /* — threads: one conversation — */
 .thr-head{padding-bottom:18px;border-bottom:1px solid var(--line-faint)}
@@ -507,3 +504,21 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
      var(--gradient-accent) itself would print ink-on-ink from a paper page. */
   .crd-seam{background:var(--ivory-100) !important;animation:none !important}
 }
+
+/* The deck's column, lifted out of an inline style so the design-system gate
+   can see it and so the feed and its filter row share one gap value. */
+.deck-feed{display:flex;flex-direction:column;gap:14px}
+
+/* The roster's one control line: the field takes the room, the button takes
+   what it needs, and the two axes live behind it. */
+
+/* .dir-bar, .chd-bar, .wd-filter and .dir-filters went with the bespoke filter
+   rows they held — these surfaces use the kit's ListToolbar now. */
+
+/* The toolbar owns the space below itself, so a neighbour that used to set its
+   own top offset for the old filter row would now add to it rather than
+   replace it. Both of these are that, and nothing more. */
+.ls-toolbar + .chd-grid{margin-top:0}
+/* A gapped column spaces its own children; the toolbar keeps its 32px above
+   (it is the first child, so no gap applies there) and lets the gap do below. */
+.deck-feed > .ls-toolbar{margin-block-end:0}
