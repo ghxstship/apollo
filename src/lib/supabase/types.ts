@@ -170,6 +170,11 @@ export type MembershipPlanRow = {
   stripe_price_id: string | null; stripe_price_id_annual: string | null; annual_price_cents: number | null
   /* The club_products row this plan sells as; the membership cap counts by it. */
   product_slug: string | null; published: boolean
+  /* Model C, 2026-09-02: the value of a paid tier is a monthly credit against
+     passes, not an allowance of them. events_per_month is 0 on every live plan
+     and this is what a member is buying — the column existed for eight days
+     before anything read it. */
+  monthly_credit_cents: number
 }
 export type VesselRow = {
   id: string; name: string; capacity: number; home_city: string | null; active: boolean

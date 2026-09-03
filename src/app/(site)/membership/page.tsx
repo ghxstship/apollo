@@ -137,11 +137,30 @@ export default async function MembershipPage() {
                       <span className="ws-plans__price">
                         {p.price_cents ? `${price(p.price_cents)} / mo` : "Complimentary"}
                       </span>
+                      {/* Model C moved the value from a pass allowance to a
+                          monthly credit, set events_per_month to 0 on every
+                          plan, and left this branch reading the old column — so
+                          the page described Deck, Cabin, Owner and Founding,
+                          up to a thousand dollars a month, as "Waitlist + one
+                          invitation ashore". Four paying tiers, one line, and
+                          the line belonged to a tier that pays nothing.
+
+                          The credit IS the product now, so the credit is what
+                          the card says. events_per_month is still read as the
+                          fallback because a plan may yet be written the old
+                          way; it is no longer the first question asked. */}
                       <span className="ws-plans__ev">
-                        {p.events_per_month === 0
-                          ? "Waitlist + one invitation ashore"
-                          : `${p.events_per_month} ${p.events_per_month === 1 ? "episode" : "episodes"} / mo`}
+                        {p.monthly_credit_cents > 0
+                          ? `${price(p.monthly_credit_cents)} of passes every month`
+                          : p.events_per_month > 0
+                            ? `${p.events_per_month} ${p.events_per_month === 1 ? "episode" : "episodes"} / mo`
+                            : "Waitlist + one invitation ashore"}
                       </span>
+                      {p.monthly_credit_cents > 0 ? (
+                        <span className="ws-plans__note">
+                          SPEND IT ON ANY EPISODE · UNSPENT CREDIT CLEARS ON THE 1ST
+                        </span>
+                      ) : null}
                       {p.class_ceiling && SUB_CLASSES[p.class_ceiling] ? (
                         <span className="ws-plans__note">
                           {SUB_CLASSES[p.class_ceiling].note}
