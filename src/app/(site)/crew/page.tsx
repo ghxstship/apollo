@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/crew" },
   title: "The Cast & Crew",
   description:
-    "The people who run the room, the water, the cameras and the welcome — and who you will meet on the night.",
+    "The people who make the night happen — and who you will meet when it does.",
 };
 
 /* /crew is the people now, and hiring moved to /crew/wanted.
@@ -37,10 +37,9 @@ export default async function CrewIndexPage() {
         <span className="ls-eyebrow">The Cast & Crew</span>
         <h1>Who runs it.</h1>
         <p className="ws-phead__sub">
-          The cast are who the cameras follow. Crew run the room, the water, the
-          cameras and the welcome — and unlike most of this industry, they are
-          not anonymous. You will meet them on the night, and the manifest says
-          who before you go.
+          The cast are the ones it happens to. Crew are the ones who make it
+          happen — and unlike most of this industry, they are not anonymous. You
+          will meet them on the night, and the manifest says who before you go.
         </p>
       </div>
 

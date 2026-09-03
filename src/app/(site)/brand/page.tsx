@@ -129,7 +129,7 @@ const ROOMS: Array<[keyof typeof SURFACES, string]> = [
   ["openDeck", "The cast's feed — the confession booth"],
   ["passbook", "The credential, with its rotating code"],
   ["shoreside", "The crew desk ashore"],
-  ["magazine", "What the cameras kept, published"],
+  ["magazine", "What actually happened, published"],
   ["agent", "Confirm-first assistant — it proposes, you confirm; money always asks"],
   ["gangway", "Arrivals — sign-in and casting"],
   ["shop", "Merch and drops — carries the hosting division\u2019s mark"],
@@ -152,7 +152,7 @@ const FACTS: Array<[string, string]> = [
   ["Handle", HANDLE.toUpperCase()],
   /* Was TABLES ASHORE, which named one format and stood for four series and
      thirty-four episodes. The row now says what the season actually is. */
-  ["What we run", "FIVE SERIES · EPISODES AFLOAT AND ASHORE · CAMERAS ON"],
+  ["What we run", "FIVE SERIES · EPISODES AFLOAT AND ASHORE · NOTHING REHEARSED"],
   ["Casting", "ACCESS · REGIONAL · NATIONAL · GLOBAL · GUEST — BY APPLICATION OR INVITATION"],
   /* Was EPISODES, SUNDAYS. Season I opens on Friday 4 September 2026 and runs
      every day of the week except Monday — nine of the fifty-two are Sundays.
@@ -173,7 +173,7 @@ export default function BrandKitPage() {
           <p style={{ color: "var(--text-2)", marginTop: 16, maxWidth: "56ch" }}>
             Everything needed to write about, partner with, or sponsor the show —
             the wordmark, the palette, the type, the voice, and the facts. Use it
-            as given; the cameras don&apos;t negotiate either.
+            as given; the club doesn&apos;t negotiate either.
           </p>
           <div className="bk-boiler">
             <p>{BOILER}</p>
@@ -299,7 +299,7 @@ export default function BrandKitPage() {
             <div>
               <div className="h">Say</div>
               <div className="ex">No scripts. No second takes.</div>
-              <div className="ex">The cameras are on. So is the bar.</div>
+              <div className="ex">Nobody rehearsed this. The bar is open.</div>
               {/* The specimen has to match the page it is a specimen of — the
                   homepage band said 12 cabins and now says 40 aboard. */}
               <div className="ex">40 aboard. 200 applicants.</div>

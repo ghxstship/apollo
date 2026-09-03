@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/log" },
   title: "The Log",
   description:
-    "What the cameras kept. Written by the cast and crew, credited by name, one episode at a time.",
+    "What actually happened, written by the people it happened to. Credited by name, one episode at a time.",
 };
 
 export default async function LorePage() {
@@ -40,11 +40,13 @@ export default async function LorePage() {
           The Log · Sundays
         </span>
         <h1 className="dp-mast">The Log</h1>
-        {/* Was "The ship's log, published." — a boat metaphor standing in front
-            of a camera product, on a page where thirty-four of the season's
-            fifty-two episodes never leave land. The homepage already had the
-            line this page needed. */}
-        <p className="dp-mast__sub">What the cameras kept.</p>
+        {/* Was "The ship's log, published." — a boat metaphor on a page where
+            thirty-four of the season's fifty-two episodes never leave land. Then
+            "What the cameras kept", which was accurate and killed the mood: the
+            shows this club is built on never mention the equipment, and neither
+            does their marketing. What the reader wants to know is whether the
+            thing that happened is written down. */}
+        <p className="dp-mast__sub">What actually happened.</p>
       </div>
       {/* Dates are formatted here rather than in the browser: the club's zone
           is the server's to know, and a client component that computed it would

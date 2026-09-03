@@ -150,7 +150,7 @@ export default async function StubPage({
             episode.status === "cancelled"
               ? "Anything reserved against it was credited in full. The Passes page holds the next open water."
               : voyageOver
-                ? `The stub is spent. What the cameras kept is in ${SURFACES.magazine}.`
+                ? `The stub is spent. What happened is in ${SURFACES.magazine}.`
                 : "Claim it again on the Passes page and a fresh stub is cut for you."
           }
         />

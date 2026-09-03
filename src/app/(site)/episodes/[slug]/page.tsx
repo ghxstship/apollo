@@ -485,7 +485,7 @@ export default async function EpisodePage({
               </p>
             ) : sailed ? (
               <p className="ev-note">
-                This one has sailed. What the cameras kept is in The Log.
+                This one has run. What happened is in The Log.
               </p>
             ) : episode.status === "weather_hold" ? (
               <p className="ev-note">

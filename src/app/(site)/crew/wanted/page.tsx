@@ -48,9 +48,9 @@ export default async function CrewPage() {
               as a literal substring of the source and does not decode entities,
               so the escaped form reads as absent. */}
           The Cast & Crew are the club&rsquo;s own people — marine safety,
-          hospitality, media, engineering. The cast are who the cameras follow;
-          crew run the room, the water, the cameras and the welcome, and crew is
-          what this page is hiring. We take people who&rsquo;d do the job on
+          hospitality, media, engineering. The cast are the ones it happens to;
+          crew are the ones who make it happen, and crew is what this page is
+          hiring. We take people who&rsquo;d do the job on
           their day off — and then we make sure they don&rsquo;t have to.
         </p>
       </div>

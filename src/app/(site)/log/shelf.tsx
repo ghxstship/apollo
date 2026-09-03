@@ -113,8 +113,8 @@ export function LogShelf({ entries }: { entries: LogEntry[] }) {
         <div className="ws-dp-row ws-dp-row--flat">
           <div className="ws-dp-row__t">Nothing filed yet.</div>
           <p className="ws-dp-row__dek">
-            The log opens with the first episode of the season. What the cameras
-            keep is written up here, credited by name.
+            The log opens with the first episode of the season. What happens
+            gets written up here, credited by name.
           </p>
         </div>
       ) : null}

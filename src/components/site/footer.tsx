@@ -25,7 +25,7 @@ export function SiteFooter({ cities }: { cities: Tables<"cities">[] }) {
                 register the voice rules exist to keep out. A fact, then a line
                 that lands. */}
             <p className="ws-footer__blurb">
-              Fifty-two episodes a season, afloat and ashore. The cameras stay on.
+              Fifty-two episodes a season, afloat and ashore. Nothing rehearsed.
             </p>
           </div>
           <div className="ws-footer__col">

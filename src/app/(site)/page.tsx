@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 const STEPS: Array<[string, string]> = [
   ["Apply.", "A short casting form, read by a person. We reply inside the week."],
   ["Board.", "Claim a pass for any episode. Solo is normal — the cast meets at the gangway, not before."],
-  ["See what happens.", "Cameras from the first hello to the last cab. No scripts, no second takes."],
+  ["See what happens.", "No scripts. No second takes. No idea what happens next."],
 ];
 
 export default async function HomePage() {
@@ -128,8 +128,7 @@ export default async function HomePage() {
               operating playbook models a hundred for the flagship). The season
               is the honest unit of scale, and it is not pending anything. */}
           <p className="ws-hero__sub">
-            Fifty-two episodes. Afloat and ashore. Cameras from the first hello
-            to the last cab — whatever happens in between is the show.
+            Unscripted. Unreachable. Unforgettable.
           </p>
           <div className="ws-hero__cta">
             <LinkButton href="/membership#apply" variant="gold" size="lg">
@@ -162,7 +161,7 @@ export default async function HomePage() {
         <div className="ls-container">
           <SectionHeader
             eyebrow="On this episode"
-            title="Next up. Every camera on."
+            title="Next up. Nobody knows how it ends."
             aside={
               <LinkButton href="/episodes" variant="ghost">
                 All episodes <Icon name="ArrowUpRight" size={15} />
@@ -286,7 +285,7 @@ export default async function HomePage() {
         <div className="ls-container">
           <SectionHeader
             eyebrow="The show"
-            title="What the cameras kept."
+            title="What actually happened."
             aside={
               /* The written record, which is the Log — not the listing at
                  /episodes, which is where the club's episodes are sold. */
@@ -342,7 +341,7 @@ export default async function HomePage() {
           <h2>Fifty-two episodes. Two hundred applicants.</h2>
           <p>
             Casting is by application or invitation. Apply once, board a season —
-            the cameras do the rest.
+            the rest takes care of itself.
           </p>
           <div style={{ marginTop: 32 }}>
             <LinkButton href="/membership#apply" variant="outline" size="lg" inverse>

@@ -527,7 +527,19 @@ export const BANNED_TERMS = [
   "UN__",
   "UNMOORED",
   "UNBOUND",
-  "UNSCRIPTED",
+  /* UNSCRIPTED came off this list on 2026-09-03, by owner ruling: the hero is
+     now Unscripted. Unreachable. Unforgettable.
+
+     It was banned as one of the four retired sub-brand wordmarks, where the
+     un-spaced form WAS the mark. The ordinary adjective is a different word
+     doing a different job, and the gate cannot tell them apart — it matches a
+     lowercase substring of visible text, so banning the mark banned the
+     adjective with it.
+
+     What is lost: the retired wordmark is no longer guarded. What still guards
+     the shape is the live naming rule itself — the six divisions carry a space
+     after the bracket, [un] Scripted, and the other three retired marks below
+     are still refused. This one word is the trade. */
   "UNCUT",
   "UNHINGED Social",
   "UNHINGED Dating",

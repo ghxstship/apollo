@@ -96,7 +96,7 @@ export function Composer({
         name="body"
         rows={3}
         maxLength={2000}
-        placeholder="The booth is open. Say it like the cameras are on."
+        placeholder="The booth is open. Say it like you mean it."
         aria-label="Post to the deck"
         className="ls-writein"
         style={{

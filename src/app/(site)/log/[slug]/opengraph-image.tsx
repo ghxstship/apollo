@@ -26,7 +26,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       (
         <OgFrame
           eyebrow={SURFACES.magazine}
-          title="What the cameras kept."
+          title="What actually happened."
           meta={`${SURFACES.magazine} · SEASON I`}
         />
       ),
