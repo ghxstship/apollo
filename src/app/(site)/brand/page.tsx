@@ -377,7 +377,7 @@ export default function BrandKitPage() {
                 {CURRENCY.name} · {CURRENCY.code}
               </span>
               <span className="bk-rooms__role">
-                Earned on the water, never bought. {CURRENCY.line}
+                Earned on the night, never bought. {CURRENCY.line}
               </span>
             </div>
           </div>

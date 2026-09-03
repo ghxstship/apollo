@@ -46,7 +46,7 @@ export default async function EnvelopesPage({
           <StateBlock
             status="empty"
             icon="Mail"
-            title="Nothing on the water."
+            title="No envelopes yet."
             detail="An envelope is minted against an aboard pass on an episode. When there is one, its sheet shows here."
           />
         </div>

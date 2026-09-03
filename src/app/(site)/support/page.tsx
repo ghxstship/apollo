@@ -20,9 +20,14 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
         "Can I visit before joining?",
         "Yes — that's the point. Redeem a member's invite code for one shore night as their guest.",
       ],
+      /* The question stays — a prospective member really does ask it — but the
+         answer used to treat sailing as the price of entry, under a heading
+         about joining. Thirty-four of the fifty-two episodes never leave land,
+         so the honest first half of the answer is that most of the season does
+         not ask. The second half is the old answer, which was always good. */
       [
         "I've never sailed.",
-        "Perfect. Instruction is included at every tier; day sails are built for first reefs. Swim 200 meters and mind the boom.",
+        "Then most of the season is already yours — thirty-four of the fifty-two episodes never leave land. For the ones that do, instruction is included at every tier and the day sails are built for first reefs. Swim 200 meters and mind the boom.",
       ],
     ],
   ],

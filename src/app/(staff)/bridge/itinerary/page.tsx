@@ -77,7 +77,7 @@ export default async function ItineraryPage({
           <StateBlock
             status="empty"
             icon="Map"
-            title="Nothing on the water."
+            title="No itinerary yet."
             detail="An itinerary belongs to an episode. Put one on the board from the Episodes tab and its legs show here."
           />
         </div>

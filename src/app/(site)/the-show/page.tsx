@@ -16,7 +16,7 @@ export const metadata: Metadata = {
    was answered only by clauses nobody reads until they are already signing.
    Every claim below is a thing the product actually does:
 
-     "cameras run from boarding to docking", "out of frame and out of the cut",
+     "cameras run from the first hello to the last cab", "out of frame and out of the cut",
      the microphones, and the minors line  -> the filming-release,
        voice-likeness and minor-appearance clause bodies, verbatim in substance
      members on by default, guests off      -> profiles.on_camera default true,
@@ -57,9 +57,10 @@ export default function TheShowPage() {
       <section className="lg-sec" id="filmed">
         <h2>What gets filmed.</h2>
         <p>
-          The cameras run from boarding to docking. That is the whole of the
-          window — it is the episode, not your life. The club&rsquo;s own cast
-          and crew run the water, the cameras and the welcome.
+          The cameras run from the first hello to the last cab. That is the
+          whole of the window — it is the episode, not your life. The
+          club&rsquo;s own cast and crew run the room, the cameras and the
+          welcome.
         </p>
         <p>
           Microphones count. What a mic catches is footage on the same terms as

@@ -153,7 +153,7 @@ export default async function MemberPage({
         <p className="dir-bio">
           {member.bio?.trim()
             ? member.bio
-            : "No word yet. Some members prefer to be met on the water."}
+            : "No word yet. Some members prefer to be met in person."}
         </p>
       </section>
 

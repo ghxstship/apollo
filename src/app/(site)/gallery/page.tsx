@@ -93,7 +93,7 @@ export default async function GalleryPage() {
                   <img
                     className="gl-tile__img"
                     src={f.url}
-                    alt={f.caption ?? `${g.title} — a frame from the sail`}
+                    alt={f.caption ?? `${g.title} — a frame from the episode`}
                   />
                   {f.caption ? (
                     <span className="gl-tile__cap">

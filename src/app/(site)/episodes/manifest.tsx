@@ -163,7 +163,7 @@ export function EpisodeManifest({
   const toMs = dayMs(values.to, true);
 
   /* Controls read the calendar rather than a hardcoded list — a city or a
-     series appears only once something is actually sailing under it. */
+     series appears only once something is actually running under it. */
   const cityOptions = React.useMemo(() => {
     const seen = new Map<string, string>();
     for (const v of items) {

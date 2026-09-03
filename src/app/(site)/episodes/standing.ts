@@ -5,10 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 
 /* A standing view of the manifest.
 
-   A member who only sails, or only follows one series, says so once and the
-   manifest opens that way. Stored on the profile rather than in the browser so
-   it survives the phone — which is the whole difference between this and a
-   preference nobody can rely on.
+   A member who only turns up for one series, or only when it is on the water,
+   says so once and the manifest opens that way. Stored on the profile rather
+   than in the browser so it survives the phone — which is the whole difference
+   between this and a preference nobody can rely on.
 
    What is stored is the query string the pills already write, so there is one
    format for a filter set in this system rather than two that can disagree. */
@@ -47,7 +47,7 @@ export async function saveStandingView(
     .from("profiles")
     .update({ manifest_filters: value })
     .eq("id", user.id);
-  if (error) return { error: "That did not save. Try again." };
+  if (error) return { error: "That did not take. Try it again." };
 
   revalidatePath("/episodes");
   return { saved: value };

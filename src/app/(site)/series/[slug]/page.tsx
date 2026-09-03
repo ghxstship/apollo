@@ -86,12 +86,16 @@ export default async function SeriesDetailPage({
              keep, so one instant never prints as two times across surfaces. */
           const zone = e.time_zone;
           const hours = durationChip(e.starts_at, e.ends_at);
-          const sailed = new Date(e.starts_at).getTime() < nowMs;
+          /* Was `sailed`, and it printed SAILED on every past episode —
+             including all of Night Watch and Showboat, which never leave land.
+             Wrapped is the production word, true of both settings, and in the
+             register the rest of the show already speaks. */
+          const wrapped = new Date(e.starts_at).getTime() < nowMs;
           const meta = [
             SETTING_LABEL[e.setting] ?? "Afloat",
             weekChip(e.starts_at),
             hours,
-            sailed ? "Sailed" : null,
+            wrapped ? "Wrapped" : null,
           ].filter(Boolean) as string[];
           return (
             <Link

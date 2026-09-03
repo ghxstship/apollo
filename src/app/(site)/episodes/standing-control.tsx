@@ -6,13 +6,14 @@ import { saveStandingView } from "./standing";
 
 /* Set once, opens that way from then on.
 
-   The membership move: a member who only sails, or only follows Night Watch,
-   should not have to say so on every visit. What makes it safe rather than
+   The membership move: a member who only follows Night Watch, or only turns
+   up when it is on the water, should not have to say so on every visit. What makes it safe rather than
    annoying is that the standing view is never invisible — the manifest says it
    is in force, and the way out is the same row as the way in.
 
    Deliberately not a star or a bookmark icon. This is a sentence about what
-   happens next time, and it reads as one. */
+   happens next time, and it reads as one — both labels open the same way so
+   the pair reads as one choice with two answers rather than two controls. */
 export function StandingControl({
   /* The query string as it stands, from the pills. */
   current,
@@ -49,7 +50,7 @@ export function StandingControl({
       ) : null}
       {!matches ? (
         <Button variant="ghost" size="sm" disabled={pending} onClick={() => write(current)}>
-          {current ? "Open this way from now on" : "Stop opening filtered"}
+          {current ? "Open this way from now on" : "Open on everything from now on"}
         </Button>
       ) : null}
       {saved !== null && matches ? (

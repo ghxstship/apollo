@@ -78,7 +78,7 @@ export function ProfileForm({
           rows={3}
           maxLength={BIO_MAX}
           defaultValue={bio}
-          placeholder="What you turn up for, and what you would rather be doing on the water."
+          placeholder="What you turn up for, and what you would rather be doing."
           hint={`Up to ${BIO_MAX} characters. Shown on your directory page.`}
         />
       </div>

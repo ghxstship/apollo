@@ -426,8 +426,8 @@ export function NoSailings() {
   return (
     <StateBlock
       status="empty"
-      icon="Sailboat"
-      title="Nothing on the water."
+      icon="CalendarDays"
+      title="Nothing composed yet."
       detail="A composition belongs to an episode. Put one on the board from the Episodes tab and its three ceilings show here."
     />
   );

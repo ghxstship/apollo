@@ -38,8 +38,8 @@ export default async function GangwayPage({
         <div className="hm-sec">
           <StateBlock
             status="empty"
-            icon="Sailboat"
-            title="Nothing on the water."
+            icon="CalendarDays"
+            title="Nobody to board."
             detail="No upcoming episodes to board. Set one on the Episodes tab."
           />
         </div>

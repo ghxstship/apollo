@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 const STEPS: Array<[string, string]> = [
   ["Apply.", "A short casting form, read by a person. We reply inside the week."],
   ["Board.", "Claim a pass for any episode. Solo is normal — the cast meets at the gangway, not before."],
-  ["See what happens.", "Cameras from boarding to docking. No scripts, no second takes."],
+  ["See what happens.", "Cameras from the first hello to the last cab. No scripts, no second takes."],
 ];
 
 export default async function HomePage() {
@@ -114,18 +114,22 @@ export default async function HomePage() {
               lowercase phrase on the rule), never Anton alone, because the
               tagline is the one string the display face must not capitalise. */}
           <h1><TaglineMark /></h1>
-          {/* Was "Twelve strangers. One yacht." The flagship sails a flotilla
-              of four hulls at ten passes each, so both halves were wrong and
-              the club stated three different capacities across four surfaces.
+          {/* This line described the flagship and called it the season.
 
-              CAPACITY, PENDING OWNER CONFIRMATION: forty matches the seeded
-              fleet and the press boilerplate; the operating playbook models 100
-              guests for the flagship. The other three sites carry the same
-              note — see src/app/layout.tsx, the closing band below, and the
-              boilerplate on /brand. */}
+              Anchor is twelve episodes of the fifty-two and the only series
+              wholly on the water: Night Watch and Showboat never leave land,
+              Even Keel leaves it once, and thirty-four episodes in all are
+              ashore. A hero that says four yachts and boarding to docking sells
+              a boat product the club stopped being — and the press boilerplate
+              two files away already had it right, naming all five series.
+
+              It also stopped depending on the capacity number, which is still
+              an open owner decision (forty matches the seeded fleet, the
+              operating playbook models a hundred for the flagship). The season
+              is the honest unit of scale, and it is not pending anything. */}
           <p className="ws-hero__sub">
-            Forty strangers. Four yachts. Cameras from boarding to docking —
-            whatever happens after sunset is the show.
+            Fifty-two episodes. Afloat and ashore. Cameras from the first hello
+            to the last cab — whatever happens in between is the show.
           </p>
           <div className="ws-hero__cta">
             <LinkButton href="/membership#apply" variant="gold" size="lg">
@@ -331,12 +335,11 @@ export default async function HomePage() {
 
       <section className="ws-band">
         <div className="ls-container">
-          {/* Was "12 cabins. 200 applicants." The four hulls carry eighteen
-              cabins between them, so the number named nothing real. Passes are
-              the unit a reader buys anyway.
-
-              CAPACITY, PENDING OWNER CONFIRMATION — see the hero above. */}
-          <h2>40 aboard. 200 applicants.</h2>
+          {/* Was "12 cabins. 200 applicants.", then "40 aboard." — a per-
+              episode headcount for the flagship, standing in for the size of
+              the club. The season is the true measure and it needs no owner
+              ruling to state; the tension the line is for survives intact. */}
+          <h2>Fifty-two episodes. Two hundred applicants.</h2>
           <p>
             Casting is by application or invitation. Apply once, board a season —
             the cameras do the rest.

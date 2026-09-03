@@ -157,7 +157,7 @@ export default async function ShowPage() {
       </div>
 
       {!sailing ? (
-        <p className="shw-note">Nothing on the water. The board comes up when an episode is on the sheet.</p>
+        <p className="shw-note">Nothing running. The board comes up when an episode is on the sheet.</p>
       ) : (
         <>
           {/* Run of show */}

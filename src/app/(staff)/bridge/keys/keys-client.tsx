@@ -235,7 +235,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
             <StateBlock
               status="empty"
               title="No hooks set."
-              detail="Add one when another system needs to hear what happened on the water."
+              detail="Add one when another system needs to hear what happened at an episode."
             />
           </div>
         )}

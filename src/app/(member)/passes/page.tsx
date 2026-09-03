@@ -438,7 +438,7 @@ export default async function PassesPage() {
           <StateBlock
             status="empty"
             icon="Sailboat"
-            title="Nothing on the water."
+            title="Nothing on the calendar."
             detail="The next season is being drawn. It lands in your Inbox."
           />
         </div>

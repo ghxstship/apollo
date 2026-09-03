@@ -200,7 +200,7 @@ export function Shop({
         sortOptions={SORTS}
         onSort={(id) => set("sort", id)}
         resultCount={shown.length}
-        resultNoun="piece"
+        resultNoun="item"
         chips={
           filter === "all"
             ? []

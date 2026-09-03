@@ -69,7 +69,7 @@ export function Progress({
 
 /* — StateBlock — */
 const STATE_DEFAULTS: Record<string, { icon?: string; title: string; detail: string }> = {
-  empty: { icon: "Waves", title: "Nothing on the water.", detail: "When there's something to show, it shows here." },
+  empty: { icon: "Inbox", title: "Nothing here yet.", detail: "When there's something to show, it shows here." },
   /* This default renders on EVERY loading state in the product, so it cannot
      name one surface: a manifest is the boarding list for a single episode,
      and most of what loads here is not that. */

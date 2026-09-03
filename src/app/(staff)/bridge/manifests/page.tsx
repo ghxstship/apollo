@@ -41,8 +41,8 @@ export default async function ManifestsPage({
         <div className="hm-sec">
           <StateBlock
             status="empty"
-            icon="Sailboat"
-            title="Nothing on the water."
+            icon="CalendarDays"
+            title="Nothing to muster."
             detail="No upcoming episodes to muster. Set one on the Episodes tab."
           />
         </div>

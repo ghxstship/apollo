@@ -100,7 +100,7 @@ export async function uploadFrame(formData: FormData): Promise<GalleyResult> {
   if (fileError)
     return {
       error: /policy|security/i.test(fileError.message)
-        ? "Frames are for the crew on the water — board first, then send it."
+        ? "Frames are for the crew on the episode — board first, then send it."
         : "The frame didn't land. Try again; if it holds, hail Shoreside.",
     };
 
