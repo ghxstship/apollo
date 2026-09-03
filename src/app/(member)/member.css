@@ -522,3 +522,5 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 /* A gapped column spaces its own children; the toolbar keeps its 32px above
    (it is the first child, so no gap applies there) and lets the gap do below. */
 .deck-feed > .ls-toolbar{margin-block-end:0}
+/* The pause allowance, stated before the question rather than after it. */
+.you-allowance{margin:0 0 10px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--gold-deep)}

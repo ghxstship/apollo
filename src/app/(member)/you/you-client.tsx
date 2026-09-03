@@ -352,7 +352,18 @@ export function ResumeBanner() {
 export type HeldPass = { id: string; title: string; when: string };
 
 /* — Offboarding: pause or depart, for real — */
-export function Offboarding({ status, heldPasses }: { status: string; heldPasses: HeldPass[] }) {
+export function Offboarding({
+  status,
+  heldPasses,
+  pause,
+}: {
+  status: string;
+  heldPasses: HeldPass[];
+  /* Days used and the club's allowance, both from the database. The counter
+     has existed since August and nothing called it, so a member pausing could
+     not tell three days from ninety. */
+  pause: { used: number; cap: number };
+}) {
   const [mode, setMode] = React.useState<null | "pause" | "depart">(null);
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -436,6 +447,18 @@ export function Offboarding({ status, heldPasses }: { status: string; heldPasses
           </>
         }
       >
+        {/* The allowance, before the question rather than after it. A member
+            deciding whether to pause wants to know what it costs them, and the
+            club has counted this since August without ever saying it. */}
+        {pause.cap > 0 ? (
+          <p className="you-allowance">
+            {pause.used === 0
+              ? `You have all ${pause.cap} of your pause days this year.`
+              : pause.used >= pause.cap
+                ? `You have used all ${pause.cap} pause days this year. Pausing again is a word with Shoreside.`
+                : `${pause.cap - pause.used} of your ${pause.cap} pause days are left this year.`}
+          </p>
+        ) : null}
         {/* Says exactly what @/lib/dues does. If these two ever drift, the
             code is the thing that is right and this is the thing that lies. */}
         Knots and tier keep, and you can resume with a word — no games either

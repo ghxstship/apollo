@@ -123,6 +123,22 @@ export default async function YouPage() {
   /* set_own_standing refuses a member who tries to lift a hold they did not
      place. The interface should not offer them the button. */
   const heldByTheClub = status === "paused" && profile?.status_set_by !== profile?.id;
+
+  /* What the member has left of their own pause allowance. The counter and the
+     window trigger have both existed since August and nothing has ever called
+     them, so a member pausing could not tell three days from ninety — and the
+     ninety itself lived only in prose. Both numbers come from the database now.
+
+     Self-scoped by the function itself: it refuses a profile that is not yours
+     unless you are staff, so this cannot be asked on anyone else's behalf. */
+  const [{ data: pauseUsed }, { data: pauseCap }] = await Promise.all([
+    supabase.rpc("membership_pause_days_used", { p_profile: user.id }),
+    supabase.rpc("club_setting", { p_key: "pause_days_per_year" }),
+  ]);
+  const pause = {
+    used: typeof pauseUsed === "number" ? pauseUsed : 0,
+    cap: typeof pauseCap === "number" ? pauseCap : 0,
+  };
   const balanceCents = account?.balance_cents ?? 0;
   const joinedYear = profile?.joined_at
     ? new Date(profile.joined_at).getFullYear()
@@ -313,7 +329,7 @@ export default async function YouPage() {
               <b>Pause or depart</b>
               <p>No exit surveys, no retention calls, no games.</p>
             </div>
-            <Offboarding status={status} heldPasses={heldPasses} />
+            <Offboarding status={status} heldPasses={heldPasses} pause={pause} />
           </div>
           <div className="you-row">
             <div>

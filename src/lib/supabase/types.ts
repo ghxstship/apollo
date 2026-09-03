@@ -743,6 +743,10 @@ export type Database = {
       requeue_outbox_row: { Args: { p_table: "email_outbox" | "sms_outbox" | "push_outbox"; p_id: string }; Returns: undefined }
       assign_vessels_evenly: { Args: { p_episode: string }; Returns: number }
       club_setting: { Args: { p_key: string }; Returns: number }
+      /* Days this member has held their OWN membership paused in a rolling
+         year. Refuses a profile that is not yours unless you are staff, so it
+         cannot be asked on anyone else's behalf. */
+      membership_pause_days_used: { Args: { p_profile: string }; Returns: number }
       passes_left: { Args: { p_episode: string; p_except_pass?: string | null }; Returns: number }
       scheduler_health: {
         Args: { p_limit?: number }
