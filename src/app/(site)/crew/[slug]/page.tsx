@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge } from "@/components/ds";
-import { MAILBOX } from "@/lib/brand";
+import { Avatar, Badge } from "@/components/ds";
+import { logDate } from "@/lib/format";
+import { CLUB_ZONE } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
-import { CrewApplyForm } from "./apply-form";
 
-async function roleFor(slug: string) {
+async function crewFor(slug: string) {
   const supabase = await createClient();
-  const { data } = await supabase.from("crew_roles").select("*").eq("slug", slug).maybeSingle();
+  const { data } = await supabase
+    .from("crew")
+    .select("*")
+    .eq("slug", slug)
+    .eq("public", true)
+    .eq("active", true)
+    .maybeSingle();
   return data;
 }
 
@@ -18,131 +24,112 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const role = await roleFor(slug);
-  if (!role) return { title: "Role not found" };
-  const where = role.remote ? "Remote" : role.city;
+  const person = await crewFor(slug);
+  if (!person) return { title: "Not on the roster" };
   return {
-    alternates: { canonical: `/crew/${role.slug}` },
-    title: `${role.title} — ${where}`,
-    description: role.blurb ?? undefined,
+    alternates: { canonical: `/crew/${person.slug}` },
+    title: `${person.display_name} — ${person.role_title}`,
+    description: person.bio ?? undefined,
   };
 }
 
-/* A posting, at its own address.
+/* One of the crew, and what they are working.
 
-   The listing carried one blurb per role and a mailto:, which asked a candidate
-   to decide on twenty words and then compose an email from nothing. This is the
-   work, the bar, the money and the shape of the process — and the form that
-   puts them in the pipeline the Bridge has been running by hand. */
-export default async function CrewRolePage({ params }: { params: Promise<{ slug: string }> }) {
+   The billing is the point. In a filmed series the crew are characters, and a
+   member who had a good night with a particular skipper should be able to find
+   the next one they are on — which is the same reason a studio puts the
+   instructor on the class card.
+
+   Only confirmed billings appear, and only for people who opted in: the policy
+   on crew_assignments admits a row to anon exactly when it is confirmed and the
+   crew member is public and active, so an offer nobody answered never leaks and
+   this page never has to remember to filter. */
+export default async function CrewMemberPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
-  const role = await roleFor(slug);
-  if (!role) notFound();
+  const person = await crewFor(slug);
+  if (!person) notFound();
 
-  const where = role.remote ? "Remote" : role.city;
-  const facts = [role.dept, role.employment, where].filter(Boolean) as string[];
+  const supabase = await createClient();
+  const nowIso = new Date().toISOString();
+  const { data: billings } = await supabase
+    .from("crew_assignments")
+    .select("id, position_slug, episodes!inner(slug, title, starts_at, status, setting)")
+    .eq("crew_id", person.id)
+    .eq("status", "confirmed")
+    .gte("episodes.starts_at", nowIso)
+    .order("created_at", { ascending: true })
+    .limit(12);
+
+  const rows = ((billings ?? []) as unknown as Array<{
+    id: string;
+    position_slug: string;
+    episodes: { slug: string; title: string; starts_at: string; setting: string } | null;
+  }>)
+    .filter((b) => b.episodes)
+    .sort((a, b) => Date.parse(a.episodes!.starts_at) - Date.parse(b.episodes!.starts_at));
 
   return (
     <div className="ls-container">
       <div className="ws-phead">
         <span className="ls-eyebrow">
           <Link href="/crew" className="crew-back">
-            Crew wanted
+            The Cast &amp; Crew
           </Link>
         </span>
-        <h1>{role.title}</h1>
-        <div className="crew-facts">
-          {facts.map((f, i) => (
-            <span key={`${i}-${f}`}>
-              {i > 0 ? "· " : ""}
-              {f}
-            </span>
-          ))}
-          {/* A closed posting still renders rather than 404ing: its URL is on
-              somebody's clipboard, and "this one closed" is a better answer
-              than a dead page. */}
-          {role.open ? null : <Badge tone="caution">Closed</Badge>}
+        <div className="crew-hero">
+          <Avatar
+            name={person.display_name}
+            tone={
+              (["gold", "sea", "ink", "sand"].includes(person.avatar_tone)
+                ? person.avatar_tone
+                : "ink") as "gold" | "sea" | "ink" | "sand"
+            }
+            size="lg"
+          />
+          <div>
+            <h1>{person.display_name}</h1>
+            <div className="crew-facts">
+              {[person.role_title, person.city, person.since ? `Since ${new Date(person.since).getFullYear()}` : null]
+                .filter(Boolean)
+                .map((bit, i) => (
+                  <span key={`${i}-${bit}`}>
+                    {i > 0 ? "· " : ""}
+                    {bit}
+                  </span>
+                ))}
+            </div>
+          </div>
         </div>
+        {person.bio ? <p className="ws-phead__sub">{person.bio}</p> : null}
       </div>
 
-      <div className="crew-role">
-        <div className="crew-role__body">
-          {role.body ? <p className="crew-role__lede">{role.body}</p> : null}
-
-          {role.responsibilities.length > 0 ? (
-            <section className="crew-sec">
-              <h2>The work.</h2>
-              <ul>
-                {role.responsibilities.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {role.requirements.length > 0 ? (
-            <section className="crew-sec">
-              <h2>What you need.</h2>
-              <ul>
-                {role.requirements.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {role.nice_to_have.length > 0 ? (
-            <section className="crew-sec">
-              <h2>What helps.</h2>
-              <ul>
-                {role.nice_to_have.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {/* Null renders nothing rather than an empty heading — a posting with
-              a Pay section and no pay in it is worse than one without. */}
-          {role.comp ? (
-            <section className="crew-sec">
-              <h2>Pay.</h2>
-              <p>{role.comp}</p>
-            </section>
-          ) : null}
-
-          {role.process.length > 0 ? (
-            <section className="crew-sec">
-              <h2>How it goes.</h2>
-              {/* Numbered because these really are a sequence — the one place
-                  on this page where order carries information. */}
-              <ol className="crew-steps">
-                {role.process.map((step, i) => (
-                  <li key={step}>
-                    <span className="crew-steps__n">{String(i + 1).padStart(2, "0")}</span>
-                    {step}
-                  </li>
-                ))}
-              </ol>
-            </section>
-          ) : null}
-        </div>
-
-        <aside className="crew-role__apply" id="apply">
-          {role.open ? (
-            <CrewApplyForm roleId={role.id} roleTitle={role.title} />
-          ) : (
-            <div className="crew-closed">
-              <span className="ws-zero__label">This one is closed</span>
-              <p>
-                It is not taking applications any more. The open roles are on the{" "}
-                <Link href="/crew">crew page</Link>, and{" "}
-                <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a> reads
-                everything either way.
-              </p>
-            </div>
-          )}
-        </aside>
+      <div className="crew-list">
+        <h2 className="crew-billing__h">Next on.</h2>
+        {rows.length > 0 ? (
+          rows.map((b) => (
+            <Link key={b.id} href={`/episodes/${b.episodes!.slug}`} className="crew-row">
+              <div>
+                <div className="ws-ledger-row__t">{b.episodes!.title}</div>
+                <div className="ws-ledger-row__m">
+                  <span>{logDate(b.episodes!.starts_at, CLUB_ZONE)}</span>
+                  <span>·</span>
+                  <span>{b.episodes!.setting === "sea" ? "Afloat" : "Ashore"}</span>
+                </div>
+              </div>
+              <Badge tone="outline">{b.position_slug.replace(/_/g, " ")}</Badge>
+            </Link>
+          ))
+        ) : (
+          <p className="crew-none">
+            Nothing on the board for {person.display_name.split(" ")[0]} yet.
+            The season is long — check the{" "}
+            <Link href="/episodes">manifest</Link>.
+          </p>
+        )}
       </div>
     </div>
   );

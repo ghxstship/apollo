@@ -9,6 +9,10 @@ export type CrewStage = "applied" | "interview" | "sea_trial" | "offer" | "passe
 function done(): ActionResult {
   revalidatePath("/bridge/crew");
   revalidatePath("/crew");
+  revalidatePath("/crew/wanted");
+  /* A billing change shows on the episode page and on the crew member's own,
+     and neither is worth a stale cache. */
+  revalidatePath("/episodes", "layout");
   return {};
 }
 
@@ -63,6 +67,47 @@ export async function setRoleOpen(roleId: string, open: boolean): Promise<Action
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const { error } = await supabase.from("crew_roles").update({ open }).eq("id", roleId);
+  if (error) return { error: ERR_LAND };
+  return done();
+}
+
+/* — the rota — */
+
+/* An OFFER. The word matters and so does the default status: a name written
+   into a box by somebody else is not cover, and the gap view only counts a
+   confirmation. The unique index on (episode_id, crew_id) is the backstop for
+   the picker's own filtering. */
+export async function assignCrew(
+  episodeId: string,
+  crewId: string,
+  positionSlug: string
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const { error } = await supabase.from("crew_assignments").insert({
+    episode_id: episodeId,
+    crew_id: crewId,
+    position_slug: positionSlug,
+    status: "offered",
+    assigned_by: staffId,
+  });
+  if (error) {
+    if (error.code === "23505") return { error: "They are already on that episode." };
+    return { error: ERR_LAND };
+  }
+  return done();
+}
+
+export async function setAssignmentStatus(
+  assignmentId: string,
+  status: "offered" | "confirmed" | "declined" | "released"
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const { error } = await supabase
+    .from("crew_assignments")
+    .update({ status })
+    .eq("id", assignmentId);
   if (error) return { error: ERR_LAND };
   return done();
 }

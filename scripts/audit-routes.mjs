@@ -449,7 +449,23 @@ async function main() {
     }
     if (!r.source) { note(r.path, "dynamic route has slug source", false, "add to DYNAMIC_SOURCES"); continue; }
     const slugs = await fetchSlugs(r.source);
-    note(r.path, "slug source non-empty", slugs.length > 0, `${slugs.length} slugs`);
+    /* A source may declare that zero rows is a legitimate state. Exactly one
+       thing needs this so far and it is the reason the flag exists rather than
+       a fudge: /crew/[slug] lists crew who have OPTED IN to being shown, and
+       until somebody does, the correct number of pages is none.
+
+       Without the flag the audit forced a choice between two wrong answers —
+       leave the route unregistered (which fails on line 450 instead), or invent
+       a person to satisfy a counter. The flag is narrower than either: the
+       route still has to 404 an unknown slug, and every row that does appear is
+       still crawled and checked. */
+    const mayBeEmpty = r.source.allowEmpty === true;
+    note(
+      r.path,
+      mayBeEmpty ? "slug source resolves (may legitimately be empty)" : "slug source non-empty",
+      mayBeEmpty || slugs.length > 0,
+      `${slugs.length} slugs`
+    );
     for (const s of slugs) pages.push({ path: r.path.replace(/\[[^\]]+\]/, s), access: r.access });
     // Unknown slugs must 404, never 500.
     const missing = await get(r.path.replace(/\[[^\]]+\]/, "__audit-missing__"));

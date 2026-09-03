@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar, AvatarGroup, Badge, Tag } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
@@ -144,6 +145,36 @@ export default async function EpisodePage({
           : "ink") as "gold" | "sea" | "ink" | "sand",
       }));
   }
+
+  /* Who is WORKING it, which is a different question from who is aboard — and
+     a public one. The manifest of members is gated on sign-in and on each
+     member's own consent; the crew billing is gated on the crew member having
+     opted in, and then it is for everybody, because it is a reason to book.
+
+     The policy on crew_assignments admits a row to anon exactly when it is
+     confirmed and the person is public and active, so an offer nobody answered
+     cannot leak through this query and the page never has to filter for it. */
+  const { data: billed } = await supabase
+    .from("crew_assignments")
+    .select("id, position_slug, crew!inner(slug, display_name, role_title, avatar_tone)")
+    .eq("episode_id", episode.id)
+    .eq("status", "confirmed");
+
+  const working = ((billed ?? []) as unknown as Array<{
+    id: string;
+    position_slug: string;
+    crew: { slug: string; display_name: string; role_title: string; avatar_tone: string } | null;
+  }>)
+    .filter((b) => b.crew)
+    .map((b) => ({
+      id: b.id,
+      slug: b.crew!.slug,
+      name: b.crew!.display_name,
+      role: b.crew!.role_title,
+      tone: (["gold", "sea", "ink", "sand"].includes(b.crew!.avatar_tone)
+        ? b.crew!.avatar_tone
+        : "ink") as "gold" | "sea" | "ink" | "sand",
+    }));
 
   const aboard = cap?.aboard ?? 0;
   const left = cap?.passes_left ?? null;
@@ -613,6 +644,23 @@ export default async function EpisodePage({
               </div>
             ) : null}
           </div>
+
+          {working.length > 0 ? (
+            <div className="ev-panel">
+              <div className="ev-panel__label">Your crew</div>
+              <div className="ev-crew">
+                {working.map((w) => (
+                  <Link key={w.id} href={`/crew/${w.slug}`} className="ev-crew__one">
+                    <Avatar name={w.name} size="sm" tone={w.tone} />
+                    <span className="ev-crew__who">
+                      <b>{w.name}</b>
+                      <span>{w.role}</span>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           <div className="ev-panel">
             <div className="ev-panel__label">Who&rsquo;s aboard</div>

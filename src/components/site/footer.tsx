@@ -39,7 +39,8 @@ export function SiteFooter({ cities }: { cities: Tables<"cities">[] }) {
             <Link href="/membership">Casting</Link>
             <Link href="/log">The Log</Link>
             <Link href="/gallery">Gallery</Link>
-            <Link href="/crew">Crew wanted</Link>
+            <Link href="/crew/wanted">Crew wanted</Link>
+            <Link href="/crew">The Cast &amp; Crew</Link>
           </div>
           <div className="ws-footer__col">
             <b>{PLACE.markets}</b>

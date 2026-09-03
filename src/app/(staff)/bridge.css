@@ -324,3 +324,19 @@
 .hm-hist__at{flex:none;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;min-width:118px}
 .hm-hist__what{min-width:0}
 .hm-hist__what em{display:block;font-style:normal;color:var(--text-3);margin-top:3px}
+
+/* The rota, which is a list of holes rather than a calendar — the question an
+   operator has is which nights are short and how soon, not who is on when. */
+.hm-tabbody{margin-top:20px}
+.hm-rota{display:flex;flex-direction:column}
+.hm-rota__row{display:grid;grid-template-columns:110px 1fr auto;gap:20px;align-items:center;padding:14px 0;border-top:1px solid var(--line-faint)}
+.hm-rota__row:last-child{border-bottom:1px solid var(--line-faint)}
+.hm-rota__when{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.hm-rota__when b{display:block;font-size:var(--text-data);font-weight:400;color:var(--text-1)}
+.hm-rota__t{font-size:var(--text-sm);color:var(--text-1)}
+.hm-rota__m{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.hm-rota__act{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:860px){
+  .hm-rota__row{grid-template-columns:1fr;gap:8px}
+  .hm-rota__act{justify-content:flex-start}
+}

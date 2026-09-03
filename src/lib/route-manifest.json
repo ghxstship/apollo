@@ -390,6 +390,25 @@
       "dynamic": true,
       "access": "public",
       "source": {
+        "table": "crew",
+        "column": "slug",
+        "allowEmpty": true
+      }
+    },
+    {
+      "path": "/crew/wanted",
+      "file": "src/app/(site)/crew/wanted/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/crew/wanted/[slug]",
+      "file": "src/app/(site)/crew/wanted/[slug]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "public",
+      "source": {
         "table": "crew_roles",
         "column": "slug"
       }

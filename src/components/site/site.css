@@ -552,3 +552,23 @@ main .ls-section + .ls-section{padding-top:0}
 .crew-form__fine{font-size:var(--text-xs);color:var(--text-3);margin:0}
 .crew-closed{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);padding:24px;display:flex;flex-direction:column;gap:12px}
 .crew-closed p{font-size:var(--text-sm);color:var(--text-2);margin:0}
+
+/* — the crew index and a crew member — */
+.crew-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--line-faint);border:1px solid var(--line-faint)}
+.crew-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px 20px;background:var(--surface-page);color:inherit;text-decoration:none}
+.crew-card:hover{background:var(--surface-card)}
+.crew-card__name{font-family:var(--font-display);font-size:var(--text-xl);letter-spacing:var(--track-display);text-transform:uppercase;line-height:1}
+.crew-card__role{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.crew-hero{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.crew-hero h1{margin:0}
+.crew-billing__h{font-size:var(--text-2xl);margin:0 0 8px}
+
+/* — the billing on an episode. A different question from who is aboard, and a
+     public one: this is the reason somebody books the night. — */
+.ev-crew{display:flex;flex-direction:column;gap:2px;margin-top:10px}
+.ev-crew__one{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line-faint);color:inherit;text-decoration:none}
+.ev-crew__one:first-child{border-top:none}
+.ev-crew__one:hover b{color:var(--aegean)}
+.ev-crew__who{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ev-crew__who b{font-size:var(--text-sm);font-weight:500}
+.ev-crew__who span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}

@@ -280,6 +280,43 @@ export type CrewCandidateRow = {
   cv_url: string | null
   reviewed_by: string | null; decided_at: string | null; rejected_reason: string | null
 }
+/* One of the club's own people. profile_id is NULLABLE on purpose: a contracted
+   deckhand may never hold a membership, and a rota that can only schedule
+   account-holders is a rota kept in a spreadsheet instead.
+
+   `public` is opt-in and defaults false — being scheduled is a job, being shown
+   to members with your name and face is a separate thing to agree to. */
+export type CrewRow = {
+  id: string; profile_id: string | null; slug: string; display_name: string
+  role_title: string; city: string | null; bio: string | null; avatar_tone: string
+  public: boolean; active: boolean; since: string | null; position: number; created_at: string
+}
+export type CrewPositionRow = {
+  slug: string; label: string; setting: "sea" | "shore" | null; position: number
+}
+/* Offered, not assigned: a name in a box nobody acknowledged is not cover, and
+   only `confirmed` counts against a need or renders to a member. */
+export type CrewAssignmentRow = {
+  id: string; episode_id: string; crew_id: string; position_slug: string
+  call_time: string | null
+  status: "offered" | "confirmed" | "declined" | "released"
+  assigned_by: string | null; note: string | null; created_at: string
+}
+/* When somebody cannot work, never when they can — availability calendars are
+   what rota systems drown in. */
+export type CrewBlackoutRow = {
+  id: string; crew_id: string; from_date: string; to_date: string
+  note: string | null; created_at: string
+}
+export type CrewNeedRow = { setting: "sea" | "shore"; position_slug: string; headcount: number }
+export type EpisodeCrewNeedRow = { episode_id: string; position_slug: string; headcount: number }
+/* The only thing a rota is for: which nights are short, and how soon. */
+export type EpisodeCrewGapRow = {
+  episode_id: string; slug: string; title: string; starts_at: string; setting: string
+  position_slug: string; position_label: string; position_order: number
+  needed: number; confirmed: number; offered: number; short: number
+}
+
 /* Append-only. No update grant, no update policy: a rejection reason that can
    be rewritten after the fact is not a record. */
 export type CrewCandidateEventRow = {
@@ -535,6 +572,12 @@ export type Database = {
       crew_roles: Table<CrewRoleRow, Ins<CrewRoleRow, "title" | "city">>
       crew_candidates: Table<CrewCandidateRow, Ins<CrewCandidateRow, "role_id" | "full_name" | "email">>
       crew_candidate_events: Table<CrewCandidateEventRow, Ins<CrewCandidateEventRow, "candidate_id" | "kind">>
+      crew: Table<CrewRow, Ins<CrewRow, "slug" | "display_name" | "role_title">>
+      crew_positions: Table<CrewPositionRow, Ins<CrewPositionRow, "slug" | "label">>
+      crew_assignments: Table<CrewAssignmentRow, Ins<CrewAssignmentRow, "episode_id" | "crew_id" | "position_slug">>
+      crew_blackouts: Table<CrewBlackoutRow, Ins<CrewBlackoutRow, "crew_id" | "from_date" | "to_date">>
+      crew_needs: Table<CrewNeedRow, Ins<CrewNeedRow, "setting" | "position_slug" | "headcount">>
+      episode_crew_needs: Table<EpisodeCrewNeedRow, Ins<EpisodeCrewNeedRow, "episode_id" | "position_slug" | "headcount">>
       marks: Table<MarkRow, Ins<MarkRow, "code" | "name" | "blurb" | "kind">>
       member_marks: Table<MemberMarkRow, Ins<MemberMarkRow, "profile_id" | "mark_code">>
       contests: Table<ContestRow, Ins<ContestRow, "slug" | "shape" | "title" | "metric" | "starts_at" | "ends_at">>
@@ -615,6 +658,13 @@ export type Database = {
       }
       member_pass_usage: {
         Row: { profile_id: string | null; month: string | null; passes_used: number | null }
+        Relationships: []
+      }
+      /* security_invoker, so row-level security still applies to whoever reads
+         it — crew_needs has no anon policy, which makes the view empty for a
+         signed-out reader by construction rather than by a filter. */
+      episode_crew_gaps: {
+        Row: EpisodeCrewGapRow
         Relationships: []
       }
     }

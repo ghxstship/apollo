@@ -1,91 +1,88 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Avatar } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
-import { MAILBOX } from "@/lib/brand";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/crew" },
-  title: "Crew wanted",
-  description: "Small crew, high standard, good light. Afloat and ashore, in Miami and Los Angeles.",
+  title: "The Cast & Crew",
+  description:
+    "The people who run the room, the water, the cameras and the welcome — and who you will meet on the night.",
 };
 
-/* The four roles used to live in an array in this file, and crew_roles sat
-   beside it holding its own four. They drifted, as two copies of anything do:
-   the page had been corrected to Gangway ops while the row still said
-   Harbormaster ops, a surface name this brand retired.
+/* /crew is the people now, and hiring moved to /crew/wanted.
 
-   The table is the source now. A role that opens or closes is a row somebody
-   toggles in the Bridge, not a deploy. */
-export default async function CrewPage() {
+   The other way round was the wrong shape: crew means the humans, and a club
+   whose premise is a filmed series should be able to say who is in it before it
+   says it is recruiting. The move cost nothing — the postings had been live for
+   an hour and nothing outside this repository linked to them.
+
+   Everyone here opted in. crew.public defaults to false, so being scheduled
+   puts nobody on this page; a second, deliberate decision does. */
+export default async function CrewIndexPage() {
   const supabase = await createClient();
   const { data } = await supabase
-    .from("crew_roles")
+    .from("crew")
     .select("*")
-    .eq("open", true)
+    .eq("public", true)
+    .eq("active", true)
     .order("position", { ascending: true });
 
-  const roles = data ?? [];
-  const count = roles.length;
-  const heading =
-    count === 0 ? "Nothing open right now." : count === 1 ? "One role open." : `${count} roles open.`;
+  const crew = data ?? [];
 
   return (
     <div className="ls-container">
       <div className="ws-phead">
-        <span className="ls-eyebrow">Crew wanted</span>
-        <h1>Work the season.</h1>
-        {/* Was "Work the water" over a paragraph about running it. Thirty-four
-            of the fifty-two episodes never leave land, and two of these four
-            roles never go near it — a crew page that hires for a boat is
-            advertising a job the club mostly does not have. */}
+        <span className="ls-eyebrow">The Cast & Crew</span>
+        <h1>Who runs it.</h1>
         <p className="ws-phead__sub">
-          {/* A raw ampersand, not &amp;: the vocabulary gate matches this term
-              as a literal substring of the source and does not decode entities,
-              so the escaped form reads as absent. */}
-          The Cast & Crew are the club&rsquo;s own people — marine safety,
-          hospitality, media, engineering. The cast are who the cameras follow;
-          crew run the room, the water, the cameras and the welcome, and crew is
-          what this page is hiring. We take people who&rsquo;d do the job on
-          their day off — and then we make sure they don&rsquo;t have to.
+          The cast are who the cameras follow. Crew run the room, the water, the
+          cameras and the welcome — and unlike most of this industry, they are
+          not anonymous. You will meet them on the night, and the manifest says
+          who before you go.
         </p>
       </div>
+
       <div className="crew-list">
-        {/* A seat is what a member holds on an episode. A job is not one, and
-            using the word for both makes the club's own vocabulary mean less. */}
-        <SectionHeader eyebrow="Open roles" title={heading} />
-        {roles.map((r) => (
-          <Link key={r.id} href={`/crew/${r.slug}`} className="crew-row">
-            <div>
-              <div className="ws-ledger-row__t">{r.title}</div>
-              <div className="ws-ledger-row__m">
-                {[r.dept, r.employment, r.remote ? "Remote" : r.city]
-                  .filter(Boolean)
-                  .map((bit, i) => (
-                    <span key={`${i}-${bit}`}>
-                      {i > 0 ? "· " : ""}
-                      {bit}
-                    </span>
-                  ))}
-              </div>
-              {r.blurb ? <p className="ws-ledger-row__body">{r.blurb}</p> : null}
+        {crew.length > 0 ? (
+          <>
+            <SectionHeader eyebrow="On the roster" title="The crew." />
+            <div className="crew-grid">
+              {crew.map((c) => (
+                <Link key={c.id} href={`/crew/${c.slug}`} className="crew-card">
+                  <Avatar
+                    name={c.display_name}
+                    tone={
+                      (["gold", "sea", "ink", "sand"].includes(c.avatar_tone)
+                        ? c.avatar_tone
+                        : "ink") as "gold" | "sea" | "ink" | "sand"
+                    }
+                    size="lg"
+                  />
+                  <span className="crew-card__name">{c.display_name}</span>
+                  <span className="crew-card__role">
+                    {[c.role_title, c.city].filter(Boolean).join(" · ")}
+                  </span>
+                </Link>
+              ))}
             </div>
-            <span className="ls-btn ls-btn--outline ls-btn--sm crew-row__go">Read the role</span>
-          </Link>
-        ))}
-        {count === 0 ? (
-          <p className="crew-none">
-            No postings open at the moment. The club hires in bursts around a
-            season — write to <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a>{" "}
-            and we will keep you in mind for the next one.
-          </p>
+          </>
         ) : (
-          <p className="crew-none">
-            Nothing that fits? Write to{" "}
-            <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a> anyway — good
-            hands find a place aboard.
-          </p>
+          /* Not an error and not a gap in the club — nobody has opted in yet,
+             which is the correct default and reads as one. */
+          <div className="ws-zero">
+            <span className="ws-zero__label">Not yet</span>
+            <p>
+              The crew are working; none of them has chosen to be listed here
+              yet. You will still meet them on the night.
+            </p>
+          </div>
         )}
+
+        <p className="crew-none">
+          Want the job? <Link href="/crew/wanted">The open roles are here</Link>.
+        </p>
       </div>
     </div>
   );

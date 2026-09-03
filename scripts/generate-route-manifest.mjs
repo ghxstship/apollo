@@ -53,7 +53,17 @@ const DYNAMIC_SOURCES = {
      expands every posting including closed ones — which is correct: a closed
      posting still renders, saying so, rather than 404ing a URL a candidate has
      on their clipboard. */
-  "/crew/[slug]": { table: "crew_roles", column: "slug" },
+  /* Postings moved under /crew/wanted when /crew became the people. */
+  "/crew/wanted/[slug]": { table: "crew_roles", column: "slug" },
+  /* Only the crew who opted in are anon-readable, so the audit expands exactly
+     the pages that exist for a signed-out reader — which is the set that should
+     be crawlable.
+
+     allowEmpty because that set is legitimately none until somebody opts in:
+     crew.public defaults to false, and the alternative was inventing a person
+     to satisfy a counter. Unknown slugs must still 404, and every crew member
+     who does appear is still crawled. */
+  "/crew/[slug]": { table: "crew", column: "slug", allowEmpty: true },
 };
 
 function walk(dir, segments = []) {
