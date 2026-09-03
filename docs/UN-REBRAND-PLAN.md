@@ -30,7 +30,7 @@ Three changes stacked, each a different size:
    a filmed social experiment. The voice is "a reality-TV producer who respects
    the audience": present tense, sentence case, no emoji, **no exclamation
    marks**, cast are first names only, scarcity stated flatly ("12 cabins. 200
-   applicants."). Copy patterns move to production framing: Casting now ·
+   applicants."). Copy patterns move to production framing: Now casting ·
    Episode 04 · On this charter · Confession booth. Every sentence in the
    product gets re-voiced, not just re-labeled.
 

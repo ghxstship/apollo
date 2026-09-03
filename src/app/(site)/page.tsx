@@ -108,7 +108,7 @@ export default async function HomePage() {
     <>
       <header className="ws-hero">
         <div className="ls-container ws-hero__in">
-          <div className="ls-eyebrow">Season I · Casting now</div>
+          <div className="ls-eyebrow">Season I · Now casting</div>
           {/* The tagline lockup, not a bare phrase — owner ruling 2026-08-31:
               the hero is the §Tagline Active Rule mark (Anton anchor, mono
               lowercase phrase on the rule), never Anton alone, because the

@@ -158,7 +158,7 @@ const FACTS: Array<[string, string]> = [
      every day of the week except Monday — nine of the fifty-two are Sundays.
      A cadence row that states a day the calendar does not keep is worse than
      one that states the span, so it states the span. */
-  ["Cadence", "52 EPISODES · 4 SEP MMXXVI – 29 AUG MMXXVII · SEASON I — CASTING NOW"],
+  ["Cadence", "52 EPISODES · 4 SEP MMXXVI – 29 AUG MMXXVII · SEASON I — NOW CASTING"],
 ];
 
 export default function BrandKitPage() {

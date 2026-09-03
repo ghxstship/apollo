@@ -90,6 +90,16 @@
       "access": "public"
     },
     {
+      "path": "/api/search",
+      "file": "src/app/api/search/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
       "path": "/api/stripe/checkout",
       "file": "src/app/api/stripe/checkout/route.ts",
       "type": "handler",

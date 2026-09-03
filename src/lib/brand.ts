@@ -630,4 +630,12 @@ export const BANNED_TERMS = [
      trap. With the space, a standalone label still matches, because the gate
      replaces every tag with a space before it looks. */
   " format",
+  /* The word order is fixed, 2026-09-02, by owner ruling: it is always Now
+     casting, never the reverse. Now leads because it is the call and not a
+     status field - a slate announces the state it is in before it names the
+     thing, which is the register this brand is borrowing.
+
+     A clean two-word phrase, so the correct order passes and no trailing-space
+     trick is needed here. */
+  "casting now",
 ];
