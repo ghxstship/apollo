@@ -231,6 +231,11 @@ export type AccountLedgerRow = {
      of a settlement was a session id inside a memo, and a memo is not a key.
      It is also what reconciliation matches on. */
   stripe_ref: string | null
+  /* WHEN the club delivers what this row charges for — the episode night, or
+     the dues period. created_at is when it was billed; the gap between the two
+     is deferred revenue. Null means delivered on the spot, so earned when
+     billed: a bar tab, a shop order. */
+  service_date: string | null
 }
 export type AddonRow = { id: string; slug: string; name: string; price_cents: number; active: boolean }
 export type PassAddonRow = { rsvp_id: string; addon_id: string; qty: number }
@@ -668,6 +673,15 @@ export type Database = {
       }
       member_pass_usage: {
         Row: { profile_id: string | null; month: string | null; passes_used: number | null }
+        Relationships: []
+      }
+      /* Exceptions only, both directions. A reconciliation that lists
+         everything reconciles nothing — the eye slides off it. */
+      stripe_reconciliation: {
+        Row: {
+          issue: string | null; stripe_id: string | null; detail: string | null
+          at: string | null; profile_id: string | null; delta_cents: number | null
+        }
         Relationships: []
       }
       /* security_invoker, so row-level security still applies to whoever reads

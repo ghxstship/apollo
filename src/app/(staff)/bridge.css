@@ -352,3 +352,9 @@
 .hm-plan__holders{margin-inline-start:auto;color:var(--text-3)}
 .hm-plan__ids{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-top:12px}
 @media (max-width:860px){.hm-plan__ids{grid-template-columns:1fr}}
+
+/* Reconciliation. Exceptions only, so the list is short by design and each row
+   has to say which direction the disagreement runs in. */
+.hm-recon{display:flex;flex-direction:column;margin-top:12px}
+.hm-recon__row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line-faint);font-size:var(--text-xs)}
+.hm-recon__amt{margin-inline-start:auto;font-variant-numeric:tabular-nums}

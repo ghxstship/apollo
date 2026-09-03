@@ -148,6 +148,7 @@ export default async function ReportsPage() {
     capacityRes,
     ledgerRes,
     rollRes,
+    reconRes,
     knotsRes,
     weatherRes,
     outboxRes,
@@ -172,10 +173,13 @@ export default async function ReportsPage() {
     supabase.from("episode_capacity").select("*"),
     supabase
       .from("account_ledger")
-      .select("delta_cents, created_at")
+      .select("delta_cents, created_at, service_date")
       .lt("delta_cents", 0)
       .gte("created_at", seasonStart),
     supabase.from("member_roll").select("invite_code"),
+    /* Exceptions only, both directions — see the view. Empty is the answer an
+       operator wants and the one they have never been able to get. */
+    supabase.from("stripe_reconciliation").select("*").limit(50),
     supabase.from("knots_ledger").select("episode_id, delta").not("episode_id", "is", null),
     /* notifications is member-private and has no staff policy, so counting it
        directly returned the operator's own notices — 0 weather, while 14 had
@@ -270,10 +274,26 @@ export default async function ReportsPage() {
   const fillPct = sailedBerths ? Math.round((sailedAboard / sailedBerths) * 100) : 0;
 
   /* House account — charge volume this season */
-  const houseCents = (must(ledgerRes)).reduce((t, l) => t + Math.abs(l.delta_cents), 0);
+  /* BILLED and EARNED are two different questions and this report only ever
+     asked the first. A season of fifty-two episodes is sold months ahead, so a
+     pass sold in September for a March episode was September revenue — which
+     made House revenue a cash-collected figure wearing a revenue label.
+
+     service_date says when the club owes the thing. Anything dated ahead of
+     today is money taken for a night that has not happened: a liability, not
+     income. A row with no service_date is delivered on the spot — a bar tab, a
+     shop order — and is earned when it is billed. */
+  const ledgerRows = must(ledgerRes);
+  const houseCents = ledgerRows.reduce((t, l) => t + Math.abs(l.delta_cents), 0);
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const deferredCents = ledgerRows
+    .filter((l) => l.service_date != null && l.service_date > todayISO)
+    .reduce((t, l) => t + Math.abs(l.delta_cents), 0);
+  const earnedCents = houseCents - deferredCents;
 
   /* Referrals */
   const roll = must(rollRes);
+  const recon = must(reconRes);
   const referred = roll.filter((r) => r.invite_code).length;
   const referralPct = roll.length ? Math.round((referred / roll.length) * 100) : 0;
 
@@ -548,7 +568,17 @@ export default async function ReportsPage() {
           sub={`${sailed.length} EPISODES SAILED OR LIVE`}
         />
         <Stat
-          label="House revenue"
+          label="Earned"
+          value={earnedCents ? price(earnedCents) : "$0"}
+          sub="NIGHTS ALREADY RUN"
+        />
+        <Stat
+          label="Deferred"
+          value={deferredCents ? price(deferredCents) : "$0"}
+          sub="TAKEN FOR NIGHTS AHEAD"
+        />
+        <Stat
+          label="Billed"
           value={houseCents ? price(houseCents) : "$0"}
           sub="CHARGES THIS SEASON"
         />
@@ -558,6 +588,37 @@ export default async function ReportsPage() {
           sub={`${referred} OF ${roll.length} ON THE ROLL`}
         />
       </div>
+
+      {/* Reconciliation. stripe_events has been write-only since it shipped —
+          the webhook inserts a row so delivery is idempotent and nothing ever
+          reads it back — so nobody could answer whether every Stripe event
+          reached the ledger, or whether every ledger row claiming a Stripe
+          object actually has one. Exceptions only; silence is the good answer
+          and is stated rather than left blank. */}
+      <section className="hm-sec">
+        <span className="hm-eyebrow">Stripe against the book</span>
+        {recon.length === 0 ? (
+          <p className="hm-note">
+            Nothing unmatched. Every Stripe event that moves money has a ledger
+            row, and every row naming a Stripe object has an event behind it.
+          </p>
+        ) : (
+          <div className="hm-recon">
+            {recon.map((r) => (
+              <div key={`${r.issue}-${r.stripe_id}`} className="hm-recon__row">
+                <Badge tone={r.issue === "unmatched" ? "danger" : "caution"}>
+                  {r.issue === "unmatched" ? "No event" : "Not posted"}
+                </Badge>
+                <span className="hm-mono">{r.stripe_id}</span>
+                <span>{r.detail}</span>
+                <span className="hm-mono hm-recon__amt">
+                  {r.delta_cents != null ? price(Math.abs(r.delta_cents)) : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <div className="hm-row">
         <Stat
