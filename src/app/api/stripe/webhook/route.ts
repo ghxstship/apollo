@@ -153,6 +153,7 @@ async function postDues(admin: Admin, profileId: string, invoice: Stripe.Invoice
       kind: "payment",
       memo: `${memo} — settled by card`,
       idem_key: `${key}:payment`,
+      stripe_ref: invoice.id,
     },
   ]);
   /* 23505 is the unique index doing its job: this invoice has already been
@@ -226,6 +227,11 @@ async function postSettlement(admin: Admin, session: Stripe.Checkout.Session) {
     kind: "payment",
     memo,
     idem_key: `stripe:session:${session.id}:payment`,
+    /* The payment intent, not the session. A refund is issued against the
+       intent, and until this column existed the only record of the settlement
+       was a session id inside a memo string — which is not a key and cannot be
+       refunded from. */
+    stripe_ref: idOf(session.payment_intent),
   });
   /* Already posted by a concurrent delivery of the same event — say nothing
      more, and do not tell the member their payment arrived a second time. */
@@ -239,6 +245,100 @@ async function postSettlement(admin: Admin, session: Stripe.Checkout.Session) {
     title: "Payment received.",
     body: "Your account is square. Fair winds.",
   });
+}
+
+/* Money that left, recorded when Stripe says it left.
+
+   The Bridge REQUESTS a refund; this records it. That split is deliberate and
+   it buys three things: the ledger cannot claim a refund Stripe declined, a
+   refund issued by hand in the Stripe dashboard lands here too, and the row is
+   keyed on the refund id so a redelivered event cannot post it twice.
+
+   Sign: a refund takes value back off the member's house account, so it is
+   negative — the mirror of the positive payment that put it there. */
+async function postRefund(admin: Admin, charge: Stripe.Charge) {
+  const refunded = charge.amount_refunded ?? 0;
+  if (refunded <= 0) return;
+
+  const intent = idOf(charge.payment_intent);
+  if (!intent) return;
+
+  /* Whose money it was. The settlement row already answers this, which is the
+     other reason stripe_ref had to exist. */
+  const { data: settled } = await admin
+    .from("account_ledger")
+    .select("profile_id")
+    .eq("stripe_ref", intent)
+    .eq("kind", "payment")
+    .limit(1)
+    .maybeSingle();
+  if (!settled?.profile_id) return;
+
+  for (const r of charge.refunds?.data ?? []) {
+    if (r.status !== "succeeded") continue;
+    const { error } = await admin.from("account_ledger").insert({
+      profile_id: settled.profile_id,
+      delta_cents: -r.amount,
+      kind: "refund",
+      memo: `Refunded to card — Stripe ${r.id}`,
+      idem_key: `stripe:refund:${r.id}`,
+      stripe_ref: intent,
+    });
+    if (error && error.code !== "23505") {
+      throw new Error(`refund ledger insert failed (${error.code ?? "unknown"})`);
+    }
+  }
+}
+
+/* A dispute is not a refund and must not be reported as one. Same money
+   movement, entirely different story: one is the club deciding, the other is
+   the club being told. Recording it under its own kind is the only way an
+   operator ever sees it — until now nothing in this application knew the word.
+
+   Both ends are handled. The hold posts when it opens; if the club wins, the
+   money comes back and the reversal posts on close. */
+async function postDispute(admin: Admin, dispute: Stripe.Dispute) {
+  const intent = idOf(dispute.payment_intent);
+  if (!intent) return;
+
+  const { data: settled } = await admin
+    .from("account_ledger")
+    .select("profile_id")
+    .eq("stripe_ref", intent)
+    .eq("kind", "payment")
+    .limit(1)
+    .maybeSingle();
+  if (!settled?.profile_id) return;
+
+  const won = dispute.status === "won";
+  const { error } = await admin.from("account_ledger").insert({
+    profile_id: settled.profile_id,
+    delta_cents: won ? dispute.amount : -dispute.amount,
+    kind: "dispute",
+    memo: won
+      ? `Dispute won, funds returned — Stripe ${dispute.id}`
+      : `Dispute opened — ${dispute.reason} — Stripe ${dispute.id}`,
+    /* Keyed on the outcome as well as the id: the opening and the win are two
+       real movements on the same dispute and both belong in the book. */
+    idem_key: `stripe:dispute:${dispute.id}:${won ? "won" : "open"}`,
+    stripe_ref: intent,
+  });
+  if (error && error.code !== "23505") {
+    throw new Error(`dispute ledger insert failed (${error.code ?? "unknown"})`);
+  }
+
+  if (!won) {
+    /* Staff, not the member. A dispute is a conversation with the bank and the
+       club needs to answer it inside a deadline. */
+    await admin.from("notifications").insert(
+      (await admin.from("profiles").select("id").eq("is_staff", true)).data?.map((s) => ({
+        profile_id: s.id,
+        kind: "word",
+        title: `A charge is disputed — ${dispute.reason}`,
+        body: `${(dispute.amount / 100).toFixed(2)} held by the bank. Evidence is due in Stripe; the ledger has it recorded.`,
+      })) ?? []
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -313,6 +413,15 @@ export async function POST(request: NextRequest) {
       break;
     case "payment_method.attached":
       await syncPaymentMethod(admin, event.data.object);
+      break;
+    /* Fires for a refund issued from anywhere — this application, the Stripe
+       dashboard, or Stripe itself on a dispute. One handler, every path. */
+    case "charge.refunded":
+      await postRefund(admin, event.data.object);
+      break;
+    case "charge.dispute.created":
+    case "charge.dispute.closed":
+      await postDispute(admin, event.data.object);
       break;
     default:
       break;

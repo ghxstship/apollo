@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { CLUB_ZONE } from "@/lib/brand";
 import { logTime, price } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { getStripe, stripeEnabled } from "@/lib/stripe";
 
 function done(): ActionResult {
   revalidatePath("/bridge/orders");
@@ -132,4 +133,76 @@ export async function refundShopOrder(orderId: string): Promise<ActionResult> {
   }
 
   return done();
+}
+
+/* — money that actually goes back — */
+
+/* Until now "refund" in this club meant account credit, and the member kept a
+   balance they might never spend. This sends it to the card.
+ *
+ * It posts NOTHING to the ledger. The webhook does that, on charge.refunded,
+ * keyed on the refund id — so the book cannot claim a refund Stripe declined,
+ * a refund issued by hand in the Stripe dashboard is recorded identically, and
+ * a redelivered event cannot double it. The request and the record are separate
+ * on purpose.
+ */
+export async function refundToCard(
+  /* The settlement being reversed, by the Stripe object the ledger recorded. */
+  stripeRef: string,
+  amountCents: number,
+  reason: string
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!stripeEnabled()) {
+    return { error: "Stripe is not configured on this deployment — settle it by hand and post a credit." };
+  }
+  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+    return { error: "A refund needs an amount." };
+  }
+
+  /* The row must exist, must be a payment, and must be the one named — the
+     operator names a settlement, never a raw Stripe id from somewhere else. */
+  const { data: settled } = await supabase
+    .from("account_ledger")
+    .select("delta_cents, profile_id")
+    .eq("stripe_ref", stripeRef)
+    .eq("kind", "payment")
+    .limit(1)
+    .maybeSingle();
+  if (!settled) return { error: "No settlement on file for that payment." };
+
+  /* Already refunded, in whole or in part. Stripe would refuse an over-refund
+     itself, but its message is for a developer and this one is for a person. */
+  const { data: back } = await supabase
+    .from("account_ledger")
+    .select("delta_cents")
+    .eq("stripe_ref", stripeRef)
+    .in("kind", ["refund", "dispute"]);
+  const alreadyBack = (back ?? []).reduce((sum, r) => sum + Math.abs(r.delta_cents), 0);
+  const refundable = settled.delta_cents - alreadyBack;
+  if (amountCents > refundable) {
+    return {
+      error:
+        refundable <= 0
+          ? "That payment has already been returned in full."
+          : `Only ${price(refundable)} of that payment is left to refund.`,
+    };
+  }
+
+  try {
+    await getStripe().refunds.create({
+      payment_intent: stripeRef,
+      amount: amountCents,
+      /* Read back in the Stripe dashboard by whoever asks why. */
+      metadata: { reason: reason.slice(0, 200), by: staffId },
+    });
+  } catch {
+    /* Never the provider's error text: it carries ids and card detail, and this
+       lands in a toast a member could be standing next to. */
+    return { error: "Stripe refused that refund. Check the payment in Stripe." };
+  }
+
+  revalidatePath("/bridge/orders");
+  return {};
 }

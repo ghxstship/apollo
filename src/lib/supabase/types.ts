@@ -226,6 +226,11 @@ export type AccountLedgerRow = {
   /* Names the external event this row settles. Unique when present, so a
      repeated webhook delivery cannot post the same money twice. */
   idem_key: string | null
+  /* WHICH Stripe object this row is — payment intent, invoice or charge. A
+     refund is issued against the intent, so before this existed the only trace
+     of a settlement was a session id inside a memo, and a memo is not a key.
+     It is also what reconciliation matches on. */
+  stripe_ref: string | null
 }
 export type AddonRow = { id: string; slug: string; name: string; price_cents: number; active: boolean }
 export type PassAddonRow = { rsvp_id: string; addon_id: string; qty: number }
