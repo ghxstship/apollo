@@ -49,6 +49,11 @@ const DYNAMIC_SOURCES = {
   "/series/[slug]": { table: "series", column: "slug" },
   "/regattas/[slug]": { table: "contests", column: "slug" },
   "/agreements/[code]": { table: "documents", column: "code" },
+  /* crew_roles is anon-readable by policy ("roles are public"), so the audit
+     expands every posting including closed ones — which is correct: a closed
+     posting still renders, saying so, rather than 404ing a URL a candidate has
+     on their clipboard. */
+  "/crew/[slug]": { table: "crew_roles", column: "slug" },
 };
 
 function walk(dir, segments = []) {

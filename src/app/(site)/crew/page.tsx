@@ -1,104 +1,91 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SectionHeader } from "@/components/site/section-header";
 import { MAILBOX } from "@/lib/brand";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/crew" },
   title: "Crew wanted",
-  description: "Work the water. Small crew, high standard, good light.",
+  description: "Small crew, high standard, good light. Afloat and ashore, in Miami and Los Angeles.",
 };
 
-const ROLES: Array<{
-  title: string;
-  dept: string;
-  type: string;
-  city: string;
-  blurb: string;
-}> = [
-  {
-    title: "Deckhand",
-    dept: "Deck",
-    type: "Part time",
-    city: "Miami",
-    blurb:
-      "Rig, teach, tell the truth about the weather. ASA cert or equivalent scar tissue.",
-  },
-  {
-    title: "Shore lead",
-    dept: "Ashore",
-    type: "Full time",
-    city: "Los Angeles",
-    blurb:
-      "Own the land half of the club — long tables, records, the golden hour. Hospitality background, allergic to boring rooms.",
-  },
-  {
-    /* Was Harbormaster ops. The role is unchanged and the blurb already named
-       what it actually is — the manifest, the gangway, the weather calls — but
-       Harbormaster console is a retired surface name this repo bans, and a job
-       ad carrying the echo invites a candidate to learn a word the product no
-       longer uses. The Gangway is a live surface; the title now matches it. */
-    title: "Gangway ops",
-    dept: "Shoreside",
-    type: "Full time",
-    city: "Miami",
-    blurb:
-      "Run the manifest, the gangway, and the weather calls. The first voice a member hears and the last one off the dock.",
-  },
-  {
-    title: "The Producer engineering",
-    dept: "Engineering",
-    type: "Full time",
-    city: "Remote",
-    blurb:
-      "Build the ledger, the manifest, and The Producer — the agent that minds them. TypeScript on the surface, judgment underneath.",
-  },
-];
+/* The four roles used to live in an array in this file, and crew_roles sat
+   beside it holding its own four. They drifted, as two copies of anything do:
+   the page had been corrected to Gangway ops while the row still said
+   Harbormaster ops, a surface name this brand retired.
 
-export default function CrewPage() {
+   The table is the source now. A role that opens or closes is a row somebody
+   toggles in the Bridge, not a deploy. */
+export default async function CrewPage() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("crew_roles")
+    .select("*")
+    .eq("open", true)
+    .order("position", { ascending: true });
+
+  const roles = data ?? [];
+  const count = roles.length;
+  const heading =
+    count === 0 ? "Nothing open right now." : count === 1 ? "One role open." : `${count} roles open.`;
+
   return (
     <div className="ls-container">
       <div className="ws-phead">
         <span className="ls-eyebrow">Crew wanted</span>
-        <h1>Work the water.</h1>
-        {/* Was "The Cast & Crew run the water" — the cast are the people the
-            cameras follow; they run nothing. Crew run it, which is what this
-            page is hiring for. */}
+        <h1>Work the season.</h1>
+        {/* Was "Work the water" over a paragraph about running it. Thirty-four
+            of the fifty-two episodes never leave land, and two of these four
+            roles never go near it — a crew page that hires for a boat is
+            advertising a job the club mostly does not have. */}
         <p className="ws-phead__sub">
-          Crew run the water, the cameras, and the welcome — marine safety,
-          media, hospitality. We hire people who&rsquo;d do the job on their day
-          off — and then we make sure they don&rsquo;t have to.
+          {/* A raw ampersand, not &amp;: the vocabulary gate matches this term
+              as a literal substring of the source and does not decode entities,
+              so the escaped form reads as absent. */}
+          The Cast & Crew are the club&rsquo;s own people — marine safety,
+          hospitality, media, engineering. The cast are who the cameras follow;
+          crew run the room, the water, the cameras and the welcome, and crew is
+          what this page is hiring. We take people who&rsquo;d do the job on
+          their day off — and then we make sure they don&rsquo;t have to.
         </p>
       </div>
-      <div style={{ padding: "64px 0 96px" }}>
+      <div className="crew-list">
         {/* A seat is what a member holds on an episode. A job is not one, and
             using the word for both makes the club's own vocabulary mean less. */}
-        <SectionHeader eyebrow="Open roles" title="Four roles open." />
-        {ROLES.map((r) => (
-          <div className="ws-ledger-row" key={r.title}>
+        <SectionHeader eyebrow="Open roles" title={heading} />
+        {roles.map((r) => (
+          <Link key={r.id} href={`/crew/${r.slug}`} className="crew-row">
             <div>
               <div className="ws-ledger-row__t">{r.title}</div>
               <div className="ws-ledger-row__m">
-                <span>{r.dept}</span>
-                <span>·</span>
-                <span>{r.type}</span>
-                <span>·</span>
-                <span>{r.city}</span>
+                {[r.dept, r.employment, r.remote ? "Remote" : r.city]
+                  .filter(Boolean)
+                  .map((bit, i) => (
+                    <span key={`${i}-${bit}`}>
+                      {i > 0 ? "· " : ""}
+                      {bit}
+                    </span>
+                  ))}
               </div>
-              <p className="ws-ledger-row__body">{r.blurb}</p>
+              {r.blurb ? <p className="ws-ledger-row__body">{r.blurb}</p> : null}
             </div>
-            <a
-              className="ls-btn ls-btn--outline ls-btn--sm"
-              href={`mailto:${MAILBOX.crew}?subject=${encodeURIComponent(`Crew wanted — ${r.title}, ${r.city}`)}`}
-            >
-              Apply
-            </a>
-          </div>
+            <span className="ls-btn ls-btn--outline ls-btn--sm crew-row__go">Read the role</span>
+          </Link>
         ))}
-        <p style={{ marginTop: 24, fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
-          Nothing that fits? Write to{" "}
-          <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a> anyway — good hands
-          find a place aboard.
-        </p>
+        {count === 0 ? (
+          <p className="crew-none">
+            No postings open at the moment. The club hires in bursts around a
+            season — write to <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a>{" "}
+            and we will keep you in mind for the next one.
+          </p>
+        ) : (
+          <p className="crew-none">
+            Nothing that fits? Write to{" "}
+            <a href={`mailto:${MAILBOX.crew}`}>{MAILBOX.crew}</a> anyway — good
+            hands find a place aboard.
+          </p>
+        )}
       </div>
     </div>
   );

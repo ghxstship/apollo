@@ -257,13 +257,35 @@ export type ShopOrderRow = {
 export type ShopOrderItemRow = {
   order_id: string; product_id: string; qty: number; size: string | null; price_cents: number
 }
+export type CrewStage = "applied" | "interview" | "sea_trial" | "offer" | "passed"
 export type CrewRoleRow = {
   id: string; title: string; city: string; meta: string | null; blurb: string | null
   open: boolean; position: number
+  /* A posting rather than a listing line: the public page reads this table now
+     rather than carrying its own copy of it, so a role that opens or closes
+     does not need a deploy. */
+  slug: string; dept: string | null; employment: string | null; remote: boolean
+  body: string | null
+  responsibilities: string[]; requirements: string[]; nice_to_have: string[]
+  /* Prose, never a number range — see the column comment. */
+  comp: string | null
+  process: string[]; posted_at: string
 }
 export type CrewCandidateRow = {
   id: string; role_id: string; full_name: string; email: string; note: string | null
-  stage: "applied" | "interview" | "sea_trial" | "offer" | "passed"; created_at: string
+  stage: CrewStage; created_at: string
+  phone: string | null; links: string | null; source: string | null
+  /* A link, not a file. See the column comment: an anonymous upload endpoint is
+     a different risk from an anonymous row insert. */
+  cv_url: string | null
+  reviewed_by: string | null; decided_at: string | null; rejected_reason: string | null
+}
+/* Append-only. No update grant, no update policy: a rejection reason that can
+   be rewritten after the fact is not a record. */
+export type CrewCandidateEventRow = {
+  id: string; candidate_id: string; at: string; actor: string | null
+  kind: "applied" | "stage" | "note" | "email" | "decision"
+  from_stage: string | null; to_stage: string | null; body: string | null
 }
 
 export type SubscriptionStatus = "incomplete" | "trialing" | "active" | "past_due" | "paused" | "canceled"
@@ -512,6 +534,7 @@ export type Database = {
       automations: Table<AutomationRow, Ins<AutomationRow, "name" | "trigger_event">>
       crew_roles: Table<CrewRoleRow, Ins<CrewRoleRow, "title" | "city">>
       crew_candidates: Table<CrewCandidateRow, Ins<CrewCandidateRow, "role_id" | "full_name" | "email">>
+      crew_candidate_events: Table<CrewCandidateEventRow, Ins<CrewCandidateEventRow, "candidate_id" | "kind">>
       marks: Table<MarkRow, Ins<MarkRow, "code" | "name" | "blurb" | "kind">>
       member_marks: Table<MemberMarkRow, Ins<MemberMarkRow, "profile_id" | "mark_code">>
       contests: Table<ContestRow, Ins<ContestRow, "slug" | "shape" | "title" | "metric" | "starts_at" | "ends_at">>

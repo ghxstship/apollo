@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Avatar, Badge, Button, Dialog, Stat, StateBlock, Switch, Table, Tabs, Toast } from "@/components/ds";
+import { Avatar, Badge, Button, Dialog, Stat, StateBlock, Switch, Table, Tabs, Textarea, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { setCandidateStage, setRoleOpen, type CrewStage } from "./actions";
+import { addCandidateNote, setCandidateStage, setRoleOpen, type CrewStage } from "./actions";
 
 export type RoleRow = {
   id: string;
@@ -21,7 +21,24 @@ export type CandidateRow = {
   note: string;
   stage: CrewStage;
   applied: string;
+  phone: string;
+  links: string;
+  source: string;
+  rejectedReason: string;
   [key: string]: unknown;
+};
+
+/* Append-only, newest first. The table it comes from has no UPDATE grant and no
+   update policy, so a rejection reason cannot be quietly rewritten after the
+   fact — which is exactly the thing that gets quietly rewritten. */
+export type EventRow = {
+  id: string;
+  candidateId: string;
+  at: string;
+  kind: "applied" | "stage" | "note" | "email" | "decision";
+  fromStage: string | null;
+  toStage: string | null;
+  body: string;
 };
 
 const STAGES: Array<{ id: CrewStage; label: string }> = [
@@ -54,15 +71,23 @@ const ADVANCE: Partial<Record<CrewStage, CrewStage>> = {
 export function CrewClient({
   roles,
   candidates,
+  events,
 }: {
   roles: RoleRow[];
   candidates: CandidateRow[];
+  events: EventRow[];
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [roleId, setRoleId] = React.useState(roles[0]?.id ?? "");
   const [stage, setStage] = React.useState<"all" | CrewStage>("all");
   const [openId, setOpenId] = React.useState<string | null>(null);
+  /* Passing asks for a reason before it takes one. A pipeline that records the
+     decision and not the why leaves the next person reading this row with no
+     idea whether to approach them again. */
+  const [passing, setPassing] = React.useState(false);
+  const [reason, setReason] = React.useState("");
+  const [note, setNote] = React.useState("");
 
   const role = roles.find((r) => r.id === roleId) ?? null;
   const pool = candidates.filter((c) => c.roleId === roleId);
@@ -76,6 +101,12 @@ export function CrewClient({
       if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
+  };
+
+  const fileNote = (c: CandidateRow) => {
+    const body = note;
+    setNote("");
+    run(() => addCandidateNote(c.id, body), () => show({ msg: "Filed.", meta: "CREW HISTORY" }));
   };
 
   const advance = (c: CandidateRow) => {
@@ -93,9 +124,12 @@ export function CrewClient({
   };
 
   const pass = (c: CandidateRow) => {
+    const why = reason;
     setOpenId(null);
+    setPassing(false);
+    setReason("");
     run(
-      () => setCandidateStage(c.id, "passed"),
+      () => setCandidateStage(c.id, "passed", why),
       () =>
         show({
           msg: `${c.name} passed — kindly, in writing.`,
@@ -250,8 +284,12 @@ export function CrewClient({
           current ? (
             <>
               {current.stage !== "passed" ? (
-                <Button variant="ghost" disabled={pending} onClick={() => pass(current)}>
-                  Pass
+                <Button
+                  variant="ghost"
+                  disabled={pending}
+                  onClick={() => (passing ? pass(current) : setPassing(true))}
+                >
+                  {passing ? "Pass, with that reason" : "Pass"}
                 </Button>
               ) : null}
               {ADVANCE[current.stage] ? (
@@ -270,12 +308,70 @@ export function CrewClient({
               <span>·</span>
               <span>{current.email.toUpperCase()}</span>
             </div>
+            {current.phone || current.links || current.source ? (
+              <div className="hm-mod__meta">
+                {[current.phone, current.links, current.source ? `VIA ${current.source}` : ""]
+                  .filter(Boolean)
+                  .map((bit, i) => (
+                    <span key={`${i}-${bit}`}>
+                      {i > 0 ? "· " : ""}
+                      {bit.toUpperCase()}
+                    </span>
+                  ))}
+              </div>
+            ) : null}
             <p style={{ fontSize: 14 }}>{current.note || "No note on file."}</p>
             {current.stage === "offer" ? (
               <p className="hm-note" style={{ marginTop: 0 }}>
                 Offer&apos;s out — the tide decides from here.
               </p>
             ) : null}
+            {passing ? (
+              <Textarea
+                label="Why — this goes in the history and does not come back out"
+                rows={3}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Strong, wrong season. Keep warm for the LA opening."
+              />
+            ) : null}
+
+            <div className="hm-hist">
+              <span className="hm-mono">HISTORY</span>
+              {events
+                .filter((e) => e.candidateId === current.id)
+                .map((e) => (
+                  <div key={e.id} className="hm-hist__row">
+                    <span className="hm-hist__at">{e.at}</span>
+                    <span className="hm-hist__what">
+                      {e.kind === "applied"
+                        ? "Applied"
+                        : e.kind === "note"
+                          ? "Note"
+                          : e.fromStage
+                            ? `${STAGE_LABEL[e.fromStage as CrewStage] ?? e.fromStage} → ${STAGE_LABEL[e.toStage as CrewStage] ?? e.toStage}`
+                            : (e.toStage ?? "")}
+                      {e.body ? <em>{e.body}</em> : null}
+                    </span>
+                  </div>
+                ))}
+            </div>
+
+            <Textarea
+              label="File a note"
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="What you would want the next reader to know."
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending || note.trim().length === 0}
+              onClick={() => fileNote(current)}
+            >
+              File it
+            </Button>
           </div>
         ) : null}
       </Dialog>

@@ -315,3 +315,12 @@
   .hm-envelopes__card code{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);word-break:break-all;border-top:1px solid #ccc;border-bottom:1px solid #ccc;padding:6px 0} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .hm-envelopes__card em{font-style:normal;font-size:10px;color:var(--noir-600)}
 }
+
+/* The candidate history — append-only, newest first. A pipeline that shows a
+   stage and not how it got there leaves the next reader guessing. */
+.hm-hist{display:flex;flex-direction:column;gap:2px;border-top:1px solid var(--line-faint);padding-top:12px}
+.hm-hist__row{display:flex;gap:14px;padding:7px 0;font-size:var(--text-xs);color:var(--text-2);border-bottom:1px solid var(--line-faint)}
+.hm-hist__row:last-child{border-bottom:none}
+.hm-hist__at{flex:none;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;min-width:118px}
+.hm-hist__what{min-width:0}
+.hm-hist__what em{display:block;font-style:normal;color:var(--text-3);margin-top:3px}

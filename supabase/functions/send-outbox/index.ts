@@ -165,6 +165,21 @@ function greet(p: Record<string, unknown>): string {
 type Rendered = { subject: string; html: string };
 
 const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
+  /* A crew application is answered by a person too, and by a different one —
+     this goes to whoever is hiring, not to Shoreside. The role rides in the
+     payload so the letter can name what they applied for; a candidate who
+     applied for two should be able to tell the two replies apart. */
+  "crew-application-received": (p) => ({
+    subject: p.role ? `Received — ${String(p.role)}.` : "Received. A person reads it next.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">Your application${p.role ? ` for <strong>${esc(String(p.role))}</strong>` : ""} is with us. A person reads it — not a machine, not a scorecard.</p>
+<p style="margin:0 0 16px;">We reply either way, inside the week. If it takes longer than that, chase us; the delay will be ours.</p>
+<p style="margin:0;">Nothing else follows unless we write again.</p>`,
+      false,
+      "applicant",
+    ),
+  }),
   "application-received": (p) => ({
     subject: "Received. A person reads it next.",
     html: shell(

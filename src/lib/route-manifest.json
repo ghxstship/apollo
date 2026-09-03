@@ -384,6 +384,17 @@
       "access": "public"
     },
     {
+      "path": "/crew/[slug]",
+      "file": "src/app/(site)/crew/[slug]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "public",
+      "source": {
+        "table": "crew_roles",
+        "column": "slug"
+      }
+    },
+    {
       "path": "/directory",
       "file": "src/app/(member)/directory/page.tsx",
       "type": "page",

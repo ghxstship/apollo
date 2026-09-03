@@ -511,3 +511,44 @@ main .ls-section + .ls-section{padding-top:0}
    pages keep the double rule: they have no toolbar, so this never matches. */
 .dp-head:has(+ .dp-list .ls-toolbar){border-bottom:none;padding-bottom:0}
 .dp-head:has(+ .dp-list .ls-toolbar):after{content:none}
+
+/* ————— crew: postings and the application ————— */
+.crew-list{padding:64px 0 96px}
+.crew-row{display:flex;align-items:flex-start;gap:24px;padding:24px 0;border-top:1px solid var(--line-faint);color:inherit;text-decoration:none}
+.crew-row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.crew-row>div{flex:1;min-width:0}
+.crew-row__go{flex:none;align-self:center}
+.crew-row:hover .ws-ledger-row__t{color:var(--aegean)}
+.crew-none{margin-top:24px;font-size:var(--text-sm);color:var(--text-3);max-width:58ch}
+.crew-back{color:inherit;text-decoration:none}
+.crew-back:hover{text-decoration:underline}
+.crew-facts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+
+/* The posting reads in a column, the form sits beside it and sticks — a
+   candidate who has just read why they want it should not have to scroll back
+   up to say so. */
+.crew-role{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:56px;padding:56px 0 96px;align-items:start}
+.crew-role__lede{font-size:var(--text-body-l);color:var(--text-2);max-width:60ch}
+.crew-role__apply{position:sticky;top:96px}
+@media (max-width:960px){
+  .crew-role{grid-template-columns:1fr;gap:40px;padding:40px 0 72px}
+  .crew-role__apply{position:static}
+}
+.crew-sec{margin-top:40px}
+.crew-sec h2{font-size:var(--text-2xl);margin-bottom:16px}
+.crew-sec ul{margin:0;padding:0;list-style:none;max-width:64ch}
+.crew-sec li{padding:10px 0 10px 22px;border-top:1px solid var(--line-faint);font-size:var(--text-sm);color:var(--text-2);position:relative}
+.crew-sec li:before{content:"";position:absolute;inset-inline-start:0;top:19px;width:8px;border-top:1px solid var(--border-strong)}
+.crew-sec p{font-size:var(--text-sm);color:var(--text-2);max-width:64ch}
+/* Numbered because the process really is a sequence — the one place on this
+   page where order carries information the reader needs. */
+.crew-steps{margin:0;padding:0;list-style:none;counter-reset:none;max-width:64ch}
+.crew-steps li{display:flex;gap:16px;padding:12px 0;border-top:1px solid var(--line-faint);font-size:var(--text-sm);color:var(--text-2)}
+.crew-steps__n{flex:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep)}
+
+.crew-form{display:flex;flex-direction:column;gap:14px;background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);padding:24px}
+.crew-form__eyebrow{color:var(--gold-deep);display:block}
+.crew-form__err{font-size:var(--text-xs);color:var(--danger);margin:0}
+.crew-form__fine{font-size:var(--text-xs);color:var(--text-3);margin:0}
+.crew-closed{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);padding:24px;display:flex;flex-direction:column;gap:12px}
+.crew-closed p{font-size:var(--text-sm);color:var(--text-2);margin:0}
