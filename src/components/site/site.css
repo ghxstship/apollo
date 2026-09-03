@@ -572,3 +572,5 @@ main .ls-section + .ls-section{padding-top:0}
 .ev-crew__who{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ev-crew__who b{font-size:var(--text-sm);font-weight:500}
 .ev-crew__who span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+/* "Sailed together 3×" — a fact the club has, not an inference about anybody. */
+.ev-crew__met{font-style:normal;color:var(--gold-deep);margin-inline-start:5px}

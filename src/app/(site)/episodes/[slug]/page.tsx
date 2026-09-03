@@ -156,18 +156,20 @@ export default async function EpisodePage({
      cannot leak through this query and the page never has to filter for it. */
   const { data: billed } = await supabase
     .from("crew_assignments")
-    .select("id, position_slug, crew!inner(slug, display_name, role_title, avatar_tone)")
+    .select("id, crew_id, position_slug, crew!inner(slug, display_name, role_title, avatar_tone)")
     .eq("episode_id", episode.id)
     .eq("status", "confirmed");
 
   const working = ((billed ?? []) as unknown as Array<{
     id: string;
+    crew_id: string;
     position_slug: string;
     crew: { slug: string; display_name: string; role_title: string; avatar_tone: string } | null;
   }>)
     .filter((b) => b.crew)
     .map((b) => ({
       id: b.id,
+      crewId: b.crew_id,
       slug: b.crew!.slug,
       name: b.crew!.display_name,
       role: b.crew!.role_title,
@@ -175,6 +177,25 @@ export default async function EpisodePage({
         ? b.crew!.avatar_tone
         : "ink") as "gold" | "sea" | "ink" | "sand",
     }));
+
+  /* Whether this member already knows anyone working tonight. Naming the crew
+     is a reason to book; remembering that you know them is a reason to come
+     back — and unlike most personalisation it is a fact the club actually has
+     rather than an inference about somebody.
+
+     Only asked when there is somebody to ask about and somebody to ask for. */
+  let known = new Map<string, number>();
+  if (user && working.length > 0) {
+    const { data: history } = await supabase
+      .from("member_crew_history")
+      .select("crew_id, together")
+      .eq("profile_id", user.id);
+    known = new Map(
+      ((history ?? []) as Array<{ crew_id: string | null; together: number | null }>)
+        .filter((h) => h.crew_id && (h.together ?? 0) > 0)
+        .map((h) => [h.crew_id as string, h.together as number])
+    );
+  }
 
   const aboard = cap?.aboard ?? 0;
   const left = cap?.passes_left ?? null;
@@ -654,7 +675,14 @@ export default async function EpisodePage({
                     <Avatar name={w.name} size="sm" tone={w.tone} />
                     <span className="ev-crew__who">
                       <b>{w.name}</b>
-                      <span>{w.role}</span>
+                      <span>
+                        {w.role}
+                        {known.get(w.crewId) ? (
+                          <em className="ev-crew__met">
+                            · sailed together {known.get(w.crewId)}×
+                          </em>
+                        ) : null}
+                      </span>
                     </span>
                   </Link>
                 ))}

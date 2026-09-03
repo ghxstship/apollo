@@ -667,6 +667,16 @@ export type Database = {
         Row: EpisodeCrewGapRow
         Relationships: []
       }
+      /* A member's own history with the crew. security_invoker plus the passes
+         policy means it shows each member theirs and nobody else's, with no
+         filter in the query that reads it. */
+      member_crew_history: {
+        Row: {
+          profile_id: string | null; crew_id: string | null
+          together: number | null; last_together: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_staff: { Args: Record<string, never>; Returns: boolean }
