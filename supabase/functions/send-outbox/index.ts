@@ -288,6 +288,42 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
       true,
     ),
   }),
+  /* Dunning. The trigger for this has fired since August — a subscriptions
+     trigger calls run_automations('dues_failed') and the Bridge exposes the
+     rule — but no letter existed, and a migration enforces that an automation
+     cannot name a letter that does not exist. So the rule could not be created
+     and involuntary churn went unworked.
+
+     Written to be answerable, not shameful: a failed card is almost always a
+     card, not a decision, and the member is usually the last to know. */
+  "dues-failed": (p) => ({
+    subject: "Your card didn't go through.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">The card on file was declined for this month's dues. It is nearly always the card rather than the money — an expiry, a new number, a bank being careful.</p>
+<p style="margin:0 0 16px;">Nothing changes today. We try again in a few days, and your standing holds while we do.</p>
+<p style="margin:0;"><a href="${APP_URL}/account">Update the card</a> and it settles itself.</p>`,
+    ),
+  }),
+  "card-expiring": (p) => ({
+    subject: "The card on file expires soon.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">The card we hold for your dues expires shortly. Replacing it now means nothing skips.</p>
+<p style="margin:0;"><a href="${APP_URL}/account">Update it here</a> — it takes a minute.</p>`,
+    ),
+  }),
+  /* The last letter before a standing is held. It says the date, because a
+     final notice that does not is not a notice. */
+  "final-notice": (p) => ({
+    subject: "Last word before your standing pauses.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">We have not been able to settle this month's dues, and we have tried a few times now.</p>
+<p style="margin:0 0 16px;">If it is still outstanding${p.holds_on ? ` on ${esc(String(p.holds_on))}` : " in a few days"}, your standing pauses — passes you already hold stay yours, and nothing else is charged.</p>
+<p style="margin:0;">If something has changed, write to us rather than letting it lapse. <a href="${APP_URL}/account">Settle it here</a>.</p>`,
+    ),
+  }),
   "refund-posted": (p) => ({
     subject: "Refund posted.",
     html: shell(
