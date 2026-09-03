@@ -300,6 +300,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/plans",
+      "file": "src/app/(staff)/bridge/plans/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/program",
       "file": "src/app/(staff)/bridge/program/page.tsx",
       "type": "page",
