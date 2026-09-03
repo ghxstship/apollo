@@ -90,6 +90,21 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: meta,
       subscription_data: { metadata: meta },
+      /* Dues are the one charge where Stripe is the right authority: a single
+         recurring product, one tax code, and Stripe Tax charges ONLY in
+         jurisdictions the club has registered in through the dashboard. So
+         turning it on invents nothing — an unregistered state is charged
+         nothing, which is the correct behaviour and not a silent default.
+
+         Deliberately NOT enabled on the settlement checkout, which charges an
+         aggregate house balance: one line covering passes, deposits, bar tabs
+         and dues cannot carry one product code honestly, and anything already
+         taxed at charge time would be taxed twice. */
+      automatic_tax: { enabled: true },
+      /* Stripe Tax needs somewhere to tax. Saving it to the customer means a
+         member is asked once rather than at every renewal. */
+      billing_address_collection: "required",
+      customer_update: { address: "auto", name: "auto" },
       success_url: `${origin}/account?joined=1`,
       cancel_url: `${origin}/membership`,
     });

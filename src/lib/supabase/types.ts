@@ -236,6 +236,9 @@ export type AccountLedgerRow = {
      is deferred revenue. Null means delivered on the spot, so earned when
      billed: a bar tab, a shop order. */
   service_date: string | null
+  /* Tax included in delta_cents, if any. Zero means untaxed, NOT tax-free —
+     city_tax says whether a treatment has been determined at all. */
+  tax_cents: number
 }
 export type AddonRow = { id: string; slug: string; name: string; price_cents: number; active: boolean }
 export type PassAddonRow = { rsvp_id: string; addon_id: string; qty: number }
@@ -305,6 +308,15 @@ export type CrewRow = {
   id: string; profile_id: string | null; slug: string; display_name: string
   role_title: string; city: string | null; bio: string | null; avatar_tone: string
   public: boolean; active: boolean; since: string | null; position: number; created_at: string
+}
+/* What a city's tax treatment IS, once somebody qualified has determined it.
+   A NULL rate means undetermined; zero means determined to be untaxed. Nothing
+   here is defaulted and nothing should be guessed — Florida taxes admissions,
+   California generally does not, so the cities differ in kind and not degree. */
+export type CityTaxRow = {
+  city_id: string; admissions_rate_bp: number | null; goods_rate_bp: number | null
+  registered: boolean; note: string | null
+  determined_by: string | null; determined_on: string | null; updated_at: string
 }
 export type CrewPositionRow = {
   slug: string; label: string; setting: "sea" | "shore" | null; position: number
@@ -589,6 +601,7 @@ export type Database = {
       crew_candidate_events: Table<CrewCandidateEventRow, Ins<CrewCandidateEventRow, "candidate_id" | "kind">>
       crew: Table<CrewRow, Ins<CrewRow, "slug" | "display_name" | "role_title">>
       crew_positions: Table<CrewPositionRow, Ins<CrewPositionRow, "slug" | "label">>
+      city_tax: Table<CityTaxRow, Ins<CityTaxRow, "city_id">>
       crew_assignments: Table<CrewAssignmentRow, Ins<CrewAssignmentRow, "episode_id" | "crew_id" | "position_slug">>
       crew_blackouts: Table<CrewBlackoutRow, Ins<CrewBlackoutRow, "crew_id" | "from_date" | "to_date">>
       crew_needs: Table<CrewNeedRow, Ins<CrewNeedRow, "setting" | "position_slug" | "headcount">>

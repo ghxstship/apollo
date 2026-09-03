@@ -146,7 +146,19 @@ async function postDues(admin: Admin, profileId: string, invoice: Stripe.Invoice
 
   const key = `stripe:invoice:${invoice.id}`;
   const { error } = await admin.from("account_ledger").insert([
-    { profile_id: profileId, delta_cents: -amount, kind: "dues", memo, idem_key: `${key}:dues` },
+    {
+      profile_id: profileId,
+      delta_cents: -amount,
+      kind: "dues",
+      memo,
+      idem_key: `${key}:dues`,
+      /* What Stripe Tax actually charged, kept on the row rather than inferred
+         later from a rate that may have changed since. */
+      tax_cents: invoice.total_taxes?.reduce((sum, x) => sum + (x.amount ?? 0), 0) ?? 0,
+      service_date: invoice.period_start
+        ? new Date(invoice.period_start * 1000).toISOString().slice(0, 10)
+        : null,
+    },
     {
       profile_id: profileId,
       delta_cents: amount,
