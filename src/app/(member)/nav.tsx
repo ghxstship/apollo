@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, IconButton, Wordmark } from "@/components/ds";
+import { GlobalSearch } from "@/components/search/global-search";
 import { LOGBOOK, SURFACES } from "@/lib/brand";
 import { memberMark } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/client";
@@ -263,6 +264,7 @@ export function MemberTopBar({
           ) : null}
         </nav>
         <div className="mbr-top__meta">
+          <GlobalSearch />
           {/* The number, set the way the member card sets it: a mark and digits,
               and no retired prefix. Every number in the database was minted with
               the old brand's letters in front of it, that string is in

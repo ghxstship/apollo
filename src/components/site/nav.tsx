@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 import { IconButton, ThemeToggle, Icon } from "@/components/ds";
+import { GlobalSearch } from "@/components/search/global-search";
 import { LockupHorizontal } from "./logo";
 import { LinkButton } from "./link-button";
 import { useModal } from "@/components/ds/use-modal";
@@ -67,6 +68,8 @@ export function SiteNav() {
         </div>
         <span className="ws-nav__coords">{COORDS}</span>
         <div className="ws-nav__end">
+          {/* One field, on every page, for everything the club knows about. */}
+          <GlobalSearch inverse />
           <ThemeToggle />
           <span className="ws-nav__cta">
             <LinkButton href="/gangway" variant="outline" size="sm" inverse>
