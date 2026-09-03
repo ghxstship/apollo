@@ -116,14 +116,35 @@ export default async function VettingPage() {
 
   /* The six gates, as the member's own checklist. Same six names the kit's
      funnel uses, read as a state rather than as a rate. */
-  const gates: Array<[string, boolean]> = [
-    ["Applied", true],
-    ["ID and age verified", !!file?.id_verified && !!file?.age_ok],
-    ["Background cleared", file?.background_state === "cleared"],
-    ["Preference Sheet complete", !!sheet?.completed_at],
-    ["Lifestyle vetted", file?.background_state === "cleared" && !!sheet?.completed_at],
-    ["Seated this episode", !!mySegment],
+  /* WHO HOLDS EACH GATE, which the checklist never said.
+
+     Two of the six a member cannot act on at any price — ID verification and
+     background clearance are the club's to do — and a third is only reachable
+     once those clear. Shown as six identical unchecked boxes, the page asked a
+     member to work out for themselves whether they were the hold-up or we were,
+     and the booking guard's refusal ("the vetting file is not open yet") sent
+     them here to find out. It did not tell them.
+
+     So each gate says whose move it is. "Yours" is a thing to go and do, and
+     the row links to it; "ours" is a thing to wait for, and saying so is the
+     difference between a queue and a dead end. */
+  const gates: Array<[string, boolean, "yours" | "ours"]> = [
+    ["Applied", true, "yours"],
+    ["ID and age verified", !!file?.id_verified && !!file?.age_ok, "ours"],
+    ["Background cleared", file?.background_state === "cleared", "ours"],
+    ["Preference Sheet complete", !!sheet?.completed_at, "yours"],
+    [
+      "Lifestyle vetted",
+      file?.background_state === "cleared" && !!sheet?.completed_at,
+      "ours",
+    ],
+    ["Seated this episode", !!mySegment, "yours"],
   ];
+  /* Nothing has been opened at all — not "in progress", not started. A member
+     in this state is waiting on a person, and the page should say so rather
+     than showing five zeroes and letting them guess. */
+  const fileUnopened = !file;
+  const yoursOutstanding = gates.filter(([, done, whose]) => !done && whose === "yours").length;
 
   return (
     <div className="ls-fade vet-stack">
@@ -167,10 +188,15 @@ export default async function VettingPage() {
             {gates.filter(([, done]) => done).length} of {gates.length} cleared
           </p>
           <div>
-            {gates.map(([label, done], i) => (
+            {gates.map(([label, done, whose], i) => (
               <div className="vet-row" key={label}>
                 <span className="vet-row__label">{String(i + 1).padStart(2, "0")}</span>
                 <span className="vet-gate">{label}</span>
+                {/* An open gate says whose move it is. A cleared one does not:
+                    once it is done, who did it stops mattering. */}
+                {done ? null : (
+                  <span className="vet-whose">{whose === "yours" ? "your move" : "with us"}</span>
+                )}
                 <span
                   className="vet-row__token"
                   style={{ color: done ? "var(--positive)" : "var(--text-faint)" }}
@@ -180,6 +206,16 @@ export default async function VettingPage() {
               </div>
             ))}
           </div>
+          {/* The sentence the booking refusal sends people here to find. */}
+          <p className="vet-standing">
+            {fileUnopened
+              ? yoursOutstanding > 0
+                ? "Your file has not been opened yet. Finish the Preference Sheet below and the vetting team takes it from there — they write when it moves."
+                : "Your file has not been opened yet. Nothing is needed from you; the vetting team writes when it moves."
+              : yoursOutstanding > 0
+                ? "The open gates below marked your move are yours to finish. The rest are with the vetting team."
+                : "Everything left is with the vetting team. They write when it moves."}
+          </p>
           <p className="vet-note">
             Ages 25 to 45, no exceptions. Your ID is deleted 30 days after your
             last episode, and it never leaves the vetting file.
