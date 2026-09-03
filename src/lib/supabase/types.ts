@@ -27,6 +27,10 @@ export type ProfileRow = {
   hold_reason: "dues" | "conduct" | "club" | null
   stripe_customer_id: string | null; bio: string | null; in_directory: boolean
   interests: string[]; calendar_token: string; phone: string | null; phone_verified: boolean
+  /* The query string this member's /episodes view opens with — the same format
+     the manifest's pills write, so a filter set has one shape in this system
+     and not two. Null means show everything. */
+  manifest_filters: string | null
 }
 export type CityRow = {
   id: string; slug: string; name: string; status: string; coordinates: string | null
