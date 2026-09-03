@@ -236,8 +236,25 @@
 .ls-stat--inverse .ls-stat__value{color:var(--bone)}
 .ls-stat--inverse .ls-stat__sub{color:var(--text-inverse-3)}
 .ls-stat--sm .ls-stat__value{font-size:28px}
+/* The delta. One figure, one channel: it is a movement in a number, which is
+   STATUS, so it reads --positive on paper and on ink alike. The inverse variant
+   used to repaint it --gold-bright — the ACCENT channel — for the same figure on
+   a dark ground, and nobody caught it in review because the accent was acid
+   green and --positive was green: two token names 0.2° of hue apart, so the bug
+   was invisible until the accent lost its hue and the ink-ground delta would
+   have turned ivory while the paper one stayed green. Removing the override is
+   the fix; --positive already flips to its ink step with the theme.
+
+   Caveat for whoever ships the first inverse delta: --stat--inverse surfaces
+   stay ink in BOTH themes, so on a paper page this lands the paper-step
+   --positive (#12722F) on ink at about 1.9:1. Nothing hits that today — no Stat
+   in src passes a `sub` containing <b>, and the one inverse Stat (portal) passes
+   a plain string — so both of these rules are latent and this one is left as the
+   correct channel rather than a second wrong one. The escape when it is needed
+   is the badge's, twenty lines up: an ink-ground status tone puts the hue on a
+   border and the TEXT on --text-inverse-1, because the status channel publishes
+   no ink step of its own to reach for. */
 .ls-stat__sub b{color:var(--positive);font-weight:400}
-.ls-stat--inverse .ls-stat__sub b{color:var(--gold-bright)}
 
 /* — Table — */
 .ls-table{width:100%;border-collapse:collapse;font-family:var(--font-sans);font-size:var(--text-sm)}
@@ -508,7 +525,7 @@
 .sgn-choice input{width:16px;height:16px;accent-color:var(--gold-deep)}
 .sgn-draw{display:flex;flex-direction:column;gap:8px}
 .sgn-draw__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
-.sgn-canvas{width:100%;max-width:520px;height:140px;border:1px solid var(--line-strong);background:#fff;border-radius:2px;touch-action:none;cursor:crosshair}
+.sgn-canvas{width:100%;max-width:520px;height:140px;border:1px solid var(--line-strong);background:#fff;border-radius:2px;touch-action:none;cursor:crosshair} /* ds-exempt: signature canvas — the pad must be white because the strokes are painted through the canvas API, which cannot read a custom property. */
 .sgn-draw__acts{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .sgn-link{background:none;border:0;padding:4px 2px;min-height:24px;color:var(--gold-deep);font:inherit;text-decoration:underline;cursor:pointer}
 .sgn-consent{border-top:1px solid var(--line-faint);padding-top:18px}

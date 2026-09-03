@@ -1,7 +1,18 @@
 "use client";
 
 /* The last net: a throw in the root layout itself, where no shell or stylesheet
-   is guaranteed. It has to carry its own html and body tags. */
+   is guaranteed. It has to carry its own html and body tags.
+
+   Which is also why the three colours below are raw hex rather than var(): this
+   component replaces the whole document, so no stylesheet is loaded and no
+   custom property resolves. They were #0b0f14, #e8e6e1 and #c8a656 — the
+   retired Lyre navy-and-antique-gold — still being painted on the one screen a
+   member sees when everything else has already failed. They are now the current
+   palette, transcribed: ink ground, ivory type, and the ink theme's accent,
+   which under Option C is that same ivory. Re-transcribe when the palette moves. */
+const INK = "#141414"; /* --noir-900 */
+const IVORY = "#F1F1ED"; /* --ivory-100 — and, on ink, --accent */
+
 export default function GlobalError({
   error,
   reset,
@@ -13,8 +24,8 @@ export default function GlobalError({
     <html lang="en">
       <body
         style={{
-          background: "#0b0f14",
-          color: "#e8e6e1",
+          background: INK,
+          color: IVORY,
           fontFamily: "ui-sans-serif, system-ui, sans-serif",
           margin: 0,
           padding: "96px 24px",
@@ -31,8 +42,8 @@ export default function GlobalError({
           style={{
             marginTop: 24,
             padding: "12px 20px",
-            background: "#c8a656",
-            color: "#0b0f14",
+            background: IVORY,
+            color: INK,
             border: 0,
             borderRadius: 2,
             cursor: "pointer",

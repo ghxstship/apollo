@@ -50,7 +50,7 @@
    pixels at each end so a cut-off label reads as cut off. The gradient's black
    is a stencil, not a colour: a mask reads the alpha channel, so this paints
    nothing and there is no token for it to take. */
-.hm-tabs__in{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%)}
+.hm-tabs__in{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%)} /* ds-exempt: mask stencil — a mask reads alpha only, so #000 here means "fully opaque", not black. There is no colour decision to tokenise. */
 .hm-tabs__in a{font:var(--type-label);flex:none;padding:12px 14px;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;border-bottom:2px solid transparent;transition:color var(--dur-1) var(--ease-swell)}
 .hm-tabs__in a:hover{color:var(--text-1);background:var(--wash-ink)}
 .hm-tabs__in a[aria-current="page"]{color:var(--text-1);border-bottom-color:var(--neon-cyan)}
@@ -162,8 +162,15 @@
 .hm-gang__result span{font-size:var(--text-xs);color:var(--text-2)}
 .hm-gang__result--aboard{border-color:var(--positive);background:color-mix(in srgb,var(--positive) 10%,var(--surface-card))}
 .hm-gang__result--aboard b{color:var(--positive)}
-.hm-gang__result--not_found{border-color:var(--terracotta);background:color-mix(in srgb,var(--terracotta) 10%,var(--surface-card))}
-.hm-gang__result--not_found b{color:var(--terracotta)}
+/* A scan that finds no pass is a refusal, and a refusal is danger. It read
+   --terracotta, which is the Shop's commerce hue and has nothing to do with a
+   door — the same argument components.css already makes for the caution badge
+   ("terracotta is the Shop's commerce hue... a weather hold has nothing to do
+   with the Shop"). It is worse than a category error now: commerce is retired
+   as a hue and --terracotta resolves to ink, so a failed scan would have drawn
+   an ink border on an ink-washed card and read as no state at all. */
+.hm-gang__result--not_found{border-color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,var(--surface-card))}
+.hm-gang__result--not_found b{color:var(--danger)}
 .hm-gang__result--already{border-color:var(--line-strong)}
 /* Uncertainty must not borrow the colour of a refusal. Amber says "stop and
    look", which is what it is; red said "this pass is fake", which it never
@@ -179,14 +186,14 @@
 /* — the door list prints alone; the console never does — */
 .hm-doorlist{display:none}
 @media print{
-  body{background:#fff}
+  body{background:#fff} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .hm-shell,.ls-toast--fixed{display:none !important}
-  .hm-doorlist{display:block;color:#000;font-family:var(--font-sans);padding:24px}
+  .hm-doorlist{display:block;color:#000;font-family:var(--font-sans);padding:24px} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .hm-doorlist h1{font-family:var(--font-sans);font-size:var(--text-lg);font-weight:700;margin:0 0 4px;text-transform:none}/* 18px heading = Archivo 700 sentence case; without the explicit family it inherited Anton from base (the container's sans loses to the element-targeted rule) */
   .hm-doorlist p{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);margin:0 0 16px;color:var(--noir-600)}
   .hm-doorlist table{width:100%;border-collapse:collapse;font-size:12px}
-  .hm-doorlist th{text-align:left;font-size:9px;letter-spacing:var(--track-data);text-transform:uppercase;border-bottom:1px solid #000;padding:6px 8px 4px}
-  .hm-doorlist td{border-bottom:1px solid #ccc;padding:6px 8px;vertical-align:top}
+  .hm-doorlist th{text-align:left;font-size:9px;letter-spacing:var(--track-data);text-transform:uppercase;border-bottom:1px solid #000;padding:6px 8px 4px} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
+  .hm-doorlist td{border-bottom:1px solid #ccc;padding:6px 8px;vertical-align:top} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .hm-doorlist tr{break-inside:avoid}
 }
 
@@ -298,13 +305,13 @@
 /* — the envelope sheet prints alone, one card per guest — */
 .hm-envelopes{display:none}
 @media print{
-  .hm-envelopes{display:block;color:#000;font-family:var(--font-sans);padding:24px}
+  .hm-envelopes{display:block;color:#000;font-family:var(--font-sans);padding:24px} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .hm-envelopes h1{font-family:var(--font-sans);font-size:var(--text-lg);font-weight:700;margin:0 0 4px;text-transform:none}/* same as the door list: 18px = Archivo 700 sentence case, stated rather than inherited wrong */
   .hm-envelopes>p{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);margin:0 0 16px;color:var(--noir-600)}
   .hm-envelopes__grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .hm-envelopes__card{border:1px solid #000;padding:12px 14px;break-inside:avoid;display:flex;flex-direction:column;gap:5px}
+  .hm-envelopes__card{border:1px solid #000;padding:12px 14px;break-inside:avoid;display:flex;flex-direction:column;gap:5px} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .hm-envelopes__card b{font-size:var(--text-sm);font-weight:700}
   .hm-envelopes__card span{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--track-data);text-transform:uppercase;color:var(--noir-600)}
-  .hm-envelopes__card code{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);word-break:break-all;border-top:1px solid #ccc;border-bottom:1px solid #ccc;padding:6px 0}
+  .hm-envelopes__card code{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);word-break:break-all;border-top:1px solid #ccc;border-bottom:1px solid #ccc;padding:6px 0} /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .hm-envelopes__card em{font-style:normal;font-size:10px;color:var(--noir-600)}
 }

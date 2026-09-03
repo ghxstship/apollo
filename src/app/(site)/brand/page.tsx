@@ -34,9 +34,13 @@ const SEAS: Record<string, string> = {
 
 /* Hexes, not tokens: a swatch that paints with var(--noir-900) shows the reader
    the colour but has nothing to put on the clipboard, and the whole point of
-   this grid is that it copies. Every value below is transcribed from
-   src/styles/tokens.css and has to be re-transcribed when that file moves —
-   this page is the one place in src permitted to hold a second copy. */
+   this grid is that it copies. Every value below is transcribed from the palette
+   — the greyscale from src/styles/tokens.css, the accent and the division hues
+   from src/styles/palette.css, which is where the Option C decisions live until
+   the handoff package is regenerated — and has to be re-transcribed when either
+   moves. This page is the one place in src permitted to hold a second copy, and
+   the cost of that permission is that it goes stale silently: it held the
+   retired acid and synthwave values for a full palette cycle. */
 const NOIRS: Array<[string, string, string, boolean]> = [
   ["Noir 950", "#0D0D0D", "sunken fields", true],
   ["Noir 900", "#141414", "ink page, body text", true],
@@ -49,23 +53,44 @@ const IVORIES: Array<[string, string, string, boolean]> = [
   ["Ivory 100", "#F1F1ED", "type on ink", false],
   ["Ivory 500", "#BCBCB3", "secondary", false],
 ];
-/* The house accent, then the division hues — five of them: [un] Brand carries
-   no hue and no token, so it has no swatch to copy. Division hues name a club and
-   nothing else: operational state — Five-A phase, run-of-show position,
-   procurement status — is set in numerals on the greyscale, never in one of
-   these. Status colours are the only exception and override them. */
+/* THE HOUSE ACCENT HAS NO HUE. It was acid green, and the reason it is not any
+   more is measurable rather than a matter of taste: acid sat at OKLCH hue 140.4
+   and --positive on the ink theme at 140.2, so the house colour and the success
+   state were the same colour under two token names. An accent appears beside
+   whichever division is on screen — links, focus rings, seams, progress — so any
+   saturated house colour competes permanently with the identity system. It is
+   now ink on paper and ivory on ink, which is how [un] Brand, the sixth
+   division, has always worked.
+
+   There is no Shop swatch any more. Commerce is retired as a hue: the Shop is
+   the sales channel, not the maker, and its products carry the hosting
+   division's mark, so a channel with no mark of its own needs no accent.
+   --brand-shop still resolves — to ink — so nothing breaks, but nothing should
+   reach for it as a colour.
+
+   Then the division hues — five of them: [un] Brand carries no hue and no token,
+   so it has no swatch to copy. Division hues name a club and nothing else:
+   operational state — Five-A phase, run-of-show position, procurement status —
+   is set in numerals on the greyscale, never in one of these. Status colours are
+   the only exception and override them. */
 const ACCENTS: Array<[string, string, string, boolean]> = [
-  ["Acid 500", "#3EC317", "the house accent — one per view", false],
-  ["Acid 400", "#58D621", "hover, focus, live", false],
-  ["Acid 600", "#2F9410", "press, and small type on paper", true],
-  ["Shop", "#C06A3E", "commerce — not a division", true],
+  ["Accent", "#141414", "the house accent on paper — one per view", true],
+  ["Accent hover", "#0D0D0D", "hover deepens; press goes to #000000", true],
+  ["Accent on ink", "#F1F1ED", "the same accent, inverted for the ink theme", false],
 ];
+/* The five moved to one cool arc, 41 degrees apart, at IDENTICAL lightness and
+   chroma. The old ramp ran L 0.447 to 0.751, so an [un] Limited page was three
+   times brighter than an [un] Bound page for the same element — the accent, the
+   brightness and the saturation all changed at once, when brand.ts promises a
+   division "swaps the accent and nothing else". Now one number changes. Their
+   old values — #F72585, #7209B7, #FF8C00, #4361EE, #B5179E — are gone; anything
+   still quoting a magenta or an amber for a division is quoting the old kit. */
 const DIVISION_SWATCHES: Array<[string, string, string, boolean]> = [
-  ["Hinged", "#F72585", "electric magenta — singles social", true],
-  ["Bound", "#7209B7", "deep orchid — couples", true],
-  ["Limited", "#FF8C00", "outrun amber — premium", false],
-  ["Scripted", "#4361EE", "grid cobalt — content series", true],
-  ["Cut", "#B5179E", "laser fuchsia — the ungraded channel", true],
+  ["Hinged", "#A55779", "muted plum — singles social", true],
+  ["Bound", "#5E6FB5", "slate indigo — couples", true],
+  ["Limited", "#0D7FA9", "deep cerulean — premium", true],
+  ["Scripted", "#048681", "teal — content series", true],
+  ["Cut", "#8B60A2", "muted violet — the ungraded channel", true],
 ];
 /* The swatches read the TOKENS rather than restating their values. They used to
    carry the gradient inline, which meant this page — the reference for what a
@@ -75,11 +100,14 @@ const DIVISION_SWATCHES: Array<[string, string, string, boolean]> = [
    worse than no reference. Night and rose are shown too; they were defined,
    documented in readme as imagery placeholders, and rendered nowhere. */
 const GRADIENTS: Array<[string, string, string]> = [
-  /* Two different tokens, and the row used to conflate them: --gradient-accent
-     is the acid pair for hero rules and small fills; --gradient-outrun is the
-     amber→magenta→orchid→void synthwave scene, the canonical hero ground. */
+  /* Two different tokens, and the row used to conflate them. --gradient-outrun
+     is the canonical hero ground. --gradient-accent is NOT a gradient any more
+     and is left in this grid to say so: its two stops were 1.5 degrees of hue
+     apart, so five surfaces paid gradient cost to render what the eye read as a
+     flat fill, and with the accent's hue gone there is not even a pair left to
+     interpolate. It is a flat fill, and this row shows a flat bar. */
   ["Outrun", "var(--gradient-outrun)", "the canonical hero ground"],
-  ["Accent", "var(--gradient-accent)", "hero rules and small fills only"],
+  ["Accent", "var(--gradient-accent)", "a flat fill, not a gradient — seams and rules"],
   ["Scene golden", "var(--scene-golden)", "imagery TK — golden hour"],
   ["Scene biscayne", "var(--scene-biscayne)", "imagery TK — on the water"],
   ["Scene noir", "var(--scene-noir)", "type-led surfaces — stubs, documents, notices"],
@@ -207,7 +235,7 @@ export default function BrandKitPage() {
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
             ))}
           </div>
-          <div className="bk-swlbl">The house accent</div>
+          <div className="bk-swlbl">The house accent — no hue: ink on paper, ivory on ink</div>
           <div className="bk-swgrid">
             {ACCENTS.map(([nm, hex, use, inv]) => (
               <Swatch key={hex} name={nm} hex={hex} use={use} onMedia={inv} />
@@ -230,15 +258,24 @@ export default function BrandKitPage() {
             ))}
           </div>
           <p className="bk-note">
-            Page surfaces are paper-first greyscale with one acid-green accent
-            per view — hover lightens, press darkens, never shrinks. Divisions
-            swap the accent and nothing else: never their own type, never their
-            own surfaces. One stage, different spotlights. The division hues are
-            reserved for identity and never encode operational state; only
-            positive, caution and danger override them. The synthwave palette
-            supplies accents and gradient grounds, not page backgrounds. An ink
-            theme ships via <b>data-theme=&quot;dark&quot;</b>. Scene gradients
-            stand in wherever photography belongs, always labeled IMAGERY TK.
+            Page surfaces are paper-first greyscale, and the house accent has no
+            hue at all: it is ink on paper and ivory on ink, one per view, and it
+            deepens on press rather than shrinking. That is deliberate. An accent
+            sits beside whichever division is on screen — in links, focus rings,
+            seams and progress — so a house colour with a hue competes
+            permanently with the identity system, and the acid green it replaces
+            was in any case the same colour as the success state under a second
+            name. Removing it gives the divisions the only saturated voice on the
+            page. The five division hues sit on one cool arc at matched lightness,
+            so a division swaps the accent and nothing else: never its own type,
+            never its own surfaces, never its own brightness. One stage,
+            different spotlights. They are reserved for identity and never encode
+            operational state; only positive, caution and danger override them,
+            and commerce is not a hue — the Shop carries the hosting division&rsquo;s
+            mark. An ink theme ships via <b>data-theme=&quot;dark&quot;</b>, which
+            is the light/ink switch and carries nothing else — never a setting,
+            never a division. Scene gradients stand in wherever photography
+            belongs, always labeled IMAGERY TK.
           </p>
         </section>
 

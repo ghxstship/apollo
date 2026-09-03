@@ -10,8 +10,27 @@ body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var
    string the display face must never capitalise. */
 h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0;text-transform:uppercase}
 p{margin:0;text-wrap:pretty}
-a{color:var(--text-link);text-decoration:none;transition:color var(--dur-1) var(--ease-swell)}
-a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+/* A link is underlined, and that is not a style preference any more.
+
+   The house accent lost its hue on 2026-09-02 (see src/styles/palette.css), so
+   --text-link now resolves to the same value as --text-body. A link coloured
+   like body text with text-decoration:none has NO distinguishing feature at
+   all — not a weak one, none — which is WCAG 1.4.1 and, more to the point, a
+   link nobody can see.
+
+   Underline by default is the correct answer rather than the fallback: it is
+   what a paper-first editorial brand does, it survives both themes without a
+   token, and it cannot be broken by a future palette decision. Hover thickens
+   rather than adding, because there is nothing left to add. */
+a{color:var(--text-link);text-decoration:underline;text-underline-offset:3px;
+  text-decoration-thickness:1px;text-decoration-color:var(--border-strong);
+  transition:text-decoration-color var(--dur-1) var(--ease-swell)}
+a:hover{text-decoration-color:currentColor;text-decoration-thickness:2px}
+/* Anything that is a link only in markup — a card, a nav item, a button —
+   opts out. These already set their own affordance. */
+a.ls-btn,a.hm-btn,a[class*="__card"],a[class*="-card"],a[class*="-row"],
+nav a,.ls-tabs a,.hm-tabs a,.mbr-tabs a{text-decoration:none}
+nav a:hover,.ls-tabs a:hover,.hm-tabs a:hover,.mbr-tabs a:hover{text-decoration:underline}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 img{max-width:100%;height:auto}
 /* animation-delay too: zeroing only the duration still leaves a backwards fill

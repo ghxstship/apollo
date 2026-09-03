@@ -239,8 +239,13 @@ export default async function EpisodePage({
   const credits = creditsRes.data ?? [];
   const venueName = venueRes.data?.name ?? null;
 
+  /* The wrapper used to be <div data-theme={episode.setting}>, which overloaded
+     the light/ink attribute to carry the afloat/ashore taxonomy and repointed
+     the accent by SETTING rather than by division — see the deleted block in
+     site.css for the full argument. The division is spoken by the eyebrow and
+     the lockup, so the wrapper had nothing left to do and is a fragment. */
   return (
-    <div data-theme={episode.setting}>
+    <>
       <header className="ev-hero">
         <div className="ev-hero__bg" style={{ background: SEAS[episode.media] ?? SEAS.dusk }}></div>
         <div className="ls-container ev-hero__in">
@@ -648,6 +653,6 @@ export default async function EpisodePage({
           </div>
         </aside>
       </div>
-    </div>
+    </>
   );
 }

@@ -4,18 +4,36 @@
    specimen with raw hex, and these surfaces render on a paper-first ground in
    both themes.
 
-   The kit's colourway is "ORCHID ON INK" — #4361EE, which is --grid-500, which
-   is what brand.ts assigns to --brand-scripted. So the token is referenced and
-   the hex never is, which is what keeps this correct through a rename: the kit
-   called the same hue "FLARE ON INK" one revision ago, and the current readme
-   calls [un] Scripted "flare pink" while tokens.css and both kits agree it is
-   blue. A file full of #4361EE would have had to be edited three times and
-   would be wrong now.
+   The kit's colourway is "ORCHID ON INK" — #4361EE, and the hex is not written
+   anywhere below, which is the whole point: the kit called that same hue "FLARE
+   ON INK" one revision ago, the readme called [un] Scripted "flare pink" while
+   both kits called it blue, and Option C has since moved [un] Scripted to teal
+   at #048681. A file full of #4361EE would have had to be edited three times and
+   would still be wrong today. As it is, nothing here needed a colour edit for
+   the palette change — only for the state/identity error described next.
 
-   This is the one place a division hue belongs on these screens — Radar IS
-   Scripted, so the accent is identity, not operational state. Slot states, by
-   contrast, are drawn in the greyscale and a dashed rule, exactly as the
-   handoff's colour invariant requires. */
+   THAT CLAIM WAS NOT WHAT THE FILE DID. "Radar IS Scripted, so the accent is
+   identity" was true of the surface and false of every declaration below it:
+   the division hue was painting the live panel, the live eyebrow, the plotted
+   pin, the filled slot, the countdown and the meter fill — nine declarations,
+   every one of them a STATE, on the same screens whose header claimed states
+   were drawn in the greyscale. Radar's identity is spoken by the route and its
+   lockup; a hue that changes when a slot fills is not identity, it is a status
+   light wearing an identity token.
+
+   So the division hue is gone from this file and the two sanctioned channels
+   carry it instead:
+
+     LIVE takes --positive. A session that is running is the one thing here
+     that is genuinely a status, and green is its convention.
+
+     FILLED, PLOTTED, the reader's own dot and the meter fill take the house
+     accent — ink on paper, ivory on ink. Emphasis with no valence, which is
+     exactly what these need: "three is the ceiling, not a target", so a filled
+     slot must not read as a success and --positive would have said it was one.
+     Small type takes --text-accent, the same value at the type step.
+
+   Slot states keep the dashed rule and the greyscale they already had. */
 
 .rdr-stack { display: flex; flex-direction: column; gap: var(--space-6); }
 
@@ -35,7 +53,7 @@
   flex-direction: column;
   gap: var(--space-3);
 }
-.rdr-panel--live { border-color: var(--brand-scripted); }
+.rdr-panel--live { border-color: var(--positive); }
 
 .rdr-eyebrow {
   font: var(--type-label);
@@ -43,7 +61,7 @@
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.rdr-eyebrow--live { color: var(--brand-scripted-deep); }
+.rdr-eyebrow--live { color: var(--positive); }
 
 .rdr-note { font: var(--type-caption); color: var(--text-faint); margin: 0; max-width: 56ch; }
 
@@ -65,11 +83,13 @@
 .rdr-ring--1 { width: 240px; height: 240px; }
 .rdr-ring--2 { width: 164px; height: 164px; }
 .rdr-ring--3 { width: 88px; height: 88px; border-color: var(--border-strong); }
+/* The reader's own dot. Not a state and not a division claim — it is simply
+   where "you" are — so it takes the house accent. */
 .rdr-self {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--brand-scripted);
+  background: var(--accent);
 }
 
 .rdr-pin {
@@ -98,8 +118,8 @@
   background: var(--surface-raised);
 }
 .rdr-pin--plotted .rdr-pin__dot {
-  border-color: var(--brand-scripted);
-  color: var(--brand-scripted-deep);
+  border-color: var(--accent);
+  color: var(--text-accent);
 }
 .rdr-pin__name {
   font: var(--type-label);
@@ -118,12 +138,12 @@
   color: var(--text-muted);
 }
 .rdr-meter__track { height: 2px; background: var(--surface-sunken); }
-.rdr-meter__fill { height: 2px; background: var(--brand-scripted); }
+.rdr-meter__fill { height: 2px; background: var(--accent); }
 
-/* Slots. Filled takes a solid rule in the division accent; open takes a dashed
+/* Slots. Filled takes a solid rule in the house accent; open takes a dashed
    greyscale rule; locked takes a flat hairline. "Three is the ceiling, not a
    target" — so an open slot is set at the same weight as the others and never
-   as a call to action. */
+   as a call to action, and a filled one is emphasis rather than a success. */
 .rdr-slots { display: flex; flex-direction: column; gap: var(--space-2); }
 .rdr-slot {
   background: var(--surface-sunken);
@@ -134,7 +154,7 @@
   align-items: center;
   gap: var(--space-3);
 }
-.rdr-slot--filled { border-color: var(--brand-scripted); }
+.rdr-slot--filled { border-color: var(--accent); }
 .rdr-slot--open { border-style: dashed; }
 .rdr-slot--locked { background: var(--surface-card); }
 .rdr-slot__n {
@@ -145,7 +165,7 @@
   width: 72px;
   flex: none;
 }
-.rdr-slot--filled .rdr-slot__n { color: var(--brand-scripted-deep); }
+.rdr-slot--filled .rdr-slot__n { color: var(--text-accent); }
 .rdr-slot__who { flex: 1; font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
 .rdr-slot__who--empty { font-weight: 400; color: var(--text-faint); }
 
@@ -160,10 +180,13 @@
 }
 .rdr-row:last-child { border-bottom: 1px solid var(--border-subtle); }
 .rdr-row__name { flex: 1; font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+/* The clock is a figure, not a state — it does not change colour as it runs
+   down, because there is no threshold at which the answer becomes different. It
+   takes the accent's type step so it reads as the row's load-bearing value. */
 .rdr-row__clock {
   font: var(--type-label);
   letter-spacing: var(--tracking-dense);
-  color: var(--brand-scripted-deep);
+  color: var(--text-accent);
 }
 
 /* The strip idiom, as in the vetting kit: a state or a refusal, never an input. */

@@ -211,28 +211,58 @@ main .ls-section + .ls-section{padding-top:0}
 .ws-zero p{font-size:var(--text-sm);color:var(--text-2);max-width:56ch}
 
 /* ————— event page ————— */
-/* — the division accent. A charter page carries data-theme with its setting,
-     and until now nothing answered to those values: a sailing and a shore night
-     rendered byte-identically, on the one view where the divisions are most
-     visible. §Setting files afloat under [un] Limited (amber) and ashore under
-     [un] Scripted (cobalt) — brand/page.tsx says so in the kit itself — so the
-     attribute repoints the accent and nothing else. One accent per view; type,
-     surfaces and rules stay exactly where they were.
+/* — the four [data-theme="sea"|"shore"] accent rules that used to sit here are
+     deleted, along with the data-theme={episode.setting} that fed them on
+     episodes/[slug]/page.tsx. Three separate reasons, any one of which is
+     enough:
 
-     Each setting takes the paper-safe -deep step for small type, and the ink
-     -lift step where the ground is dark — the same split compat.css makes for
-     the house accent, restated because this element's declaration wins over the
-     one on <html> for its own subtree. — */
-[data-theme="sea"]{--accent:var(--brand-limited);--gold-deep:var(--brand-limited-deep);--gold-bright:var(--brand-limited-lift)}
-[data-theme="shore"]{--accent:var(--brand-scripted);--gold-deep:var(--brand-scripted-deep);--gold-bright:var(--brand-scripted-lift)}
-[data-theme="dark"] [data-theme="sea"]{--gold-deep:var(--brand-limited-lift)}
-[data-theme="dark"] [data-theme="shore"]{--gold-deep:var(--brand-scripted-lift)}
+     data-theme IS THE LIGHT/INK MECHANISM. It is set on <html> by actions.tsx
+     and read by tokens.css, palette.css and compat.css to choose a whole
+     palette. Hanging a second, unrelated taxonomy off the same attribute is why
+     the [data-theme="dark"] [data-theme="sea"] descendant pair had to exist at
+     all — a nesting that only makes sense once you know one "theme" means the
+     page's ground and the other means where the episode happens. Any future
+     theme value collides with a setting name on sight.
+
+     IT KEYED THE WRONG AXIS. It set the accent by SETTING — afloat or ashore —
+     not by division, so an [un] Hinged episode held on the water rendered in
+     [un] Limited's hue and an [un] Cut night ashore rendered in [un] Scripted's.
+     brand.ts promises "a division swaps the accent and nothing else"; this
+     swapped the accent for something that is not a division. (It also silently
+     did nothing for setting "sky", which has no rule here and never had one.)
+
+     AND THE ACCENT NO LONGER HAS A HUE. Under Option C the house accent is ink
+     on paper and ivory on ink. A block whose whole job is to substitute a
+     saturated hue into --accent is now arguing with the palette rather than
+     extending it.
+
+     The division is still spoken on these pages — by the lockup and the
+     eyebrow, the way tonight/page.tsx already says it should be ("the division
+     is spoken by the [un] Scripted lockup in the eyebrow, not by a theme
+     attribute"). Nothing here replaces the rules; the accent is the house
+     accent on an episode page as it is everywhere else. — */
 .ev-hero{color:var(--text-inverse-1);position:relative;min-height:420px;display:flex;align-items:flex-end}
 .ev-hero__bg{position:absolute;inset:0}
 .ev-hero__bg:after{content:"";position:absolute;inset:0;background:var(--scrim)}
 .ev-hero__bg:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply}
 .ev-hero__in{position:relative;z-index:1;width:100%;padding-block:96px 40px}
-.ev-hero__in .ls-eyebrow{color:var(--gold-bright);margin-bottom:16px;display:block}
+/* Knockout, not accent. This eyebrow sits at the BOTTOM of the hero, where
+   every --scene-* gradient has run down to #0D0D0D and the scrim is over it, so
+   it is type on media and takes --text-on-media like the --bone headline beside
+   it. It read --gold-bright, which the deleted setting block above was quietly
+   repointing to a division's -lift step — a bright cool hue on near-black, which
+   is why nobody noticed that --gold-bright resolves to --accent, and --accent on
+   the PAPER theme is now ink. Removing the block without this would have printed
+   an ink eyebrow on a black hero.
+
+   NOTE, not fixed here because it is not this pass's call to make: lines 20, 129
+   and 140 — the nav's active underline, the marketing hero's eyebrow and the
+   live strip — have the identical defect and never had a setting block hiding
+   it. They are ink-on-dark on the paper theme today. The real fix is one line at
+   the compat layer (--gold-bright resolving to the on-dark accent for knockout
+   surfaces, the way --focus-on-dark already does for focus rings), which is why
+   it is reported rather than patched surface by surface here. */
+.ev-hero__in .ls-eyebrow{color:var(--text-on-media);margin-bottom:16px;display:block}
 .ev-hero h1{font-size:var(--text-display-l);color:var(--bone);max-width:16ch}
 .ev-hero__meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-inverse-2);text-transform:uppercase}
 .ev-body{display:grid;grid-template-columns:1fr 360px;gap:64px;padding-block:64px 96px}

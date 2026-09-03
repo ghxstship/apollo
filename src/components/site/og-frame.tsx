@@ -2,21 +2,30 @@ import React from "react";
 import { ANCHOR } from "@/lib/brand";
 
 /* Shared card for the social previews — ink ground, ivory type, the anchor
-   tracked wide, one acid rule as the view's only accent. Rendered by next/og
+   tracked wide, one flat rule as the view's only accent. Rendered by next/og
    (satori), so every box declares display and no font is fetched.
 
-   The five literals below are the one place in src that may hold raw hex. next/og
+   The literals below are the one place in src that may hold raw hex. next/og
    rasterises on the server with no document and no cascade, so var(--noir-900)
    resolves to nothing and the card renders transparent-on-transparent. Each value
-   is copied from tokens.css and has to be re-copied when tokens.css moves. */
+   is copied from the palette and has to be re-copied when the palette moves. */
 
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = "image/png";
 
 const INK = "#141414";        /* --noir-900 */
-const IVORY = "#F1F1ED";      /* --ivory-100 */
-const MUTED = "#8A8A85";      /* --text-faint */
-const ACID_RULE = "linear-gradient(90deg,#2F9410,#58D621,#2F9410)"; /* --acid-600/400/600 */
+const IVORY = "#F1F1ED";      /* --ivory-100 — and, on this ink ground, --accent */
+/* --text-faint on the ink theme. Was #8A8A85, the PAPER step, and the value the
+   palette pass replaced for failing AA in both themes: at 3.59:1 on this ground
+   it was the eyebrow, the standfirst and the meta line of every social preview
+   the club publishes. #8E8E88 measures 5.59:1. */
+const MUTED = "#8E8E88";
+/* Was a three-stop linear-gradient across --acid-600/400/600 — a gradient whose
+   outer stops were the same colour, so it rasterised as a two-tone smear for no
+   reason anyone could see. The accent has no hue at all now, and on ink it is
+   ivory, which makes this what it always effectively was: a flat rule. A
+   backgroundColor, not a backgroundImage. */
+const RULE = IVORY;
 
 export function OgFrame({
   eyebrow,
@@ -41,7 +50,7 @@ export function OgFrame({
         color: IVORY,
       }}
     >
-      <div style={{ display: "flex", width: "100%", height: 8, backgroundImage: ACID_RULE }} />
+      <div style={{ display: "flex", width: "100%", height: 8, backgroundColor: RULE }} />
       <div
         style={{
           display: "flex",

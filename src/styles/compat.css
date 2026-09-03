@@ -108,16 +108,22 @@
      these lands on an acid step: the -deep step on paper (small type needs it
      to clear AA on #EDEDEA), the 400 step on ink. — */
 --gold:var(--accent);
---gold-400:var(--acid-400);
---gold-bright:var(--acid-400);
+--gold-400:var(--accent-hover);
+/* KNOCKOUT ONLY. Every consumer of these three sits on a ground that is dark in
+   BOTH themes — the Bridge, .ls-card--sea, the brand download band, the site nav
+   and hero. They must therefore take the on-dark step, not --accent: with the
+   accent now achromatic, --accent on the paper theme is INK, which would have
+   painted an ink eyebrow onto a near-black gradient. Same reasoning as
+   --focus-on-dark below, and the same trap. */
+--gold-bright:var(--ivory-100);
 --gold-deep:var(--text-accent);
---gilt-bright:var(--acid-400);
+--gilt-bright:var(--ivory-100);
 --brass:var(--accent);
---brass-bright:var(--acid-400);
+--brass-bright:var(--ivory-100);
 --brass-deep:var(--text-accent);
 --aegean:var(--accent);
 --neon-cyan:var(--accent);
---neon-violet:var(--acid-600);
+--neon-violet:var(--accent-press);
 /* Commerce, not a division — the Shop carries whichever division's mark the
    drop belongs to and has no mark of its own, so it gets the one commerce hue. */
 --terracotta:var(--brand-shop);
@@ -136,11 +142,11 @@
 --line-inverse:rgba(241,241,237,.26);
 --line-inverse-strong:rgba(241,241,237,.5);
 --border-gold:var(--border-accent);
---focus:var(--acid-600);
+--focus:var(--accent);
 /* Painted on surfaces that stay dark in BOTH themes (the mobile tab bar, the
    toast). The paper-safe focus green is 2.4:1 there — under the 3:1 that WCAG
    1.4.11 asks of a focus indicator — so those surfaces get the ink step. */
---focus-on-dark:var(--acid-400);
+--focus-on-dark:var(--ivory-100);
 
 /* — actions — */
 --action-primary:var(--noir-900);
@@ -155,8 +161,8 @@
 /* — washes — */
 --wash-ink:rgba(20,20,20,.06);
 --wash-ink-2:rgba(20,20,20,.10);
---wash-bone:rgba(62,195,23,.08);
---wash-gold:rgba(62,195,23,.16);
+--wash-bone:rgba(20,20,20,.05);
+--wash-gold:rgba(20,20,20,.08);
 
 /* — effects — */
 --radius-sharp:var(--radius-sm);
@@ -208,14 +214,14 @@
    marketing nav, the Bridge, the member card, the toast. Both ramps stay ivory
    in both themes for exactly that reason. */
 [data-theme="dark"]{
---gold-deep:var(--acid-400);
---brass-deep:var(--acid-400);
---focus:var(--acid-400);
+--gold-deep:var(--accent);
+--brass-deep:var(--accent);
+--focus:var(--accent);
 --action-primary:var(--ivory-100);
 --action-primary-hover:var(--ivory-50);
 --action-on-primary:var(--noir-950);
 --wash-ink:rgba(241,241,237,.07);
 --wash-ink-2:rgba(241,241,237,.12);
---wash-bone:rgba(88,214,33,.10);
---wash-gold:rgba(88,214,33,.16);
+--wash-bone:rgba(241,241,237,.06);
+--wash-gold:rgba(241,241,237,.10);
 }

@@ -131,7 +131,11 @@ export function Sweep({
         <div className="rdr-meter">
           <div className="rdr-meter__head">
             <span>Picks used</span>
-            <span style={{ color: "var(--brand-scripted-deep)" }}>
+            {/* The tenth division-hue-as-state declaration, and the only one
+                that was inline rather than in radar.css. It heads the meter
+                whose fill it must match, so it takes the same house accent at
+                the type step. */}
+            <span style={{ color: "var(--text-accent)" }}>
               {used} of {total}
             </span>
           </div>

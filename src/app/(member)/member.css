@@ -30,7 +30,7 @@
    into view on mount (see nav.tsx) — the last seven live past the fold and were
    invisible by default. The black in the mask is a stencil, not ink — a mask
    reads only the alpha channel, so no token applies to it. */
-.mbr-nav{display:flex;align-items:center;gap:4px;margin-inline-start:8px;min-width:0;flex:1 1 auto;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%)}
+.mbr-nav{display:flex;align-items:center;gap:4px;margin-inline-start:8px;min-width:0;flex:1 1 auto;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%)} /* ds-exempt: mask stencil — a mask reads alpha only, so #000 here means "fully opaque", not black. There is no colour decision to tokenise. */
 .mbr-nav::-webkit-scrollbar{display:none}
 .mbr-nav a{flex:none}
 .mbr-nav a{position:relative;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:8px 10px;border-radius:var(--radius-sharp);transition:color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
@@ -478,7 +478,7 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
    left exactly that hole. — */
 @media print{
   @page{margin:12mm}
-  body{background:#FFFFFF !important} /* paper */
+  body{background:#FFFFFF !important} /* paper */ /* ds-exempt: print sheet — paper is white and ink is black on every printer, so a theme token is the wrong answer here by construction. */
   .mbr-top,.mbr-tabbar,.pr-fab,.pr-panel,.crd-title,.crd-note,.crd-acts,.crd-feed,.plog{display:none !important}
   .mbr-shell,.mbr-main,.mbr-holdbox{padding:0 !important;margin:0 !important;max-width:none !important}
   .crd{padding:0 !important}
@@ -487,11 +487,23 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
     width:100% !important;
     max-width:480px !important;
     margin-inline:auto !important;
-    background:#0D0D0D !important; /* --void-black / --noir-950 */
-    color:#F1F1ED !important; /* --text-inverse-1 / --ivory-100 */
-    border-color:#0D0D0D !important; /* --line-inverse resolves to a translucent ivory; on paper the edge is the ground */
+    /* --noir-950 and --ivory-100 are base ramp values, declared once at :root
+       and never redeclared under [data-theme="dark"] — so they are exactly the
+       literals that used to sit here and, unlike a themed alias, they still
+       print an ink card from a paper page. The literals were only ever here
+       because the themed names were wrong, not because tokens fail in print. */
+    background:var(--noir-950) !important;
+    color:var(--ivory-100) !important;
+    border-color:var(--noir-950) !important; /* --line-inverse resolves to a translucent ivory; on paper the edge is the ground */
     -webkit-print-color-adjust:exact !important;
     print-color-adjust:exact !important;
   }
-  .crd-seam{background:linear-gradient(120deg,#58D621,#3EC317) !important;animation:none !important} /* --lava / --gradient-accent */
+  /* The seam, printed. Hardcoded for the same reason the card above it is —
+     print-color-adjust:exact needs a literal — and it was the retired acid pair
+     #58D621/#3EC317, a gradient that no longer exists in either sense: the
+     accent has no hue, and --gradient-accent is a flat fill now, not a pair.
+     The card prints on ink, and on ink the accent is ivory — named here as the
+     theme-invariant ramp value for the same reason the card above it is, since
+     var(--gradient-accent) itself would print ink-on-ink from a paper page. */
+  .crd-seam{background:var(--ivory-100) !important;animation:none !important}
 }

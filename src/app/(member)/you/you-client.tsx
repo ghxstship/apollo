@@ -244,9 +244,15 @@ export function ClosedPlaceNotice() {
   );
 }
 
+/* The three hold banners below all rule their border in --brass-deep, which
+   compat.css aliases to --text-accent and which therefore resolves in every
+   theme. All three carried a `, #966E22` fallback — antique gold from the
+   retired brand — which could only ever paint if the alias had been deleted,
+   i.e. it was a promise to render the OLD palette on the day the new one lost
+   its name. Dropped: a fallback that is wrong is worse than none. */
 export function ClubHoldNotice() {
   return (
-    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep, #966E22)" }} role="status">
+    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep)" }} role="status">
       <div className="you-row">
         <div>
           <b>Your membership is paused</b>
@@ -269,7 +275,7 @@ export function ClubHoldNotice() {
    card payment ends on its own would send them to the wrong door. */
 export function DuesHoldNotice() {
   return (
-    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep, #966E22)" }} role="status">
+    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep)" }} role="status">
       <div className="you-row">
         <div>
           <b>Held — dues lapsed.</b>
@@ -293,7 +299,7 @@ export function ResumeBanner() {
   return (
     <div
       className="you-sec"
-      style={{ marginTop: 0, borderColor: "var(--brass-deep, #966E22)" }}
+      style={{ marginTop: 0, borderColor: "var(--brass-deep)" }}
       role="status"
     >
       <div className="you-row">

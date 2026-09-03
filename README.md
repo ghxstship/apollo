@@ -78,7 +78,7 @@ Every change ships only when all of these are green, on the commit (not the work
 | --- | --- | --- |
 | Types | `npx tsc --noEmit` | the hand-maintained `src/lib/supabase/types.ts` still matches the code that reads it |
 | Lint | `npx eslint src --max-warnings=0` | no warnings, no disabled rules |
-| Design system | `npm run check:ds` | tokens, lockups, casing and the named vocabulary hold |
+| Design system | `npm run check:ds` | tokens, lockups, casing and the named vocabulary hold; colour holds too — the status/identity hue reservation, the 30° hue floor, WCAG contrast against the ground each token actually renders on, and no raw hex outside `tokens.css`/`palette.css` |
 | Unit | `npm run test` | the pure helpers in `src/lib` (vitest) |
 | Routes | `E2E_PASSWORD=… BASE_URL=… npm run routes:audit` | every route renders for its role, no leaked undefined/null text |
 | Personas | `E2E_PASSWORD=… BASE_URL=… npm run e2e` — **twice** | business rules through the live API with real RLS and triggers; the suite sweeps its own fixtures and pins its knots footprint |

@@ -1,0 +1,251 @@
+/* [un] — the palette, as decided rather than as shipped.
+   Owner decision 2026-09-02, Option C: the club has no colour of its own.
+
+   ── WHY THIS FILE EXISTS ────────────────────────────────────────────────────
+   Neither of the two files that already hold colour would take this change, and
+   both were right to refuse.
+
+   tokens.css is a verbatim copy of the handoff package and says so in its own
+   header: values "MUST NOT be renamed, re-scaled, or tidied here". A palette
+   decision is not tidying, but editing it would make the file's claim to be a
+   verbatim copy false, and that claim is what lets anyone diff this repo against
+   the package and believe the answer.
+
+   compat.css takes the opposite vow: "Nothing here may redeclare a name
+   tokens.css owns." It is an alias layer for the PREVIOUS brand's vocabulary,
+   and it deletes itself as surfaces are rebuilt. Overrides that are meant to
+   last do not belong in a file whose stated end state is empty.
+
+   So this is a third layer with one job, sitting between them: tokens publishes,
+   palette decides, compat translates. When the handoff package is regenerated
+   with these values, this file collapses into it and disappears — the same exit
+   compat.css has, for the same reason.
+
+   ── WHAT CHANGED, AND WHY ───────────────────────────────────────────────────
+   THE ACCENT IS GONE. It was acid green at OKLCH hue 140.4. --positive on the
+   ink theme is hue 140.2. Two tenths of a degree and eight thousandths of
+   lightness apart is below a just-noticeable difference at any size, which means
+   the house colour and the success state were not similar — they were the same
+   colour wearing two token names. Every argument for keeping a hue ran into the
+   same wall: the accent appears beside whichever division is on screen, in
+   links, focus rings, seams and progress, so any saturated house colour competes
+   permanently with the identity system. Removing it settles that outright and
+   costs one slot on a wheel that had none to spare.
+
+   The accent is now ink on paper and ivory on ink — which is exactly how
+   [un] Brand, the sixth division, has always worked. This generalises a pattern
+   the brand already sanctioned rather than inventing one.
+
+   THE DIVISIONS MOVED TO THE COOL ARC, at 41 degrees apart and identical
+   lightness and chroma. brand.ts promises that "a division swaps the accent and
+   nothing else"; the shipped palette swapped the accent, the brightness and the
+   saturation — lightness ran 0.447 to 0.751, so an [un] Limited page was three
+   times brighter than an [un] Bound page for the same element. Now it is one
+   number that changes.
+
+   STATUS KEEPS ITS HUES AND GAINS CONTRAST. Green, amber and red are worth more
+   as convention than any brand gains by taking them. They were failing the 3:1
+   floor for the borders and rules they draw; these clear it.
+
+   --text-faint IS THE ONE THAT WAS ACTUALLY BROKEN. At #8A8A85 on paper it
+   measured 2.96:1 — failing AA and failing even the 3:1 large-text floor — and
+   it paints stat labels, ledger metadata and empty-state copy. It failed in both
+   themes. That is the only change here that is not a matter of taste.
+
+   Every value below was solved rather than chosen: for each hue, the darkest
+   step that clears 4.5:1 on paper and the lightest that clears it on ink. */
+
+:root{
+/* ── The house accent: no hue at all ──────────────────────────────────────── */
+--accent:var(--noir-900);
+--accent-hover:var(--noir-950);
+--accent-press:#000000;
+--on-accent:var(--ivory-50);
+--text-accent:var(--noir-900);
+/* --focus and --focus-on-dark are NOT declared here on purpose. compat.css
+   owns both, and it imports after this file, so anything set here would lose
+   on cascade order and look like it had worked. They are repointed there. */
+
+/* ── Divisions: cool arc, 41 degrees apart, iso-lightness ──────────────────
+   L 0.56 for the mark, 0.44 for text on paper, 0.70 for text on ink. Every
+   -deep clears 6.4:1 and every -lift clears 6.5:1 — the shipped ramp managed
+   4.50:1 with no headroom at all. */
+--brand-scripted:#048681;   --brand-scripted-deep:#035F5C; --brand-scripted-lift:#3AB3AD;
+--brand-limited:#0D7FA9;    --brand-limited-deep:#005A7A;  --brand-limited-lift:#50AAD4;
+--brand-bound:#5E6FB5;      --brand-bound-deep:#3D4C91;    --brand-bound-lift:#879AE0;
+--brand-cut:#8B60A2;        --brand-cut-deep:#683C7F;      --brand-cut-lift:#B58BCD;
+--brand-hinged:#A55779;     --brand-hinged-deep:#813357;   --brand-hinged-lift:#D282A3;
+
+/* Commerce is retired as a hue. brand.ts already argues it out of existence —
+   the Shop is the sales channel, not the maker, and its products carry the
+   [un] Brand mark. A channel with no mark needs no accent, and terracotta was
+   boxed in between caution and danger anyway. It resolves to ink so that any
+   surface still reading it renders in the house colour rather than breaking. */
+--brand-shop:var(--noir-900);
+
+/* Three dead aliases from the retired sub-brand era — Syrius Social, Dating and
+   Yacht Club, the last of which is itself a banned term. Nothing consumes them;
+   the orphan check exempts them as known-dead. They are repointed anyway,
+   because they still held acid green (140.4 degrees, 7.6 from the new positive)
+   and amber (58.3) — the two hues this palette exists to retire. A dead token
+   carrying a retired hue is a loaded gun for whoever revives it. */
+--brand-social:var(--brand-hinged);
+--brand-dating:var(--brand-bound);
+--brand-yacht:var(--brand-limited);
+
+/* ── Status: same hues, enough contrast to draw a border with ─────────────── */
+--positive:#12722F;
+--caution:#B67707;
+--danger:#BE3A31;
+
+/* ── The one real accessibility defect ─────────────────────────────────────
+   2.96:1 -> 4.92:1 on the page ground, 5.37:1 on a card. */
+--text-faint:#666662;
+
+/* The two remaining acid-derived tokens. --border-accent draws the rule around
+   an accented control and --shadow-glow-accent its focus bloom; both were mixed
+   from acid rgba and would have stayed green while everything around them went
+   to ink. A glow around an ink control is a shadow, not a glow. */
+--border-accent:rgba(20,20,20,.42);
+--shadow-glow-accent:0 0 0 3px rgba(20,20,20,.16);
+
+/* The accent seam is not a gradient. Its two stops were 1.5 degrees apart, so
+   five surfaces paid gradient cost to render a flat fill. It is a flat fill. */
+--gradient-accent:var(--noir-900);
+
+/* The scene grounds terminate in the surface black rather than --void, a violet
+   black at chroma 0.026 that shares no ground with any page in the product, and
+   their stops are respaced so lightness falls evenly. The shipped ramps dumped
+   colour into a narrow band and then fell off a cliff — --gradient-outrun's
+   bottom fifth darkened 5.7 times faster than its top half. */
+--scene-noir:var(--texture-grain),linear-gradient(165deg,#D6D6D0 0%,#8A8A85 34%,#3A3A38 68%,#0D0D0D 100%);
+--scene-biscayne:var(--texture-grain),linear-gradient(180deg,#A9C4D6 0%,#4F7C99 34%,#2A4356 68%,#0D0D0D 100%);
+--scene-crimson:var(--texture-grain),linear-gradient(180deg,#D8A6B8 0%,#A55779 34%,#5C2C42 68%,#0D0D0D 100%);
+--scene-golden:var(--texture-grain),linear-gradient(180deg,#DFC9A4 0%,#A98D5E 34%,#5A4A32 68%,#0D0D0D 100%);
+--scene-night:var(--texture-grain),linear-gradient(180deg,#8E9FC9 0%,#5E6FB5 34%,#333D63 68%,#0D0D0D 100%);
+--scene-rose:var(--texture-grain),linear-gradient(180deg,#C79BB4 0%,#8B60A2 34%,#4A3457 68%,#0D0D0D 100%);
+--gradient-outrun:linear-gradient(180deg,#A98D5E 0%,#A55779 34%,#5C2C42 68%,#0D0D0D 100%);
+
+/* The washes are NOT declared here. compat.css owns them in both themes and
+   imports after this file — they were mixed from acid green and are neutralised
+   there, at source, rather than shadowed from here where they would lose. */
+}
+
+[data-theme="dark"]{
+/* On ink the accent is ivory — the same inversion [un] Brand has always made. */
+--accent:var(--ivory-100);
+--accent-hover:var(--ivory-50);
+--accent-press:var(--ivory-300);
+--on-accent:var(--noir-950);
+--text-accent:var(--ivory-100);
+
+/* Divisions read the -lift step on ink; the base stays for fills and marks. */
+--brand-scripted:#3AB3AD;
+--brand-limited:#50AAD4;
+--brand-bound:#879AE0;
+--brand-cut:#B58BCD;
+--brand-hinged:#D282A3;
+--brand-shop:var(--ivory-100);
+
+--positive:#4AB962;
+--caution:#EB9F2C;
+--danger:#E8594D;
+
+/* 3.59:1 -> 5.59:1. The ink theme failed this too. */
+--text-faint:#8E8E88;
+
+--gradient-accent:var(--ivory-100);
+--border-accent:rgba(241,241,237,.38);
+--shadow-glow-accent:0 0 0 3px rgba(241,241,237,.18);
+
+/* AND THE ALIASES, EXPLICITLY. This is the part that is easy to get wrong and
+   looks like it worked: a custom property resolves its var() at the element
+   that DECLARES it, not the element that uses it. compat.css declares
+   --action-accent:var(--gradient-accent) on :root, so it computes to ink there
+   and is inherited as ink — redefining --gradient-accent down here does
+   nothing for it.
+
+   The symptom was precise and worth recording: the hero CTA kept an ink fill
+   while gaining an ivory glow, because box-shadow reads --shadow-glow-accent
+   directly and background reads it through one level of indirection. Every
+   alias that points at the accent has to be restated here. */
+--action-accent:var(--ivory-100);
+--action-on-accent:var(--noir-950);
+--text-link:var(--ivory-100);
+--gold:var(--ivory-100);
+--gold-deep:var(--ivory-100);
+--brass:var(--ivory-100);
+--brass-deep:var(--ivory-100);
+--aegean:var(--ivory-100);
+--neon-cyan:var(--ivory-100);
+--lava:var(--ivory-100);
+--border-gold:rgba(241,241,237,.38);
+--glow-cyan:0 0 0 3px rgba(241,241,237,.18);
+--focus:var(--ivory-100);
+--text-gold:var(--ivory-100);
+}
+
+/* ── Always-ink surfaces ────────────────────────────────────────────────────
+   THE CENTRAL CONSEQUENCE OF AN ACHROMATIC ACCENT, and the thing that will
+   catch anyone who touches this palette next.
+
+   A green accent worked on paper and on ink without thinking about it, because
+   a hue is legible against both. Ink is not: --accent resolves to ink on the
+   paper theme, and roughly a dozen surfaces in this product are DARK IN BOTH
+   THEMES — the Bridge, the kiosk, the member card, the toast, the marketing
+   nav and hero, .ls-card--sea. On those, an ink primary button is an ink
+   rectangle on an ink ground, and the whole Bridge ships with an invisible
+   Save.
+
+   Found by looking at the homepage rather than by any check: the hero CTA
+   rendered as a black pill on a near-black gradient. The Bridge was worse and
+   would not have shown up in a screenshot of the marketing site at all.
+
+   These surfaces therefore flip the accent pair locally, which is the same
+   move --focus-on-dark and the --text-inverse-* ramp already make and for the
+   same reason. Everything inside them — buttons, badges, seams, progress —
+   then resolves correctly without a single call site knowing about it.
+
+   Add to this list whenever a surface is dark in both themes. The rule is not
+   "is it dark right now", it is "is it dark in BOTH themes"; a surface that
+   merely follows the theme already gets the right answer from the blocks
+   above. */
+.hm-top,.hm-tabs,.hm-shell,.kio,.crd-card,.ls-toast,.ls-tip__bubble,
+.ls-card--sea,.ws-nav,.ws-menu,.ws-hero,.ws-footer,.ws-livestrip,.ws-band,
+.ev-log,.bk-lock--ink,.bk-dl,.gw-side,.mbr-tabbar,.ptl-hero,
+.ls-table--inverse,[data-surface="ink"]{
+--accent:var(--ivory-100);
+--accent-hover:var(--ivory-50);
+--accent-press:var(--ivory-300);
+--on-accent:var(--noir-950);
+--text-accent:var(--ivory-100);
+--gradient-accent:var(--ivory-100);
+--border-accent:rgba(241,241,237,.38);
+--shadow-glow-accent:0 0 0 3px rgba(241,241,237,.18);
+
+/* AND THE ALIASES, EXPLICITLY. This is the part that is easy to get wrong and
+   looks like it worked: a custom property resolves its var() at the element
+   that DECLARES it, not the element that uses it. compat.css declares
+   --action-accent:var(--gradient-accent) on :root, so it computes to ink there
+   and is inherited as ink — redefining --gradient-accent down here does
+   nothing for it.
+
+   The symptom was precise and worth recording: the hero CTA kept an ink fill
+   while gaining an ivory glow, because box-shadow reads --shadow-glow-accent
+   directly and background reads it through one level of indirection. Every
+   alias that points at the accent has to be restated here. */
+--action-accent:var(--ivory-100);
+--action-on-accent:var(--noir-950);
+--text-link:var(--ivory-100);
+--gold:var(--ivory-100);
+--gold-deep:var(--ivory-100);
+--brass:var(--ivory-100);
+--brass-deep:var(--ivory-100);
+--aegean:var(--ivory-100);
+--neon-cyan:var(--ivory-100);
+--lava:var(--ivory-100);
+--border-gold:rgba(241,241,237,.38);
+--glow-cyan:0 0 0 3px rgba(241,241,237,.18);
+--focus:var(--ivory-100);
+--text-gold:var(--ivory-100);
+}
