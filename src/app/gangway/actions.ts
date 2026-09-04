@@ -21,7 +21,7 @@ export async function sendMagicLink(
   const email = String(formData.get("email") ?? "").trim();
   const next = safeNext(String(formData.get("next") ?? "/home"));
 
-  if (!email || !email.includes("@")) {
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { error: "Enter the email on file." };
   }
 

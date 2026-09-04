@@ -5,6 +5,7 @@ import { TIER_LABEL, logDate, logTime } from "@/lib/format";
 import { SURFACES } from "@/lib/brand";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { literalCode } from "@/lib/boarding-code";
+import { memberMark } from "@/lib/membership";
 import { getMember } from "../../data";
 import { PrintButton } from "../../card/print-button";
 
@@ -185,11 +186,15 @@ export default async function StubPage({
   const berthsTotal = capRes.data?.passes_total ?? episode.passes_total;
   const qr = await qrDataUrl(code);
   const name = host?.full_name ?? "A member";
-  const memberNo = host?.member_no ?? "UN-0000";
+  /* As the card sets it — the raw column carries the retired prefix. */
+  const memberNo = memberMark(host?.member_no) || "UNISSUED";
   const tier = TIER_LABEL[host?.tier ?? "regional"] ?? "Regional";
 
   return (
     <div className="crd ls-fade">
+      {/* The page is the credential and prints as one, so its name is for
+          the reader who cannot see it and the title bar that can. */}
+      <h1 className="ls-visually-hidden">Boarding pass</h1>
       <div className="crd-card" style={{ textAlign: "left" }}>
         <div className="crd-seam"></div>
         <div className="crd-in">
@@ -225,7 +230,10 @@ export default async function StubPage({
 
           <div style={{ marginTop: 16 }}>
             <Row label="DEPARTS" value={`${logDate(episode.starts_at, episode.time_zone)} · ${logTime(episode.starts_at, episode.time_zone)}`} />
-            <Row label="MUSTER" value={episode.muster ?? "GANGWAY B-12"} />
+            {/* TODO(owner): the fallback used to read GANGWAY B-12, a dock
+                nobody had confirmed. Until the episode carries a muster point
+                the stub says where to look rather than inventing one. */}
+            <Row label="MUSTER" value={episode.muster ?? "POSTED ON BOARD"} />
             <Row label="MANIFEST" value={`${aboard}/${berthsTotal} ABOARD`} />
             {guest ? (
               <>

@@ -37,25 +37,40 @@ export function Sweep({
   clock,
   pins,
   listed,
+  now: serverNow,
 }: {
   episodeId: string;
   myPass: string;
   clock: RadarClock | null;
   pins: RadarPin[];
   listed: boolean;
+  /** Request time, read on the server. The first client render uses the same
+      instant, so the two never disagree about the phase or the minute. */
+  now: number;
 }) {
   const [error, setError] = React.useState<string | null>(null);
   const [token, setToken] = React.useState("");
   const [pending, start] = React.useTransition();
 
-  /* Read once per render, on the server's clock via the page and then on the
-     browser's. It is a label; the lock itself is held by the trigger, so a
+  /* The server's clock at first paint, then the browser's every half minute.
+     Reading Date.now() during render put "17 minutes remaining" on the server
+     and "16" in the browser, and React re-rendered the panel to settle it. It
+     is a label either way; the lock itself is held by the trigger, so a
      browser whose clock is wrong gets a wrong countdown and a right refusal —
      which is the correct way round. */
-  const phase = radarPhase(clock);
-  const left = minutesUntil(clock?.locks_at);
+  const [now, setNow] = React.useState(serverNow);
+  React.useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+  const phase = radarPhase(clock, now);
+  const left = minutesUntil(clock?.locks_at, now);
   const plotted = pins.filter((p) => p.plotted);
-  const slots = slotsFor(clock, plotted);
+  /* slotsFor reads its own clock for the locked state; the phase above is the
+     one this component has already committed to. */
+  const slots = slotsFor(clock, plotted).map((s) =>
+    s.pin ? s : { ...s, state: (phase === "open" ? "open" : "locked") as typeof s.state }
+  );
   const used = plotted.length;
   const total = clock?.slots ?? 3;
 
@@ -91,7 +106,7 @@ export function Sweep({
             <p className="rdr-strip__body">
               You asked to stay off the manifest, and Radar honours that — which
               means nobody aboard can pick you, so nothing you pick can come
-              back mutual. Your page has the switch.
+              back mutual. The You page has the switch.
             </p>
           </div>
         ) : null}

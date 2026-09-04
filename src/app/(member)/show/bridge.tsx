@@ -216,13 +216,24 @@ export function PodQueue({
 
 export function BoardControls({ episodeId, empty }: { episodeId: string; empty: boolean }) {
   const [error, setError] = React.useState<string | null>(null);
+  const [said, setSaid] = React.useState<string | null>(null);
   const [pending, start] = React.useTransition();
 
-  const run = (fn: () => Promise<{ error?: string }>) =>
+  const run = (fn: () => Promise<{ error?: string; minted?: number }>) =>
     start(async () => {
       setError(null);
+      setSaid(null);
       const res = await fn();
       if (res.error) setError(res.error);
+      /* The RPC's own count. The action returns it so the screen can stop
+         asserting a figure computed before the click. */
+      else if (res.minted !== undefined) {
+        setSaid(
+          res.minted === 0
+            ? "Nothing to mint — every pass aboard already holds an envelope."
+            : `${res.minted} envelope${res.minted === 1 ? "" : "s"} minted.`
+        );
+      }
     });
 
   return (
@@ -238,6 +249,10 @@ export function BoardControls({ episodeId, empty }: { episodeId: string; empty: 
       {error ? (
         <p className="shw-note" role="alert" style={{ color: "var(--danger)" }}>
           {error}
+        </p>
+      ) : said ? (
+        <p className="shw-note" role="status">
+          {said}
         </p>
       ) : null}
     </div>

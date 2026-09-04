@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, Icon, StandingsTable, type StandingRow } from "@/components/ds";
 import { CONTEST_METRIC, knots, LOGBOOK } from "@/lib/brand";
-import { logDate, roman } from "@/lib/format";
+import { logDate, roman, yearIn } from "@/lib/format";
 import { getMember } from "../../data";
 import { ContestEntry } from "./entry-control";
 
@@ -136,7 +136,7 @@ export default async function ContestPage({
             : `Reach ${contest.target} ${CONTEST_METRIC[contest.metric] ?? contest.metric}`}
         </Badge>
         <Badge tone="outline">
-          {logDate(contest.starts_at, zone)} — {logDate(contest.ends_at, zone)} · {roman(new Date(contest.ends_at).getFullYear())}
+          {logDate(contest.starts_at, zone)} — {logDate(contest.ends_at, zone)} · {roman(yearIn(contest.ends_at, zone))}
         </Badge>
         {contest.knots_award > 0 ? (
           <Badge tone="outline">
@@ -153,8 +153,8 @@ export default async function ContestPage({
 
       {open && !closed && onHold ? (
         <p style={{ marginTop: 22, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
-          Entries wait while your membership is paused. Resume it on your page
-          and this contest opens back up.
+          Entries wait while your membership is paused. Resume it on the You
+          page and this contest opens back up.
         </p>
       ) : open && !closed && !mayEnter && !entered ? (
         <p style={{ marginTop: 22, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>

@@ -105,6 +105,8 @@ export default async function MatchesPage() {
           status="empty"
           icon="Users"
           title="That is everyone."
+          /* TODO(owner): Thursday is asserted here and on Tonight; the night
+             itself comes off episodes.starts_at. Confirm the standing day. */
           detail="Matches come from tables, not swiping — take a seat on Thursday."
           style={{ marginTop: 24 }}
         />

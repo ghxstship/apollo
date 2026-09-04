@@ -1,60 +1,12 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, KnotsLedger, Toast, type LedgerEntry, type LedgerReward } from "@/components/ds";
+import { Button, Dialog, KnotsLedger, Toast, type LedgerEntry, type LedgerReward } from "@/components/ds";
 import { mintInvite, redeemReward } from "./actions";
 
-/* — Redeem a reward against the knots balance — */
-export function RedeemButton({
-  rewardId,
-  rewardName,
-  affordable,
-  short,
-}: {
-  rewardId: string;
-  rewardName: string;
-  affordable: boolean;
-  short: number;
-}) {
-  const [pending, startTransition] = React.useTransition();
-  const [error, setError] = React.useState<string | null>(null);
-  const [redeemed, setRedeemed] = React.useState(false);
-
-  const redeem = () => {
-    setError(null);
-    startTransition(async () => {
-      const res = await redeemReward(rewardId);
-      if (res.error) setError(res.error);
-      else setRedeemed(true);
-    });
-  };
-
-  return (
-    <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-      {affordable ? (
-        <Button variant="gold" size="sm" disabled={pending} onClick={redeem}>
-          Redeem
-        </Button>
-      ) : (
-        <Badge tone="outline">{short} short</Badge>
-      )}
-      {error ? (
-        <span role="alert" style={{ fontSize: 12, color: "var(--siren)" }}>
-          {error}
-        </span>
-      ) : null}
-      {redeemed ? (
-        <Toast
-          fixed
-          tone="positive"
-          message="Redeemed. Shoreside will make it so."
-          meta={rewardName}
-          onDismiss={() => setRedeemed(false)}
-        />
-      ) : null}
-    </div>
-  );
-}
+/* RedeemButton stood here — exported, never mounted, and it spent knots on a
+   single click with no second word. KnotsPanel below is the one redeem path
+   and it asks first. Deleted rather than left for an autocomplete to find. */
 
 /* — Mint the member's real invite code — */
 export function MintInvite() {

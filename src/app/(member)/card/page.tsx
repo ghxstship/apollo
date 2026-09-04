@@ -3,12 +3,13 @@ import { headers } from "next/headers";
 import { CopyLink } from "@/components/copy-link";
 import { Badge, Wordmark } from "@/components/ds";
 import { SITE_DOMAIN, SURFACES } from "@/lib/brand";
-import { TIER_LABEL, roman } from "@/lib/format";
+import { TIER_LABEL, roman, yearIn } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { memberMark } from "@/lib/membership";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../data";
 import { PrintButton } from "./print-button";
+import { RotateFeed } from "./rotate-feed";
 
 export const metadata: Metadata = { title: SURFACES.passbook };
 
@@ -32,9 +33,8 @@ export default async function MemberCardPage() {
   const memberNo = profile?.member_no ?? "";
   const shownNo = memberMark(memberNo) || "Unissued";
   const tier = TIER_LABEL[profile?.tier ?? "regional"] ?? "Regional";
-  const joinedYear = profile?.joined_at
-    ? new Date(profile.joined_at).getFullYear()
-    : new Date().getFullYear();
+  /* On the member's own clock — getFullYear() reads the render host's. */
+  const joinedYear = yearIn(profile?.joined_at ?? new Date().toISOString(), zone);
   const qr = await qrDataUrl(memberNo || "unissued");
 
   /* Season feed — public by secret, so the address is the whole key. */
@@ -155,6 +155,12 @@ export default async function MemberCardPage() {
           <p className="mbr-mono" style={{ marginTop: 12 }}>
             THIS ADDRESS IS YOURS ALONE — ANYONE HOLDING IT READS YOUR SEASON
           </p>
+          {/* The way back from an address that got out. The action and the
+              dialog existed; nothing on this page mounted them, so the warning
+              above was all a member had. */}
+          <div style={{ marginTop: 10 }}>
+            <RotateFeed />
+          </div>
         </section>
       ) : null}
       <div style={{ width: "min(680px, 100%)" }}>

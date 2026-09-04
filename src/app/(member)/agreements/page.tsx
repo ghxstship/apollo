@@ -79,7 +79,7 @@ export default async function AgreementsPage() {
           <span className="mbr-eyebrow">On file</span>
           <StateBlock
             status="empty"
-            icon="FileSignature"
+            icon="FilePenLine"
             title="Nothing to sign yet."
             detail="Agreements land here when an episode calls for one. Nothing is waiting on you."
           />

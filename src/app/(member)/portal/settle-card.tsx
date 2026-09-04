@@ -5,7 +5,7 @@ import { Button, Toast } from "@/components/ds";
 import { CARD_UNAVAILABLE } from "@/lib/errors";
 
 /* — Settle a negative house-account balance by card via Stripe Checkout.
-     Rendered only when the server says the processor is configured. — */
+     Rendered only when the server says card payments are wired. — */
 
 export function SettleCardButton({ amountLabel }: { amountLabel: string }) {
   const [pending, setPending] = React.useState(false);
@@ -52,7 +52,7 @@ export function SettledNotice() {
     <Toast
       fixed
       tone="positive"
-      message="Payment received — the ledger updates when the processor confirms."
+      message="Payment received — the ledger updates when the card clears."
       onDismiss={() => setOpen(false)}
     />
   );

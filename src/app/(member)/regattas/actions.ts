@@ -7,6 +7,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export type ContestResult = { error?: string };
 
+/* The slug is only ever a cache key here, but it comes off the wire and goes
+   into revalidatePath — so it has the shape a contest slug has, or it is
+   nothing. */
+const SLUG = /^[a-z0-9-]{1,80}$/;
+
 /* Entering and leaving a contest. Both are plain table writes — the RLS policies
    are the whole rule set: you may only enter yourself, only into an open contest,
    only before it closes, and, when the contest is scoped to one episode, only if
@@ -29,7 +34,7 @@ export async function enterContest(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/gangway");
-  if (!contestId || !slug) redirect("/regattas");
+  if (!contestId || !SLUG.test(slug)) redirect("/regattas");
 
   const { error } = await supabase
     .from("contest_entries")
@@ -52,7 +57,7 @@ export async function withdrawFromContest(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/gangway");
-  if (!contestId || !slug) redirect("/regattas");
+  if (!contestId || !SLUG.test(slug)) redirect("/regattas");
 
   const { error } = await supabase
     .from("contest_entries")

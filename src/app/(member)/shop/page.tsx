@@ -19,7 +19,9 @@ export default async function ShopPage() {
       .from("shop_orders")
       .select("*")
       .eq("profile_id", user.id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      /* The sixty most recent — a history, not the whole ledger. */
+      .limit(60),
   ]);
 
   const products: ShopProduct[] = (productsRes.data ?? []).map((p) => ({

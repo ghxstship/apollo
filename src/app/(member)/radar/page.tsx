@@ -146,6 +146,7 @@ export default async function RadarPage() {
             clock={clock}
             pins={pins}
             listed={pass.show_on_manifest !== false}
+            now={now}
           />
         ) : (
           <div className="rdr-panel">

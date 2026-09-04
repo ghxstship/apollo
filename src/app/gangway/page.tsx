@@ -34,7 +34,10 @@ export default async function GangwayPage({
           <span>·</span>
           <span>LA 33.98° N</span>
           <span>·</span>
-          <span>SEASON II</span>
+          {/* TODO(owner): Season I is the one on the playbook; this read
+              SEASON II with nothing behind it. Read it off the edition once
+              the gangway knows which city it is standing in. */}
+          <span>SEASON I</span>
         </div>
       </aside>
       <main id="main" className="gw-main">

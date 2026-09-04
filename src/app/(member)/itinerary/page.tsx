@@ -177,6 +177,8 @@ export default async function ItineraryPage() {
                   Safe code<b>Set on board</b>
                 </span>
               </div>
+              {/* TODO(owner): stock card copy — confirm the water hours and
+                  the jacket stowage for the hull, or move both onto cabins. */}
               <p className="cht-card__note">
                 Life jackets under the bunk. Fresh water runs 07:00 to 23:00.
               </p>

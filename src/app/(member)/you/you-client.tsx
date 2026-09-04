@@ -50,8 +50,15 @@ export function ProfileForm({
   return (
     <form action={formAction}>
       <div className="you-grid">
-        <Input label="Full name" name="full_name" defaultValue={fullName} error={state.error} />
-        <Input label="Handle" name="handle" defaultValue={handle} placeholder="how the crew hails you" />
+        <Input label="Full name" name="full_name" defaultValue={fullName} maxLength={80} error={state.error} />
+        <Input
+          label="Handle"
+          name="handle"
+          defaultValue={handle}
+          maxLength={32}
+          placeholder="how the crew hails you"
+          hint="Letters, digits, dots, dashes, underscores."
+        />
         <Select
           label={`Home ${PLACE.market.toLowerCase()}`}
           name="home_city"
@@ -489,7 +496,7 @@ export function Offboarding({
             <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
               Stay aboard
             </Button>
-            <Button variant="outline" size="sm" disabled={pending} onClick={confirm}>
+            <Button variant="danger" size="sm" disabled={pending} onClick={confirm}>
               Depart
             </Button>
           </>

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
-import { DRINKS, isSegment, type Segment, type Stance } from "@/lib/vetting";
+import { BOUNDARY_TOPICS, DRINKS, STANCES, isSegment, type Segment, type Stance } from "@/lib/vetting";
 import { isPartnerName } from "./partner";
 
 /* Vetting — the member's side of the funnel.
@@ -37,7 +37,7 @@ export async function saveDrinks(drinks: string[]): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
 
-  const clean = [...new Set(drinks)].filter((d) => (DRINKS as readonly string[]).includes(d));
+  const clean = [...new Set(Array.isArray(drinks) ? drinks : [])].filter((d) => (DRINKS as readonly string[]).includes(d));
   const { error } = await db
     .from("preference_sheets")
     .upsert({ profile_id: user.id, drinks: clean, updated_at: new Date().toISOString() });
@@ -52,7 +52,7 @@ export async function saveDrinks(drinks: string[]): Promise<VettingResult> {
 export async function saveFlags(green: string, red: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
-  if (green.length > 200 || red.length > 200) {
+  if (typeof green !== "string" || typeof red !== "string" || green.length > 200 || red.length > 200) {
     return { error: "Two hundred characters each — trim one and try again." };
   }
 
@@ -78,6 +78,11 @@ export async function saveFlags(green: string, red: string): Promise<VettingResu
 export async function setBoundary(topic: string, stance: Stance): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  /* The column is an open slug, but what this surface writes is the sheet's
+     own list — "photographed" is read by blur_is_required(), and a stray
+     topic would be a boundary nobody honours. */
+  if (!(BOUNDARY_TOPICS as readonly string[]).includes(topic)) return { error: "Pick a boundary from the sheet." };
+  if (!(STANCES as readonly string[]).includes(stance)) return { error: "Pick never, ask me, or happy to." };
 
   const { error } = await db
     .from("preference_boundaries")

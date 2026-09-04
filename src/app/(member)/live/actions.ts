@@ -36,10 +36,21 @@ export async function placeGalleyOrder(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  const clean = lines
+  const clean = (Array.isArray(lines) ? lines : [])
     .map((l) => ({ itemId: String(l.itemId), qty: Math.round(Number(l.qty)) }))
-    .filter((l) => l.itemId && l.qty > 0 && l.qty <= 12);
+    .filter((l) => l.itemId && l.qty > 0);
   if (clean.length === 0) return { error: "Nothing in the order yet." };
+  /* Over the ceiling is refused, not trimmed — a tab that quietly lost a line
+     is a member arguing with the galley over a drink they were never charged
+     for. */
+  if (clean.some((l) => l.qty > 12)) return { error: "Twelve of a thing is the ceiling per order." };
+  if (clean.length > 40) return { error: "That is more than one order. Send it in two." };
+  if (!/^[0-9a-f-]{36}$/i.test(episodeId)) {
+    return { error: "This page has lost the episode. Reload it, then order again." };
+  }
+  if (typeof idemKey !== "string" || idemKey.length === 0 || idemKey.length > 64) {
+    return { error: "That didn't land. Try again." };
+  }
 
   const { error } = await supabase.rpc("place_galley_order", {
     p_episode: episodeId,

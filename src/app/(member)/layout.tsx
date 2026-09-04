@@ -44,7 +44,7 @@ export default async function MemberLayout({
                 : "Your log, your ledger and what you owe stay open. Booking, posting and contests wait until it resumes."}
             </p>
             <a href="/you" className="mbr-hold__link">
-              Your page
+              You
             </a>
           </div>
         </div>

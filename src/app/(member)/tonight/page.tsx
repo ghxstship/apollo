@@ -94,6 +94,7 @@ export default async function TablesPage() {
           status="empty"
           icon="CalendarDays"
           title="No Table night on the sheet."
+          /* TODO(owner): confirm Thursday is the standing Table night. */
           detail="Thursday comes around."
           style={{ marginTop: 24 }}
         />

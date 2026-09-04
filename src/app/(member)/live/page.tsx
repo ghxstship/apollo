@@ -16,10 +16,12 @@ import { GalleyOrderForm, type GalleyItem } from "./galley";
 
 export const metadata: Metadata = { title: SURFACES.gateway };
 
-/* — the standard sea-day legs, offsets in minutes from cast-off. The LAST
+/* — the standard afloat legs, offsets in minutes from cast-off. The LAST
    resort: the crew's posted legs come first, the episode's itinerary jsonb
    second, and this only when both are silent — a member should never read a
-   stock schedule while the crew has posted a real one. — */
+   stock schedule while the crew has posted a real one.
+   TODO(owner): these four are stock copy, not the run of any hull. Confirm or
+   retire them once every episode carries posted legs. — */
 const LEGS = [
   { offset: -30, title: "Boards", detail: "Muster at the gangway. Waivers clear, coffee below deck." },
   { offset: 0, title: "Underway", detail: "Open water. Watch two on deck; helm open to first-timers." },
@@ -375,7 +377,7 @@ export default async function LivePage() {
         <span
           className="ls-live"
           style={{
-            font: "600 9px var(--font-sans)",
+            font: "700 9px var(--font-sans)",
             letterSpacing: ".2em",
             textTransform: "uppercase",
             color: "var(--neon-cyan)",
@@ -475,6 +477,9 @@ export default async function LivePage() {
         </div>
       ) : null}
 
+      {/* TODO(owner): four fixed facts about one boat's layout, shown on every
+          episode afloat or ashore. Confirm against the hull, or move them onto
+          the episode record. */}
       <div className="now-panel ls-rise-2">
         <h3>Find your way</h3>
         <div className="now-way">

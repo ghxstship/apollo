@@ -27,17 +27,22 @@ async function crew() {
      cannot become a member driving the show from their own page. */
   if (user) {
     const { data: staff } = await supabase.rpc("is_staff");
-    if (!staff) return { supabase, db: moduleTables(supabase), user: null };
+    if (!staff) return { supabase, db: moduleTables(supabase), user: null, refusal: NOT_CREW };
   }
-  return { supabase, db: moduleTables(supabase), user };
+  return { supabase, db: moduleTables(supabase), user, refusal: user ? null : SIGN_IN };
 }
+
+/* Two different people reach the null branch — one with no session, one with
+   a session and no authority — and they were both told to sign in. */
+const SIGN_IN = "Sign in first.";
+const NOT_CREW = "The show board is the crew's.";
 
 /* One flag flies at a time, which is a single-valued column rather than a table
    of hoisted flags — so "raise this one" is an update and lowering the previous
    one is not a separate act that can be forgotten. */
 export async function setDeckState(episodeId: string, state: string | null): Promise<ShowResult> {
-  const { supabase, db, user } = await crew();
-  if (!user) return { error: "Sign in first." };
+  const { supabase, db, user, refusal } = await crew();
+  if (!user) return { error: refusal ?? SIGN_IN };
   if (state !== null && !(DECK_STATES as readonly string[]).includes(state)) {
     return { error: "That is not one of the four flags." };
   }
@@ -55,8 +60,8 @@ export async function setDeckState(episodeId: string, state: string | null): Pro
    is the run of show rather than eight rows somebody retypes at 06:00 with one
    BPM wrong. */
 export async function seedTheBoard(episodeId: string): Promise<ShowResult> {
-  const { supabase, db, user } = await crew();
-  if (!user) return { error: "Sign in first." };
+  const { supabase, db, user, refusal } = await crew();
+  if (!user) return { error: refusal ?? SIGN_IN };
 
   const { error } = await db.rpc("seed_the_run_of_show", { p_episode: episodeId });
   if (error) return { error: await voiceWith(supabase, error) };
@@ -78,8 +83,8 @@ export async function seedTheBoard(episodeId: string): Promise<ShowResult> {
    "the queue is the crew's" ALL policy (is_staff), same as every other write
    on this surface. */
 export async function enqueuePod(episodeId: string, passId: string): Promise<ShowResult> {
-  const { supabase, db, user } = await crew();
-  if (!user) return { error: "Sign in first." };
+  const { supabase, db, user, refusal } = await crew();
+  if (!user) return { error: refusal ?? SIGN_IN };
   if (!passId) return { error: "Pick a guest first." };
 
   /* Next position. The ceiling aboard is forty souls, so one small read is
@@ -121,13 +126,18 @@ export async function advancePod(
   state: string,
   opts: { blur?: true; durationSeconds?: number } = {}
 ): Promise<ShowResult> {
-  const { supabase, db, user } = await crew();
-  if (!user) return { error: "Sign in first." };
+  const { supabase, db, user, refusal } = await crew();
+  if (!user) return { error: refusal ?? SIGN_IN };
   if (!(POD_STATES as readonly string[]).includes(state)) {
     return { error: "That is not a pod state." };
   }
-  if (opts.durationSeconds !== undefined && opts.durationSeconds > POD_MAX_SECONDS) {
-    return { error: `Ninety seconds is the ceiling — that one ran ${opts.durationSeconds}.` };
+  if (opts.durationSeconds !== undefined) {
+    if (!Number.isInteger(opts.durationSeconds) || opts.durationSeconds < 0) {
+      return { error: "A duration is whole seconds, none or more." };
+    }
+    if (opts.durationSeconds > POD_MAX_SECONDS) {
+      return { error: `Ninety seconds is the ceiling — that one ran ${opts.durationSeconds}.` };
+    }
   }
 
   const patch: Record<string, unknown> = { state: state as PodState };
@@ -145,8 +155,8 @@ export async function advancePod(
 /* Forty gold-foil envelopes, printed at once. An unissued one is a guest at the
    dock with nothing in their hand and no way into their own anchors at 19:00. */
 export async function issueTheEnvelopes(episodeId: string): Promise<ShowResult> {
-  const { supabase, db, user } = await crew();
-  if (!user) return { error: "Sign in first." };
+  const { supabase, db, user, refusal } = await crew();
+  if (!user) return { error: refusal ?? SIGN_IN };
 
   /* The RPC returns how many it actually minted. That number used to be thrown
      away, and the screen then announced a figure it had computed from props

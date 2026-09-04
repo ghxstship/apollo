@@ -204,6 +204,7 @@ export function SignForm({
           label="Your full name"
           hint="Typing your name here is your signature."
           value={typed}
+          maxLength={120}
           autoComplete="name"
           onChange={(e) => setTyped(e.target.value)}
           aria-describedby={error ? errorId : undefined}
@@ -240,6 +241,7 @@ export function SignForm({
           label="If the person aboard is under 18, the name of the adult signing for them"
           hint="Leave blank if this is you and you are over 18."
           value={guardian}
+          maxLength={120}
           autoComplete="name"
           onChange={(e) => setGuardian(e.target.value)}
         />
@@ -247,11 +249,13 @@ export function SignForm({
 
       {askCamera ? (
         <Checkbox
-          label="Happy to appear on camera."
+          /* TODO(owner): confirm this pair against the guest waiver's own
+             clause — the form cannot read the document it sits under. */
+          label="Happy to appear in the show."
           description={
             guardian.trim().length > 0
-              ? "Off for anyone under eighteen unless you tick it — production keeps them out of frame."
-              : "Untick and production keeps you out of frame. The crew sheet carries it either way."
+              ? "Off for anyone under eighteen unless you tick it — they stay out of frame."
+              : "Untick and you stay out of frame. The crew sheet carries it either way."
           }
           checked={cameraChoice ?? !(guardian.trim().length > 0)}
           onChange={(e) => setCameraChoice(e.target.checked)}

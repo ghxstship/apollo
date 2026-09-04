@@ -34,7 +34,7 @@ export type FeedPost = {
 export type EpisodeOption = { id: string; title: string };
 
 /* — Composer — the kit's card: borderless textarea, episode attach, gold
-   "Post to the deck". The confession-booth motif lives here, in the voice. */
+   "Post to the deck". */
 export function Composer({
   episodes,
   onHold = false,
@@ -72,8 +72,8 @@ export function Composer({
           color: "var(--text-2)",
         }}
       >
-        The deck is closed while your membership is paused. Resume it on your
-        page and the composer opens back up.
+        The deck is closed while your membership is paused. Resume it on the
+        You page and the composer opens back up.
       </div>
     );
   }
@@ -96,7 +96,7 @@ export function Composer({
         name="body"
         rows={3}
         maxLength={2000}
-        placeholder="The booth is open. Say it like you mean it."
+        placeholder="The deck is open. Say it like you mean it."
         aria-label="Post to the deck"
         className="ls-writein"
         style={{
@@ -139,7 +139,7 @@ export function Composer({
               whiteSpace: "nowrap",
             }}
           >
-            + ATTACH A SAILING
+            + ATTACH AN EPISODE
           </button>
         ) : (
           <span />
@@ -396,7 +396,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
             <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
               Keep it
             </Button>
-            <Button variant="outline" size="sm" disabled={pending} onClick={remove}>
+            <Button variant="danger" size="sm" disabled={pending} onClick={remove}>
               Strike it
             </Button>
           </>

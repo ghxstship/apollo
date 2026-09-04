@@ -10,6 +10,11 @@ import { BIO_MAX, INTERESTS } from "./interests";
 export type ProfileFormState = { saved?: boolean; error?: string };
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
+const NAME_MAX = 80;
+const HANDLE_MIN = 2;
+const HANDLE_MAX = 32;
+const HANDLE_SHAPE = /^[a-z0-9._-]{2,32}$/i;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function updateProfile(
   _prev: ProfileFormState,
@@ -36,6 +41,14 @@ export async function updateProfile(
   /* Not "a name for the manifest": this is the profile, no episode is in view,
      and the place a member can actually SEE this name is their Member Card. */
   if (!fullName) return { error: "A name, at least — it goes on your Member Card." };
+  if (fullName.length > NAME_MAX) return { error: `Keep the name under ${NAME_MAX} characters.` };
+  /* The handle is a URL segment (/directory/[handle]) and the roster's search
+     key, so it is letters, digits, dot, dash and underscore — nothing a path
+     or a query could misread. */
+  if (handle && !HANDLE_SHAPE.test(handle)) {
+    return { error: `A handle is ${HANDLE_MIN} to ${HANDLE_MAX} characters — letters, digits, dots, dashes, underscores.` };
+  }
+  if (homeCity && !UUID.test(homeCity)) return { error: "Pick a city from the list." };
   if (bio.length > BIO_MAX) return { error: `Keep it under ${BIO_MAX} characters.` };
 
   const { error } = await supabase

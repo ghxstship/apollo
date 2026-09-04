@@ -55,16 +55,30 @@ function done(): PassResult {
 }
 
 function clampGuests(guests: number): number {
-  return Math.max(0, Math.min(2, Math.round(guests)));
+  const n = Number(guests);
+  return Number.isFinite(n) ? Math.max(0, Math.min(2, Math.round(n))) : 0;
 }
 
-/* Names as the manifest reads them — trimmed, sized to the guest count. */
+/* Names as the manifest reads them — trimmed, sized to the guest count, and
+   no longer than a stub can print. */
+const GUEST_NAME_MAX = 80;
 function cleanNames(names: string[], count: number): string[] {
-  return names
+  return (Array.isArray(names) ? names : [])
     .slice(0, count)
-    .map((n) => n.trim())
+    .map((n) => String(n ?? "").trim().slice(0, GUEST_NAME_MAX))
     .filter(Boolean);
 }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/* Add-on ids as the definer expects them: unique, well-formed, and never more
+   than the catalogue could hold. A malformed id used to reach the RPC and come
+   back as a Postgres type name. */
+function cleanAddonIds(ids: string[]): string[] {
+  return [...new Set((Array.isArray(ids) ? ids : []).map(String).filter((id) => UUID.test(id)))].slice(0, 20);
+}
+
+const PASS_STATUSES = new Set(["aboard", "waitlist", "not_going"]);
 
 /* Attach add-ons to an rsvp: one pass_addons row plus one account_ledger
    'addon' charge each (the triggers do not cover these). Already-attached
@@ -95,6 +109,8 @@ export async function setPassStatus(
 ): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  /* The type says three values; the wire says whatever it likes. */
+  if (!PASS_STATUSES.has(status)) return { error: "That didn't land. Try again." };
   const { error } = await supabase
     .from("passes")
     .upsert(
@@ -124,7 +140,7 @@ async function splitIntoDraws(
   draws: number
 ): Promise<string | null> {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return "Split draws open when the processor is live.";
+    return "Split draws open when card payments are live.";
   }
   let n = Math.max(2, Math.min(4, Math.round(draws)));
 
@@ -223,6 +239,7 @@ export async function confirmBerth(
 ): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  addonIds = cleanAddonIds(addonIds);
 
   /* The code is validated here so a bad one is refused in the brand's voice
      rather than silently ignored; the PRICE it implies is the trigger's to
@@ -287,6 +304,7 @@ export async function confirmBerth(
 export async function improvePass(episodeId: string, addonIds: string[]): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  addonIds = cleanAddonIds(addonIds);
   if (addonIds.length === 0) return {};
 
   const { data: episode } = await supabase
@@ -413,7 +431,7 @@ export async function setAutoClaim(episodeId: string, on: boolean): Promise<Pass
 export async function offerPass(passId: string, toProfile: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  if (!toProfile) return { error: "Choose the member taking it." };
+  if (!toProfile || !UUID.test(toProfile)) return { error: "Choose the member taking it." };
   if (toProfile === userId) return { error: "A pass cannot be handed to yourself." };
 
   /* One live offer per pass — a standing offer is replaced, not stacked. */
@@ -496,7 +514,7 @@ async function validatePromo(
   rawCode: string,
   episodeId: string
 ): Promise<PromoOk | { reason: string }> {
-  const code = rawCode.trim().toUpperCase();
+  const code = String(rawCode ?? "").trim().toUpperCase().slice(0, 40);
   if (!code) return { reason: "No such code." };
   const { data, error } = await supabase.rpc("check_promo", {
     p_code: code,
@@ -539,10 +557,14 @@ export async function applyPromo(rawCode: string, episodeId: string): Promise<Pr
 export async function postCrewRequest(episodeId: string, note: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  /* 500 is the table's own check; refused here in words rather than as a
+     constraint name. */
+  const line = String(note ?? "").trim();
+  if (line.length > 500) return { error: "Keep the line under 500 characters." };
   const { error } = await supabase
     .from("crew_requests")
     .upsert(
-      { episode_id: episodeId, profile_id: userId, note: note.trim() || null, open: true },
+      { episode_id: episodeId, profile_id: userId, note: line || null, open: true },
       { onConflict: "episode_id,profile_id" }
     );
   if (error) return { error: await guardMessage(supabase, error.message, error.code) };

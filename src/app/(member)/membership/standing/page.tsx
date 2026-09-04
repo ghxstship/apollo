@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getMember } from "../../data";
 import { moduleTables } from "@/lib/module-tables";
 import { qrDataUrl } from "@/lib/commerce-qr";
-import { roman } from "@/lib/format";
+import { roman, yearIn } from "@/lib/format";
 import { Wordmark } from "@/components/ds";
 import {
   PAUSE_DAYS_A_YEAR,
@@ -56,7 +56,7 @@ const SCAN_LINES: Array<[keyof typeof SCAN_LABEL, string, string]> = [
 ];
 
 export default async function StandingPage() {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, zone } = await getMember();
   const db = moduleTables(supabase);
 
   /* The third one was NOT destructured to `.data`. The first two are, a line
@@ -87,9 +87,7 @@ export default async function StandingPage() {
     status === "departed" ? "departed" : status === "paused" ? "paused" : "active";
 
   const name = profile?.full_name ?? "A member";
-  const joinedYear = profile?.joined_at
-    ? new Date(profile.joined_at).getFullYear()
-    : new Date().getFullYear();
+  const joinedYear = yearIn(profile?.joined_at ?? new Date().toISOString(), zone);
 
   return (
     <div className="std">
@@ -123,7 +121,7 @@ export default async function StandingPage() {
             stops a pause that would run past the allowance, and says so.
           </p>
           <Link className="std-state__link" href="/you">
-            Pause or resume on your page
+            Pause or resume on the You page
           </Link>
         </div>
       </section>

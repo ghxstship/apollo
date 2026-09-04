@@ -26,14 +26,21 @@ export async function placeShopOrder(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  const clean = lines
+  const clean = (Array.isArray(lines) ? lines : [])
     .map((l) => ({
       productId: String(l.productId),
       qty: Math.round(Number(l.qty)),
-      size: l.size ? String(l.size) : null,
+      size: l.size ? String(l.size).slice(0, 32) : null,
     }))
-    .filter((l) => l.productId && l.qty > 0 && l.qty <= 12);
+    .filter((l) => l.productId && l.qty > 0);
   if (clean.length === 0) return { error: "The crate is empty." };
+  /* A line over the ceiling used to be dropped from the order in silence —
+     the member paid for a crate that was missing what they asked for. */
+  if (clean.some((l) => l.qty > 12)) return { error: "Twelve of a thing is the ceiling per crate." };
+  if (clean.length > 40) return { error: "That is more than one crate. Split it in two." };
+  if (typeof idemKey !== "string" || idemKey.length === 0 || idemKey.length > 64) {
+    return { error: "That didn't land. Try again." };
+  }
 
   const { error } = await supabase.rpc("place_shop_order", {
     p_lines: clean,

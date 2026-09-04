@@ -25,6 +25,14 @@ export type CrewSeeker = { id: string; name: string; handle: string | null; note
 export type AppliedPromo = { code: string; kind: PromoKind; value: number; passCents: number };
 
 const monoLine: React.CSSProperties = { display: "block", marginTop: 6 };
+
+/* The page's own origin, for a link a member copies. Read through
+   useSyncExternalStore so the server renders nothing and the browser fills it
+   in, rather than a `typeof window` branch in render. */
+const subscribeNever = () => () => {};
+function useOrigin(): string {
+  return React.useSyncExternalStore(subscribeNever, () => window.location.origin, () => "");
+}
 const noteStyle: React.CSSProperties = {
   fontSize: 12,
   color: "var(--text-3)",
@@ -48,10 +56,14 @@ export function WaitlistClaim({
   episodeId,
   position,
   autoClaim,
+  creditHours,
 }: {
   episodeId: string;
   position: number | null;
   autoClaim: boolean;
+  /* club_setting('release_credit_hours') — the window said here was 48 by
+     hand while every other line read the setting. */
+  creditHours: number;
 }) {
   const [pending, startTransition] = React.useTransition();
   const [on, setOn] = React.useState(autoClaim);
@@ -89,8 +101,8 @@ export function WaitlistClaim({
         style={{ marginTop: 10 }}
       />
       <p style={noteStyle}>
-        We take the pass the moment one frees. Release it within 48 hours if the
-        tide has turned.
+        We take the pass the moment one frees. Release it within {creditHours} hours
+        if the tide has turned.
       </p>
       <Problem message={error} />
     </div>
@@ -209,6 +221,7 @@ export function HandOff({
    machinery as a guest and is listed here with them — under its own line,
    because it is not a companion and must not read as one. */
 export function GuestStubs({ guests, partner = null }: { guests: GuestStub[]; partner?: GuestStub | null }) {
+  const origin = useOrigin();
   const cut = guests.filter((g) => g.code);
   const head = partner?.code ? partner : null;
   if (cut.length === 0 && !head) return null;
@@ -258,7 +271,7 @@ export function GuestStubs({ guests, partner = null }: { guests: GuestStub[]; pa
           {unsigned.map((g) => (
             <CopyLink
               key={g.signToken}
-              value={`${typeof window === "undefined" ? "" : window.location.origin}/sign/${g.signToken}`}
+              value={`${origin}/sign/${g.signToken}`}
               label={`Copy ${g.name}'s link`}
               toast={`${g.name}'s signing link copied.`}
             />

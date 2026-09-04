@@ -44,8 +44,8 @@ export default async function AgreementPage({
   });
   if (!versionId) notFound();
 
-  /* Sea Days pull the clauses a Port Day does not, so the fuller rendering is
-     what a member signs. The condition set is the same one the RPC will use. */
+  /* Afloat pulls the clauses ashore does not, so the fuller rendering is what
+     a member signs. The condition set is the same one the RPC will use. */
   const { data: body } = await supabase.rpc("render_document", {
     p_document_version_id: versionId,
     p_context: { class: "sea" },

@@ -120,7 +120,7 @@ export function SheetPanel({
           })}
         </div>
         <p className="vet-note">
-          Boundaries drive real operations: seating, the media team&rsquo;s shot list,
+          Boundaries drive real operations: seating, the crew&rsquo;s brief,
           {/* Capitalised because it is named vocabulary, not a description: the
               handoff lexicon lists Wristband alongside Boarding pass and
               Confessional Pod, and check:ds enforces that every named term

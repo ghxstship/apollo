@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Button, Icon, StateBlock } from "@/components/ds";
+import { CLUB_ZONE } from "@/lib/brand";
+import { startOfDay } from "@/lib/format";
 import { getMember, type Notification } from "../data";
 import { KIND_ICON, relTime } from "../relative";
 import { markAllRead } from "./actions";
@@ -29,7 +31,7 @@ function Row({ n, index }: { n: Notification; index: number }) {
 const DAY_MS = 86400000;
 
 export default async function InboxPage() {
-  const { supabase, user } = await getMember();
+  const { supabase, user, zone } = await getMember();
 
   /* Capped. Notices never stop arriving, and this query had no ceiling — a
      member two seasons in rendered every notice ever written to them in one
@@ -53,9 +55,10 @@ export default async function InboxPage() {
   const items: Notification[] = data ?? [];
   const unread = count ?? items.filter((n) => !n.read).length;
 
-  const dayStart = new Date();
-  dayStart.setHours(0, 0, 0, 0);
-  const todayMs = dayStart.getTime();
+  /* Midnight on the member's own clock. setHours(0) read the render host's,
+     so on a UTC host "Today" turned over at 20:00 in Miami. */
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: zone || CLUB_ZONE }).format(new Date());
+  const todayMs = Date.parse(startOfDay(today, zone));
   const weekMs = todayMs - 6 * DAY_MS;
   const monthMs = todayMs - 29 * DAY_MS;
   const at = (n: Notification) => new Date(n.created_at).getTime();

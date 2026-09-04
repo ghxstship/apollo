@@ -75,7 +75,7 @@ export async function setBlock(
     if (error) return { error: await voiceWith(supabase, error) };
   }
 
-  if (handle) revalidatePath(`/directory/${handle}`);
+  if (/^[a-z0-9._-]{2,32}$/i.test(handle)) revalidatePath(`/directory/${handle}`);
   revalidatePath("/directory");
   return {};
 }

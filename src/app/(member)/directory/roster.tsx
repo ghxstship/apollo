@@ -38,7 +38,7 @@ const SORTS = [
   { id: "name", label: "Name A – Z" },
   { id: "newest", label: "Newest aboard" },
   { id: "longest", label: "Longest aboard" },
-  { id: "passes", label: "Most sailings" },
+  { id: "passes", label: "Most passes" },
 ];
 
 function RowBody({ m }: { m: DirectoryMember }) {

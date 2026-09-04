@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Avatar, Icon, Stat, Tag } from "@/components/ds";
 import { CLUB_ZONE, CITY_CODES, CURRENCY, PLACE, knots } from "@/lib/brand";
 import { SETTING_LABEL, logDate, roman, yearIn } from "@/lib/format";
+import { memberMark } from "@/lib/membership";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../../data";
 import { moduleTables } from "@/lib/module-tables";
@@ -93,9 +94,7 @@ export default async function MemberPage({
   const leagueName = leagueRes.data?.league_name ?? "First League — Harborline";
   const passes = engagementRes.data?.passes ?? 0;
   const shared = affinityRes.data?.shared ?? 0;
-  const joinedYear = member.joined_at
-    ? yearIn(member.joined_at, CLUB_ZONE)
-    : new Date().getFullYear();
+  const joinedYear = yearIn(member.joined_at ?? new Date().toISOString(), CLUB_ZONE);
 
   /* Episodes both were aboard for — the affinity count, made concrete. */
   let both: SharedEpisode[] = [];
@@ -136,7 +135,10 @@ export default async function MemberPage({
             {cityCode ? <span className="dir-row__code">{cityCode}</span> : null}
           </p>
           <p className="mbr-mono dir-head__no">
-            {member.member_no ?? "UN-0000"} · member since {roman(joinedYear)}
+            {/* Through memberMark, as the nav and the card do: the raw column
+                still carries the retired prefix on every number minted before
+                the rebrand. */}
+            {memberMark(member.member_no) || "Unissued"} · member since {roman(joinedYear)}
           </p>
         </div>
         {!own && !blocked ? (

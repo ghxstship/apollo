@@ -3,7 +3,7 @@ import { CameraConsent } from "./camera-consent";
 import { ManifestConsent } from "./manifest-consent";
 import Link from "next/link";
 import { Avatar, Badge, Button, ThemeToggle } from "@/components/ds";
-import { TIER_LABEL, logDateTime, roman } from "@/lib/format";
+import { TIER_LABEL, logDateTime, roman, yearIn } from "@/lib/format";
 import { PushControls } from "@/components/push-controls";
 import { PhoneField } from "@/components/phone-field";
 import { stripeEnabled } from "@/lib/stripe";
@@ -37,7 +37,8 @@ const SECTIONS: Array<[string, string]> = [
      these fields belong to one. The anchor id is untouched on purpose: it is
      plumbing, and a rename here would break any link already pointing at it. */
   ["you-manifest", "How you read"],
-  ["you-cameras", "The cameras"],
+  /* The anchor id is plumbing and stays; the label is the show's own word. */
+  ["you-cameras", "The show"],
   ["you-appearance", "Appearance"],
   ["you-word", "The word"],
   ["you-gathering", "Raise a gathering"],
@@ -46,7 +47,7 @@ const SECTIONS: Array<[string, string]> = [
 ];
 
 export default async function YouPage() {
-  const { supabase, user, profile } = await getMember();
+  const { supabase, user, profile, zone } = await getMember();
   const nowIso = new Date().toISOString();
   const [{ data: cities }, { data: account }, { data: proposals }, { data: formats }, { data: aboard }] =
     await Promise.all([
@@ -140,9 +141,7 @@ export default async function YouPage() {
     cap: typeof pauseCap === "number" ? pauseCap : 0,
   };
   const balanceCents = account?.balance_cents ?? 0;
-  const joinedYear = profile?.joined_at
-    ? new Date(profile.joined_at).getFullYear()
-    : new Date().getFullYear();
+  const joinedYear = yearIn(profile?.joined_at ?? nowIso, zone);
 
   const prefs = (profile?.notification_prefs ?? {}) as Record<string, unknown>;
   const prefOn = (key: string, fallback: boolean) =>
@@ -225,7 +224,7 @@ export default async function YouPage() {
       </section>
 
       <section id="you-cameras">
-        <div className="you-h">The cameras</div>
+        <div className="you-h">The show</div>
         <div className="you-sec">
           <CameraConsent onCamera={profile?.on_camera ?? true} />
           <ManifestConsent onManifest={profile?.on_manifest ?? true} />
@@ -311,7 +310,7 @@ export default async function YouPage() {
             <div className="you-row">
               <div>
                 <b>Settle the account</b>
-                <p>Card payments post to the ledger when the processor confirms.</p>
+                <p>Card payments post to the ledger when the card clears.</p>
               </div>
               <SettleCardButton
                 amountLabel={`$${(Math.abs(balanceCents) / 100).toFixed(2)}`}

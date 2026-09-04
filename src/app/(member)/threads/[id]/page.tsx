@@ -6,7 +6,19 @@ import { SETTING_LABEL, logDateTime } from "@/lib/format";
 import { getMember, type DirectoryMember, type Profile } from "../../data";
 import { Composer, ThreadLive } from "./live";
 
-export const metadata: Metadata = { title: "Thread" };
+/* The title is the thread's own name, which is also the h1 — a direct thread
+   is titled by the other member, a crew thread by its episode. getMember is
+   request-cached, so this costs one small read. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const { supabase } = await getMember();
+  const { data } = await supabase.from("threads").select("kind,title").eq("id", id).maybeSingle();
+  return { title: data?.title ?? (data?.kind === "crew" ? "Crew thread" : "Thread") };
+}
 
 const TONES = new Set(["ink", "sea", "gold", "sand"]);
 
@@ -32,11 +44,15 @@ export default async function ThreadPage({
     .eq("thread_id", thread.id);
   if (!(roster ?? []).some((r) => r.profile_id === user.id)) notFound();
 
-  const { data: messages } = await supabase
+  /* The latest three hundred, read newest-first and turned round — a
+     conversation two seasons long is not rendered whole on every open. */
+  const { data: newest } = await supabase
     .from("messages")
     .select("*")
     .eq("thread_id", thread.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .limit(300);
+  const messages = (newest ?? []).slice().reverse();
 
   const peopleIds = Array.from(
     new Set([

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
+import { boundSignature } from "./signature";
 
 /* Signing goes through the RPC, never a table write. The hash, the timestamp and
    the IP are all computed server-side — a client that could insert its own
@@ -28,15 +29,27 @@ export async function signDocument(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
+  if (!/^[a-z0-9-]{1,64}$/i.test(input.documentCode)) {
+    return { error: "That link looks wrong. Start again from Agreements." };
+  }
+  const bounded = boundSignature(input);
+  if (!bounded) return { error: "That signature didn't land. Try again." };
+  /* The context is the rendering condition set and nothing else — a handful
+     of short string keys. Anything wider is not what the page rendered. */
+  const context: Record<string, string> = {};
+  for (const [k, v] of Object.entries(input.context ?? {}).slice(0, 8)) {
+    if (/^[a-z_]{1,32}$/.test(k) && typeof v === "string") context[k] = v.slice(0, 40);
+  }
+
   const { error } = await supabase.rpc("sign_document", {
     p_document_code: input.documentCode,
-    p_context: input.context,
-    p_consent: input.consent,
-    p_consent_text: input.consentText,
-    p_signature_kind: input.kind,
-    p_signature_data: input.data,
-    p_signer_name: input.name || null,
-    p_user_agent: input.userAgent || null,
+    p_context: context,
+    p_consent: input.consent === true,
+    p_consent_text: bounded.consentText,
+    p_signature_kind: bounded.kind,
+    p_signature_data: bounded.data,
+    p_signer_name: bounded.name || null,
+    p_user_agent: bounded.userAgent || null,
   });
 
   if (error) {

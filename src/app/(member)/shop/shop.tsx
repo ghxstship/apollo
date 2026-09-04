@@ -131,7 +131,9 @@ export function Shop({
       const i = c.findIndex((l) => l.productId === line.productId && l.size === line.size);
       if (i === -1) return [...c, line];
       const next = [...c];
-      next[i] = { ...next[i], qty: Math.min(20, next[i].qty + line.qty) };
+      /* Twelve, the same ceiling the stepper and the server hold — twenty here
+         made a merged line the server refused. */
+      next[i] = { ...next[i], qty: Math.min(12, next[i].qty + line.qty) };
       return next;
     });
     setOpen(null);
