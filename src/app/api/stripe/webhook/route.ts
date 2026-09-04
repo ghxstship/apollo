@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { notifyWalletUpdate } from "@/lib/wallet/apns";
 import type Stripe from "stripe";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -107,6 +108,9 @@ async function syncSubscription(
     },
     { onConflict: "stripe_subscription_id" }
   );
+  /* The card in a wallet says the plan and the standing; a subscription
+     change is when either moves. Never throws, gated on the wallet env. */
+  await notifyWalletUpdate(profileId);
 }
 
 /* The plan a paid invoice belongs to, read back from our own subscription row

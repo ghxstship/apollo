@@ -4,7 +4,6 @@ import {
   buildCalendar,
   icsResponse,
   offTheChart,
-  voyageLocation,
   voyageSummary,
   voyageWindow, icsStatus } from "../../ics";
 
@@ -35,10 +34,16 @@ export async function GET(
      a feed that selects * ships every future column too. */
   const { data: episode } = await supabase
     .from("episodes")
-    .select("id,slug,title,setting,blurb,starts_at,ends_at,coordinates,muster,status")
+    .select("id,slug,title,setting,blurb,starts_at,ends_at,status,city_id")
     .eq("slug", slug)
     .maybeSingle();
   if (!episode) return offTheChart();
+  /* The address comes with the pass. This feed is public, so LOCATION is the
+     city — the venue, muster and coordinates it carried until 2026-09-04 undid
+     the episode page's own reveal rule. The member's token feed keeps them. */
+  const { data: city } = episode.city_id
+    ? await supabase.from("cities").select("name").eq("id", episode.city_id).maybeSingle()
+    : { data: null };
 
   const { start, end } = voyageWindow(episode);
   const url = `${SITE_URL}/episodes/${episode.slug}`;
@@ -57,7 +62,7 @@ export async function GET(
       start,
       end,
       summary: voyageSummary(episode),
-      location: voyageLocation(episode),
+      location: city?.name ?? null,
       description,
       url,
       alarm: `${episode.title} — tomorrow. Boards thirty minutes before cast off.`,
