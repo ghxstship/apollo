@@ -149,6 +149,7 @@ export default async function ReportsPage() {
     ledgerRes,
     rollRes,
     reconRes,
+    lapsedRes,
     knotsRes,
     weatherRes,
     outboxRes,
@@ -180,6 +181,9 @@ export default async function ReportsPage() {
     /* Exceptions only, both directions — see the view. Empty is the answer an
        operator wants and the one they have never been able to get. */
     supabase.from("stripe_reconciliation").select("*").limit(50),
+    /* The people behind the churn number. Reports has counted churn since it
+       shipped and never once said who. */
+    supabase.from("lapsed_members").select("*").order("held_since", { ascending: true }).limit(50),
     supabase.from("knots_ledger").select("episode_id, delta").not("episode_id", "is", null),
     /* notifications is member-private and has no staff policy, so counting it
        directly returned the operator's own notices — 0 weather, while 14 had
@@ -294,6 +298,7 @@ export default async function ReportsPage() {
   /* Referrals */
   const roll = must(rollRes);
   const recon = must(reconRes);
+  const lapsed = must(lapsedRes);
   const referred = roll.filter((r) => r.invite_code).length;
   const referralPct = roll.length ? Math.round((referred / roll.length) * 100) : 0;
 
@@ -588,6 +593,36 @@ export default async function ReportsPage() {
           sub={`${referred} OF ${roll.length} ON THE ROLL`}
         />
       </div>
+
+      {/* The churn number, as people. Reports has counted churn since it
+          shipped and never said who — and a lapse is the recoverable kind:
+          nobody chose it, a card did. */}
+      <section className="hm-sec">
+        <span className="hm-eyebrow">Held for dues</span>
+        {lapsed.length === 0 ? (
+          <p className="hm-note">Nobody is held for dues. Every membership is either running or was ended on purpose.</p>
+        ) : (
+          <div className="hm-recon">
+            {lapsed.map((m) => (
+              <div key={m.profile_id} className="hm-recon__row">
+                <Badge tone={(m.days_held ?? 0) > 90 ? "outline" : "caution"}>
+                  {m.days_held}d
+                </Badge>
+                <span>{m.full_name ?? "A member"}</span>
+                <span className="hm-mono">{m.plan_label ?? "—"}</span>
+                {m.written_to ? (
+                  <span className="hm-mono">WRITTEN TO</span>
+                ) : (
+                  <span className="hm-mono hm-recon__due">NOT YET WRITTEN</span>
+                )}
+                <span className="hm-mono hm-recon__amt">
+                  {m.was_paying_cents ? price(m.was_paying_cents) + "/MO" : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Reconciliation. stripe_events has been write-only since it shipped —
           the webhook inserts a row so delivery is idempotent and nothing ever

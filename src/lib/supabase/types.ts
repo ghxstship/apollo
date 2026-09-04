@@ -688,6 +688,18 @@ export type Database = {
         Row: { profile_id: string | null; month: string | null; passes_used: number | null }
         Relationships: []
       }
+      /* Memberships held because dues stopped clearing — involuntary, and so
+         recoverable. Distinct from a member's own pause, which carries no
+         hold_reason, and from a departure, which was a decision. */
+      lapsed_members: {
+        Row: {
+          profile_id: string | null; full_name: string | null; email: string | null
+          tier: string | null; held_since: string | null; days_held: number | null
+          plan_label: string | null; was_paying_cents: number | null
+          knots: number | null; written_to: boolean | null
+        }
+        Relationships: []
+      }
       /* Exceptions only, both directions. A reconciliation that lists
          everything reconciles nothing — the eye slides off it. */
       stripe_reconciliation: {

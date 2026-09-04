@@ -358,3 +358,5 @@
 .hm-recon{display:flex;flex-direction:column;margin-top:12px}
 .hm-recon__row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line-faint);font-size:var(--text-xs)}
 .hm-recon__amt{margin-inline-start:auto;font-variant-numeric:tabular-nums}
+/* Not yet written to — the one actionable state in the lapsed list. */
+.hm-recon__due{color:var(--caution)}

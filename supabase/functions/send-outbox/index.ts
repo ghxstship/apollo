@@ -324,6 +324,24 @@ ${p["starts_at"] ? `<tr><td style="padding:2px 0;color:#6B6B70;">Departs</td><td
 <p style="margin:0;">If something has changed, write to us rather than letting it lapse. <a href="${APP_URL}/account">Settle it here</a>.</p>`,
     ),
   }),
+  /* The letter after the silence. A membership held for dues sits there
+     indefinitely — the hold notice is sent once and nothing ever follows, so
+     the club's position is "we stopped charging you and never mentioned it
+     again", which is how an involuntary lapse becomes a permanent one.
+
+     Written as a door rather than an invoice. Somebody whose card failed four
+     months ago does not need the amount restated; they need to know the club
+     kept their place and that coming back is one click. */
+  "win-back": (p) => ({
+    subject: "Your place is still here.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">Your membership has been on hold since the dues stopped clearing. We have not given the place away.</p>
+<p style="margin:0 0 16px;">Your knots are where you left them and your tier is intact${p.knots ? ` — ${esc(String(p.knots))} of them` : ""}. Nothing has been charged in the meantime.</p>
+<p style="margin:0 0 16px;">If it was the card, it is a minute to fix. If it was the year you were having, that is a fine reason too, and the door works the same either way.</p>
+<p style="margin:0;"><a href="${APP_URL}/account">Pick it back up</a>, or write back and tell us to stop asking — we will.</p>`,
+    ),
+  }),
   "refund-posted": (p) => ({
     subject: "Refund posted.",
     html: shell(
