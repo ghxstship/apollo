@@ -52,6 +52,11 @@ const FALLBACK: Library = {
 };
 
 export async function readLibrary(): Promise<Library> {
+  /* Three locks on one door: the proxy rewrites /preview to the 404 in
+     production, the page answers notFound(), and this reader — the only
+     thing on the route that holds the service role — refuses to open the
+     admin client at all. Each holds without the other two. */
+  if (process.env.NODE_ENV === "production") return FALLBACK;
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) return FALLBACK;
 
   try {

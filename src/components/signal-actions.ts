@@ -12,14 +12,40 @@ export type SignalResult = { ok?: true; error?: string };
 
 /* — Web push — */
 
+/* What a push address is: an https URL at a push service, and two base64url
+   keys of a size a browser actually mints. A server action is a POST anyone
+   with a session can shape by hand, so the row is bounded here rather than
+   trusted to be what push-controls sent. */
+const MAX_ENDPOINT = 2048;
+const KEY_SHAPE = /^[A-Za-z0-9_-]{16,512}$/;
+
+/* Not exported: a "use server" module may only export async functions. */
+function pushEndpoint(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim();
+  if (!value || value.length > MAX_ENDPOINT) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function pushKey(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim();
+  return KEY_SHAPE.test(value) ? value : null;
+}
+
 export async function savePushSubscription(sub: {
   endpoint: string;
   p256dh: string;
   auth: string;
 }): Promise<SignalResult> {
-  const endpoint = sub.endpoint?.trim() ?? "";
-  const p256dh = sub.p256dh?.trim() ?? "";
-  const auth = sub.auth?.trim() ?? "";
+  const endpoint = pushEndpoint(sub?.endpoint);
+  const p256dh = pushKey(sub?.p256dh);
+  const auth = pushKey(sub?.auth);
   if (!endpoint || !p256dh || !auth) return { error: "That device sent an incomplete address." };
 
   const supabase = await createClient();
@@ -38,7 +64,7 @@ export async function savePushSubscription(sub: {
 }
 
 export async function removePushSubscription(endpoint: string): Promise<SignalResult> {
-  const target = endpoint?.trim() ?? "";
+  const target = typeof endpoint === "string" ? endpoint.trim().slice(0, MAX_ENDPOINT) : "";
   if (!target) return { ok: true };
 
   const supabase = await createClient();

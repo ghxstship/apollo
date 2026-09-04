@@ -13,6 +13,10 @@ import { NextResponse, type NextRequest } from "next/server";
    before the page rendered a word. /the-show needs no entry for the same
    reason it needs no removal: it was never on this list, and it does not fall
    under /show, which matches only /show and /show/*. */
+/* Mirrored by PRIVATE in public/sw.js — the worker must never write a page
+   from any of these prefixes to disk. Change both together. The gate here is
+   optimistic, per the Next 16 proxy docs: the (member) and (staff) layouts
+   re-check the session, and every action and route handler checks its own. */
 const PROTECTED = ["/home", "/passes", "/itinerary", "/membership/standing", "/open-deck", "/directory", "/threads", "/portal", "/account", "/card", "/inbox", "/you", "/live", "/shop", "/stub", "/regattas", "/tonight", "/matches", "/agreements", "/kiosk", "/bridge", "/vetting", "/radar", "/show"];
 
 export async function updateSession(request: NextRequest) {

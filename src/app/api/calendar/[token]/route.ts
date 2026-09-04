@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   buildCalendar,
   icsResponse,
+  offTheChart,
   voyageLocation,
   voyageSummary,
   voyageWindow,
@@ -20,16 +21,22 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`;
 
+/* The token is a v4 uuid from gen_random_uuid() — 122 random bits, issued by
+   the database and never chosen by hand (the profile guard trigger refuses a
+   written value; only rotate_calendar_token replaces it, for the caller's own
+   row). Rotating is revoking: the old address answers nothing from then on.
+   So a wrong guess is not worth counting, and the answer to one is the same
+   404 the club gives for any address that is not on the chart. */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
   const { token } = await params;
-  if (!UUID.test(token)) return new Response("Not found", { status: 404 });
+  if (!UUID.test(token)) return offTheChart();
 
   const supabase = await createClient();
   const { data: rows } = await supabase.rpc("calendar_feed", { p_token: token });
-  if (!rows || rows.length === 0) return new Response("Not found", { status: 404 });
+  if (!rows || rows.length === 0) return offTheChart();
 
   const events: CalendarEvent[] = rows.map((row) => {
     const { start, end } = voyageWindow(row);

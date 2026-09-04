@@ -16,7 +16,11 @@ export function SwRegister() {
        key names, and drops stranded rosters — which still hold boarding codes. */
     adoptLegacyDeviceStorage();
     if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.register("/sw.js").catch((err) => {
+    /* A worker only registers on a secure origin; asking on a plain-http
+       host is a guaranteed rejection that the warning below would then report
+       as a fault. Localhost counts as secure, so development is unaffected. */
+    if (!window.isSecureContext) return;
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch((err) => {
       console.warn("[un] the offline shell did not register:", err);
     });
   }, []);

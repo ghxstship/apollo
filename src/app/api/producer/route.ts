@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { overLimit, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -216,36 +217,61 @@ function textOf(content: Anthropic.ContentBlock[]): string {
     .trim();
 }
 
+/* The panel sends the whole transcript back each turn. Twelve of the member's
+   own lines are kept below; the ceiling on what is read at all is a little
+   above what a long conversation would honestly send, so a deliberately
+   enormous transcript is refused before it is parsed. */
+const MAX_MESSAGES = 48;
+const MAX_BODY_BYTES = 256 * 1024;
+
+/* Every answer is the member's own — never for a shared cache. */
+const NO_STORE = { "Cache-Control": "private, no-store" };
+
+function refuse(error: string, status: number) {
+  return Response.json({ error }, { status, headers: NO_STORE });
+}
+
+function parseTranscript(body: unknown): { role: "user" | "assistant"; content: string }[] | null {
+  const raw = (body as { messages?: unknown })?.messages;
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_MESSAGES) return null;
+  if (!raw.every(isChatMessage)) return null;
+  return raw;
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return Response.json({ error: "Sign in first." }, { status: 401 });
+  if (!user) return refuse("Sign in first.", 401);
 
-  if (!process.env.ANTHROPIC_API_KEY) return Response.json({ fallback: true });
+  if (!process.env.ANTHROPIC_API_KEY) return Response.json({ fallback: true }, { headers: NO_STORE });
 
-  /* Before spending anything. The route had no limit at all — thirty concurrent
-     requests from one member all went through, and each is up to six model
-     turns. The counter lives in the database because this runs serverless and
-     an in-memory bucket does not survive between invocations. */
-  const { error: budget } = await supabase.rpc("take_a_producer_turn");
-  if (budget) {
-    return Response.json(
-      { error: "The Producer needs a moment. Try again in a few minutes." },
-      { status: 429 }
-    );
-  }
+  /* The body is read and judged BEFORE a turn is taken from the budget. It
+     used to be the other way round, so a malformed post — which spends
+     nothing on the model — still cost the member one of their twenty. */
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (declared > MAX_BODY_BYTES) return refuse("That's more than the Producer can read in one go.", 413);
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Bad request." }, { status: 400 });
+    return refuse("The Producer couldn't read that.", 400);
   }
-  const raw = (body as { messages?: unknown })?.messages;
-  if (!Array.isArray(raw) || raw.length === 0 || !raw.every(isChatMessage)) {
-    return Response.json({ error: "Bad request." }, { status: 400 });
+  const raw = parseTranscript(body);
+  if (!raw) return refuse("The Producer couldn't read that.", 400);
+
+  /* Two gates, in order of cost. The in-memory one turns away a burst on this
+     instance without a round trip; the database one is the real budget —
+     twenty turns in ten minutes, counted across every instance — and it is
+     the only one that can be trusted to hold. Neither is skipped. */
+  if (overLimit(`producer:${user.id}`, 30, 60_000)) {
+    return tooMany({ error: "The Producer needs a moment. Try again in a few minutes." }, 60);
+  }
+  const { error: budget } = await supabase.rpc("take_a_producer_turn");
+  if (budget) {
+    return tooMany({ error: "The Producer needs a moment. Try again in a few minutes." }, 120);
   }
 
   /* Only the member's own turns. The client used to be able to post
@@ -257,9 +283,7 @@ export async function POST(request: Request) {
     .filter((m) => m.role === "user")
     .slice(-12)
     .map((m) => ({ role: "user" as const, content: m.content }));
-  if (messages.length === 0) {
-    return Response.json({ error: "Bad request." }, { status: 400 });
-  }
+  if (messages.length === 0) return refuse("The Producer couldn't read that.", 400);
 
   /* Six turns at the SDK's ten-minute default would hold one serverless
      invocation for an hour. Twenty seconds a turn, one retry. */
@@ -286,13 +310,14 @@ export async function POST(request: Request) {
           (action?.kind === "hail_shoreside"
             ? "Past my charts — hail Shoreside."
             : "Your call — confirm below and I'll see it logged.");
-        return Response.json(action ? { reply, action } : { reply });
+        return Response.json(action ? { reply, action } : { reply }, { headers: NO_STORE });
       }
 
       if (response.stop_reason !== "tool_use") {
-        return Response.json({
-          reply: textOf(response.content) || "Past my charts — hail Shoreside.",
-        });
+        return Response.json(
+          { reply: textOf(response.content) || "Past my charts — hail Shoreside." },
+          { headers: NO_STORE }
+        );
       }
 
       const toolUses = response.content.filter(
@@ -322,9 +347,9 @@ export async function POST(request: Request) {
     }
 
     /* Turn budget spent without a final answer — let the panel dead-reckon. */
-    return Response.json({ fallback: true });
+    return Response.json({ fallback: true }, { headers: NO_STORE });
   } catch {
     /* API or network trouble — graceful fallback, never a broken panel. */
-    return Response.json({ fallback: true });
+    return Response.json({ fallback: true }, { headers: NO_STORE });
   }
 }

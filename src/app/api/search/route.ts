@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { clientKey, overLimit, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 /* One search, and it finds everything.
@@ -43,10 +44,29 @@ function clean(raw: string): string {
   return raw.replace(/[,()%_*\\]/g, " ").trim().slice(0, 64);
 }
 
+/* Results are the reader's own — the Yours section names their passes and
+   threads — so nothing between here and the browser may keep a copy. */
+const NO_STORE = { "Cache-Control": "private, no-store" };
+
+function answer(sections: Section[], status = 200) {
+  return NextResponse.json({ sections }, { status, headers: NO_STORE });
+}
+
+/* Six queries a call, on every pause in typing, from anyone at all. One
+   address gets a keystroke a second sustained; past that the field goes
+   quiet rather than the database. See rate-limit.ts for what this can and
+   cannot promise. */
+const LIMIT = 60;
+const WINDOW_MS = 60_000;
+
 export async function GET(request: Request) {
-  const q = clean(new URL(request.url).searchParams.get("q") ?? "");
+  if (overLimit(`search:${clientKey(request)}`, LIMIT, WINDOW_MS)) {
+    return tooMany({ sections: [] satisfies Section[] }, 30);
+  }
+
+  const q = clean(new URL(request.url).searchParams.get("q")?.slice(0, 256) ?? "");
   /* Two characters is where a prefix stops matching most of the corpus. */
-  if (q.length < 2) return NextResponse.json({ sections: [] satisfies Section[] });
+  if (q.length < 2) return answer([]);
 
   const supabase = await createClient();
   const {
@@ -64,11 +84,21 @@ export async function GET(request: Request) {
       .ilike("title", like)
       .order("starts_at", { ascending: true })
       .limit(PER_SECTION),
-    supabase
-      .from("member_directory")
-      .select("id,full_name,handle")
-      .or(`full_name.ilike.${like},handle.ilike.${like}`)
-      .limit(PER_SECTION),
+    /* Members only for members. The view answers nobody who is signed out,
+       so the query was a round trip for an empty list. And only members who
+       are IN the directory: the view masks everyone else to "A member" with
+       no handle, so a search for "member" was returning a row per opted-out
+       profile — a count of people who asked not to be listed, which is
+       still a fact about them. A handle is exactly the mark of a listed,
+       active member. */
+    user
+      ? supabase
+          .from("member_directory")
+          .select("id,full_name,handle")
+          .not("handle", "is", null)
+          .or(`full_name.ilike.${like},handle.ilike.${like}`)
+          .limit(PER_SECTION)
+      : Promise.resolve({ data: null }),
     supabase
       .from("log_posts")
       .select("id,slug,title,dek,published_at")
@@ -176,5 +206,5 @@ export async function GET(request: Request) {
     },
   ].filter((s) => s.items.length > 0);
 
-  return NextResponse.json({ sections });
+  return answer(sections);
 }

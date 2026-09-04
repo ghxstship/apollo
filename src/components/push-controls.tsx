@@ -78,13 +78,20 @@ export function PushControls() {
       if (granted !== "granted") return;
 
       const registration = await navigator.serviceWorker.ready;
+      /* Always a fresh subscription, never a reused one. The endpoint is the
+         key push_subscriptions rows are unique on, and the row belongs to
+         whoever enabled it last. Reusing the device's existing subscription
+         meant a second member on a shared phone tried to upsert an endpoint
+         another member's row already held — which the policy refuses — and
+         got "That didn't land" with nothing to do about it. A new endpoint is
+         this member's alone; the old row goes stale and send-push drops it on
+         its first 410. */
       const existing = await registration.pushManager.getSubscription();
-      const sub =
-        existing ??
-        (await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        }));
+      if (existing) await existing.unsubscribe().catch(() => {});
+      const sub = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
 
       const keys = sub.toJSON().keys ?? {};
       const result = await savePushSubscription({

@@ -128,8 +128,28 @@ export function icsResponse(body: string, filename: string): Response {
   return new Response(body, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
+      /* The filename is a slug the route has already checked against
+         [a-z0-9-], or a constant — never text a member typed. */
       "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": "no-store, max-age=0",
+      /* A season feed is fetched by an address that IS the credential, so no
+         cache between the calendar app and this route may keep a copy. */
+      "Cache-Control": "private, no-store, max-age=0",
+      "X-Robots-Tag": "noindex, nofollow",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+}
+
+/* The one refusal a calendar address gets — wrong token, unknown slug, or a
+   shape that was never an address — in the words the club's 404 uses, and
+   carrying no hint of which it was. */
+export function offTheChart(): Response {
+  return new Response("Off the chart.\n", {
+    status: 404,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "private, no-store, max-age=0",
+      "X-Robots-Tag": "noindex, nofollow",
     },
   });
 }
