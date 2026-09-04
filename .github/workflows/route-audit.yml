@@ -41,8 +41,20 @@ jobs:
 
       - name: Lint & typecheck
         run: |
-          npx eslint src --max-warnings=0
+          npx eslint src scripts --max-warnings=0
           npx tsc --noEmit
+
+      # vitest was never in this workflow: the unit tests ran only on whoever
+      # remembered to run them. The money-path formatters, the magic-link
+      # guard and the device-storage adoption all live there now.
+      - name: Unit tests
+        run: npm run test
+
+      # The generator step above proves the committed manifest is what the
+      # generator would write; this proves the generator saw every page and
+      # handler on disk, in both directions, by the same walk.
+      - name: Route manifest covers src/app
+        run: npm run routes:manifest:check
 
       - name: Design system audit
         run: npm run check:ds

@@ -12,17 +12,25 @@
  *               unknown-slug pages that don't 404, missing PWA manifest/icons
  *
  * Usage:  BASE_URL=http://localhost:3000 node scripts/audit-routes.mjs
+ *         node scripts/audit-routes.mjs --source   (source invariants only; no server)
+ *         node scripts/audit-routes.mjs --manifest-only
+ *           — no server, no network: only the check that the manifest covers
+ *             every page and handler under src/app (and names no file that is
+ *             gone). This is the form `npm run gates` runs.
  * Runs in CI on every push and on a daily schedule (.github/workflows/route-audit.yml).
  * Exits non-zero if anything fails; writes route-audit-report.json.
  */
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { letterInvariants } from "./lib/letters.mjs";
+import { readBannedTerms } from "./lib/banned-terms.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(readFileSync(join(root, "src", "lib", "route-manifest.json"), "utf8"));
 
 const BASE = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const MANIFEST_ONLY = process.argv.includes("--manifest-only");
 
 /* Supabase creds for expanding dynamic slugs — from env or .env.local. */
 function loadEnvLocal() {
@@ -38,46 +46,10 @@ loadEnvLocal();
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-/* Brand lexicon guard, read from the source of truth. This used to be a
-   hand-copied list matched case-sensitively against raw HTML — the exact
-   failure the e2e suite was rewritten to avoid. The copies agreed, but the
-   casing did not: "Shore office" is banned and /support rendered "Shoreside —
-   the shore office" on every load, past both gates. */
-function bannedTerms() {
-  try {
-    /* Comments stripped BEFORE the array is located, for two reasons that both
-       end with a gate reporting clean while enforcing nothing:
-
-       the terminator was `\]` non-greedy, so it stopped at the FIRST close
-       bracket — and a section comment reading "the retired [un] drafts" inside
-       the array truncated the list to seven entries with no error anywhere; and
-
-       every double-quoted string in range became a banned term, so quoting an
-       example in a comment silently banned it.
-
-       Anchored on the real terminator as well, and a zero-length result is a
-       hard failure rather than an empty list, because "no banned terms" and
-       "could not read the banned terms" must never look the same. */
-    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-    const block = src.match(/export const BANNED_TERMS[^=]*=\s*\[([\s\S]*?)\n\];/);
-    if (!block) {
-      console.error("could not read BANNED_TERMS from src/lib/brand.ts — the lexicon gate would pass on everything");
-      process.exit(2);
-    }
-    const terms = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-    if (terms.length === 0) {
-      console.error("BANNED_TERMS parsed as empty — refusing to run a lexicon gate that bans nothing");
-      process.exit(2);
-    }
-    return terms;
-  } catch (e) {
-    console.error("BANNED_TERMS could not be read:", String(e));
-    process.exit(2);
-  }
-}
-const BANNED = bannedTerms();
+/* Brand lexicon guard, read from the source of truth — shared with the
+   letter audit through scripts/lib/banned-terms.mjs, so there is one
+   extractor and one set of traps to remember. */
+const BANNED = readBannedTerms(root);
 
 /* ---------- source invariants ----------
    Two things the fetch pass structurally cannot see. A dev-only route 404s in
@@ -135,101 +107,43 @@ function pagesHaveALanding() {
   }
 }
 
-/* Every key an email template reads must be a key something actually writes.
-   `season-card` read `p["charters"]`; the payload has always carried
-   `sailings`; nothing has ever written `charters`. So `esc(value ?? 0)`
-   printed the number nought and stated it as fact, and every season card ever
-   sent told its member they had made 0 SAILINGS. Fourteen went out for real.
-   Nothing could have caught that: the audit reads rendered web pages, and an
-   email template is not a web page.
+/* The letter gate — registry, sender and callers held in agreement — lives
+   in scripts/lib/letters.mjs and runs alone as scripts/audit-letters.mjs. It
+   used to be two functions here, and the registry reader fell into two traps
+   in one evening (a semicolon in prose, a comment quoting its own regex);
+   the reader there knows where a string literal ends. */
 
-   Note for whoever edits this: the first version of this extractor matched
-   jsonb_build_object with a non-greedy paren, which stops at the first `)` —
-   so `to_jsonb(c.marks_won)` truncated the argument list and it reported three
-   keys as unwritten that are written on the very next line. Balanced-paren
-   scan, and it is worth re-proving by breaking it rather than trusting green. */
-function jsonbObjects(src) {
-  const out = [];
-  const re = /jsonb_build_object\s*\(/g;
-  while (re.exec(src)) {
-    let depth = 1;
-    let i = re.lastIndex;
-    while (i < src.length && depth > 0) {
-      const c = src[i];
-      if (c === "(") depth++;
-      else if (c === ")") depth--;
-      i++;
+/* The manifest must cover every page and handler under src/app, and name no
+   file that is gone. generate-route-manifest.mjs is what writes it, but a
+   hand edit, a stale checkout or a renamed folder can leave the two apart,
+   and every check downstream of here trusts the manifest as the list of
+   what exists. (Reconstructed after a concurrent-edit collision removed the
+   original; if the original is restored, prefer it.) */
+function manifestCoversTheFilesystem() {
+  const app = join(root, "src", "app");
+  const found = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      if (name.startsWith(".") || name === "node_modules") continue;
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/^(page|route)\.tsx?$/.test(name)) found.push(full.slice(root.length + 1));
     }
-    out.push(src.slice(re.lastIndex, i - 1));
+  };
+  walk(app);
+  const listed = new Set(manifest.routes.map((r) => r.file));
+  for (const file of found.sort()) {
+    note(file, "is in the route manifest", listed.has(file), "run npm run routes:manifest");
   }
-  return out;
-}
-
-function emailTemplatesReadOnlyWrittenKeys() {
-  let tpl;
-  try {
-    tpl = readFileSync(join(root, "supabase/functions/send-outbox/index.ts"), "utf8");
-  } catch {
-    return; /* the function is not in this checkout */
+  for (const r of manifest.routes) {
+    note(r.path, "manifest names a file that exists", existsSync(join(root, r.file)), r.file);
   }
-  const read = new Set([...tpl.matchAll(/\bp\[\s*"([^"]+)"\s*\]/g)].map((m) => m[1]));
-  const written = new Set();
-  const migrations = join(root, "supabase/migrations");
-  for (const f of readdirSync(migrations)) {
-    for (const body of jsonbObjects(readFileSync(join(migrations, f), "utf8"))) {
-      for (const k of body.matchAll(/'([a-z_][a-z0-9_]*)'\s*,/gi)) written.add(k[1]);
-    }
-  }
-  /* Payloads are built in TypeScript too. */
-  for (const file of sourceFiles(join(root, "src"))) {
-    const src = readFileSync(file, "utf8");
-    if (!src.includes("email_outbox")) continue;
-    for (const k of src.matchAll(/\b([a-z_][a-z0-9_]*)\s*:/gi)) written.add(k[1]);
-  }
-  const orphans = [...read].filter((k) => !written.has(k)).sort();
-  note("supabase/functions/send-outbox", "every template key is a key something writes",
-    orphans.length === 0, orphans.length ? `read but never written: ${orphans.join(", ")}` : "");
-}
-
-/* The letter registry and the sender must agree. run_automations refuses to
-   queue a letter the registry does not list — which is only worth anything if
-   the registry lists what the sender can actually render. Two sources of truth
-   that drift is worse than one that is merely incomplete: the guard would start
-   refusing real letters, or waving through letters that arrive empty. */
-function theLetterRegistryMatchesTheSender() {
-  let sender;
-  try {
-    sender = readFileSync(join(root, "supabase/functions/send-outbox/index.ts"), "utf8");
-  } catch {
-    return;
-  }
-  const renderable = new Set([
-    ...[...sender.matchAll(/^\s*"([a-z0-9-]+)":\s*\(p\)\s*=>/gm)].map((m) => m[1]),
-    ...[...sender.matchAll(/templates\["([a-z0-9-]+)"\]\s*=/g)].map((m) => m[1]),
-  ]);
-
-  const registered = new Set();
-  const migrations = join(root, "supabase/migrations");
-  for (const f of readdirSync(migrations)) {
-    const sql = readFileSync(join(migrations, f), "utf8");
-    const block = sql.match(/insert into public\.email_templates[\s\S]*?;/);
-    if (!block) continue;
-    for (const m of block[0].matchAll(/\(\s*'([a-z0-9-]+)'\s*,/g)) registered.add(m[1]);
-  }
-  if (registered.size === 0) return;
-
-  const listedButUnrenderable = [...registered].filter((c) => !renderable.has(c)).sort();
-  const renderableButUnlisted = [...renderable].filter((c) => !registered.has(c)).sort();
-  note("supabase/functions/send-outbox", "the letter registry lists only letters that render",
-    listedButUnrenderable.length === 0, listedButUnrenderable.join(", "));
-  note("supabase/functions/send-outbox", "every letter the sender renders is in the registry",
-    renderableButUnlisted.length === 0, renderableButUnlisted.join(", "));
 }
 
 function sourceInvariants() {
+  manifestCoversTheFilesystem();
   pagesHaveALanding();
-  emailTemplatesReadOnlyWrittenKeys();
-  theLetterRegistryMatchesTheSender();
+  letterInvariants({ root, note, banned: BANNED });
   const files = sourceFiles(join(root, "src"));
   for (const file of files) {
     const rel = file.slice(root.length + 1);
@@ -423,9 +337,39 @@ async function keysConsoleOpen(token) {
   }
 }
 
+function report() {
+  const passed = results.filter((r) => r.ok).length;
+  writeFileSync(join(root, "route-audit-report.json"), JSON.stringify({ base: MANIFEST_ONLY ? null : BASE, checkedAt: new Date().toISOString(), passed, failed: failures.length, results }, null, 2));
+  console.log(`\n${passed}/${results.length} checks passed`);
+  if (failures.length) {
+    console.error("\nFAILURES:");
+    for (const f of failures) console.error(`  ✕ ${f.route} — ${f.check}${f.detail ? ` (${f.detail})` : ""}`);
+    process.exit(1);
+  }
+}
+
 async function main() {
+  if (MANIFEST_ONLY) {
+    console.log("route manifest vs src/app\n");
+    manifestCoversTheFilesystem();
+    report();
+    console.log("the manifest covers every page and handler under src/app");
+    return;
+  }
   console.log(`auditing ${BASE}\n`);
   sourceInvariants();
+  /* Source-only: the invariants that need no server, for a checkout with
+     none running. The full audit still runs in CI against a built site. */
+  if (process.argv.includes("--source")) {
+    const passed = results.filter((r) => r.ok).length;
+    console.log(`\n${passed}/${results.length} source checks passed`);
+    if (failures.length) {
+      console.error("\nFAILURES:");
+      for (const f of failures) console.error(`  ✕ ${f.route} — ${f.check}${f.detail ? ` (${f.detail})` : ""}`);
+      process.exit(1);
+    }
+    return;
+  }
 
   // Expand the manifest into concrete URLs.
   const pages = [];
@@ -567,15 +511,7 @@ async function main() {
     }
   }
 
-  // Report.
-  const passed = results.filter((r) => r.ok).length;
-  writeFileSync(join(root, "route-audit-report.json"), JSON.stringify({ base: BASE, checkedAt: new Date().toISOString(), passed, failed: failures.length, results }, null, 2));
-  console.log(`\n${passed}/${results.length} checks passed`);
-  if (failures.length) {
-    console.error("\nFAILURES:");
-    for (const f of failures) console.error(`  ✕ ${f.route} — ${f.check}${f.detail ? ` (${f.detail})` : ""}`);
-    process.exit(1);
-  }
+  report();
   console.log("all clear — every route accounted for");
 }
 

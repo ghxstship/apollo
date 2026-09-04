@@ -14,6 +14,9 @@
  *      tier gating, guest passes, capacity, waitlist promotion in order,
  *      house-ledger charges/credits, reward redemption guards, moderation
  *      rights, application funnel privacy, vetting-bypass resistance.
+ *   M. The money path: a pass charged once, the plan credit drawn down and
+ *      given back, release A = C − X − P + R in both the same-month and the
+ *      lapsed-credit branch, and the balance at exactly zero afterwards.
  *
  * Usage: BASE_URL=http://localhost:3000 E2E_PASSWORD=... node scripts/e2e-suite.mjs
  * Exits non-zero on any failure; writes e2e-report.json.
@@ -21,6 +24,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readBannedTerms } from "./lib/banned-terms.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const manifest = JSON.parse(readFileSync(join(root, "src", "lib", "route-manifest.json"), "utf8"));
@@ -38,18 +42,16 @@ loadEnvLocal();
 
 /* The one ban list, read from the source of truth. A hand-copied subset in this
    file is how "berth" stayed on the Bridge through three hardening rounds while
-   the audit reported a clean lexicon. */
-function bannedTerms() {
-  try {
-    const src = readFileSync(join(root, "src/lib/brand.ts"), "utf8");
-    const block = src.match(/export const BANNED_TERMS = \[([\s\S]*?)\]/);
-    if (!block) return [];
-    return [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-  } catch {
-    return [];
-  }
+   the audit reported a clean lexicon — and a private regex is how this gate
+   then enforced 12 of 61 terms for a week (see scripts/lib/banned-terms.mjs).
+   Same parser as the route audit; an unreadable list is a hard stop. */
+let BANNED;
+try {
+  BANNED = readBannedTerms(root);
+} catch (e) {
+  console.error(`BANNED_TERMS could not be read: ${String(e)}`);
+  process.exit(2);
 }
-const BANNED = bannedTerms();
 const SUPA = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const PASSWORD = process.env.E2E_PASSWORD;
@@ -225,6 +227,8 @@ async function sweep(p) {
   for (const who of ["regional", "national", "global", "paused", "staff"]) {
     await stf.del(`membership_pauses?profile_id=eq.${uid(p[who])}`);
   }
+  await stf.del(`episodes?slug=like.e2e-money-*${RUN_TOKEN}*`);
+  await stf.del(`episodes?slug=like.e2e-money-*&created_at=lt.${STALE_BEFORE()}`);
   await stf.del(`episodes?slug=like.e2e-table-night-*${RUN_TOKEN}*`);
   await stf.del(`episodes?slug=like.e2e-table-night-*&created_at=lt.${STALE_BEFORE()}`);
   /* Vetting, Radar and Show fixtures. The voyage sweep above already catches
@@ -596,6 +600,192 @@ async function commerceRules(p) {
     const touched = Array.isArray(res.data) ? res.data.length : 1;
     note("regional", `cannot ${label}`, res.status >= 400 || touched === 0, `got ${res.status}, ${touched} rows`);
   }
+}
+
+/* ---------- M. the money path ----------
+   The arithmetic lives in two SQL triggers and nowhere else: handle_pass_aboard
+   charges a pass and draws the month's plan credit down against it, and
+   handle_pass_release gives back A = C − X − P + R (charges, cash credits,
+   plan credit applied, plan credit returned). The + R was dropped once, and a
+   member who released a credited pass was left owing the credited half of a
+   pass they no longer held. A hand-run check caught it. This is that check,
+   run every time.
+
+   Staff persona, own pass, a fixture episode thirty days out — far outside the
+   48-hour release window, so both halves come back. Two branches of the
+   release formula are proven: R = P (the credit was applied this month) and
+   R = 0 (it was applied in an earlier month and has lapsed). Every ledger row
+   this section causes is on the staff persona, whose knots and balance no
+   other footprint check pins.
+
+   WHAT IT CANNOT DO WITHOUT A GRANT, and says so rather than failing:
+   pass_credits has a SELECT policy and nothing else, and the granting
+   function is revoked from authenticated — so unless the staff persona was
+   granted an allowance this month by cron, the draw-down itself cannot be
+   exercised. The release arithmetic still can: a staff-posted plan_credit
+   row is exactly what the trigger would have written, and the release reads
+   the ledger, not the allowance. The lapsed branch further needs a plan_credit
+   row dated last month; if account_ledger refuses a created_at from staff,
+   that branch is skipped with the SQL it needs named in the gate report. */
+async function moneyRules(p) {
+  const stf = rest(p.staff);
+  const me = uid(p.staff);
+  const stamp = `${Date.now().toString(36)}-${RUN_TOKEN}`;
+  const PRICE = 8500;
+  const cityId = (await stf.get("cities?slug=eq.miami&select=id&limit=1")).data?.[0]?.id;
+
+  /* The club's clock, because the trigger keys the allowance by
+     date_trunc('month', now() at time zone 'America/New_York'). */
+  const nyMonth = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(d);
+  const thisMonth = nyMonth(new Date());
+  const period = `${thisMonth}-01`;
+  const lastMonthIso = (() => {
+    const [y, m] = thisMonth.split("-").map(Number);
+    /* The 15th at noon UTC of the previous month is that month in New York
+       whichever way the offset falls. */
+    return new Date(Date.UTC(m === 1 ? y - 1 : y, (m === 1 ? 12 : m - 1) - 1, 15, 12)).toISOString();
+  })();
+
+  const raise = (label) => stf.post("episodes", {
+    slug: `e2e-money-${label}-${stamp}`,
+    title: "E2E money fixture.",
+    setting: "shore",
+    starts_at: new Date(Date.now() + 30 * 864e5).toISOString(),
+    ends_at: new Date(Date.now() + 30 * 864e5 + 3 * 36e5).toISOString(),
+    time_zone: "America/New_York",
+    city_id: cityId,
+    passes_total: 8,
+    price_cents: PRICE,
+    status: "scheduled",
+  });
+  const ledger = async (episodeId) =>
+    (await stf.get(`account_ledger?profile_id=eq.${me}&episode_id=eq.${episodeId}&select=delta_cents,kind,memo,created_at&order=created_at.asc`)).data || [];
+  const balance = (rows) => rows.reduce((n, r) => n + r.delta_cents, 0);
+  const ofKind = (rows, kind) => rows.filter((r) => r.kind === kind);
+  const allowance = async () =>
+    (await stf.get(`pass_credits?profile_id=eq.${me}&period=eq.${period}&select=granted_cents,spent_cents`)).data?.[0] ?? null;
+
+  /* Give the persona a real allowance so the draw-down and the release
+     arithmetic are exercised on the trigger, not on a stand-in row. Staff-only
+     and fixture-only by the function's own checks. */
+  const granted = await stf.rpc("grant_pass_credit_by_hand", { p_profile: me, p_cents: 5000 });
+  note("staff", "a fixture persona can be handed an allowance for the run", granted.status < 400, `got ${granted.status} ${JSON.stringify(granted.data).slice(0, 100)}`);
+  const startAllowance = await allowance();
+  const left = startAllowance ? Math.max(0, startAllowance.granted_cents - startAllowance.spent_cents) : 0;
+  note("staff", "reads the month's allowance (staff read all of pass_credits)", startAllowance !== undefined, JSON.stringify(startAllowance));
+
+  /* ── same month: R = P ──────────────────────────────────────────────── */
+  const one = await raise("same-month");
+  const v1 = one.data?.[0];
+  note("staff", "raises a priced fixture episode thirty days out", !!v1?.id, `got ${one.status} ${JSON.stringify(one.data).slice(0, 90)}`);
+  if (v1) {
+    await stf.del(`passes?profile_id=eq.${me}&episode_id=eq.${v1.id}`);
+    const aboard = await stf.post("passes", { episode_id: v1.id, profile_id: me, status: "aboard" });
+    note("staff", "books a priced pass", aboard.status < 400, `got ${aboard.status} ${JSON.stringify(aboard.data).slice(0, 120)}`);
+
+    let rows = await ledger(v1.id);
+    const charge = ofKind(rows, "pass");
+    note("staff", "the pass is charged once, at the catalogue price (C)", charge.length === 1 && charge[0].delta_cents === -PRICE, JSON.stringify(charge));
+
+    /* P — the plan credit applied. From the trigger's own draw-down where the
+       persona holds an allowance; otherwise a stand-in row of the same shape. */
+    let P = 0;
+    const drawn = ofKind(rows, "plan_credit");
+    if (left > 0) {
+      const want = Math.min(left, PRICE);
+      note("staff", "the plan credit draws down the lesser of the allowance and the price", drawn.length === 1 && drawn[0].delta_cents === want, `${JSON.stringify(drawn)} vs ${want}`);
+      const now = await allowance();
+      note("staff", "pass_credits.spent_cents moved by exactly the draw-down", now && now.spent_cents - startAllowance.spent_cents === want, `${startAllowance.spent_cents} → ${now?.spent_cents}`);
+      P = drawn[0]?.delta_cents ?? 0;
+    } else {
+      note("staff", "SKIPPED the draw-down — the staff persona holds no pass_credits row this month; grant one by SQL (see the gate report)", true, "skipped");
+      note("staff", "with no allowance, nothing is drawn", drawn.length === 0, JSON.stringify(drawn));
+      const half = Math.floor(PRICE / 2);
+      const hand = await stf.post("account_ledger", {
+        profile_id: me, delta_cents: half, kind: "plan_credit", memo: "E2E membership credit — stand-in for the draw-down", episode_id: v1.id,
+      });
+      note("staff", "posts a stand-in plan credit of the trigger's own shape", hand.status < 400, `got ${hand.status} ${JSON.stringify(hand.data).slice(0, 120)}`);
+      if (hand.status < 400) P = half;
+    }
+
+    rows = await ledger(v1.id);
+    note("staff", "the balance after booking is −C + P", balance(rows) === -PRICE + P, `${balance(rows)} vs ${-PRICE + P}`);
+
+    /* ── the same booking again is not the same charge again ───────────── */
+    const again = await stf.post("passes", { episode_id: v1.id, profile_id: me, status: "aboard" });
+    note("staff", "the same pass booked a second time is refused, not charged", again.status >= 400, `got ${again.status}`);
+    /* on_rsvp_aboard is `after insert or update of status`, so setting the
+       status to the value it already holds re-runs handle_pass_aboard. Its
+       "already billed" guard sums cash credits only — a plan credit counted
+       there would make a fully covered pass look unbilled and bill it twice. */
+    const refire = await stf.patch(`passes?episode_id=eq.${v1.id}&profile_id=eq.${me}`, { status: "aboard" });
+    rows = await ledger(v1.id);
+    note("staff", "re-firing the aboard trigger on a credited pass charges nothing more",
+      ofKind(rows, "pass").length === 1 && balance(rows) === -PRICE + P, `patch ${refire.status}; balance ${balance(rows)}; ${ofKind(rows, "pass").length} charges`);
+
+    /* ── release ────────────────────────────────────────────────────────── */
+    const release = await stf.del(`passes?episode_id=eq.${v1.id}&profile_id=eq.${me}`);
+    note("staff", "releases the pass thirty days out", release.status < 400, `got ${release.status}`);
+    rows = await ledger(v1.id);
+    const back = ofKind(rows, "credit");
+    const returned = ofKind(rows, "plan_credit").filter((r) => r.delta_cents < 0);
+    if (P > 0) {
+      note("staff", "a same-month release returns the plan credit to the allowance (R = P)", returned.length === 1 && returned[0].delta_cents === -P, JSON.stringify(returned));
+    }
+    note("staff", "and posts cash credit A = C − X − P + R, which with R = P is C", back.length === 1 && back[0].delta_cents === PRICE, `${JSON.stringify(back)} vs ${PRICE}`);
+    note("staff", "the balance returns to exactly zero (same month)", balance(rows) === 0, `balance ${balance(rows)}; rows ${JSON.stringify(rows.map((r) => [r.kind, r.delta_cents]))}`);
+    if (left > 0) {
+      const end = await allowance();
+      note("staff", "pass_credits.spent_cents is back where it started", end && end.spent_cents === startAllowance.spent_cents, `${startAllowance.spent_cents} → ${end?.spent_cents}`);
+    }
+  }
+
+  /* ── an earlier month: R = 0 ───────────────────────────────────────── */
+  const two = await raise("lapsed");
+  const v2 = two.data?.[0];
+  note("staff", "raises a second fixture episode for the lapsed branch", !!v2?.id, `got ${two.status}`);
+  if (v2) {
+    await stf.del(`passes?profile_id=eq.${me}&episode_id=eq.${v2.id}`);
+    const aboard = await stf.post("passes", { episode_id: v2.id, profile_id: me, status: "aboard" });
+    note("staff", "books the second pass", aboard.status < 400, `got ${aboard.status}`);
+    /* Whatever this month's allowance drew is returned by the release — it is
+       the SAME-month branch. The lapsed branch is the extra row, dated last
+       month, that must NOT come back. */
+    const drawnNow = ofKind(await ledger(v2.id), "plan_credit").reduce((n, r) => n + r.delta_cents, 0);
+    const P2 = Math.floor(PRICE / 4);
+    const aged = await stf.post("account_ledger", {
+      profile_id: me, delta_cents: P2, kind: "plan_credit", memo: "E2E membership credit — applied last month", episode_id: v2.id, created_at: lastMonthIso,
+    });
+    const stampedMonth = aged.data?.[0]?.created_at ? nyMonth(new Date(aged.data[0].created_at)) : null;
+    if (aged.status >= 400 || stampedMonth === thisMonth) {
+      note("staff", `SKIPPED the lapsed-credit branch — staff cannot post a plan_credit row dated last month (got ${aged.status}, created_at month ${stampedMonth}); it needs a definer RPC (see the gate report)`, true, "skipped");
+    } else {
+      const release = await stf.del(`passes?episode_id=eq.${v2.id}&profile_id=eq.${me}`);
+      note("staff", "releases the second pass", release.status < 400, `got ${release.status}`);
+      const rows = await ledger(v2.id);
+      const returned = ofKind(rows, "plan_credit").filter((r) => r.delta_cents < 0).reduce((n, r) => n + r.delta_cents, 0);
+      note("staff", "a lapsed plan credit is not returned to the allowance (R = 0 for last month's row)", returned === -drawnNow, `returned ${returned}; this month's draw-down was ${drawnNow}`);
+      const back = ofKind(rows, "credit");
+      note("staff", "cash credit is A = C − P for the lapsed half — only what was paid in cash comes back",
+        back.length === 1 && back[0].delta_cents === PRICE - P2, `${JSON.stringify(back)} vs ${PRICE - P2}`);
+      note("staff", "the balance returns to exactly zero (lapsed credit)", balance(rows) === 0, `balance ${balance(rows)}; rows ${JSON.stringify(rows.map((r) => [r.kind, r.delta_cents]))}`);
+    }
+  }
+
+  /* ── a refund is bounded by its payment ─────────────────────────────── */
+  /* Nothing in the schema bounds a 'refund' row to the 'payment' it reverses:
+     account_ledger takes any kind at any size from staff, and Stripe refunds
+     are issued from an API route this suite does not drive. Posting an
+     oversized refund to prove the absence would leave a real, undeletable
+     row on the fixture ledger. Skipped, with the guard it needs written up in
+     the gate report; when that guard lands, this becomes an assertion that a
+     refund larger than its stripe_object's payment is refused. */
+  note("staff", "SKIPPED refund ≤ payment — no guard bounds account_ledger kind=refund to its payment yet (SQL in the gate report)", true, "skipped");
+
+  /* Cleanup. Passes were released above; the episodes carry the run token so
+     the sweep would take them anyway. The ledger rows are the club's record
+     and stay — on the staff persona, which nothing else weighs. */
+  await stf.del(`episodes?slug=like.e2e-money-*${RUN_TOKEN}*`);
 }
 
 /* ---------- I. the instruments ----------
@@ -1795,6 +1985,13 @@ async function roundThreeRules(p) {
       note("regional", "editing a pass you hold does not charge again", f === charged,
         `moved ${f - charged} on an edit (charge was ${charged - editStart})`);
       await reg.patch(`passes?id=eq.${hid}`, { show_on_manifest: true });
+      /* The gangway columns are the club's. Until 2026-09-04 a member could
+         stamp their own checked_in_at — which returns the deposit and banks the
+         knots on completion — and mint their own boarding code. */
+      const selfIn = await reg.patch(`passes?id=eq.${hid}`, { checked_in_at: new Date().toISOString() });
+      note("regional", "a member cannot check themselves in", selfIn.status >= 400, `got ${selfIn.status}`);
+      const selfCode = await reg.patch(`passes?id=eq.${hid}`, { boarding_code: "UN-HACK-0101-0000-AA" });
+      note("regional", "a member cannot write their own boarding code", selfCode.status >= 400, `got ${selfCode.status}`);
     }
     await wipe();
   }
@@ -4371,6 +4568,7 @@ async function main() {
   await anonSurface();
   await isolationRules(personas);
   await commerceRules(personas);
+  await moneyRules(personas);
   await opsRules(personas);
   await moderationRules(personas);
   await documentRules(personas);
