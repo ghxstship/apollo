@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Select, StateBlock, Stat, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, Select, StateBlock, Stat, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { assignCrew, setAssignmentStatus } from "./actions";
+import { assignCrew, setAssignmentStatus, setEpisodeNeed } from "./actions";
 
 export type GapRow = {
   episodeId: string;
@@ -67,6 +67,8 @@ export function Rota({
   const { toast, show, clear } = useToast();
   const [filling, setFilling] = React.useState<GapRow | null>(null);
   const [pick, setPick] = React.useState("");
+  /* A night's own headcount for a position, typed but not yet set. */
+  const [need, setNeed] = React.useState<Record<string, string>>({});
 
   const short = gaps.filter((g) => g.short > 0);
   const soon = short.filter((g) => g.daysOut <= 14);
@@ -206,6 +208,36 @@ export function Rota({
                   >
                     Offer it
                   </Button>
+                  {(() => {
+                    const key = `${g.episodeId}-${g.positionSlug}`;
+                    const typed = need[key] ?? String(g.needed);
+                    const changed = typed !== String(g.needed);
+                    return (
+                      <span className="hm-need">
+                        <Input
+                          label="Needs"
+                          type="number"
+                          min={0}
+                          max={50}
+                          value={typed}
+                          onChange={(e) => setNeed((s) => ({ ...s, [key]: e.target.value }))}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={pending || !changed}
+                          onClick={() =>
+                            run(
+                              () => setEpisodeNeed(g.episodeId, g.positionSlug, Number(typed)),
+                              () => show({ msg: `${g.title} — ${g.positionLabel} needs ${typed}.`, meta: "ROTA" })
+                            )
+                          }
+                        >
+                          Set
+                        </Button>
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             );

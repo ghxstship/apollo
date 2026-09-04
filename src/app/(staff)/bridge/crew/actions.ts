@@ -5,6 +5,14 @@ import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staf
 import type { CrewCandidateRow } from "@/lib/supabase/types";
 
 export type CrewStage = "applied" | "interview" | "sea_trial" | "offer" | "passed";
+export type AssignmentStatus = "offered" | "confirmed" | "declined" | "released";
+
+/* Both are check constraints on their tables (crew_candidates.stage,
+   crew_assignments.status). A value off either list is refused by the
+   database with a constraint name; it is refused here first, in words. */
+const STAGES: readonly CrewStage[] = ["applied", "interview", "sea_trial", "offer", "passed"];
+const ASSIGNMENT_STATUSES: readonly AssignmentStatus[] = ["offered", "confirmed", "declined", "released"];
+const NOTE_MAX = 4000;
 
 function done(): ActionResult {
   revalidatePath("/bridge/crew");
@@ -26,13 +34,14 @@ export async function setCandidateStage(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!STAGES.includes(stage)) return { error: "That is not a stage on the pipeline." };
   /* Typed as the row's own Partial rather than a loose record — the generated
      Update type rejects excess properties, which is the point of it. */
   const patch: Partial<CrewCandidateRow> =
     stage === "passed"
       ? {
           stage,
-          rejected_reason: reason?.trim() || null,
+          rejected_reason: reason?.trim().slice(0, NOTE_MAX) || null,
           decided_at: new Date().toISOString(),
           reviewed_by: staffId,
         }
@@ -57,7 +66,7 @@ export async function addCandidateNote(
     candidate_id: candidateId,
     actor: staffId,
     kind: "note",
-    body: text.slice(0, 4000),
+    body: text.slice(0, NOTE_MAX),
   });
   if (error) return { error: ERR_LAND };
   return done();
@@ -84,6 +93,17 @@ export async function assignCrew(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!crewId) return { error: "Pick someone first." };
+  /* position_slug is a foreign key onto crew_positions. The rota only ever
+     offers a slug the gaps view handed it, but the wire is not the screen: a
+     slug off the catalogue is refused here by name rather than as a foreign
+     key violation. */
+  const { data: position } = await supabase
+    .from("crew_positions")
+    .select("slug")
+    .eq("slug", positionSlug)
+    .maybeSingle();
+  if (!position) return { error: "That position is not on the crew list." };
   const { error } = await supabase.from("crew_assignments").insert({
     episode_id: episodeId,
     crew_id: crewId,
@@ -98,12 +118,39 @@ export async function assignCrew(
   return done();
 }
 
-export async function setAssignmentStatus(
-  assignmentId: string,
-  status: "offered" | "confirmed" | "declined" | "released"
+/* What a particular night needs of a position, overriding the setting's
+   default. Zero is meaningful: it is how a night says it does not want a
+   position its setting normally carries — and without it, a night that
+   genuinely needs nobody on that post reported short forever, and a rota that
+   cries wolf gets ignored. */
+export async function setEpisodeNeed(
+  episodeId: string,
+  positionSlug: string,
+  headcount: number
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!/^[0-9a-f-]{36}$/.test(episodeId)) return { error: ERR_LAND };
+  if (!Number.isInteger(headcount) || headcount < 0 || headcount > 50) {
+    return { error: "A headcount is a whole number, 0 to 50." };
+  }
+  const { data: pos } = await supabase.from("crew_positions").select("slug").eq("slug", positionSlug).maybeSingle();
+  if (!pos) return { error: "No such position on the crew list." };
+
+  const { error } = await supabase
+    .from("episode_crew_needs")
+    .upsert({ episode_id: episodeId, position_slug: positionSlug, headcount }, { onConflict: "episode_id,position_slug" });
+  if (error) return { error: ERR_LAND };
+  return done();
+}
+
+export async function setAssignmentStatus(
+  assignmentId: string,
+  status: AssignmentStatus
+): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!ASSIGNMENT_STATUSES.includes(status)) return { error: "That is not an answer an offer can take." };
   const { error } = await supabase
     .from("crew_assignments")
     .update({ status })

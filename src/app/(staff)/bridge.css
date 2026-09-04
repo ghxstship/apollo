@@ -350,7 +350,7 @@
 .hm-plan__head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .hm-plan__head b{font-size:var(--text-sm)}
 .hm-plan__holders{margin-inline-start:auto;color:var(--text-3)}
-.hm-plan__ids{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-top:12px}
+.hm-plan__ids{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px;align-items:end;margin-top:12px}
 @media (max-width:860px){.hm-plan__ids{grid-template-columns:1fr}}
 
 /* Reconciliation. Exceptions only, so the list is short by design and each row
@@ -384,3 +384,10 @@
    item defaults to min-content, so a long episode title pushed the columns wide
    and forced the row to scroll instead of truncating. */
 .hm-rota__what,.hm-pnl__what{min-width:0}
+/* A checkbox with its sentence, sitting on the same baseline as the inputs
+   beside it in a plan-style card. */
+.hm-check{display:flex;align-items:center;gap:10px;font-size:var(--text-sm);align-self:end;padding-bottom:10px}
+.hm-check input{width:18px;height:18px;accent-color:var(--gold)}
+/* A night's own headcount for a post, inline with the row's actions. */
+.hm-need{display:inline-flex;align-items:end;gap:6px}
+.hm-need input{width:64px}

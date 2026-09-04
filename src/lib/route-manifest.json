@@ -188,6 +188,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/broadcast",
+      "file": "src/app/(staff)/bridge/broadcast/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/codes",
       "file": "src/app/(staff)/bridge/codes/page.tsx",
       "type": "page",
@@ -232,6 +239,13 @@
     {
       "path": "/bridge/episodes",
       "file": "src/app/(staff)/bridge/episodes/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/fleet",
+      "file": "src/app/(staff)/bridge/fleet/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -365,6 +379,13 @@
     {
       "path": "/bridge/sponsors",
       "file": "src/app/(staff)/bridge/sponsors/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/tax",
+      "file": "src/app/(staff)/bridge/tax/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
