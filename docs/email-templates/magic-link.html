@@ -1,23 +1,33 @@
-<!-- [un] SOCIAL — magic link (Supabase Auth template).
+<!-- [un] — magic link (Supabase Auth template).
      Paste into Supabase Dashboard → Authentication → Email Templates →
      Magic Link (subject: "Your gangway link."). Also set Auth → SMTP to
      Resend (host smtp.resend.com, user "resend", password = the API key,
-     sender Shoreside) so auth mail leaves the rate-limited default sender. -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F2F2F4;padding:32px 0;">
+     sender = the OUTBOX_FROM row in Vault) so auth mail leaves the
+     rate-limited default sender.
+
+     This is the one letter send-outbox does not render: Supabase Auth sends
+     it, so its shell is kept by hand to match shell() in
+     supabase/functions/send-outbox/index.ts — ivory canvas, warm noir ink, an
+     acid rule, the mono strap. It is transactional and carries no unsubscribe;
+     nobody can opt out of the link they just asked for.
+
+     Kept on-lexicon by hand too: the previous version carried the retired
+     "Strike a chord." strap and a bracketless "SOCIAL" after the anchor. -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EDEDEA;padding:32px 0;">
   <tr><td align="center">
-    <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:#F2F2F4;color:#0B0B0C;font-family:'Marcellus',Georgia,'Times New Roman',serif;">
-      <tr><td style="padding:0 8px 24px;letter-spacing:0.28em;font-size:13px;">[un] SOCIAL</td></tr>
-      <tr><td style="padding:0 8px;border-top:1px solid #D8D8DC;"></td></tr>
-      <tr><td style="padding:28px 8px;font-size:16px;line-height:1.65;">
+    <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:#F7F7F4;color:#141414;font-family:'Instrument Serif',Georgia,'Times New Roman',serif;">
+      <tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:#141414;">[un]</td></tr>
+      <tr><td style="padding:0 24px;"><div style="border-top:2px solid #3EC317;"></div></td></tr>
+      <tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:#141414;">
         <p style="margin:0 0 16px;">The gangway is down. One click boards you — no passwords aboard.</p>
         <p style="margin:0 0 24px;">
-          <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#0B0B0C;color:#F2F2F4;text-decoration:none;padding:14px 30px;border-radius:999px;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;">Board now</a>
+          <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#141414;color:#F1F1ED;text-decoration:none;padding:14px 30px;border-radius:999px;font-family:'Instrument Serif',Georgia,'Times New Roman',serif;font-size:14px;">Come aboard</a>
         </p>
-        <p style="margin:0;color:#6B6B70;font-size:13px;">The link holds for a short while and works once. If you didn't ask for it, let it expire — nothing happens without the click.</p>
+        <p style="margin:0;color:#4F4F4C;font-size:13px;">The link holds for a short while and works once. If you did not ask for it, let it expire — nothing happens without the click.</p>
       </td></tr>
-      <tr><td style="padding:0 8px;border-top:1px solid #D8D8DC;"></td></tr>
-      <tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:#6B6B70;">You're getting this because you asked to board. Preferences live in the member app.</td></tr>
-      <tr><td style="padding:14px 8px 0;font-family:'Space Mono','Courier New',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#6B6B70;">Strike a chord.</td></tr>
+      <tr><td style="padding:0 24px;"><div style="border-top:1px solid #4F4F4C33;"></div></td></tr>
+      <tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:#4F4F4C;">You're getting this because you asked to come aboard just now. Nothing else follows from it.</td></tr>
+      <tr><td style="padding:14px 24px 24px;font-family:'Space Mono','Courier New',monospace;font-size:10px;letter-spacing:0.18em;color:#4F4F4C;">[un] anything goes here</td></tr>
     </table>
   </td></tr>
 </table>

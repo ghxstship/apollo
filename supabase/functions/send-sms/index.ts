@@ -101,14 +101,29 @@ async function mark(id: string, status: "sent" | "skipped" | "failed", why?: str
   if (why) body.last_error = why;
   /* `sending` too: the row is claimed before the carrier call, so by the time
      this runs it is no longer pending. */
-  await fetch(`${SUPABASE_URL}/rest/v1/sms_outbox?id=eq.${id}&status=in.(pending,sending)`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/sms_outbox?id=eq.${id}&status=in.(pending,sending)`, {
     method: "PATCH",
     headers: H,
     body: JSON.stringify(body),
   });
+  if (!res.ok) console.error(`mark ${status} failed for ${id}: ${res.status}`);
 }
 
 const MAX_ATTEMPTS = 5;
+/* Bounded per invocation; the cron runs every five minutes. */
+const BATCH = 25;
+
+/* What the log may say about a carrier response. sent.dm's validation errors
+   echo the request, and the request carries the number — so anything shaped
+   like a phone number or an address is removed before the excerpt is written
+   anywhere, and the excerpt is short. */
+function scrub(text: string): string {
+  return text
+    .replace(/[^\s"'<>@,;]+@[^\s"'<>@,;]+/g, "[address]")
+    .replace(/\+?\d[\d\s().-]{6,}\d/g, "[number]")
+    .replace(/\s+/g, " ")
+    .slice(0, 160);
+}
 
 /* Nothing claimed a row before sending it. The fetch selected `pending` and the
    POST to sent.dm went out, and only the MARKING collided — so two overlapping
@@ -183,16 +198,26 @@ Deno.serve(async (req) => {
 
     const apiKey = await secret("SENT_API_KEY");
 
-    const [rows, mappings]: [Row[], Mapping[]] = await Promise.all([
-      fetch(
+    /* A PostgREST error is a JSON object, not a list, and `.map` on it took
+       the whole run down as a 500 with the error text — headers and all — in
+       the log. Each read is checked for shape and named on failure. */
+    const list = async <T,>(what: string, url: string): Promise<T[]> => {
+      const res = await fetch(url, { headers: H });
+      if (!res.ok) throw new Error(`${what} read failed: ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error(`${what} read returned something that is not a list`);
+      return data as T[];
+    };
+    const [rows, mappings] = await Promise.all([
+      list<Row>(
+        "sms_outbox",
         `${SUPABASE_URL}/rest/v1/sms_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${new Date().toISOString()})` +
-          `&order=created_at.asc&limit=25&select=id,to_phone,template,payload,attempts`,
-        { headers: H },
-      ).then((r) => r.json()),
-      fetch(
+          `&order=created_at.asc&limit=${BATCH}&select=id,to_phone,template,payload,attempts`,
+      ),
+      list<Mapping>(
+        "sms_templates",
         `${SUPABASE_URL}/rest/v1/sms_templates?select=code,provider_template_id,provider_template_name,channels,parameter_map,active`,
-        { headers: H },
-      ).then((r) => r.json()),
+      ),
     ]);
 
     if (!apiKey) {
@@ -234,59 +259,80 @@ Deno.serve(async (req) => {
 
     let sent = 0, failed = 0, skipped = 0, retried = 0;
 
-    for (const row of rows) {
+    /* One row, start to finish, and nothing it does can take the batch with
+       it. A carrier timeout used to throw straight out of the loop, leave the
+       row in 'sending' for the stall rescue, and abandon every row behind it —
+       and these are day-of messages. */
+    const deliver = async (row: Row): Promise<"sent" | "skipped" | "retry" | "failed" | "taken"> => {
       const map = byCode.get(row.template);
 
       // No registered, approved template — nothing is wrong, there is just
       // nothing to send against yet.
       const ref = map ? templateRef(map) : null;
       if (!map || !map.active || !ref) {
-        await mark(row.id, "skipped");
-        skipped++;
-        continue;
+        await mark(row.id, "skipped", `template ${row.template} is not registered with the carrier`);
+        return "skipped";
       }
 
       const to = e164(row.to_phone);
       if (!to) {
         console.error(`send-sms ${row.id}: unusable number`);
         await mark(row.id, "failed", "unusable number");
-        failed++;
-        continue;
+        return "failed";
       }
 
       /* Claimed immediately before the carrier call and not a line earlier:
          everything above this point is a decision about the row, not a send. */
-      if (!(await claim(row.id))) continue;
+      if (!(await claim(row.id))) return "taken";
 
-      const res = await fetch(SENT_API, {
-        method: "POST",
-        signal: AbortSignal.timeout(10_000),
-        headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          to: [to],
-          template: { ...ref, parameters: parameters(row, map.parameter_map) },
-          channel: map.channels?.length ? map.channels : ["sms"],
-        }),
-      });
+      let res: Response;
+      try {
+        res = await fetch(SENT_API, {
+          method: "POST",
+          signal: AbortSignal.timeout(10_000),
+          headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: [to],
+            template: { ...ref, parameters: parameters(row, map.parameter_map) },
+            channel: map.channels?.length ? map.channels : ["sms"],
+          }),
+        });
+      } catch (err) {
+        /* A timeout or a dropped connection is not a verdict on the message. */
+        const why = err instanceof Error && err.name === "TimeoutError" ? "carrier timed out" : "carrier unreachable";
+        return (await requeue(row, why)) ? "failed" : "retry";
+      }
 
       if (!res.ok) {
-        const why = `provider said ${res.status}`;
-        console.error(`sent.dm ${row.id}: ${res.status} ${await res.text()}`);
+        const note = scrub(await res.text().catch(() => ""));
+        const why = `provider said ${res.status}${note ? ` — ${note}` : ""}`;
+        console.error(`sent.dm refused ${row.id} (${row.template}): ${res.status}`);
         /* 4xx that is not a rate limit is the club's mistake and will not get
            better by repeating it; anything else is worth another try. */
         const worthRetrying = res.status === 429 || res.status === 408 || res.status >= 500;
-        if (worthRetrying) {
-          if (await requeue(row, why)) failed++;
-          else retried++;
-        } else {
-          await mark(row.id, "failed", why);
-          failed++;
-        }
-        continue;
+        if (worthRetrying) return (await requeue(row, why)) ? "failed" : "retry";
+        await mark(row.id, "failed", why);
+        return "failed";
       }
 
       await mark(row.id, "sent");
-      sent++;
+      return "sent";
+    };
+
+    for (const row of rows) {
+      let outcome: Awaited<ReturnType<typeof deliver>>;
+      try {
+        outcome = await deliver(row);
+      } catch (err) {
+        /* Even the bookkeeping can fail — PostgREST down mid-batch. The row
+           is left where it is; the stall rescue and the next run pick it up. */
+        console.error(`row ${row.id} (${row.template}) could not be settled: ${err instanceof Error ? err.name : "error"}`);
+        outcome = "retry";
+      }
+      if (outcome === "sent") sent++;
+      else if (outcome === "skipped") skipped++;
+      else if (outcome === "retry") retried++;
+      else if (outcome === "failed") failed++;
     }
 
     /* `retried` is reported rather than folded into `failed`: a row waiting
@@ -294,7 +340,9 @@ Deno.serve(async (req) => {
        have the operator chasing an outage that is a carrier hiccup. */
     return Response.json({ fetched: rows.length, sent, failed, skipped, retried, sandbox }, { status: failed > 0 ? 207 : 200 });
   } catch (err) {
-    console.error(err);
-    return Response.json({ error: String(err) }, { status: 500 });
+    /* The message only. An error here can wrap a response body, and a response
+       body from PostgREST can wrap a row. */
+    console.error(`send-sms: ${err instanceof Error ? err.message : "error"}`);
+    return Response.json({ error: "the drain could not run" }, { status: 500 });
   }
 });

@@ -35,17 +35,24 @@ type Row = { id: string; profile_id: string; title: string; body: string | null;
 type Sub = { id: string; profile_id: string; endpoint: string; p256dh: string; auth: string };
 
 const MAX_ATTEMPTS = 5;
+/* Bounded per invocation; the cron runs every five minutes. */
+const BATCH = 50;
 
-async function mark(id: string, status: "sent" | "skipped" | "failed") {
+async function mark(id: string, status: "sent" | "skipped" | "failed", why?: string) {
   const body: Record<string, unknown> = { status };
   if (status === "sent") body.sent_at = new Date().toISOString();
+  /* A terminal row says why — last_error has been on this table since
+     20260901232254 and a skip with no reason reads as a number nobody can
+     argue with. */
+  if (why) body.last_error = why;
   /* `sending` too: the row is claimed before the Push API call, so by the
      time this runs it is no longer pending. */
-  await fetch(`${SUPABASE_URL}/rest/v1/push_outbox?id=eq.${id}&status=in.(pending,sending)`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_outbox?id=eq.${id}&status=in.(pending,sending)`, {
     method: "PATCH",
     headers: H,
     body: JSON.stringify(body),
   });
+  if (!res.ok) console.error(`mark ${status} failed for ${id}: ${res.status}`);
 }
 
 /* Claim before sending — the discipline both siblings hold and this drain
@@ -101,11 +108,21 @@ Deno.serve(async (req: Request) => {
       secret("VAPID_PRIVATE_KEY"),
       secret("VAPID_SUBJECT"),
     ]);
+    /* A PostgREST error is a JSON object, not a list, and `.map` on it took
+       the whole run down as a 500 with the error text in the log. Each read
+       is checked for shape and named on failure. */
+    const list = async <T,>(what: string, url: string): Promise<T[]> => {
+      const res = await fetch(url, { headers: H });
+      if (!res.ok) throw new Error(`${what} read failed: ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error(`${what} read returned something that is not a list`);
+      return data as T[];
+    };
     const now = new Date().toISOString();
-    const rows: Row[] = await fetch(
-      `${SUPABASE_URL}/rest/v1/push_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${now})&order=created_at.asc&limit=50&select=id,profile_id,title,body,url,attempts`,
-      { headers: H },
-    ).then((r) => r.json());
+    const rows = await list<Row>(
+      "push_outbox",
+      `${SUPABASE_URL}/rest/v1/push_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${now})&order=created_at.asc&limit=${BATCH}&select=id,profile_id,title,body,url,attempts`,
+    );
 
     if (!pub || !priv) {
       /* The queue waits for the keys; it is not drained to prove they are gone. */
@@ -116,27 +133,32 @@ Deno.serve(async (req: Request) => {
 
     /* One read for every subscription this batch needs, not one per row. */
     const profileIds = [...new Set(rows.map((r) => r.profile_id))];
-    const allSubs: Sub[] = profileIds.length
-      ? await fetch(
+    const allSubs = profileIds.length
+      ? await list<Sub>(
+          "push_subscriptions",
           `${SUPABASE_URL}/rest/v1/push_subscriptions?profile_id=in.(${profileIds.join(",")})&select=id,profile_id,endpoint,p256dh,auth`,
-          { headers: H },
-        ).then((r) => r.json())
+        )
       : [];
     const subsByProfile = new Map<string, Sub[]>();
     for (const s of allSubs) {
-      const list = subsByProfile.get(s.profile_id) ?? [];
-      list.push(s);
-      subsByProfile.set(s.profile_id, list);
+      const held = subsByProfile.get(s.profile_id) ?? [];
+      held.push(s);
+      subsByProfile.set(s.profile_id, held);
     }
 
-    let sent = 0, failed = 0, skipped = 0;
-    for (const row of rows) {
+    /* One row, start to finish, and nothing it does can take the batch with
+       it. The push call itself was already caught; the bookkeeping around it
+       was not, and a PostgREST hiccup on one row abandoned the rest. */
+    const deliver = async (row: Row): Promise<"sent" | "skipped" | "retry" | "failed" | "taken"> => {
       const subs = subsByProfile.get(row.profile_id) ?? [];
-      if (!subs.length) { await mark(row.id, "skipped"); skipped++; continue; }
+      if (!subs.length) {
+        await mark(row.id, "skipped", "no push subscription on file");
+        return "skipped";
+      }
 
       /* Claimed immediately before the push — a row another run took is
          skipped, not re-sent. */
-      if (!(await claim(row.id))) continue;
+      if (!(await claim(row.id))) return "taken";
 
       const payload = JSON.stringify({
         title: row.title,
@@ -145,6 +167,7 @@ Deno.serve(async (req: Request) => {
       });
       let ok = false;
       let transient = false;
+      let dropped = 0;
       for (const s of subs) {
         try {
           await webpush.sendNotification(
@@ -157,6 +180,7 @@ Deno.serve(async (req: Request) => {
           const code = (e as { statusCode?: number }).statusCode;
           // The browser dropped it — stop shouting into a dead endpoint.
           if (code === 404 || code === 410) {
+            dropped++;
             await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${s.id}`, {
               method: "DELETE",
               headers: H,
@@ -169,18 +193,39 @@ Deno.serve(async (req: Request) => {
       }
       if (ok) {
         await mark(row.id, "sent");
-        sent++;
-      } else if (transient) {
-        await requeue(row, "push service refused, worth another try");
-        skipped++;
-      } else {
-        await mark(row.id, "failed");
-        failed++;
+        return "sent";
       }
+      if (transient) {
+        await requeue(row, "push service refused, worth another try");
+        return "retry";
+      }
+      /* Every endpoint the member had was dead, and each has now been
+         removed. That is not a failure of the message; the member has simply
+         gone, and the next time they enable push the row would be stale. */
+      await mark(row.id, "skipped", `every subscription was gone (${dropped} removed)`);
+      return "skipped";
+    };
+
+    let sent = 0, failed = 0, skipped = 0, retried = 0;
+    for (const row of rows) {
+      let outcome: Awaited<ReturnType<typeof deliver>>;
+      try {
+        outcome = await deliver(row);
+      } catch (err) {
+        console.error(`row ${row.id} could not be settled: ${err instanceof Error ? err.name : "error"}`);
+        outcome = "retry";
+      }
+      if (outcome === "sent") sent++;
+      else if (outcome === "skipped") skipped++;
+      else if (outcome === "retry") retried++;
+      else if (outcome === "failed") failed++;
     }
-    return Response.json({ fetched: rows.length, sent, failed, skipped }, { status: failed > 0 ? 207 : 200 });
+    /* `retried` apart from `skipped`: a row waiting on a backoff has not been
+       skipped, and reporting it as one hid every push-service outage. */
+    return Response.json({ fetched: rows.length, sent, failed, skipped, retried }, { status: failed > 0 ? 207 : 200 });
   } catch (err) {
-    console.error(err);
-    return Response.json({ error: String(err) }, { status: 500 });
+    /* The message only — a wrapped response body can carry a row. */
+    console.error(`send-push: ${err instanceof Error ? err.message : "error"}`);
+    return Response.json({ error: "the drain could not run" }, { status: 500 });
   }
 });
