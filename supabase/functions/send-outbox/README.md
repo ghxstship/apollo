@@ -64,7 +64,22 @@ The cron jobs `send-outbox-drain`, `send-sms-drain` and `send-push-drain` (every
 | `refund-posted` | transactional | Refund posted. (requires `amount`) |
 | `win-back` | marketing | Your place is still here. |
 | `bridge-word` | marketing | {title} (a Bridge broadcast; requires `title`, `body`) |
+| `frames-wanted` | transactional | Frames wanted — {episode}. (queued by `the_night_asks_for_its_frames` when an episode completes, to members aboard, checked in and in frame; requires `episode`; links `/live`, `/gallery`, `/you`) |
 | `season-card` | marketing | Your season — {season} |
 | `lore-digest` | marketing | The Log, Sundays. (legacy `dispatch-digest`, `episode-digest` render the same) |
 
 Every template carries the `[un] anything goes here` strap in the footer. All payload fields are HTML-escaped before interpolation.
+
+`frames-wanted` is transactional on purpose: it concerns a pass the reader held and used and a record they are already part of, goes once to everyone it concerns, and sells nothing. Its control is not an unsubscribe but the one the trigger already reads — a member who steps out of frame on `/you` (`profiles.camera_withdrawn_at`) is never asked — and the letter says so. It is therefore correctly absent from `marketing_mail_honours_the_switch`.
+
+## Comms map — which feature speaks on which channel
+
+| feature | email (`email_outbox`) | SMS (`sms_outbox`) | push (`push_outbox`) | in-app notice | wallet |
+| --- | --- | --- | --- | --- | --- |
+| Bridge broadcast | `bridge-word` | `bridge-word` → sent.dm `un_bridge_word` (`[un]: {{title}} — {{body}}`; the SQL cuts `body` to 140, `send-sms` cuts every parameter by code point) | via the notice, or push alone | `notifications.kind = 'word'` | — |
+| Frames after a night | `frames-wanted` | — | — | — | — |
+| Debrief (deck status, who to sit near) | none, by design | none | none | in-app only | — |
+| Poll (a question, never a person) | none, by design | none | none | in-app only | — |
+| Wallet pass update | — | — | **not `send-push`**: a changed pass is announced to Apple Wallet by an APNs push to the device tokens the pass registered through the PassKit web service (`/v1/devices/{deviceId}/registrations/{passTypeId}`), and to Google Wallet by a PATCH on the object. That is a fourth drain — say `send-wallet-push`, reading a `wallet_registrations` table, signed with the Pass Type ID certificate — not this function and not the VAPID web-push drain. Nothing here needs to change for it. | — | fails closed until the Apple and Google credentials exist |
+
+The debrief and the poll are in-app only by design: the debrief is a status a member sets for the night and it expires with it, and a poll is settled by the Bridge on the surface where the vote was cast. Neither has a letter, a text or a push, and the gate's "a letter nobody sends" check is how that stays visible rather than accidental.

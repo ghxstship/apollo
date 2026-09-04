@@ -82,15 +82,30 @@ function e164(raw: string): string | null {
   return null;
 }
 
+/* A parameter is cut by code point, not by UTF-16 unit. `slice(0, 300)` on a
+   body that ends in a four-byte character — an operator's broadcast can carry
+   one — left half a surrogate pair at the end, which the carrier's JSON
+   reader refuses for the whole message. The broadcast already trims the body
+   to 140 in SQL; this is the last guard, not the first. */
+const PARAMETER_MAX = 300;
+
+function clip(text: string, max: number): string {
+  const points = Array.from(text.trim());
+  return (points.length > max ? points.slice(0, max) : points).join("");
+}
+
 /* The outbox speaks in title/body; sent.dm speaks in named variables. The
-   mapping says which is which, so neither side has to know about the other. */
+   mapping says which is which, so neither side has to know about the other.
+   bridge-word maps {title -> title, body -> body} and the carrier's template
+   reads `[un]: {{title}} — {{body}}`; the text goes out as the operator
+   wrote it, whitespace and all. */
 function parameters(row: Row, map: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [variable, key] of Object.entries(map ?? {})) {
     const v = row.payload?.[key];
-    if (v !== undefined && v !== null && String(v).trim() !== "") {
-      out[variable] = String(v).slice(0, 300);
-    }
+    if (v === undefined || v === null) continue;
+    const text = clip(String(v), PARAMETER_MAX);
+    if (text !== "") out[variable] = text;
   }
   return out;
 }

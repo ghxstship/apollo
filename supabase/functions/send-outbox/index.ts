@@ -547,6 +547,33 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
       html: shell(greet(p) + paragraphs, { kind: "marketing" }),
     };
   },
+  /* After the night wraps. Queued once by the_night_asks_for_its_frames, to
+     every member who was aboard, checked in and in frame, when the episode
+     goes to completed. The pipeline — upload during Live, the Bridge's
+     approval queue, consent per member — has existed since August; this is
+     the ask that was missing.
+
+     Transactional, deliberately. It concerns a pass the reader held and used
+     and a record they are already part of; it goes once, to everyone it
+     concerns, and sells nothing. The control that fits it is not an
+     unsubscribe but the one the trigger already reads: a member who steps
+     out of frame at /you is never asked, and the letter says so. The frames
+     upload lives on /live, which is where the letter points. */
+  "frames-wanted": (p) => {
+    const episode = String(p["episode"] ?? p["voyage"] ?? "The night");
+    const slug = p["slug"];
+    const page = typeof slug === "string" && slug.trim() ? `${APP_URL}/episodes/${encodeURIComponent(slug.trim())}` : "";
+    return {
+      subject: `Frames wanted — ${episode}.`,
+      html: shell(
+        greet(p) +
+          `<p style="margin:0 0 16px;">${page ? link(page, esc(episode)) : esc(episode)} has wrapped. You were aboard and in frame, and the record is missing what you saw.</p>
+<p style="margin:0 0 16px;">Send what you shot — a frame at a time, straight from your phone. It lands in the queue for the Bridge's eye, and nobody sees it until the Bridge clears it. Once cleared it reaches ${link(`${APP_URL}/gallery`, "the gallery")}, credited to you by name.</p>
+<p style="margin:0 0 16px;">${link(`${APP_URL}/live`, "Send the frames →")}</p>
+<p style="margin:0;">If you would rather the night stayed yours, send nothing. You can step out of frame at any time in ${link(`${APP_URL}/you`, "your settings")}, and we do not ask again.</p>`,
+      ),
+    };
+  },
   "lore-digest": (p) => {
     const items = Array.isArray(p["items"]) ? (p["items"] as Array<Record<string, unknown>>) : [];
     const list = items
@@ -604,6 +631,7 @@ const LETTER_KIND: Record<string, Kind> = {
   "card-expiring": "transactional",
   "final-notice": "transactional",
   "refund-posted": "transactional",
+  "frames-wanted": "transactional",
   "win-back": "marketing",
   "bridge-word": "marketing",
   "season-card": "marketing",
@@ -629,6 +657,9 @@ const REQUIRES: Record<string, string[]> = {
   "refund-posted": ["amount"],
   "season-card": ["season"],
   "bridge-word": ["title", "body"],
+  /* A frames request that cannot name the night is a request for nothing in
+     particular; the trigger writes the title under both keys. */
+  "frames-wanted": ["episode"],
 };
 
 function missingKeys(code: string, p: Record<string, unknown>): string[] {
