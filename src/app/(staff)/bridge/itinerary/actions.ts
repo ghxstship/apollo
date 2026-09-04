@@ -52,6 +52,15 @@ function instantIn(local: string, zone: string): string | null {
   return Number.isNaN(when.getTime()) ? null : when.toISOString();
 }
 
+/* A leg's day and a stop's position are integer columns with no ceiling of
+   their own; a clock is a plain time column. Bounded here so a slipped key
+   meets words rather than the driver's. */
+const DAY_MAX = 366;
+const POSITION_MAX = 999;
+const TEXT_MAX = 200;
+const NOTE_MAX = 2000;
+const isClock = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+
 export type LegInput = {
   day: number;
   place: string;
@@ -70,9 +79,10 @@ export async function saveLeg(
   if (!staffId) return { error: ERR_STAFF };
   const db = moduleTables(supabase);
 
-  const place = input.place.trim();
+  const place = input.place.trim().slice(0, TEXT_MAX);
   if (!place) return { error: "A leg needs a place." };
-  const day = Math.max(1, Math.round(Number(input.day) || 0));
+  const day = Math.round(Number(input.day) || 0);
+  if (day < 1 || day > DAY_MAX) return { error: `A leg's day runs 1 to ${DAY_MAX}.` };
 
   let startsAt: string | null = null;
   if (input.startsAt) {
@@ -82,7 +92,7 @@ export async function saveLeg(
     if (!startsAt) return { error: "That time doesn't parse." };
   }
 
-  const patch = { place, note: input.note.trim() || null, starts_at: startsAt };
+  const patch = { place, note: input.note.trim().slice(0, NOTE_MAX) || null, starts_at: startsAt };
 
   if (legId) {
     const { error } = await db.from("episode_legs").update({ ...patch, day }).eq("id", legId);
@@ -169,9 +179,12 @@ export async function saveStop(
   if (!staffId) return { error: ERR_STAFF };
   const db = moduleTables(supabase);
 
-  const name = input.name.trim();
+  const name = input.name.trim().slice(0, TEXT_MAX);
   if (!name) return { error: "A stop needs a name." };
-  const position = Math.max(1, Math.round(Number(input.position) || 0));
+  const position = Math.round(Number(input.position) || 0);
+  if (position < 1 || position > POSITION_MAX) return { error: `A stop's position runs 1 to ${POSITION_MAX}.` };
+  if (input.tenderAt && !isClock(input.tenderAt)) return { error: "That tender time doesn't parse." };
+  if (input.lastReturn && !isClock(input.lastReturn)) return { error: "That last-return time doesn't parse." };
 
   /* Tender out before last return, or the card tells a guest to be back before
      they land. The database does not hold this one, so the screen does. */
@@ -185,7 +198,7 @@ export async function saveStop(
     leg_id: input.legId || null,
     tender_at: input.tenderAt || null,
     last_return: input.lastReturn || null,
-    notes: input.notes.trim() || null,
+    notes: input.notes.trim().slice(0, NOTE_MAX) || null,
   };
 
   const res = stopId

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, Radio, Select, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Radio, Select, StateBlock, Table, Toast } from "@/components/ds";
 import { CLUB_ZONE, CONTEST_METRIC, knots } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -151,6 +151,11 @@ export function RegattasClient({
         </Button>
       </div>
 
+      <ListToolbar
+        resultCount={rows.length}
+        resultNoun="contest"
+        countSuffix={` · ${rows.filter((r) => r.status === "open").length} open`}
+      />
       {rows.length === 0 ? (
         <StateBlock
           title="Nothing called."

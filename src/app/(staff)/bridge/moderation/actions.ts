@@ -19,7 +19,9 @@ export async function removeAndNotify(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const line = reason.trim() || "Against the code of conduct.";
+  /* The line is the body of the word the author reads. Bounded so a pasted
+     essay does not become a notification. */
+  const line = reason.trim().slice(0, 500) || "Against the code of conduct.";
 
   const { error: flagError } = await supabase
     .from("open_deck_flags")

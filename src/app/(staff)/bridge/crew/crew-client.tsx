@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Avatar, Badge, Button, Dialog, Stat, StateBlock, Switch, Table, Tabs, Textarea, Toast } from "@/components/ds";
+import { Avatar, Badge, Button, Dialog, Input, ListToolbar, Stat, StateBlock, Switch, Table, Tabs, Textarea, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { addCandidateNote, setCandidateStage, setRoleOpen, type CrewStage } from "./actions";
 
@@ -88,11 +88,17 @@ export function CrewClient({
   const [passing, setPassing] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const [note, setNote] = React.useState("");
+  const [query, setQuery] = React.useState("");
 
   const role = roles.find((r) => r.id === roleId) ?? null;
   const pool = candidates.filter((c) => c.roleId === roleId);
   const pipeline = pool.filter((c) => c.stage !== "passed");
-  const list = pool.filter((c) => stage === "all" || c.stage === stage);
+  const q = query.trim().toLowerCase();
+  const list = pool.filter(
+    (c) =>
+      (stage === "all" || c.stage === stage) &&
+      (!q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q))
+  );
   const current = candidates.find((c) => c.id === openId) ?? null;
 
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
@@ -141,9 +147,14 @@ export function CrewClient({
 
   if (roles.length === 0) {
     return (
-      <p style={{ padding: "24px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
-        No roles posted. The crew page waits on the first one.
-      </p>
+      <div style={{ marginTop: 20 }}>
+        <StateBlock
+          status="empty"
+          icon="Users"
+          title="No roles posted."
+          detail="The crew page waits on the first one. Candidates apply against a posted role from the crew page."
+        />
+      </div>
     );
   }
 
@@ -224,14 +235,29 @@ export function CrewClient({
                 onChange={(id) => setStage(id as "all" | CrewStage)}
               />
 
+              <ListToolbar
+                search={
+                  <Input
+                    label="Search the candidates"
+                    placeholder="A name or an email"
+                    aria-label="Search the candidates"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                }
+                resultCount={list.length}
+                resultNoun="candidate"
+                countSuffix={` of ${pool.length} for this role`}
+              />
+
               {/* A stage with nobody at it rendered four column headings over
                   an empty body, with the explanation stranded below them. */}
               {list.length === 0 ? (
                 <div style={{ marginTop: 20 }}>
                   <StateBlock
                     status="empty"
-                    title="Nobody at this stage."
-                    detail="The tide brings more. Candidates move up the stages from here."
+                    title={q ? "Nobody by that name." : "Nobody at this stage."}
+                    detail={q ? "Clear the search to see everyone at this stage." : "The tide brings more. Candidates move up the stages from here."}
                   />
                 </div>
               ) : (

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Button, StateBlock, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Input, ListToolbar, StateBlock, Textarea, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { relTime, useToast } from "../../ui";
 import { replyToThread } from "./actions";
@@ -30,8 +30,14 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
   const { toast, show, clear } = useToast();
   const [activeId, setActiveId] = React.useState(threads[0]?.id ?? "");
   const [draft, setDraft] = React.useState("");
+  const [query, setQuery] = React.useState("");
 
   const active = threads.find((t) => t.id === activeId) ?? threads[0] ?? null;
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? threads.filter((t) => t.member.toLowerCase().includes(q) || t.memberNo.toLowerCase().includes(q))
+    : threads;
+  const waiting = threads.filter((t) => t.waiting).length;
 
   if (threads.length === 0) {
     return (
@@ -61,9 +67,28 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
 
   return (
     <>
+      <ListToolbar
+        search={
+          <Input
+            label="Search the threads"
+            placeholder="A member, or a number"
+            aria-label="Search the threads"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        }
+        resultCount={shown.length}
+        resultNoun="thread"
+        countSuffix={` · ${waiting} waiting on us`}
+      />
       <div className="hm-inbox">
         <div className="hm-inbox__list">
-          {threads.map((t) => (
+          {shown.length === 0 ? (
+            <p style={{ padding: "16px", fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
+              Nobody by that name. Clear the search to see every thread.
+            </p>
+          ) : null}
+          {shown.map((t) => (
             <button
               type="button"
               key={t.id}

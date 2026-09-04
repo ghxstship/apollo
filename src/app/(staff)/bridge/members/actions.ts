@@ -21,14 +21,49 @@ export type SegmentFilters = {
   q: string;
 };
 
+/* The filters column is jsonb. Only the eight keys the roster reads are
+   stored, each a bounded string (or the one boolean) — a view is reloaded by
+   spreading it straight into the filter state, so anything else in the
+   object would ride into the client untouched. */
+const SEGMENT_NAME_MAX = 80;
+const FILTER_MAX = 120;
+const TIERS = ["", "regional", "national", "global"] as const;
+const STANDINGS = ["", "active", "paused", "departed"] as const;
+const DUES = ["", "active", "trialing", "past_due", "paused", "canceled", "incomplete", "none"] as const;
+
+function cleanFilters(raw: SegmentFilters): SegmentFilters | string {
+  const str = (v: unknown) => (typeof v === "string" ? v.trim().slice(0, FILTER_MAX) : "");
+  const tier = str(raw.tier);
+  const status = str(raw.status);
+  const dues = str(raw.dues);
+  const league = str(raw.league);
+  if (!(TIERS as readonly string[]).includes(tier)) return "That is not a tier.";
+  if (!(STANDINGS as readonly string[]).includes(status)) return "That is not a standing.";
+  if (!(DUES as readonly string[]).includes(dues)) return "That is not a dues state.";
+  if (league && !/^[1-5]$/.test(league)) return "That is not a league.";
+  return {
+    city: str(raw.city),
+    tier,
+    plan: str(raw.plan),
+    league,
+    status,
+    dues,
+    recent: raw.recent === true,
+    q: str(raw.q),
+  };
+}
+
 export async function saveSegment(name: string, filters: SegmentFilters): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const label = name.trim();
   if (!label) return { error: "Give the view a name first." };
+  if (label.length > SEGMENT_NAME_MAX) return { error: `A view's name runs to ${SEGMENT_NAME_MAX} characters.` };
+  const cleaned = cleanFilters(filters);
+  if (typeof cleaned === "string") return { error: cleaned };
   const { error } = await supabase
     .from("saved_segments")
-    .insert({ name: label, filters, created_by: staffId });
+    .insert({ name: label, filters: cleaned, created_by: staffId });
   if (error) return { error: ERR_LAND };
   revalidatePath("/bridge/members");
   return {};
@@ -179,9 +214,10 @@ export async function setMemberStatus(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (status !== "active" && status !== "paused") return { error: "The Bridge pauses a membership or resumes it — nothing else from here." };
 
   const { error } = await supabase.from("profiles").update({ status }).eq("id", profileId);
-  if (error) return { error: ERR_LAND };
+  if (error) return { error: voice(error) };
 
   /* The member is told by the handle_profile_status trigger, which fires on
      the status change itself — so a member who pauses themselves and one the
@@ -232,7 +268,7 @@ export async function adjustKnots(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const line = reason.trim();
+  const line = reason.trim().slice(0, 200);
   if (!line) return { error: "The ledger never writes without a reason." };
   /* Three refusals, each saying what actually happened. The one message used
      to cover all three, so a decimal came back as "A zero adjustment is not an

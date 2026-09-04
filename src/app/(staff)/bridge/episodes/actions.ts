@@ -2,9 +2,27 @@
 
 import { revalidatePath } from "next/cache";
 import type { EpisodeSetting, MembershipTier, EpisodeStatus } from "@/lib/supabase/types";
-import type { ExperienceClassId } from "@/lib/brand";
+import { EXPERIENCE_CLASS_IDS, type ExperienceClassId } from "@/lib/brand";
 import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+
+/* The enums the board writes, restated so a value off the list is refused in
+   words before the driver refuses it as a malformed enum (22P02) and the
+   operator reads "That didn't land." for a form that looked fine. status,
+   setting and min_tier are Postgres enums; media is a free text column the
+   member page reads as one of three gradients; kind is derived by the
+   taxonomy trigger from the setting and is never typed here. */
+const STATUSES: readonly EpisodeStatus[] = ["scheduled", "live", "weather_hold", "completed", "cancelled"];
+const SETTINGS: readonly EpisodeSetting[] = ["sea", "shore"];
+const TIERS: readonly MembershipTier[] = ["regional", "national", "global"];
+const MEDIA = ["dawn", "day", "dusk"] as const;
+const TITLE_MAX = 120;
+const SLUG_MAX = 80;
+const DISTANCE_MAX_NM = 10_000;
+const LEG_MAX = 48;
+const LEG_TEXT_MAX = 200;
+const CONDITION_MAX = 40;
+const MUSTER_MAX = 200;
 
 function done(): ActionResult {
   revalidatePath("/bridge/episodes");
@@ -24,8 +42,9 @@ export async function setEpisodeStatus(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!STATUSES.includes(status)) return { error: "That is not a state an episode can be in." };
   const { error } = await supabase.from("episodes").update({ status }).eq("id", episodeId);
-  if (error) return { error: ERR_LAND };
+  if (error) return { error: programRefusal(error) };
   return done();
 }
 
@@ -76,14 +95,16 @@ export async function saveEpisodeOps(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  /* Only the four keys the board charts, each bounded — the column is jsonb
+     and would otherwise take whatever arrived. */
   const clean = Object.fromEntries(
-    Object.entries(conditions)
-      .map(([k, v]) => [k, v.trim()])
+    (["wind", "swell", "heading", "speed"] as const)
+      .map((k) => [k, String(conditions[k] ?? "").trim().slice(0, CONDITION_MAX)])
       .filter(([, v]) => v)
   );
   const { error } = await supabase
     .from("episodes")
-    .update({ conditions: clean, muster: muster.trim() || null })
+    .update({ conditions: clean, muster: muster.trim().slice(0, MUSTER_MAX) || null })
     .eq("id", episodeId);
   if (error) return { error: ERR_LAND };
   return done();
@@ -148,7 +169,6 @@ export type NewEpisodeInput = {
      — a_sailing_keeps_its_taxonomy overwrites it from the series the moment
      one is named. */
   experienceClass: ExperienceClassId;
-  kind: string;
   cityId: string | null;
   startsAt: string;
   endsAt: string;
@@ -217,9 +237,25 @@ export async function createEpisode(input: NewEpisodeInput): Promise<ActionResul
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const slug = input.slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
+  const slug = input.slug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, SLUG_MAX);
   const title = input.title.trim();
   if (!slug || !title) return { error: "An episode needs a slug and a title." };
+  if (title.length > TITLE_MAX) return { error: `A title runs to ${TITLE_MAX} characters.` };
+  if (!SETTINGS.includes(input.setting)) return { error: "Pick where it happens — afloat or ashore." };
+  if (input.subClass !== null && !["passage", "expedition", "odyssey"].includes(input.subClass))
+    return { error: "That is not a duration the board files." };
+  if (!(EXPERIENCE_CLASS_IDS as readonly string[]).includes(input.experienceClass))
+    return { error: "That is not an experience class." };
+  if (!TIERS.includes(input.minTier)) return { error: "That is not a tier." };
+  if (!(MEDIA as readonly string[]).includes(input.media)) return { error: "Pick the imagery — dawn, day or dusk." };
+  if (input.distanceNm !== null && (!Number.isFinite(input.distanceNm) || input.distanceNm < 0 || input.distanceNm > DISTANCE_MAX_NM))
+    return { error: `Distance runs 0 to ${DISTANCE_MAX_NM.toLocaleString("en-US")} nautical miles.` };
+  if (!Number.isFinite(input.priceCents) || input.priceCents < 0) return { error: "A price is a dollar figure, zero or better." };
   if (!input.startsAt) return { error: "Set a departure time." };
   /* An episode with no return time can never round the marks that are measured
      in hours: confer_marks skips any episode where ends_at is null, so
@@ -276,12 +312,14 @@ export async function createEpisode(input: NewEpisodeInput): Promise<ActionResul
   const depositCents = Math.max(0, Math.round(input.depositCents));
   if (depositCents > DEPOSIT_CEILING_CENTS) return { error: ERR_DEPOSIT_CEILING };
 
-  /* Itinerary rows: minutes from cast off, a title, an optional note. */
+  /* Itinerary rows: minutes from cast off, a title, an optional note. Bounded
+     — the column is jsonb and would otherwise take whatever arrived. */
   const itinerary = (input.itinerary ?? [])
+    .slice(0, LEG_MAX)
     .map((leg) => ({
-      offset: Math.round(Number(leg.offset) || 0),
-      title: String(leg.title ?? "").trim(),
-      note: String(leg.note ?? "").trim(),
+      offset: Math.max(-1440, Math.min(10_080, Math.round(Number(leg.offset) || 0))),
+      title: String(leg.title ?? "").trim().slice(0, LEG_TEXT_MAX),
+      note: String(leg.note ?? "").trim().slice(0, LEG_TEXT_MAX),
     }))
     .filter((leg) => leg.title);
 
@@ -295,7 +333,10 @@ export async function createEpisode(input: NewEpisodeInput): Promise<ActionResul
        catalogue is the authority, and this is the answer for the unfiled. */
     experience_class: input.experienceClass,
     itinerary,
-    kind: input.kind.trim() || (input.setting === "shore" ? "port_day" : "sea_day"),
+    /* Derived from the setting, never typed: an_episode_keeps_its_taxonomy
+       overwrites anything else it is handed, and the composer no longer
+       offers a field for it. */
+    kind: input.setting === "shore" ? "port_day" : "sea_day",
     city_id: input.cityId,
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
@@ -338,6 +379,8 @@ export async function saveEpisodeProgram(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!(EXPERIENCE_CLASS_IDS as readonly string[]).includes(program.experienceClass))
+    return { error: "That is not an experience class." };
 
   /* The episode carries its city's zone — the on-sale hour is read on that
      clock, exactly as the departure was when the episode was set. */

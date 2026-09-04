@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Stepper, Switch, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Stepper, Switch, Table, Toast } from "@/components/ds";
 import { PLACE } from "@/lib/brand";
 import { useToast } from "../../ui";
 import {
@@ -124,7 +124,7 @@ export function ProgramClient({
       const res = await act();
       if (res.error) show({ msg: res.error, tone: "danger" });
       else if (active)
-        show({ msg: "Retired. What points at it keeps pointing at it.", meta: what.toUpperCase() });
+        show({ msg: "Retired. Whatever names it keeps naming it.", meta: what.toUpperCase() });
       else show({ msg: "Back on the program.", meta: what.toUpperCase() });
     });
 
@@ -319,9 +319,16 @@ export function ProgramClient({
           </Button>
         </div>
         {seasons.length ? (
-          <div className="hm-panel">
-            <Table rowKey={(r: SeasonPanelRow) => r.id} columns={seasonColumns} rows={seasons} />
-          </div>
+          <>
+            <ListToolbar
+              resultCount={seasons.length}
+              resultNoun="season"
+              countSuffix={` · ${seasons.filter((r) => r.active).length} standing`}
+            />
+            <div className="hm-panel">
+              <Table rowKey={(r: SeasonPanelRow) => r.id} columns={seasonColumns} rows={seasons} />
+            </div>
+          </>
         ) : (
           <div style={{ marginTop: 20 }}>
             <StateBlock
@@ -347,9 +354,16 @@ export function ProgramClient({
           </Button>
         </div>
         {venues.length ? (
-          <div className="hm-panel">
-            <Table rowKey={(r: VenuePanelRow) => r.id} columns={venueColumns} rows={venues} />
-          </div>
+          <>
+            <ListToolbar
+              resultCount={venues.length}
+              resultNoun="venue"
+              countSuffix={` · ${venues.filter((r) => r.active).length} standing`}
+            />
+            <div className="hm-panel">
+              <Table rowKey={(r: VenuePanelRow) => r.id} columns={venueColumns} rows={venues} />
+            </div>
+          </>
         ) : (
           <div style={{ marginTop: 20 }}>
             <StateBlock
@@ -375,9 +389,17 @@ export function ProgramClient({
           </Button>
         </div>
         {series.length ? (
-          <div className="hm-panel">
-            <Table rowKey={(r: SeriesPanelRow) => r.id} columns={seriesColumns} rows={series} />
-          </div>
+          <>
+            <ListToolbar
+              resultCount={series.length}
+              resultNoun="series"
+              resultNounPlural="series"
+              countSuffix={` · ${series.filter((r) => r.active).length} standing`}
+            />
+            <div className="hm-panel">
+              <Table rowKey={(r: SeriesPanelRow) => r.id} columns={seriesColumns} rows={series} />
+            </div>
+          </>
         ) : (
           <div style={{ marginTop: 20 }}>
             <StateBlock

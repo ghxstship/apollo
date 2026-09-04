@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE, SETTING_LABEL } from "@/lib/brand";
-import { Badge, Button, Dialog, Input, Select, Stat, StateBlock, Table, Tabs, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, Stat, StateBlock, Table, Tabs, Textarea, Toast } from "@/components/ds";
 import type { ClauseCategory } from "@/lib/supabase/types";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -89,6 +89,8 @@ export function DocumentsClient({
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [tab, setTab] = React.useState("library");
+  const [clauseQuery, setClauseQuery] = React.useState("");
+  const [registerQuery, setRegisterQuery] = React.useState("");
 
   const [writing, setWriting] = React.useState(false);
   const [revising, setRevising] = React.useState<ClauseRow | null>(null);
@@ -340,6 +342,19 @@ export function DocumentsClient({
   const drafts = docs.filter((d) => d.draftVersionId).length;
   const awaiting = register.filter((s) => s.isContract && !s.counterSignedBy && !s.redacted).length;
 
+  const cq = clauseQuery.trim().toLowerCase();
+  const shownClauses = cq
+    ? clauses.filter(
+        (c) => c.title.toLowerCase().includes(cq) || c.code.includes(cq) || c.category.includes(cq)
+      )
+    : clauses;
+  const rq = registerQuery.trim().toLowerCase();
+  const shownRegister = rq
+    ? register.filter(
+        (s) => s.signer.toLowerCase().includes(rq) || s.document.toLowerCase().includes(rq)
+      )
+    : register;
+
   return (
     <>
       <div className="hm-row">
@@ -372,17 +387,41 @@ export function DocumentsClient({
               Write a clause
             </Button>
           </div>
+          <ListToolbar
+            search={
+              <Input
+                label="Search the library"
+                placeholder="A title, a code, a category"
+                aria-label="Search the library"
+                value={clauseQuery}
+                onChange={(e) => setClauseQuery(e.target.value)}
+              />
+            }
+            resultCount={shownClauses.length}
+            resultNoun="clause"
+            countSuffix={` · ${clauses.filter((c) => !c.active).length} out of use`}
+          />
           {clauses.length === 0 ? (
             <StateBlock title="No clauses yet." detail="A document is a composition of clauses; start with one." />
+          ) : shownClauses.length === 0 ? (
+            <StateBlock title="No clause by that name." detail="Clear the search to see the whole library." />
           ) : (
-            <Table tall columns={clauseColumns} rows={clauses} rowKey={(c) => c.code} />
+            <Table tall columns={clauseColumns} rows={shownClauses} rowKey={(c) => c.code} />
           )}
         </>
       ) : null}
 
       {tab === "documents" ? (
         <div style={{ marginTop: 18 }}>
-          <Table tall columns={docColumns} rows={docs} rowKey={(d) => d.code} />
+          <ListToolbar resultCount={docs.length} resultNoun="document" countSuffix={` · ${drafts} in draft`} />
+          {docs.length === 0 ? (
+            <StateBlock
+              title="No documents on the books."
+              detail="A document is seeded at the database — the waiver, the crew contract — and composed from the library here."
+            />
+          ) : (
+            <Table tall columns={docColumns} rows={docs} rowKey={(d) => d.code} />
+          )}
         </div>
       ) : null}
 
@@ -393,10 +432,26 @@ export function DocumentsClient({
               Send the season&rsquo;s cards
             </Button>
           </div>
+          <ListToolbar
+            search={
+              <Input
+                label="Search the register"
+                placeholder="A signer, or a document"
+                aria-label="Search the register"
+                value={registerQuery}
+                onChange={(e) => setRegisterQuery(e.target.value)}
+              />
+            }
+            resultCount={shownRegister.length}
+            resultNoun="signature"
+            countSuffix={` · ${awaiting} awaiting the club`}
+          />
           {register.length === 0 ? (
             <StateBlock title="Nothing signed yet." detail="Signatures land here with their hash and the exact wording agreed." />
+          ) : shownRegister.length === 0 ? (
+            <StateBlock title="Nobody by that name." detail="Clear the search to see the whole register." />
           ) : (
-            <Table tall columns={registerColumns} rows={register} rowKey={(s) => s.id} />
+            <Table tall columns={registerColumns} rows={shownRegister} rowKey={(s) => s.id} />
           )}
         </div>
       ) : null}
@@ -497,7 +552,12 @@ export function DocumentsClient({
             /* Ticked at a version that is no longer the newest wording. Say so,
                rather than letting it read as though the draft is up to date. */
             const stale = !!chosen && chosen.clauseVersionId !== c.latestVersionId;
-            const cond = chosen?.condition?.setting ?? "";
+            /* Keyed `class` on the wire and in the row — the key the renderer
+               tests against the episode's setting. This read `.setting`, so the
+               picker showed Always for every clause the draft actually held to
+               one setting, and the first touch of the dropdown quietly cleared
+               the condition. */
+            const cond = chosen?.condition?.class ?? "";
             return (
               <div
                 key={c.code}

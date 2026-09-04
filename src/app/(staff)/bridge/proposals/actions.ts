@@ -1,9 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { voice } from "@/lib/errors";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 export type ProposalRuling = "considering" | "approved" | "declined";
+
+/* member_event_proposals.status and charter_requests.status are check
+   constraints; the two ruling lists are the moves the Bridge may make on each.
+   A note is the body of the word the member reads — bounded. */
+const RULINGS: readonly ProposalRuling[] = ["considering", "approved", "declined"];
+const CHARTER_RULINGS: readonly CharterRuling[] = ["answered", "declined"];
+const NOTE_MAX = 600;
 
 /* One motion for every ruling. decide_a_proposal is staff-checked inside,
    writes the status AND posts to the proposer’s Inbox in the same call — the
@@ -22,15 +30,18 @@ export async function decideProposal(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!RULINGS.includes(ruling)) return { error: "That is not a ruling the Bridge gives." };
 
   const { error } = await supabase.rpc("decide_a_proposal", {
     p_id: id,
     p_status: ruling,
-    p_note: note?.trim() || null,
+    p_note: note?.trim().slice(0, NOTE_MAX) || null,
   });
-  if (error) {
-    return { error: error.message?.trim() || "That didn't land. Try again." };
-  }
+  /* The RPC's refusals are in the club's voice (P0001) and voice() passes
+     them through as said. This used to hand over error.message whatever it
+     was — a malformed id reached the operator as "invalid input syntax for
+     type uuid". */
+  if (error) return { error: voice(error) };
 
   let linkNote: string | undefined;
   if (ruling === "approved" && episodeId) {
@@ -85,8 +96,9 @@ export async function decideCharter(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!CHARTER_RULINGS.includes(ruling)) return { error: "That is not an answer the Bridge gives." };
 
-  const line = note.trim();
+  const line = note.trim().slice(0, NOTE_MAX);
   if (ruling === "answered" && !line) {
     return { error: "An answer needs a line — that line is what reaches the member." };
   }

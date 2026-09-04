@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, StateBlock, Table, Tag, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, FilterPills, Input, ListToolbar, StateBlock, Table, Tag, Toast } from "@/components/ds";
 import { useToast } from "../ui";
 import {
   acceptApplication,
@@ -45,6 +45,15 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
   const [pending, startTransition] = React.useTransition();
   const [confirm, setConfirm] = React.useState<Confirm>(null);
   const { toast, show, clear } = useToast();
+  const [query, setQuery] = React.useState("");
+  const [status, setStatus] = React.useState<"all" | AppRow["status"]>("all");
+
+  const q = query.trim().toLowerCase();
+  const shown = apps.filter(
+    (a) =>
+      (status === "all" || a.status === status) &&
+      (!q || a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.inviteCode.toLowerCase().includes(q))
+  );
 
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
@@ -152,12 +161,48 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
 
   return (
     <>
+      <ListToolbar
+        search={
+          <Input
+            label="Search the queue"
+            placeholder="A name, an email, an invite code"
+            aria-label="Search the queue"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        }
+        filterCount={status === "all" ? 0 : 1}
+        filters={
+          <FilterPills
+            label="Status"
+            value={status}
+            onChange={(next) => setStatus(next as typeof status)}
+            allCount={apps.length}
+            options={(Object.keys(STATUS_LABEL) as AppRow["status"][]).map((id) => ({
+              id,
+              label: STATUS_LABEL[id],
+              count: apps.filter((a) => a.status === id).length,
+            }))}
+          />
+        }
+        chips={status === "all" ? [] : [{ key: "status", label: "Status", value: STATUS_LABEL[status] }]}
+        onDropChip={() => setStatus("all")}
+        onClear={() => setStatus("all")}
+        resultCount={shown.length}
+        resultNoun="application"
+        countSuffix={` of ${apps.length}`}
+      />
+
       {/* The table rendered whatever the row count was, so an empty desk left a
           header row standing over nothing with the explanation stranded
           underneath it. Nothing to show means no table. */}
-      {apps.length ? (
+      {shown.length ? (
         <div className="hm-panel">
-          <Table rowKey={(a: AppRow) => a.id} columns={columns} rows={apps} />
+          <Table rowKey={(a: AppRow) => a.id} columns={columns} rows={shown} />
+        </div>
+      ) : apps.length ? (
+        <div style={{ marginTop: 20 }}>
+          <StateBlock status="empty" title="Nobody under that filter." detail="Widen the search, or clear the status filter." />
         </div>
       ) : (
         <div style={{ marginTop: 20 }}>

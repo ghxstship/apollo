@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CITY_CODES } from "@/lib/brand";
+import { moduleTables } from "@/lib/module-tables";
 import { getOperator } from "../../data";
 import { AutomationsClient, type RuleRow } from "./automations-client";
 import type { RuleAction, RuleConditions, TriggerEvent } from "./actions";
@@ -22,6 +23,13 @@ function readConditions(raw: unknown): RuleConditions {
   return { tier: pick("tier"), city: pick("city"), setting: pick("setting") };
 }
 
+/* The letter registry — email_templates — is not in the shared type file, so
+   it is read through the module seam and typed at the boundary. */
+interface LetterRecord {
+  code: string;
+  description: string;
+}
+
 function readAction(raw: unknown): RuleAction {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) {
     const o = raw as Record<string, unknown>;
@@ -41,10 +49,14 @@ function readAction(raw: unknown): RuleAction {
 export default async function AutomationsPage() {
   const { supabase } = await getOperator();
 
-  const [rulesRes, citiesRes, smsRes] = await Promise.all([
+  const [rulesRes, citiesRes, smsRes, lettersRes] = await Promise.all([
     supabase.from("automations").select("*").order("created_at", { ascending: false }),
     supabase.from("cities").select("slug, name").order("position", { ascending: true }),
     supabase.from("sms_templates").select("code").eq("active", true).order("code"),
+    /* Only a letter the sender can render — the same test run_automations
+       applies when the rule fires, asked here so the picker cannot offer a
+       letter that would be refused. */
+    moduleTables(supabase).from("email_templates").select("code, description").eq("active", true).order("code"),
   ]);
 
   const rows: RuleRow[] = (must(rulesRes)).map((a) => ({
@@ -76,6 +88,10 @@ export default async function AutomationsPage() {
         rows={rows}
         cities={cities}
         smsTemplates={(must(smsRes)).map((t) => t.code)}
+        letters={must(lettersRes as { data: LetterRecord[] | null; error: null }).map((l) => ({
+          code: l.code,
+          description: l.description,
+        }))}
       />
     </div>
   );

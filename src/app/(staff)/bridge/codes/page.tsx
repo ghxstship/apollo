@@ -25,7 +25,7 @@ export default async function CodesPage() {
     code: c.code,
     kind: c.kind,
     value: c.value,
-    scope: c.episode_id ? (titles.get(c.episode_id) ?? "One sailing") : "Any sailing",
+    scope: c.episode_id ? (titles.get(c.episode_id) ?? "One episode") : "Any episode",
     uses: c.uses,
     maxUses: c.max_uses,
     expiresAt: c.expires_at,

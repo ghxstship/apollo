@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, ListToolbar, StateBlock, Table, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { cutAnchorsShort, openTheRadar } from "./actions";
 
@@ -201,10 +201,12 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
         />
       ) : (
         <div className="hm-sec">
+          <ListToolbar
+            resultCount={rows.length}
+            resultNoun="episode"
+            countSuffix={` · ${rows.filter((r) => r.opens).length} carry a radar clock`}
+          />
           <Table columns={columns} rows={rows} rowKey={(r) => r.id} />
-          <span className="hm-count">
-            {rows.filter((r) => r.opens).length} of {rows.length} episodes carry a radar clock
-          </span>
         </div>
       )}
 

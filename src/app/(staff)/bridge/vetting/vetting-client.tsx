@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Checkbox, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, ListToolbar, Select, StateBlock, Table, Toast } from "@/components/ds";
 import {
   BACKGROUND_LABEL,
   BACKGROUND_LINE,
@@ -50,6 +50,10 @@ export function VettingClient({
   const [newProfile, setNewProfile] = React.useState("");
   const [confirmDecline, setConfirmDecline] = React.useState(false);
   const [filter, setFilter] = React.useState("");
+  /* The sweep clears identity records for good, across every file at once,
+     and it fired straight off the click — the one bulk purge on the Bridge
+     with no confirmation. It asks first now, and says what it will do. */
+  const [confirmSweep, setConfirmSweep] = React.useState(false);
 
   /* The dialog's own copy of the file. Editing in place would write on every
      keystroke; this collects the four decisions and commits them once. */
@@ -102,6 +106,7 @@ export function VettingClient({
   const sweep = () =>
     startTransition(async () => {
       const res = await sweepSpentIdentityRecords();
+      setConfirmSweep(false);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -186,27 +191,33 @@ export function VettingClient({
 
   return (
     <>
-      <div className="hm-filters">
-        <div className="hm-filters__grow">
+      <ListToolbar
+        search={
           <Input
-            label="Find"
+            label="Search the files"
             placeholder="Name or member number"
+            aria-label="Search the files"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
-        </div>
-        <span className="hm-filters__acts">
-          {/* A bulk purge of identity records, and it was the quietest control
-              on the page — a ghost button beside a gold one that only opens a
-              form. What it destroys is what it should look like. */}
-          <Button variant="danger" size="sm" disabled={pending} onClick={sweep}>
-            Sweep spent identity records
-          </Button>
-          <Button variant="gold" size="sm" disabled={unfiled.length === 0} onClick={() => setOpening(true)}>
-            Open a file
-          </Button>
-        </span>
-      </div>
+        }
+        actions={
+          <>
+            {/* A bulk purge of identity records, and it was the quietest control
+                on the page — a ghost button beside a gold one that only opens a
+                form. What it destroys is what it should look like. */}
+            <Button variant="danger" size="sm" disabled={pending} onClick={() => setConfirmSweep(true)}>
+              Sweep spent identity records
+            </Button>
+            <Button variant="gold" size="sm" disabled={unfiled.length === 0} onClick={() => setOpening(true)}>
+              Open a file
+            </Button>
+          </>
+        }
+        resultCount={shown.length}
+        resultNoun="file"
+        countSuffix={` of ${rows.length} · ${unfiled.length} member${unfiled.length === 1 ? "" : "s"} with no file`}
+      />
 
       {rows.length === 0 ? (
         <div className="hm-sec">
@@ -224,12 +235,33 @@ export function VettingClient({
       ) : (
         <div className="hm-sec">
           <Table columns={columns} rows={shown} rowKey={(r) => r.id} onRowClick={(r) => openFile(r)} />
-          <span className="hm-count">
-            {shown.length} of {rows.length} files · {unfiled.length} member
-            {unfiled.length === 1 ? "" : "s"} with no file
-          </span>
         </div>
       )}
+
+      {/* The sweep */}
+      <Dialog
+        open={confirmSweep}
+        onClose={() => setConfirmSweep(false)}
+        eyebrow="Vetting"
+        title="Sweep the spent identity records?"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmSweep(false)}>
+              Not yet
+            </Button>
+            <Button variant="danger" disabled={pending} onClick={sweep}>
+              Sweep them
+            </Button>
+          </>
+        }
+      >
+        <p className="hm-body">
+          Every file&apos;s purge date is recomputed against the member&apos;s last completed
+          episode, and any identity record past its date is cleared — for good, across every
+          file at once. Thirty days after the last episode is the promise; this keeps it. Nothing
+          that is not yet due is touched.
+        </p>
+      </Dialog>
 
       {/* Open a file */}
       <Dialog

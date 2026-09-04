@@ -6,12 +6,14 @@ import {
   Button,
   Checkbox,
   Dialog,
+  FilterPills,
   Input,
+  ListToolbar,
   Progress,
   Select,
   Stat,
+  StateBlock,
   Stepper,
-  Tag,
   Toast,
 } from "@/components/ds";
 import {
@@ -106,10 +108,6 @@ export type SeriesOption = ProgramOption & {
   priceCents: number | null;
   capacity: number | null;
 };
-
-/* sky was folded into shore when the setting axis landed; the enum still
-   carries it, so it takes the ashore default. */
-const DEFAULT_KIND: Record<EpisodeSetting, string> = { sea: "sea_day", shore: "port_day", sky: "port_day" };
 
 /* A series' category settles the setting: port → ashore, sea → afloat. The
    category column now holds only those two — how far the club goes moved to
@@ -373,10 +371,16 @@ export function EpisodesClient({
   const [flotillaId, setFlotillaId] = React.useState<string | null>(null);
   const flotilla = flotillaId ? (rows.find((r) => r.id === flotillaId) ?? null) : null;
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
+  const [query, setQuery] = React.useState("");
 
   /* The tally is the whole board, never the filtered slice — a summary that
      moved with the filter would be answering a different question each time. */
-  const shown = statusFilter === "all" ? rows : rows.filter((r) => r.status === statusFilter);
+  const q = query.trim().toLowerCase();
+  const shown = rows.filter(
+    (r) =>
+      (statusFilter === "all" || r.status === statusFilter) &&
+      (!q || r.title.toLowerCase().includes(q) || (r.seriesLabel ?? "").toLowerCase().includes(q))
+  );
   const totals = rows.reduce(
     (t, r) => ({ aboard: t.aboard + r.aboard, passes: t.passes + r.passes }),
     { aboard: 0, passes: 0 }
@@ -454,13 +458,37 @@ export function EpisodesClient({
         </Button>
       </div>
 
-      <div className="hm-acts" style={{ marginTop: 14 }}>
-        {STATUS_FILTERS.map(([id, label]) => (
-          <Tag key={id} active={statusFilter === id} onClick={() => setStatusFilter(id)}>
-            {label}
-          </Tag>
-        ))}
-      </div>
+      <ListToolbar
+        search={
+          <Input
+            label="Search the board"
+            placeholder="A title, or a series"
+            aria-label="Search the board"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        }
+        filterCount={statusFilter === "all" ? 0 : 1}
+        filters={
+          <FilterPills
+            label="Status"
+            value={statusFilter}
+            onChange={(next) => setStatusFilter(next as StatusFilter)}
+            options={STATUS_FILTERS.filter(([id]) => id !== "all").map(([id, label]) => ({
+              id,
+              label,
+              count: rows.filter((r) => r.status === id).length,
+            }))}
+            allCount={rows.length}
+          />
+        }
+        chips={statusFilter === "all" ? [] : [{ key: "status", label: "Status", value: STATUS_LABEL[statusFilter] }]}
+        onDropChip={() => setStatusFilter("all")}
+        onClear={() => setStatusFilter("all")}
+        resultCount={shown.length}
+        resultNoun="episode"
+        countSuffix={` of ${rows.length} on the board`}
+      />
 
       {shown.map((v) => (
         <div className="hm-voy" key={v.id}>
@@ -565,11 +593,14 @@ export function EpisodesClient({
       ))}
 
       {shown.length === 0 ? (
-        <p className="hm-empty">
-          {rows.length === 0
-            ? "Nothing on the board. Set the first episode."
-            : "Nothing on the board under that filter."}
-        </p>
+        <div style={{ marginTop: 20 }}>
+          <StateBlock
+            status="empty"
+            icon="CalendarDays"
+            title={rows.length === 0 ? "Nothing on the board." : "Nothing on the board under that filter."}
+            detail={rows.length === 0 ? "Set the first episode." : "Widen the search, or clear the filter."}
+          />
+        </div>
       ) : null}
 
       <Dialog
@@ -985,7 +1016,6 @@ type NewEpisodeForm = {
   setting: EpisodeSetting;
   subClass: string;
   experienceClass: ExperienceClassId;
-  kind: string;
   cityId: string;
   startsAt: string;
   endsAt: string;
@@ -1012,7 +1042,6 @@ const BLANK: NewEpisodeForm = {
   /* The members' standard is the honest default — most of what the club raises
      is a club episode, and the operator says so when it is not. */
   experienceClass: "club",
-  kind: "sea_day",
   cityId: "",
   startsAt: "",
   endsAt: "",
@@ -1069,17 +1098,14 @@ function NewEpisodeDialog({
   const liveSeries = seriesList.filter((x) => !x.retired);
 
   /* The setting picks the duration ladder — keep the two in step. The kind
-     follows the setting while it is still the other setting's default, and is
-     left alone once the operator has typed their own. */
-  const withSetting = (prev: NewEpisodeForm, setting: EpisodeSetting): NewEpisodeForm => {
-    const wasDefault = !prev.kind.trim() || Object.values(DEFAULT_KIND).includes(prev.kind.trim());
-    return {
-      ...prev,
-      setting,
-      kind: wasDefault ? DEFAULT_KIND[setting] : prev.kind,
-      subClass: prev.subClass || (subClassOptions()[0]?.value ?? ""),
-    };
-  };
+     column is plumbing the taxonomy trigger derives from the setting; the
+     composer used to offer it as free text, and it was the one field on this
+     form that could be typed wrong. */
+  const withSetting = (prev: NewEpisodeForm, setting: EpisodeSetting): NewEpisodeForm => ({
+    ...prev,
+    setting,
+    subClass: prev.subClass || (subClassOptions()[0]?.value ?? ""),
+  });
   const setSetting = (setting: EpisodeSetting) => setF((prev) => withSetting(prev, setting));
 
   /* Choosing a series settles the setting from its category — a port series
@@ -1126,7 +1152,6 @@ function NewEpisodeDialog({
         setting: f.setting,
         subClass: (f.subClass || null) as SubClass | null,
         experienceClass: f.experienceClass,
-        kind: f.kind,
         cityId: f.cityId || null,
         startsAt: f.startsAt,
         endsAt: f.endsAt,
@@ -1220,15 +1245,6 @@ function NewEpisodeDialog({
             hint={experienceClassHint(chosenSeries)}
             disabled={Boolean(chosenSeries)}
             onChange={(e) => set("experienceClass", e.target.value as ExperienceClassId)}
-          />
-        </div>
-        <div className="hm-form__row">
-          <Input
-            label="Kind"
-            placeholder="sea_day · port_day"
-            hint="Plumbing the ledger reads. Blank follows the setting."
-            value={f.kind}
-            onChange={(e) => set("kind", e.target.value)}
           />
         </div>
         <div className="hm-form__row">

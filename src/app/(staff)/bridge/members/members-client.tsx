@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Badge, Button, Checkbox, Dialog, Input, Select, Stat, StateBlock, Table, Tag, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, FilterPills, Input, ListToolbar, Select, StateBlock, Table, Toast, type ToolbarChip } from "@/components/ds";
 import { CLUB_ZONE, LEAGUES, PLACE, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -80,6 +80,8 @@ const STATUS_OPTIONS = [
   { value: "departed", label: "Departed" },
 ];
 
+const TIER_LABEL: Record<string, string> = { regional: "Regional", national: "National", global: "Global" };
+
 /* The standing badge in the drawer. A dues hold is named as such, because it
    is the one hold that lifts on its own — when the dues clear — and the
    operator should know before they reach for the button that they need not. */
@@ -130,26 +132,22 @@ export function MembersClient({
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [f, setF] = React.useState<SegmentFilters>(EMPTY);
-  /* Six selects, a search, a checkbox and four buttons stood above the roster
-     with no narrow-screen rule at all — about 350px of chrome before row one on
-     a phone. Below 900px they fold behind a summary of what is actually set. */
-  const [filtersOpen, setFiltersOpen] = React.useState(false);
 
-  /* What the folded bar says it is doing. Reads the filter object rather than a
-     second list, so a filter added later cannot be silently left out of the
-     summary. */
-  const activeFilters = React.useMemo(() => {
-    const out: string[] = [];
-    if (f.city) out.push(cities.find((h) => h.slug === f.city)?.label ?? f.city);
-    if (f.tier) out.push(f.tier);
-    if (f.plan) out.push("Plan set");
-    if (f.league) out.push(`League ${f.league}`);
-    if (f.status) out.push(f.status);
-    if (f.dues) out.push(f.dues);
-    if (f.recent) out.push("Sailed in 90 days");
-    if (f.q.trim()) out.push(`“${f.q.trim()}”`);
+  /* What is in force, as the toolbar's chips — one per axis, each removable.
+     Reads the filter object rather than a second list, so a filter added later
+     cannot be silently left out. The search is not a chip: it has its own
+     field on the bar. */
+  const chips = React.useMemo<ToolbarChip[]>(() => {
+    const out: ToolbarChip[] = [];
+    if (f.city) out.push({ key: "city", label: PLACE.market, value: cities.find((h) => h.slug === f.city)?.label ?? f.city });
+    if (f.tier) out.push({ key: "tier", label: "Tier", value: TIER_LABEL[f.tier] ?? f.tier });
+    if (f.plan) out.push({ key: "plan", label: "Plan", value: plans.find((p) => p.id === f.plan)?.label ?? "Set" });
+    if (f.league) out.push({ key: "league", label: "League", value: LEAGUES.find((l) => String(l.league) === f.league)?.name ?? `League ${f.league}` });
+    if (f.status) out.push({ key: "status", label: "Standing", value: STATUS_OPTIONS.find((o) => o.value === f.status)?.label ?? f.status });
+    if (f.dues) out.push({ key: "dues", label: "Dues", value: DUES_OPTIONS.find((o) => o.value === f.dues)?.label ?? f.dues });
+    if (f.recent) out.push({ key: "recent", label: "Sailed", value: "In the last 90 days" });
     return out;
-  }, [f, cities]);
+  }, [f, cities, plans]);
   const [segmentId, setSegmentId] = React.useState("");
   const [naming, setNaming] = React.useState(false);
   const [segmentName, setSegmentName] = React.useState("");
@@ -164,6 +162,15 @@ export function MembersClient({
 
   const set = <K extends keyof SegmentFilters>(key: K, value: SegmentFilters[K]) => {
     setF((prev) => ({ ...prev, [key]: value }));
+    setSegmentId("");
+  };
+
+  const dropChip = (key: string) => {
+    if (key === "recent") set("recent", false);
+    else set(key as keyof Omit<SegmentFilters, "recent">, "");
+  };
+  const clearAxes = () => {
+    setF((prev) => ({ ...EMPTY, q: prev.q }));
     setSegmentId("");
   };
 
@@ -266,119 +273,133 @@ export function MembersClient({
 
   return (
     <>
-      <div className={"hm-filters" + (filtersOpen ? " is-open" : "")}>
-        <div className="hm-filters__summary">
-          <Button variant="outline" size="sm" onClick={() => setFiltersOpen((v) => !v)}>
-            {filtersOpen ? "Hide filters" : "Filter"}
-          </Button>
-          {activeFilters.length ? (
-            activeFilters.map((label) => <Tag key={label}>{label}</Tag>)
-          ) : (
-            <span className="hm-count">NO FILTER SET</span>
-          )}
-        </div>
-        <div className="hm-filters__body">
-        <Select
-          label={PLACE.market}
-          value={f.city}
-          onChange={(e) => set("city", e.target.value)}
-          options={[{ value: "", label: "Every city" }, ...cities.map((h) => ({ value: h.slug, label: h.label }))]}
-        />
-        <Select
-          label="Tier"
-          value={f.tier}
-          onChange={(e) => set("tier", e.target.value)}
-          options={[
-            { value: "", label: "Any tier" },
-            { value: "regional", label: "Regional" },
-            { value: "national", label: "National" },
-            { value: "global", label: "Global" },
-          ]}
-        />
-        <Select
-          label="Plan"
-          value={f.plan}
-          onChange={(e) => set("plan", e.target.value)}
-          options={[{ value: "", label: "Any plan" }, ...plans.map((p) => ({ value: p.id, label: p.label }))]}
-        />
-        <Select
-          label="League"
-          value={f.league}
-          onChange={(e) => set("league", e.target.value)}
-          options={[
-            { value: "", label: "Any League" },
-            ...LEAGUES.map((l) => ({ value: String(l.league), label: l.name })),
-          ]}
-        />
-        <Select
-          label="Standing"
-          value={f.status}
-          onChange={(e) => set("status", e.target.value)}
-          options={[{ value: "", label: "Any standing" }, ...STATUS_OPTIONS]}
-        />
-        <Select
-          label="Dues"
-          value={f.dues}
-          onChange={(e) => set("dues", e.target.value)}
-          options={[{ value: "", label: "Any dues state" }, ...DUES_OPTIONS]}
-        />
-        <Input
-          className="hm-filters__grow"
-          label="Search"
-          placeholder="Name, member no, email"
-          value={f.q}
-          onChange={(e) => set("q", e.target.value)}
-        />
-        <Checkbox
-          label="Sailed in the last 90 days"
-          checked={f.recent}
-          onChange={(e) => set("recent", e.target.checked)}
-        />
-        <div className="hm-filters__acts">
-          <Select
-            label="Saved views"
-            value={segmentId}
-            onChange={(e) => applySegment(e.target.value)}
-            options={[
-              { value: "", label: segments.length ? "Load a view" : "None saved yet" },
-              ...segments.map((s) => ({ value: s.id, label: s.name })),
-            ]}
+      {/* Six selects, a search, a checkbox and four buttons stood above the
+          roster in a bar of their own — about 350px of chrome before row one
+          on a phone, folded behind a summary below 900px. THE list toolbar
+          now: search on the bar, the axes in the Filter tray, what is in force
+          as chips, the saved views and the export riding the bar. */}
+      <ListToolbar
+        search={
+          <Input
+            label="Search the roll"
+            placeholder="Name, member no, email"
+            aria-label="Search the roll"
+            value={f.q}
+            onChange={(e) => set("q", e.target.value)}
           />
-          <Button variant="outline" size="sm" onClick={() => setNaming(true)}>
-            Save this view
-          </Button>
-          {segmentId ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={pending}
-              onClick={() => {
-                const id = segmentId;
-                startTransition(async () => {
-                  const res = await removeSegment(id);
-                  if (res.error) show({ msg: res.error, tone: "danger" });
-                  else {
-                    setSegmentId("");
-                    show({ msg: "View dropped.", meta: "SAVED VIEW REMOVED" });
-                  }
-                });
-              }}
-            >
-              Drop view
+        }
+        filterCount={chips.length}
+        filters={
+          <>
+            <FilterPills
+              label="Tier"
+              value={f.tier || "all"}
+              onChange={(next) => set("tier", next === "all" ? "" : next)}
+              allLabel="Any tier"
+              options={Object.entries(TIER_LABEL).map(([id, label]) => ({
+                id,
+                label,
+                count: rows.filter((r) => r.tier === id).length,
+              }))}
+            />
+            <FilterPills
+              label="Standing"
+              value={f.status || "all"}
+              onChange={(next) => set("status", next === "all" ? "" : next)}
+              allLabel="Any standing"
+              options={STATUS_OPTIONS.map((o) => ({
+                id: o.value,
+                label: o.label,
+                count: rows.filter((r) => r.status === o.value).length,
+              }))}
+            />
+            <FilterPills
+              label="Dues"
+              value={f.dues || "all"}
+              onChange={(next) => set("dues", next === "all" ? "" : next)}
+              allLabel="Any dues state"
+              options={DUES_OPTIONS.map((o) => ({
+                id: o.value,
+                label: o.label,
+                count: rows.filter((r) => r.dues === o.value).length,
+              }))}
+            />
+            <FilterPills
+              label="League"
+              value={f.league || "all"}
+              onChange={(next) => set("league", next === "all" ? "" : next)}
+              allLabel="Any league"
+              options={LEAGUES.map((l) => ({
+                id: String(l.league),
+                label: l.name,
+                count: rows.filter((r) => r.league === l.league).length,
+              }))}
+            />
+            <Select
+              label={PLACE.market}
+              value={f.city}
+              onChange={(e) => set("city", e.target.value)}
+              options={[{ value: "", label: "Every city" }, ...cities.map((h) => ({ value: h.slug, label: h.label }))]}
+            />
+            <Select
+              label="Plan"
+              value={f.plan}
+              onChange={(e) => set("plan", e.target.value)}
+              options={[{ value: "", label: "Any plan" }, ...plans.map((p) => ({ value: p.id, label: p.label }))]}
+            />
+            <Checkbox
+              label="Sailed in the last 90 days"
+              checked={f.recent}
+              onChange={(e) => set("recent", e.target.checked)}
+            />
+          </>
+        }
+        chips={chips}
+        onDropChip={dropChip}
+        onClear={clearAxes}
+        actions={
+          <>
+            <Select
+              aria-label="Saved views"
+              value={segmentId}
+              onChange={(e) => applySegment(e.target.value)}
+              options={[
+                { value: "", label: segments.length ? "Load a view" : "No view saved yet" },
+                ...segments.map((s) => ({ value: s.id, label: s.name })),
+              ]}
+            />
+            <Button variant="outline" size="sm" onClick={() => setNaming(true)}>
+              Save this view
             </Button>
-          ) : null}
-          <Button variant="ghost" size="sm" disabled={!filtered.length} onClick={exportCsv}>
-            Export CSV
-          </Button>
-        </div>
-        </div>
-      </div>
-
-      {/* The count was 10px mono in the faintest token on the sheet — the one
-          figure that says whether the filters did anything. */}
-      <div className="hm-row">
-        <Stat size="sm" label="On the roll" value={filtered.length} sub={`OF ${rows.length}`} />
-      </div>
+            {segmentId ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={pending}
+                onClick={() => {
+                  const id = segmentId;
+                  startTransition(async () => {
+                    const res = await removeSegment(id);
+                    if (res.error) show({ msg: res.error, tone: "danger" });
+                    else {
+                      setSegmentId("");
+                      show({ msg: "View dropped.", meta: "SAVED VIEW REMOVED" });
+                    }
+                  });
+                }}
+              >
+                Drop view
+              </Button>
+            ) : null}
+            <Button variant="ghost" size="sm" disabled={!filtered.length} onClick={exportCsv}>
+              Export CSV
+            </Button>
+          </>
+        }
+        resultCount={filtered.length}
+        resultNoun="member"
+        countSuffix={` of ${rows.length} on the roll`}
+      />
 
       {filtered.length ? (
         <div className="hm-panel">

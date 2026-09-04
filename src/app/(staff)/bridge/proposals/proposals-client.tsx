@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, Select, Stat, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, Stat, StateBlock, Table, Toast } from "@/components/ds";
 import { relTime, useToast } from "../../ui";
 import { decideCharter, decideProposal, linkProposal, type CharterRuling } from "./actions";
 
@@ -343,15 +343,16 @@ export function ProposalsClient({
         <Stat size="sm" label="Approved, no episode" value={unlinked} />
       </div>
 
+      <ListToolbar resultCount={rows.length} resultNoun="proposal" countSuffix={` · ${waiting} waiting on the word`} />
       {rows.length === 0 ? (
-        <div style={{ marginTop: 24 }}>
+        <div>
           <StateBlock
             title="Nothing raised."
             detail="Members raise gatherings and mixers from their own page. What they raise queues here, newest first."
           />
         </div>
       ) : (
-        <div style={{ marginTop: 24 }}>
+        <div>
           <Table columns={columns} rows={rows} rowKey={(r) => r.id} />
         </div>
       )}
@@ -369,15 +370,16 @@ export function ProposalsClient({
           own — a shape, a party and some dates; the Bridge answers with a line,
           or passes with one. Either way the line reaches them as a word.
         </p>
+        <ListToolbar resultCount={charters.length} resultNoun="request" countSuffix={` · ${chartersWaiting} waiting`} />
         {charters.length === 0 ? (
-          <div style={{ marginTop: 16 }}>
+          <div>
             <StateBlock
               title="No requests waiting."
               detail="A series marked on-request takes a request from the member side. They queue here."
             />
           </div>
         ) : (
-          <div style={{ marginTop: 16 }}>
+          <div>
             <Table columns={charterColumns} rows={charters} rowKey={(r) => r.id} />
           </div>
         )}

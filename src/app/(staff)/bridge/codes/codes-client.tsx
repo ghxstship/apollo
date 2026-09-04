@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Table, Toast } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
 import { createCode, reconcileUses, setCodeActive, type CodeKind } from "./actions";
@@ -56,6 +56,10 @@ export function CodesClient({
   const [maxUses, setMaxUses] = React.useState("1");
   const [expires, setExpires] = React.useState("");
   const [note, setNote] = React.useState("");
+  const [query, setQuery] = React.useState("");
+
+  const q = query.trim().toUpperCase();
+  const shown = q ? rows.filter((r) => r.code.includes(q) || r.note.toUpperCase().includes(q)) : rows;
 
   const columns = [
     {
@@ -164,13 +168,28 @@ export function CodesClient({
         Redemption checks the code but never marks it — Reconcile recounts passes and sets the
         tally.
       </p>
-      <span className="hm-count">
-        {rows.filter(isLive).length} OF {rows.length} CODES LIVE
-      </span>
+      <ListToolbar
+        search={
+          <Input
+            label="Search the codes"
+            placeholder="A code, or the note on it"
+            aria-label="Search the codes"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        }
+        resultCount={shown.length}
+        resultNoun="code"
+        countSuffix={` · ${rows.filter(isLive).length} of ${rows.length} live`}
+      />
 
-      {rows.length ? (
+      {shown.length ? (
         <div className="hm-panel">
-          <Table rowKey={(r: CodeRow) => r.code} columns={columns} rows={rows} />
+          <Table rowKey={(r: CodeRow) => r.code} columns={columns} rows={shown} />
+        </div>
+      ) : rows.length ? (
+        <div style={{ marginTop: 20 }}>
+          <StateBlock status="empty" title="No code by that name." detail="Clear the search to see every code cut." />
         </div>
       ) : (
         <div style={{ marginTop: 20 }}>

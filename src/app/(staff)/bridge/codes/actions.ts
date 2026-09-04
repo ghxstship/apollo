@@ -7,6 +7,16 @@ import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staf
 
 export type CodeKind = "percent" | "amount" | "comp";
 
+/* promo_codes.kind is a check constraint on exactly these three; a value off
+   the list is refused by the database with a constraint name, so it is refused
+   here first in words. The remaining bounds keep an operator leaning on a key
+   from meeting Postgres's own words about an integer column. */
+const KINDS: readonly CodeKind[] = ["percent", "amount", "comp"];
+const CODE_MAX = 32;
+const NOTE_MAX = 200;
+const AMOUNT_MAX_CENTS = 1_000_000;
+const USES_MAX = 100_000;
+
 export type NewCode = {
   code: string;
   kind: CodeKind;
@@ -28,9 +38,20 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
 
   const code = input.code.trim().toUpperCase().replace(/\s+/g, "");
   if (!code) return { error: "A code needs characters." };
+  if (code.length > CODE_MAX) return { error: `A code runs to ${CODE_MAX} characters.` };
+  if (!/^[A-Z0-9-]+$/.test(code)) return { error: "A code is letters, numbers and hyphens — nothing a member has to hunt for on a keyboard." };
+  if (!KINDS.includes(input.kind)) return { error: "Pick what the code is worth." };
+  if (!Number.isFinite(input.value)) return { error: "The value takes a number." };
   if (input.kind === "percent" && (input.value < 1 || input.value > 100))
     return { error: "A percentage runs 1 to 100." };
   if (input.kind === "amount" && input.value < 100) return { error: "An amount off needs at least a dollar." };
+  if (input.kind === "amount" && input.value > AMOUNT_MAX_CENTS)
+    return { error: "That is over $10,000 off one pass — check the figure." };
+  if (!Number.isFinite(input.maxUses) || Math.round(input.maxUses) > USES_MAX)
+    return { error: `Max uses runs 1 to ${USES_MAX.toLocaleString("en-US")}.` };
+  if (input.expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt))
+    return { error: "That expiry date doesn't parse." };
+  const note = input.note.trim().slice(0, NOTE_MAX);
 
   const { error } = await supabase.from("promo_codes").insert({
     code,
@@ -47,7 +68,7 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
        An expiry date means the END of that day. Start of the next day on the
        club's clock, which is the last instant the code is still good. */
     expires_at: input.expiresAt ? endOfDay(input.expiresAt, CLUB_ZONE) : null,
-    note: input.note.trim() || null,
+    note: note || null,
     active: true,
     created_by: staffId,
   });

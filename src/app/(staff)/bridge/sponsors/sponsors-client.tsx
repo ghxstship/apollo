@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Checkbox, Dialog, Input, Select, StateBlock, Switch, Table, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, ListToolbar, Select, StateBlock, Switch, Table, Toast } from "@/components/ds";
 import { logDate, price } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
@@ -223,6 +223,11 @@ export function SponsorsClient({
         </Button>
       </div>
 
+      <ListToolbar
+        resultCount={rows.length}
+        resultNoun="sponsor"
+        countSuffix={` · ${rows.filter((r) => r.active).length} active`}
+      />
       {tiers.length === 0 ? (
         <StateBlock
           status="error"

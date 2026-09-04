@@ -199,7 +199,7 @@ export default async function EpisodesOpsPage() {
 
   return (
     <div>
-      <span className="hm-eyebrow">Episode operations</span>
+      <span className="hm-eyebrow">Episodes</span>
       <h1 className="hm-h1">The board.</h1>
       <EpisodesClient
         rows={rows}

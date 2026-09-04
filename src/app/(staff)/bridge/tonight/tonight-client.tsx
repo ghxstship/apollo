@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Table, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { createTable, deleteTable } from "./actions";
 
@@ -118,6 +118,11 @@ export function TablesClient({
         </Button>
       </div>
 
+      <ListToolbar
+        resultCount={rows.length}
+        resultNoun="table"
+        countSuffix={` · ${rows.reduce((n, r) => n + r.taken, 0)} of ${rows.reduce((n, r) => n + r.seats, 0)} seats taken`}
+      />
       {rows.length === 0 ? (
         <StateBlock
           title="No tables laid."
@@ -198,7 +203,7 @@ export function TablesClient({
                 Not yet
               </Button>
               <Button
-                variant="gold"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   const t = striking;

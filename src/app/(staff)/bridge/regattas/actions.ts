@@ -29,6 +29,19 @@ function done(): ActionResult {
   return {};
 }
 
+/* contests.shape, .scope and .metric are check constraints on exactly these
+   values (metric was renamed 20260902191028 — sailings became episodes,
+   harbors became cities). Refused here in words before the database refuses
+   them by constraint name. knots_award and target are integer columns. */
+const SHAPES: readonly ContestShape[] = ["regatta", "challenge"];
+const SCOPES: readonly ContestScope[] = ["member", "crew"];
+const METRICS: readonly ContestMetric[] = ["nm", "episodes", "cities", "vessels", "crew_met", "frames"];
+const TITLE_MAX = 120;
+const BLURB_MAX = 300;
+const PRIZE_MAX = 200;
+const TARGET_MAX = 1_000_000;
+const AWARD_MAX = 1_000_000;
+
 function slugify(v: string): string {
   return v
     .toLowerCase()
@@ -43,6 +56,14 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
 
   const title = input.title.trim();
   if (!title) return { error: "A contest needs a name." };
+  if (title.length > TITLE_MAX) return { error: `A contest's name runs to ${TITLE_MAX} characters.` };
+  if (!SHAPES.includes(input.shape)) return { error: "A contest is a regatta or a challenge." };
+  if (!SCOPES.includes(input.scope)) return { error: "A contest is for members or for one episode's crew." };
+  if (!METRICS.includes(input.metric)) return { error: "That is not a thing the club measures." };
+  if (!Number.isFinite(input.knotsAward) || input.knotsAward < 0 || input.knotsAward > AWARD_MAX)
+    return { error: `A knots award runs 0 to ${AWARD_MAX.toLocaleString("en-US")}.` };
+  if (input.shape === "challenge" && (!Number.isFinite(input.target) || input.target > TARGET_MAX))
+    return { error: `A target runs 1 to ${TARGET_MAX.toLocaleString("en-US")}.` };
 
   const slug = slugify(input.slug || title);
   if (!slug) return { error: "That name leaves no address behind it." };
@@ -69,13 +90,13 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
   const { error } = await supabase.from("contests").insert({
     slug,
     title,
-    blurb: input.blurb.trim() || null,
+    blurb: input.blurb.trim().slice(0, BLURB_MAX) || null,
     shape: input.shape,
     scope: input.scope,
     episode_id: input.scope === "crew" ? input.episodeId : null,
     metric: input.metric,
     target: input.shape === "challenge" ? Math.round(input.target) : null,
-    prize: input.prize.trim() || null,
+    prize: input.prize.trim().slice(0, PRIZE_MAX) || null,
     knots_award: Math.max(0, Math.round(input.knotsAward)),
     starts_at: starts.toISOString(),
     ends_at: ends.toISOString(),

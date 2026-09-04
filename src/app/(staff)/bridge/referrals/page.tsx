@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Stat, StateBlock, Table } from "@/components/ds";
+import { ListToolbar, Stat, StateBlock, Table } from "@/components/ds";
 import { knots } from "@/lib/brand";
 import { logDate } from "@/lib/format";
 import { memberMark } from "@/lib/membership";
@@ -106,6 +106,8 @@ export default async function ReferralsPage() {
         {/* Six column headings over an empty body, with the explanation
             stranded beneath them, whenever nobody holds a code. */}
         {rows.length ? (
+          <>
+          <ListToolbar resultCount={rows.length} resultNoun="code" countSuffix={` · ${totalAboard} came aboard`} />
           <div className="hm-panel">
             <Table
               rowKey={(r: ReferralRow) => r.code}
@@ -120,6 +122,7 @@ export default async function ReferralsPage() {
               rows={rows}
             />
           </div>
+          </>
         ) : (
           <div style={{ marginTop: 20 }}>
             <StateBlock

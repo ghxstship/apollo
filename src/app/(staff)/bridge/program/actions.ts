@@ -1,7 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { voice } from "@/lib/errors";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+
+const TITLE_MAX = 120;
+const BLURB_MAX = 300;
+const ADDRESS_MAX = 300;
 
 export type VenueKind = "marina" | "club" | "restaurant" | "beach" | "pool" | "partner";
 
@@ -70,6 +75,7 @@ export async function createSeason(input: NewSeason): Promise<ActionResult> {
 
   const title = input.title.trim();
   if (!title) return { error: "A season needs a name." };
+  if (title.length > TITLE_MAX) return { error: `A season's name runs to ${TITLE_MAX} characters.` };
 
   const slug = slugify(input.slug || title);
   if (!slug) return { error: "That name leaves no address behind it." };
@@ -83,7 +89,7 @@ export async function createSeason(input: NewSeason): Promise<ActionResult> {
     title,
     starts_on: input.startsOn,
     ends_on: input.endsOn,
-    blurb: input.blurb.trim() || null,
+    blurb: input.blurb.trim().slice(0, BLURB_MAX) || null,
   });
   if (error) {
     return {
@@ -112,6 +118,7 @@ export async function createVenue(input: NewVenue): Promise<ActionResult> {
 
   const name = input.name.trim();
   if (!name) return { error: "A venue needs a name." };
+  if (name.length > TITLE_MAX) return { error: `A venue's name runs to ${TITLE_MAX} characters.` };
 
   const slug = slugify(input.slug || name);
   if (!slug) return { error: "That name leaves no address behind it." };
@@ -124,7 +131,7 @@ export async function createVenue(input: NewVenue): Promise<ActionResult> {
     name,
     kind: input.kind,
     city_id: input.harborId || null,
-    address: input.address.trim() || null,
+    address: input.address.trim().slice(0, ADDRESS_MAX) || null,
   });
   if (error) {
     return {
@@ -152,6 +159,7 @@ export async function createSeries(input: NewSeries): Promise<ActionResult> {
 
   const title = input.title.trim();
   if (!title) return { error: "A series needs a name." };
+  if (title.length > TITLE_MAX) return { error: `A series' name runs to ${TITLE_MAX} characters.` };
 
   const slug = slugify(input.slug || title);
   if (!slug) return { error: "That name leaves no address behind it." };
@@ -204,7 +212,10 @@ export async function extendSeries(seriesId: string, count: number): Promise<Ext
     p_series: seriesId,
     p_count: n,
   });
-  if (error) return { error: error.message || ERR_LAND };
+  /* The RPC raises in the club's voice (P0001) and voice() passes that
+     through; anything else — a malformed id, a constraint — used to reach the
+     operator as Postgres's own words. */
+  if (error) return { error: voice(error) };
 
   doneWithSailings();
   return { raised: data ?? 0 };

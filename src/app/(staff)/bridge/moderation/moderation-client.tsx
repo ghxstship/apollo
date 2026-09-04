@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Dialog, Input, Toast } from "@/components/ds";
+import { Button, Dialog, Input, ListToolbar, Toast } from "@/components/ds";
 import { FlagQueue, type FlagItem } from "@/components/ds/feed";
 import { relTime, useToast } from "../../ui";
 import { leaveUp, removeAndNotify } from "./actions";
@@ -45,7 +45,8 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
 
   return (
     <>
-      <div style={{ marginTop: 24 }}>
+      <ListToolbar resultCount={flags.length} resultNoun="open flag" countSuffix=" · oldest first" />
+      <div>
         <FlagQueue
           items={items}
           onResolve={(item, action) => {
@@ -77,7 +78,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
                 Not yet
               </Button>
               <Button
-                variant="gold"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   const f = removing;

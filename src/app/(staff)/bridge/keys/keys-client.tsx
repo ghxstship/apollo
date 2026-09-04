@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Button, Checkbox, Dialog, Input, Stat, StateBlock, Switch, Table, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, ListToolbar, Stat, StateBlock, Switch, Table, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
 import { createApiKey, createWebhook, revokeApiKey, setWebhookActive } from "./actions";
@@ -134,9 +134,12 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           </Button>
         </div>
         {keys.length ? (
-          <div className="hm-panel">
-            <Table tall rowKey={(k: KeyRow) => k.id} columns={keyColumns} rows={keys} />
-          </div>
+          <>
+            <ListToolbar resultCount={keys.length} resultNoun="key" countSuffix={` · ${live} live`} />
+            <div className="hm-panel">
+              <Table tall rowKey={(k: KeyRow) => k.id} columns={keyColumns} rows={keys} />
+            </div>
+          </>
         ) : (
           <div style={{ marginTop: 20 }}>
             <StateBlock
@@ -164,7 +167,9 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
         </div>
 
         {hooks.length ? (
-          hooks.map((h) => (
+          <>
+          <ListToolbar resultCount={hooks.length} resultNoun="hook" countSuffix={` · ${liveHooks} live`} />
+          {hooks.map((h) => (
             <div className="hm-item" key={h.id}>
               <div className="hm-item__head">
                 <b style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", wordBreak: "break-all" }}>
@@ -229,7 +234,8 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
                 )}
               </div>
             </div>
-          ))
+          ))}
+          </>
         ) : (
           <div style={{ marginTop: 20 }}>
             <StateBlock

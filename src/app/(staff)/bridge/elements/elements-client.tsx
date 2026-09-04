@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Checkbox, Dialog, Input, Select, StateBlock, Table, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, FilterPills, Input, ListToolbar, Select, StateBlock, Table, Textarea, Toast } from "@/components/ds";
 import {
   DEPARTMENTS,
   ELEMENT_GRAINS,
@@ -261,36 +261,57 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
 
   return (
     <>
-      <div className="hm-filters">
-        <div className="hm-filters__grow">
+      <ListToolbar
+        search={
           <Input
-            label="Find"
+            label="Search the catalogue"
             placeholder="Name, element key, or URID"
+            aria-label="Search the catalogue"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
-        </div>
-        <Select
-          label="Department"
-          value={dept}
-          onChange={(e) => setDept(e.target.value)}
-          options={[{ value: "", label: "Every department" }, ...DEPARTMENTS.map((d) => ({ value: d, label: d }))]}
-        />
-        <Select
-          label="Five-A"
-          value={phase}
-          onChange={(e) => setPhase(e.target.value)}
-          options={[
-            { value: "", label: "Every phase" },
-            ...FIVE_A_PHASES.map((p) => ({ value: p, label: FIVE_A_LABEL[p] })),
-          ]}
-        />
-        <span className="hm-filters__acts">
+        }
+        filterCount={(dept ? 1 : 0) + (phase ? 1 : 0)}
+        filters={
+          <>
+            <FilterPills
+              label="Department"
+              value={dept || "all"}
+              onChange={(next) => setDept(next === "all" ? "" : next)}
+              allLabel="Every department"
+              options={DEPARTMENTS.map((d) => ({ id: d, label: d }))}
+            />
+            <FilterPills
+              label="Five-A"
+              value={phase || "all"}
+              onChange={(next) => setPhase(next === "all" ? "" : next)}
+              allLabel="Every phase"
+              options={FIVE_A_PHASES.map((p) => ({ id: p, label: FIVE_A_LABEL[p] }))}
+            />
+          </>
+        }
+        chips={[
+          ...(dept ? [{ key: "dept", label: "Department", value: dept }] : []),
+          ...(phase ? [{ key: "phase", label: "Five-A", value: FIVE_A_LABEL[phase as FiveAPhase] ?? phase }] : []),
+        ]}
+        onDropChip={(key) => (key === "dept" ? setDept("") : setPhase(""))}
+        onClear={() => {
+          setDept("");
+          setPhase("");
+        }}
+        actions={
           <Button variant="gold" size="sm" onClick={openNew}>
             File an element
           </Button>
-        </span>
-      </div>
+        }
+        resultCount={shown.length}
+        resultNoun="element"
+        countSuffix={
+          uncovered.length
+            ? ` · ${uncovered.map((p) => FIVE_A_LABEL[p]).join(", ")} uncovered`
+            : " · every Five-A phase covered"
+        }
+      />
 
       {rows.length === 0 ? (
         <div className="hm-sec">
@@ -301,15 +322,13 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
             detail="Every produced element — signage, swag, print, equipment, credential — is filed against the element schema. Until one is, the Show board's kit panel says nothing is specified, because nothing is."
           />
         </div>
+      ) : shown.length === 0 ? (
+        <div className="hm-sec">
+          <StateBlock status="empty" title="Nothing under that filter." detail="Widen the search, or clear the filters." />
+        </div>
       ) : (
         <div className="hm-sec">
           <Table columns={columns} rows={shown} rowKey={(r) => r.id} onRowClick={(r) => openEdit(r)} />
-          <span className="hm-count">
-            {shown.length} of {rows.length} elements
-            {uncovered.length
-              ? ` · ${uncovered.map((p) => FIVE_A_LABEL[p]).join(", ")} uncovered`
-              : " · every Five-A phase covered"}
-          </span>
           {unsubstituted.length ? (
             <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
               {unsubstituted.map((r) => r.elementId).join(", ")} —{" "}
@@ -531,7 +550,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
             <Button variant="ghost" onClick={() => setConfirmRemove(null)}>
               Keep it
             </Button>
-            <Button variant="gold" disabled={pending} onClick={() => confirmRemove && drop(confirmRemove)}>
+            <Button variant="danger" disabled={pending} onClick={() => confirmRemove && drop(confirmRemove)}>
               Remove it
             </Button>
           </>

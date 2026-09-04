@@ -8,8 +8,11 @@ import {
   Button,
   Checkbox,
   Dialog,
+  FilterPills,
   Input,
+  ListToolbar,
   Select,
+  StateBlock,
   Stepper,
   Table,
   Toast,
@@ -243,6 +246,28 @@ export function RosterTable({
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
+  const [query, setQuery] = React.useState("");
+  const [standing, setStanding] = React.useState<"all" | "aboard" | "waitlist" | "checked_in" | "waiver_missing">("all");
+
+  const q = query.trim().toLowerCase();
+  const shown = rows.filter((r) => {
+    if (standing === "aboard" && r.status !== "aboard") return false;
+    if (standing === "waitlist" && r.status !== "waitlist") return false;
+    if (standing === "checked_in" && !r.checkedInAt) return false;
+    if (standing === "waiver_missing" && !r.waiverMissing) return false;
+    if (q) {
+      const hay = `${r.name} ${r.memberNo} ${r.boardingCode} ${r.guestNames.join(" ")}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  const STANDING_LABEL: Record<typeof standing, string> = {
+    all: "All",
+    aboard: "Aboard",
+    waitlist: "Waitlist",
+    checked_in: "Checked in",
+    waiver_missing: "Waiver missing",
+  };
 
   const checkIn = (r: RosterRow) => {
     startTransition(async () => {
@@ -379,14 +404,55 @@ export function RosterTable({
 
   return (
     <>
-      <div className="hm-panel">
-        <Table rowKey={(r: RosterRow) => r.passId} columns={columns} rows={rows} />
-        {rows.length === 0 ? (
-          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
-            No passes claimed yet. The roster fills as RSVPs land.
-          </p>
-        ) : null}
-      </div>
+      <ListToolbar
+        search={
+          <Input
+            label="Search the roster"
+            placeholder="A name, a member number, a code, a guest"
+            aria-label="Search the roster"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        }
+        filterCount={standing === "all" ? 0 : 1}
+        filters={
+          <FilterPills
+            label="Standing"
+            value={standing}
+            onChange={(next) => setStanding(next as typeof standing)}
+            options={[
+              { id: "aboard", label: "Aboard", count: rows.filter((r) => r.status === "aboard").length },
+              { id: "waitlist", label: "Waitlist", count: rows.filter((r) => r.status === "waitlist").length },
+              { id: "checked_in", label: "Checked in", count: rows.filter((r) => r.checkedInAt).length },
+              { id: "waiver_missing", label: "Waiver missing", count: rows.filter((r) => r.waiverMissing).length },
+            ]}
+            allCount={rows.length}
+          />
+        }
+        chips={standing === "all" ? [] : [{ key: "standing", label: "Standing", value: STANDING_LABEL[standing] }]}
+        onDropChip={() => setStanding("all")}
+        onClear={() => setStanding("all")}
+        resultCount={shown.length}
+        resultNoun="pass"
+        resultNounPlural="passes"
+        countSuffix={` of ${rows.length} on the manifest`}
+      />
+      {/* The table rendered its column headings over an empty body, with the
+          explanation stranded underneath. Nothing to show means no table. */}
+      {rows.length === 0 ? (
+        <StateBlock
+          status="empty"
+          icon="Users"
+          title="No passes claimed yet."
+          detail="The roster fills as passes land — or walk a member on from the box office above."
+        />
+      ) : shown.length === 0 ? (
+        <StateBlock status="empty" title="Nobody under that filter." detail="Widen the search, or clear the standing filter." />
+      ) : (
+        <div className="hm-panel">
+          <Table rowKey={(r: RosterRow) => r.passId} columns={columns} rows={shown} />
+        </div>
+      )}
       {toast ? (
         <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
       ) : null}

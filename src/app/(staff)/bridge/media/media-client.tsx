@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Button, Dialog, Select, StateBlock, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, FilterPills, ListToolbar, StateBlock, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
 import { approveMedia, removeMedia, unapproveMedia } from "./actions";
@@ -50,30 +50,47 @@ export function MediaClient({
 
   return (
     <>
-      <div className="hm-filters">
-        <Select
-          label="Episode"
-          value={episodeId}
-          onChange={(e) => setEpisodeId(e.target.value)}
-          options={[
-            { value: "", label: "Every episode" },
-            ...episodes.map((v) => ({ value: v.id, label: v.title })),
-          ]}
-        />
-        <Select
-          label="State"
-          value={state}
-          onChange={(e) => setState(e.target.value)}
-          options={[
-            { value: "pending", label: "Waiting on a look" },
-            { value: "approved", label: "Cleared" },
-            { value: "", label: "Everything" },
-          ]}
-        />
-        <span className="hm-filters__acts hm-mono">
-          {shown.length} OF {cards.length} FRAMES
-        </span>
-      </div>
+      <ListToolbar
+        filterCount={(episodeId ? 1 : 0) + (state ? 1 : 0)}
+        filters={
+          <>
+            <FilterPills
+              label="State"
+              value={state || "all"}
+              onChange={(next) => setState(next === "all" ? "" : next)}
+              allLabel="Everything"
+              allCount={cards.length}
+              options={[
+                { id: "pending", label: "Waiting on a look", count: cards.filter((c) => !c.approved).length },
+                { id: "approved", label: "Cleared", count: cards.filter((c) => c.approved).length },
+              ]}
+            />
+            <FilterPills
+              label="Episode"
+              value={episodeId || "all"}
+              onChange={(next) => setEpisodeId(next === "all" ? "" : next)}
+              allLabel="Every episode"
+              options={episodes.map((v) => ({ id: v.id, label: v.title }))}
+            />
+          </>
+        }
+        chips={[
+          ...(state
+            ? [{ key: "state", label: "State", value: state === "approved" ? "Cleared" : "Waiting on a look" }]
+            : []),
+          ...(episodeId
+            ? [{ key: "episode", label: "Episode", value: episodes.find((v) => v.id === episodeId)?.title ?? "" }]
+            : []),
+        ]}
+        onDropChip={(key) => (key === "state" ? setState("") : setEpisodeId(""))}
+        onClear={() => {
+          setState("");
+          setEpisodeId("");
+        }}
+        resultCount={shown.length}
+        resultNoun="frame"
+        countSuffix={` of ${cards.length}`}
+      />
 
       {shown.length ? (
         <div className="hm-media">
@@ -155,8 +172,12 @@ export function MediaClient({
         <div style={{ marginTop: 20 }}>
           <StateBlock
             status="empty"
-            title="Nothing waiting."
-            detail="When someone aboard sends a frame up, it queues here for a look."
+            title={cards.length ? "Nothing under that filter." : "Nothing waiting."}
+            detail={
+              cards.length
+                ? "Widen the filters to see every frame on the record."
+                : "When someone aboard sends a frame up, it queues here for a look."
+            }
           />
         </div>
       )}

@@ -25,7 +25,11 @@ export async function createApiKey(
   const picked = scopes.filter((s) => (SCOPES as readonly string[]).includes(s));
   if (!picked.length) return { error: "A key with no scope opens nothing." };
 
-  const key = `syr_${randomBytes(24).toString("base64url")}`;
+  /* `un_`, the club's own mark. This minted `syr_` — the retired name, on a
+     credential the operator copies into a partner's config and reads back in
+     their logs for the life of the key. Nothing parses the prefix; it is kept
+     only so a key can be recognised in a log. */
+  const key = `un_${randomBytes(24).toString("base64url")}`;
   const keyHash = createHash("sha256").update(key).digest("hex");
   const prefix = key.slice(0, 8);
 

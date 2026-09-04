@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Stat, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Stat, Toast } from "@/components/ds";
 import { price } from "@/lib/format";
 import { useToast } from "../../ui";
 import { addExpense, removeExpense, settleExpense } from "./actions";
@@ -55,6 +55,11 @@ export function PnlClient({
   const [amount, setAmount] = React.useState("");
   const [note, setNote] = React.useState("");
   const [settled, setSettled] = React.useState(false);
+  /* Removing a cost line is the one destructive act on this screen and it
+     fired straight off the click. Confirm-first, inline — a second dialog
+     over this one would fight the overlay. The first press arms the line;
+     the second removes it. */
+  const [arming, setArming] = React.useState<string | null>(null);
 
   const costed = rows.filter((r) => r.costed);
   const withRevenue = rows.filter((r) => r.revenueCents > 0);
@@ -90,7 +95,20 @@ export function PnlClient({
         />
       </div>
 
-      {costed.length === 0 ? (
+      <ListToolbar
+        resultCount={rows.length}
+        resultNoun="night"
+        countSuffix={` · ${costed.length} costed`}
+      />
+
+      {rows.length === 0 ? (
+        <StateBlock
+          status="empty"
+          icon="Calculator"
+          title="No night on the book yet."
+          detail="A night lands here once it is on the board and close enough to have cost something. Nothing has."
+        />
+      ) : costed.length === 0 ? (
         <StateBlock
           status="empty"
           icon="Calculator"
@@ -175,14 +193,28 @@ export function PnlClient({
                     >
                       {e.settled ? "Settled" : "Estimate"}
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={pending}
-                      onClick={() => run(() => removeExpense(e.id), "Line removed.")}
-                    >
-                      Remove
-                    </Button>
+                    {arming === e.id ? (
+                      <>
+                        <Button variant="ghost" size="sm" disabled={pending} onClick={() => setArming(null)}>
+                          Keep it
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          disabled={pending}
+                          onClick={() => {
+                            setArming(null);
+                            run(() => removeExpense(e.id), "Line removed.");
+                          }}
+                        >
+                          Remove the line
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="ghost" size="sm" disabled={pending} onClick={() => setArming(e.id)}>
+                        Remove
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE, PLACE, SETTING_LABEL } from "@/lib/brand";
-import { Badge, Button, Dialog, Input, Select, StateBlock, Switch, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Switch, Textarea, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
@@ -39,7 +39,7 @@ const TIER_OPTIONS = [
 ];
 
 /* Where the episode happens — the setting axis, not the old family codes. */
-const CLASS_OPTIONS = [
+const SETTING_OPTIONS = [
   { value: "", label: "Either setting" },
   { value: "sea", label: SETTING_LABEL.sea },
   { value: "shore", label: SETTING_LABEL.shore },
@@ -63,12 +63,18 @@ export function AutomationsClient({
   rows,
   cities,
   smsTemplates,
+  letters,
 }: {
   rows: RuleRow[];
   cities: Array<{ slug: string; label: string }>;
   /* Texts are template-only at the provider; the rule picks from what is
      registered rather than typing a code that will bounce on send. */
   smsTemplates: string[];
+  /* The letter registry (email_templates). The dispatcher refuses a letter
+     the sender cannot render, so the rule picks one off the registry rather
+     than typing a key that would be refused at fire time with nothing said
+     to the operator. */
+  letters: Array<{ code: string; description: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -83,8 +89,15 @@ export function AutomationsClient({
   const [title, setTitle] = React.useState("");
   const [body, setBody] = React.useState("");
   const [template, setTemplate] = React.useState("");
+  const [query, setQuery] = React.useState("");
 
   const cityLabel = (slug: string) => cities.find((h) => h.slug === slug)?.label ?? slug;
+
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? rows.filter((r) => r.name.toLowerCase().includes(q) || actionLine(r.action).toLowerCase().includes(q))
+    : rows;
+  const live = rows.filter((r) => r.active).length;
 
   return (
     <>
@@ -97,10 +110,23 @@ export function AutomationsClient({
           triggers were live and the one existing rule had already sent 194
           notifications to members. The dangerous direction: an operator writes
           a rule believing it is a draft, and it messages the club. */}
-      <span className="hm-count">LIVE — A SAVED RULE FIRES ON THE NEXT MATCHING EVENT.</span>
+      <ListToolbar
+        search={
+          <Input
+            label="Search the rules"
+            placeholder="A rule's name, or what it sends"
+            aria-label="Search the rules"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        }
+        resultCount={shown.length}
+        resultNoun="rule"
+        countSuffix={` · ${live} LIVE — A SAVED RULE FIRES ON THE NEXT MATCHING EVENT`}
+      />
 
-      {rows.length ? (
-        rows.map((r) => (
+      {shown.length ? (
+        shown.map((r) => (
           <div className="hm-item" key={r.id}>
             <div className="hm-item__head">
               <b>{r.name}</b>
@@ -135,6 +161,10 @@ export function AutomationsClient({
             <div className="hm-item__body">{actionLine(r.action)}</div>
           </div>
         ))
+      ) : rows.length ? (
+        <div style={{ marginTop: 20 }}>
+          <StateBlock status="empty" title="No rule by that name." detail="Clear the search to see every rule." />
+        </div>
       ) : (
         <div style={{ marginTop: 20 }}>
           <StateBlock
@@ -185,12 +215,12 @@ export function AutomationsClient({
                     setTitle("");
                     setBody("");
                     setTemplate("");
-                    show({ msg: "Rule saved.", meta: "SAVED · NOT YET FIRING" });
+                    show({ msg: "Rule saved and live.", meta: "FIRES ON THE NEXT MATCHING EVENT" });
                   }
                 });
               }}
             >
-              Save the rule
+              Save and go live
             </Button>
           </>
         }
@@ -229,10 +259,10 @@ export function AutomationsClient({
             />
           </div>
           <Select
-            label="Family"
+            label="Setting"
             value={klass}
             onChange={(e) => setKlass(e.target.value)}
-            options={CLASS_OPTIONS}
+            options={SETTING_OPTIONS}
           />
           <Select
             label="Then"
@@ -273,14 +303,16 @@ export function AutomationsClient({
               options={smsTemplates.map((c) => ({ value: c, label: c }))}
             />
           ) : (
-            <Input
-              label="Template key"
-              placeholder="welcome-aboard"
+            <Select
+              label="Letter"
+              hint="Only a letter in the registry sends; any other is refused when the rule fires."
+              placeholder="Pick a letter"
               value={template}
               onChange={(e) => setTemplate(e.target.value)}
+              options={letters.map((l) => ({ value: l.code, label: `${l.code} — ${l.description}` }))}
             />
           )}
-          <p className="hm-mono">RULES SAVE NOW; THE TRIGGERS ARE WIRED NEXT.</p>
+          <p className="hm-mono">SAVED IS LIVE — THE RULE FIRES ON THE NEXT MATCHING EVENT.</p>
         </div>
       </Dialog>
 

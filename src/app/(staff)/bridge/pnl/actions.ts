@@ -33,11 +33,16 @@ export async function addExpense(
   if (amountCents > 10_000_000) {
     return { error: "That is over $100,000 on one line — check the figure, or split it." };
   }
+  /* kind is a foreign key onto expense_kinds. The form offers the catalogue;
+     the wire is checked against it too, and refused by name rather than as a
+     foreign key violation. */
+  const { data: known } = await supabase.from("expense_kinds").select("slug").eq("slug", kind).maybeSingle();
+  if (!known) return { error: "That is not a kind of cost the book keeps." };
   const { error } = await supabase.from("episode_expenses").insert({
     episode_id: episodeId,
     kind,
     amount_cents: Math.round(amountCents),
-    note: note.trim() || null,
+    note: note.trim().slice(0, 200) || null,
     settled,
     created_by: staffId,
   });

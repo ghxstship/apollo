@@ -25,7 +25,7 @@ export async function createTable(
   if (!episodeId) return { error: "Pick the night first." };
 
   const n = Math.round(number);
-  if (!Number.isFinite(n) || n < 1) return { error: "A table needs a number, one or higher." };
+  if (!Number.isFinite(n) || n < 1 || n > 999) return { error: "A table needs a number, one to 999." };
 
   /* The check constraint says 2–12; this is the readable version of it. */
   const s = Math.round(seats);

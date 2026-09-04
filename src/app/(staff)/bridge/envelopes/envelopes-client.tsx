@@ -3,7 +3,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Select, Stat, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, ListToolbar, Select, Stat, StateBlock, Table, Toast } from "@/components/ds";
 import { issueTheEnvelopes } from "../../../(member)/show/actions";
 import { useToast } from "../../ui";
 
@@ -187,10 +187,8 @@ export function EnvelopesClient({
           />
         ) : (
           <>
+            <ListToolbar resultCount={rows.length} resultNoun="envelope" countSuffix={` · ${opened} opened`} />
             <Table columns={columns} rows={rows} rowKey={(r) => r.passId} />
-            <span className="hm-count">
-              {rows.length} envelope{rows.length === 1 ? "" : "s"} · {opened} opened
-            </span>
           </>
         )}
       </section>

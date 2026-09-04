@@ -12,6 +12,8 @@ export async function replyToThread(threadId: string, body: string): Promise<Act
 
   const line = body.trim();
   if (!line) return { error: "Nothing to send." };
+  /* The same ceiling the member's own composer keeps. */
+  if (line.length > 4000) return { error: "Keep it under 4,000 characters." };
 
   const { error: seatError } = await supabase
     .from("thread_members")
