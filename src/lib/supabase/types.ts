@@ -318,6 +318,13 @@ export type CityTaxRow = {
   registered: boolean; note: string | null
   determined_by: string | null; determined_on: string | null; updated_at: string
 }
+export type ExpenseKindRow = { slug: string; label: string; position: number }
+/* An estimate and a settled invoice are different facts, and a P&L that mixes
+   them silently is why nobody trusts one. */
+export type EpisodeExpenseRow = {
+  id: string; episode_id: string; kind: string; amount_cents: number
+  note: string | null; settled: boolean; created_by: string | null; created_at: string
+}
 export type CrewPositionRow = {
   slug: string; label: string; setting: "sea" | "shore" | null; position: number
 }
@@ -602,6 +609,8 @@ export type Database = {
       crew: Table<CrewRow, Ins<CrewRow, "slug" | "display_name" | "role_title">>
       crew_positions: Table<CrewPositionRow, Ins<CrewPositionRow, "slug" | "label">>
       city_tax: Table<CityTaxRow, Ins<CityTaxRow, "city_id">>
+      expense_kinds: Table<ExpenseKindRow, Ins<ExpenseKindRow, "slug" | "label">>
+      episode_expenses: Table<EpisodeExpenseRow, Ins<EpisodeExpenseRow, "episode_id" | "kind" | "amount_cents">>
       crew_assignments: Table<CrewAssignmentRow, Ins<CrewAssignmentRow, "episode_id" | "crew_id" | "position_slug">>
       crew_blackouts: Table<CrewBlackoutRow, Ins<CrewBlackoutRow, "crew_id" | "from_date" | "to_date">>
       crew_needs: Table<CrewNeedRow, Ins<CrewNeedRow, "setting" | "position_slug" | "headcount">>
@@ -686,6 +695,20 @@ export type Database = {
       }
       member_pass_usage: {
         Row: { profile_id: string | null; month: string | null; passes_used: number | null }
+        Relationships: []
+      }
+      /* Revenue and cost per episode. `costed` says whether anybody has
+         recorded a cost at all — an uncosted night has zero cost and therefore
+         a hundred per cent margin, the most misleading number this schema can
+         produce. Never render a margin where costed is false. */
+      episode_pnl: {
+        Row: {
+          episode_id: string | null; slug: string | null; title: string | null
+          starts_at: string | null; setting: string | null; series: string | null
+          revenue_cents: number | null; cost_cents: number | null
+          unsettled_cents: number | null; margin_cents: number | null
+          costed: boolean | null
+        }
         Relationships: []
       }
       /* Memberships held because dues stopped clearing — involuntary, and so

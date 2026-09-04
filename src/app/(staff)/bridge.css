@@ -360,3 +360,22 @@
 .hm-recon__amt{margin-inline-start:auto;font-variant-numeric:tabular-nums}
 /* Not yet written to — the one actionable state in the lapsed list. */
 .hm-recon__due{color:var(--caution)}
+
+/* P&L. The uncosted row is the design problem: a zero cost reads as a perfect
+   margin, so an uncosted night prints words rather than a number. */
+.hm-pnl{display:flex;flex-direction:column;margin-top:20px}
+.hm-pnl__row{display:grid;grid-template-columns:104px 1fr 120px auto;gap:16px;align-items:center;padding:13px 0;border-top:1px solid var(--line-faint)}
+.hm-pnl__row:last-child{border-bottom:1px solid var(--line-faint)}
+.hm-pnl__when{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.hm-pnl__when b{display:block;font-size:var(--text-data-s);font-weight:400;color:var(--text-1)}
+.hm-pnl__t{font-size:var(--text-sm)}
+.hm-pnl__m{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:4px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.hm-pnl__margin{text-align:end;font-family:var(--font-mono);font-size:var(--text-data-s);font-variant-numeric:tabular-nums}
+.hm-pnl__neg{color:var(--danger)}
+.hm-pnl__uncosted{color:var(--text-faint);text-transform:uppercase;letter-spacing:var(--track-data);font-size:var(--text-3xs)}
+.hm-pnl__lines{display:flex;flex-direction:column;gap:2px}
+.hm-pnl__line{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line-faint);font-size:var(--text-xs)}
+@media (max-width:860px){
+  .hm-pnl__row{grid-template-columns:1fr auto;gap:8px}
+  .hm-pnl__line{grid-template-columns:1fr auto}
+}

@@ -307,6 +307,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/pnl",
+      "file": "src/app/(staff)/bridge/pnl/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/program",
       "file": "src/app/(staff)/bridge/program/page.tsx",
       "type": "page",
