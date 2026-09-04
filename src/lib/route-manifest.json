@@ -24,7 +24,10 @@
     "/bridge",
     "/vetting",
     "/radar",
-    "/show"
+    "/show",
+    "/polls",
+    "/season",
+    "/debrief"
   ],
   "routes": [
     {
@@ -77,6 +80,18 @@
         "GET"
       ],
       "dynamic": true,
+      "access": "public"
+    },
+    {
+      "path": "/api/mcp",
+      "file": "src/app/api/mcp/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST",
+        "GET",
+        "DELETE"
+      ],
+      "dynamic": false,
       "access": "public"
     },
     {
@@ -135,6 +150,77 @@
       "type": "handler",
       "methods": [
         "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/wallet/apple",
+      "file": "src/app/api/wallet/apple/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/wallet/apple/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]",
+      "file": "src/app/api/wallet/apple/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": true,
+      "access": "public"
+    },
+    {
+      "path": "/api/wallet/apple/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/[serialNumber]",
+      "file": "src/app/api/wallet/apple/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/[serialNumber]/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST",
+        "DELETE"
+      ],
+      "dynamic": true,
+      "access": "public"
+    },
+    {
+      "path": "/api/wallet/apple/v1/log",
+      "file": "src/app/api/wallet/apple/v1/log/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/wallet/apple/v1/passes/[passTypeIdentifier]/[serialNumber]",
+      "file": "src/app/api/wallet/apple/v1/passes/[passTypeIdentifier]/[serialNumber]/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": true,
+      "access": "public"
+    },
+    {
+      "path": "/api/wallet/google",
+      "file": "src/app/api/wallet/google/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/wallet/status",
+      "file": "src/app/api/wallet/status/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
       ],
       "dynamic": false,
       "access": "public"
@@ -328,6 +414,13 @@
       "access": "member"
     },
     {
+      "path": "/bridge/polls",
+      "file": "src/app/(staff)/bridge/polls/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/bridge/program",
       "file": "src/app/(staff)/bridge/program/page.tsx",
       "type": "page",
@@ -337,6 +430,13 @@
     {
       "path": "/bridge/proposals",
       "file": "src/app/(staff)/bridge/proposals/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/bridge/questions",
+      "file": "src/app/(staff)/bridge/questions/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"
@@ -449,6 +549,17 @@
       }
     },
     {
+      "path": "/debrief/[slug]",
+      "file": "src/app/(member)/debrief/[slug]/page.tsx",
+      "type": "page",
+      "dynamic": true,
+      "access": "member",
+      "source": {
+        "table": "episodes",
+        "column": "slug"
+      }
+    },
+    {
       "path": "/directory",
       "file": "src/app/(member)/directory/page.tsx",
       "type": "page",
@@ -479,6 +590,16 @@
         "table": "episodes",
         "column": "slug"
       }
+    },
+    {
+      "path": "/episodes/[slug]/share",
+      "file": "src/app/(site)/episodes/[slug]/share/route.tsx",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": true,
+      "access": "public"
     },
     {
       "path": "/gallery",
@@ -590,6 +711,13 @@
       "access": "member"
     },
     {
+      "path": "/polls",
+      "file": "src/app/(member)/polls/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
       "path": "/portal",
       "file": "src/app/(member)/portal/page.tsx",
       "type": "page",
@@ -627,6 +755,13 @@
         "table": "contests",
         "column": "slug"
       }
+    },
+    {
+      "path": "/season",
+      "file": "src/app/(member)/season/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
     },
     {
       "path": "/series",
@@ -716,6 +851,17 @@
       "type": "page",
       "dynamic": false,
       "access": "member"
+    },
+    {
+      "path": "/w/[token]",
+      "file": "src/app/w/[token]/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": true,
+      "access": "public",
+      "credential": true
     },
     {
       "path": "/you",

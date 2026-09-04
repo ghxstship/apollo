@@ -31,6 +31,10 @@ export type ProfileRow = {
      the manifest's pills write, so a filter set has one shape in this system
      and not two. Null means show everything. */
   manifest_filters: string | null
+  /* Dues waived by the Bridge until this date; the plan stands. */
+  comped_until: string | null
+  /* One line the member sets during Live, shown to those aboard, expiring with the night. */
+  deck_status: string | null; deck_status_until: string | null
 }
 export type CityRow = {
   id: string; slug: string; name: string; status: string; coordinates: string | null
@@ -42,6 +46,11 @@ export type EpisodeRow = {
   id: string; slug: string; title: string; setting: EpisodeSetting; kind: string
   city_id: string | null; starts_at: string; ends_at: string | null; coordinates: string | null
   distance_nm: number | null; passes_total: number; price_cents: number; status: EpisodeStatus
+  /* Places are requested and the Bridge offers them; the door never says a number. */
+  by_request: boolean
+  /* Passes beyond the ceiling that board only into a seat a no-show frees. */
+  standby_passes: number
+  age_line: string | null
   /* The second taxonomy axis. `setting` says WHERE (afloat or ashore); this says
      WHAT KIND — open | club | premium | exotic, NOT NULL. A series DEFAULTS it:
      an_episode_keeps_its_taxonomy fills this from the series only when the
@@ -84,6 +93,8 @@ export type VenueRow = {
   id: string; slug: string; name: string; city_id: string | null
   kind: "marina" | "club" | "restaurant" | "beach" | "pool" | "partner"
   address: string | null; notes: string | null; active: boolean; created_at: string
+  /* Step-free, lift, quiet room — what an access need wants to know before booking. */
+  access_note: string | null
 }
 /* An edition: one series running in one city, with its own cadence. Sandbar
    Social Miami and Sandbar Social LA are two rows here and one series.
@@ -149,7 +160,7 @@ export type TableSeatRow = {
   table_id: string; profile_id: string; state: "held" | "confirmed"
   held_until: string; created_at: string
 }
-export type TablePickRow = { table_id: string; picker: string; picked: string; created_at: string }
+export type TablePickRow = { table_id: string; picker: string; picked: string; created_at: string; again: boolean }
 export type MatchRow = {
   id: string; table_id: string; profile_a: string; profile_b: string; created_at: string
 }
@@ -167,6 +178,8 @@ export type PassRow = {
   boarding_code: string | null; show_on_manifest: boolean; vessel_id: string | null
   comp: boolean; guest_names: string[]; promo_code: string | null; auto_claim: boolean
   cabin_id: string | null
+  /* Stands outside the count; becomes a seat at the gangway if one is free. */
+  standby: boolean
   /* A comp given on a sponsor's account. */
   sponsor_id: string | null
 }
@@ -182,6 +195,8 @@ export type MembershipPlanRow = {
      and this is what a member is buying — the column existed for eight days
      before anything read it. */
   monthly_credit_cents: number
+  /* Named guests a pass on this plan may carry; the guard and the FAQ read it. */
+  guest_allowance: number
 }
 export type VesselRow = {
   id: string; name: string; capacity: number; home_city: string | null; active: boolean
@@ -214,6 +229,8 @@ export type ApplicationRow = {
   note: string | null; status: ApplicationStatus; created_at: string; interests: string[]
   tier_requested: MembershipTier; invite_code: string | null; waiver_swim: boolean
   waiver_conduct: boolean; reviewed_by: string | null; decided_at: string | null
+  /* Answers keyed by application_questions.key; the proposer in the applicant's words. */
+  answers: Json; proposer: string | null
 }
 export type NotificationRow = {
   id: string; profile_id: string; kind: string; title: string; body: string | null
@@ -221,6 +238,8 @@ export type NotificationRow = {
   /* The episode a Word is about, when it is about one — the idempotency key
      for the day-of Words since series occurrences share a title. */
   episode_id: string | null
+  /* Where the notice goes when tapped. Derived from kind when the writer set none. */
+  href: string | null
 }
 export type MemberRollRow = {
   email: string; tier: MembershipTier; home_city: string | null; source: string
@@ -325,6 +344,7 @@ export type CrewRow = {
 export type BroadcastRow = {
   id: string; sent_by: string | null; audience: Json; title: string; body: string
   channels: string[]; recipients: number; created_at: string
+  send_at: string | null; status: "queued" | "sent"
 }
 export type CityTaxRow = {
   city_id: string; admissions_rate_bp: number | null; goods_rate_bp: number | null
@@ -468,7 +488,30 @@ export type WebhookDeliveryRow = {
 export type AutomationRow = {
   id: string; name: string; trigger_event: string; conditions: Json; action: Json
   active: boolean; last_run_at: string | null; created_at: string
+  /* Minutes the rule waits before acting; 0 fires on the event. */
+  delay_minutes: number
 }
+export type AutomationQueueRow = {
+  id: string; automation_id: string; profile_id: string | null; episode_id: string | null
+  payload: Json; run_at: string; done_at: string | null; created_at: string
+}
+export type DoorGrantRow = {
+  id: string; profile_id: string; episode_id: string; granted_by: string | null; expires_at: string; created_at: string
+}
+export type ApplicationQuestionRow = {
+  key: string; prompt: string; kind: "text" | "long" | "choice"; options: Json | null
+  required: boolean; active: boolean; position: number
+}
+export type DebriefRow = {
+  id: string; episode_id: string; profile_id: string; note: string | null; again: boolean | null; created_at: string
+}
+export type PollRow = {
+  id: string; question: string; options: Json; closes_at: string; settled: number | null
+  created_by: string | null; created_at: string
+}
+export type PollVoteRow = { poll_id: string; profile_id: string; option: number; created_at: string }
+export type WalletTokenRow = { token: string; profile_id: string; issued_at: string; revoked_at: string | null; touched_at: string }
+export type WalletRegistrationRow = { device_id: string; pass_type: string; serial: string; push_token: string; created_at: string }
 
 
 /* ===== The logbook: marks, the Knots sink, and contests ===================== */
@@ -624,6 +667,14 @@ export type Database = {
       crew: Table<CrewRow, Ins<CrewRow, "slug" | "display_name" | "role_title">>
       crew_positions: Table<CrewPositionRow, Ins<CrewPositionRow, "slug" | "label">>
       broadcasts: Table<BroadcastRow, Ins<BroadcastRow, "audience" | "title" | "body" | "channels">>
+      automation_queue: Table<AutomationQueueRow, Ins<AutomationQueueRow, "automation_id" | "run_at">>
+      door_grants: Table<DoorGrantRow, Ins<DoorGrantRow, "profile_id" | "episode_id" | "expires_at">>
+      application_questions: Table<ApplicationQuestionRow, Ins<ApplicationQuestionRow, "key" | "prompt">>
+      debriefs: Table<DebriefRow, Ins<DebriefRow, "episode_id" | "profile_id">>
+      polls: Table<PollRow, Ins<PollRow, "question" | "options" | "closes_at">>
+      poll_votes: Table<PollVoteRow, Ins<PollVoteRow, "poll_id" | "profile_id" | "option">>
+      wallet_tokens: Table<WalletTokenRow, Ins<WalletTokenRow, "profile_id">>
+      wallet_registrations: Table<WalletRegistrationRow, Ins<WalletRegistrationRow, "device_id" | "pass_type" | "serial" | "push_token">>
       city_tax: Table<CityTaxRow, Ins<CityTaxRow, "city_id">>
       expense_kinds: Table<ExpenseKindRow, Ins<ExpenseKindRow, "slug" | "label">>
       episode_expenses: Table<EpisodeExpenseRow, Ins<EpisodeExpenseRow, "episode_id" | "kind" | "amount_cents">>
@@ -646,6 +697,16 @@ export type Database = {
       counter_signatures: Table<CounterSignatureRow, Ins<CounterSignatureRow, "signature_id" | "signed_by" | "signer_name">>
     }
     Views: {
+      membership_cohorts: {
+        Row: { cohort: string | null; joined: number | null; active_now: number | null; lapsed: number | null; paused: number | null; departed: number | null }
+        Relationships: []
+      }
+      application_funnel: { Row: { stage: string | null; applicants: number | null; this_year: number | null }; Relationships: [] }
+      member_value: {
+        Row: { profile_id: string | null; dues_cents: number | null; spend_cents: number | null; first_charge: string | null; last_charge: string | null }
+        Relationships: []
+      }
+      poll_tallies: { Row: { poll_id: string | null; option: number | null; votes: number | null }; Relationships: [] }
       /* What one member may see of another. Deliberately narrower than the
          profiles row: no email, phone, calendar_token, stripe id or plan. */
       member_directory: {
@@ -803,9 +864,20 @@ export type Database = {
       pass_credit_left: { Args: { p_profile_id?: string | null }; Returns: number }
       /* One word to a chosen audience; returns how many it reached. */
       send_broadcast: {
-        Args: { p_audience: Json; p_title: string; p_body: string; p_channels: string[] }
+        Args: { p_audience: Json; p_title: string; p_body: string; p_channels: string[]; p_send_at?: string | null }
         Returns: number
       }
+      is_door: { Args: { p_episode?: string | null }; Returns: boolean }
+      door_manifest: {
+        Args: { p_episode: string }
+        Returns: Array<{ pass_id: string; profile_id: string; full_name: string | null; member_no: string | null; waiver_current: boolean }>
+      }
+      aboard_now: {
+        Args: { p_episode: string }
+        Returns: Array<{ profile_id: string; name: string | null; avatar_tone: string | null; status: string | null; checked_in_at: string }>
+      }
+      cast_vote: { Args: { p_poll: string; p_option: number }; Returns: undefined }
+      poll_results: { Args: { p_poll: string }; Returns: Array<{ option: number; votes: number }> }
       passes_left: { Args: { p_episode: string; p_except_pass?: string | null }; Returns: number }
       scheduler_health: {
         Args: { p_limit?: number }
@@ -827,8 +899,16 @@ export type Database = {
         Returns: string
       }
       apply_with_invite: {
-        Args: { p_full_name: string; p_email: string; p_city: string; p_note: string; p_code: string }
+        Args: { p_full_name: string; p_email: string; p_city: string; p_note: string; p_code: string; p_answers?: Json; p_proposer?: string | null }
         Returns: string
+      }
+      shares_ground_with: { Args: { p_other: string }; Returns: boolean }
+      offer_this_place: { Args: { p_entry: string }; Returns: string }
+      issue_wallet_token: { Args: Record<string, never>; Returns: WalletTokenRow[] }
+      revoke_wallet_token: { Args: Record<string, never>; Returns: undefined }
+      verify_wallet_token: {
+        Args: { p_token: string }
+        Returns: Array<{ state: string; profile_id: string | null; full_name: string | null; member_no: string | null; standing: string | null }>
       }
       application_status_for: {
         Args: { p_email: string; p_fingerprint?: string | null }

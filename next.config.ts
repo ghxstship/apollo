@@ -85,7 +85,7 @@ const nextConfig: NextConfig = {
         /* Every path that carries its credential in the URL. The calendar feed
            was missing from this list, so a bearer-token URL kept the default
            referrer policy and stayed cacheable. */
-        source: "/:path(sign|stub|kiosk)/:token*",
+        source: "/:path(sign|stub|kiosk|w)/:token*",
         headers: [
           { key: "Referrer-Policy", value: "no-referrer" },
           { key: "Cache-Control", value: "private, no-store, max-age=0" },
@@ -135,7 +135,6 @@ const nextConfig: NextConfig = {
          their own heading. */
       { source: "/manifest", destination: "/passes", permanent: true },
       { source: "/manifest/:path*", destination: "/passes/:path*", permanent: true },
-      { source: "/season", destination: "/passes", permanent: true },
       { source: "/charter", destination: "/itinerary", permanent: true },
       { source: "/charter/:path*", destination: "/itinerary/:path*", permanent: true },
       { source: "/tables", destination: "/tonight", permanent: true },
