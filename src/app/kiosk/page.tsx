@@ -27,12 +27,18 @@ export default async function KioskPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/gangway");
 
+  /* Staff, or the holder of a live door grant — the hired crew member who has
+     one episode's gangway for one night. is_door() answers for both. RLS then
+     hands a door exactly its own episode's passes below, so the manifest this
+     page carries is already the right one for whoever propped the device. */
+  const { data: door } = await supabase.rpc("is_door");
+  if (door !== true) redirect("/home");
   const { data: me } = await supabase
     .from("profiles")
     .select("is_staff")
     .eq("id", user.id)
     .maybeSingle();
-  if (!me?.is_staff) redirect("/home");
+  const staff = Boolean(me?.is_staff);
 
   /* The same board the gangway console and the check-in action work from:
      today's departures stay for 24 hours, upcoming line up after. */
@@ -54,15 +60,23 @@ export default async function KioskPage() {
       .not("boarding_code", "is", null);
 
     const profileIds = [...new Set((passRows ?? []).map((r) => r.profile_id))];
+    /* Names and waiver standing, the same way the gangway roster reads them.
+       A door is not staff: profiles is own-or-staff, so it reads the directory
+       view for names, and the waiver view (security_invoker over signatures)
+       cannot answer for it at all — so standing is UNKNOWN for a door, never
+       false, and the offline path holds rather than refuses. The database
+       still refuses an unsigned member at the stamp. */
     const [profilesRes, waiverRes] = profileIds.length
       ? await Promise.all([
-          supabase.from("profiles").select("id, full_name").in("id", profileIds),
-          /* Waiver standing from the signature record, never a profile flag —
-             the same single source the gangway roster reads. */
-          supabase
-            .from("member_waiver_standing")
-            .select("profile_id, current")
-            .in("profile_id", profileIds),
+          staff
+            ? supabase.from("profiles").select("id, full_name").in("id", profileIds)
+            : supabase.from("member_directory").select("id, full_name").in("id", profileIds),
+          staff
+            ? supabase
+                .from("member_waiver_standing")
+                .select("profile_id, current")
+                .in("profile_id", profileIds)
+            : Promise.resolve({ data: [] as Array<{ profile_id: string | null; current: boolean | null }> }),
         ])
       : [{ data: [] }, { data: [] }];
     const nameOf = new Map((profilesRes.data ?? []).map((p) => [p.id, p.full_name ?? "Sailor"]));
@@ -75,7 +89,7 @@ export default async function KioskPage() {
       episodeId: r.episode_id,
       code: r.boarding_code ?? "",
       name: nameOf.get(r.profile_id) ?? "Sailor",
-      waiverSigned: waiverCurrent.get(r.profile_id) ?? false,
+      waiverSigned: staff ? (waiverCurrent.get(r.profile_id) ?? false) : null,
       checkedInAt: r.checked_in_at,
     }));
   }

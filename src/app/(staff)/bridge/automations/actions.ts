@@ -15,13 +15,20 @@ export type RuleConditions = { tier?: string; city?: string; setting?: string };
 export type RuleAction =
   | { kind: "notify"; title: string; body: string }
   | { kind: "email"; template: string }
-  | { kind: "sms"; template: string };
+  | { kind: "sms"; template: string }
+  /* Call a registered webhook. The dispatcher posts the event and its context
+     to the hook's URL through webhook_deliveries; the id comes off the
+     `webhooks` table and nowhere else. */
+  | { kind: "webhook"; webhookId: string };
 
 export type NewRule = {
   name: string;
   trigger: TriggerEvent;
   conditions: RuleConditions;
   action: RuleAction;
+  /* Minutes the rule waits before it acts; 0 fires on the event. Up to
+     thirty days — the column's CHECK. */
+  delayMinutes: number;
 };
 
 /* The five events the dispatcher fires — automations_on_rsvp, automations_on_voyage
@@ -42,6 +49,7 @@ const TIERS = ["regional", "national", "global"] as const;
 const SETTINGS = ["sea", "shore"] as const;
 
 const NAME_MAX = 120;
+const DELAY_MAX = 43_200;
 const TITLE_MAX = 120;
 const BODY_MAX = 600;
 
@@ -81,8 +89,19 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
     conditions.city = city.slug;
   }
 
-  let action: RuleAction;
-  if (rule.action.kind === "notify") {
+  const delay = Math.round(Number(rule.delayMinutes) || 0);
+  if (!Number.isInteger(delay) || delay < 0 || delay > DELAY_MAX)
+    return { error: "A delay is whole minutes, 0 to 43,200 — thirty days." };
+
+  /* The stored shape is the dispatcher's: {kind:'webhook', webhook_id}. */
+  let action: RuleAction | { kind: "webhook"; webhook_id: string };
+  if (rule.action.kind === "webhook") {
+    const id = rule.action.webhookId.trim();
+    if (!/^[0-9a-f-]{36}$/.test(id)) return { error: "Pick the webhook the rule calls." };
+    const { data: hook } = await supabase.from("webhooks").select("id").eq("id", id).eq("active", true).maybeSingle();
+    if (!hook) return { error: "That webhook is not registered, or is switched off." };
+    action = { kind: "webhook", webhook_id: id };
+  } else if (rule.action.kind === "notify") {
     const title = rule.action.title.trim();
     const body = rule.action.body.trim();
     if (!title) return { error: "A word needs a title." };
@@ -128,6 +147,7 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
     conditions,
     action,
     active: true,
+    delay_minutes: delay,
   });
   if (error) return { error: ERR_LAND };
   return done();

@@ -26,7 +26,12 @@ export type NewVenue = {
   kind: VenueKind;
   harborId: string | null;
   address: string;
+  /* Step-free, lift, quiet room — what an access need wants to know before
+     booking. Up to 200 characters; blank says nothing. */
+  accessNote: string;
 };
+
+const ACCESS_NOTE_MAX = 200;
 
 export type NewSeries = {
   title: string;
@@ -132,6 +137,7 @@ export async function createVenue(input: NewVenue): Promise<ActionResult> {
     kind: input.kind,
     city_id: input.harborId || null,
     address: input.address.trim().slice(0, ADDRESS_MAX) || null,
+    access_note: (input.accessNote ?? "").trim().slice(0, ACCESS_NOTE_MAX) || null,
   });
   if (error) {
     return {
@@ -140,6 +146,18 @@ export async function createVenue(input: NewVenue): Promise<ActionResult> {
         : ERR_LAND,
     };
   }
+  return done();
+}
+
+/* The access note on a standing venue — the one field that changes after a
+   place is charted, when somebody has been and can say what the door is like. */
+export async function setVenueAccessNote(id: string, accessNote: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const note = accessNote.trim();
+  if (note.length > ACCESS_NOTE_MAX) return { error: `An access note runs to ${ACCESS_NOTE_MAX} characters.` };
+  const { error } = await supabase.from("venues").update({ access_note: note || null }).eq("id", id);
+  if (error) return { error: ERR_LAND };
   return done();
 }
 

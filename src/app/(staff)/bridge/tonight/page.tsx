@@ -3,7 +3,8 @@ import { StateBlock } from "@/components/ds";
 import { logDate, logTime } from "@/lib/format";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
-import { TablesClient, type TableRow } from "./tonight-client";
+import { memberMark } from "@/lib/membership";
+import { TablesClient, type Seated, type TableRow } from "./tonight-client";
 
 export const metadata: Metadata = { title: "Tonight" };
 
@@ -62,9 +63,32 @@ export default async function TablesPage({
 
   const tableIds = tables.map((t) => t.id);
   const seatsRes = tableIds.length
-    ? await supabase.from("table_seats").select("table_id, state, held_until").in("table_id", tableIds)
+    ? await supabase.from("table_seats").select("table_id, profile_id, state, held_until").in("table_id", tableIds)
     : { data: [] };
   const seats = must(seatsRes);
+
+  /* The "sit near again" hints. After a Table night a member may mark, of the
+     people at their table, anyone they would sit near again — a hint to the
+     Bridge for the next seating, not a match, and never shown to members. Read
+     here as a count per seated member of the picks that name THEM, from prior
+     nights' tables; the picker is not read, so the hint carries a number and
+     no names. Empty when the Bridge has no read on table_picks. */
+  const seatedIds = [...new Set(seats.map((s) => s.profile_id))];
+  const [picksRes, namesRes] = await Promise.all([
+    seatedIds.length
+      ? supabase.from("table_picks").select("table_id, picked").eq("again", true).in("picked", seatedIds)
+      : Promise.resolve({ data: [] as Array<{ table_id: string; picked: string }>, error: null }),
+    seatedIds.length
+      ? supabase.from("profiles").select("id, full_name, member_no").in("id", seatedIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; full_name: string | null; member_no: string | null }>, error: null }),
+  ]);
+  const againFor = new Map<string, number>();
+  for (const p of must(picksRes)) {
+    /* Picks made at a table on THIS night are not prior — they are tonight. */
+    if (tableIds.includes(p.table_id)) continue;
+    againFor.set(p.picked, (againFor.get(p.picked) ?? 0) + 1);
+  }
+  const names = new Map(must(namesRes).map((p) => [p.id, p]));
 
   /* Server-rendered per request, so "now" is request time — the same rule
      the member page and claim_table_seat apply. */
@@ -75,6 +99,14 @@ export default async function TablesPage({
     const held = mine.filter(
       (s) => s.state === "held" && new Date(s.held_until).getTime() >= now
     ).length;
+    const seated: Seated[] = mine
+      .filter((s) => s.state === "confirmed" || new Date(s.held_until).getTime() >= now)
+      .map((s) => ({
+        id: s.profile_id,
+        name: names.get(s.profile_id)?.full_name ?? "A member",
+        memberNo: memberMark(names.get(s.profile_id)?.member_no ?? null) || "—",
+        again: againFor.get(s.profile_id) ?? 0,
+      }));
     return {
       id: t.id,
       number: t.number,
@@ -82,6 +114,7 @@ export default async function TablesPage({
       taken: confirmed + held,
       confirmed,
       held,
+      seated,
     };
   });
 

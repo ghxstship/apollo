@@ -172,6 +172,9 @@ export default async function EpisodesOpsPage() {
       saleOpensAtLocal: wallClockValue(v.sale_opens_at, v.time_zone),
       presaleHours: v.presale_hours,
       depositCents: v.deposit_cents,
+      byRequest: v.by_request,
+      standbyPasses: v.standby_passes,
+      ageLine: v.age_line ?? "",
     };
   });
 

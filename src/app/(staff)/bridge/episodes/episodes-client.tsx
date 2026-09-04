@@ -31,6 +31,7 @@ import {
   assignVessel,
   createEpisode,
   removeVessel,
+  saveEpisodeDoor,
   saveEpisodeOps,
   saveEpisodeProgram,
   setPassesTotal,
@@ -89,6 +90,10 @@ export type EpisodeOpsRow = {
   saleOpensAtLocal: string;
   presaleHours: number;
   depositCents: number;
+  /* — the door — */
+  byRequest: boolean;
+  standbyPasses: number;
+  ageLine: string;
 };
 
 /* A retired season, venue or series stays in the picker, marked, so an episode
@@ -354,6 +359,8 @@ export function EpisodesClient({
   const [move, setMove] = React.useState<{ row: EpisodeOpsRow; m: StatusMove } | null>(null);
   const [ops, setOps] = React.useState<EpisodeOpsRow | null>(null);
   const [opsForm, setOpsForm] = React.useState({ wind: "", swell: "", heading: "", speed: "", muster: "" });
+  const [door, setDoor] = React.useState<EpisodeOpsRow | null>(null);
+  const [doorForm, setDoorForm] = React.useState({ byRequest: false, standby: "0", ageLine: "" });
   const [program, setProgram] = React.useState<EpisodeOpsRow | null>(null);
   const [programForm, setProgramForm] = React.useState<ProgramForm>({
     series: "",
@@ -398,6 +405,11 @@ export function EpisodesClient({
   const openOps = (row: EpisodeOpsRow) => {
     setOpsForm({ wind: row.wind, swell: row.swell, heading: row.heading, speed: row.speed, muster: row.muster });
     setOps(row);
+  };
+
+  const openDoor = (row: EpisodeOpsRow) => {
+    setDoorForm({ byRequest: row.byRequest, standby: String(row.standbyPasses), ageLine: row.ageLine });
+    setDoor(row);
   };
 
   const openProgram = (row: EpisodeOpsRow) => {
@@ -495,6 +507,8 @@ export function EpisodesClient({
           <div className="hm-voy__head">
             <b>{v.title}</b>
             <Badge tone={STATUS_TONE[v.status]}>{STATUS_LABEL[v.status]}</Badge>
+            {v.byRequest ? <Badge tone="ink">By request</Badge> : null}
+            {v.standbyPasses > 0 ? <Badge tone="outline">Standby {v.standbyPasses}</Badge> : null}
           </div>
           <div className="hm-voy__meta">
             <span>{v.departs}</span>
@@ -573,6 +587,9 @@ export function EpisodesClient({
             </Button>
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => openProgram(v)}>
               Program
+            </Button>
+            <Button variant="ghost" size="sm" disabled={pending} onClick={() => openDoor(v)}>
+              Door
             </Button>
             <Button variant="ghost" size="sm" disabled={pending} onClick={() => setFlotillaId(v.id)}>
               Flotilla
@@ -715,6 +732,70 @@ export function EpisodesClient({
             placeholder="05:45 · Gangway B-12"
             value={opsForm.muster}
             onChange={(e) => setOpsForm((f) => ({ ...f, muster: e.target.value }))}
+          />
+        </div>
+      </Dialog>
+
+      {/* — The door: how the night admits. — */}
+      <Dialog
+        open={!!door}
+        onClose={() => setDoor(null)}
+        width={440}
+        eyebrow={door ? door.title : ""}
+        title="The door."
+        footer={
+          door ? (
+            <>
+              <Button variant="ghost" onClick={() => setDoor(null)}>
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                disabled={pending}
+                onClick={() => {
+                  const row = door;
+                  setDoor(null);
+                  run(
+                    () =>
+                      saveEpisodeDoor(row.id, {
+                        byRequest: doorForm.byRequest,
+                        standbyPasses: Number(doorForm.standby) || 0,
+                        ageLine: doorForm.ageLine,
+                      }),
+                    () => show({ msg: "Door set.", meta: row.title.toUpperCase() })
+                  );
+                }}
+              >
+                Save
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <div className="hm-form">
+          <Checkbox
+            label="By request"
+            description="Places are asked for and the Bridge offers them from Composition; the card never shows a number of passes."
+            checked={doorForm.byRequest}
+            onChange={(e) => setDoorForm((f) => ({ ...f, byRequest: e.target.checked }))}
+          />
+          <Input
+            label="Standby passes"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={50}
+            hint="Passes past the ceiling that board only into a seat a no-show frees. 0 to 50."
+            value={doorForm.standby}
+            onChange={(e) => setDoorForm((f) => ({ ...f, standby: e.target.value }))}
+          />
+          <Input
+            label="Age line"
+            maxLength={40}
+            placeholder="30s and 40s"
+            hint="One phrase on the card about who the night is for. Blank says nothing."
+            value={doorForm.ageLine}
+            onChange={(e) => setDoorForm((f) => ({ ...f, ageLine: e.target.value }))}
           />
         </div>
       </Dialog>

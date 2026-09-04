@@ -14,7 +14,9 @@ import { updateSession } from "@/lib/supabase/middleware";
 
    2. Refresh the member's session and keep the gate on the member and staff
       route groups. That lives in updateSession, next to the list of what is
-      behind the gangway. */
+      behind the gangway — and so does the one header the proxy stamps, which
+      names a request for /bridge/gangway so the (staff) layout can admit a
+      hired door on that screen and no other. */
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
@@ -34,7 +36,11 @@ export const config = {
        Next's own assets, the icon set, the worker script, the manifest and
        every static file by extension — and the Stripe webhook, which arrives
        with a signature rather than a cookie and must never be slowed or
-       redirected by the gate. */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|robots.txt|sitemap.xml|icons/|logo/|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
+       redirected by the gate. The MCP endpoint is excluded on the same
+       reasoning: it is authenticated by a bearer API key on every call, carries
+       no cookie and refreshes no session, so running the session refresh on it
+       would be a database round trip that decides nothing. Its own handler
+       verifies the key. */
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|robots.txt|sitemap.xml|icons/|logo/|api/stripe/webhook|api/mcp|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest|woff2?)$).*)",
   ],
 };

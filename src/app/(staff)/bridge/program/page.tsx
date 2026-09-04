@@ -60,6 +60,7 @@ export default async function ProgramPage() {
     kind: v.kind,
     city: v.city_id ? (harborNames.get(v.city_id) ?? null) : null,
     active: v.active,
+    accessNote: v.access_note ?? "",
   }));
 
   const series: SeriesPanelRow[] = must(seriesRes).map((s) => ({

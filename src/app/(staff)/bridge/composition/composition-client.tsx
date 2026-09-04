@@ -3,6 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Dialog, Input, Select, Stat, StateBlock, Toast } from "@/components/ds";
+import { memberMark } from "@/lib/membership";
 import {
   SEGMENTS,
   SEGMENT_HEADS,
@@ -29,6 +30,20 @@ export type QueueLine = {
       rather than counted as outstanding — the seat is free again. */
   lapsed: number;
   claimed: number;
+};
+
+/* One person asking for a place on a by-request night. */
+export type RequestedRow = {
+  id: string;
+  segment: Segment;
+  place: number;
+  name: string;
+  memberNo: string | null;
+  since: string;
+  /* Offered once already and the six hours ran out — back in the line. */
+  lapsed: boolean;
+  /* First in their segment's line: the one offer_the_next_place will reach. */
+  next: boolean;
 };
 
 export function EpisodePicker({
@@ -59,9 +74,14 @@ export function CompositionPanel({
   clubCeiling,
   rows,
   lines,
+  byRequest,
+  requested,
 }: {
   episodeId: string;
   voyageTitle: string;
+  /** episodes.by_request — places are asked for and offered from here. */
+  byRequest: boolean;
+  requested: RequestedRow[];
   /** Heads the hull carries net of operator holds — the number guard_the_ratio
       refuses against, and the only honest denominator for the head total. */
   hull: number;
@@ -389,6 +409,58 @@ export function CompositionPanel({
           </p>
         ) : null}
       </section>
+
+      {byRequest ? (
+        <section className="hm-sec">
+          <div className="hm-head">
+            <h2>Requested.</h2>
+            <span className="hm-mono">
+              {requested.length} {requested.length === 1 ? "ASKING" : "ASKING"} · THE DOOR SAYS NO NUMBER
+            </span>
+          </div>
+          <p className="hm-note">
+            This night admits by request. Everyone in the line who has not been written to, in
+            the order they hold. An offer goes to the first in a segment&apos;s line and stands
+            six hours — the line is served in order, so the button sits on the person it reaches.
+          </p>
+          {requested.length === 0 ? (
+            <p className="hm-empty">Nobody is asking. A request lands here the moment a member joins the line.</p>
+          ) : (
+            <div className="hm-req">
+              {requested.map((r) => {
+                const room = (rows.find((x) => x.segment === r.segment)?.remaining ?? 0) > 0;
+                return (
+                  <div className="hm-req__row" key={r.id}>
+                    <span className="hm-mono">{String(r.place).padStart(2, "0")}</span>
+                    <span className="hm-req__who">
+                      <b>{r.name}</b>
+                      <span className="hm-mono">
+                        {r.memberNo ? memberMark(r.memberNo) : "—"} · {SEGMENT_LABEL[r.segment].toUpperCase()} · SINCE {r.since.toUpperCase()}
+                      </span>
+                    </span>
+                    {r.lapsed ? <Badge tone="caution">Offer lapsed</Badge> : null}
+                    <span className="hm-req__act">
+                      {r.next ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={pending || !room}
+                          title={room ? undefined : `${SEGMENT_LABEL[r.segment]} is at its ceiling — raise it first.`}
+                          onClick={() => offer(r.segment)}
+                        >
+                          Offer
+                        </Button>
+                      ) : (
+                        <span className="hm-mono">IN LINE</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      ) : null}
 
       <Dialog
         open={confirmLift}

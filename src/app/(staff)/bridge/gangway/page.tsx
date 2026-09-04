@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { StateBlock } from "@/components/ds";
-import { SETTING_LABEL, logDate, logTime } from "@/lib/format";
+import { SETTING_LABEL, logDate, logDateTime, logTime } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
-import { getOperator } from "../../data";
+import { getDoor } from "../../data";
 import { GangwayConsole, type GangwayRow } from "./gangway-client";
 import { must } from "../../staff";
 
@@ -17,18 +17,25 @@ export default async function GangwayPage({
 }: {
   searchParams: Promise<{ episode?: string }>;
 }) {
-  const { supabase } = await getOperator();
+  /* getDoor, not getOperator: this is the one Bridge screen a hired door may
+     hold. Staff see the whole board; a door sees the episodes they hold a
+     grant for and nothing else, and every action below asks the database
+     again before it stamps. */
+  const { supabase, staff, grants } = await getDoor();
   const sp = await searchParams;
 
   /* Today's departures stay on the board for 24 hours; upcoming line up after. */
   const cutoff = new Date(new Date().getTime() - 24 * 3600 * 1000).toISOString();
-  const episodesRes = await supabase
+  let episodesQuery = supabase
     .from("episodes")
     .select("*")
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
     .order("starts_at", { ascending: true });
-  const episodes = must(episodesRes);
+  /* A door's board is their grants. An empty list is filtered to nothing
+     rather than to everything — `in()` with no values matches no row. */
+  if (!staff) episodesQuery = episodesQuery.in("id", grants.map((g) => g.episode_id));
+  const episodes = must(await episodesQuery);
 
   if (episodes.length === 0) {
     return (
@@ -40,7 +47,11 @@ export default async function GangwayPage({
             status="empty"
             icon="CalendarDays"
             title="Nobody to board."
-            detail="No upcoming episodes to board. Set one on the Episodes tab."
+            detail={
+              staff
+                ? "No upcoming episodes to board. Set one on the Episodes tab."
+                : "No episode on the board for your door tonight. If that's wrong, hail Shoreside."
+            }
           />
         </div>
       </div>
@@ -48,6 +59,7 @@ export default async function GangwayPage({
   }
 
   const episode = episodes.find((v) => v.id === sp.episode) ?? episodes[0];
+  const grant = staff ? null : grants.find((g) => g.episode_id === episode.id) ?? null;
 
   const passesRes = await supabase
     .from("passes")
@@ -58,22 +70,32 @@ export default async function GangwayPage({
   const passes = must(passesRes);
 
   const profileIds = passes.map((r) => r.profile_id);
-  const profilesRes = profileIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, full_name, member_no")
-        .in("id", profileIds)
-    : { data: [] };
+  /* Names. Staff read profiles; a door is not staff, and profiles is "own
+     profile or staff", so a door reads the directory view instead — the name a
+     member has agreed other members may see. A member who opted out of the
+     directory reads as "A member" to the door, and the number stays blank:
+     that is the view's rule and it is the right one for a hired door. (A
+     definer that hands the door its own episode's names is the fix; see the
+     door role's SQL notes.) */
+  const profilesRes = !profileIds.length
+    ? { data: [] as Array<{ id: string; full_name: string | null; member_no: string | null }> }
+    : staff
+      ? await supabase.from("profiles").select("id, full_name, member_no").in("id", profileIds)
+      : await supabase.from("member_directory").select("id, full_name, member_no").in("id", profileIds);
   const profiles = new Map((must(profilesRes)).map((p) => [p.id, p]));
 
   /* Waiver standing is derived from the signature record, never from a flag on
-     the profile — one question, one answer. */
-  const waiverRes = profileIds.length
+     the profile — one question, one answer. The view is security_invoker over
+     signatures, which a door cannot read for anyone but themselves, so for a
+     door the standing is UNKNOWN — null, never false. Printing "Missing" for a
+     whole manifest the door cannot see would be a confident wrong answer; the
+     database still refuses an unsigned member at the stamp. */
+  const waiverRes = staff && profileIds.length
     ? await supabase
         .from("member_waiver_standing")
         .select("profile_id, current")
         .in("profile_id", profileIds)
-    : { data: [] };
+    : { data: [] as Array<{ profile_id: string | null; current: boolean | null }> };
   const waiverCurrent = new Map(
     (must(waiverRes)).map((w) => [w.profile_id, Boolean(w.current)])
   );
@@ -156,16 +178,19 @@ export default async function GangwayPage({
       passId: r.id,
       code: r.boarding_code ?? "",
       name: p?.full_name ?? "Unknown sailor",
-      memberNo: p?.member_no ?? "GUEST",
+      /* A door's directory read may carry no number for a listed member's
+         row; that is a member, not a guest, so it does not say GUEST. */
+      memberNo: p?.member_no ?? (staff ? "GUEST" : "MEMBER"),
       vessel: r.vessel_id ? (vesselById.get(r.vessel_id) ?? "") : "",
       guestNames: guestList.map((g) => g.name),
       guestList,
       guests: r.guests,
-      waiverSigned: waiverCurrent.get(r.profile_id) ?? false,
+      waiverSigned: staff ? (waiverCurrent.get(r.profile_id) ?? false) : null,
       checkedInAt: r.checked_in_at,
       daybed: daybedPasses.has(r.id),
       cabin: cabin?.name ?? null,
       cabinMuster: cabin?.muster ?? null,
+      standby: r.standby,
     };
   });
 
@@ -176,6 +201,15 @@ export default async function GangwayPage({
           so the aboard count ticks live). */}
       <h1 className="hm-h1">Boarding.</h1>
       <p className="hm-lede">Scan a pass or type its code.</p>
+      {/* The door's own header: which episode the grant is for and when it
+          runs out. Staff already have the Bridge around them; a door has this
+          line and the console, and nothing else to follow. */}
+      {grant ? (
+        <p className="hm-note ls-mono-data">
+          THE DOOR · {episode.title.replace(/\.+$/, "").toUpperCase()} · GRANT RUNS OUT{" "}
+          {logDateTime(grant.expires_at, episode.time_zone).toUpperCase()}
+        </p>
+      ) : null}
 
       <GangwayConsole
         episodeId={episode.id}

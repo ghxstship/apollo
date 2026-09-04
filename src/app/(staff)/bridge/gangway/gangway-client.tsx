@@ -23,7 +23,10 @@ export type GangwayRow = {
      a roster cached before this field existed still parses. */
   guestList?: { name: string; aboard: boolean }[];
   guests: number;
-  waiverSigned: boolean;
+  /* null when the operator cannot see the standing at all — a hired door reads
+     the manifest but not the signatures behind it. Unknown is not Missing: the
+     paper prints a dash, and the offline path holds rather than refuses. */
+  waiverSigned: boolean | null;
   checkedInAt: string | null;
   /* What the pass holds on the episode beyond a place aboard: a daybed claim,
      a cabin and that cabin's own muster station. Optional for the same reason
@@ -31,7 +34,16 @@ export type GangwayRow = {
   daybed?: boolean;
   cabin?: string | null;
   cabinMuster?: string | null;
+  /* Stands outside the count and boards only into a seat a no-show frees. The
+     database decides whether one has; the roster only says which passes are
+     waiting on it. */
+  standby?: boolean;
 };
+
+/* One word for the paper and the CSV. */
+function waiverWord(r: GangwayRow): string {
+  return r.waiverSigned === null ? "—" : r.waiverSigned ? "Signed" : "Missing";
+}
 
 /* One rendering of a guest set, everywhere the roster speaks: aboard guests
    marked, ashore guests plain, so the list and the paper never disagree. */
@@ -48,6 +60,7 @@ function berthLine(r: GangwayRow): string {
   const parts: string[] = [];
   if (r.cabin) parts.push(r.cabinMuster ? `${r.cabin} · muster ${r.cabinMuster}` : r.cabin);
   if (r.daybed) parts.push("DAYBED");
+  if (r.standby) parts.push("STANDBY");
   return parts.length ? parts.join(" · ") : "—";
 }
 
@@ -309,6 +322,30 @@ export function GangwayConsole({
       berth: held === "—" ? undefined : held,
     };
     if (hit.checkedInAt) return { kind: "already", ...base, time: hit.checkedInAt, queued: true };
+    /* A standby pass boards only into a seat that has come free, and only the
+       database knows whether one has. With no signal there is nothing to ask,
+       so the answer is a hold — never a queued stamp the guard will refuse
+       once the signal returns, after the person has walked aboard. */
+    if (hit.standby) {
+      return {
+        kind: "refused",
+        ...base,
+        reason:
+          "Standby pass — it boards only into a seat that has come free, and there is no signal to check for one. Hold them until it returns.",
+        queued: true,
+      };
+    }
+    /* The cached roster cannot say — a door's list carries no waiver standing.
+       Unknown is held, not refused and not boarded. */
+    if (hit.waiverSigned === null) {
+      return {
+        kind: "refused",
+        ...base,
+        reason:
+          "Waiver standing is not on this list and there is no signal to check it. Hold them until the signal returns.",
+        queued: true,
+      };
+    }
     /* The roster we are scanning against carries waiverSigned, and this path
        never looked at it — so with no signal an unsigned member read ABOARD,
        walked on, and the queued stamp was refused by the database on every
@@ -408,7 +445,7 @@ export function GangwayConsole({
         r.vessel || "—",
         berthLine(r),
         guestLine(r),
-        r.waiverSigned ? "Signed" : "Missing",
+        waiverWord(r),
       ]),
     ];
     if (muster) lines.push([], ["Muster", muster]);
@@ -636,7 +673,7 @@ export function GangwayConsole({
                       <td>{r.vessel || "—"}</td>
                       <td>{berthLine(r)}</td>
                       <td>{guestLine(r)}</td>
-                      <td>{r.waiverSigned ? "Signed" : "Missing"}</td>
+                      <td>{waiverWord(r)}</td>
                     </tr>
                   ))}
                 </tbody>

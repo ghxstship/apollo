@@ -4,7 +4,7 @@ import { Wordmark } from "@/components/ds";
 import { SURFACES } from "@/lib/brand";
 import { memberMark } from "@/lib/membership";
 import { getOperator } from "./data";
-import { HmClock, HmTabs } from "./nav";
+import { HmClock, HmRail, HmTabs } from "./nav";
 import "./bridge.css";
 
 export const metadata: Metadata = {
@@ -15,7 +15,18 @@ export const metadata: Metadata = {
 export default async function StaffLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { supabase, profile } = await getOperator();
+  const { supabase, profile, door } = await getOperator();
+
+  /* A door grant opens exactly one console — the gangway — and the layout
+     shows it nothing it cannot follow: no tabs, no rail, no way back to a
+     Home it may not have. The page itself names the episode and the expiry. */
+  if (door) {
+    return (
+      <div className="hm-shell">
+        <main id="main" className="hm-main">{children}</main>
+      </div>
+    );
+  }
 
   const [{ data: cities }, { data: keysOpen }] = await Promise.all([
     supabase.from("cities").select("name").order("position", { ascending: true }).limit(1),
@@ -45,7 +56,10 @@ export default async function StaffLayout({
         </div>
       </header>
       <HmTabs hidden={hidden} />
-      <main id="main" className="hm-main">{children}</main>
+      <div className="hm-deck">
+        <HmRail hidden={hidden} />
+        <main id="main" className="hm-main">{children}</main>
+      </div>
     </div>
   );
 }

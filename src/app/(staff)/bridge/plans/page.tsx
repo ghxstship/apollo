@@ -27,6 +27,7 @@ export default async function PlansPage() {
     priceCents: p.price_cents,
     annualCents: p.annual_price_cents,
     creditCents: p.monthly_credit_cents,
+    guestAllowance: p.guest_allowance,
     priceId: p.stripe_price_id,
     annualPriceId: p.stripe_price_id_annual,
     published: p.published,

@@ -6,6 +6,10 @@ import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Table, T
 import { useToast } from "../../ui";
 import { createTable, deleteTable } from "./actions";
 
+/* One person in a chair, with the count of prior "sit near again" picks that
+   name them — the Bridge's hint for the seating, and nothing a member sees. */
+export type Seated = { id: string; name: string; memberNo: string; again: number };
+
 export type TableRow = {
   id: string;
   number: number;
@@ -14,6 +18,7 @@ export type TableRow = {
   taken: number;
   confirmed: number;
   held: number;
+  seated: Seated[];
   [key: string]: unknown;
 };
 
@@ -73,6 +78,23 @@ export function TablesClient({
           <Badge tone="caution">Full</Badge>
         ) : (
           <Badge tone="outline">Open</Badge>
+        ),
+    },
+    {
+      key: "seated",
+      label: "Seated · sit near again",
+      render: (r: TableRow) =>
+        r.seated.length ? (
+          <span className="hm-hint">
+            {r.seated.map((p) => (
+              <span key={p.id} className="hm-mono hm-hint__row" title={`${p.name} · ${p.memberNo}`}>
+                {p.memberNo}
+                {p.again > 0 ? ` · AGAIN ×${p.again}` : ""}
+              </span>
+            ))}
+          </span>
+        ) : (
+          <span className="hm-mono">—</span>
         ),
     },
     {
@@ -136,6 +158,10 @@ export function TablesClient({
         A held seat lapses on its own in fifteen minutes. A confirmed seat is
         somebody&rsquo;s evening — the table stays until it is released from the
         member side, or the pass is struck and the seat follows it.
+      </p>
+      <p style={{ marginTop: 6, color: "var(--text-3)", fontSize: "var(--text-xs)" }}>
+        AGAIN counts the prior-night picks that name a seated member as someone to sit near
+        again. It is a hint for laying the room, not a match, and no member sees it.
       </p>
 
       <Dialog

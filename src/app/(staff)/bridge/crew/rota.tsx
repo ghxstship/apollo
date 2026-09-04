@@ -3,7 +3,7 @@
 import React from "react";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Stat, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { assignCrew, setAssignmentStatus, setEpisodeNeed } from "./actions";
+import { assignCrew, grantTheDoor, revokeTheDoor, setAssignmentStatus, setEpisodeNeed } from "./actions";
 
 export type GapRow = {
   episodeId: string;
@@ -40,6 +40,21 @@ export type BillingRow = {
   status: "offered" | "confirmed" | "declined" | "released";
 };
 
+/* A confirmed assignment on a night ahead, and whether it holds the door. */
+export type DoorRow = {
+  assignmentId: string;
+  episodeTitle: string;
+  when: string;
+  startsAt: string;
+  crewName: string;
+  positionSlug: string;
+  /* The crew row is tied to a member profile — without one there is nobody
+     for the door to recognise. */
+  linked: boolean;
+  grantId: string | null;
+  grantExpires: string | null;
+};
+
 const STATUS_TONE: Record<string, "gold" | "ink" | "positive" | "caution" | "outline"> = {
   offered: "gold",
   confirmed: "positive",
@@ -58,10 +73,12 @@ export function Rota({
   gaps,
   crew,
   billings,
+  doors,
 }: {
   gaps: GapRow[];
   crew: CrewOption[];
   billings: BillingRow[];
+  doors: DoorRow[];
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
@@ -244,6 +261,72 @@ export function Rota({
           })}
         </div>
       )}
+
+      {/* The door. A confirmed crew member can be handed the gangway for the
+          night: they read the manifest and stamp arrivals until six hours after
+          the episode ends, and nothing else. Shown for every confirmed
+          assignment ahead, with the live grant beside the name. */}
+      <section className="hm-sec">
+        <div className="hm-head">
+          <h2>The door.</h2>
+          <span className="hm-mono">
+            {doors.filter((d) => d.grantId).length} {doors.filter((d) => d.grantId).length === 1 ? "GRANT" : "GRANTS"} LIVE
+          </span>
+        </div>
+        <p className="hm-note">
+          Grant the door to a confirmed crew member and they work the gangway for that night — the
+          manifest and the stamp, nothing more. It expires on its own six hours after the episode
+          ends; revoke it sooner from here.
+        </p>
+        {doors.length === 0 ? (
+          <p className="hm-empty">Nobody is confirmed on a night ahead. Confirm an offer above and the name lands here.</p>
+        ) : (
+          <div className="hm-door">
+            {doors.map((d) => (
+              <div className="hm-door__row" key={d.assignmentId}>
+                <span className="hm-door__who">
+                  <b>{d.crewName}</b>
+                  <span className="hm-mono">
+                    {d.positionSlug.replaceAll("_", " ").toUpperCase()} · {d.episodeTitle.toUpperCase()} · {d.when.toUpperCase()}
+                  </span>
+                </span>
+                {d.grantId ? (
+                  <Badge tone="positive">Holds the door · until {d.grantExpires}</Badge>
+                ) : d.linked ? (
+                  <Badge tone="outline">No grant</Badge>
+                ) : (
+                  <Badge tone="caution">No member login</Badge>
+                )}
+                <span className="hm-door__act">
+                  {d.grantId ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={pending}
+                      onClick={() => {
+                        const id = d.grantId!;
+                        run(() => revokeTheDoor(id), () => show({ msg: `${d.crewName} no longer holds the door.`, meta: d.episodeTitle.toUpperCase(), tone: "caution" }));
+                      }}
+                    >
+                      Revoke
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={pending || !d.linked}
+                      title={d.linked ? undefined : "Link this crew member to a member profile first."}
+                      onClick={() => run(() => grantTheDoor(d.assignmentId), () => show({ msg: `${d.crewName} holds the door for ${d.episodeTitle}.`, meta: "GANGWAY · EXPIRES SIX HOURS AFTER", tone: "positive" }))}
+                    >
+                      Grant the door
+                    </Button>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <Dialog
         open={!!filling}

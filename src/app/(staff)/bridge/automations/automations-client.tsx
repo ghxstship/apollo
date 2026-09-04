@@ -21,7 +21,22 @@ export type RuleRow = {
   action: RuleAction;
   active: boolean;
   lastRunAt: string | null;
+  delayMinutes: number;
+  /* Rows of this rule waiting in automation_queue. */
+  waiting: number;
 };
+
+export type HookOption = { id: string; url: string; active: boolean };
+
+/* The hook's host is what an operator recognises; the full URL is the
+   tooltip. */
+function hookLabel(h: HookOption): string {
+  try {
+    return new URL(h.url).host + (h.active ? "" : " (off)");
+  } catch {
+    return h.url;
+  }
+}
 
 const TRIGGER_LABEL: Record<TriggerEvent, string> = {
   pass_confirmed: "A pass is confirmed",
@@ -53,20 +68,38 @@ function conditionLine(c: RuleConditions, cityLabel: (slug: string) => string): 
   return parts.length ? parts.join(" · ") : "EVERYONE";
 }
 
-function actionLine(a: RuleAction): string {
+function actionLine(a: RuleAction, hooks: HookOption[] = []): string {
   if (a.kind === "email") return `Email — ${a.template}`;
   if (a.kind === "sms") return `Text — ${a.template}`;
+  if (a.kind === "webhook") {
+    const h = hooks.find((x) => x.id === a.webhookId);
+    return `Call a webhook — ${h ? hookLabel(h) : "a hook no longer registered"}`;
+  }
   return `Send the word — ${a.title}`;
+}
+
+function delayLine(minutes: number): string {
+  if (minutes <= 0) return "AT ONCE";
+  if (minutes % 1440 === 0) return `${minutes / 1440}D AFTER`;
+  if (minutes % 60 === 0) return `${minutes / 60}H AFTER`;
+  return `${minutes} MIN AFTER`;
 }
 
 export function AutomationsClient({
   rows,
   cities,
+  webhooks,
+  waiting,
+  nextRunAt,
   smsTemplates,
   letters,
 }: {
   rows: RuleRow[];
   cities: Array<{ slug: string; label: string }>;
+  webhooks: HookOption[];
+  /* Rows waiting in automation_queue across every rule, and the soonest. */
+  waiting: number;
+  nextRunAt: string | null;
   /* Texts are template-only at the provider; the rule picks from what is
      registered rather than typing a code that will bounce on send. */
   smsTemplates: string[];
@@ -85,23 +118,30 @@ export function AutomationsClient({
   const [tier, setTier] = React.useState("");
   const [city, setCity] = React.useState("");
   const [klass, setKlass] = React.useState("");
-  const [actionKind, setActionKind] = React.useState<"notify" | "email" | "sms">("notify");
+  const [actionKind, setActionKind] = React.useState<"notify" | "email" | "sms" | "webhook">("notify");
   const [title, setTitle] = React.useState("");
   const [body, setBody] = React.useState("");
   const [template, setTemplate] = React.useState("");
+  const [hookId, setHookId] = React.useState("");
+  const [delay, setDelay] = React.useState("0");
   const [query, setQuery] = React.useState("");
 
   const cityLabel = (slug: string) => cities.find((h) => h.slug === slug)?.label ?? slug;
 
   const q = query.trim().toLowerCase();
   const shown = q
-    ? rows.filter((r) => r.name.toLowerCase().includes(q) || actionLine(r.action).toLowerCase().includes(q))
+    ? rows.filter((r) => r.name.toLowerCase().includes(q) || actionLine(r.action, webhooks).toLowerCase().includes(q))
     : rows;
   const live = rows.filter((r) => r.active).length;
 
   return (
     <>
-      <div className="hm-acts" style={{ marginTop: 20 }}>
+      <div className="hm-head hm-tabbody">
+        <span className="hm-mono">
+          {waiting} WAITING
+          {waiting > 0 && nextRunAt ? ` · NEXT ${logDateTime(nextRunAt, CLUB_ZONE).toUpperCase()}` : ""}
+          {" · THE CLOCK DRAINS THE QUEUE EVERY FIVE MINUTES"}
+        </span>
         <Button variant="gold" size="sm" onClick={() => setWriting(true)}>
           New rule
         </Button>
@@ -157,8 +197,16 @@ export function AutomationsClient({
               <span>IF {conditionLine(r.conditions, cityLabel)}</span>
               <span>·</span>
               <span>LAST RUN {r.lastRunAt ? logDateTime(r.lastRunAt, CLUB_ZONE).toUpperCase() : "NEVER"}</span>
+              <span>·</span>
+              <span>{delayLine(r.delayMinutes)}</span>
+              {r.waiting > 0 ? (
+                <>
+                  <span>·</span>
+                  <span>{r.waiting} WAITING</span>
+                </>
+              ) : null}
             </div>
-            <div className="hm-item__body">{actionLine(r.action)}</div>
+            <div className="hm-item__body">{actionLine(r.action, webhooks)}</div>
           </div>
         ))
       ) : rows.length ? (
@@ -195,7 +243,9 @@ export function AutomationsClient({
                     ? { kind: "email", template: template.trim() }
                     : actionKind === "sms"
                       ? { kind: "sms", template: template.trim() }
-                      : { kind: "notify", title: title.trim(), body: body.trim() };
+                      : actionKind === "webhook"
+                        ? { kind: "webhook", webhookId: hookId }
+                        : { kind: "notify", title: title.trim(), body: body.trim() };
                 const rule = {
                   name,
                   trigger,
@@ -205,6 +255,7 @@ export function AutomationsClient({
                     setting: klass || undefined,
                   },
                   action,
+                  delayMinutes: Number(delay) || 0,
                 };
                 startTransition(async () => {
                   const res = await createAutomation(rule);
@@ -215,6 +266,8 @@ export function AutomationsClient({
                     setTitle("");
                     setBody("");
                     setTemplate("");
+                    setHookId("");
+                    setDelay("0");
                     show({ msg: "Rule saved and live.", meta: "FIRES ON THE NEXT MATCHING EVENT" });
                   }
                 });
@@ -264,17 +317,29 @@ export function AutomationsClient({
             onChange={(e) => setKlass(e.target.value)}
             options={SETTING_OPTIONS}
           />
+          <Input
+            label="Delay"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={43200}
+            hint="Fires N minutes after the event; 0 = at once. Up to 43,200, thirty days."
+            value={delay}
+            onChange={(e) => setDelay(e.target.value)}
+          />
           <Select
             label="Then"
             value={actionKind}
             onChange={(e) => {
-              setActionKind(e.target.value as "notify" | "email" | "sms");
+              setActionKind(e.target.value as "notify" | "email" | "sms" | "webhook");
               setTemplate("");
+              setHookId("");
             }}
             options={[
               { value: "notify", label: "Send the word" },
               { value: "email", label: "Send an email" },
               { value: "sms", label: "Send a text" },
+              { value: "webhook", label: "Call a webhook" },
             ]}
           />
           {actionKind === "notify" ? (
@@ -293,6 +358,15 @@ export function AutomationsClient({
                 onChange={(e) => setBody(e.target.value)}
               />
             </>
+          ) : actionKind === "webhook" ? (
+            <Select
+              label="Webhook"
+              hint="One of the hooks on Keys. The event, the member and the episode go in the body, signed with the hook's secret."
+              placeholder={webhooks.some((h) => h.active) ? "Pick a hook" : "No live webhook registered — add one on Keys"}
+              value={hookId}
+              onChange={(e) => setHookId(e.target.value)}
+              options={webhooks.filter((h) => h.active).map((h) => ({ value: h.id, label: hookLabel(h) }))}
+            />
           ) : actionKind === "sms" ? (
             <Select
               label="Text template"

@@ -9,12 +9,17 @@ import {
   NoSailings,
   EpisodePicker,
   type QueueLine,
+  type RequestedRow,
 } from "./composition-client";
 
 export const metadata: Metadata = { title: "Composition" };
 
 interface QueueEntry {
+  id: string;
+  profile_id: string;
   segment: Segment;
+  place: number;
+  joined_at: string;
   offered_at: string | null;
   claim_expires_at: string | null;
   claimed_at: string | null;
@@ -36,7 +41,7 @@ export default async function CompositionPage({
   const episodesRes = await supabase
     .from("episodes")
     .select(
-      "id, title, starts_at, time_zone, passes_total, held_passes, status, hull_ceiling_heads, hull_certificate"
+      "id, title, starts_at, time_zone, passes_total, held_passes, status, hull_ceiling_heads, hull_certificate, by_request"
     )
     .gte("starts_at", cutoff)
     .in("status", ["scheduled", "live", "weather_hold"])
@@ -61,8 +66,9 @@ export default async function CompositionPage({
     db.from("episode_segment_capacity").select("*").eq("episode_id", episode.id),
     db
       .from("waitlist_entries")
-      .select("segment, offered_at, claim_expires_at, claimed_at, released_at")
-      .eq("episode_id", episode.id),
+      .select("id, profile_id, segment, place, joined_at, offered_at, claim_expires_at, claimed_at, released_at")
+      .eq("episode_id", episode.id)
+      .order("place", { ascending: true }),
     /* The club's certified heads, read rather than retyped: the trigger reads
        coalesce(episode.hull_ceiling_heads, club_setting('hull_ceiling_heads')),
        and the screen has to show the same figure it will be refused against. */
@@ -108,6 +114,32 @@ export default async function CompositionPage({
 
   const hull = Math.max((episode.passes_total ?? 0) - (episode.held_passes ?? 0), 0);
 
+  /* By request: the people asking, by name, in the order the line holds them.
+     Read only when the door works that way — on an ordinary night the line is
+     the counts above and nothing more. */
+  let requested: RequestedRow[] = [];
+  if (episode.by_request) {
+    const asking = entries.filter((e) => live(e) && (!e.offered_at || !running(e)));
+    const ids = [...new Set(asking.map((e) => e.profile_id))];
+    const namesRes = ids.length
+      ? await supabase.from("profiles").select("id, full_name, member_no").in("id", ids)
+      : { data: [] as Array<{ id: string; full_name: string | null; member_no: string | null }>, error: null };
+    const names = new Map(must(namesRes).map((p) => [p.id, p]));
+    /* First in each segment's line is the one offer_the_next_place reaches. */
+    const nextBySegment = new Map<Segment, string>();
+    for (const e of asking) if (!nextBySegment.has(e.segment)) nextBySegment.set(e.segment, e.id);
+    requested = asking.map((e) => ({
+      id: e.id,
+      segment: e.segment,
+      place: e.place,
+      name: names.get(e.profile_id)?.full_name ?? "A member",
+      memberNo: names.get(e.profile_id)?.member_no ?? null,
+      since: logDate(e.joined_at, episode.time_zone),
+      lapsed: !!e.offered_at,
+      next: nextBySegment.get(e.segment) === e.id,
+    }));
+  }
+
   return (
     <div>
       <span className="hm-eyebrow">Composition</span>
@@ -139,6 +171,8 @@ export default async function CompositionPage({
         clubCeiling={clubCeiling}
         rows={rows}
         lines={lines}
+        byRequest={episode.by_request}
+        requested={requested}
       />
 
       <p className="hm-note">

@@ -37,6 +37,7 @@ export async function setPlanPricing(
     published?: boolean;
     price_cents?: number;
     annual_price_cents?: number | null;
+    guest_allowance?: number;
   }
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
@@ -63,6 +64,15 @@ export async function setPlanPricing(
     clean.monthly_credit_cents = n;
   }
   if (patch.published !== undefined) clean.published = patch.published;
+
+  /* Named guests a pass on this plan may carry. The column's CHECK is 0–6;
+     the guard and the FAQ read it, so the number here is the number a member
+     is quoted. */
+  if (patch.guest_allowance !== undefined) {
+    const n = Math.round(patch.guest_allowance);
+    if (!Number.isInteger(n) || n < 0 || n > 6) return { error: "A plan carries 0 to 6 guests a pass." };
+    clean.guest_allowance = n;
+  }
 
   /* The number a member is quoted. It does not change what Stripe charges —
      that is the price object behind the id above — so the two can drift, and

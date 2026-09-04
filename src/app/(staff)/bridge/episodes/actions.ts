@@ -357,6 +357,36 @@ export async function createEpisode(input: NewEpisodeInput): Promise<ActionResul
   return done();
 }
 
+/* — The door: how a night admits. by_request means places are asked for and
+     the Bridge offers them, and the door never says a number; standby passes
+     board only into a seat a no-show frees; the age line is the one sentence
+     the card says about who the night is for. — */
+const STANDBY_MAX = 50;
+const AGE_LINE_MAX = 40;
+
+export type EpisodeDoorInput = {
+  byRequest: boolean;
+  standbyPasses: number;
+  ageLine: string;
+};
+
+export async function saveEpisodeDoor(episodeId: string, door: EpisodeDoorInput): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const standby = Math.round(Number(door.standbyPasses) || 0);
+  if (!Number.isInteger(standby) || standby < 0 || standby > STANDBY_MAX)
+    return { error: `Standby passes run 0 to ${STANDBY_MAX}.` };
+  const age = door.ageLine.trim();
+  if (age.length > AGE_LINE_MAX) return { error: `The age line runs to ${AGE_LINE_MAX} characters — one phrase, like 30s and 40s.` };
+  const { error } = await supabase
+    .from("episodes")
+    .update({ by_request: door.byRequest === true, standby_passes: standby, age_line: age || null })
+    .eq("id", episodeId);
+  if (error) return { error: programRefusal(error) };
+  revalidatePath("/bridge/composition");
+  return done();
+}
+
 export type EpisodeProgramInput = {
   series: string | null;
   /* Same standing as on a new episode: the operator's answer for an unfiled

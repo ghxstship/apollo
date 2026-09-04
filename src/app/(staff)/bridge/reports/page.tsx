@@ -170,6 +170,9 @@ export default async function ReportsPage() {
     changesRes,
     errorsRes,
     schedulerRes,
+    cohortsRes,
+    funnelRes,
+    valueRes,
   ] = await Promise.all([
     supabase.from("profiles").select("status, joined_at"),
     supabase.from("episodes").select("id, title, distance_nm, kind, status, starts_at"),
@@ -273,7 +276,61 @@ export default async function ReportsPage() {
     /* The last fifty answers the drains gave pg_net. A quiet 200 is the norm;
        207 and 503 are the two the drains use to say something is wrong. */
     supabase.rpc("scheduler_health", { p_limit: 50 }),
+    /* Three views added 2026-09-04. Cohorts by the month joined; the
+       application funnel by stage; and what each member has paid, from which
+       the dues-per-member figures below are read. */
+    supabase.from("membership_cohorts").select("*").order("cohort", { ascending: false }).limit(24),
+    supabase.from("application_funnel").select("*"),
+    supabase.from("member_value").select("profile_id, dues_cents, spend_cents"),
   ]);
+
+  /* Cohorts. Lapsed is held for dues; the percentage is of the cohort. */
+  const cohorts = must(cohortsRes)
+    .filter((c) => c.cohort)
+    .map((c) => {
+      const joined = c.joined ?? 0;
+      const lapsed = c.lapsed ?? 0;
+      return {
+        cohort: c.cohort as string,
+        joined,
+        activeNow: c.active_now ?? 0,
+        lapsed,
+        lapsedPct: joined ? Math.round((lapsed / joined) * 100) : 0,
+        paused: c.paused ?? 0,
+        departed: c.departed ?? 0,
+      };
+    });
+
+  /* The funnel, in the order an application moves. */
+  const FUNNEL_ORDER = ["received", "review", "invited", "aboard", "declined"];
+  const FUNNEL_LABEL: Record<string, string> = {
+    received: "Received",
+    review: "In review",
+    invited: "Invited ashore",
+    aboard: "Aboard",
+    declined: "Declined",
+  };
+  const funnelRows = must(funnelRes)
+    .filter((f) => f.stage)
+    .sort((a, b) => FUNNEL_ORDER.indexOf(a.stage as string) - FUNNEL_ORDER.indexOf(b.stage as string));
+  const funnelTotal = funnelRows.reduce((n, f) => n + (f.applicants ?? 0), 0);
+
+  /* Dues per member, from member_value: one row per member who has ever been
+     charged. Mean is the sum over those members; the median is the middle
+     member's figure. Neither is a lifetime value — it is what has been paid to
+     date by people who have paid anything, and it is labelled as that. */
+  const duesFigures = must(valueRes)
+    .map((v) => v.dues_cents ?? 0)
+    .sort((a, b) => a - b);
+  const payers = duesFigures.filter((n) => n > 0);
+  const meanDues = payers.length ? Math.round(payers.reduce((n, v) => n + v, 0) / payers.length) : 0;
+  const medianDues = payers.length
+    ? payers.length % 2
+      ? payers[(payers.length - 1) / 2]
+      : Math.round((payers[payers.length / 2 - 1] + payers[payers.length / 2]) / 2)
+    : 0;
+  const spendTotal = must(valueRes).reduce((n, v) => n + (v.spend_cents ?? 0), 0);
+  const chargedMembers = duesFigures.length;
 
   /* Members */
   const profiles = must(profilesRes);
@@ -756,6 +813,87 @@ export default async function ReportsPage() {
             sub={`${installments.length} PLANS RUNNING`}
           />
         </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>Dues per member, to date.</h2>
+        <p className="hm-note">
+          What members who have paid any dues have paid so far — not a lifetime figure, since most
+          of them are still paying. Median is the middle member; mean is the sum over paying
+          members. Spend is passes, deposits, add-ons, galley and shop, across every charged member.
+        </p>
+        <div className="hm-row">
+          <Stat label="Median dues paid" value={medianDues ? price(medianDues) : "$0"} sub={`PER PAYING MEMBER · ${payers.length} HAVE PAID DUES`} />
+          <Stat label="Mean dues paid" value={meanDues ? price(meanDues) : "$0"} sub="PER PAYING MEMBER · TO DATE" />
+          <Stat label="Spend beyond dues" value={spendTotal ? price(spendTotal) : "$0"} sub={`ACROSS ${chargedMembers} CHARGED MEMBERS`} />
+        </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>Cohorts.</h2>
+        <p className="hm-note">
+          Members by the month they joined, and where each month stands now. Lapsed is held for dues
+          — the recoverable kind — as a share of the cohort.
+        </p>
+        {cohorts.length === 0 ? (
+          <p className="hm-empty">Nobody on the roll yet.</p>
+        ) : (
+          <div className="hm-panel">
+            <Table
+              rowKey={(r: (typeof cohorts)[number]) => r.cohort}
+              minWidth={560}
+              columns={[
+                { key: "cohort", label: "Joined", mono: true, width: 120, render: (r) => r.cohort.slice(0, 7) },
+                { key: "joined", label: "Joined", mono: true, align: "end", width: 90 },
+                { key: "activeNow", label: "Active now", mono: true, align: "end", width: 110 },
+                {
+                  key: "lapsedPct",
+                  label: "Lapsed",
+                  mono: true,
+                  align: "end",
+                  width: 120,
+                  render: (r) => (
+                    <span className={r.lapsedPct >= 25 ? "hm-recon__due" : undefined}>
+                      {r.lapsed} · {r.lapsedPct}%
+                    </span>
+                  ),
+                },
+                { key: "paused", label: "Paused", mono: true, align: "end", width: 90 },
+                { key: "departed", label: "Departed", mono: true, align: "end", width: 100 },
+              ]}
+              rows={cohorts}
+            />
+          </div>
+        )}
+      </section>
+
+      <section className="hm-sec">
+        <h2>The application funnel.</h2>
+        <p className="hm-note">
+          Every application ever filed, by the stage it stands at, with this year&apos;s beside it.
+          A stage is where an application IS, so the rows sum to the whole and not to a flow.
+        </p>
+        {funnelRows.length === 0 ? (
+          <p className="hm-empty">No applications on file.</p>
+        ) : (
+          <div className="hm-funnel">
+            {funnelRows.map((f) => {
+              const n = f.applicants ?? 0;
+              const pct = funnelTotal ? Math.round((n / funnelTotal) * 100) : 0;
+              return (
+                <div className="hm-funnel__row" key={f.stage}>
+                  <span className="hm-funnel__stage">{FUNNEL_LABEL[f.stage as string] ?? f.stage}</span>
+                  <span className="hm-funnel__bar" aria-hidden="true">
+                    <span className="hm-funnel__fill" style={{ width: `${pct}%` }} />
+                  </span>
+                  <span className="hm-mono hm-funnel__n">
+                    {n} · {pct}% · {f.this_year ?? 0} THIS YEAR
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section className="hm-sec">

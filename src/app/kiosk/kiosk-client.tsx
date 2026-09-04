@@ -7,6 +7,7 @@ import { GANGWAY_QUEUE_KEY } from "@/lib/device-storage";
 import { isUnanswered } from "@/lib/staff-errors";
 import { CameraScanner } from "../(staff)/bridge/gangway/camera-scanner";
 import { gangwayCheckIn, gangwayFlush, type ScanResult } from "../(staff)/bridge/gangway/actions";
+import { ERR_DOOR } from "../(staff)/bridge/gangway/door-errors";
 
 /* Three screens, kit-faithful: Scan (animated scanline lives in the camera
    component), Confirm, Help. The kiosk never shows the roster — one person's
@@ -27,7 +28,9 @@ export type KioskPass = {
   episodeId: string;
   code: string;
   name: string;
-  waiverSigned: boolean;
+  /* null when the device's operator cannot see the standing — a hired door
+     reads the manifest, not the signatures. Unknown holds; it never refuses. */
+  waiverSigned: boolean | null;
   checkedInAt: string | null;
 };
 
@@ -195,6 +198,10 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
       if (hit.checkedInAt) {
         return { kind: "confirm", result: { outcome: "already", name: hit.name }, queued: true };
       }
+      /* A door's manifest carries no waiver standing. With no signal there is
+         nothing to ask, so this is "we cannot check that" — the machine's
+         limit, not a refusal of the pass. */
+      if (hit.waiverSigned === null) return { kind: "unreachable" };
       /* Nobody boards unsigned, signal or no signal — the gangway's rule. */
       if (!hit.waiverSigned) {
         return {
@@ -303,7 +310,9 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
        refusal and a pass for an episode that has already gone also arrive with
        no outcome and no name, and both of those ARE answers the member needs
        to hear. Only the two generic errors are silence. */
-    const cannotSay = isUnanswered(r.error);
+    /* ERR_DOOR is the same kind of silence as ERR_STAFF: the device's own
+       session has no door tonight, which is a fact about the device. */
+    const cannotSay = isUnanswered(r.error) || r.error === ERR_DOOR;
     const refused = !cannotSay && (Boolean(r.error) || r.outcome === "not_found");
     if (cannotSay) {
       return (
@@ -340,7 +349,7 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
               <p className="kio-mono">WITH {r.guestNames.join(" · ").toUpperCase()}</p>
             ) : null}
             {screen.queued ? (
-              <p className="kio-mono">RECORDED — SYNCS WHEN THE SIGNAL RETURNS</p>
+              <p className="kio-mono">RECORDED — LANDS WHEN THE SIGNAL RETURNS</p>
             ) : null}
           </>
         )}
@@ -360,7 +369,7 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
       <p className="kio-mono">MEMBER CARD OR BOARDING STUB · THE CAMERAS ARE ON</p>
       {queuedCount > 0 ? (
         <p className="kio-mono">
-          {queuedCount} RECORDED OFFLINE · SYNCS WHEN THE SIGNAL RETURNS
+          {queuedCount} RECORDED OFFLINE · LANDS WHEN THE SIGNAL RETURNS
         </p>
       ) : null}
       {needsCrew > 0 ? (

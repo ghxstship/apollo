@@ -10,6 +10,8 @@ import {
   salonInvite,
 } from "./actions";
 
+export type Answer = { key: string; prompt: string; answer: string };
+
 export type AppRow = {
   id: string;
   name: string;
@@ -20,6 +22,11 @@ export type AppRow = {
   inviteCode: string;
   created: string;
   status: "received" | "review" | "invited" | "aboard" | "declined";
+  /* What they wrote at the door: the free note, who proposed them, and the
+     answers to the Bridge's own questions, each under its prompt. */
+  note: string;
+  proposer: string;
+  answers: Answer[];
   [key: string]: unknown;
 };
 
@@ -44,6 +51,8 @@ type Confirm = { app: AppRow; mode: "accept" | "decline" } | null;
 export function AppsClient({ apps }: { apps: AppRow[] }) {
   const [pending, startTransition] = React.useTransition();
   const [confirm, setConfirm] = React.useState<Confirm>(null);
+  /* The drawer: one application, read in full. Opens on the row. */
+  const [reading, setReading] = React.useState<AppRow | null>(null);
   const { toast, show, clear } = useToast();
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<"all" | AppRow["status"]>("all");
@@ -103,7 +112,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       key: "act",
       label: "",
       render: (a: AppRow) => (
-        <span className="hm-acts" style={{ justifyContent: "flex-end" }}>
+        <span className="hm-acts" style={{ justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
           {a.status === "received" ? (
             <Button
               variant="outline"
@@ -198,7 +207,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
           underneath it. Nothing to show means no table. */}
       {shown.length ? (
         <div className="hm-panel">
-          <Table rowKey={(a: AppRow) => a.id} columns={columns} rows={shown} />
+          <Table rowKey={(a: AppRow) => a.id} columns={columns} rows={shown} onRowClick={setReading} />
         </div>
       ) : apps.length ? (
         <div style={{ marginTop: 20 }}>
@@ -213,6 +222,52 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
           />
         </div>
       )}
+
+      <Dialog
+        open={!!reading}
+        onClose={() => setReading(null)}
+        width={560}
+        eyebrow={reading ? reading.email.toUpperCase() : ""}
+        title={reading ? reading.name : ""}
+      >
+        {reading ? (
+          <div className="hm-form">
+            <div className="hm-item__meta">
+              <span>{reading.city ? reading.city.toUpperCase() : "NO CITY"}</span>
+              <span>·</span>
+              <span>{reading.tier.toUpperCase()}</span>
+              <span>·</span>
+              <span>APPLIED {reading.created.toUpperCase()}</span>
+              {reading.inviteCode ? (
+                <>
+                  <span>·</span>
+                  <span>INVITE {reading.inviteCode.toUpperCase()}</span>
+                </>
+              ) : null}
+            </div>
+            <div>
+              <span className="hm-mono">PROPOSED BY</span>
+              <p className="hm-body hm-answer">{reading.proposer || "Nobody named."}</p>
+            </div>
+            {reading.answers.length ? (
+              reading.answers.map((a) => (
+                <div key={a.key}>
+                  <span className="hm-mono">{a.prompt.toUpperCase()}</span>
+                  <p className="hm-body hm-answer">{a.answer}</p>
+                </div>
+              ))
+            ) : (
+              <p className="hm-note">No answers on file — the application predates the questions, or none were asked.</p>
+            )}
+            {reading.note ? (
+              <div>
+                <span className="hm-mono">IN THEIR OWN WORDS</span>
+                <p className="hm-body hm-answer">{reading.note}</p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </Dialog>
 
       <Dialog
         open={confirm?.mode === "accept"}

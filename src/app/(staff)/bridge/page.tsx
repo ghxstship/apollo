@@ -4,7 +4,7 @@ import { Badge, Stat, StateBlock, Table } from "@/components/ds";
 import { TIER_LABEL, logDateTime } from "@/lib/format";
 import { memberMark } from "@/lib/membership";
 import { getOperator } from "../data";
-import { AppsClient, type AppRow } from "./apps-client";
+import { AppsClient, type AppRow, type Answer } from "./apps-client";
 import { must } from "../staff";
 
 export const metadata: Metadata = { title: "Applications" };
@@ -22,13 +22,33 @@ type RollRow = {
 export default async function ApplicationsPage() {
   const { supabase } = await getOperator();
 
-  const [appsRes, rollRes] = await Promise.all([
+  const [appsRes, rollRes, questionsRes] = await Promise.all([
     supabase.from("applications").select("*").order("created_at", { ascending: false }),
     supabase.from("member_roll").select("*").order("created_at", { ascending: false }),
+    /* Every question, live or not: an answer filed under a question since
+       switched off still reads under its prompt. */
+    supabase.from("application_questions").select("key, prompt, position").order("position", { ascending: true }),
   ]);
 
   const applications = must(appsRes);
   const roll = must(rollRes);
+  const questions = must(questionsRes);
+
+  /* The answers, joined to their prompts in question order. An answer whose key
+     no longer has a question reads under the key itself rather than vanishing. */
+  const readAnswers = (raw: unknown): Answer[] => {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+    const o = raw as Record<string, unknown>;
+    const line = (v: unknown) => (Array.isArray(v) ? v.map(String).join(", ") : v == null ? "" : String(v));
+    const out: Answer[] = questions
+      .filter((q) => q.key in o && line(o[q.key]).trim() !== "")
+      .map((q) => ({ key: q.key, prompt: q.prompt, answer: line(o[q.key]) }));
+    for (const key of Object.keys(o)) {
+      if (!questions.some((q) => q.key === key) && line(o[key]).trim() !== "")
+        out.push({ key, prompt: key.replaceAll("_", " "), answer: line(o[key]) });
+    }
+    return out;
+  };
 
   const rollEmails = roll.map((r) => r.email);
   const joinedProfilesRes = rollEmails.length
@@ -50,6 +70,9 @@ export default async function ApplicationsPage() {
     inviteCode: a.invite_code ?? "",
     created: logDateTime(a.created_at, CLUB_ZONE),
     status: a.status,
+    note: a.note ?? "",
+    proposer: a.proposer ?? "",
+    answers: readAnswers(a.answers),
   }));
 
   const openCount = apps.filter((a) => a.status === "received" || a.status === "review").length;

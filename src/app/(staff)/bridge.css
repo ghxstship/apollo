@@ -350,7 +350,7 @@
 .hm-plan__head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .hm-plan__head b{font-size:var(--text-sm)}
 .hm-plan__holders{margin-inline-start:auto;color:var(--text-3)}
-.hm-plan__ids{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px;align-items:end;margin-top:12px}
+.hm-plan__ids{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:12px;align-items:end;margin-top:12px}
 @media (max-width:860px){.hm-plan__ids{grid-template-columns:1fr}}
 
 /* Reconciliation. Exceptions only, so the list is short by design and each row
@@ -391,3 +391,25 @@
 /* A night's own headcount for a post, inline with the row's actions. */
 .hm-need{display:inline-flex;align-items:end;gap:6px}
 .hm-need input{width:64px}
+
+/* — the rail —
+   Forty-odd links in one hidden-scrollbar row hid most of the console on the
+   very screens that have room to show it. From 1280px the five groups stand
+   in a left rail, each under its name, and the strip steps aside; below that
+   the strip is the nav and the rail does not exist. One or the other, never
+   both — the same links twice would be two tab stops for every section. */
+.hm-deck{flex:1;display:flex;flex-direction:column;width:100%}
+.hm-rail{display:none}
+@media (min-width:1280px){
+  .hm-tabs{display:none}
+  .hm-deck{display:grid;grid-template-columns:200px minmax(0,1fr);max-width:1480px;margin-inline:auto;align-items:start}
+  .hm-rail{display:block;position:sticky;top:0;max-height:100vh;max-height:100dvh;overflow-y:auto;scrollbar-width:none;border-inline-end:1px solid var(--line-faint);padding:22px 0 40px 28px}
+  .hm-rail::-webkit-scrollbar{display:none}
+  .hm-rail__in{display:flex;flex-direction:column;gap:22px}
+  .hm-rail__group{display:flex;flex-direction:column;gap:1px}
+  .hm-rail__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);padding:0 12px 8px}
+  .hm-rail__group a{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:8px 12px;border-inline-start:2px solid transparent;transition:color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
+  .hm-rail__group a:hover{color:var(--text-1);background:var(--wash-ink)}
+  .hm-rail__group a[aria-current="page"]{color:var(--text-1);border-inline-start-color:var(--neon-cyan);background:var(--wash-ink)}
+  .hm-main{max-width:none;margin-inline:0}
+}

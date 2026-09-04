@@ -158,3 +158,61 @@ export async function setAssignmentStatus(
   if (error) return { error: ERR_LAND };
   return done();
 }
+
+/* — The door grant. A crew member on a confirmed assignment can be handed the
+     gangway for that one night: they read the manifest and stamp arrivals, and
+     nothing else. The grant expires six hours after the episode ends — or, for
+     a night with no end on the books, six hours after start plus eight. The
+     crew row has to be tied to a member profile; a name with no login has
+     nothing for the door to check. — */
+
+const UUID = /^[0-9a-f-]{36}$/;
+
+export async function grantTheDoor(assignmentId: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(assignmentId)) return { error: ERR_LAND };
+
+  const { data: a } = await supabase
+    .from("crew_assignments")
+    .select("episode_id, crew_id, status")
+    .eq("id", assignmentId)
+    .maybeSingle();
+  if (!a) return { error: "No such assignment on the rota." };
+  if (a.status !== "confirmed") return { error: "The door goes with a confirmed assignment — an offer is not cover." };
+
+  const [{ data: crew }, { data: episode }] = await Promise.all([
+    supabase.from("crew").select("profile_id, display_name").eq("id", a.crew_id).maybeSingle(),
+    supabase.from("episodes").select("starts_at, ends_at").eq("id", a.episode_id).maybeSingle(),
+  ]);
+  if (!crew) return { error: "That crew member is off the list." };
+  if (!crew.profile_id) return { error: `${crew.display_name} has no member login to hand the door to — link their profile on the crew list first.` };
+  if (!episode) return { error: "That episode is not on the board." };
+
+  const endMs = episode.ends_at
+    ? new Date(episode.ends_at).getTime()
+    : new Date(episode.starts_at).getTime() + 8 * 3_600_000;
+  const expiresAt = new Date(endMs + 6 * 3_600_000).toISOString();
+
+  const { error } = await supabase
+    .from("door_grants")
+    .upsert(
+      { profile_id: crew.profile_id, episode_id: a.episode_id, granted_by: staffId, expires_at: expiresAt },
+      { onConflict: "profile_id,episode_id" }
+    );
+  if (error) return { error: ERR_LAND };
+  revalidatePath("/bridge/crew");
+  revalidatePath("/bridge/gangway");
+  return {};
+}
+
+export async function revokeTheDoor(grantId: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(grantId)) return { error: ERR_LAND };
+  const { error } = await supabase.from("door_grants").delete().eq("id", grantId);
+  if (error) return { error: ERR_LAND };
+  revalidatePath("/bridge/crew");
+  revalidatePath("/bridge/gangway");
+  return {};
+}

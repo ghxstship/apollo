@@ -2,12 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
-import { Badge, Button, Checkbox, Dialog, FilterPills, Input, ListToolbar, Select, StateBlock, Table, Toast, type ToolbarChip } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, FilterPills, Input, ListToolbar, Select, StateBlock, Table, Textarea, Toast, type ToolbarChip } from "@/components/ds";
 import { CLUB_ZONE, LEAGUES, PLACE, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
 import {
   adjustKnots,
+  bulkAdjustKnots,
+  bulkSetStatus,
+  bulkWord,
+  compDues,
   loadMember,
   removeSegment,
   saveSegment,
@@ -159,6 +163,19 @@ export function MembersClient({
   const [verifying, setVerifying] = React.useState(false);
   const [knotDelta, setKnotDelta] = React.useState("");
   const [knotReason, setKnotReason] = React.useState("");
+  /* Comp dues: a date and, if the member has none, a plan. */
+  const [comping, setComping] = React.useState(false);
+  const [compUntil, setCompUntil] = React.useState("");
+  const [compPlan, setCompPlan] = React.useState("");
+  /* The selection — ids, never rows, so a filter change cannot strand a stale
+     copy. What is acted on is the selection AS SHOWN: ticking twenty, then
+     narrowing to five, acts on five. */
+  const [selected, setSelected] = React.useState<Set<string>>(() => new Set());
+  const [bulk, setBulk] = React.useState<"hold" | "lift" | "knots" | "word" | null>(null);
+  const [bulkDelta, setBulkDelta] = React.useState("");
+  const [bulkReason, setBulkReason] = React.useState("");
+  const [bulkTitle, setBulkTitle] = React.useState("");
+  const [bulkBody, setBulkBody] = React.useState("");
 
   const set = <K extends keyof SegmentFilters>(key: K, value: SegmentFilters[K]) => {
     setF((prev) => ({ ...prev, [key]: value }));
@@ -192,6 +209,43 @@ export function MembersClient({
     });
   }, [rows, f, recentCutoff]);
 
+  const chosen = filtered.filter((r) => selected.has(r.id));
+  const allShown = filtered.length > 0 && filtered.every((r) => selected.has(r.id));
+  const toggleAllShown = () =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allShown) filtered.forEach((r) => next.delete(r.id));
+      else filtered.forEach((r) => next.add(r.id));
+      return next;
+    });
+  const toggleOne = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const runBulk = (fn: (ids: string[]) => Promise<{ error?: string; note?: string; landed?: number; failed?: number }>, verb: string) => {
+    const ids = chosen.map((r) => r.id);
+    setBulk(null);
+    startTransition(async () => {
+      const res = await fn(ids);
+      if (res.error) {
+        show({ msg: res.error, tone: "danger" });
+        return;
+      }
+      const landed = res.landed ?? ids.length;
+      const failed = res.failed ?? 0;
+      show({
+        msg: res.note ?? (failed ? `${verb} for ${landed}; ${failed} did not land.` : `${verb} for ${landed}.`),
+        meta: `${landed} OF ${ids.length} MEMBERS`,
+        tone: res.note || failed ? "caution" : "positive",
+      });
+      if (!failed) setSelected(new Set());
+    });
+  };
+
   const applySegment = (id: string) => {
     setSegmentId(id);
     const seg = segments.find((s) => s.id === id);
@@ -224,6 +278,23 @@ export function MembersClient({
   };
 
   const columns = [
+    {
+      key: "pick",
+      label: <span className="ls-visually-hidden">Selected</span>,
+      width: 36,
+      /* A tick inside a clickable row: the click stops here so it does not
+         also open the drawer. Enter/Space on the row itself still opens it. */
+      render: (r: MemberRow) => (
+        <span className="hm-pick" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            aria-label={`Select ${r.name}`}
+            checked={selected.has(r.id)}
+            onChange={() => toggleOne(r.id)}
+          />
+        </span>
+      ),
+    },
     {
       key: "name",
       label: "Member",
@@ -394,12 +465,43 @@ export function MembersClient({
             <Button variant="ghost" size="sm" disabled={!filtered.length} onClick={exportCsv}>
               Export CSV
             </Button>
+            <Button variant="ghost" size="sm" disabled={!filtered.length} onClick={toggleAllShown}>
+              {allShown ? "Clear selection" : "Select all shown"}
+            </Button>
           </>
         }
         resultCount={filtered.length}
         resultNoun="member"
         countSuffix={` of ${rows.length} on the roll`}
       />
+
+      {/* The bulk bar. It exists only while something is ticked, and every
+          button on it names the count before it asks. */}
+      {chosen.length ? (
+        <div className="hm-bulk" role="region" aria-label="Selected members">
+          <span className="hm-mono">
+            {chosen.length} {chosen.length === 1 ? "MEMBER" : "MEMBERS"} SELECTED
+            {selected.size > chosen.length ? ` · ${selected.size - chosen.length} MORE OUTSIDE THIS FILTER` : ""}
+          </span>
+          <span className="hm-acts">
+            <Button variant="outline" size="sm" disabled={pending} onClick={() => setBulk("hold")}>
+              Hold
+            </Button>
+            <Button variant="outline" size="sm" disabled={pending} onClick={() => setBulk("lift")}>
+              Lift hold
+            </Button>
+            <Button variant="outline" size="sm" disabled={pending} onClick={() => { setBulkDelta(""); setBulkReason(""); setBulk("knots"); }}>
+              Adjust knots
+            </Button>
+            <Button variant="outline" size="sm" disabled={pending} onClick={() => { setBulkTitle(""); setBulkBody(""); setBulk("word"); }}>
+              Send a word
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </span>
+        </div>
+      ) : null}
 
       {filtered.length ? (
         <div className="hm-panel">
@@ -505,6 +607,12 @@ export function MembersClient({
                 <br />
                 House account: {detail.balanceCents ? price(Math.abs(detail.balanceCents)) : "Complimentary"}
                 {detail.balanceCents < 0 ? " owing" : " on hand"}
+                {detail.compedUntil ? (
+                  <>
+                    <br />
+                    <Badge tone="gold">Complimentary until {logDate(detail.compedUntil, null)}</Badge>
+                  </>
+                ) : null}
               </p>
             </div>
             <div>
@@ -560,6 +668,18 @@ export function MembersClient({
               </Button>
               <Button size="sm" variant="outline" disabled={pending} onClick={() => setAdjusting(true)}>
                 Correct knots
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={() => {
+                  setCompUntil(detail.compedUntil ?? "");
+                  setCompPlan(detail.planId ?? "");
+                  setComping(true);
+                }}
+              >
+                {detail.compedUntil ? "Change the comp" : "Comp dues"}
               </Button>
               {!detail.phoneVerified ? (
                 <Button size="sm" variant="outline" disabled={pending} onClick={() => setVerifying(true)}>
@@ -759,6 +879,159 @@ export function MembersClient({
           their number later, the flag drops on its own and it is verified
           again from here.
         </p>
+      </Dialog>
+
+      <Dialog
+        open={comping}
+        onClose={() => setComping(false)}
+        width={420}
+        eyebrow={detail ? detail.name : ""}
+        title="Complimentary dues."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setComping(false)}>
+              Not now
+            </Button>
+            <Button
+              variant="gold"
+              disabled={pending}
+              onClick={() => {
+                const row = openRow;
+                if (!row) return;
+                const until = compUntil.trim() || null;
+                const plan = compPlan || null;
+                startTransition(async () => {
+                  const res = await compDues(row.id, until, plan);
+                  if (res.error) {
+                    show({ msg: res.error, tone: "danger" });
+                    return;
+                  }
+                  setComping(false);
+                  setDetail((d) =>
+                    d
+                      ? {
+                          ...d,
+                          compedUntil: until,
+                          planId: plan ?? d.planId,
+                          planLine: plan ? (plans.find((p) => p.id === plan)?.label ?? d.planLine) : d.planLine,
+                        }
+                      : d
+                  );
+                  show({
+                    msg: until ? `Complimentary until ${logDate(until, null)}.` : "Comp cleared. Dues run as the plan says.",
+                    meta: row.name.toUpperCase(),
+                    tone: "positive",
+                  });
+                });
+              }}
+            >
+              {compUntil.trim() ? "Comp it" : "Clear the comp"}
+            </Button>
+          </>
+        }
+      >
+        <div className="hm-form">
+          <p className="hm-body">
+            The plan stands and nothing is charged until the date. Blank clears it and dues run again
+            from the next period.
+          </p>
+          <Input
+            label="Complimentary until"
+            type="date"
+            value={compUntil}
+            onChange={(e) => setCompUntil(e.target.value)}
+          />
+          <Select
+            label="Plan"
+            hint={detail?.planId ? "Already on a plan; change it only if the comp is for a different tier." : "No plan on file — a comp needs one to stand on."}
+            value={compPlan}
+            onChange={(e) => setCompPlan(e.target.value)}
+            options={[{ value: "", label: detail?.planId ? "Keep the plan" : "No plan" }, ...plans.map((p) => ({ value: p.id, label: p.label }))]}
+          />
+        </div>
+      </Dialog>
+
+      {/* — Bulk confirmations. Each names the count in its title. — */}
+      <Dialog
+        open={bulk === "hold" || bulk === "lift"}
+        onClose={() => setBulk(null)}
+        width={420}
+        eyebrow={`${chosen.length} ${chosen.length === 1 ? "member" : "members"}`}
+        title={bulk === "hold" ? `Pause ${chosen.length} ${chosen.length === 1 ? "membership" : "memberships"}?` : `Lift the hold on ${chosen.length}?`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setBulk(null)}>
+              Not now
+            </Button>
+            <Button
+              variant={bulk === "hold" ? "danger" : "gold"}
+              disabled={pending}
+              onClick={() => runBulk((ids) => bulkSetStatus(ids, bulk === "hold" ? "paused" : "active"), bulk === "hold" ? "Paused" : "Running again")}
+            >
+              {bulk === "hold" ? "Pause them" : "Lift it"}
+            </Button>
+          </>
+        }
+      >
+        <p className="hm-body">
+          {bulk === "hold"
+            ? "Booking, posting and contests stop for each of them until it resumes, and their dues pause with it. Each member is told."
+            : "Booking, posting and contests open back up for each of them, dues resume, and each member is told. Anyone already active is unchanged."}
+        </p>
+      </Dialog>
+
+      <Dialog
+        open={bulk === "knots"}
+        onClose={() => setBulk(null)}
+        width={420}
+        eyebrow={`${chosen.length} ${chosen.length === 1 ? "member" : "members"}`}
+        title={`Post the same knots to ${chosen.length}?`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setBulk(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="gold"
+              disabled={pending}
+              onClick={() => runBulk((ids) => bulkAdjustKnots(ids, Number(bulkDelta), bulkReason), "Posted to the ledger")}
+            >
+              Post it to {chosen.length}
+            </Button>
+          </>
+        }
+      >
+        <div className="hm-form">
+          <Input label="Knots" type="number" hint="Negative claws back. Never zero. The same figure lands on every ledger." value={bulkDelta} onChange={(e) => setBulkDelta(e.target.value)} />
+          <Input label="Reason" hint="Each member reads this on their ledger." value={bulkReason} onChange={(e) => setBulkReason(e.target.value)} />
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={bulk === "word"}
+        onClose={() => setBulk(null)}
+        width={460}
+        eyebrow={`${chosen.length} ${chosen.length === 1 ? "member" : "members"}`}
+        title={`Send a word to ${chosen.length}?`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setBulk(null)}>
+              Not yet
+            </Button>
+            <Button variant="gold" disabled={pending} onClick={() => runBulk((ids) => bulkWord(ids, bulkTitle, bulkBody), "Said")}>
+              Say it to {chosen.length}
+            </Button>
+          </>
+        }
+      >
+        <div className="hm-form">
+          <Input label="Title" maxLength={120} placeholder="A word about Saturday." value={bulkTitle} onChange={(e) => setBulkTitle(e.target.value)} />
+          <Textarea label="The word" rows={4} maxLength={600} value={bulkBody} onChange={(e) => setBulkBody(e.target.value)} />
+          <p className="hm-note">
+            One notice each, in the app. Not a broadcast — nothing goes by email from here, and it
+            is not kept on the Broadcast log.
+          </p>
+        </div>
       </Dialog>
 
       {toast ? (

@@ -29,9 +29,13 @@ export default async function BroadcastPage() {
     id: b.id,
     title: b.title,
     audience: describe(b.audience as Record<string, string>, must(citiesRes), must(episodesRes)),
-    channels: b.channels.join(" + "),
+    channels: b.channels.map((c) => (c === "sms" ? "text" : c)).join(" + "),
     recipients: b.recipients,
     when: logDateTime(b.created_at, CLUB_ZONE),
+    status: b.status,
+    /* The hour it went, or is to go. Null on a word said at once before the
+       column existed. */
+    sendAt: b.send_at ? logDateTime(b.send_at, CLUB_ZONE) : null,
   }));
 
   return (
@@ -39,9 +43,9 @@ export default async function BroadcastPage() {
       <span className="hm-eyebrow">Broadcast</span>
       <h1 className="hm-h1">A word to everyone it concerns.</h1>
       <p className="hm-lede">
-        Pick who, say it once. A notice lands in the app and, if you choose, in the
-        post as a letter from the Bridge. Every send is kept below with who it
-        reached, so nobody wonders whether the venue change went out.
+        Pick who, say it once — now, or at an hour you name. A notice lands in the
+        app and, if you choose, by email, push or text. Every send is kept below
+        with who it reached, so nobody wonders whether the venue change went out.
       </p>
       <BroadcastClient
         cities={must(citiesRes).map((c) => ({ value: c.id, label: c.name }))}

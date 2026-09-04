@@ -13,6 +13,8 @@ export type PlanRow = {
   priceCents: number;
   annualCents: number | null;
   creditCents: number;
+  /* Named guests a pass may carry, 0–6. */
+  guestAllowance: number;
   priceId: string | null;
   annualPriceId: string | null;
   published: boolean;
@@ -29,12 +31,12 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
   const { toast, show, clear } = useToast();
   const dollars = (cents: number | null) => (cents == null ? "" : (cents / 100).toFixed(2));
   const [draft, setDraft] = React.useState<
-    Record<string, { m: string; y: string; price: string; annual: string }>
+    Record<string, { m: string; y: string; price: string; annual: string; guests: string }>
   >(() =>
     Object.fromEntries(
       plans.map((p) => [
         p.id,
-        { m: p.priceId ?? "", y: p.annualPriceId ?? "", price: dollars(p.priceCents), annual: dollars(p.annualCents) },
+        { m: p.priceId ?? "", y: p.annualPriceId ?? "", price: dollars(p.priceCents), annual: dollars(p.annualCents), guests: String(p.guestAllowance) },
       ])
     )
   );
@@ -44,6 +46,8 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
     const priceCents = Math.round(Number(d.price) * 100);
     const annualCents = d.annual.trim() === "" ? null : Math.round(Number(d.annual) * 100);
     const priceMoved = priceCents !== p.priceCents || annualCents !== p.annualCents;
+    const guests = Math.round(Number(d.guests));
+    const guestsMoved = guests !== p.guestAllowance;
     /* The displayed price and the Stripe price are two different records. Say
        so at the moment they are about to diverge, not on the statement. */
     if (
@@ -59,6 +63,7 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
         stripe_price_id: d.m,
         stripe_price_id_annual: d.y,
         ...(priceMoved ? { price_cents: priceCents, annual_price_cents: annualCents } : {}),
+        ...(guestsMoved ? { guest_allowance: guests } : {}),
       });
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: `${p.label} priced.`, meta: "DUES" });
@@ -107,7 +112,8 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
             d.m !== (p.priceId ?? "") ||
             d.y !== (p.annualPriceId ?? "") ||
             d.price !== dollars(p.priceCents) ||
-            d.annual !== dollars(p.annualCents);
+            d.annual !== dollars(p.annualCents) ||
+            d.guests !== String(p.guestAllowance);
           const blocked = p.priceCents > 0 && !p.priceId;
           return (
             <div key={p.id} className={"hm-plan" + (blocked ? " hm-plan--blocked" : "")}>
@@ -120,6 +126,7 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
                   {p.creditCents > 0
                     ? ` · $${(p.creditCents / 100).toLocaleString()} CREDIT`
                     : ""}
+                  {` · ${p.guestAllowance} ${p.guestAllowance === 1 ? "GUEST" : "GUESTS"} A PASS`}
                 </span>
                 {blocked ? <Badge tone="danger">Cannot be paid for</Badge> : null}
                 {!p.published ? <Badge tone="outline">Unpublished</Badge> : null}
@@ -155,6 +162,17 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
                     }
                   />
                   <Input
+                    label="Guests a pass"
+                    type="number"
+                    min={0}
+                    max={6}
+                    step={1}
+                    value={d.guests}
+                    onChange={(e) =>
+                      setDraft((s) => ({ ...s, [p.id]: { ...s[p.id], guests: e.target.value } }))
+                    }
+                  />
+                  <Input
                     label="Stripe price — monthly"
                     placeholder="price_…"
                     value={d.m}
@@ -180,9 +198,31 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
                   </Button>
                 </div>
               ) : (
-                <p className="hm-note">
-                  Nothing to price — this tier is free and never reaches checkout.
-                </p>
+                <div className="hm-plan__ids">
+                  <Input
+                    label="Guests a pass"
+                    type="number"
+                    min={0}
+                    max={6}
+                    step={1}
+                    value={d.guests}
+                    onChange={(e) =>
+                      setDraft((s) => ({ ...s, [p.id]: { ...s[p.id], guests: e.target.value } }))
+                    }
+                  />
+                  <p className="hm-note hm-plan__free">
+                    Nothing to price — this tier is free and never reaches checkout. The guest count
+                    still reads on the pass.
+                  </p>
+                  <Button
+                    variant={dirty ? "gold" : "outline"}
+                    size="sm"
+                    disabled={pending || !dirty}
+                    onClick={() => save(p)}
+                  >
+                    {dirty ? "Save" : "Saved"}
+                  </Button>
+                </div>
               )}
             </div>
           );

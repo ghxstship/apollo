@@ -11,6 +11,7 @@ import {
   extendSeries,
   setSeasonActive,
   setSeriesActive,
+  setVenueAccessNote,
   setVenueActive,
   type VenueKind,
 } from "./actions";
@@ -33,6 +34,7 @@ export type VenuePanelRow = {
   kind: VenueKind;
   city: string | null;
   active: boolean;
+  accessNote: string;
   [key: string]: unknown;
 };
 
@@ -104,6 +106,10 @@ export function ProgramClient({
   const [vKind, setVKind] = React.useState<VenueKind>("marina");
   const [vCity, setVCity] = React.useState("");
   const [vAddress, setVAddress] = React.useState("");
+  const [vAccess, setVAccess] = React.useState("");
+  /* The access note on a standing venue, edited in place. */
+  const [accessFor, setAccessFor] = React.useState<VenuePanelRow | null>(null);
+  const [accessDraft, setAccessDraft] = React.useState("");
 
   /* Series composer. */
   const [rTitle, setRTitle] = React.useState("");
@@ -190,6 +196,29 @@ export function ProgramClient({
       label: PLACE.market,
       width: 160,
       render: (r: VenuePanelRow) => r.city ?? "—",
+    },
+    {
+      key: "access",
+      label: "Access",
+      render: (r: VenuePanelRow) => (
+        <span className="hm-acts">
+          <span className={r.accessNote ? "hm-access" : "hm-access hm-access--none"}>
+            {r.accessNote || "Nothing noted"}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={pending}
+            aria-label={`Access note for ${r.name}`}
+            onClick={() => {
+              setAccessDraft(r.accessNote);
+              setAccessFor(r);
+            }}
+          >
+            {r.accessNote ? "Edit" : "Note"}
+          </Button>
+        </span>
+      ),
     },
     {
       key: "active",
@@ -492,6 +521,7 @@ export function ProgramClient({
                     kind: vKind,
                     harborId: vCity || null,
                     address: vAddress,
+                    accessNote: vAccess,
                   });
                   if (res.error) {
                     show({ msg: res.error, tone: "danger" });
@@ -503,6 +533,7 @@ export function ProgramClient({
                   setVKind("marina");
                   setVCity("");
                   setVAddress("");
+                  setVAccess("");
                   show({ msg: "Charted.", meta: "VENUE ON THE PROGRAM" });
                 })
               }
@@ -539,6 +570,57 @@ export function ProgramClient({
             hint="As it reads on an invitation. Optional."
             value={vAddress}
             onChange={(e) => setVAddress(e.target.value)}
+          />
+          <Input
+            label="Access note"
+            maxLength={200}
+            hint="Step-free, lift, quiet room — what an access need wants to know before booking. Optional."
+            value={vAccess}
+            onChange={(e) => setVAccess(e.target.value)}
+          />
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={!!accessFor}
+        onClose={() => setAccessFor(null)}
+        width={440}
+        eyebrow={accessFor ? accessFor.name : ""}
+        title="What the door is like."
+        footer={
+          accessFor ? (
+            <>
+              <Button variant="ghost" onClick={() => setAccessFor(null)}>
+                Not now
+              </Button>
+              <Button
+                variant="gold"
+                disabled={pending}
+                onClick={() => {
+                  const v = accessFor;
+                  const note = accessDraft;
+                  setAccessFor(null);
+                  startTransition(async () => {
+                    const res = await setVenueAccessNote(v.id, note);
+                    if (res.error) show({ msg: res.error, tone: "danger" });
+                    else show({ msg: note.trim() ? "Noted. It reads on the episode card." : "Note cleared.", meta: v.name.toUpperCase() });
+                  });
+                }}
+              >
+                Save
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <div className="hm-form">
+          <Input
+            label="Access note"
+            maxLength={200}
+            placeholder="Step-free from the street; lift to the terrace; a quiet room off the bar."
+            hint="Up to 200 characters. Blank says nothing rather than guessing."
+            value={accessDraft}
+            onChange={(e) => setAccessDraft(e.target.value)}
           />
         </div>
       </Dialog>

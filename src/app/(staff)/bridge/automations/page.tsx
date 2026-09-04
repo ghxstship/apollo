@@ -37,6 +37,8 @@ function readAction(raw: unknown): RuleAction {
       return { kind: "email", template: typeof o.template === "string" ? o.template : "" };
     if (o.kind === "sms")
       return { kind: "sms", template: typeof o.template === "string" ? o.template : "" };
+    if (o.kind === "webhook")
+      return { kind: "webhook", webhookId: typeof o.webhook_id === "string" ? o.webhook_id : "" };
     return {
       kind: "notify",
       title: typeof o.title === "string" ? o.title : "",
@@ -49,7 +51,7 @@ function readAction(raw: unknown): RuleAction {
 export default async function AutomationsPage() {
   const { supabase } = await getOperator();
 
-  const [rulesRes, citiesRes, smsRes, lettersRes] = await Promise.all([
+  const [rulesRes, citiesRes, smsRes, lettersRes, hooksRes, waitingRes] = await Promise.all([
     supabase.from("automations").select("*").order("created_at", { ascending: false }),
     supabase.from("cities").select("slug, name").order("position", { ascending: true }),
     supabase.from("sms_templates").select("code").eq("active", true).order("code"),
@@ -57,7 +59,18 @@ export default async function AutomationsPage() {
        applies when the rule fires, asked here so the picker cannot offer a
        letter that would be refused. */
     moduleTables(supabase).from("email_templates").select("code, description").eq("active", true).order("code"),
+    /* Every hook, live or not: a rule pointing at a hook since switched off
+       should still name it rather than read as a blank. */
+    supabase.from("webhooks").select("id, url, active").order("created_at", { ascending: true }),
+    /* What is waiting its turn — delayed rules the five-minute clock has not
+       yet brought back through the dispatcher. */
+    supabase.from("automation_queue").select("automation_id, run_at").is("done_at", null).order("run_at", { ascending: true }),
   ]);
+
+  const hooks = must(hooksRes);
+  const waiting = must(waitingRes);
+  const waitingByRule = new Map<string, number>();
+  for (const w of waiting) waitingByRule.set(w.automation_id, (waitingByRule.get(w.automation_id) ?? 0) + 1);
 
   const rows: RuleRow[] = (must(rulesRes)).map((a) => ({
     id: a.id,
@@ -69,6 +82,8 @@ export default async function AutomationsPage() {
     action: readAction(a.action),
     active: a.active,
     lastRunAt: a.last_run_at,
+    delayMinutes: a.delay_minutes,
+    waiting: waitingByRule.get(a.id) ?? 0,
   }));
 
   const cities = (must(citiesRes)).map((h) => ({
@@ -87,6 +102,9 @@ export default async function AutomationsPage() {
       <AutomationsClient
         rows={rows}
         cities={cities}
+        webhooks={hooks.map((h) => ({ id: h.id, url: h.url, active: h.active }))}
+        waiting={waiting.length}
+        nextRunAt={waiting[0]?.run_at ?? null}
         smsTemplates={(must(smsRes)).map((t) => t.code)}
         letters={must(lettersRes as { data: LetterRecord[] | null; error: null }).map((l) => ({
           code: l.code,
