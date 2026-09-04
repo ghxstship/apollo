@@ -57,17 +57,17 @@ export function PostCard({
           the league and the age were simply unreachable. */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
         <Avatar name={author} tone={tone} size="sm" />
-        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-1)" }}>{author}</span>
+        <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--text-1)" }}>{author}</span>
         {/* A hand-rolled pill until now: 9px off the label step, in
             --brand-yacht, which is UN Limited's IDENTITY hue spent on a
             per-post qualifier — and at 2.1:1 on paper, unreadable. It is the
             neutral status face of the badge the whole app already uses. */}
         {sailing ? <Badge tone="outline">{sailing}</Badge> : null}
-        <span style={{ marginLeft: "auto", font: `400 10px/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>
+        <span style={{ marginLeft: "auto", font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>
           {timestamp}
         </span>
       </div>
-      {body ? <div style={{ fontSize: 14, lineHeight: 1.55, color: "var(--text-1)" }}>{body}</div> : null}
+      {body ? <div style={{ fontSize: "var(--text-sm)", lineHeight: 1.55, color: "var(--text-1)" }}>{body}</div> : null}
       {media ? (
         <div style={{ height: 180, borderRadius: "var(--radius-sm)", background: "var(--scene-night)", position: "relative", overflow: "hidden" }}>
           <span style={{ position: "absolute", inset: 0, background: "var(--scrim)" }}></span>
@@ -77,7 +77,7 @@ export function PostCard({
               right: 10,
               bottom: 8,
               font: `700 var(--text-3xs)/1 ${MONO}`,
-              letterSpacing: ".14em",
+              letterSpacing: "var(--tracking-dense)",
               /* The label sits on a scene gradient under a scrim, which is what
                  --text-on-media is for; the literal it replaces was an ivory
                  from the retired palette. */
@@ -111,16 +111,17 @@ export function Hail({
 }) {
   return (
     <button
+      type="button"
       className="ls-bare"
       onClick={onToggle}
+      aria-pressed={hailed}
       style={{
-        all: "unset",
         cursor: onToggle ? "pointer" : "default",
         display: "inline-flex",
         alignItems: "center",
         gap: 7,
-        font: `700 10px/1 ${MONO}`,
-        letterSpacing: ".14em",
+        font: `700 var(--text-2xs)/1 ${MONO}`,
+        letterSpacing: "var(--tracking-label)",
         textTransform: "uppercase",
         color: hailed ? "var(--text-gold)" : "var(--text-2)",
         padding: "6px 0",
@@ -165,7 +166,7 @@ export function CommentThread({
                   app's own comment bubble (.wd-cmt__b) is already --text-xs;
                   13 was doing the job of 12 here. */}
               <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--text-1)" }}>{c.author}</span>
-              <span style={{ font: `400 9px/1 ${MONO}`, color: "var(--text-3)" }}>{c.timestamp}</span>
+              <span style={{ font: `400 var(--text-3xs)/1 ${MONO}`, color: "var(--text-3)" }}>{c.timestamp}</span>
             </div>
             <span style={{ fontSize: "var(--text-xs)", lineHeight: 1.5, color: "var(--text-1)" }}>{c.body}</span>
           </div>
@@ -228,13 +229,13 @@ export function Composer({
           <Badge tone="outline">{sailing}</Badge>
         ) : onAttachSailing ? (
           <button
-      className="ls-bare"
+            type="button"
+            className="ls-bare"
             onClick={onAttachSailing}
             style={{
-              all: "unset",
               cursor: "pointer",
-              font: `700 9px/1 ${MONO}`,
-              letterSpacing: ".12em",
+              font: `700 var(--text-3xs)/1 ${MONO}`,
+              letterSpacing: "var(--tracking-dense)",
               color: "var(--text-3)",
               minHeight: 24,
               whiteSpace: "nowrap",
@@ -272,14 +273,14 @@ export function FlagButton({
 }) {
   return (
     <button
+      type="button"
       className="ls-bare"
       onClick={onFlag}
       disabled={flagged}
       style={{
-        all: "unset",
         cursor: flagged ? "default" : "pointer",
-        font: `700 9px/1 ${MONO}`,
-        letterSpacing: ".14em",
+        font: `700 var(--text-3xs)/1 ${MONO}`,
+        letterSpacing: "var(--tracking-dense)",
         textTransform: "uppercase",
         color: flagged ? "var(--text-3)" : "var(--text-2)",
         padding: "6px 0",
@@ -316,8 +317,8 @@ export function FlagQueue({
   const th = (right = false): React.CSSProperties => ({
     textAlign: right ? "right" : "left",
     padding: "10px 12px",
-    font: `700 10px/1 ${MONO}`,
-    letterSpacing: ".16em",
+    font: `700 var(--text-2xs)/1 ${MONO}`,
+    letterSpacing: "var(--tracking-label)",
     color: "var(--text-2)",
     borderBottom: "1px solid var(--line-strong)",
   });
@@ -330,13 +331,15 @@ export function FlagQueue({
            on a phone the moderation queue pushed the page 10px wide and made it
            scroll sideways instead of scrolling the table. */
         <div className="ls-table-wrap">
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, color: "var(--text-1)" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
           <thead>
             <tr>
-              <th style={th()}>POST</th>
-              <th style={th()}>FLAGGED BY</th>
-              <th style={th()}>WHEN</th>
-              <th style={th(true)}></th>
+              <th scope="col" style={th()}>POST</th>
+              <th scope="col" style={th()}>FLAGGED BY</th>
+              <th scope="col" style={th()}>WHEN</th>
+              {/* An empty header is read as nothing for every cell beneath it — the
+                  same fix Table makes for its action column. */}
+              <th scope="col" style={th(true)}><span className="ls-visually-hidden">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -346,7 +349,7 @@ export function FlagQueue({
                   <span style={{ fontWeight: 500 }}>{it.author}</span> —{" "}
                   <span style={{ color: "var(--text-2)" }}>{it.excerpt}</span>
                 </td>
-                <td style={{ ...td, font: `400 12px/1 ${MONO}` }}>{it.flaggedBy}</td>
+                <td style={{ ...td, font: `400 var(--text-xs)/1 ${MONO}` }}>{it.flaggedBy}</td>
                 <td style={{ ...td, font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>{it.when}</td>
                 <td style={{ ...td, textAlign: "right" }}>
                   <Button variant="outline" size="sm" onClick={() => setPick(it)}>
@@ -388,7 +391,7 @@ export function FlagQueue({
         }
       >
         {pick ? (
-          <span style={{ fontSize: 14, lineHeight: 1.55, color: "var(--text-2)" }}>&ldquo;{pick.excerpt}&rdquo;</span>
+          <span style={{ fontSize: "var(--text-sm)", lineHeight: 1.55, color: "var(--text-2)" }}>&ldquo;{pick.excerpt}&rdquo;</span>
         ) : null}
       </Dialog>
     </div>

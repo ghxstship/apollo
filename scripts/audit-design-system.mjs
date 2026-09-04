@@ -976,9 +976,109 @@ function checkOrphanClasses() {
     total, hits: hits.filter((h) => !h.exempt), exempted: hits.filter((h) => h.exempt) };
 }
 
+/* ── check: icon names ────────────────────────────────────────────────────── */
+/* §Iconography: "The system uses Lucide". Icon takes its name as a string and
+   renders an EMPTY BOX of the requested size when Lucide has no such export —
+   the layout holds, nothing throws, nothing logs, and the page looks like it
+   has a gap rather than a bug. The agreements page asked for "FileSignature",
+   which Lucide 1.x does not ship, and its empty state drew a blank 26px square
+   above its title; an earlier pass found "Waves" doing the same.
+
+   Every literal name is read against the set Lucide actually exports: the
+   `name` prop on <Icon>, an `icon=` prop on any component (StateBlock and its
+   kin forward it to Icon), and an `icon:` key in an object literal (the
+   StateBlock defaults). A name that arrives through a variable is the
+   caller's — a map keyed on a database column cannot be read here, which is
+   why Icon also warns in development. */
+import { createRequire } from "node:module";
+const LUCIDE = new Set(Object.keys(createRequire(import.meta.url)("lucide-react").icons));
+
+function checkIcons() {
+  const hits = [], exempted = [];
+  let total = 0;
+  const files = CODE.filter((p) => /\/src\//.test(p) && /\.tsx?$/.test(p));
+  const PATTERNS = [
+    /<Icon\b[^>]*?\bname="([A-Za-z0-9]+)"/g,
+    /\bicon=(?:"([A-Za-z0-9]+)"|\{"([A-Za-z0-9]+)"\})/g,
+    /\bicon:\s*"([A-Za-z0-9]+)"/g,
+  ];
+  for (const p of files) {
+    lines(p).forEach((line, i) => {
+      for (const re of PATTERNS) {
+        for (const m of line.matchAll(re)) {
+          const name = m[1] ?? m[2];
+          if (!name) continue;
+          total++;
+          if (LUCIDE.has(name)) continue;
+          const hit = { file: rel(p), line: i + 1, why: `"${name}" is not a Lucide icon — Icon renders an empty box` };
+          const why = exempt(line);
+          if (why) exempted.push({ ...hit, exempt: why });
+          else hits.push(hit);
+        }
+      }
+    });
+  }
+  return { name: "icons", rule: `every literal icon name resolves in lucide-react (${LUCIDE.size} glyphs)`, total, hits, exempted };
+}
+
+/* ── check: focus after all:unset ─────────────────────────────────────────── */
+/* `all:unset` is how the kit strips a button back to text, and it strips the
+   outline with it — base.css's global :focus-visible ring is (0,1,0), the same
+   specificity as the class that unsets it, so whichever sheet loads later
+   wins, and page sheets load later. Hail, Flag, Reply, Strike, Enter and
+   Redeem all shipped with no keyboard focus indicator that way (WCAG 2.4.7)
+   before .ls-bare got its own ring, and nothing was checking that the next
+   `all:unset` remembered to.
+
+   For every rule in the kit's own stylesheets that says all:unset, some rule
+   must restate focus for the same selector — `S:focus-visible` or `S:focus`,
+   or `S input:focus-visible+` for a control whose input is hidden behind a
+   drawn box. A line may carry ds-exempt where the focus indication lives on a
+   parent by design (the search slate's field row). Scoped to src/styles and
+   src/components because that is the layer the kit owns; page sheets are
+   their owners' — .gw-mono in gangway.css is the one known outside it. */
+function checkUnsetFocus() {
+  const hits = [], exempted = [];
+  let total = 0;
+  const sheets = APP_CSS.filter((p) => /\/src\/(styles|components)\//.test(p));
+  /* selector → true for every rule anywhere in the layer that mentions focus */
+  const focused = [];
+  for (const p of sheets) {
+    const src = readFileSync(p, "utf8").replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+    for (const m of src.matchAll(/([^{}@]+)\{[^{}]*\}/g)) {
+      for (const sel of m[1].split(",").map((s) => s.trim()).filter(Boolean)) {
+        if (/:focus/.test(sel)) focused.push(sel);
+      }
+    }
+  }
+  const hasFocus = (sel) => {
+    const base = sel.replace(/\s+/g, " ");
+    return focused.some((f) => {
+      const g = f.replace(/\s+/g, " ");
+      return g.startsWith(base + ":focus") || g.startsWith(base + " input:focus") || g.startsWith(base + " :focus");
+    });
+  };
+  for (const p of sheets) {
+    lines(p).forEach((line, i) => {
+      if (!/all:\s*unset/.test(line)) return;
+      const why = exempt(line);
+      for (const m of line.matchAll(/([^{}@;]+)\{[^{}]*all:\s*unset[^{}]*\}/g)) {
+        for (const sel of m[1].split(",").map((s) => s.trim()).filter(Boolean)) {
+          total++;
+          if (hasFocus(sel)) continue;
+          const hit = { file: rel(p), line: i + 1, why: `${sel} sets all:unset and no rule restates :focus-visible for it` };
+          if (why) exempted.push({ ...hit, exempt: why });
+          else hits.push(hit);
+        }
+      }
+    });
+  }
+  return { name: "unset-focus", rule: "every all:unset selector in the kit's stylesheets has a :focus-visible rule of its own", total, hits, exempted };
+}
+
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
 const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear(), checkInline(), checkTracking(),
-                checkHueArc(), checkHueGap(), checkContrast(), checkNoRawHex(), checkOrphanClasses()]
+                checkHueArc(), checkHueGap(), checkContrast(), checkNoRawHex(), checkOrphanClasses(), checkIcons(), checkUnsetFocus()]
   .filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {

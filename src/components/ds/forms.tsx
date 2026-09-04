@@ -185,10 +185,12 @@ export function Switch({
 /* — Stepper — */
 export function Stepper({
   value = 0, onChange, min = 0, max = 99, size = "md", inverse = false,
-  decrementLabel = "Decrease", incrementLabel = "Increase", className = "", style,
+  decrementLabel = "Decrease", incrementLabel = "Increase", label, className = "", style,
 }: {
   value?: number; onChange?: (n: number) => void; min?: number; max?: number;
   size?: "sm" | "md"; inverse?: boolean; decrementLabel?: string; incrementLabel?: string;
+  /** Names the group — what is being counted ("Guests", "Quantity"). */
+  label?: string;
   className?: string; style?: React.CSSProperties;
 }) {
   const set = (v: number) => { const n = Math.min(max, Math.max(min, v)); if (n !== value && onChange) onChange(n); };
@@ -197,7 +199,7 @@ export function Stepper({
      rest. The value rides on the buttons' labels instead: focus stays on
      the button that was pressed, and its label now says what it did. */
   return (
-    <span className={["ls-stepper", "ls-stepper--" + size, inverse ? "ls-stepper--inverse" : "", className].filter(Boolean).join(" ")} style={style} role="group">
+    <span className={["ls-stepper", "ls-stepper--" + size, inverse ? "ls-stepper--inverse" : "", className].filter(Boolean).join(" ")} style={style} role="group" aria-label={label}>
       <button type="button" aria-label={`${decrementLabel}, now ${value}`} disabled={value <= min} onClick={() => set(value - 1)}>−</button>
       <span className="ls-stepper__val">{value}</span>
       <button type="button" aria-label={`${incrementLabel}, now ${value}`} disabled={value >= max} onClick={() => set(value + 1)}>+</button>

@@ -213,7 +213,13 @@
 .hm-top,.hm-tabs,.hm-shell,.kio,.crd-card,.ls-toast,.ls-tip__bubble,
 .ls-card--sea,.ws-nav,.ws-menu,.ws-hero,.ws-footer,.ws-livestrip,.ws-band,
 .ev-log,.bk-lock--ink,.bk-dl,.gw-side,.mbr-tabbar,.ptl-hero,
-.ls-table--inverse,[data-surface="ink"]{
+/* The kit's `inverse` variants are, by contract, the component ON an always-ink
+   ground — so they belong here as a class, not one consumer at a time. Before
+   this, an inverse Progress on the paper theme drew an ink fill on a graphite
+   track and a `gold` inverse Button was an ink pill on ink. */
+.ls-table--inverse,.ls-btn--inverse,.ls-iconbtn--inverse,.ls-badge--inverse,
+.ls-stat--inverse,.ls-progress--inverse,.ls-stepper--inverse,.ls-tabs--inverse,
+[data-surface="ink"]{
 --accent:var(--ivory-100);
 --accent-hover:var(--ivory-50);
 --accent-press:var(--ivory-300);

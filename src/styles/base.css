@@ -38,7 +38,10 @@ img{max-width:100%;height:auto}
    reduced-motion reader got a staggered blank-then-pop of up to 180ms — the
    very thing the preference asks us not to do. */
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
-::selection{background:var(--neon-cyan);color:var(--carbon)}
+/* --neon-cyan aliases the accent, and --carbon is fixed ink — with an
+   achromatic accent that was ink text on an ink highlight in the paper theme,
+   so a selected word vanished. The primary pair flips with the theme. */
+::selection{background:var(--action-primary);color:var(--action-on-primary)}
 /* The accent seam used to scroll its own background on a 6s `linear infinite`
    loop. tokens/motion.css ships no linear curve and tops out at --dur-cine
    560ms, and §Motion asks for "fades and small translates; no bounces, no

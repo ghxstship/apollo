@@ -64,8 +64,8 @@ export function PassageLog({
             <span style={{ font: `700 var(--text-xl)/1 ${MONO}`, color: "var(--text-1)" }}>{f.value}</span>
             <span
               style={{
-                font: `700 9px/1.3 ${MONO}`,
-                letterSpacing: ".16em",
+                font: `700 var(--text-3xs)/1.3 ${MONO}`,
+                letterSpacing: "var(--tracking-dense)",
                 textTransform: "uppercase",
                 color: "var(--text-3)",
                 whiteSpace: "nowrap",
@@ -80,8 +80,8 @@ export function PassageLog({
         <div
           style={{
             paddingTop: 10,
-            font: `700 10px/1 ${MONO}`,
-            letterSpacing: ".14em",
+            font: `700 var(--text-2xs)/1 ${MONO}`,
+            letterSpacing: "var(--tracking-label)",
             textTransform: "uppercase",
             color: "var(--text-3)",
           }}
@@ -128,8 +128,8 @@ export function MarksList({
           >
             <span
               style={{
-                font: `700 9px/1 ${MONO}`,
-                letterSpacing: ".14em",
+                font: `700 var(--text-3xs)/1 ${MONO}`,
+                letterSpacing: "var(--tracking-dense)",
                 textTransform: "uppercase",
                 color: m.held ? "var(--text-gold)" : "var(--text-3)",
                 width: 88,
@@ -140,13 +140,16 @@ export function MarksList({
               {m.kind}
             </span>
             <span style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
-              <span style={{ font: `400 16px/1.2 ${DISPLAY}`, color: "var(--text-1)" }}>{m.name}</span>
-              {m.detail ? <span style={{ fontSize: 12, color: "var(--text-2)" }}>{m.detail}</span> : null}
+              {/* Anton at 16px sat six below its 22px floor, hidden from the inline gate
+                  because the family arrived through a constant rather than a literal.
+                  §Type: below 22px a heading is Archivo 700, sentence case. */}
+              <span style={{ font: `700 var(--text-md)/1.2 ${BODY}`, color: "var(--text-1)" }}>{m.name}</span>
+              {m.detail ? <span style={{ fontSize: "var(--text-xs)", color: "var(--text-2)" }}>{m.detail}</span> : null}
             </span>
             <span
               style={{
-                font: `700 10px/1 ${MONO}`,
-                letterSpacing: ".1em",
+                font: `700 var(--text-2xs)/1 ${MONO}`,
+                letterSpacing: "var(--tracking-label)",
                 color: "var(--text-3)",
                 whiteSpace: "nowrap",
               }}
@@ -203,8 +206,8 @@ export function ContestCard({
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span
           style={{
-            font: `700 9px/1 ${MONO}`,
-            letterSpacing: ".18em",
+            font: `700 var(--text-3xs)/1 ${MONO}`,
+            letterSpacing: "var(--tracking-dense)",
             color: settled ? "var(--text-3)" : "var(--text-gold)",
             whiteSpace: "nowrap",
           }}
@@ -213,16 +216,16 @@ export function ContestCard({
           {win ? " · " + win : ""}
         </span>
         {settled ? (
-          <span style={{ marginLeft: "auto", font: `700 9px/1 ${MONO}`, letterSpacing: ".14em", color: "var(--text-3)", whiteSpace: "nowrap" }}>
+          <span style={{ marginLeft: "auto", font: `700 var(--text-3xs)/1 ${MONO}`, letterSpacing: "var(--tracking-dense)", color: "var(--text-3)", whiteSpace: "nowrap" }}>
             SETTLED
           </span>
         ) : daysLeft != null ? (
-          <span style={{ marginLeft: "auto", font: `700 9px/1 ${MONO}`, letterSpacing: ".14em", color: "var(--text-2)", whiteSpace: "nowrap" }}>
+          <span style={{ marginLeft: "auto", font: `700 var(--text-3xs)/1 ${MONO}`, letterSpacing: "var(--tracking-dense)", color: "var(--text-2)", whiteSpace: "nowrap" }}>
             {daysLeft} DAYS LEFT
           </span>
         ) : null}
       </div>
-      <div style={{ font: `400 22px/1.2 ${DISPLAY}`, color: "var(--text-1)" }}>{name}</div>
+      <div style={{ font: `400 var(--text-xl)/1.2 ${DISPLAY}`, textTransform: "uppercase", color: "var(--text-1)" }}>{name}</div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         {/* Two more hand-rolled badges, now the component. The split falls out
             of the family's own rule: a metric is what this contest MEASURES —
@@ -231,7 +234,7 @@ export function ContestCard({
         {metric ? <Badge tone="outline">{metric}</Badge> : null}
         {award ? <Badge tone="gold">{award}</Badge> : null}
         {entered && !settled ? (
-          <span style={{ font: `700 10px/1 ${MONO}`, letterSpacing: ".12em", color: "var(--positive)", whiteSpace: "nowrap" }}>
+          <span style={{ font: `700 var(--text-2xs)/1 ${MONO}`, letterSpacing: "var(--tracking-label)", color: "var(--positive)", whiteSpace: "nowrap" }}>
             ENTERED
           </span>
         ) : null}
@@ -239,10 +242,10 @@ export function ContestCard({
       {children}
       {!entered && !settled && onEnter ? (
         <button
-      className="ls-bare"
+          type="button"
+          className="ls-bare"
           onClick={onEnter}
           style={{
-            all: "unset",
             cursor: "pointer",
             alignSelf: "flex-start",
             font: `500 var(--text-sm)/1 ${BODY}`,
@@ -290,14 +293,14 @@ export function StandingsTable({
     textAlign: "left",
     padding: "10px 14px",
     font: `700 var(--text-2xs)/1 ${MONO}`,
-    letterSpacing: ".16em",
+    letterSpacing: "var(--tracking-label)",
     textTransform: "uppercase",
     color: "var(--text-2)",
     borderBottom: `1px solid var(${frozen ? "--line-faint" : "--line-strong"})`,
   };
   const caption: React.CSSProperties = {
     font: `700 var(--text-3xs)/1 ${MONO}`,
-    letterSpacing: ".14em",
+    letterSpacing: "var(--tracking-dense)",
     textTransform: "uppercase",
     color: "var(--text-3)",
   };
@@ -339,7 +342,7 @@ export function StandingsTable({
                   <td style={{ padding: "11px 14px", borderBottom: "1px solid var(--line-faint)" }}>
                     {r.name}
                     {you ? (
-                      <span style={{ marginLeft: 8, font: `700 var(--text-3xs)/1 ${MONO}`, letterSpacing: ".14em", color: "var(--text-gold)" }}>
+                      <span style={{ marginLeft: 8, font: `700 var(--text-3xs)/1 ${MONO}`, letterSpacing: "var(--tracking-dense)", color: "var(--text-gold)" }}>
                         YOU
                       </span>
                     ) : null}
@@ -383,8 +386,8 @@ export function KnotsLedger({
   style?: React.CSSProperties;
 }) {
   const label: React.CSSProperties = {
-    font: `700 10px/1 ${MONO}`,
-    letterSpacing: ".16em",
+    font: `700 var(--text-2xs)/1 ${MONO}`,
+    letterSpacing: "var(--tracking-label)",
     textTransform: "uppercase",
     color: "var(--text-2)",
   };
@@ -393,7 +396,7 @@ export function KnotsLedger({
       {balance != null ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={label}>Knots</span>
-          <span style={{ font: `400 var(--text-3xl)/1.05 ${DISPLAY}`, color: "var(--text-gold)" }}>{balance}</span>
+          <span style={{ font: `400 var(--text-3xl)/1.05 ${DISPLAY}`, fontVariantNumeric: "tabular-nums", color: "var(--text-gold)" }}>{balance}</span>
         </div>
       ) : null}
       {entries.length > 0 ? (
@@ -416,7 +419,7 @@ export function KnotsLedger({
                   <div
                     style={{
                       font: `700 var(--text-3xs)/1 ${MONO}`,
-                      letterSpacing: ".12em",
+                      letterSpacing: "var(--tracking-dense)",
                       textTransform: "uppercase",
                       color: "var(--text-3)",
                       padding: i === 0 ? "0 0 8px" : "18px 0 8px",
@@ -438,7 +441,7 @@ export function KnotsLedger({
                   <span style={{ fontSize: "var(--text-sm)" }}>{e.reason}</span>
                   <span
                     style={{
-                      font: `700 12px/1 ${MONO}`,
+                      font: `700 var(--text-xs)/1 ${MONO}`,
                       fontVariantNumeric: "tabular-nums",
                       textAlign: "end",
                       color: String(e.delta).startsWith("−") || String(e.delta).startsWith("-") ? "var(--text-2)" : "var(--positive)",
@@ -447,7 +450,7 @@ export function KnotsLedger({
                   >
                     {e.delta}
                   </span>
-                  <span style={{ font: `400 10px/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap", textAlign: "end" }}>{e.date}</span>
+                  <span style={{ font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap", textAlign: "end" }}>{e.date}</span>
                 </div>
               </React.Fragment>
             );
@@ -470,17 +473,17 @@ export function KnotsLedger({
                 borderRadius: "var(--radius-md)",
               }}
             >
-              <span style={{ fontSize: 14, flex: 1 }}>{r.name}</span>
+              <span style={{ fontSize: "var(--text-sm)", flex: 1 }}>{r.name}</span>
               <span style={{ font: `700 var(--text-2xs)/1 ${MONO}`, color: "var(--text-gold)", whiteSpace: "nowrap" }}>{r.cost}</span>
               {onRedeem ? (
                 <button
-      className="ls-bare"
+                  type="button"
+                  className="ls-bare"
                   onClick={() => onRedeem(r)}
                   disabled={balance != null && r.costValue != null && r.costValue > balance}
                   style={{
-                    all: "unset",
                     cursor: "pointer",
-                    font: `500 12px/1 ${BODY}`,
+                    font: `500 var(--text-xs)/1 ${BODY}`,
                     color: "var(--text-gold)",
                     border: "1px solid var(--border-gold)",
                     borderRadius: "var(--radius-pill)",

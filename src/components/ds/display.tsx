@@ -81,11 +81,11 @@ export function Tag({
   return (
     <span
       className={cls} onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(e as unknown as React.MouseEvent); } } : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } } : undefined}
       aria-pressed={onClick ? active : undefined} {...rest}
     >
       {children}
-      {onRemove ? <button type="button" className="ls-tag__x" aria-label={removeLabel} onClick={(e) => { e.stopPropagation(); onRemove(e); }}>✕</button> : null}
+      {onRemove ? <button type="button" className="ls-tag__x" aria-label={removeLabel} onClick={(e) => { e.stopPropagation(); onRemove(e); }}><Icon name="X" size={12} /></button> : null}
     </span>
   );
 }
@@ -97,8 +97,11 @@ export function Avatar({
   name = "", tone = "ink", size = "md", ring = false, className = "", style, ...rest
 }: { name?: string; tone?: "ink" | "sea" | "gold" | "sand"; size?: "sm" | "md" | "lg"; ring?: boolean; className?: string; style?: React.CSSProperties } & React.HTMLAttributes<HTMLSpanElement>) {
   return (
-    <span className={["ls-avatar", "ls-avatar--" + tone, "ls-avatar--" + size, ring ? "ls-avatar--ring" : "", className].filter(Boolean).join(" ")} style={style} title={name} {...rest}>
-      {initials(name)}
+    /* Initials are read as letters — "J C" — so the disc carries the name as
+       an image label; a nameless avatar is decorative and hidden. */
+    <span className={["ls-avatar", "ls-avatar--" + tone, "ls-avatar--" + size, ring ? "ls-avatar--ring" : "", className].filter(Boolean).join(" ")} style={style} title={name}
+      role={name ? "img" : undefined} aria-label={name || undefined} aria-hidden={name ? undefined : true} {...rest}>
+      <span aria-hidden="true">{initials(name)}</span>
     </span>
   );
 }
@@ -110,7 +113,9 @@ export function AvatarGroup({ children, className = "", style }: { children?: Re
 /* — Stat — */
 export function Stat({
   label, value, sub, size, inverse = false, className = "", style,
-}: { label?: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode; size?: "sm"; inverse?: boolean; className?: string; style?: React.CSSProperties }) {
+}: { label?: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode;
+  /** md (default) sets the value at --text-3xl; sm at --text-2xl. */
+  size?: "sm" | "md"; inverse?: boolean; className?: string; style?: React.CSSProperties }) {
   return (
     <div className={["ls-stat", size === "sm" ? "ls-stat--sm" : "", inverse ? "ls-stat--inverse" : "", className].filter(Boolean).join(" ")} style={style}>
       {label ? <span className="ls-stat__label">{label}</span> : null}
@@ -326,7 +331,10 @@ export function Wordmark({
             /* Optical centring: .42em of tracking is applied after the last
                glyph too, so the block sits half a step left without this. */
             marginLeft: ".42em",
-            color: inverse ? "rgba(241,241,237,.8)" : WM_ACCENTS[tone] ?? WM_ACCENTS.hinged,
+            /* --text-inverse-2 (ivory-300) for the literal rgba(241,241,237,.8)
+               it replaces — the same ivory at the ramp's second step rather
+               than an alpha nothing else in the kit uses. */
+            color: inverse ? "var(--text-inverse-2)" : WM_ACCENTS[tone] ?? WM_ACCENTS.hinged,
           }}
         >
           {sub}

@@ -6,10 +6,13 @@ import { useModal } from "./use-modal";
 
 /* — Dialog — */
 export function Dialog({
-  open, onClose, eyebrow, title, children, footer, width = 520, closeLabel = "Close",
+  open, onClose, eyebrow, title, children, footer, width = 520, closeLabel = "Close", label,
 }: {
   open: boolean; onClose?: () => void; eyebrow?: React.ReactNode; title?: React.ReactNode;
   children?: React.ReactNode; footer?: React.ReactNode; width?: number; closeLabel?: string;
+  /** Accessible name when there is no `title` — a dialog with neither is
+      announced as "dialog" and nothing else. */
+  label?: string;
 }) {
   const boxRef = useModal(open, onClose);
   const titleId = React.useId();
@@ -32,7 +35,7 @@ export function Dialog({
   if (!open || !mounted) return null;
   return createPortal(
     <div className="ls-dialog-veil" onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
-      <div className="ls-dialog" ref={boxRef} tabIndex={-1} style={{ maxWidth: "min(" + width + "px, calc(100vw - 32px))" }} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined}>
+      <div className="ls-dialog" ref={boxRef} tabIndex={-1} style={{ maxWidth: "min(" + width + "px, calc(100vw - 32px))" }} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : label}>
         <div className="ls-dialog__head">
           <div>
             {eyebrow ? <div className="ls-dialog__eyebrow">{eyebrow}</div> : null}
@@ -50,15 +53,23 @@ export function Dialog({
 
 /* — Progress — */
 export function Progress({
-  value = 0, label, detail, thick = false, inverse = false, className = "", style,
-}: { value?: number; label?: React.ReactNode; detail?: React.ReactNode; thick?: boolean; inverse?: boolean; className?: string; style?: React.CSSProperties }) {
+  value = 0, label, detail, tone, thick = false, inverse = false, className = "", style,
+}: {
+  value?: number; label?: React.ReactNode; detail?: React.ReactNode;
+  /** The status hue of the fill. Omit for the accent — the caller knows what
+      the threshold means; the bar only shows it. Same names as Badge/Toast. */
+  tone?: "positive" | "caution" | "danger";
+  thick?: boolean; inverse?: boolean; className?: string; style?: React.CSSProperties;
+}) {
   const v = Math.min(100, Math.max(0, value));
+  const labelId = React.useId();
   return (
-    <div className={["ls-progress", thick ? "ls-progress--thick" : "", inverse ? "ls-progress--inverse" : "", className].filter(Boolean).join(" ")} style={style}
-      role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100} aria-label={typeof label === "string" ? label : undefined}>
+    <div className={["ls-progress", tone ? "ls-progress--" + tone : "", thick ? "ls-progress--thick" : "", inverse ? "ls-progress--inverse" : "", className].filter(Boolean).join(" ")} style={style}
+      role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100}
+      aria-labelledby={label ? labelId : undefined} aria-valuetext={typeof detail === "string" ? detail : undefined}>
       {(label || detail) ? (
         <div className="ls-progress__head">
-          {label ? <span className="ls-progress__label">{label}</span> : <span></span>}
+          {label ? <span className="ls-progress__label" id={labelId}>{label}</span> : <span></span>}
           {detail ? <span className="ls-progress__val">{detail}</span> : null}
         </div>
       ) : null}
@@ -103,10 +114,6 @@ export function StateBlock({
 }
 
 /* — Toast — */
-const TOAST_TONES: Record<string, string> = {
-  ink: "var(--brass-bright)", laurel: "var(--laurel)", clay: "var(--terracotta)", siren: "var(--siren)",
-};
-
 export function Toast({
   message, meta, tone = "ink", fixed = false, onDismiss, dismissLabel = "Dismiss", className = "", style,
 }: {
@@ -133,13 +140,20 @@ export function Toast({
   const saidRef = React.useRef<string | null>(null);
   /* Which region this toast spoke into, for the cleanup to clear the same one. */
   const regionRef = React.useRef<string>("ls-announcer");
+  /* The standing regions live in the root layout. Rendered anywhere without
+     them — a storybook, a test, a stray route outside the shell — the toast
+     becomes its own live region rather than saying nothing. */
+  const [ownRole, setOwnRole] = React.useState<"status" | "alert" | undefined>(undefined);
+  React.useEffect(() => {
+    /* A refusal is read at once; a receipt waits its turn. */
+    regionRef.current = tone === "danger" ? "ls-announcer-alert" : "ls-announcer";
+    setOwnRole(document.getElementById(regionRef.current) ? undefined : tone === "danger" ? "alert" : "status");
+  }, [tone]);
   /* No dependency array on purpose. `message` is a ReactNode at half the call
      sites, so it has a new identity on every parent render; keying the effect
      on it would clear and refill the region each time and read the same
      sentence out over and over. The guard is the text itself. */
   React.useEffect(() => {
-    /* A refusal is read at once; a receipt waits its turn. */
-    regionRef.current = tone === "danger" ? "ls-announcer-alert" : "ls-announcer";
     const region = document.getElementById(regionRef.current);
     const text = msgRef.current?.textContent?.trim();
     if (!region || !text || text === saidRef.current) return;
@@ -155,8 +169,8 @@ export function Toast({
   );
 
   const node = (
-    <div className={["ls-toast", fixed ? "ls-toast--fixed" : "", className].filter(Boolean).join(" ")} style={style}>
-      <span className="ls-toast__rule" style={{ background: TOAST_TONES[tone] || TOAST_TONES.ink }}></span>
+    <div className={["ls-toast", "ls-toast--" + tone, fixed ? "ls-toast--fixed" : "", className].filter(Boolean).join(" ")} style={style} role={ownRole}>
+      <span className="ls-toast__rule"></span>
       <span ref={msgRef}>{message}</span>
       {meta ? <span className="ls-toast__meta">{meta}</span> : null}
       {onDismiss ? <button type="button" className="ls-toast__x" aria-label={dismissLabel} onClick={onDismiss}>✕</button> : null}
@@ -167,14 +181,30 @@ export function Toast({
   return mounted ? createPortal(node, document.body) : null;
 }
 
-/* — Tooltip — */
+/* — Tooltip —
+   Shown on hover and on focus-within (CSS), so the child has to be focusable
+   for a keyboard reader to reach it — wrap a Button or an IconButton, not a
+   bare span. The bubble is wired to the child with aria-describedby when the
+   child is a single element, and Escape hides it until the pointer or focus
+   leaves (WCAG 1.4.13: dismissible). */
 export function Tooltip({
   label, side = "top", className = "", style, children,
 }: { label: React.ReactNode; side?: "top" | "bottom"; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) {
+  const id = React.useId();
+  const [hidden, setHidden] = React.useState(false);
+  const child = React.isValidElement<{ "aria-describedby"?: string }>(children)
+    ? React.cloneElement(children, { "aria-describedby": [children.props["aria-describedby"], id].filter(Boolean).join(" ") })
+    : children;
   return (
-    <span className={["ls-tip", side === "bottom" ? "ls-tip--bottom" : "", className].filter(Boolean).join(" ")} style={style}>
-      {children}
-      <span className="ls-tip__bubble" role="tooltip">{label}</span>
+    <span
+      className={["ls-tip", side === "bottom" ? "ls-tip--bottom" : "", hidden ? "ls-tip--hidden" : "", className].filter(Boolean).join(" ")}
+      style={style}
+      onKeyDown={(e) => { if (e.key === "Escape") setHidden(true); }}
+      onMouseLeave={() => setHidden(false)}
+      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHidden(false); }}
+    >
+      {child}
+      <span className="ls-tip__bubble" role="tooltip" id={id}>{label}</span>
     </span>
   );
 }

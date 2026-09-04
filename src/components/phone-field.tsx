@@ -10,10 +10,12 @@ import { savePhone, type PhoneState } from "./signal-actions";
 
 const INITIAL: PhoneState = {};
 
+/* An uppercase mono label, so it takes the label pair (--type-label,
+   --tracking-label) like every other label in the kit. It was 10px on
+   --track-data, which is the .04em FIGURES setting — see compat.css. */
 const MONO: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
-  letterSpacing: "var(--track-data)",
+  font: "var(--type-label)",
+  letterSpacing: "var(--tracking-label)",
   textTransform: "uppercase",
   color: "var(--text-3)",
 };
@@ -47,7 +49,9 @@ export function PhoneField({
         </Button>
       </div>
       <span style={MONO}>Weather holds reach this number.</span>
-      <span style={MONO}>
+      {/* The line that changes after Save is the only feedback a screen reader
+          gets — a live region, so SAVED is heard and not just painted. */}
+      <span style={MONO} role="status" aria-live="polite">
         {state.cleared
           ? "NUMBER REMOVED"
           : state.saved
