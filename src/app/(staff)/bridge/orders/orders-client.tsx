@@ -4,7 +4,7 @@ import { LEDGER_KIND } from "@/lib/brand";
 import React from "react";
 import { Badge, Button, Dialog, Input, Select, Table, Tag, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { postLedgerEntry, refundShopOrder } from "./actions";
+import { postLedgerEntry, refundShopOrder, refundToCard } from "./actions";
 
 export type LedgerRow = {
   id: string;
@@ -15,6 +15,9 @@ export type LedgerRow = {
   amount: string;
   deltaCents: number;
   created: string;
+  /* The Stripe object behind a card settlement, when there is one. It is what
+     a refund to the card is issued against. */
+  stripeRef: string | null;
   [key: string]: unknown;
 };
 
@@ -65,6 +68,9 @@ export function OrdersClient({
   const [posting, setPosting] = React.useState<PostKind | null>(null);
   const [form, setForm] = React.useState({ profileId: "", amount: "", memo: "" });
   const [refund, setRefund] = React.useState<ShopOrderRow | null>(null);
+  /* A card refund — the settlement row being reversed, and the form. */
+  const [toCard, setToCard] = React.useState<LedgerRow | null>(null);
+  const [cardForm, setCardForm] = React.useState({ amount: "", reason: "" });
 
   const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
     startTransition(async () => {
@@ -157,6 +163,24 @@ export function OrdersClient({
             { key: "memo", label: "Memo", render: (e: LedgerRow) => e.memo || "—" },
             { key: "amount", label: "Amount", mono: true, width: 100 },
             { key: "created", label: "Posted", mono: true, width: 110 },
+            {
+              key: "act",
+              label: "",
+              render: (e: LedgerRow) =>
+                e.kind === "payment" && e.stripeRef ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => {
+                      setToCard(e);
+                      setCardForm({ amount: (e.deltaCents / 100).toFixed(2), reason: "" });
+                    }}
+                  >
+                    Refund to card
+                  </Button>
+                ) : null,
+            },
           ]}
           rows={visible}
         />
@@ -326,6 +350,70 @@ export function OrdersClient({
       >
         The refund posts to the member account and the receipt goes out by email. Financial
         actions log to the ship&apos;s record with your name on them.
+      </Dialog>
+
+      {/* The money leaves Stripe here. Nothing is posted from this dialog: the
+          webhook records the refund on charge.refunded, keyed on Stripe's own
+          refund id, so the book cannot claim a refund Stripe declined and a
+          redelivered event cannot double it. */}
+      <Dialog
+        open={!!toCard}
+        onClose={() => setToCard(null)}
+        width={420}
+        eyebrow={toCard ? `${toCard.member} · ${toCard.created}` : ""}
+        title={toCard ? `Refund ${toCard.amount} to the card?` : ""}
+        footer={
+          toCard ? (
+            <>
+              <Button variant="ghost" onClick={() => setToCard(null)}>
+                Not yet
+              </Button>
+              <Button
+                variant="danger"
+                disabled={pending || !(Number(cardForm.amount) > 0) || !cardForm.reason.trim()}
+                onClick={() => {
+                  const row = toCard;
+                  const cents = Math.round(Number(cardForm.amount) * 100);
+                  setToCard(null);
+                  run(
+                    () => refundToCard(row.stripeRef ?? "", cents, cardForm.reason.trim()),
+                    () =>
+                      show({
+                        msg: "Refund sent to Stripe — it posts here when the card is credited.",
+                        meta: `${row.member} · $${(cents / 100).toFixed(2)} TO CARD`,
+                        tone: "positive",
+                      })
+                  );
+                }}
+              >
+                Refund to card
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <div className="hm-form">
+          <p style={{ fontSize: "var(--text-sm)" }}>
+            This returns money to the card that paid, not to the member account. It
+            cannot be taken back. The ledger row appears when Stripe confirms the
+            credit, usually within a minute.
+          </p>
+          <Input
+            label="Amount ($)"
+            type="number"
+            min={0.01}
+            step="0.01"
+            max={toCard ? (toCard.deltaCents / 100).toFixed(2) : undefined}
+            value={cardForm.amount}
+            onChange={(e) => setCardForm((f) => ({ ...f, amount: e.target.value }))}
+          />
+          <Input
+            label="Reason"
+            placeholder="Episode cancelled — weather"
+            value={cardForm.reason}
+            onChange={(e) => setCardForm((f) => ({ ...f, reason: e.target.value }))}
+          />
+        </div>
       </Dialog>
 
       {toast ? (

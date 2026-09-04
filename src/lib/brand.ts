@@ -290,6 +290,10 @@ export const LEDGER_KIND: Record<string, string> = {
   credit: "Credit",
   refund: "Refund",
   payment: "Payment",
+  /* Both fell through to the raw column value and reached a member's own
+     statement as PLAN_CREDIT and DISPUTE. */
+  plan_credit: "Plan credit",
+  dispute: "Dispute",
 };
 
 /* Mail and web domain, in one place. These name the club's own addresses as a

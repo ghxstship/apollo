@@ -28,6 +28,9 @@ export type StatementRow = {
   kind: string;
   memo: string | null;
   delta_cents: number;
+  /* The part of delta_cents that is tax. Absent on rows read before the
+     column existed; zero means untaxed. */
+  tax_cents?: number;
 };
 
 /* What the query asks for, and what the page shows without being asked. */
@@ -125,7 +128,17 @@ function StatementTable({ lines, zone }: { lines: Line[]; zone: Zone }) {
             {m.lines.map(({ row, balance }) => (
               <tr key={row.id}>
                 <td className="num">{logDate(row.created_at, zone)}</td>
-                <td>{row.memo ?? (LEDGER_KIND[row.kind] ?? row.kind).toUpperCase()}</td>
+                <td>
+                  {row.memo ?? (LEDGER_KIND[row.kind] ?? row.kind).toUpperCase()}
+                  {/* Tax is inside the amount, not beside it, so the line says so.
+                      Charged only where a city has recorded a rate and the club
+                      is registered to collect — see /bridge/tax. */}
+                  {typeof row.tax_cents === "number" && row.tax_cents > 0 ? (
+                    <span className="mbr-mono" style={{ display: "block", fontSize: "var(--text-xs)", color: "var(--text-3)" }}>
+                      INCL. ${(row.tax_cents / 100).toFixed(2)} TAX
+                    </span>
+                  ) : null}
+                </td>
                 <td className="num">{(LEDGER_KIND[row.kind] ?? row.kind).toUpperCase()}</td>
                 <td className="num num--end">
                   <span style={{ color: row.delta_cents < 0 ? "var(--siren)" : "var(--laurel)" }}>

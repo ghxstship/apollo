@@ -41,6 +41,7 @@ export default async function PassesPage() {
     seriesRes,
     creditHoursRes,
     citiesRes,
+    creditRes,
   ] = await Promise.all([
     supabase
       .from("episodes")
@@ -92,6 +93,9 @@ export default async function PassesPage() {
     supabase.rpc("club_setting", { p_key: "release_credit_hours" }),
     /* Names for the city lock's refusal — read once, not per row. */
     supabase.from("cities").select("id,name"),
+    /* This month's unspent plan credit. Drawn down in SQL since the 3rd
+       and never shown to the member who was spending it. */
+    supabase.rpc("pass_credit_left", {}),
   ]);
 
   const episodes: Episode[] = episodesRes.data ?? [];
@@ -309,10 +313,19 @@ export default async function PassesPage() {
       );
     })?.passes_used ?? 0;
   const monthName = meterMonth.toLocaleString("en-US", { month: "long" }).toUpperCase();
+  /* Model C: the value of a paid tier is a monthly credit, not a count of
+     passes. events_per_month is 0 on every live plan, so the old meter read
+     its false branch — "PASSES À LA CARTE" — to a member paying $225 a month
+     for a $290 credit. The credit is this calendar month's; the pass count
+     stays for any plan that still meters that way. */
+  const creditLeft = typeof creditRes.data === "number" ? creditRes.data : 0;
+  const creditMonth = now.toLocaleString("en-US", { month: "long" }).toUpperCase();
   const passMeter = plan
-    ? plan.events_per_month > 0
-      ? `${passesUsed} OF ${plan.events_per_month} PASSES USED · ${monthName}`
-      : "PASSES À LA CARTE"
+    ? plan.monthly_credit_cents > 0
+      ? `${creditLeft > 0 ? price(creditLeft) : "$0"} OF ${price(plan.monthly_credit_cents)} CREDIT LEFT · ${creditMonth}`
+      : plan.events_per_month > 0
+        ? `${passesUsed} OF ${plan.events_per_month} PASSES USED · ${monthName}`
+        : "PASSES À LA CARTE"
     : null;
   const earlyDays = plan?.early_days ?? 0;
 
@@ -532,6 +545,7 @@ export default async function PassesPage() {
                       windowNote={windowNote}
                       recommended={v.id === recommendedId}
                       priceCents={v.price_cents}
+                      creditLeftCents={creditLeft}
                       depositRequired={v.deposit_required}
                       depositCents={v.deposit_cents}
                       daybedHeld={r ? daybedPasses.has(r.id) : false}

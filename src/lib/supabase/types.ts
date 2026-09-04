@@ -117,7 +117,14 @@ export type ClubSettingRow = { key: string; value_int: number; note: string | nu
 export type SegmentRow = { slug: string; label: string; heads: number }
 export type SponsorTierRow = { slug: string; label: string; position: number; rate_cents: number; assets: string[] }
 export type LeagueRow = { league: number; name: string; months: number }
-export type StripeEventRow = { id: string; type: string; created: string; received_at: string }
+export type StripeEventRow = {
+  id: string; type: string; created: string; received_at: string
+  /* The id the ledger records for this event, and the money it moved — what
+     the reconciliation joins on. Null on rows received before they were kept. */
+  object_id: string | null; amount_cents: number | null
+  /* Seen is not done. Null on a row whose handler never finished. */
+  processed_at: string | null
+}
 export type AuditLogRow = {
   id: number; table_name: string; row_id: string | null; action: "INSERT" | "UPDATE" | "DELETE"
   actor_id: string | null; before: Json | null; after: Json | null; at: string
@@ -179,6 +186,8 @@ export type MembershipPlanRow = {
 export type VesselRow = {
   id: string; name: string; capacity: number; home_city: string | null; active: boolean
   length_ft: number | null; year: number | null; cabins: number | null
+  /* Charter cost per day, for the P&L. Null until the contract says. */
+  day_rate_cents: number | null
 }
 export type EpisodeVesselRow = { episode_id: string; vessel_id: string; position: number }
 export type KnotsRow = {
@@ -313,6 +322,10 @@ export type CrewRow = {
    A NULL rate means undetermined; zero means determined to be untaxed. Nothing
    here is defaulted and nothing should be guessed — Florida taxes admissions,
    California generally does not, so the cities differ in kind and not degree. */
+export type BroadcastRow = {
+  id: string; sent_by: string | null; audience: Json; title: string; body: string
+  channels: string[]; recipients: number; created_at: string
+}
 export type CityTaxRow = {
   city_id: string; admissions_rate_bp: number | null; goods_rate_bp: number | null
   registered: boolean; note: string | null
@@ -364,6 +377,8 @@ export type SubscriptionRow = {
   id: string; profile_id: string; plan_id: string | null; stripe_subscription_id: string | null
   status: SubscriptionStatus; interval: "month" | "year"; current_period_end: string | null
   cancel_at_period_end: boolean; created_at: string; updated_at: string
+  /* When the current lapse began; null unless past_due. The dunning ladder keys on it. */
+  past_due_since: string | null
 }
 export type InvoiceRow = {
   id: string; profile_id: string; stripe_invoice_id: string | null; number: string | null
@@ -608,6 +623,7 @@ export type Database = {
       crew_candidate_events: Table<CrewCandidateEventRow, Ins<CrewCandidateEventRow, "candidate_id" | "kind">>
       crew: Table<CrewRow, Ins<CrewRow, "slug" | "display_name" | "role_title">>
       crew_positions: Table<CrewPositionRow, Ins<CrewPositionRow, "slug" | "label">>
+      broadcasts: Table<BroadcastRow, Ins<BroadcastRow, "audience" | "title" | "body" | "channels">>
       city_tax: Table<CityTaxRow, Ins<CityTaxRow, "city_id">>
       expense_kinds: Table<ExpenseKindRow, Ins<ExpenseKindRow, "slug" | "label">>
       episode_expenses: Table<EpisodeExpenseRow, Ins<EpisodeExpenseRow, "episode_id" | "kind" | "amount_cents">>
@@ -782,6 +798,14 @@ export type Database = {
          year. Refuses a profile that is not yours unless you are staff, so it
          cannot be asked on anyone else's behalf. */
       membership_pause_days_used: { Args: { p_profile: string }; Returns: number }
+      /* This month's unspent plan credit, in cents. Granted to authenticated
+         since 2026-09-02 and unreachable from here until it was typed. */
+      pass_credit_left: { Args: { p_profile_id?: string | null }; Returns: number }
+      /* One word to a chosen audience; returns how many it reached. */
+      send_broadcast: {
+        Args: { p_audience: Json; p_title: string; p_body: string; p_channels: string[] }
+        Returns: number
+      }
       passes_left: { Args: { p_episode: string; p_except_pass?: string | null }; Returns: number }
       scheduler_health: {
         Args: { p_limit?: number }

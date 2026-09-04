@@ -35,6 +35,8 @@ export async function setPlanPricing(
     stripe_price_id_annual?: string | null;
     monthly_credit_cents?: number;
     published?: boolean;
+    price_cents?: number;
+    annual_price_cents?: number | null;
   }
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
@@ -61,6 +63,23 @@ export async function setPlanPricing(
     clean.monthly_credit_cents = n;
   }
   if (patch.published !== undefined) clean.published = patch.published;
+
+  /* The number a member is quoted. It does not change what Stripe charges —
+     that is the price object behind the id above — so the two can drift, and
+     the client says so before it lets an operator save one. */
+  if (patch.price_cents !== undefined) {
+    const n = Math.round(patch.price_cents);
+    if (!Number.isFinite(n) || n < 0) return { error: "A price cannot be negative." };
+    clean.price_cents = n;
+  }
+  if (patch.annual_price_cents !== undefined) {
+    if (patch.annual_price_cents === null) clean.annual_price_cents = null;
+    else {
+      const n = Math.round(patch.annual_price_cents);
+      if (!Number.isFinite(n) || n < 0) return { error: "A price cannot be negative." };
+      clean.annual_price_cents = n;
+    }
+  }
 
   if (Object.keys(clean).length === 0) return {};
 

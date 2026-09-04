@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Card, Icon, Stat, StateBlock } from "@/components/ds";
 import { CURRENCY, knots, PLACE, SURFACES } from "@/lib/brand";
-import { logDate, logMeta } from "@/lib/format";
+import { logDate, logMeta, price } from "@/lib/format";
 import { firstName, getMember } from "../data";
 import { KIND_ICON, relTime } from "../relative";
 
@@ -16,7 +16,7 @@ export default async function HomePortPage() {
   const { supabase, user, profile, zone } = await getMember();
   const nowIso = new Date().toISOString();
 
-  const [cityRes, passesRes, liveRes, balanceRes, wordRes, planRes, usageRes] =
+  const [cityRes, passesRes, liveRes, balanceRes, wordRes, planRes, usageRes, creditRes] =
     await Promise.all([
       profile?.home_city
         ? supabase.from("cities").select("name,coordinates").eq("id", profile.home_city).maybeSingle()
@@ -31,9 +31,10 @@ export default async function HomePortPage() {
         .order("created_at", { ascending: false })
         .limit(2),
       profile?.plan_id
-        ? supabase.from("membership_plans").select("events_per_month").eq("id", profile.plan_id).maybeSingle()
+        ? supabase.from("membership_plans").select("events_per_month,monthly_credit_cents").eq("id", profile.plan_id).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from("member_pass_usage").select("month,passes_used").eq("profile_id", user.id),
+      supabase.rpc("pass_credit_left", {}),
     ]);
 
   /* The next pass is the soonest upcoming episode this member is aboard —
@@ -72,12 +73,17 @@ export default async function HomePortPage() {
       const m = new Date(u.month);
       return m.getUTCFullYear() === now.getUTCFullYear() && m.getUTCMonth() === now.getUTCMonth();
     })?.passes_used ?? 0;
+  /* Model C plans carry a credit, not a count; the count stays for any plan
+     that still meters that way. */
+  const creditCents = planRes.data?.monthly_credit_cents ?? 0;
+  const creditLeft = typeof creditRes.data === "number" ? creditRes.data : 0;
+  const monthName = now.toLocaleString("en-US", { month: "long" }).toUpperCase();
   const passLine =
-    allowance > 0
-      ? `${passesUsed} OF ${allowance} PASSES USED · ${now
-          .toLocaleString("en-US", { month: "long" })
-          .toUpperCase()}`
-      : null;
+    creditCents > 0
+      ? `${creditLeft > 0 ? price(creditLeft) : "$0"} OF ${price(creditCents)} CREDIT LEFT · ${monthName}`
+      : allowance > 0
+        ? `${passesUsed} OF ${allowance} PASSES USED · ${monthName}`
+        : null;
 
   return (
     <div>

@@ -149,6 +149,8 @@ export default async function ReportsPage() {
     ledgerRes,
     rollRes,
     reconRes,
+    planCreditRes,
+    disputeRes,
     lapsedRes,
     knotsRes,
     weatherRes,
@@ -181,6 +183,24 @@ export default async function ReportsPage() {
     /* Exceptions only, both directions — see the view. Empty is the answer an
        operator wants and the one they have never been able to get. */
     supabase.from("stripe_reconciliation").select("*").limit(50),
+    /* Passes paid for with membership credit. The dues that bought the credit
+       are already in Billed; counting the pass at full price on top counts the
+       same money twice. The figure is kept and named rather than silently
+       netted, because which one is the top line is an accounting position. */
+    supabase
+      .from("account_ledger")
+      .select("delta_cents")
+      .eq("kind", "plan_credit")
+      .gte("created_at", seasonStart),
+    /* Disputes. The webhook has recorded them since 2026-09-03 under their own
+       ledger kind and nothing on the Bridge showed one — a chargeback the
+       club never sees is money gone with a deadline attached. */
+    supabase
+      .from("account_ledger")
+      .select("stripe_ref, delta_cents, memo, created_at")
+      .eq("kind", "dispute")
+      .order("created_at", { ascending: false })
+      .limit(50),
     /* The people behind the churn number. Reports has counted churn since it
        shipped and never once said who. */
     supabase.from("lapsed_members").select("*").order("held_since", { ascending: true }).limit(50),
@@ -294,10 +314,24 @@ export default async function ReportsPage() {
     .filter((l) => l.service_date != null && l.service_date > todayISO)
     .reduce((t, l) => t + Math.abs(l.delta_cents), 0);
   const earnedCents = houseCents - deferredCents;
+  /* Net of plan credit: what members paid cash for, once the pass a credit
+     covered is not counted on top of the dues that bought the credit. */
+  const planCreditCents = must(planCreditRes).reduce((t, l) => t + Math.max(0, l.delta_cents), 0);
+  const netCents = Math.max(0, houseCents - planCreditCents);
 
   /* Referrals */
   const roll = must(rollRes);
   const recon = must(reconRes);
+  /* Open disputes: the hold posted and no win posted back against the same
+     payment. Net by intent — a dispute the club won nets to zero. */
+  const disputes = must(disputeRes);
+  const heldByIntent = new Map<string, number>();
+  for (const d of disputes) {
+    const k = d.stripe_ref ?? d.memo ?? "";
+    heldByIntent.set(k, (heldByIntent.get(k) ?? 0) + d.delta_cents);
+  }
+  const openDisputes = [...heldByIntent.values()].filter((v) => v < 0);
+  const heldCents = openDisputes.reduce((t, v) => t - v, 0);
   const lapsed = must(lapsedRes);
   const referred = roll.filter((r) => r.invite_code).length;
   const referralPct = roll.length ? Math.round((referred / roll.length) * 100) : 0;
@@ -585,7 +619,12 @@ export default async function ReportsPage() {
         <Stat
           label="Billed"
           value={houseCents ? price(houseCents) : "$0"}
-          sub="CHARGES THIS SEASON"
+          sub="CHARGES THIS SEASON · GROSS OF CREDIT"
+        />
+        <Stat
+          label="Net of credit"
+          value={netCents ? price(netCents) : "$0"}
+          sub={`${price(planCreditCents)} OF PASSES PAID BY PLAN CREDIT`}
         />
         <Stat
           label="Referral joins"
@@ -652,6 +691,34 @@ export default async function ReportsPage() {
               </div>
             ))}
           </div>
+        )}
+      </section>
+
+      {/* Disputes, as a list, because each one is a deadline. */}
+      <section className="hm-sec">
+        <span className="hm-eyebrow">Disputed by the bank</span>
+        {disputes.length === 0 ? (
+          <p className="hm-note">No charge has been disputed. When one is, it is listed here the minute Stripe says so.</p>
+        ) : (
+          <>
+            <p className="hm-note">
+              {openDisputes.length === 0
+                ? "Every dispute on record has closed in the club’s favour."
+                : `${openDisputes.length} open · ${price(heldCents)} held by the bank. Evidence is answered in Stripe.`}
+            </p>
+            <div className="hm-recon">
+              {disputes.map((d) => (
+                <div key={`${d.stripe_ref}-${d.created_at}`} className="hm-recon__row">
+                  <Badge tone={d.delta_cents < 0 ? "danger" : "positive"}>
+                    {d.delta_cents < 0 ? "Held" : "Returned"}
+                  </Badge>
+                  <span className="hm-mono">{d.stripe_ref ?? "—"}</span>
+                  <span>{d.memo ?? ""}</span>
+                  <span className="hm-mono hm-recon__amt">{price(Math.abs(d.delta_cents))}</span>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </section>
 

@@ -165,7 +165,10 @@ async function postDues(admin: Admin, profileId: string, invoice: Stripe.Invoice
       kind: "payment",
       memo: `${memo} — settled by card`,
       idem_key: `${key}:payment`,
-      stripe_ref: invoice.id,
+      /* The payment intent when the invoice carries one, because a refund is
+         issued against the intent and this column exists to be refunded from.
+         An invoice id was stored here until 2026-09-04 and could not be. */
+      stripe_ref: idOf(invoice.payments?.data?.[0]?.payment?.payment_intent) ?? invoice.id,
     },
   ]);
   /* 23505 is the unique index doing its job: this invoice has already been
@@ -353,6 +356,39 @@ async function postDispute(admin: Admin, dispute: Stripe.Dispute) {
   }
 }
 
+/* What the reconciliation needs to know about an event: which object the
+   ledger will name for it, and how much money it moved. The session for a
+   checkout, the invoice for dues, and the payment intent for a refund or a
+   dispute — the intent is what the settlement row records, so it is what the
+   refund and dispute rows point at. */
+function ledgerRefOf(event: Stripe.Event): { object_id: string | null; amount_cents: number | null } {
+  const o = event.data.object as unknown as Record<string, unknown>;
+  switch (event.type) {
+    case "checkout.session.completed":
+      return { object_id: String(o.id ?? "") || null, amount_cents: Number(o.amount_total ?? 0) || 0 };
+    case "invoice.paid":
+      return { object_id: String(o.id ?? "") || null, amount_cents: Number(o.amount_paid ?? 0) || 0 };
+    case "charge.refunded": {
+      const refunds = (o.refunds as { data?: Array<{ amount?: number; status?: string }> } | undefined)?.data ?? [];
+      return {
+        object_id: idOf(o.payment_intent as string | { id: string } | null | undefined) ?? null,
+        amount_cents: refunds.filter((r) => r.status === "succeeded").reduce((s, r) => s + (r.amount ?? 0), 0),
+      };
+    }
+    case "charge.dispute.created":
+    case "charge.dispute.closed":
+      return {
+        object_id: idOf(o.payment_intent as string | { id: string } | null | undefined) ?? null,
+        amount_cents: Number(o.amount ?? 0) || 0,
+      };
+    default:
+      /* Informational: the object id is still kept, so a stale-ordering check
+         can be scoped to THIS subscription rather than to every subscription
+         that updated after it. No amount — nothing posts. */
+      return { object_id: String(o.id ?? "") || null, amount_cents: null };
+  }
+}
+
 export async function POST(request: NextRequest) {
   if (!stripeEnabled()) {
     return NextResponse.json({ disabled: true }, { status: 503 });
@@ -381,21 +417,46 @@ export async function POST(request: NextRequest) {
   /* Handled once: Stripe retries, and a late duplicate of
      customer.subscription.updated could overwrite newer state. The ledger
      inserts already dedupe on idem_key; this is the ordering half. */
+  const ref = ledgerRefOf(event);
   const { error: seen } = await admin
     .from("stripe_events")
-    .insert({ id: event.id, type: event.type, created: new Date(event.created * 1000).toISOString() });
+    .insert({
+      id: event.id,
+      type: event.type,
+      created: new Date(event.created * 1000).toISOString(),
+      /* The id the LEDGER will record for this event, and the amount — so the
+         reconciliation can join event to row by object rather than guessing
+         by the clock. */
+      ...ref,
+    });
   if (seen) {
-    if (seen.code === "23505") return NextResponse.json({ received: true, replay: true });
-    return NextResponse.json({ error: "Could not record the event." }, { status: 500 });
+    if (seen.code !== "23505") {
+      return NextResponse.json({ error: "Could not record the event." }, { status: 500 });
+    }
+    /* Seen before. Seen is not done: a handler that threw halfway left the
+       row with no processed_at, and Stripe's retry is the second chance —
+       until 2026-09-04 it was answered "replay" and the event was lost. */
+    const { data: prior } = await admin
+      .from("stripe_events")
+      .select("processed_at")
+      .eq("id", event.id)
+      .maybeSingle();
+    if (prior?.processed_at) return NextResponse.json({ received: true, replay: true });
   }
-  const { data: newer } = await admin
-    .from("stripe_events")
-    .select("id")
-    .eq("type", event.type)
-    .gt("created", new Date(event.created * 1000).toISOString())
-    .limit(1);
-  if (newer && newer.length > 0 && event.type.startsWith("customer.subscription.")) {
-    return NextResponse.json({ received: true, stale: true });
+  /* Scoped to the object. Unscoped, member A's subscription update was thrown
+     away because member B's happened to arrive first. */
+  if (event.type.startsWith("customer.subscription.") && ref.object_id) {
+    const { data: newer } = await admin
+      .from("stripe_events")
+      .select("id")
+      .eq("type", event.type)
+      .eq("object_id", ref.object_id)
+      .gt("created", new Date(event.created * 1000).toISOString())
+      .limit(1);
+    if (newer && newer.length > 0) {
+      await admin.from("stripe_events").update({ processed_at: new Date().toISOString() }).eq("id", event.id);
+      return NextResponse.json({ received: true, stale: true });
+    }
   }
 
   switch (event.type) {
@@ -439,5 +500,6 @@ export async function POST(request: NextRequest) {
       break;
   }
 
+  await admin.from("stripe_events").update({ processed_at: new Date().toISOString() }).eq("id", event.id);
   return NextResponse.json({ received: true });
 }

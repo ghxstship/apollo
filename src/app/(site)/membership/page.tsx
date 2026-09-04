@@ -63,6 +63,9 @@ export default async function MembershipPage() {
       .from("membership_plans")
       .select("*")
       .eq("active", true)
+      /* Unpublish on the Bridge and the tier leaves this page. It was a badge
+         with nothing behind it until 2026-09-04. */
+      .eq("published", true)
       .order("tier", { ascending: true }),
     supabase.auth.getUser(),
   ]);

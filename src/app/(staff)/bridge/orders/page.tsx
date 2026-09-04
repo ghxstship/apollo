@@ -81,6 +81,7 @@ export default async function OrdersPage() {
     amount: signedAmount(l.delta_cents),
     deltaCents: l.delta_cents,
     created: logDateTime(l.created_at, CLUB_ZONE),
+    stripeRef: l.stripe_ref ?? null,
   }));
 
   const shopOrders: ShopOrderRow[] = shop.map((o) => ({

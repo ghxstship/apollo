@@ -27,21 +27,49 @@ export type PlanRow = {
 export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLive: boolean }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
-  const [draft, setDraft] = React.useState<Record<string, { m: string; y: string }>>(() =>
+  const dollars = (cents: number | null) => (cents == null ? "" : (cents / 100).toFixed(2));
+  const [draft, setDraft] = React.useState<
+    Record<string, { m: string; y: string; price: string; annual: string }>
+  >(() =>
     Object.fromEntries(
-      plans.map((p) => [p.id, { m: p.priceId ?? "", y: p.annualPriceId ?? "" }])
+      plans.map((p) => [
+        p.id,
+        { m: p.priceId ?? "", y: p.annualPriceId ?? "", price: dollars(p.priceCents), annual: dollars(p.annualCents) },
+      ])
     )
   );
 
   const save = (p: PlanRow) => {
     const d = draft[p.id];
+    const priceCents = Math.round(Number(d.price) * 100);
+    const annualCents = d.annual.trim() === "" ? null : Math.round(Number(d.annual) * 100);
+    const priceMoved = priceCents !== p.priceCents || annualCents !== p.annualCents;
+    /* The displayed price and the Stripe price are two different records. Say
+       so at the moment they are about to diverge, not on the statement. */
+    if (
+      priceMoved &&
+      !window.confirm(
+        `This changes what members are quoted, not what Stripe charges. Change the Stripe price behind ${p.label} as well, or the two will disagree. Save it?`
+      )
+    ) {
+      return;
+    }
     startTransition(async () => {
       const res = await setPlanPricing(p.id, {
         stripe_price_id: d.m,
         stripe_price_id_annual: d.y,
+        ...(priceMoved ? { price_cents: priceCents, annual_price_cents: annualCents } : {}),
       });
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: `${p.label} priced.`, meta: "DUES" });
+    });
+  };
+
+  const setPublished = (p: PlanRow, published: boolean) => {
+    startTransition(async () => {
+      const res = await setPlanPricing(p.id, { published });
+      if (res.error) show({ msg: res.error, tone: "danger" });
+      else show({ msg: published ? `${p.label} is on the membership page.` : `${p.label} is off the membership page.`, meta: "DUES" });
     });
   };
 
@@ -75,7 +103,11 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
       <div className="hm-plans">
         {plans.map((p) => {
           const d = draft[p.id];
-          const dirty = d.m !== (p.priceId ?? "") || d.y !== (p.annualPriceId ?? "");
+          const dirty =
+            d.m !== (p.priceId ?? "") ||
+            d.y !== (p.annualPriceId ?? "") ||
+            d.price !== dollars(p.priceCents) ||
+            d.annual !== dollars(p.annualCents);
           const blocked = p.priceCents > 0 && !p.priceId;
           return (
             <div key={p.id} className={"hm-plan" + (blocked ? " hm-plan--blocked" : "")}>
@@ -91,6 +123,9 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
                 </span>
                 {blocked ? <Badge tone="danger">Cannot be paid for</Badge> : null}
                 {!p.published ? <Badge tone="outline">Unpublished</Badge> : null}
+                <Button variant="ghost" size="sm" disabled={pending} onClick={() => setPublished(p, !p.published)}>
+                  {p.published ? "Take off the page" : "Put on the page"}
+                </Button>
                 <span className="hm-plan__holders hm-mono">
                   {p.holders} {p.holders === 1 ? "HOLDER" : "HOLDERS"}
                 </span>
@@ -98,6 +133,27 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
 
               {p.priceCents > 0 ? (
                 <div className="hm-plan__ids">
+                  <Input
+                    label="Quoted — monthly ($)"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={d.price}
+                    onChange={(e) =>
+                      setDraft((s) => ({ ...s, [p.id]: { ...s[p.id], price: e.target.value } }))
+                    }
+                  />
+                  <Input
+                    label="Quoted — annual ($)"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="no annual price"
+                    value={d.annual}
+                    onChange={(e) =>
+                      setDraft((s) => ({ ...s, [p.id]: { ...s[p.id], annual: e.target.value } }))
+                    }
+                  />
                   <Input
                     label="Stripe price — monthly"
                     placeholder="price_…"

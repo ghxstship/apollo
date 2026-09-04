@@ -174,10 +174,27 @@ export async function refundToCard(
 
   /* Already refunded, in whole or in part. Stripe would refuse an over-refund
      itself, but its message is for a developer and this one is for a person. */
+  /* Dues settlements posted before 2026-09-04 recorded the INVOICE id, and a
+     refund is issued against the payment intent. Resolve it through Stripe's
+     own record of what paid the invoice, rather than refusing the refund. The
+     webhook keys refund and dispute rows on the intent, so the already-back
+     sum has to be read under both names. */
+  let intent = stripeRef;
+  if (stripeRef.startsWith("in_")) {
+    try {
+      const paid = await getStripe().invoicePayments.list({ invoice: stripeRef, limit: 1 });
+      const pi = paid.data[0]?.payment?.payment_intent;
+      intent = typeof pi === "string" ? pi : pi?.id ?? "";
+    } catch {
+      intent = "";
+    }
+    if (!intent) return { error: "Stripe has no card payment on file for that invoice." };
+  }
+
   const { data: back } = await supabase
     .from("account_ledger")
     .select("delta_cents")
-    .eq("stripe_ref", stripeRef)
+    .in("stripe_ref", intent === stripeRef ? [stripeRef] : [stripeRef, intent])
     .in("kind", ["refund", "dispute"]);
   const alreadyBack = (back ?? []).reduce((sum, r) => sum + Math.abs(r.delta_cents), 0);
   const refundable = settled.delta_cents - alreadyBack;
@@ -192,7 +209,7 @@ export async function refundToCard(
 
   try {
     await getStripe().refunds.create({
-      payment_intent: stripeRef,
+      payment_intent: intent,
       amount: amountCents,
       /* Read back in the Stripe dashboard by whoever asks why. */
       metadata: { reason: reason.slice(0, 200), by: staffId },

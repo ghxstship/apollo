@@ -65,7 +65,7 @@ export default async function AccountPage({
   const { joined } = await searchParams;
   const processorLive = stripeEnabled();
 
-  const [subRes, invoicesRes, cardsRes, accountRes, accountBalRes, installmentsRes, erasureRes] =
+  const [subRes, invoicesRes, cardsRes, accountRes, accountBalRes, installmentsRes, erasureRes, creditRes] =
     await Promise.all([
       /* Was "newest by created_at, any status". A superseded CANCELED row is
          newer than the live one it replaced, so this screen could say "Closed"
@@ -103,6 +103,8 @@ export default async function AccountPage({
          it is anonymised — read, not retyped, so the line below cannot drift
          from what the nightly job actually does. */
       supabase.rpc("club_setting", { p_key: "departed_erasure_days" }),
+      /* This month's unspent plan credit — the thing the dues buy. */
+      supabase.rpc("pass_credit_left", {}),
     ]);
   const erasureDays =
     typeof erasureRes.data === "number" && erasureRes.data > 0 ? erasureRes.data : 30;
@@ -120,6 +122,8 @@ export default async function AccountPage({
   const installments = installmentsRes.data ?? [];
 
   const status = subscription?.status ?? null;
+  const creditLeft = typeof creditRes.data === "number" ? creditRes.data : 0;
+  const creditMonth = new Date().toLocaleString("en-US", { month: "long", timeZone: zone ?? undefined }).toUpperCase();
   const ending = subscription?.cancel_at_period_end || status === "canceled";
   const periodEnd = subscription?.current_period_end ?? null;
 
@@ -178,6 +182,12 @@ export default async function AccountPage({
             {periodEnd ? (
               <p className="mbr-mono" style={{ marginTop: 6 }}>
                 {ending ? "ENDS" : "RENEWS"} {logDateYear(periodEnd, zone)}
+              </p>
+            ) : null}
+            {plan.monthly_credit_cents > 0 ? (
+              <p className="mbr-mono" style={{ marginTop: 6 }}>
+                {creditLeft > 0 ? price(creditLeft) : "$0"} OF {price(plan.monthly_credit_cents)} CREDIT LEFT ·{" "}
+                {creditMonth}
               </p>
             ) : null}
             {status === "past_due" ? (

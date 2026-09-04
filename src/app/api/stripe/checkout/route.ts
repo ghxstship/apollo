@@ -45,6 +45,11 @@ export async function POST(request: NextRequest) {
     metadata: { profile_id: user.id },
     success_url: `${origin}/portal?settled=1`,
     cancel_url: `${origin}/portal`,
+  }, {
+    /* Two clicks made two sessions, and both could be paid — the member
+       ended the night in credit. One balance, one session: Stripe returns the
+       same session for the same key inside its 24-hour window. */
+    idempotencyKey: `settle:${user.id}:${-balanceCents}`,
   });
 
   return NextResponse.json({ url: session.url });

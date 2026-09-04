@@ -123,6 +123,7 @@ export function PassControls({
   windowNote,
   recommended,
   priceCents,
+  creditLeftCents = 0,
   depositRequired,
   depositCents,
   addons,
@@ -173,6 +174,10 @@ export function PassControls({
   windowNote: string | null;
   recommended: boolean;
   priceCents: number;
+  /* This month's unspent plan credit. The database draws it down against the
+     pass, deposit and add-ons together, so the dialog says so before the
+     member confirms rather than after the statement does. */
+  creditLeftCents?: number;
   depositRequired: boolean;
   /* The episode's own figure — episodes.deposit_cents, no longer club-wide. */
   depositCents: number;
@@ -286,6 +291,9 @@ export function PassControls({
   const splitDraws = splitEligible && split ? split : null;
   const perDraw = splitDraws ? Math.floor(total / splitDraws) : 0;
   const dueToday = splitDraws ? total - perDraw * (splitDraws - 1) : total;
+  /* What the credit will cover of this booking. Shown against the account
+     figure only — a split is built server-side off the ledger charge. */
+  const creditApplied = Math.min(creditLeftCents, total);
 
   const unattached = addons.filter((a) => !attachedAddonIds.includes(a.id));
   const aboardQty = 1 + guests;
@@ -356,7 +364,7 @@ export function PassControls({
       </p>
     ) : null;
 
-  const pausedLine = `Your membership is paused — resume it on your page to change this pass. Release still works, and the ${creditHours}-hour clock is running.`;
+  const pausedLine = `Your membership is paused — resume it on the You page to change this pass. Release still works, and the ${creditHours}-hour clock is running.`;
 
   /* A lock governs claiming a NEW pass. It must never swallow one the member
      already holds — otherwise a waitlister cannot see their place or leave the
@@ -571,6 +579,7 @@ export function PassControls({
               episodeId={episodeId}
               position={waitlistPosition}
               autoClaim={autoClaim}
+              creditHours={creditHours}
             />
           )}
           <CrewCall episodeId={episodeId} mine={crewMine} seekers={[]} />
@@ -793,12 +802,20 @@ export function PassControls({
               </span>
             </div>
           ) : null}
+          {creditApplied > 0 ? (
+            <div style={rowStyle}>
+              <span>Plan credit</span>
+              <span className="mbr-mono" style={{ fontSize: 12 }}>
+                −{price(creditApplied)}
+              </span>
+            </div>
+          ) : null}
           <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
             <span className="mbr-mono">
               {splitDraws ? "DUE TODAY" : "DUE TO MEMBER ACCOUNT"}
             </span>
             <span className="mbr-mono" style={{ fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
-              {price(dueToday)}
+              {splitDraws || dueToday - creditApplied > 0 ? price(splitDraws ? dueToday : dueToday - creditApplied) : "$0"}
             </span>
           </div>
           {splitDraws ? (
