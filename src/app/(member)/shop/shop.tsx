@@ -328,7 +328,7 @@ export function Shop({
                   <span className="mbr-mono">{price(subtotal)}</span>
                 </div>
                 {discount > 0 ? (
-                  <div className="chd-sum chd-sum--brass">
+                  <div className="chd-sum chd-sum--gold">
                     <span>Global member discount</span>
                     <span className="mbr-mono">−{price(discount)}</span>
                   </div>

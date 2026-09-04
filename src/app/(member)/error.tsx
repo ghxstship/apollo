@@ -14,8 +14,8 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <h1 style={{ marginTop: 12 }}>That didn&rsquo;t land.</h1>
       <p style={{ maxWidth: 460, marginTop: 12 }}>Our end, not yours. Try again — if it holds, hail Shoreside and quote the reference.</p>
       <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <button className="hm-btn hm-btn--gold" onClick={reset} type="button">Try again</button>
-        <Link className="hm-btn hm-btn--ghost" href="/support">Hail Shoreside</Link>
+        <button className="ls-btn ls-btn--gold" onClick={reset} type="button">Try again</button>
+        <Link className="ls-btn ls-btn--ghost" href="/support">Hail Shoreside</Link>
       </p>
       {error.digest ? <p className="hm-mono" style={{ marginTop: 24, fontSize: 12 }}>REF {error.digest.toUpperCase()}</p> : null}
     </main>

@@ -126,7 +126,7 @@ export function Rota({
 
   return (
     <>
-      <div className="hm-stats">
+      <div className="hm-row">
         <Stat label="Short" value={short.length} sub={`${soon.length} INSIDE 14 DAYS`} />
         <Stat label="Unanswered" value={unanswered.length} sub="OFFERS INSIDE 48H" />
         <Stat label="Crew" value={crew.length} sub="ON THE LIST" />

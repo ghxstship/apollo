@@ -28,7 +28,7 @@ a{color:var(--text-link);text-decoration:underline;text-underline-offset:3px;
 a:hover{text-decoration-color:currentColor;text-decoration-thickness:2px}
 /* Anything that is a link only in markup — a card, a nav item, a button —
    opts out. These already set their own affordance. */
-a.ls-btn,a.hm-btn,a[class*="__card"],a[class*="-card"],a[class*="-row"],
+a.ls-btn,a[class*="__card"],a[class*="-card"],a[class*="-row"],
 nav a,.ls-tabs a,.hm-tabs a,.mbr-tabs a{text-decoration:none}
 nav a:hover,.ls-tabs a:hover,.hm-tabs a:hover,.mbr-tabs a:hover{text-decoration:underline}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}

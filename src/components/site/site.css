@@ -146,12 +146,22 @@ main .ls-section + .ls-section{padding-top:0}
 .ws-step h3{font-size:var(--text-display-xs)}
 .ws-step p{font-size:var(--text-xs);color:var(--text-2);margin-top:8px;max-width:30ch}
 @media (max-width:960px){.ws-steps{grid-template-columns:1fr}.ws-hero__in{min-height:460px}}
-.ws-harbor-row{display:grid;grid-template-columns:1fr auto auto;gap:24px;align-items:baseline;padding:18px 0;border-top:1px solid var(--line-faint)}
-.ws-harbor-row:last-of-type{border-bottom:1px solid var(--line-faint)}
-.ws-harbor-row h3{font-size:var(--text-display-xs)}
-.ws-harbor-row .hm{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
-@media (max-width:640px){.ws-harbor-row{grid-template-columns:1fr;gap:8px}}
-.ws-harbor-note{margin-top:24px;font-size:var(--text-sm);color:var(--text-3)}
+/* Renamed from .ws-city-row with the harbor→city rename, which updated the
+   markup and left this file behind. The class in the JSX has therefore matched
+   NOTHING since — the row had no grid, no gap and no alignment, so the status
+   badge sat on top of the coordinates rather than in its own column. A rename
+   that misses a stylesheet fails silently and looks like a spacing bug.
+
+   align-items:center rather than baseline. A Badge is inline-flex, so its
+   baseline is its own first line box rather than the text's — against a display
+   heading and a mono line of different sizes, baseline hung it low. Centring is
+   what the eye reads as aligned when three different type sizes share a row. */
+.ws-city-row{display:grid;grid-template-columns:1fr auto auto;gap:24px;align-items:center;padding:18px 0;border-top:1px solid var(--line-faint)}
+.ws-city-row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.ws-city-row h3{font-size:var(--text-display-xs)}
+.ws-city-row .hm{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+@media (max-width:640px){.ws-city-row{grid-template-columns:1fr;gap:8px;justify-items:start}}
+.ws-city-note{margin-top:24px;font-size:var(--text-sm);color:var(--text-3)}
 .ws-dispatch-teaser{background:var(--surface-tint);padding-block:var(--rhythm-section-tight)}
 .ws-dp-row{display:grid;grid-template-columns:110px 1fr auto;gap:24px;padding:22px 0;border-bottom:1px solid var(--line-faint);align-items:baseline}
 .ws-dp-row:first-of-type{border-top:1px solid var(--line-faint)}
@@ -574,3 +584,12 @@ main .ls-section + .ls-section{padding-top:0}
 .ev-crew__who span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
 /* "Sailed together 3×" — a fact the club has, not an inference about anybody. */
 .ev-crew__met{font-style:normal;color:var(--gold-deep);margin-inline-start:5px}
+/* The reading column of a crew posting. min-width:0 so a long line wraps
+   inside the grid rather than widening it against the sticky form. */
+.crew-role__body{min-width:0}
+/* The manifest's list. Named so the rows have an addressable parent — a bare
+   div here is the reason nothing could target them for the sticky month rule. */
+.ws-vlist{display:block}
+/* The episode group in the gallery. __head and __meta were both defined and
+   the element holding them was not, so the groups ran together with no gap. */
+.gl-group{display:flex;flex-direction:column;gap:24px;margin-top:40px}

@@ -27,10 +27,10 @@ export default function Error({
         and quote the reference below.
       </p>
       <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <button className="hm-btn hm-btn--gold" onClick={reset} type="button">
+        <button className="ls-btn ls-btn--gold" onClick={reset} type="button">
           Try again
         </button>
-        <Link className="hm-btn hm-btn--ghost" href="/support">
+        <Link className="ls-btn ls-btn--ghost" href="/support">
           Hail Shoreside
         </Link>
       </p>

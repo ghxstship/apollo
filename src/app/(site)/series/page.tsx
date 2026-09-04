@@ -99,7 +99,7 @@ export default async function SeriesPage() {
         </div>
       )}
 
-      <p className="ws-harbor-note">
+      <p className="ws-city-note">
         A season belongs to its city. Season I is Miami&rsquo;s first year;
         another city opens on its own Season I, and both are true at once.
       </p>

@@ -14,8 +14,8 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <h1 style={{ marginTop: 12 }}>The gangway lost the signal.</h1>
       <p style={{ maxWidth: 460, marginTop: 12 }}>Stamps already taken are held on this device and flush when the connection returns. Try again, or board by hand and stamp them after.</p>
       <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <button className="hm-btn hm-btn--gold" onClick={reset} type="button">Try again</button>
-        <Link className="hm-btn hm-btn--ghost" href="/gangway">Back to the gangway</Link>
+        <button className="ls-btn ls-btn--gold" onClick={reset} type="button">Try again</button>
+        <Link className="ls-btn ls-btn--ghost" href="/gangway">Back to the gangway</Link>
       </p>
       {error.digest ? <p className="hm-mono" style={{ marginTop: 24, fontSize: 12 }}>REF {error.digest.toUpperCase()}</p> : null}
     </main>

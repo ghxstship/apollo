@@ -352,7 +352,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
                 <div className="pr-card__m">{m.meta}</div>
                 <div className="pr-card__acts">
                   {m.action.type === "link" ? (
-                    <Link href={m.action.href} className="ls-btn ls-btn--brass ls-btn--sm">
+                    <Link href={m.action.href} className="ls-btn ls-btn--gold ls-btn--sm">
                       {m.confirm}
                     </Link>
                   ) : (

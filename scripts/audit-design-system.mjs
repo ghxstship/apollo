@@ -916,9 +916,69 @@ function checkFoundingYear() {
 
 /* ── report ───────────────────────────────────────────────────────────────── */
 
+/* ── check: orphan classes ────────────────────────────────────────────────── */
+/* A className that no stylesheet defines. It is the failure mode with no
+   symptom: nothing throws, nothing logs, the element simply renders with
+   whatever the cascade happens to give it and the page looks like a spacing
+   bug rather than a missing rule.
+
+   It found the real thing. The harbor→city rename updated the markup and left
+   site.css behind, so .ws-city-row matched nothing — the home page's city rows
+   had no grid, no gap and no alignment, and the status badge sat on top of the
+   coordinates. And the seven error and 404 pages asked for hm-btn, a class
+   that has never existed in this repository, so every one of them rendered its
+   only button as unstyled text.
+
+   Only static, whole className strings are read. A composed name — "ls-tag--"
+   plus a tone — is not knowable here and is not guessed at; the tone lists are
+   short and their modifiers are covered by their own base class being present.
+   Utility prefixes that belong to no stylesheet are exempted by name below. */
+
+/* Classes handed out by something other than our CSS: framework hooks and the
+   three state classes toggled from JS whose rules live in a media query we do
+   parse — listed rather than pattern-matched so adding one is a decision. */
+const CLASS_EXEMPT = new Set(["sr-only", "group", "dark", "light"]);
+
+function checkOrphanClasses() {
+  const defined = new Set();
+  for (const p of CSS) {
+    for (const m of readFileSync(p, "utf8").matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) {
+      defined.add(m[1]);
+    }
+  }
+  const hits = [];
+  let total = 0;
+  const seen = new Set();
+  for (const p of CODE) {
+    lines(p).forEach((line, i) => {
+      /* The literal has to be the entire value. `className={"ls-rise-" + n}`
+             is a composed name and the half before the plus is not a class —
+             reading it as one reported .ls-rise- as missing. */
+        for (const m of line.matchAll(/className=(?:"([^"{}]*)"|\{"([^"{}]*)"\})/g)) {
+          const value = m[1] ?? m[2];
+        for (const cls of value.trim().split(/\s+/)) {
+          if (!cls || CLASS_EXEMPT.has(cls)) continue;
+          total++;
+          if (defined.has(cls)) continue;
+          /* One report per class. Seven files asking for the same missing
+             class is one missing class, and listing it seven times buries
+             the other six orphans under it. */
+          if (seen.has(cls)) continue;
+          seen.add(cls);
+          const hit = { file: rel(p), line: i + 1, why: `.${cls} — no CSS rule defines it` };
+          const why = exempt(line);
+          hits.push(why ? { ...hit, exempt: why } : hit);
+        }
+      }
+    });
+  }
+  return { name: "orphan-classes", rule: "every static className has a rule in some stylesheet",
+    total, hits: hits.filter((h) => !h.exempt), exempted: hits.filter((h) => h.exempt) };
+}
+
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
 const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear(), checkInline(), checkTracking(),
-                checkHueArc(), checkHueGap(), checkContrast(), checkNoRawHex()]
+                checkHueArc(), checkHueGap(), checkContrast(), checkNoRawHex(), checkOrphanClasses()]
   .filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {

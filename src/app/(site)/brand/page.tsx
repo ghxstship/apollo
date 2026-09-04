@@ -337,7 +337,7 @@ export default function BrandKitPage() {
           </div>
         </section>
 
-        <section id="rooms" className="bk-sec bk-rooms">
+        <section id="rooms" className="bk-sec">
           <SectionHeader eyebrow="05 — One stage, different spotlights" title="The umbrella and its rooms." />
           <p className="bk-note" style={{ marginTop: 0 }}>
             Divisions never get their own logos, colours beyond the accent, or

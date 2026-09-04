@@ -17,10 +17,10 @@ export default function NotFound() {
         sailed under a different name during the rebrand.
       </p>
       <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <Link className="hm-btn hm-btn--gold" href="/">
+        <Link className="ls-btn ls-btn--gold" href="/">
           Back to the club
         </Link>
-        <Link className="hm-btn hm-btn--ghost" href="/support">
+        <Link className="ls-btn ls-btn--ghost" href="/support">
           Hail Shoreside
         </Link>
       </p>

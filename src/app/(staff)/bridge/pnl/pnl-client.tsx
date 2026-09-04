@@ -81,7 +81,7 @@ export function PnlClient({
 
   return (
     <>
-      <div className="hm-stats">
+      <div className="hm-row">
         <Stat label="Costed" value={`${costed.length} of ${withRevenue.length}`} sub="NIGHTS WITH REVENUE" />
         <Stat
           label="Margin"

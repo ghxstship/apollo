@@ -379,3 +379,8 @@
   .hm-pnl__row{grid-template-columns:1fr auto;gap:8px}
   .hm-pnl__line{grid-template-columns:1fr auto}
 }
+
+/* Middle cells of the rota and P&L grids. min-width:0 is the whole job: a grid
+   item defaults to min-content, so a long episode title pushed the columns wide
+   and forced the row to scroll instead of truncating. */
+.hm-rota__what,.hm-pnl__what{min-width:0}

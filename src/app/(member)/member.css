@@ -524,3 +524,18 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .deck-feed > .ls-toolbar{margin-block-end:0}
 /* The pause allowance, stated before the question rather than after it. */
 .you-allowance{margin:0 0 10px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--gold-deep)}
+
+/* Named wrappers that had no rules. Each is a real box the layout depends on,
+   so they are defined rather than deleted — a grid or flex child defaults to
+   min-content width, which is what let a long name or a long line widen the
+   row instead of wrapping inside it. */
+.dir-head__who{min-width:0}
+.dir-row__body{min-width:0;flex:1}
+/* The month band in the statement: a row group heading, not a data row. */
+.stm-month th{padding-top:28px;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-align:left}
+.stm-month:first-child th{padding-top:0}
+/* Everything older than the current month, folded away by default. */
+.stm-more{margin-top:32px}
+.stm-more summary{cursor:pointer;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep)}
+/* Page shells for the itinerary's empty state and for standing. */
+.cht,.std{display:block}

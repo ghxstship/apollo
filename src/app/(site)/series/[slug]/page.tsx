@@ -142,7 +142,7 @@ export default async function SeriesDetailPage({
         </div>
       )}
 
-      <p className="ws-harbor-note">
+      <p className="ws-city-note">
         Every episode above is filed under {series.label}.{" "}
         <Link href="/series">The other four strands</Link> run alongside it, and{" "}
         <Link href="/episodes">the manifest</Link> puts all five in date order.
