@@ -24,7 +24,7 @@ export const metadata: Metadata = {
    surfaces state the same number and carry the same note — the homepage hero,
    the homepage closing band, and the site description in src/app/layout.tsx. */
 const BOILER =
-  "[un] is a social club, filmed. Season I runs fifty-two episodes out of Miami, 4 September 2026 to 29 August 2027, across five series: Anchor on the water, Off Soundings past the city limits, Night Watch after hours, Even Keel for fitness and wellness, and Showboat for entertainment. The flagship sails a flotilla of four yachts, forty aboard. Six divisions share one anchor and swap the accent only: [un] Hinged, [un] Bound, [un] Limited, [un] Scripted, [un] Cut and [un] Brand. Membership is by application or invitation. No scripts. No second takes.";
+  "[un] is a social club run as an unscripted series. Season I runs fifty-two episodes out of Miami, 4 September 2026 to 29 August 2027, across five series: Anchor on the water, Off Soundings past the city limits, Night Watch after hours, Even Keel for fitness and wellness, and Showboat for entertainment. The flagship sails a flotilla of four yachts, forty aboard. Six divisions share one anchor and swap the accent only: [un] Hinged, [un] Bound, [un] Limited, [un] Scripted, [un] Cut and [un] Brand. Membership is by application or invitation. No scripts. No second takes.";
 
 const SEAS: Record<string, string> = {
   dawn: "var(--scene-golden)",
@@ -301,8 +301,9 @@ export default function BrandKitPage() {
               <div className="ex">No scripts. No second takes.</div>
               <div className="ex">Nobody rehearsed this. The bar is open.</div>
               {/* The specimen has to match the page it is a specimen of — the
-                  homepage band said 12 cabins and now says 40 aboard. */}
-              <div className="ex">40 aboard. 200 applicants.</div>
+                  homepage band said 12 cabins, then 40 aboard, and now states
+                  the season. */}
+              <div className="ex">Fifty-two episodes. Two hundred applicants.</div>
             </div>
             <div className="no">
               <div className="h">Never</div>

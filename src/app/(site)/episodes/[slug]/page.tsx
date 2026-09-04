@@ -45,7 +45,7 @@ const FAQS: Record<string, Array<[string, string]>> = {
     ],
     [
       "What if the weather turns?",
-      "Ashore, we hold for rain, not for clouds. Holds are called by 18:00 the night before and your seat carries forward.",
+      "Ashore, we hold for rain, not for clouds. Holds are called by 18:00 the night before and your pass carries forward.",
     ],
     [
       "Can I bring a guest?",
@@ -430,7 +430,7 @@ export default async function EpisodePage({
                     key={f.id}
                     className="ev-frames__img"
                     src={f.url}
-                    alt={f.caption ?? `${episode.title} — a frame from the sail`}
+                    alt={f.caption ?? `${episode.title} — a frame from the episode`}
                   />
                 ))}
               </div>
@@ -439,7 +439,7 @@ export default async function EpisodePage({
                 className="ev-frames__tk"
                 style={{ background: SEAS[episode.media] ?? SEAS.dusk }}
               >
-                <span>Imagery TK — frames post after the sail, credited by name.</span>
+                <span>Imagery TK — frames post after the episode, credited by name.</span>
               </div>
             )}
           </div>
@@ -461,7 +461,9 @@ export default async function EpisodePage({
               {cancelled ? (
                 <Badge tone="caution">Cancelled</Badge>
               ) : sailed ? (
-                <Badge tone="outline">Sailed</Badge>
+                /* Wrapped, not Sailed — the series page's word, true ashore
+                   as well as afloat. */
+                <Badge tone="outline">Wrapped</Badge>
               ) : episode.status === "weather_hold" ? (
                 <Badge tone="caution">Weather hold</Badge>
               ) : episode.status === "live" ? (
@@ -494,7 +496,7 @@ export default async function EpisodePage({
               </p>
             ) : episode.status === "live" ? (
               <p className="ev-note">
-                This one is on the water. Follow along on the Open Deck, or find the
+                This one is underway. Follow along on the Open Deck, or find the
                 next episode of the season.
               </p>
             ) : onRequest ? (
@@ -679,7 +681,7 @@ export default async function EpisodePage({
                         {w.role}
                         {known.get(w.crewId) ? (
                           <em className="ev-crew__met">
-                            · sailed together {known.get(w.crewId)}×
+                            · {known.get(w.crewId)} {known.get(w.crewId) === 1 ? "episode" : "episodes"} together
                           </em>
                         ) : null}
                       </span>

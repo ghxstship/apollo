@@ -7,7 +7,7 @@ import { frameGroups, GALLERY_FRAME_LIMIT } from "@/components/site/episode-data
 export const metadata: Metadata = {
   alternates: { canonical: "/gallery" },
   title: "Gallery",
-  description: "The season in frames — shot by members, credited by name, never staged.",
+  description: "The season in frames — by members, credited by name, never staged.",
 };
 
 const SEAS: Record<string, string> = {
@@ -54,12 +54,14 @@ export default async function GalleryPage() {
   return (
     <div className="ls-container">
       <div className="ws-phead">
-        <span className="ls-eyebrow">The gallery</span>
-        <h1>Proof it happened.</h1>
+        {/* Route = nav = title = h1: the page is Gallery everywhere it is
+            named, and the line that was the h1 is the eyebrow. */}
+        <span className="ls-eyebrow">Proof it happened</span>
+        <h1>Gallery.</h1>
         <p className="ws-phead__sub">
-          The season in frames — shot by members, credited by name, never staged.
+          The season in frames — by members, credited by name, never staged.
           {groups.length === 0
-            ? " Placeholder seas hold each frame until the film comes back."
+            ? " Placeholder seas hold each frame until the first frames land."
             : capped
               ? ` The ${GALLERY_FRAME_LIMIT} newest frames, one entry per episode, most recent first — the rest live on each episode's page.`
               : " One entry per episode, most recent first."}
@@ -134,7 +136,7 @@ export default async function GalleryPage() {
             the end of it, and that half stays. The brief itself is on /brand
             under Imagery, where a photographer will look for it. */}
         <p>Never cool, never clinical, never staged.</p>
-        <span>Member film · credited by name</span>
+        <span>Member frames · credited by name</span>
       </div>
     </div>
   );

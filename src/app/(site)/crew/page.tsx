@@ -34,8 +34,11 @@ export default async function CrewIndexPage() {
   return (
     <div className="ls-container">
       <div className="ws-phead">
-        <span className="ls-eyebrow">The Cast & Crew</span>
-        <h1>Who runs it.</h1>
+        {/* Route = nav = title = h1. A raw ampersand, not &amp;: the
+            vocabulary gate matches this term as a literal substring of the
+            source and does not decode entities. */}
+        <span className="ls-eyebrow">Who runs it</span>
+        <h1>The Cast & Crew.</h1>
         <p className="ws-phead__sub">
           The cast are the ones it happens to. Crew are the ones who make it
           happen — and unlike most of this industry, they are not anonymous. You

@@ -53,7 +53,7 @@ export default async function LorePage() {
           render one string on the server and another after hydration. */}
       <LogShelf entries={entries} />
       <p className="dp-footnote">
-        The Log is written by the cast and crew, not a content team. Sailed
+        The Log is written by the cast and crew, not a content team. Seen
         something, cooked something, learned something? File a dispatch —{" "}
         <a href={`mailto:${MAILBOX.casting}`}>{MAILBOX.casting}</a>. Bylines always.
       </p>

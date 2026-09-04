@@ -13,43 +13,24 @@ const MONO: React.CSSProperties = {
   color: "var(--text-3)",
 };
 
+/* The ladder reads site.css's .as-ladder rules, which were written for it and
+   then never wired in: the list kept fifteen inline style objects and the one
+   state that matters — the stage the applicant is AT — looked exactly like the
+   ones after it. Three states now: done, now, ahead. `reached` counts stages
+   climbed, so the last climbed one is where they stand. */
 function Ladder({ reached }: { reached: number }) {
   return (
-    <ol
-      style={{ listStyle: "none", margin: "28px 0 0", padding: 0, borderTop: "1px solid var(--line-faint)" }}
-    >
+    <ol className="as-ladder">
       {STAGES.map((stage, i) => {
-        const done = i < reached;
+        const state = i < reached - 1 ? "done" : i === reached - 1 ? "now" : "ahead";
         return (
-          <li
-            key={stage.title}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "28px 1fr",
-              gap: 14,
-              padding: "16px 0",
-              borderBottom: "1px solid var(--line-faint)",
-              opacity: done ? 1 : 0.55,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                width: 12,
-                height: 12,
-                marginTop: 5,
-                borderRadius: 999,
-                border: "1px solid var(--line-strong)",
-                background: done ? "var(--brass-deep)" : "transparent",
-              }}
-            ></span>
+          <li key={stage.title} data-state={state}>
+            <span aria-hidden="true" className="as-ladder__dot"></span>
             <div>
-              <b style={{ fontSize: 14, fontWeight: 700 }}>{stage.title}</b>
-              <p style={{ ...MONO, marginTop: 5, textTransform: "none", fontSize: "var(--text-xs)" }}>
-                {stage.note}
-              </p>
-              <span style={{ ...MONO, display: "block", marginTop: 6 }}>
-                {done ? "REACHED" : "AHEAD"}
+              <b className="as-ladder__t">{stage.title}</b>
+              <p className="as-ladder__note">{stage.note}</p>
+              <span className="as-ladder__state">
+                {state === "done" ? "Reached" : state === "now" ? "You are here" : "Ahead"}
               </span>
             </div>
           </li>

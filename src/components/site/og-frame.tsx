@@ -8,7 +8,12 @@ import { ANCHOR } from "@/lib/brand";
    The literals below are the one place in src that may hold raw hex. next/og
    rasterises on the server with no document and no cascade, so var(--noir-900)
    resolves to nothing and the card renders transparent-on-transparent. Each value
-   is copied from the palette and has to be re-copied when the palette moves. */
+   is copied from the palette and has to be re-copied when the palette moves.
+
+   The same goes for type sizes: fontSize: "var(--text-xl)" is not a size to
+   satori, it is an unparseable string, and the eyebrow, standfirst and meta
+   line fell back to the engine's default. The numbers below are the ladder's
+   own --text-xl (22) and --text-lg (18), transcribed for the same reason. */
 
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_CONTENT_TYPE = "image/png";
@@ -61,9 +66,9 @@ export function OgFrame({
         }}
       >
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: "var(--text-xl)", letterSpacing: 15 }}>{ANCHOR}</div>
+          <div style={{ display: "flex", fontSize: 22, letterSpacing: 15 }}>{ANCHOR}</div>
           <div
-            style={{ display: "flex", fontSize: "var(--text-lg)", letterSpacing: 6, color: MUTED, marginTop: 18 }}
+            style={{ display: "flex", fontSize: 18, letterSpacing: 6, color: MUTED, marginTop: 18 }}
           >
             {eyebrow}
           </div>
@@ -74,7 +79,7 @@ export function OgFrame({
             <div
               style={{
                 display: "flex",
-                fontSize: "var(--text-xl)",
+                fontSize: 22,
                 lineHeight: 1.4,
                 color: MUTED,
                 marginTop: 22,
@@ -84,7 +89,7 @@ export function OgFrame({
             </div>
           ) : null}
         </div>
-        <div style={{ display: "flex", fontSize: "var(--text-lg)", letterSpacing: 5, color: MUTED }}>{meta}</div>
+        <div style={{ display: "flex", fontSize: 18, letterSpacing: 5, color: MUTED }}>{meta}</div>
       </div>
     </div>
   );

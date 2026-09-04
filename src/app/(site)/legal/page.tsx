@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 export default function LegalPage() {
   return (
     <div className="lg-wrap">
-      <span className="ls-eyebrow" style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}>
-        The fine print
-      </span>
-      <h1>Short, honest, binding.</h1>
+      {/* Route = nav = title = h1: the footer column and the tab call this
+          page The fine print, so the h1 does too. */}
+      <span className="ls-eyebrow ls-eyebrow--page">Short, honest, binding</span>
+      <h1>The fine print.</h1>
       <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "56ch" }}>
         Written to be read. If anything here surprises you, that&rsquo;s a bug —
         write to <a href={`mailto:${MAILBOX.shore}`}>{MAILBOX.shore}</a>.

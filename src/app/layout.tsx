@@ -73,7 +73,7 @@ export const metadata: Metadata = {
      public surfaces state this number; all four now say forty, and all four
      change together when the owner settles it. */
   description:
-    "An IRL social club, filmed. Season I is fifty-two episodes across five series, afloat and ashore, out of Miami — forty aboard the flagship. No scripts. No second takes.",
+    "An IRL social club run as an unscripted series. Season I is fifty-two episodes across five series, afloat and ashore, out of Miami — forty aboard the flagship. No scripts. No second takes.",
   manifest: "/manifest.webmanifest",
   icons: {
     apple: "/apple-icon.png",

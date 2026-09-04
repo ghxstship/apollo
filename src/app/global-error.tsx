@@ -1,5 +1,7 @@
 "use client";
 
+import { ANCHOR } from "@/lib/brand";
+
 /* The last net: a throw in the root layout itself, where no shell or stylesheet
    is guaranteed. It has to carry its own html and body tags.
 
@@ -31,7 +33,9 @@ export default function GlobalError({
           padding: "96px 24px",
         }}
       >
-        <p style={{ letterSpacing: "0.18em", fontSize: 12, opacity: 0.7 }}>[un]</p>
+        {/* ANCHOR, not a typed [un]: brand.ts exists so no string literal of
+            the mark can drift. */}
+        <p style={{ letterSpacing: "0.18em", fontSize: 12, opacity: 0.7 }}>{ANCHOR}</p>
         <h1 style={{ marginTop: 12, fontSize: 36 }}>That didn&rsquo;t land.</h1>
         <p style={{ maxWidth: 460, marginTop: 12, lineHeight: 1.6 }}>
           Our end, not yours. Reload, and if it keeps happening write to us.

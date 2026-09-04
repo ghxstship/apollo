@@ -19,6 +19,10 @@
 .ws-nav__link:hover{color:var(--bone);text-decoration:none}
 .ws-nav__link--on{color:var(--bone);border-bottom-color:var(--gold-bright)}
 .ws-nav__coords{margin-left:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3);white-space:nowrap}
+/* Seven labels, the search field, the toggle and the CTA already fill the bar
+   between 960 and 1180px; the coordinate is the one decorative thing on it
+   and the first to yield. Without this the row overflowed the container. */
+@media (max-width:1180px){.ws-nav__coords{display:none}.ws-nav__end{margin-left:auto}}
 .ws-nav__end{display:flex;align-items:center;gap:14px}
 .ws-nav__burger{display:none}
 .ws-menu{position:fixed;inset:0;z-index:920;background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px}
@@ -582,7 +586,7 @@ main .ls-section + .ls-section{padding-top:0}
 .ev-crew__who{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ev-crew__who b{font-size:var(--text-sm);font-weight:500}
 .ev-crew__who span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
-/* "Sailed together 3×" — a fact the club has, not an inference about anybody. */
+/* "3 episodes together" — a fact the club has, not an inference about anybody. */
 .ev-crew__met{font-style:normal;color:var(--gold-deep);margin-inline-start:5px}
 /* The reading column of a crew posting. min-width:0 so a long line wraps
    inside the grid rather than widening it against the sticky form. */

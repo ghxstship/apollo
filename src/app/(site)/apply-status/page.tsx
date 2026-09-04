@@ -12,13 +12,10 @@ export const metadata: Metadata = {
 export default function ApplyStatusPage() {
   return (
     <div className="lg-wrap">
-      <span
-        className="ls-eyebrow"
-        style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}
-      >
-        Applicants
-      </span>
-      <h1>Where you stand.</h1>
+      {/* Route = nav = title = h1: Shoreside links here as the application
+          status page and the tab says the same, so the h1 does too. */}
+      <span className="ls-eyebrow ls-eyebrow--page">Applicants · Where you stand</span>
+      <h1>Application status.</h1>
       <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "54ch" }}>
         No black box, no silence. Four stages, and you can read yours any hour of the
         day. Enter the address you applied with.

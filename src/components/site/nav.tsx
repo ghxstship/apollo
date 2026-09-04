@@ -19,14 +19,20 @@ const LINKS: Array<[string, string]> = [
      /membership was Casting here and Membership in the footer and the page
      title — one destination under two names, which teaches a reader they are
      two places. Casting is the show's word, so Casting is the name everywhere;
-     the page's own eyebrow already read it. */
+     the page's own eyebrow already read it.
+
+     /crew read Crew wanted here after hiring moved to /crew/wanted and /crew
+     became the people — the label was a page behind the route. The nav names
+     the cast, which is what a show puts in its chrome; hiring keeps its own
+     link in the footer. A raw ampersand, not &amp;: the vocabulary gate
+     matches the term as a literal substring of the source. */
   ["/episodes", "Episodes"],
   ["/series", "Series"],
   ["/the-show", "The show"],
   ["/membership", "Casting"],
   ["/log", "The Log"],
   ["/gallery", "Gallery"],
-  ["/crew", "Crew wanted"],
+  ["/crew", "The Cast & Crew"],
 ];
 
 /* The home port. This read 33.98°N 118.45°W — Marina del Rey — for a club
@@ -50,7 +56,7 @@ export function SiteNav() {
   const isOn = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <nav className="ws-nav">
+    <nav className="ws-nav" aria-label="Main">
       <div className="ls-container ws-nav__in">
         <Link href="/" className="ws-nav__logo" aria-label={`${ANCHOR} — home`}>
           <LockupHorizontal height={34} />
@@ -61,6 +67,7 @@ export function SiteNav() {
               key={href}
               href={href}
               className={"ws-nav__link" + (isOn(href) ? " ws-nav__link--on" : "")}
+              aria-current={isOn(href) ? "page" : undefined}
             >
               {label}
             </Link>
@@ -100,7 +107,7 @@ export function SiteNav() {
           </div>
           <div className="ws-menu__links">
             {LINKS.map(([href, label]) => (
-              <Link key={href} href={href} onClick={close}>
+              <Link key={href} href={href} onClick={close} aria-current={isOn(href) ? "page" : undefined}>
                 {label}
               </Link>
             ))}

@@ -23,8 +23,10 @@ export async function generateMetadata({
   const where = role.remote ? "Remote" : role.city;
   return {
     alternates: { canonical: `/crew/wanted/${role.slug}` },
-    title: `${role.title} — ${where}`,
-    description: role.blurb ?? undefined,
+    /* The role's own name, matching the h1; where it is lives in the
+       description when the posting carries no blurb. */
+    title: role.title,
+    description: role.blurb ?? [role.dept, role.employment, where].filter(Boolean).join(" · "),
   };
 }
 

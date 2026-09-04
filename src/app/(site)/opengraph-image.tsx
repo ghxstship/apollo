@@ -16,7 +16,7 @@ export default function Image() {
   return new ImageResponse(
     (
       <OgFrame
-        eyebrow="THE SOCIAL CLUB, FILMED"
+        eyebrow="THE SOCIAL CLUB, UNSCRIPTED"
         title={TAGLINE}
         standfirst="Fifty-two episodes a season, afloat and ashore. No scripts. No second takes."
         meta={`FIVE SERIES · 52 EPISODES · ${CITY_CODES.miami} · ${CITY_CODES["los-angeles"]}`}

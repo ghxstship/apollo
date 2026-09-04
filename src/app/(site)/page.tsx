@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   /* absolute, or the root template appends the anchor to a title that already
      opens with it — "[un] anything goes here · [un]" shipped once. */
   title: { absolute: `${ANCHOR} ${TAGLINE}` },
+  /* Its own line rather than the root's, so the home page's summary reads in
+     the show's register wherever the root description has not caught up. */
+  description:
+    "An IRL social club run as an unscripted series. Season I is fifty-two episodes across five series, afloat and ashore, out of Miami. No scripts. No second takes.",
 };
 
 const STEPS: Array<[string, string]> = [
@@ -132,10 +136,10 @@ export default async function HomePage() {
           </p>
           <div className="ws-hero__cta">
             <LinkButton href="/membership#apply" variant="gold" size="lg">
-              Apply to be cast
+              Apply now
             </LinkButton>
             <LinkButton href="/episodes" variant="ghost" size="lg" inverse>
-              See the episodes <Icon name="ArrowUpRight" size={16} />
+              View all episodes <Icon name="ArrowUpRight" size={16} />
             </LinkButton>
           </div>
         </div>
@@ -164,7 +168,7 @@ export default async function HomePage() {
             title="Next up. Nobody knows how it ends."
             aside={
               <LinkButton href="/episodes" variant="ghost">
-                All episodes <Icon name="ArrowUpRight" size={15} />
+                View all episodes <Icon name="ArrowUpRight" size={15} />
               </LinkButton>
             }
           />
@@ -338,6 +342,9 @@ export default async function HomePage() {
               episode headcount for the flagship, standing in for the size of
               the club. The season is the true measure and it needs no owner
               ruling to state; the tension the line is for survives intact. */}
+          {/* TODO(owner): two hundred applicants is the figure this band has
+              carried since the 12-cabins draft and nothing in the data
+              confirms it. Confirm or replace before the season opens. */}
           <h2>Fifty-two episodes. Two hundred applicants.</h2>
           <p>
             Casting is by application or invitation. Apply once, board a season —
@@ -345,7 +352,7 @@ export default async function HomePage() {
           </p>
           <div style={{ marginTop: 32 }}>
             <LinkButton href="/membership#apply" variant="outline" size="lg" inverse>
-              Apply to be cast
+              Apply now
             </LinkButton>
           </div>
         </div>

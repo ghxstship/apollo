@@ -28,8 +28,10 @@ export async function generateMetadata({
   if (!person) return { title: "Not on the roster" };
   return {
     alternates: { canonical: `/crew/${person.slug}` },
-    title: `${person.display_name} — ${person.role_title}`,
-    description: person.bio ?? undefined,
+    /* The name alone: the h1 says it, and the tab should say the same thing.
+       The role rides in the description when there is no bio to carry it. */
+    title: person.display_name,
+    description: person.bio ?? person.role_title,
   };
 }
 

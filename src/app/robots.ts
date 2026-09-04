@@ -15,7 +15,17 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       // Member surfaces stay off the charts — derived from the same
       // protected list the auth proxy enforces.
-      disallow: [...manifest.protectedPrefixes.map((p) => p + "/"), ...manifest.protectedPrefixes, "/auth/"],
+      /* /sign carries one-time tokens and /api and /preview are not pages;
+         none of the three is in the protected list because none needs a
+         session, which is exactly why they need naming here. */
+      disallow: [
+        ...manifest.protectedPrefixes.map((p) => p + "/"),
+        ...manifest.protectedPrefixes,
+        "/auth/",
+        "/sign/",
+        "/api/",
+        "/preview/",
+      ],
     },
     sitemap: SITE_URL + "/sitemap.xml",
   };

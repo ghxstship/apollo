@@ -38,16 +38,17 @@ export default async function CrewPage() {
             The Cast & Crew
           </Link>
         </span>
-        <h1>Work the season.</h1>
-        {/* Was "Work the water" over a paragraph about running it. Thirty-four
-            of the fifty-two episodes never leave land, and two of these four
-            roles never go near it — a crew page that hires for a boat is
-            advertising a job the club mostly does not have. */}
+        {/* Route = nav = title = h1: Crew wanted is the name in the footer and
+            the tab, so it is the name here. "Work the season" opens the
+            standfirst instead — it was "Work the water" once, over a paragraph
+            about running it, and thirty-four of the fifty-two episodes never
+            leave land. */}
+        <h1>Crew wanted.</h1>
         <p className="ws-phead__sub">
           {/* A raw ampersand, not &amp;: the vocabulary gate matches this term
               as a literal substring of the source and does not decode entities,
               so the escaped form reads as absent. */}
-          The Cast & Crew are the club&rsquo;s own people — marine safety,
+          Work the season. The Cast & Crew are the club&rsquo;s own people — marine safety,
           hospitality, media, engineering. The cast are the ones it happens to;
           crew are the ones who make it happen, and crew is what this page is
           hiring. We take people who&rsquo;d do the job on

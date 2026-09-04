@@ -75,10 +75,10 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
 export default function SupportPage() {
   return (
     <div className="lg-wrap">
-      <span className="ls-eyebrow" style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}>
-        Shoreside — the shore desk
-      </span>
-      <h1>Hail us.</h1>
+      {/* Route = nav = title = h1: the footer, the 404 and every "hail
+          Shoreside" link name this page Shoreside, so the h1 does too. */}
+      <span className="ls-eyebrow ls-eyebrow--page">The shore desk · Hail us</span>
+      <h1>Shoreside.</h1>
       <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "54ch" }}>
         Shoreside answers first, files second, a human always. Most of what the
         water asks is already answered below.

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import manifest from "@/lib/route-manifest.json";
 import { SITE_DOMAIN } from "@/lib/brand";
+import { readSeries } from "@/app/(site)/series/data";
 
 /* Public sitemap, derived from the generated route manifest (static pages)
    plus live Supabase slugs (dynamic pages). Member and auth surfaces are
@@ -35,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   const supabase = await createClient();
-  const [{ data: episodes }, { data: posts }] = await Promise.all([
+  const [{ data: episodes }, { data: posts }, series, { data: crew }, { data: roles }] = await Promise.all([
     /* The listing shows scheduled/live/held episodes; the sitemap used to
        publish every row, which put E2E fixtures and cancelled episodes in front
        of search engines. One rule, both places. */
@@ -44,6 +45,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, created_at")
       .in("status", ["scheduled", "live", "weather_hold", "completed"]),
     supabase.from("log_posts").select("slug, published_at"),
+    /* The three public dynamic segments the sitemap did not know about. Each
+       reads exactly the rows its page will render rather than 404: an active
+       series (readOneSeries asks for active), a crew member who opted in, and
+       an open posting — a closed one still renders, but as a closed door. */
+    readSeries(supabase),
+    supabase.from("crew").select("slug").eq("public", true).eq("active", true),
+    supabase.from("crew_roles").select("slug").eq("open", true),
   ]);
 
   const episodeEntries: MetadataRoute.Sitemap = (episodes ?? []).map((v) => ({
@@ -60,5 +68,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...episodeEntries, ...logEntries];
+  const seriesEntries: MetadataRoute.Sitemap = series.map((s) => ({
+    url: `${SITE_URL}/series/${s.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
+
+  const crewEntries: MetadataRoute.Sitemap = (crew ?? []).map((c) => ({
+    url: `${SITE_URL}/crew/${c.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.4,
+  }));
+
+  const roleEntries: MetadataRoute.Sitemap = (roles ?? []).map((r) => ({
+    url: `${SITE_URL}/crew/wanted/${r.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.4,
+  }));
+
+  return [...staticEntries, ...episodeEntries, ...logEntries, ...seriesEntries, ...crewEntries, ...roleEntries];
 }
