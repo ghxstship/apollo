@@ -3,8 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { MAILBOX, PLACE, SURFACES } from "@/lib/brand";
-import { Button, Checkbox, Dialog, Input, Select, Switch, Textarea, Toast } from "@/components/ds";
+import { Button, Checkbox, Dialog, Icon, Input, Select, Switch, Textarea, Toast } from "@/components/ds";
 import { BIO_MAX, INTERESTS } from "./interests";
+import type { NotificationPrefs, PrefCategory, PrefChannel } from "./prefs";
 import {
   departClub,
   pauseMembership,
@@ -132,17 +133,47 @@ export function ProfileForm({
   );
 }
 
-/* — Notification preferences: three switches, persisted on the profile — */
-export function NotificationPrefsForm({
-  weather,
-  berths,
-  fathoms,
-  digest,
+/* — Notification preferences: the matrix —
+
+   Rows are the categories the database fan-out reads off notification_prefs;
+   columns are the channels under prefs.channels. The stored shape is
+   category × channel, not a cell per pair: turning Threads off silences threads
+   on every channel, and turning Email off silences every letter. So the switch
+   on a row is the category, the switch in a column head is the channel, and
+   each cell SHOWS what the two together mean — it is a reading, not a control,
+   and the screen says exactly what the fan-out will do.
+
+   In app is always on: the Inbox is the record, and there is no reader that
+   consults a preference before writing to it. It is shown, not toggled, so the
+   member sees where the notice always lands.
+
+   Text needs a number the club has confirmed. Without one the column is shown
+   disabled with the reason, and its standing value rides along in a hidden
+   field so a save does not silently flip it. */
+const PREF_ROWS: Array<{ key: PrefCategory; label: string; line: string }> = [
+  /* A weather hold is an EPISODE held for conditions, and nothing else. */
+  { key: "weather", label: "Weather holds", line: "When an episode is held for conditions. Called by 18:00 the night before." },
+  { key: "berths", label: "Pass releases", line: "Waitlist offers and freed passes, in order." },
+  { key: "threads", label: "Threads", line: "A word in a thread you are in." },
+  { key: "radar", label: "Radar & Tables", line: "Who is aboard, and a seat at a table." },
+  { key: "dues", label: "Dues", line: "A draw, a card that did not clear, a standing that changed." },
+  { key: "fathoms", label: "Knots", line: "Every entry, as it lands in the ledger." },
+  { key: "digest", label: "The Sunday letter", line: `${SURFACES.magazine}, once a week. Nothing to do with your passes.` },
+];
+
+const PREF_COLUMNS: Array<{ key: PrefChannel; label: string }> = [
+  { key: "email", label: "Email" },
+  { key: "push", label: "Push" },
+  { key: "sms", label: "Text" },
+];
+
+export function NotificationMatrix({
+  prefs,
+  phoneVerified,
 }: {
-  weather: boolean;
-  berths: boolean;
-  fathoms: boolean;
-  digest: boolean;
+  prefs: NotificationPrefs;
+  /* Text goes only to a number the club has confirmed. */
+  phoneVerified: boolean;
 }) {
   const [state, formAction, pending] = React.useActionState<ProfileFormState, FormData>(
     saveNotificationPrefs,
@@ -156,52 +187,84 @@ export function NotificationPrefsForm({
     return () => clearTimeout(t);
   }, [showToast, state]);
 
+  /* Controlled, so the cells can read the two switches they sit under. */
+  const [cats, setCats] = React.useState(prefs.categories);
+  const [chans, setChans] = React.useState(prefs.channels);
+  const smsUsable = phoneVerified;
+
   return (
     <form action={formAction}>
-      <div className="you-row">
-        <div>
-          {/* A weather hold is an EPISODE held for conditions, and nothing
-              else. The membership pause used to borrow the phrase — this
-              switch sat a few hundred pixels from a banner reading "Membership
-              on weather hold", and nothing said which was which — so the
-              metaphor is off the membership entirely and this label says what
-              it is actually about. */}
-          <b>Weather holds on your episodes</b>
-          <p>When an episode is held for conditions. Called by 18:00 the night before.</p>
-        </div>
-        <Switch
-          name="weather"
-          defaultChecked={weather}
-          label=""
-          aria-label="Notices when an episode is held for weather"
-        />
+      <div className="you-matrix-wrap">
+        <table className="you-matrix">
+          <thead>
+            <tr>
+              <th scope="col">
+                <span className="ls-visually-hidden">Notice</span>
+              </th>
+              <th scope="col">
+                <span className="you-matrix__col">In app</span>
+                <span className="you-matrix__always">Always</span>
+              </th>
+              {PREF_COLUMNS.map((c) => {
+                const disabled = c.key === "sms" && !smsUsable;
+                return (
+                  <th scope="col" key={c.key}>
+                    <span className="you-matrix__col">{c.label}</span>
+                    <Switch
+                      name={`channel_${c.key}`}
+                      checked={chans[c.key]}
+                      disabled={disabled}
+                      label=""
+                      aria-label={`${c.label} — every notice on this channel`}
+                      onChange={(e) => setChans((prev) => ({ ...prev, [c.key]: e.target.checked }))}
+                    />
+                    {disabled ? (
+                      <input type="hidden" name={`channel_${c.key}`} value={chans[c.key] ? "on" : "off"} />
+                    ) : null}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {PREF_ROWS.map((r) => (
+              <tr key={r.key}>
+                <th scope="row">
+                  <div className="you-matrix__row">
+                    <Switch
+                      name={r.key}
+                      checked={cats[r.key]}
+                      label=""
+                      aria-label={r.label}
+                      onChange={(e) => setCats((prev) => ({ ...prev, [r.key]: e.target.checked }))}
+                    />
+                    <span>
+                      <b>{r.label}</b>
+                      <span className="you-matrix__line">{r.line}</span>
+                    </span>
+                  </div>
+                </th>
+                <td>
+                  <Mark on={cats[r.key]} what={`${r.label} in the Inbox`} />
+                </td>
+                {PREF_COLUMNS.map((c) => {
+                  const usable = c.key !== "sms" || smsUsable;
+                  return (
+                    <td key={c.key}>
+                      <Mark on={usable && cats[r.key] && chans[c.key]} what={`${r.label} by ${c.label.toLowerCase()}`} />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className="you-row">
-        <div>
-          <b>Pass releases</b>
-          <p>Waitlist offers, in order.</p>
-        </div>
-        <Switch name="berths" defaultChecked={berths} label="" aria-label="Pass release notices" />
-      </div>
-      <div className="you-row">
-        <div>
-          <b>Knots</b>
-          <p>Every entry, as it lands in the ledger.</p>
-        </div>
-        <Switch name="fathoms" defaultChecked={fathoms} label="" aria-label="Knots notices" />
-      </div>
-      <div className="you-row">
-        <div>
-          <b>{SURFACES.magazine}</b>
-          <p>The Sunday letter. Nothing to do with your passes.</p>
-        </div>
-        <Switch
-          name="digest"
-          defaultChecked={digest}
-          label=""
-          aria-label={`${SURFACES.magazine} letter`}
-        />
-      </div>
+      {!smsUsable ? (
+        <p className="you-matrix__why">
+          Text is off until the club has confirmed your number — add one below and the column opens.
+        </p>
+      ) : null}
       <div className="you-row">
         <div>
           <p>{state.error ? <span style={{ color: "var(--siren)" }}>{state.error}</span> : null}</p>
@@ -219,6 +282,15 @@ export function NotificationPrefsForm({
         />
       ) : null}
     </form>
+  );
+}
+
+/* One cell of the matrix: what the row and column together mean. */
+function Mark({ on, what }: { on: boolean; what: string }) {
+  return (
+    <span className={"you-matrix__mark" + (on ? " you-matrix__mark--on" : "")}>
+      <Icon name={on ? "Check" : "Minus"} size={14} label={`${what}: ${on ? "on" : "off"}`} />
+    </span>
   );
 }
 
@@ -287,12 +359,12 @@ export function DuesHoldNotice() {
         <div>
           <b>Held — dues lapsed.</b>
           <p>
-            Settle in the portal and it lifts on its own. Your log, your ledger
-            and the passes you hold stay as they are.
+            Settle on your account page and it lifts on its own. Your log, your
+            ledger and the passes you hold stay as they are.
           </p>
         </div>
-        <Link href="/portal" className="ls-btn ls-btn--outline ls-btn--sm">
-          Settle in the portal
+        <Link href="/account" className="ls-btn ls-btn--outline ls-btn--sm">
+          Settle on Account
         </Link>
       </div>
     </div>

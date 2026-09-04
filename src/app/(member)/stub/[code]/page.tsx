@@ -1,13 +1,19 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { Metadata } from "next";
 import { Badge, StateBlock } from "@/components/ds";
-import { TIER_LABEL, logDate, logTime } from "@/lib/format";
+import { logDate, logTime } from "@/lib/format";
 import { SURFACES } from "@/lib/brand";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { literalCode } from "@/lib/boarding-code";
 import { memberMark } from "@/lib/membership";
+import { moduleTables } from "@/lib/module-tables";
 import { getMember } from "../../data";
 import { PrintButton } from "../../card/print-button";
+import { RotatingCode } from "./rotating-code";
+
+/* A member's code appears two hours before the door. Before that the stub
+   states the episode and the hour and nothing scannable. */
+const CODE_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 /* The page is the credential, so it is named for the credential: a Boarding
    pass is what admits a member to one episode, and the stub is the form it
@@ -184,11 +190,40 @@ export default async function StubPage({
 
   const aboard = capRes.data?.aboard ?? 0;
   const berthsTotal = capRes.data?.passes_total ?? episode.passes_total;
-  const qr = await qrDataUrl(code);
+
+  /* Which code this stub carries. A guest has no account, so their stub keeps
+     the static boarding code and its QR. A member's stub carries the ROTATING
+     member credential — the same mint the Standing page shows — and only from
+     two hours before departure: a code that is live for a week is a code that
+     can be passed around for a week. The static member code is not drawn at
+     all; the gangway reads the rotating one. Staff opening another member's
+     stub cannot mint that member's credential, so they read the wait line. */
+  const departsMs = new Date(episode.starts_at).getTime();
+  const codeOpen = departsMs - nowMs <= CODE_WINDOW_MS;
+  const ownStub = !guest && rsvp.profile_id === user.id;
+  const guestQr = guest ? await qrDataUrl(code) : null;
+  let rotating: { qr: string | null; expiresAt: string | null } | null = null;
+  if (ownStub && codeOpen) {
+    const { data: credential } = await moduleTables(supabase).rpc("issue_member_qr");
+    const first = (Array.isArray(credential) ? credential[0] : credential) as
+      | { token: string; expires_at: string }
+      | undefined;
+    rotating = {
+      qr: first?.token ? await qrDataUrl(first.token) : null,
+      expiresAt: first?.expires_at ?? null,
+    };
+  }
   const name = host?.full_name ?? "A member";
   /* As the card sets it — the raw column carries the retired prefix. */
   const memberNo = memberMark(host?.member_no) || "UNISSUED";
-  const tier = TIER_LABEL[host?.tier ?? "regional"] ?? "Regional";
+  /* The standing on a stub is the plan the host bought, not the geography
+     word. The directory view carries no plan, so a stub read by staff for
+     another member says Member. */
+  const { data: hostPlan } =
+    rsvp.profile_id === user.id && profile?.plan_id
+      ? await supabase.from("membership_plans").select("label").eq("id", profile.plan_id).maybeSingle()
+      : { data: null };
+  const tier = hostPlan?.label ?? "Member";
 
   return (
     <div className="crd ls-fade">
@@ -243,7 +278,7 @@ export default async function StubPage({
             ) : (
               <Row label="MEMBER" value={`${name.toUpperCase()} · ${memberNo}`} />
             )}
-            <Row label="CODE" value={code} />
+            {guest ? <Row label="CODE" value={code} /> : null}
             {purchased.length > 0 ? (
               <Row
                 label="ADD-ONS"
@@ -254,10 +289,23 @@ export default async function StubPage({
             ) : null}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- data URI QR, no next/image benefit */}
-            <img src={qr} alt="Boarding code" width={168} height={168} />
-          </div>
+          {guest && guestQr ? (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- data URI QR, no next/image benefit */}
+              <img src={guestQr} alt="Boarding code" width={168} height={168} />
+            </div>
+          ) : rotating ? (
+            <RotatingCode initialQr={rotating.qr} initialExpiry={rotating.expiresAt} />
+          ) : (
+            <div className="stb-wait">
+              <b>{logTime(episode.starts_at, episode.time_zone)}</b>
+              <span>
+                {ownStub
+                  ? "Your code appears two hours before the door."
+                  : "The code is the holder's own, and appears on their stub two hours before the door."}
+              </span>
+            </div>
+          )}
 
           <div
             style={{
@@ -281,7 +329,9 @@ export default async function StubPage({
           </div>
         </div>
       </div>
-      <p className="crd-note">Present at the gangway.</p>
+      <p className="crd-note">
+        {guest || rotating ? "Present at the gangway." : "Come back two hours before departure — the code is cut then."}
+      </p>
       <div className="crd-acts">
         <PrintButton label="Print the stub" />
       </div>

@@ -5,6 +5,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { eveningBefore } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
+import { isSegment } from "@/lib/vetting";
+import { joinTheLine } from "../vetting/actions";
 
 export type PassResult = { error?: string; full?: boolean };
 
@@ -54,9 +56,14 @@ function done(): PassResult {
   return {};
 }
 
+/* The guard reads the plan's own allowance and refuses anything over it in
+   its own words; this only keeps the wire honest — a whole number, never
+   negative, and never absurd. The old ceiling of two was a Global-tier rule
+   that the plan column replaced. */
+const GUEST_WIRE_MAX = 10;
 function clampGuests(guests: number): number {
   const n = Number(guests);
-  return Number.isFinite(n) ? Math.max(0, Math.min(2, Math.round(n))) : 0;
+  return Number.isFinite(n) ? Math.max(0, Math.min(GUEST_WIRE_MAX, Math.round(n))) : 0;
 }
 
 /* Names as the manifest reads them — trimmed, sized to the guest count, and
@@ -235,7 +242,10 @@ export async function confirmBerth(
   guests: number,
   guestNames: string[],
   promoCode?: string | null,
-  split?: number | null
+  split?: number | null,
+  /* A standby pass stands outside the count and boards only into a seat a
+     no-show frees by muster. Same review, same charges; one more flag. */
+  standby?: boolean
 ): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
@@ -264,6 +274,7 @@ export async function confirmBerth(
         /* The trigger prices the pass, promo included — the row no longer
            carries an exemption a member could have written themselves. */
         ...(promo ? { promo_code: promo.code } : {}),
+        ...(standby ? { standby: true } : {}),
       },
       { onConflict: "episode_id,profile_id" }
     );
@@ -297,6 +308,38 @@ export async function confirmBerth(
 
   revalidatePath("/account");
   revalidatePath("/portal");
+  return done();
+}
+
+/* A standby pass on a free episode. The guard holds the line: it refuses when
+   the episode sells no standby, when standby is full, and it is the guard that
+   turns the pass into a seat at the gangway if one has come free. Priced
+   episodes go through confirmBerth with the flag instead, so the review says
+   what standby means before the charge posts. */
+export async function takeStandby(episodeId: string): Promise<PassResult> {
+  const { supabase, userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  const { error } = await supabase
+    .from("passes")
+    .upsert(
+      { episode_id: episodeId, profile_id: userId, status: "aboard", standby: true },
+      { onConflict: "episode_id,profile_id" }
+    );
+  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
+  return done();
+}
+
+/* By request: a member asks for a place and the Bridge decides the night
+   before. The ask is a row in the numbered line — the same line the vetting
+   page joins, through the same action, so there is one way in — and the door
+   never says a number back. The Bridge's offer is the key pass_guard admits. */
+export async function requestAPlace(episodeId: string, segment: string): Promise<PassResult> {
+  const { userId } = await member();
+  if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: "That episode is no longer listed. Start again from Passes." };
+  if (!isSegment(segment)) return { error: "Say which seat you are asking for." };
+  const res = await joinTheLine(episodeId, segment);
+  if (res.error) return { error: res.error };
   return done();
 }
 

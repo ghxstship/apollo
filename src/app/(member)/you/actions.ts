@@ -6,6 +6,7 @@ import { voiceWith } from "@/lib/errors";
 import { duesNote, endDuesAtPeriodEnd, pauseDues, resumeDues } from "@/lib/dues";
 import { createClient } from "@/lib/supabase/server";
 import { BIO_MAX, INTERESTS } from "./interests";
+import { PREF_CATEGORIES, PREF_CHANNELS } from "./prefs";
 
 export type ProfileFormState = { saved?: boolean; error?: string };
 
@@ -73,7 +74,19 @@ export async function updateProfile(
   return { saved: true };
 }
 
-/* — Notification preferences: {weather, berths, fathoms} on the profile — */
+/* — Notification preferences, as the database reads them —
+
+   profiles.notification_prefs is a jsonb of category booleans plus a
+   `channels` object. The push fan-out asks the category AND channels.push;
+   the letters (digest, season card, win-back, the Bridge's word) stop when
+   channels.email is false; the texts stop when channels.sms is false. Every
+   key missing from the object reads TRUE at every reader, so a member who has
+   never touched this page gets everything — which is why the form writes
+   every key explicitly rather than only the ones that changed.
+
+   The two lists below are the whole vocabulary. Anything else on the wire is
+   dropped, so a form field renamed in the client cannot write a key no reader
+   honours and leave the member believing they turned something off. */
 export async function saveNotificationPrefs(
   _prev: ProfileFormState,
   formData: FormData
@@ -84,15 +97,15 @@ export async function saveNotificationPrefs(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
-  const prefs = {
-    weather: formData.get("weather") === "on",
-    berths: formData.get("berths") === "on",
-    fathoms: formData.get("fathoms") === "on",
-    /* The weekly dispatch went to every active member with no preference
-       consulted anywhere — bulk mail with no way off it. It has a switch now,
-       and the switch is the unsubscribe the footer has always claimed existed. */
-    digest: formData.get("digest") === "on",
-  };
+  /* A switch that is checked posts "on"; an unchecked one posts nothing. A
+     disabled channel (text, with no verified number) posts its standing value
+     from a hidden field so a save does not quietly flip it. */
+  const on = (key: string) => formData.get(key) === "on";
+  const prefs: Record<string, boolean | Record<string, boolean>> = {};
+  for (const c of PREF_CATEGORIES) prefs[c] = on(c);
+  const channels: Record<string, boolean> = {};
+  for (const ch of PREF_CHANNELS) channels[ch] = on(`channel_${ch}`);
+  prefs.channels = channels;
 
   const { error } = await supabase
     .from("profiles")

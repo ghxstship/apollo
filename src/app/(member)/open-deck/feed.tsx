@@ -25,6 +25,9 @@ export type FeedPost = {
   body: string;
   episodeId: string | null;
   voyageTitle: string | null;
+  /* One approved frame from the attached episode, as a signed URL — or null,
+     in which case the card has no media slot at all. */
+  frame: string | null;
   hails: number;
   myHail: boolean;
   mine: boolean;
@@ -306,6 +309,8 @@ function FeedEntry({ post }: { post: FeedPost }) {
       tone={post.tone}
       timestamp={post.meta}
       sailing={post.voyageTitle ?? undefined}
+      media={post.frame}
+      mediaAlt={post.voyageTitle ? `A frame from ${post.voyageTitle}` : ""}
       body={post.body}
       style={
         answered

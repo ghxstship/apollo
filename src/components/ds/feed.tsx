@@ -19,8 +19,8 @@ export function PostCard({
   body,
   sailing,
   timestamp,
-  media = false,
-  mediaLabel = "IMAGERY TK",
+  media = null,
+  mediaAlt = "",
   footer,
   children,
   style,
@@ -30,8 +30,14 @@ export function PostCard({
   body?: React.ReactNode;
   sailing?: string;
   timestamp?: string;
-  media?: boolean;
-  mediaLabel?: string;
+  /* A real frame, or nothing. This used to be a boolean that drew a night
+     gradient stamped IMAGERY TK — a placeholder from the design handoff that
+     was shipping to members in production. A post attached to an episode with
+     an approved frame shows that frame; every other post has no media slot at
+     all. The URL is a short-lived signed one the server mints — the bucket is
+     private, so a storage path is not a URL anywhere. */
+  media?: string | null;
+  mediaAlt?: string;
   footer?: React.ReactNode;
   children?: React.ReactNode;
   style?: React.CSSProperties;
@@ -70,22 +76,12 @@ export function PostCard({
       {body ? <div style={{ fontSize: "var(--text-sm)", lineHeight: 1.55, color: "var(--text-1)" }}>{body}</div> : null}
       {media ? (
         <div style={{ height: 180, borderRadius: "var(--radius-sm)", background: "var(--scene-night)", position: "relative", overflow: "hidden" }}>
-          <span style={{ position: "absolute", inset: 0, background: "var(--scrim)" }}></span>
-          <span
-            style={{
-              position: "absolute",
-              right: 10,
-              bottom: 8,
-              font: `700 var(--text-3xs)/1 ${MONO}`,
-              letterSpacing: "var(--tracking-dense)",
-              /* The label sits on a scene gradient under a scrim, which is what
-                 --text-on-media is for; the literal it replaces was an ivory
-                 from the retired palette. */
-              color: "var(--text-on-media)",
-            }}
-          >
-            {mediaLabel}
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- a signed storage URL that expires in an hour; next/image cannot cache what it may not fetch twice */}
+          <img
+            src={media}
+            alt={mediaAlt}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
         </div>
       ) : null}
       {children}

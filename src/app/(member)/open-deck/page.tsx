@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SURFACES } from "@/lib/brand";
 import { memberMark } from "@/lib/membership";
+import { signFrames } from "@/components/site/episode-data";
 import { getMember, type DirectoryMember } from "../data";
 import { relTime } from "../relative";
 import { Composer, FeedList, type FeedPost, type EpisodeOption } from "./feed";
@@ -48,7 +49,7 @@ export default async function OpenDeckPage() {
   const postEpisodeIds = Array.from(
     new Set(posts.map((p) => p.episode_id).filter((id): id is string => !!id))
   );
-  const [hailsRes, commentsRes, episodesRes] = await Promise.all([
+  const [hailsRes, commentsRes, episodesRes, framesRes] = await Promise.all([
     postIds.length
       ? supabase.from("open_deck_hails").select("post_id,profile_id").in("post_id", postIds)
       : Promise.resolve({ data: [] as Array<{ post_id: string; profile_id: string }> }),
@@ -70,7 +71,30 @@ export default async function OpenDeckPage() {
     postEpisodeIds.length
       ? supabase.from("episodes").select("id,title").in("id", postEpisodeIds)
       : Promise.resolve({ data: [] as Array<{ id: string; title: string }> }),
+    /* Approved frames only — RLS shows a member nothing else — newest first,
+       so the one frame a post shows is the latest the Bridge cleared. */
+    postEpisodeIds.length
+      ? supabase
+          .from("episode_media")
+          .select("episode_id,storage_path,created_at")
+          .in("episode_id", postEpisodeIds)
+          .eq("approved", true)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] as Array<{ episode_id: string; storage_path: string; created_at: string }> }),
   ]);
+
+  /* One frame per episode, signed once. The bucket is private, so a path is
+     not a URL anywhere; signFrames mints the hour-long ones the gallery uses. */
+  const framePathByEpisode = new Map<string, string>();
+  for (const f of framesRes.data ?? []) {
+    if (!framePathByEpisode.has(f.episode_id)) framePathByEpisode.set(f.episode_id, f.storage_path);
+  }
+  const signedFrames = await signFrames(supabase, [...framePathByEpisode.values()]);
+  const frameOf = (episodeId: string | null): string | null => {
+    if (!episodeId) return null;
+    const path = framePathByEpisode.get(episodeId);
+    return path ? (signedFrames.get(path) ?? null) : null;
+  };
 
   const hails = hailsRes.data ?? [];
   const comments = commentsRes.data ?? [];
@@ -128,6 +152,7 @@ export default async function OpenDeckPage() {
       body: p.body,
       episodeId: p.episode_id,
       voyageTitle: p.episode_id ? episodeTitles.get(p.episode_id) ?? null : null,
+      frame: frameOf(p.episode_id),
       hails: postHails.length,
       myHail: postHails.some((h) => h.profile_id === user.id),
       mine: p.author_id === user.id,

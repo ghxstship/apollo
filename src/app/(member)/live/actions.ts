@@ -179,3 +179,65 @@ export async function withdrawFrame(id: string): Promise<GalleyResult> {
   revalidatePath("/gallery");
   return {};
 }
+
+/* One line on deck, gone by the end of the night.
+
+   profiles.deck_status is the member's own column and RLS lets a member update
+   their own row; guard_privileged_profile_columns names the columns a member
+   may NOT move (staff, tier, standing, plan, number, email, joined_at, the
+   feed token, phone_verified) and these two are not among them. The expiry is
+   the episode's end — ends_at when the Bridge posted one, eight hours after
+   cast-off when it did not — so a status set at the gangway is not still
+   showing on next week's manifest. aboard_now() reads the expiry itself, so a
+   stale line is never shown even if this row outlives the night. */
+export type DeckStatusResult = { error?: string; status?: string | null };
+
+const DECK_STATUS_MAX = 80;
+const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
+
+export async function setDeckStatus(
+  _prev: DeckStatusResult,
+  formData: FormData
+): Promise<DeckStatusResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  const episodeId = String(formData.get("episode") ?? "");
+  const intent = String(formData.get("intent") ?? "set");
+  const raw = String(formData.get("status") ?? "").replace(/\s+/g, " ").trim();
+  if (!/^[0-9a-f-]{36}$/i.test(episodeId)) {
+    return { error: "This page has lost the episode. Reload it, then try again." };
+  }
+  if (raw.length > DECK_STATUS_MAX) {
+    return { error: `One line — ${DECK_STATUS_MAX} characters is the ceiling.` };
+  }
+  const status = intent === "clear" ? null : raw || null;
+
+  /* The clock the line expires on is the episode's, read here rather than
+     trusted from the form. A member holds a pass on this episode or the
+     Bridge's aboard_now() would not have shown them the panel; the row read is
+     public either way. */
+  const { data: episode } = await supabase
+    .from("episodes")
+    .select("id, starts_at, ends_at, status")
+    .eq("id", episodeId)
+    .maybeSingle();
+  if (!episode) return { error: "This page has lost the episode. Reload it, then try again." };
+  if (episode.status !== "live") return { error: "The deck is for the night that is underway." };
+
+  const until = status
+    ? episode.ends_at ?? new Date(Date.parse(episode.starts_at) + EIGHT_HOURS_MS).toISOString()
+    : null;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ deck_status: status, deck_status_until: until })
+    .eq("id", user.id);
+  if (error) return { error: await voiceWith(supabase, error) };
+
+  revalidatePath("/live");
+  return { status };
+}

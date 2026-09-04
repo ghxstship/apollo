@@ -3,12 +3,13 @@ import { headers } from "next/headers";
 import { CopyLink } from "@/components/copy-link";
 import { Badge, Wordmark } from "@/components/ds";
 import { SITE_DOMAIN, SURFACES } from "@/lib/brand";
-import { TIER_LABEL, roman, yearIn } from "@/lib/format";
+import { roman, yearIn } from "@/lib/format";
 import { qrDataUrl } from "@/lib/commerce-qr";
 import { memberMark } from "@/lib/membership";
 import { PassageLog, readPassageLog } from "@/components/member/passage-log";
 import { getMember } from "../data";
 import { PrintButton } from "./print-button";
+import { AddToWallet } from "@/components/wallet/add-to-wallet";
 import { RotateFeed } from "./rotate-feed";
 
 export const metadata: Metadata = { title: SURFACES.passbook };
@@ -18,11 +19,14 @@ export default async function MemberCardPage() {
 
   const { log, marks } = await readPassageLog(supabase, user.id);
 
-  const { data: account } = await supabase
-    .from("account_balance")
-    .select("*")
-    .eq("profile_id", user.id)
-    .maybeSingle();
+  const [{ data: account }, { data: plan }] = await Promise.all([
+    supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
+    /* The plan's label is what the card says under the number. profiles.tier
+       is where a member may sail from, not what they hold. */
+    profile?.plan_id
+      ? supabase.from("membership_plans").select("label").eq("id", profile.plan_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
   const balanceCents = account?.balance_cents ?? 0;
 
   const name = profile?.full_name ?? "A member";
@@ -32,7 +36,7 @@ export default async function MemberCardPage() {
      gate has to keep matching it; what changes is what is legible. */
   const memberNo = profile?.member_no ?? "";
   const shownNo = memberMark(memberNo) || "Unissued";
-  const tier = TIER_LABEL[profile?.tier ?? "regional"] ?? "Regional";
+  const planLabel = plan?.label ?? null;
   /* On the member's own clock — getFullYear() reads the render host's. */
   const joinedYear = yearIn(profile?.joined_at ?? new Date().toISOString(), zone);
   const qr = await qrDataUrl(memberNo || "unissued");
@@ -59,7 +63,8 @@ export default async function MemberCardPage() {
           <Wordmark size="md" suffix={null} inverse />
           <div className="crd-name">{name}</div>
           <div className="crd-meta">
-            {shownNo} · {tier}
+            {shownNo}
+            {planLabel ? ` · ${planLabel}` : ""}
           </div>
           {/* The card carries the club's founding, not a harbour the member
               may never have set. */}
@@ -100,6 +105,7 @@ export default async function MemberCardPage() {
       </p>
       <div className="crd-acts">
         <PrintButton label="Print or save" />
+        <AddToWallet />
       </div>
 
       {feedUrl && webcalUrl ? (

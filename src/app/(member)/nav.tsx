@@ -5,18 +5,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, IconButton, Wordmark } from "@/components/ds";
 import { GlobalSearch } from "@/components/search/global-search";
-import { LOGBOOK, SURFACES } from "@/lib/brand";
+import { SURFACES } from "@/lib/brand";
 import { memberMark } from "@/lib/membership";
 import { createClient } from "@/lib/supabase/client";
 import { SignOutForm } from "@/components/sign-out-form";
 
 /* Every label here is the destination's NAME, not a description of it — the
    route, this label, the page title and the page h1 are one word per surface,
-   and a change to any of the four is a change to all four. */
+   and a change to any of the four is a change to all four.
+
+   Thirteen, down from twenty-one (2026-09-04). Portal, Standing and Agreements
+   folded into You as sections; Account and the Member Card are one tap from
+   Home and the card has a tab of its own; Itinerary, Tonight, Matches, Vetting
+   and Regattas are listed under "Also aboard" on Home. Season and Questions are
+   new. Every retired link still answers at its old address. */
 const LINKS = [
   ["/home", SURFACES.homePort],
   ["/live", SURFACES.gateway],
   ["/passes", "Passes"],
+  ["/season", "Season"],
   /* The one link here that leaves the member shell, and deliberately so.
      /series was a member route until 2026-09-02, when the copy audit found
      that the page explaining the five strands was sitting behind the sign-in —
@@ -29,21 +36,12 @@ const LINKS = [
      route groups cannot resolve to one path — Next refuses the build outright,
      which is how this was found. */
   ["/series", SURFACES.series],
-  ["/itinerary", "Itinerary"],
   ["/open-deck", SURFACES.openDeck],
   ["/directory", "Directory"],
-  ["/tonight", "Tonight"],
-  ["/matches", "Matches"],
-  ["/vetting", "Vetting"],
-  ["/radar", "Radar"],
-  ["/regattas", LOGBOOK.regattas],
   ["/threads", "Threads"],
+  ["/radar", "Radar"],
+  ["/polls", "Questions"],
   ["/shop", SURFACES.shop],
-  ["/portal", "Portal"],
-  ["/account", "Account"],
-  ["/card", SURFACES.passbook],
-  ["/membership/standing", "Standing"],
-  ["/agreements", "Agreements"],
   ["/inbox", "Inbox"],
   ["/you", "You"],
 ] as const;
@@ -68,9 +66,8 @@ function isCurrent(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-/* The nav scrolls sideways inside the bar, and seven of the twenty-one links
-   sit past its right edge — Portal, Account, Member Card, Standing, Agreements,
-   Inbox and You were invisible by default, including the one you were standing
+/* The nav scrolls sideways inside the bar on a narrow desktop, and the last
+   few links can sit past its right edge — including the one you are standing
    on. Bring the current link into the middle of the strip on mount and on every
    move; block:"nearest" keeps the page itself from scrolling. */
 function useScrollCurrentIntoView(pathname: string) {

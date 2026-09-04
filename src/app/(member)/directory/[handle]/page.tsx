@@ -50,6 +50,18 @@ export default async function MemberPage({
   if (!member.in_directory && !own && !staff) notFound();
   if (member.status !== "active" && !own && !staff) notFound();
 
+  /* Whether a word may be sent at all. open_direct_thread refuses unless
+     shares_ground_with() is true — an episode both were aboard, a thread, a
+     pass hand-off — and the button used to be shown regardless, so the refusal
+     was the first a member heard of the rule. Same definer, asked first. The
+     RPC predates the shared type file's function list; moduleTables is the
+     seam for exactly that. */
+  let sharesGround = own || staff;
+  if (!sharesGround) {
+    const { data } = await moduleTables(supabase).rpc("shares_ground_with", { p_other: member.id });
+    sharesGround = data === true;
+  }
+
   const { log, marks } = await readPassageLog(supabase, member.id);
 
   /* Whether the viewer has declined messages from this member. member_blocks
@@ -142,7 +154,11 @@ export default async function MemberPage({
           </p>
         </div>
         {!own && !blocked ? (
-          <SendAWord otherId={member.id} className="dir-head__act" />
+          sharesGround ? (
+            <SendAWord otherId={member.id} className="dir-head__act" />
+          ) : (
+            <p className="dir-head__act dir-head__note">You write to people you&rsquo;ve sailed with.</p>
+          )
         ) : null}
       </header>
 

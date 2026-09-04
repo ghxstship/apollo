@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Badge, Progress, StateBlock, Table } from "@/components/ds";
-import { TIER_LABEL, logDate, price, logDateYear } from "@/lib/format";
+import { logDate, price, logDateYear } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { subscriptionToShow } from "@/lib/dues";
 import { getMember } from "../data";
@@ -126,6 +126,10 @@ export default async function AccountPage({
   const creditMonth = new Date().toLocaleString("en-US", { month: "long", timeZone: zone ?? undefined }).toUpperCase();
   const ending = subscription?.cancel_at_period_end || status === "canceled";
   const periodEnd = subscription?.current_period_end ?? null;
+  /* Dues waived by the Bridge until a date still ahead; the plan stands. */
+  const nowMs = new Date().getTime();
+  const compedUntil =
+    profile?.comped_until && Date.parse(profile.comped_until) > nowMs ? profile.comped_until : null;
 
   return (
     <div>
@@ -170,8 +174,9 @@ export default async function AccountPage({
                 </Badge>
               ) : null}
             </div>
+            {/* The plan's label is the heading above; the geography tier said
+                nothing about what the club draws, so it is off this line. */}
             <p className="mbr-mono" style={{ marginTop: 10 }}>
-              {TIER_LABEL[profile?.tier ?? "regional"].toUpperCase()} ·{" "}
               {subscription.interval === "year" ? "ANNUAL" : "MONTHLY"} ·{" "}
               {price(
                 subscription.interval === "year"
@@ -182,6 +187,11 @@ export default async function AccountPage({
             {periodEnd ? (
               <p className="mbr-mono" style={{ marginTop: 6 }}>
                 {ending ? "ENDS" : "RENEWS"} {logDateYear(periodEnd, zone)}
+              </p>
+            ) : null}
+            {compedUntil ? (
+              <p className="mbr-mono" style={{ marginTop: 6, color: "var(--gold-deep)" }}>
+                COMPLIMENTARY UNTIL {logDateYear(compedUntil, zone)}
               </p>
             ) : null}
             {plan.monthly_credit_cents > 0 ? (
@@ -196,6 +206,16 @@ export default async function AccountPage({
                 holds — nothing else changes.
               </p>
             ) : null}
+          </div>
+        ) : compedUntil ? (
+          <div className="ptl-panel">
+            <div style={{ fontWeight: 700, fontSize: "var(--text-lg)" }}>{plan?.label ?? "Membership"}</div>
+            <p className="mbr-mono" style={{ marginTop: 10, color: "var(--gold-deep)" }}>
+              COMPLIMENTARY UNTIL {logDateYear(compedUntil, zone)}
+            </p>
+            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 12, maxWidth: "48ch" }}>
+              The Bridge has waived your dues until then. Nothing is drawn; the plan stands as it is.
+            </p>
           </div>
         ) : (
           <StateBlock

@@ -100,9 +100,15 @@ export function WaitlistClaim({
         onChange={(e) => flip(e.target.checked)}
         style={{ marginTop: 10 }}
       />
+      {/* Two systems, two truths. This is the numbered list on an ordinary
+          episode: a freed pass goes to the next in order, and with the switch
+          on it is taken for you the moment it frees — there is no offer and no
+          clock to beat. The clock that does exist here is the release window,
+          and it is the club's figure, not a typed 48. */}
       <p style={noteStyle}>
-        We take the pass the moment one frees. Release it within {creditHours} hours
-        if the tide has turned.
+        {on
+          ? `We take the pass for you the moment one frees, in order. Once it is yours, release it more than ${creditHours} hours out for full credit.`
+          : `When one frees you are told, in order, and the Confirm button appears here — first come, first aboard. Release a claimed pass more than ${creditHours} hours out for full credit.`}
       </p>
       <Problem message={error} />
     </div>

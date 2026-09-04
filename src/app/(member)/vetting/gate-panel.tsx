@@ -14,6 +14,7 @@ import {
   type SegmentCapacityRow,
   type WaitlistRow,
 } from "@/lib/vetting";
+import { OfferClock } from "@/components/member/offer-clock";
 import { claimYourPlace, joinTheLine, leaveTheLine, takeASeat } from "./actions";
 import { PARTNER_NAME_MAX, isPartnerName } from "./partner";
 
@@ -37,6 +38,8 @@ export function GatePanel({
   mySegment,
   myPartner,
   myLine,
+  claimHours,
+  claimUntilLabel,
 }: {
   episodeId: string;
   title: string;
@@ -49,6 +52,11 @@ export function GatePanel({
   /** The second head on a couple pass, as the manifest reads it. */
   myPartner: string | null;
   myLine: WaitlistRow | null;
+  /** club_setting('waitlist_claim_hours'). Null when it could not be read —
+      the copy then says "the claim window" and never a typed number. */
+  claimHours: number | null;
+  /** The lapse hour of a live offer, on the city's clock, formatted shoreside. */
+  claimUntilLabel: string | null;
 }) {
   const [choice, setChoice] = React.useState<Segment | null>(mySegment);
   /* The second head. A couple is two people on one pass; the seat is not
@@ -127,11 +135,18 @@ export function GatePanel({
           <span className="vet-strip__title">
             {myLine.place === 1 ? "You are first in line." : "You are in line."}
           </span>
+          {/* Two systems, said truthfully. This is the numbered line on a
+              composition episode: the Bridge offers a seat, once, and the offer
+              stands for the club's claim window — read from the setting, never
+              typed — with one visible clock, the row's own lapse instant. */}
           <p className="vet-strip__body">
             {myLine.offered_at && !myLine.claimed_at && !myLine.released_at
-              ? "A seat opened. It is yours for six hours, then it passes to the next in line."
-              : "If a seat opens we write once. You get six hours to claim it, then it passes to the next in line."}
+              ? `A seat opened. It is yours ${claimHours != null ? `for ${claimHours} hours` : "for the claim window"}, then it passes to the next in line.`
+              : `If a seat opens we write once. You get ${claimHours != null ? `${claimHours} hours` : "the claim window"} to claim it, then it passes to the next in line.`}
           </p>
+          {myLine.offered_at && !myLine.claimed_at && !myLine.released_at && myLine.claim_expires_at && claimUntilLabel ? (
+            <OfferClock className="vet-eyebrow" expiresAt={myLine.claim_expires_at} untilLabel={claimUntilLabel} />
+          ) : null}
           <div className="vet-acts">
             {myLine.offered_at && !myLine.claimed_at && !myLine.released_at ? (
               <Button size="sm" onClick={() => run(() => claimYourPlace(myLine.id))} disabled={pending}>

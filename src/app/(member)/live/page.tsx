@@ -11,6 +11,7 @@ import { getMember, type Episode } from "../data";
 import { readLegs, readStops, type EpisodeLeg, type EpisodeStop } from "../itinerary/data";
 import { Countdown } from "./countdown";
 import { FrameUpload } from "./frame-upload";
+import { OnDeck, type DeckMember } from "./on-deck";
 import { YourFrames, type OwnFrame } from "./your-frames";
 import { GalleyOrderForm, type GalleyItem } from "./galley";
 
@@ -193,7 +194,7 @@ const ORDER_BADGE: Record<string, { tone: "gold" | "positive" | "caution" | "out
 };
 
 export default async function LivePage() {
-  const { supabase, user } = await getMember();
+  const { supabase, user, profile } = await getMember();
   const nowIso = new Date().toISOString();
 
   const [liveRes, nextRes] = await Promise.all([
@@ -216,12 +217,39 @@ export default async function LivePage() {
   const next: Episode | null = nextRes.data?.[0] ?? null;
 
   if (!live) {
+    /* The frames letter arrives after the night wraps and points here, and
+       until 2026-09-04 this page was dark by then. The upload policy never
+       cared about status — only the page did. For three days after a night
+       the member was aboard, the frames still land in the queue from here. */
+    const since = new Date(Date.parse(nowIso) - 72 * 3600e3).toISOString();
+    const { data: wrapped } = await supabase
+      .from("passes")
+      .select("episode_id, episodes!inner(id, title, slug, starts_at, time_zone, status)")
+      .eq("profile_id", user.id)
+      .eq("status", "aboard")
+      .not("checked_in_at", "is", null)
+      .eq("episodes.status", "completed")
+      .gte("episodes.starts_at", since)
+      .order("episodes(starts_at)", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const lastNight = (wrapped?.episodes ?? null) as { id: string; title: string; starts_at: string; time_zone: string } | null;
     return (
       <div className="ls-fade">
         <span className="mbr-eyebrow">Underway</span>
         <h1 className="mbr-h1" style={{ marginTop: 6 }}>
           Live.
         </h1>
+        {lastNight ? (
+          <div className="mbr-sec">
+            <span className="mbr-eyebrow">{lastNight.title} · wrapped</span>
+            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "48ch" }}>
+              The night is on the record. Anything you shot still lands in the
+              queue for the Bridge&rsquo;s eye — nobody sees it until it is cleared.
+            </p>
+            <FrameUpload episodeId={lastNight.id} />
+          </div>
+        ) : null}
         <div className="mbr-sec">
           <StateBlock
             status="empty"
@@ -294,6 +322,27 @@ export default async function LivePage() {
     caption: f.caption,
     approved: f.approved,
   }));
+
+  /* On deck. aboard_now() is a definer that lists the checked-in, consented
+     crew of a LIVE episode and refuses a caller with no aboard pass on it — so
+     the call is only made once the pass above has been found. Consent is the
+     pass's show_on_manifest, applied inside the RPC; nothing here re-decides
+     it. Times are the episode's clock. */
+  const aboardRes = aboard ? await supabase.rpc("aboard_now", { p_episode: live.id }) : { data: null };
+  const deckTones = new Set(["ink", "sea", "gold", "sand"]);
+  const onDeck: DeckMember[] = (Array.isArray(aboardRes.data) ? aboardRes.data : []).map((m) => ({
+    id: m.profile_id,
+    name: m.name ?? "A member",
+    tone: m.avatar_tone && deckTones.has(m.avatar_tone) ? (m.avatar_tone as DeckMember["tone"]) : "ink",
+    status: m.status,
+    checkedIn: logTime(m.checked_in_at, live.time_zone),
+    self: m.profile_id === user.id,
+  }));
+  /* The member's own line, only while it still stands. */
+  const ownStatus =
+    profile?.deck_status && profile.deck_status_until && Date.parse(profile.deck_status_until) > Date.parse(nowIso)
+      ? profile.deck_status
+      : null;
 
   /* Validated against the model rather than cast blind — the check constraint
      guarantees the four values, but a constraint is not a compiler. */
@@ -436,6 +485,16 @@ export default async function LivePage() {
           </div>
         ))}
       </div>
+
+      {aboard ? (
+        <div className="now-panel ls-rise-1">
+          <h3>On deck</h3>
+          <p className="mbr-mono" style={{ marginBottom: 10 }}>
+            {onDeck.length} ABOARD AND SEEN · STAMPED AT THE GANGWAY
+          </p>
+          <OnDeck episodeId={live.id} members={onDeck} ownStatus={ownStatus} />
+        </div>
+      ) : null}
 
       {aboard && galleyItems.length > 0 ? (
         <div className="now-panel ls-rise-1">

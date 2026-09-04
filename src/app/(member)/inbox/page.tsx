@@ -1,18 +1,28 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Button, Icon, StateBlock } from "@/components/ds";
 import { CLUB_ZONE } from "@/lib/brand";
 import { startOfDay } from "@/lib/format";
 import { getMember, type Notification } from "../data";
-import { KIND_ICON, relTime } from "../relative";
+import { KIND_ICON, noticeHref, relTime } from "../relative";
 import { markAllRead } from "./actions";
+import { NoticeLink } from "./notice-link";
 
 /* Plain utility, plainly named — the owner’s call. Route, nav label, title
    and h1 all read Inbox; there is no poetic alias for it any more. */
 export const metadata: Metadata = { title: "Inbox" };
 
+/* Every notice is a link to the thing it is about. The href is the column when
+   the writer set one and the kind's own door when they did not; tapping it
+   reads the notice on the way through. */
 function Row({ n, index }: { n: Notification; index: number }) {
   return (
-    <div className={"wrd-item" + (index === 0 ? " ls-rise" : index < 4 ? ` ls-rise-${Math.min(index, 3)}` : "")}>
+    <NoticeLink
+      id={n.id}
+      href={noticeHref(n.kind, n.href)}
+      read={n.read}
+      className={"wrd-item" + (index === 0 ? " ls-rise" : index < 4 ? ` ls-rise-${Math.min(index, 3)}` : "")}
+    >
       <span className="wrd-ic">
         <Icon name={KIND_ICON[n.kind] ?? "Radio"} size={16} />
       </span>
@@ -24,13 +34,16 @@ function Row({ n, index }: { n: Notification; index: number }) {
         {!n.read ? <span className="ls-live" role="img" aria-label="Unread"></span> : null}
         {relTime(n.created_at)}
       </span>
-    </div>
+    </NoticeLink>
   );
 }
 
 const DAY_MS = 86400000;
 
-export default async function InboxPage() {
+/* The reads, behind their own boundary. There is deliberately no loading.tsx
+   under (member): the group is redirect-gated, and a loading file answers 200
+   before the gate has said its 3xx. */
+async function InboxBody() {
   const { supabase, user, zone } = await getMember();
 
   /* Capped. Notices never stop arriving, and this query had no ceiling — a
@@ -73,20 +86,11 @@ export default async function InboxPage() {
   ];
 
   return (
-    <div>
-      <div className="wrd-head">
-        <div>
-          {/* The count was the h1, so the page never said its own name. The
-              name is the h1 now and the count is the standfirst under it —
-              still the first thing read, and still the number that matters. */}
-          <span className="mbr-eyebrow">Notices</span>
-          <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-            Inbox.
-          </h1>
-          <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8 }}>
-            {unread ? `${unread} new.` : "All read."}
-          </p>
-        </div>
+    <>
+      <div className="wrd-head" style={{ marginTop: 8 }}>
+        <p style={{ fontSize: 14, color: "var(--text-2)" }}>
+          {unread ? `${unread} new.` : "All read."}
+        </p>
         {unread > 0 ? (
           <form action={markAllRead}>
             <Button type="submit" variant="outline" size="sm">
@@ -123,6 +127,31 @@ export default async function InboxPage() {
           )}
         </>
       )}
+    </>
+  );
+}
+
+export default function InboxPage() {
+  return (
+    <div>
+      <div>
+        {/* The count was the h1, so the page never said its own name. The
+            name is the h1 now and the count is the standfirst under it —
+            still the first thing read, and still the number that matters. */}
+        <span className="mbr-eyebrow">Notices</span>
+        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
+          Inbox.
+        </h1>
+      </div>
+      <Suspense
+        fallback={
+          <div className="mbr-sec">
+            <StateBlock status="loading" />
+          </div>
+        }
+      >
+        <InboxBody />
+      </Suspense>
     </div>
   );
 }

@@ -76,7 +76,7 @@ export default async function VettingPage() {
   const sailing = ((upcoming ?? []) as EpisodeRow[]).find((v) => v.id === gatedId) ?? null;
   const rows = ((caps ?? []) as SegmentCapacityRow[]).filter((c) => c.episode_id === gatedId);
 
-  const [{ data: state }, { data: sheet }, { data: boundaries }, { data: passes }, { data: line }] =
+  const [{ data: state }, { data: sheet }, { data: boundaries }, { data: passes }, { data: line }, { data: claimSetting }] =
     await Promise.all([
       db.from("own_vetting_state").select("*").maybeSingle(),
       db.from("preference_sheets").select("*").eq("profile_id", user.id).maybeSingle(),
@@ -87,7 +87,11 @@ export default async function VettingPage() {
       gatedId
         ? db.from("waitlist_entries").select("*").eq("profile_id", user.id).eq("episode_id", gatedId)
         : Promise.resolve({ data: [] }),
+      /* How long an offer stands — the club's own figure. Every sentence on
+         this page that used to say "six hours" reads this instead. */
+      supabase.rpc("club_setting", { p_key: "waitlist_claim_hours" }),
     ]);
+  const claimHours = typeof claimSetting === "number" && claimSetting > 0 ? claimSetting : null;
 
   /* The crew's view of the same queue. Staff only, and fetched only for staff —
      RLS would return their own row and nothing else to a member, so an
@@ -261,6 +265,12 @@ export default async function VettingPage() {
             mySegment={mySegment}
             myPartner={myPartner}
             myLine={myLine}
+            claimHours={claimHours}
+            claimUntilLabel={
+              myLine?.claim_expires_at && sailing
+                ? `${logDate(myLine.claim_expires_at, sailing.time_zone)} · ${logTime(myLine.claim_expires_at, sailing.time_zone)}`
+                : null
+            }
           />
         ) : (
           <div className="vet-panel">
@@ -282,6 +292,7 @@ export default async function VettingPage() {
             rows={(queue ?? []) as QueueRow[]}
             capacity={rows}
             asOf={new Date().getTime()}
+            claimHours={claimHours}
           />
         </section>
       ) : null}

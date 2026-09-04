@@ -20,10 +20,41 @@ export function relTime(iso: string): string {
    gates, which grep rendered text and strip attributes before they look — so
    they are the last hand-typed retired lexicon and they cannot be retired from
    this file. Retiring them is a migration, and it has to move the column
-   values and this map in the same change. */
+   values and this map in the same change.
+
+   The five newer kinds (pass, dues, thread, crew, radar) arrived with
+   notifications.href on 2026-09-04; the legacy keys stay beside them for the
+   rows already written. */
 export const KIND_ICON: Record<string, string> = {
   word: "Radio",
   manifest: "Ticket",
   weather: "Wind",
   fathoms: "Droplets",
+  pass: "Ticket",
+  dues: "Receipt",
+  thread: "MessageCircle",
+  crew: "Users",
+  radar: "Radar",
 };
+
+/* Where a notice goes when tapped. The column is set by the writer, and the
+   database derives it from the kind when the writer set none — this is the
+   same table, for rows written before the column existed (which are null and
+   were never touched by the insert trigger). Kept in the same order as
+   a_notice_has_somewhere_to_go() so the two cannot be compared and found to
+   disagree. */
+const HREF_BY_KIND: Record<string, string> = {
+  manifest: "/passes",
+  pass: "/passes",
+  weather: "/passes",
+  crew: "/passes",
+  fathoms: "/you#you-knots",
+  dues: "/account",
+  thread: "/threads",
+  radar: "/radar",
+};
+
+export function noticeHref(kind: string, href: string | null | undefined): string {
+  if (href && href.startsWith("/")) return href;
+  return HREF_BY_KIND[kind] ?? "/inbox";
+}

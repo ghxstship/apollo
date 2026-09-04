@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Card, StateBlock } from "@/components/ds";
 import { PLACE } from "@/lib/brand";
 import {
@@ -13,13 +14,21 @@ import {
 import { moduleTables } from "@/lib/module-tables";
 import { durationChip } from "@/components/site/episode-chips";
 import { TIER_RANK, getMember, type Pass, type Episode, type EpisodeCapacity } from "../data";
-import { PassControls, type DaybedOffer } from "./pass-controls";
+import { PassControls, type DaybedOffer, type RequestState } from "./pass-controls";
+import { isSegment, type WaitlistRow } from "@/lib/vetting";
 import type { CrewSeeker, GuestStub, MemberOption, StandingOffer } from "./pass-extras";
 import { TransferInbox, type IncomingOffer } from "./transfer-inbox";
 
 export const metadata: Metadata = { title: "Passes" };
 
-export default async function PassesPage() {
+/* Small counts in words, the way the door has always read them. */
+const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const countWord = (n: number) => WORDS[n] ?? String(n);
+
+/* The reads, behind their own boundary. There is deliberately no loading.tsx
+   under (member): the group is redirect-gated, and a loading file answers 200
+   before the gate has said its 3xx. */
+async function PassesBody() {
   const { supabase, user, profile, onHold } = await getMember();
   const now = new Date();
   const nowIso = now.toISOString();
@@ -42,6 +51,8 @@ export default async function PassesPage() {
     creditHoursRes,
     citiesRes,
     creditRes,
+    claimHoursRes,
+    lineRes,
   ] = await Promise.all([
     supabase
       .from("episodes")
@@ -96,6 +107,17 @@ export default async function PassesPage() {
     /* This month's unspent plan credit. Drawn down in SQL since the 3rd
        and never shown to the member who was spending it. */
     supabase.rpc("pass_credit_left", {}),
+    /* How long a Bridge offer stands on a by-request episode — the club's
+       figure, read rather than retyped. */
+    supabase.rpc("club_setting", { p_key: "waitlist_claim_hours" }),
+    /* Your place in every numbered line you are standing in. RLS narrows it
+       to your own rows; a released row is history and is not read. Another
+       module's table, reached through the moduleTables seam. */
+    moduleTables(supabase)
+      .from("waitlist_entries")
+      .select("id, episode_id, segment, place, offered_at, claim_expires_at, claimed_at, released_at")
+      .eq("profile_id", user.id)
+      .is("released_at", null),
   ]);
 
   const episodes: Episode[] = episodesRes.data ?? [];
@@ -127,6 +149,17 @@ export default async function PassesPage() {
   const creditHours =
     typeof creditHoursRes.data === "number" && creditHoursRes.data > 0 ? creditHoursRes.data : 48;
   const creditWindowMs = creditHours * 3600 * 1000;
+  /* No typed fallback: a member is never told a made-up number of hours. The
+     setting is seeded; if it cannot be read the copy says "the window" instead. */
+  const claimHours = typeof claimHoursRes.data === "number" && claimHoursRes.data > 0 ? claimHoursRes.data : null;
+
+  /* The line, one row per episode. An offer is live while it is written, not
+     claimed, not released and not yet lapsed — the same four tests pass_guard
+     makes before it admits the pass. */
+  const lineByEpisode = new Map<string, WaitlistRow>();
+  for (const row of (lineRes.data ?? []) as WaitlistRow[]) {
+    if (isSegment(row.segment)) lineByEpisode.set(row.episode_id, row);
+  }
   const addons = (addonsRes.data ?? []).map((a) => ({
     id: a.id,
     name: a.name,
@@ -299,6 +332,12 @@ export default async function PassesPage() {
      allowance while September's was gone. It follows the next episode they
      could actually claim, and says which month it is talking about. */
   const plan = planRes.data;
+  /* Guests ride on the plan's own allowance — the guard reads the same
+     column. profiles.tier is the geography axis and says nothing about it. */
+  const guestAllowance = Math.max(0, plan?.guest_allowance ?? 0);
+  /* The plan's label is the member's standing; TIER_LABEL is kept below only
+     where the geography axis is what is meant. */
+  const planLabel = plan?.label ?? null;
   const nextAhead = episodes
     .filter((v) => new Date(v.starts_at).getTime() > nowMs)
     .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())[0];
@@ -370,7 +409,11 @@ export default async function PassesPage() {
         note: `This episode runs past your class. ${v.sub_class ? v.sub_class.charAt(0).toUpperCase() + v.sub_class.slice(1) : "It"} passes open on a deeper plan.`,
       };
     if ((TIER_RANK[v.min_tier] ?? 0) > myRank)
-      return { note: `${TIER_LABEL[v.min_tier]} passes open at ${TIER_LABEL[v.min_tier]} tier.` };
+      return {
+        note: `This episode opens to ${TIER_LABEL[v.min_tier]} plans and above${
+          planLabel ? ` — yours is ${planLabel}` : ""
+        }.`,
+      };
     const city = cityLock(v);
     if (city === "unset")
       return {
@@ -422,21 +465,14 @@ export default async function PassesPage() {
     })?.id ?? null;
 
   return (
-    <div>
-      {/* This page is where a pass is claimed and held; the public Episodes
-          page is where episodes are browsed. The old name for it was the
-          manifest, which is the boarding list the club draws from these claims
-          — a back-of-house document, and the standfirst says so instead of the
-          heading. Season is not available: it means the calendar frame and the
-          membership cycle, and Season I would have collided with it. */}
-      <span className="mbr-eyebrow">Every episode ahead</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Passes.
-      </h1>
+    <>
       <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
         Every episode ahead, and the pass on each one. Passes are few by design.
-        Claim one{profile?.tier === "global" ? ", bring up to two guests," : ""} or hold the
-        waitlist — releases go out in order.
+        Claim one
+        {guestAllowance > 0
+          ? `, bring ${guestAllowance === 1 ? "one guest" : `up to ${countWord(guestAllowance)} guests`},`
+          : ""}{" "}
+        or hold the waitlist — releases go out in order.
       </p>
       {passMeter ? (
         <div className="mbr-mono" style={{ marginTop: 10 }}>
@@ -480,7 +516,7 @@ export default async function PassesPage() {
             const saleNote =
               saleOpens != null && nowMs < saleOpens
                 ? `ON SALE ${logDateTime(new Date(saleOpens).toISOString(), v.time_zone)}${
-                    earlyHours > 0 ? ` · ${earlyHours}H EARLY ON ${TIER_LABEL[myTier].toUpperCase()}` : ""
+                    earlyHours > 0 ? ` · ${earlyHours}H EARLY ON ${(planLabel ?? TIER_LABEL[myTier]).toUpperCase()}` : ""
                   }`
                 : null;
             const windowNote =
@@ -513,6 +549,23 @@ export default async function PassesPage() {
             const badge = [format?.label ?? SETTING_LABEL[v.setting] ?? "Afloat", hours]
               .filter(Boolean)
               .join(" · ");
+            /* By request: the door says requested or offered, never a place. */
+            const line = lineByEpisode.get(v.id) ?? null;
+            const offerLive =
+              !!line?.offered_at &&
+              !line.claimed_at &&
+              !line.released_at &&
+              !!line.claim_expires_at &&
+              Date.parse(line.claim_expires_at) > nowMs;
+            const request: RequestState | null = line
+              ? {
+                  entryId: line.id,
+                  offered: offerLive,
+                  claimExpiresAt: offerLive ? line.claim_expires_at : null,
+                  claimUntilLabel:
+                    offerLive && line.claim_expires_at ? logDateTime(line.claim_expires_at, v.time_zone) : null,
+                }
+              : null;
             const meta = [
               logDate(v.starts_at, v.time_zone),
               logTime(v.starts_at, v.time_zone),
@@ -538,7 +591,13 @@ export default async function PassesPage() {
                       guestNames={r?.guest_names ?? []}
                       passesLeft={left}
                       weatherHold={v.status === "weather_hold"}
-                      guestsAllowed={profile?.tier === "global"}
+                      guestsAllowed={guestAllowance > 0}
+                      guestAllowance={guestAllowance}
+                      standby={r?.standby ?? false}
+                      standbyOpen={left <= 0 && v.standby_passes > 0 && v.status === "scheduled"}
+                      byRequest={v.by_request}
+                      request={request}
+                      claimHours={claimHours}
                       locked={!!lock}
                       lockedNote={lock?.note ?? ""}
                       lockedLink={lock?.link}
@@ -598,6 +657,32 @@ export default async function PassesPage() {
           })}
         </div>
       )}
+    </>
+  );
+}
+
+export default function PassesPage() {
+  return (
+    <div>
+      {/* This page is where a pass is claimed and held; the public Episodes
+          page is where episodes are browsed. The old name for it was the
+          manifest, which is the boarding list the club draws from these claims
+          — a back-of-house document, and the standfirst says so instead of the
+          heading. Season is not available: it means the calendar frame and the
+          membership cycle, and Season I would have collided with it. */}
+      <span className="mbr-eyebrow">Every episode ahead</span>
+      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
+        Passes.
+      </h1>
+      <Suspense
+        fallback={
+          <div className="mbr-sec">
+            <StateBlock status="loading" />
+          </div>
+        }
+      >
+        <PassesBody />
+      </Suspense>
     </div>
   );
 }

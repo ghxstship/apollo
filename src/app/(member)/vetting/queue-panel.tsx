@@ -30,6 +30,7 @@ export function QueuePanel({
   rows,
   capacity,
   asOf,
+  claimHours,
 }: {
   episodeId: string;
   rows: QueueRow[];
@@ -38,6 +39,8 @@ export function QueuePanel({
       has to happen somewhere, and a clock read during a client render is both
       impure and a hydration mismatch waiting to happen. */
   asOf: number;
+  /** club_setting('waitlist_claim_hours'); null when unreadable. */
+  claimHours: number | null;
 }) {
   const [error, setError] = React.useState<string | null>(null);
   const [said, setSaid] = React.useState<string | null>(null);
@@ -72,7 +75,12 @@ export function QueuePanel({
       setSaid(null);
       const res = await offerTheNextPlace(episodeId, s);
       if (res.error) setError(res.error);
-      else setSaid(`Offered to position one in ${SEGMENT_LABEL[s].toLowerCase()}. One notice, six hours.`);
+      else
+        setSaid(
+          `Offered to position one in ${SEGMENT_LABEL[s].toLowerCase()}. One notice, ${
+            claimHours != null ? `${claimHours} hours` : "the claim window"
+          }.`
+        );
     });
 
   return (
@@ -116,7 +124,7 @@ export function QueuePanel({
       ) : null}
 
       <p className="vet-note">
-        An offer writes once and stands for six hours. After that it counts for
+        An offer writes once and stands {claimHours != null ? `for ${claimHours} hours` : "for the claim window"}. After that it counts for
         nothing here, and the row is released on the next offer or claim, which
         take the lapse under the same lock — no scheduler has to be up for any
         of that to be true.

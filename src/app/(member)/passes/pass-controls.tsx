@@ -15,14 +15,19 @@ import {
   Toast,
 } from "@/components/ds";
 import { price } from "@/lib/format";
+import { SEGMENTS, SEGMENT_CHOICE, type Segment } from "@/lib/vetting";
+import { OfferClock } from "@/components/member/offer-clock";
+import { claimYourPlace, leaveTheLine } from "../vetting/actions";
 import {
   chooseCabin,
   claimDaybed,
   confirmBerth,
   improvePass,
   releasePass,
+  requestAPlace,
   setGuests,
   setPassStatus,
+  takeStandby,
 } from "./actions";
 import {
   CrewCall,
@@ -43,14 +48,26 @@ export type AddonOption = { id: string; name: string; price_cents: number };
    seats, how many go per episode. Null when the water does not carry one. */
 export type DaybedOffer = { priceCents: number; cap: number; party: number };
 
+/* The member's standing in the numbered line on a by-request episode. Never a
+   number: the Bridge decides, and the door says requested or offered. */
+export type RequestState = {
+  entryId: string;
+  /* A live offer — written, not claimed, not released, not yet lapsed. */
+  offered: boolean;
+  claimExpiresAt: string | null;
+  /* The lapse hour on the member's clock, formatted shoreside. */
+  claimUntilLabel: string | null;
+};
+
 /* The release window is the club's own figure (club_setting
    'release_credit_hours'), so the policy line reads it rather than saying 48. */
 function policyLine(hours: number): string {
-  return `Weather holds are called by 18:00 the night before. Release your pass up to ${hours}h out for full credit — it goes to the waitlist in order.`;
+  return `Weather holds are called by 18:00 the night before. Release your pass more than ${hours} hours out for full credit — it goes to the waitlist in order.`;
 }
 
-/* The lock's default door — every lock but the missing-city one. */
-const MANAGE_MEMBERSHIP = { href: "/portal", label: "Manage membership" };
+/* The lock's default door — every lock but the missing-city one. The portal
+   folded into You on 2026-09-04; a plan is changed on the account page. */
+const MANAGE_MEMBERSHIP = { href: "/account", label: "Manage membership" };
 
 const rowStyle: React.CSSProperties = {
   display: "flex",
@@ -146,6 +163,12 @@ export function PassControls({
   crewSeekers,
   splitOffered,
   guestsAllowed,
+  guestAllowance,
+  standby,
+  standbyOpen,
+  byRequest,
+  request,
+  claimHours,
   daybedHeld,
   daybed,
   paused,
@@ -155,9 +178,25 @@ export function PassControls({
 }: {
   episodeId: string;
   voyageTitle: string;
-  /* Guest passes ride on Global memberships; the control is hidden otherwise
-     rather than offered and refused at submit. */
+  /* Guest passes ride on paid plans — membership_plans.guest_allowance > 0.
+     The control is hidden otherwise rather than offered and refused at submit. */
   guestsAllowed: boolean;
+  /* The plan's own number: the stepper's ceiling and every sentence about
+     guests. The guard reads the same column. */
+  guestAllowance: number;
+  /* This pass is a standby pass — outside the count, boards into a free seat. */
+  standby: boolean;
+  /* The episode sells standby passes and the manifest is full, so the door
+     may offer one. Whether standby itself is full is the guard's to say. */
+  standbyOpen: boolean;
+  /* Places are requested and the Bridge decides — the door never says a
+     number, and no pass is claimed until an offer stands. */
+  byRequest: boolean;
+  request: RequestState | null;
+  /* club_setting('waitlist_claim_hours') — how long an offer stands. Null
+     when the setting could not be read; the copy then says "the window" and
+     never a typed number. */
+  claimHours: number | null;
   myStatus: "aboard" | "waitlist" | "not_going" | null;
   guests: number;
   guestNames: string[];
@@ -249,6 +288,10 @@ export function PassControls({
   const [promo, setPromo] = React.useState<AppliedPromo | null>(null);
   /* Draws chosen at review — null is the whole thing, today. */
   const [split, setSplit] = React.useState<number | null>(null);
+  /* Review opened for a standby pass rather than a seat. */
+  const [coStandby, setCoStandby] = React.useState(false);
+  /* The seat a by-request ask is for — the line is numbered per segment. */
+  const [segment, setSegment] = React.useState<Segment | null>(null);
   /* One line of receipt, said once and gone. */
   const [toast, setToast] = React.useState<string | null>(null);
   React.useEffect(() => {
@@ -323,15 +366,44 @@ export function PassControls({
   const toggleAddon = toggle(setChosen);
   const toggleImprove = toggle(setImproveChosen);
 
-  const openCheckout = () => {
+  const openCheckout = (asStandby = false) => {
     setError(null);
     setOfferWaitlist(false);
     setCoGuests(guests);
     setCoNames(guestNames);
     setPromo(null);
     setSplit(null);
+    setCoStandby(asStandby);
     setCheckout(true);
   };
+
+  /* Take a standby pass: reviewed like any priced pass, straight in when free. */
+  const takeStandbyPass = () =>
+    needsReview ? openCheckout(true) : run(() => takeStandby(episodeId));
+
+  /* The door on a full manifest, offered wherever the guard has just said
+     "full": the waitlist, and a standby pass when the episode sells one. */
+  const fullDoors = (onWaitlist?: () => void) => (
+    <>
+      {" "}
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        onClick={() => run(() => setPassStatus(episodeId, "waitlist"), onWaitlist)}
+      >
+        Join the waitlist
+      </Button>
+      {standbyOpen ? (
+        <>
+          {" "}
+          <Button variant="ghost" size="sm" disabled={pending} onClick={takeStandbyPass}>
+            Take a standby pass
+          </Button>
+        </>
+      ) : null}
+    </>
+  );
 
   const onGuestStep = (n: number) => {
     if (n <= guests) {
@@ -348,19 +420,7 @@ export function PassControls({
     error ? (
       <p className="voy-hold" role="alert" style={{ marginTop: 10 }}>
         {error}
-        {offerWaitlist ? (
-          <>
-            {" "}
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pending}
-              onClick={() => run(() => setPassStatus(episodeId, "waitlist"), onWaitlist)}
-            >
-              Join the waitlist
-            </Button>
-          </>
-        ) : null}
+        {offerWaitlist ? fullDoors(onWaitlist) : null}
       </p>
     ) : null;
 
@@ -372,6 +432,8 @@ export function PassControls({
      control while the credit window runs out on them. When there is a pass on
      this episode, the note rides alongside the standing instead. */
   const holdsAPass = myStatus === "aboard" || myStatus === "waitlist";
+  /* A live offer on a by-request episode. */
+  const offerLive = !!request?.offered && !!request.claimExpiresAt;
   if (locked && !holdsAPass) {
     return (
       <div className="voy-foot">
@@ -403,16 +465,24 @@ export function PassControls({
       ) : null}
       {weatherHold && !holdsAPass ? null : myStatus === "aboard" ? (
         <>
-          <Badge tone="positive">Aboard</Badge>
+          {/* A standby pass is aboard in the record and outside the count on
+              the water; the badge says which, and the release rules are the
+              same either way. */}
+          {standby ? <Badge tone="caution">Standby</Badge> : <Badge tone="positive">Aboard</Badge>}
+          {standby ? (
+            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+              You board if a seat comes free by muster. If none does, the pass releases and credits in full.
+            </span>
+          ) : null}
           {guestsAllowed ? (
             <>
-              <span className="mbr-mono">GUESTS</span>
+              <span className="mbr-mono">GUESTS · UP TO {guestAllowance} ON YOUR PLAN</span>
               {/* Pinned to the current count while paused — the stepper has
                   no disabled prop, and a range of one is the same thing. */}
               <Stepper
                 size="sm"
                 min={paused ? guests : 0}
-                max={paused ? guests : 2}
+                max={paused ? guests : guestAllowance}
                 value={guests}
                 onChange={onGuestStep}
               />
@@ -607,11 +677,96 @@ export function PassControls({
         </>
       ) : inviteOnly ? (
         <span className="mbr-mono">BY INVITATION — THE WORD ARRIVES WITH THE PASS</span>
+      ) : byRequest ? (
+        /* Places are requested; the Bridge offers them the night before. The
+           door says requested, never a number — and when an offer stands it
+           shows the one clock that matters and the button that claims it. */
+        request && offerLive ? (
+          <>
+            <Badge tone="gold">A place is yours</Badge>
+            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+              The Bridge offered you a place. It stands{" "}
+              {claimHours != null ? `for ${claimHours} hours from the offer` : "for the claim window"}, then
+              passes to the next in line.
+            </span>
+            {request.claimExpiresAt && request.claimUntilLabel ? (
+              <OfferClock
+                className="mbr-mono"
+                expiresAt={request.claimExpiresAt}
+                untilLabel={request.claimUntilLabel}
+              />
+            ) : null}
+            <span className="voy-foot__spacer"></span>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              onClick={() => run(() => leaveTheLine(request.entryId))}
+            >
+              Let it pass
+            </Button>
+            <Button
+              variant="gold"
+              size="sm"
+              disabled={pending || paused}
+              onClick={() => run(() => claimYourPlace(request.entryId))}
+            >
+              Claim your place
+            </Button>
+          </>
+        ) : request ? (
+          <>
+            <Badge tone="outline">Requested</Badge>
+            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+              Asked for. The Bridge decides the night before and writes once; an offer
+              stands {claimHours != null ? `for ${claimHours} hours` : "for the claim window"}.
+            </span>
+            <span className="voy-foot__spacer"></span>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              onClick={() => run(() => leaveTheLine(request.entryId))}
+            >
+              Withdraw the request
+            </Button>
+          </>
+        ) : (
+          <>
+            <span className="mbr-mono">BY REQUEST</span>
+            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+              Ask for a place and the Bridge writes back the night before. No queue number — a
+              yes or a no.
+            </span>
+            <span className="voy-seats" role="group" aria-label="Which seat">
+              {SEGMENTS.map((sg) => (
+                <Tag key={sg} active={segment === sg} onClick={() => setSegment(sg)}>
+                  {SEGMENT_CHOICE[sg]}
+                </Tag>
+              ))}
+            </span>
+            <span className="voy-foot__spacer"></span>
+            <Button
+              variant={recommended ? "gold" : "outline"}
+              size="sm"
+              disabled={pending || paused || !segment}
+              onClick={() => segment && run(() => requestAPlace(episodeId, segment))}
+            >
+              Request a place
+            </Button>
+          </>
+        )
       ) : windowNote ? (
         <span className="mbr-mono">{windowNote}</span>
       ) : passesLeft <= 0 ? (
         <>
           <Badge tone="outline">Full</Badge>
+          {standbyOpen ? (
+            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+              Take a standby pass — you board if a seat comes free by muster. It stands outside
+              the count, and it releases and credits in full if no seat does.
+            </span>
+          ) : null}
           <span className="voy-foot__spacer"></span>
           <Button
             variant="outline"
@@ -621,6 +776,11 @@ export function PassControls({
           >
             Join the waitlist
           </Button>
+          {standbyOpen ? (
+            <Button variant="ghost" size="sm" disabled={pending || paused} onClick={takeStandbyPass}>
+              Take a standby pass
+            </Button>
+          ) : null}
         </>
       ) : (
         <>
@@ -653,19 +813,7 @@ export function PassControls({
       {error && !dialogOpen ? (
         <span className="voy-hold" role="alert" style={{ width: "100%" }}>
           {error}
-          {offerWaitlist ? (
-            <>
-              {" "}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pending}
-                onClick={() => run(() => setPassStatus(episodeId, "waitlist"))}
-              >
-                Join the waitlist
-              </Button>
-            </>
-          ) : null}
+          {offerWaitlist ? fullDoors() : null}
         </span>
       ) : null}
 
@@ -678,7 +826,7 @@ export function PassControls({
         open={checkout}
         onClose={() => setCheckout(false)}
         width={440}
-        eyebrow="Review & confirm"
+        eyebrow={coStandby ? "Review & confirm · standby" : "Review & confirm"}
         title={voyageTitle}
         footer={
           <>
@@ -698,20 +846,27 @@ export function PassControls({
                       coGuests,
                       checkoutNames,
                       promo?.code ?? null,
-                      splitDraws
+                      splitDraws,
+                      coStandby
                     ),
                   () => setCheckout(false)
                 )
               }
             >
-              Confirm your pass
+              {coStandby ? "Take the standby pass" : "Confirm your pass"}
             </Button>
           </>
         }
       >
         <div style={{ fontSize: "var(--text-sm)" }}>
+          {coStandby ? (
+            <p style={{ marginBottom: 10, color: "var(--text-2)" }}>
+              A standby pass stands outside the count. You board if a seat comes free by
+              muster; if none does, the pass releases and every charge credits back in full.
+            </p>
+          ) : null}
           <div style={{ ...rowStyle, borderTop: "none" }}>
-            <span>Pass</span>
+            <span>{coStandby ? "Standby pass" : "Pass"}</span>
             <span className="mbr-mono" style={{ fontSize: 12 }}>
               {price(passDue)}
             </span>
@@ -731,11 +886,13 @@ export function PassControls({
           ) : null}
           {guestsAllowed ? (
             <div style={rowStyle}>
-              <span className="mbr-mono">GUESTS</span>
+              <span className="mbr-mono">
+                GUESTS · UP TO {guestAllowance} ON YOUR PLAN
+              </span>
               <Stepper
                 size="sm"
                 min={0}
-                max={2}
+                max={guestAllowance}
                 value={coGuests}
                 onChange={(n) => {
                   setCoGuests(n);
