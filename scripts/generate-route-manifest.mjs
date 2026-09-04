@@ -33,7 +33,9 @@ function readProtectedPrefixes() {
    Enumerating them would mean pulling live credentials into an audit and
    walking them — the opposite of what the secret is for. They are marked
    credential-bearing instead, and the audit leaves them alone. */
-const CREDENTIAL_ROUTES = new Set(["/sign/[token]"]);
+/* Addressed by a secret, never enumerated: a signing link, and the URL inside
+   a wallet pass. */
+const CREDENTIAL_ROUTES = new Set(["/sign/[token]", "/w/[token]"]);
 
 /* Reviewer surfaces that exist only under `next dev` — the page itself calls
    notFound() in production. Classified here rather than left "public" so the
@@ -55,6 +57,8 @@ const DYNAMIC_SOURCES = {
      on their clipboard. */
   /* Postings moved under /crew/wanted when /crew became the people. */
   "/crew/wanted/[slug]": { table: "crew_roles", column: "slug" },
+  /* The debrief is asked per episode the member was aboard. */
+  "/debrief/[slug]": { table: "episodes", column: "slug" },
   /* Only the crew who opted in are anon-readable, so the audit expands exactly
      the pages that exist for a signed-out reader — which is the set that should
      be crawlable.

@@ -14,6 +14,10 @@
  *      tier gating, guest passes, capacity, waitlist promotion in order,
  *      house-ledger charges/credits, reward redemption guards, moderation
  *      rights, application funnel privacy, vetting-bypass resistance.
+ *   W12. The rules of September 4: guest allowance on the plan, the door as a
+ *      one-night role, standby and by-request passes, DM entitlement, notice
+ *      hrefs and channel switches, polls, debriefs, scheduled broadcasts and
+ *      delayed automations (rulesOfSept4).
  *   M. The money path: a pass charged once, the plan credit drawn down and
  *      given back, release A = C − X − P + R in both the same-month and the
  *      lapsed-credit branch, and the balance at exactly zero afterwards.
@@ -191,6 +195,16 @@ async function sweep(p) {
      idempotent — one row, no matter how many times the suite runs. */
   await stf.del("document_versions?status=eq.draft&version=gte.900");
   await stf.del("automations?name=like.E2E*");
+  /* September 4: a question is struck with its votes (cascade); a door grant
+     goes with its episode, but a run that died between granting and revoking
+     would leave a persona holding a door for an hour, so they are struck by
+     name. polls and door_grants are staff-writable; debriefs and broadcasts
+     are not (no DELETE policy — see the gate report), and a debrief goes with
+     its episode. */
+  await stf.del("polls?question=like.E2E*");
+  for (const who of ["regional", "national", "global", "paused"]) {
+    await stf.del(`door_grants?profile_id=eq.${uid(p[who])}`);
+  }
   await stf.del("email_outbox?template=eq.season-card&status=eq.pending");
   await stf.del("notifications?title=like.E2E*");
   /* The waitlist notice CANNOT be swept, and saying so is better than a
@@ -2545,7 +2559,7 @@ async function businessRules(p) {
 
   // Guest passes: national with guests rejected, global capped at 2
   const natGuest = await nat.post("passes", { episode_id: vid, profile_id: uid(p.national), status: "aboard", guests: 1 });
-  note("national", "guest berths require Global", natGuest.status >= 400 && /Global/i.test(JSON.stringify(natGuest.data)), `got ${natGuest.status}`);
+  note("national", "guest passes ride on paid memberships", natGuest.status >= 400 && /paid membership|guest pass/i.test(JSON.stringify(natGuest.data)), `got ${natGuest.status}`);
 
   // National takes the single berth (also proves ledger charge trigger)
   const natRsvp = await nat.post("passes", { episode_id: vid, profile_id: uid(p.national), status: "aboard" });
@@ -4053,7 +4067,7 @@ async function decisionRules(p) {
   const soloPartner = await nat.post("pass_guests", { rsvp_id: soloPass.data?.[0]?.id, name: "E2E Nobody", kind: "partner" });
   note("national", "a single pass seats one", soloPartner.status >= 400 && /seats one/.test(said(soloPartner)), said(soloPartner).slice(0, 90));
   const guestOnRegional = await reg.post("pass_guests", { rsvp_id: cplPass.data?.[0]?.id, name: "E2E Guest" });
-  note("regional", "a guest still rides a Global membership", guestOnRegional.status >= 400 && /global/i.test(said(guestOnRegional)), said(guestOnRegional).slice(0, 90));
+  note("regional", "a guest rides a paid plan with an allowance", guestOnRegional.status >= 400 && /paid membership|guest pass/i.test(said(guestOnRegional)), said(guestOnRegional).slice(0, 90));
   const cplDel = await stf.del(`episodes?id=eq.${cplVid}`);
   note("staff", "the couple fixture is struck", cplDel.status < 300, `got ${cplDel.status}`);
 
@@ -4540,6 +4554,463 @@ async function membershipRules(p) {
     stillHas.data?.[0]?.member_no === num, JSON.stringify(stillHas.data ?? "").slice(0, 90));
 }
 
+/* ---------- W12. the rules of September 4 ----------
+   Thirteen migrations in one hour, each a rule the database now keeps: a
+   guest allowance read off the plan, the door as a role a hired crew member
+   holds for one night, standby and by-request passes, "you write to people
+   you have sailed with", a notice that has somewhere to go and a member who
+   chooses the channel, polls on a question never a person, one debrief per
+   night, a broadcast that can wait for its hour, and an automation that can
+   wait. Each is pinned here through the live API, as the personas can reach
+   it.
+
+   Casting follows the guards rather than the brief. pass_guard returns before
+   any check when the caller is staff, so every refusal below is driven by a
+   member. Check-in runs require_signature_at_check_in on the pass OWNER, and
+   the regional persona is the one this suite signs the waiver for
+   (documentRules) — so the passes that get stamped are the regional
+   persona's, and the national persona is the door. guard_guest_names still
+   reads tier = 'global' and fires before pass_guard on passes.guests, so the
+   plan-allowance branch of that column is reachable only through the global
+   persona (the stale guard is written up in the gate report).
+
+   Three fixture episodes, each carrying the run token; every pass is released
+   by hand before its episode is struck, so the knots come back through the
+   release trigger rather than through a cascade. */
+async function rulesOfSept4(p) {
+  const stf = rest(p.staff), reg = rest(p.regional), nat = rest(p.national), glo = rest(p.global), pau = rest(p.paused);
+  const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
+  const said = (r) => String(r.data?.message ?? r.data?.hint ?? JSON.stringify(r.data ?? "")).toLowerCase();
+  const soon = new Date(Date.now() + 2 * 86400_000).toISOString();
+  const nowIso = () => new Date().toISOString();
+  const raise = async (label, extra = {}) => {
+    const v = await stf.post("episodes", {
+      slug: `e2e-${label}-${stamp}`, title: `E2E ${label} fixture.`, setting: "sea", kind: "sea_day", sub_class: "passage",
+      starts_at: soon, time_zone: "America/New_York", passes_total: 8, price_cents: 0, status: "live", min_tier: "regional",
+      ...extra,
+    });
+    return { id: v.data?.[0]?.id ?? null, res: v };
+  };
+  /* A pass is released by its owner first — that is the path a member takes —
+     and by the Bridge if the owner may not (a stamped pass, say). Either way
+     the release trigger runs and the knots come back. */
+  const release = async (who, id) => {
+    if (!id) return;
+    const own = await rest(p[who]).del(`passes?id=eq.${id}`);
+    const left = await stf.get(`passes?id=eq.${id}&select=id`);
+    if ((left.data || []).length) await stf.del(`passes?id=eq.${id}`);
+    return own.status;
+  };
+
+  /* ── 11. an automation can wait — written first, so the first boarding
+     below is the event it queues on ─────────────────────────────────────── */
+  const delayed = await stf.post("automations", {
+    name: `E2E delayed ${stamp}`, trigger_event: "pass_confirmed", conditions: {}, delay_minutes: 60,
+    action: { kind: "notify", title: `E2E delayed ${stamp}`, body: "{member} — {episode}, an hour on." },
+  });
+  const delayedId = delayed.data?.[0]?.id;
+  note("staff", "writes an automation that waits an hour", !!delayedId, `got ${delayed.status} ${said(delayed).slice(0, 90)}`);
+  const tooLong = await stf.post("automations", {
+    name: `E2E too long ${stamp}`, trigger_event: "pass_confirmed", conditions: {}, delay_minutes: 43201,
+    action: { kind: "notify", title: "E2E", body: "x" },
+  });
+  note("staff", "a delay is bounded at thirty days", tooLong.status >= 400, `got ${tooLong.status}`);
+  if (tooLong.status === 201) await stf.del(`automations?id=eq.${tooLong.data[0].id}`);
+
+  /* ── the standby fixture: one seat, one standby pass ─────────────────── */
+  const a = await raise("standby", { passes_total: 1, standby_passes: 1 });
+  const aVid = a.id;
+  note("staff", "raises a one-seat episode with one standby pass",
+    !!aVid && a.res.data?.[0]?.standby_passes === 1, `got ${a.res.status} ${said(a.res).slice(0, 90)}`);
+  const b = await raise("door", { passes_total: 8 });
+  const bVid = b.id;
+  note("staff", "raises the door fixture", !!bVid, `got ${b.res.status} ${said(b.res).slice(0, 90)}`);
+  if (!aVid || !bVid) return;
+
+  /* ── 5. you write to people you have sailed with — the stranger first,
+     before any fixture puts two personas on one night ─────────────────── */
+  /* Ground accumulates: a pair that once shared a night shares it for good
+     (shares_ground_with reads every pass ever held). So the stranger is found
+     rather than assumed, and a run on a well-used database says it could not
+     find one instead of asserting a refusal the ground would never give. */
+  let stranger = null;
+  for (const [from, to] of [["regional", "paused"], ["regional", "global"], ["national", "paused"], ["global", "paused"], ["national", "global"]]) {
+    const ground = await rest(p[from]).rpc("shares_ground_with", { p_other: uid(p[to]) });
+    if (ground.status < 400 && ground.data === false) { stranger = [from, to]; break; }
+  }
+  if (!stranger) {
+    note("regional", "SKIPPED the stranger refusal — every fixture pair already shares ground from earlier runs (fixtures:reset clears it)", true, "skipped");
+  } else {
+    const [from, to] = stranger;
+    const knock = await rest(p[from]).rpc("open_direct_thread", { p_other: uid(p[to]) });
+    note(from, `cannot write to ${to}, whom they have not sailed with, and is told how to`,
+      knock.status >= 400 && /sailed with/.test(said(knock)), `got ${knock.status} ${said(knock).slice(0, 110)}`);
+  }
+  const [lo, hi] = [uid(p.regional), uid(p.national)].sort();
+  const pairBefore = await stf.get(`direct_thread_pairs?lo=eq.${lo}&hi=eq.${hi}&select=thread_id`);
+
+  /* ── 6 · 11. the first boarding: a notice with somewhere to go, and the
+     delayed rule landing in the queue instead of the Word ─────────────── */
+  const natSince = nowIso();
+  const natAboard = await nat.post("passes", { episode_id: aVid, profile_id: uid(p.national), status: "aboard" });
+  const natPassId = natAboard.data?.[0]?.id;
+  note("national", "takes the one seat", natAboard.status === 201, `got ${natAboard.status} ${said(natAboard).slice(0, 90)}`);
+  await new Promise((r) => setTimeout(r, 400));
+
+  const aboardNotice = await nat.get(`notifications?kind=eq.manifest&title=like.*E2E standby fixture*&created_at=gt.${natSince}&select=href,title`);
+  note("national", "the aboard notice carries somewhere to go — the passes",
+    aboardNotice.data?.[0]?.href === "/passes", JSON.stringify(aboardNotice.data ?? "").slice(0, 120));
+
+  if (delayedId) {
+    const queued = await stf.get(`automation_queue?automation_id=eq.${delayedId}&select=id,run_at,done_at,profile_id`);
+    const q = (queued.data || [])[0];
+    const minutesOut = q ? (Date.parse(q.run_at) - Date.now()) / 60000 : NaN;
+    note("staff", "a delayed rule lands in the queue, due an hour on, addressed to the member",
+      !!q && q.done_at === null && q.profile_id === uid(p.national) && minutesOut > 55 && minutesOut <= 61,
+      `got ${queued.status} ${JSON.stringify(q ?? "").slice(0, 120)} (${Math.round(minutesOut)} min out)`);
+    const early = await nat.get(`notifications?title=eq.E2E delayed ${stamp}&select=id`);
+    note("national", "and nothing is said before the hour", (early.data || []).length === 0, `${(early.data || []).length} notices`);
+    const memberQueue = await reg.get("automation_queue?select=id&limit=1");
+    note("regional", "the queue is the Bridge's to read", (memberQueue.data || []).length === 0, `got ${memberQueue.status}`);
+    /* Switched off here so the boardings below do not keep filling it; struck
+       at the end, which takes its queue rows with it. */
+    await stf.patch(`automations?id=eq.${delayedId}`, { active: false });
+  }
+
+  /* ── 3. standby: past the hull, outside the count, aboard only into a seat
+     that has come free ────────────────────────────────────────────────── */
+  const plainFull = await glo.post("passes", { episode_id: aVid, profile_id: uid(p.global), status: "aboard" });
+  note("global", "a plain pass on a full hull is refused and offered standby",
+    plainFull.status >= 400 && /standby pass/.test(said(plainFull)), said(plainFull).slice(0, 120));
+  if (plainFull.status === 201) await release("global", plainFull.data[0].id);
+
+  const regStandby = await reg.post("passes", { episode_id: aVid, profile_id: uid(p.regional), status: "aboard", standby: true });
+  const regPassId = regStandby.data?.[0]?.id;
+  note("regional", "a standby pass is admitted past the full hull",
+    regStandby.status === 201 && regStandby.data?.[0]?.standby === true, `got ${regStandby.status} ${said(regStandby).slice(0, 90)}`);
+  const left = await reg.rpc("passes_left", { p_voyage: aVid });
+  note("regional", "a standby pass is not a seat — passes_left still reads 0",
+    left.status < 400 && Number(left.data) === 0, `got ${left.status} ${JSON.stringify(left.data)}`);
+  const gloStandby = await glo.post("passes", { episode_id: aVid, profile_id: uid(p.global), status: "aboard", standby: true });
+  note("global", "a second standby is refused, by name",
+    gloStandby.status >= 400 && /standby is full/.test(said(gloStandby)), said(gloStandby).slice(0, 100));
+  if (gloStandby.status === 201) await release("global", gloStandby.data[0].id);
+
+  const tooEarly = regPassId ? await stf.patch(`passes?id=eq.${regPassId}`, { checked_in_at: nowIso() }) : { status: 0, data: null };
+  note("staff", "a standby pass cannot board while the seat is taken",
+    tooEarly.status >= 400 && /no seat has come free/.test(said(tooEarly)), `got ${tooEarly.status} ${said(tooEarly).slice(0, 100)}`);
+
+  /* ── 2. the door: a role a member holds for one night ────────────────── */
+  const regB = await reg.post("passes", { episode_id: bVid, profile_id: uid(p.regional), status: "aboard" });
+  const regBId = regB.data?.[0]?.id;
+  note("regional", "boards the door fixture", regB.status === 201, `got ${regB.status} ${said(regB).slice(0, 90)}`);
+  const blind = await nat.get(`passes?episode_id=eq.${bVid}&select=id`);
+  note("national", "without a grant another member's manifest is invisible", (blind.data || []).length === 0, `${(blind.data || []).length} rows`);
+  const memberGrant = await reg.post("door_grants", { profile_id: uid(p.regional), episode_id: bVid, expires_at: new Date(Date.now() + 3600_000).toISOString() });
+  note("regional", "a member cannot hand themselves the door", memberGrant.status >= 400, `got ${memberGrant.status}`);
+  const grant = await stf.post("door_grants", { profile_id: uid(p.national), episode_id: bVid, expires_at: new Date(Date.now() + 3600_000).toISOString() });
+  note("staff", "hands a member the door for one night", grant.status === 201, `got ${grant.status} ${said(grant).slice(0, 90)}`);
+  const ownGrant = await nat.get("door_grants?select=episode_id");
+  note("national", "the door reads its own grant and nobody else's",
+    (ownGrant.data || []).length === 1 && ownGrant.data[0].episode_id === bVid, JSON.stringify(ownGrant.data ?? "").slice(0, 90));
+  const isDoor = await nat.rpc("is_door", { p_episode: bVid });
+  const isDoorElsewhere = await nat.rpc("is_door", { p_episode: aVid });
+  note("national", "is the door of that night and no other", isDoor.data === true && isDoorElsewhere.data === false, `${isDoor.data} / ${isDoorElsewhere.data}`);
+
+  const manifest = await nat.get(`passes?episode_id=eq.${bVid}&select=id,profile_id`);
+  note("national", "the door reads its manifest", (manifest.data || []).some((r) => r.id === regBId), `${(manifest.data || []).length} rows, got ${manifest.status}`);
+  const elsewhere = await nat.get(`passes?episode_id=eq.${aVid}&profile_id=neq.${uid(p.national)}&select=id`);
+  note("national", "and no other night's", (elsewhere.data || []).length === 0, `${(elsewhere.data || []).length} rows`);
+  const stamped = regBId ? await nat.patch(`passes?id=eq.${regBId}`, { checked_in_at: nowIso() }) : { status: 0, data: null };
+  note("national", "the door stamps an arrival", stamped.status < 300 && !!stamped.data?.[0]?.checked_in_at, `got ${stamped.status} ${said(stamped).slice(0, 100)}`);
+  const forgeCode = regBId ? await nat.patch(`passes?id=eq.${regBId}`, { boarding_code: "UN-FORGED" }) : { status: 0, data: null };
+  note("national", "the door cannot issue a boarding code",
+    forgeCode.status >= 400 && /issued by the club/.test(said(forgeCode)), `got ${forgeCode.status} ${said(forgeCode).slice(0, 100)}`);
+  const bridgeRead = await nat.get("broadcasts?select=id&limit=1");
+  note("national", "the door is not the Bridge — staff tables stay shut", (bridgeRead.data || []).length === 0, `got ${bridgeRead.status}`);
+  const revoke = await stf.del(`door_grants?episode_id=eq.${bVid}`);
+  const afterRevoke = await nat.get(`passes?episode_id=eq.${bVid}&select=id`);
+  note("national", "a revoked door reads nothing", revoke.status < 300 && (afterRevoke.data || []).length === 0, `got ${revoke.status}; ${(afterRevoke.data || []).length} rows`);
+
+  /* ── 1. a guest rides the plan ───────────────────────────────────────── */
+  const plans = await stf.get("membership_plans?select=id,label,guest_allowance,price_cents,active&order=price_cents.asc");
+  const grid = plans.data || [];
+  const zeroPlan = grid.find((m) => m.guest_allowance === 0 && m.label === "Access") ?? grid.find((m) => m.guest_allowance === 0);
+  const paidPlan = grid.find((m) => m.guest_allowance === 2 && m.active && m.price_cents > 0) ?? grid.find((m) => m.guest_allowance === 2);
+  note("staff", "the plan grid carries a zero and a two-guest allowance", !!zeroPlan && !!paidPlan,
+    JSON.stringify(grid.map((m) => [m.label, m.guest_allowance])).slice(0, 160));
+  const gloWas = (await stf.get(`profiles?id=eq.${uid(p.global)}&select=plan_id`)).data?.[0]?.plan_id ?? null;
+  const gloB = await glo.post("passes", { episode_id: bVid, profile_id: uid(p.global), status: "aboard" });
+  const gloBId = gloB.data?.[0]?.id;
+  note("global", "boards the door fixture", gloB.status === 201, `got ${gloB.status} ${said(gloB).slice(0, 90)}`);
+  if (zeroPlan && paidPlan && gloBId) {
+    try {
+      const toZero = await stf.patch(`profiles?id=eq.${uid(p.global)}`, { plan_id: zeroPlan.id });
+      note("staff", "puts the global fixture on the no-allowance plan for the check", toZero.status < 300, `got ${toZero.status}`);
+      const noGuest = await glo.post("pass_guests", { rsvp_id: gloBId, name: `E2E Guest One ${stamp}` });
+      note("global", "on a plan with no allowance a named guest is refused, and told the tier",
+        noGuest.status >= 400 && /paid memberships/.test(said(noGuest)), `got ${noGuest.status} ${said(noGuest).slice(0, 110)}`);
+      const noCount = await glo.patch(`passes?id=eq.${gloBId}`, { guests: 1 });
+      note("global", "and a guest count is refused by the pass guard for the same reason",
+        noCount.status >= 400 && /paid memberships/.test(said(noCount)), `got ${noCount.status} ${said(noCount).slice(0, 110)}`);
+
+      const toPaid = await stf.patch(`profiles?id=eq.${uid(p.global)}`, { plan_id: paidPlan.id });
+      note("staff", `moves the fixture onto ${paidPlan.label} (allowance ${paidPlan.guest_allowance})`, toPaid.status < 300, `got ${toPaid.status}`);
+      const overCount = await glo.patch(`passes?id=eq.${gloBId}`, { guests: 3 });
+      note("global", "a guest count above the allowance is refused", overCount.status >= 400, `got ${overCount.status} ${said(overCount).slice(0, 110)}`);
+      const g1 = await glo.post("pass_guests", { rsvp_id: gloBId, name: `E2E Guest One ${stamp}` });
+      const g2 = await glo.post("pass_guests", { rsvp_id: gloBId, name: `E2E Guest Two ${stamp}` });
+      note("global", "on a paid plan two named guests ride, each with a guest code",
+        g1.status === 201 && g2.status === 201 && /-G\d$/.test(g1.data?.[0]?.boarding_code ?? "") && g1.data?.[0]?.boarding_code !== g2.data?.[0]?.boarding_code,
+        `got ${g1.status}/${g2.status} ${g1.data?.[0]?.boarding_code} ${g2.data?.[0]?.boarding_code}`);
+      const g3 = await glo.post("pass_guests", { rsvp_id: gloBId, name: `E2E Guest Three ${stamp}` });
+      note("global", "the third is refused, and the refusal names the allowance",
+        g3.status >= 400 && /2 guest passes per pass/.test(said(g3)), `got ${g3.status} ${said(g3).slice(0, 110)}`);
+      const staffSeesGuests = await stf.get(`pass_guests?rsvp_id=eq.${gloBId}&select=id`);
+      note("staff", "two guests are seated on the pass", (staffSeesGuests.data || []).length === 2, `${(staffSeesGuests.data || []).length} rows`);
+    } finally {
+      await stf.del(`pass_guests?rsvp_id=eq.${gloBId}`);
+      const back = await stf.patch(`profiles?id=eq.${uid(p.global)}`, { plan_id: gloWas });
+      note("staff", "the global fixture is back on its own plan", back.status < 300 && (back.data?.[0]?.plan_id ?? null) === gloWas, `got ${back.status}`);
+    }
+  }
+  await release("global", gloBId);
+
+  /* ── 9. one debrief a night, to Shoreside and nowhere else ───────────── */
+  /* A standby pass is status 'aboard', which is what the policy reads — so
+     the regional persona, on standby, may write. */
+  const debrief = await reg.post("debriefs", { episode_id: aVid, profile_id: uid(p.regional), note: "E2E — one line for Shoreside.", again: true });
+  note("regional", "a member aboard writes one debrief", debrief.status === 201, `got ${debrief.status} ${said(debrief).slice(0, 90)}`);
+  const twice = await reg.post("debriefs", { episode_id: aVid, profile_id: uid(p.regional), note: "E2E — again.", again: false });
+  note("regional", "and only one", twice.status >= 400, `got ${twice.status}`);
+  const noPass = await glo.post("debriefs", { episode_id: aVid, profile_id: uid(p.global), note: "E2E", again: false });
+  note("global", "a member with no pass on the night has no debrief to write", noPass.status >= 400, `got ${noPass.status}`);
+  const peekDebrief = await nat.get(`debriefs?episode_id=eq.${aVid}&select=id`);
+  note("national", "a debrief is not the room's to read", (peekDebrief.data || []).length === 0, `${(peekDebrief.data || []).length} rows`);
+  const shoreside = await stf.get(`debriefs?episode_id=eq.${aVid}&select=id,again`);
+  note("staff", "Shoreside reads it", (shoreside.data || []).length === 1 && shoreside.data[0].again === true, JSON.stringify(shoreside.data ?? "").slice(0, 80));
+
+  /* ── 10. a broadcast goes out now, or waits for its hour ─────────────── */
+  /* The audience is the fixture episode, not a tier. A tier audience would
+     write a real notice into every real Regional member's Inbox — which no
+     policy lets anyone delete — and a QUEUED tier word would go out to them
+     tomorrow, because broadcasts has no DELETE policy either. Aimed at the
+     fixture, the word reaches the two personas aboard, and the queued one
+     finds nobody when the clock reaches it, the episode having been struck. */
+  const wordNow = await stf.rpc("send_broadcast", {
+    p_audience: { kind: "episode", id: aVid }, p_title: `E2E word ${stamp}`, p_body: "E2E — said now.", p_channels: ["notice"],
+  });
+  note("staff", "a word given no hour goes out now, to everyone aboard",
+    wordNow.status < 400 && Number(wordNow.data) >= 1, `got ${wordNow.status} ${JSON.stringify(wordNow.data)}`);
+  const nowRow = await stf.get(`broadcasts?title=eq.E2E word ${stamp}&select=status,recipients,send_at`);
+  note("staff", "and is recorded as sent, with its count",
+    nowRow.data?.[0]?.status === "sent" && nowRow.data?.[0]?.recipients === Number(wordNow.data) && !!nowRow.data?.[0]?.send_at,
+    JSON.stringify(nowRow.data ?? "").slice(0, 120));
+  const heard = await nat.get(`notifications?title=eq.E2E word ${stamp}&select=href`);
+  note("national", "the word lands in the Word, pointing at the passes", heard.data?.[0]?.href === "/passes", JSON.stringify(heard.data ?? "").slice(0, 80));
+
+  const wordLater = await stf.rpc("send_broadcast", {
+    p_audience: { kind: "episode", id: aVid }, p_title: `E2E later ${stamp}`, p_body: "E2E — said tomorrow.", p_channels: ["notice"],
+    p_send_at: new Date(Date.now() + 86400_000).toISOString(),
+  });
+  note("staff", "a word given an hour is written to nobody yet", wordLater.status < 400 && Number(wordLater.data) === 0, `got ${wordLater.status} ${JSON.stringify(wordLater.data)}`);
+  const laterRow = await stf.get(`broadcasts?title=eq.E2E later ${stamp}&select=status,recipients,send_at`);
+  note("staff", "and waits in the queue for it",
+    laterRow.data?.[0]?.status === "queued" && laterRow.data?.[0]?.recipients === 0 && !!laterRow.data?.[0]?.send_at,
+    JSON.stringify(laterRow.data ?? "").slice(0, 120));
+  const unheard = await nat.get(`notifications?title=eq.E2E later ${stamp}&select=id`);
+  note("national", "nothing is heard before the hour", (unheard.data || []).length === 0, `${(unheard.data || []).length} notices`);
+  const tooFar = await stf.rpc("send_broadcast", {
+    p_audience: { kind: "episode", id: aVid }, p_title: `E2E far ${stamp}`, p_body: "x", p_channels: ["notice"],
+    p_send_at: new Date(Date.now() + 91 * 86400_000).toISOString(),
+  });
+  note("staff", "a word is scheduled inside ninety days", tooFar.status >= 400 && /ninety days/.test(said(tooFar)), said(tooFar).slice(0, 90));
+  const memberWord = await reg.rpc("send_broadcast", { p_audience: { kind: "all" }, p_title: "E2E", p_body: "x", p_channels: ["notice"] });
+  note("regional", "a member cannot speak for the Bridge", memberWord.status >= 400, `got ${memberWord.status}`);
+
+  /* ── 5. the positive branch: a night booked together is shared ground ── */
+  const ground = await reg.rpc("shares_ground_with", { p_other: uid(p.national) });
+  note("regional", "a night booked together is shared ground", ground.data === true, `got ${ground.status} ${JSON.stringify(ground.data)}`);
+  const opened = await reg.rpc("open_direct_thread", { p_other: uid(p.national) });
+  note("regional", "and opens the door to a direct thread", opened.status < 400 && typeof opened.data === "string", `got ${opened.status} ${said(opened).slice(0, 90)}`);
+  if (typeof opened.data === "string" && !(pairBefore.data || []).length) {
+    const struck = await stf.del(`threads?id=eq.${opened.data}`);
+    note("staff", "the thread this run opened is struck", struck.status < 300, `got ${struck.status}`);
+  }
+
+  /* ── 3, continued: the seat comes free and the standby pass takes it ─── */
+  const natRel = natPassId ? await nat.del(`passes?id=eq.${natPassId}`) : { status: 0 };
+  note("national", "hands the seat back", natRel.status < 300, `got ${natRel.status}`);
+  const boards = regPassId ? await stf.patch(`passes?id=eq.${regPassId}`, { checked_in_at: nowIso() }) : { status: 0, data: null };
+  note("staff", "once a seat has come free the standby pass boards, and stops being standby",
+    boards.status < 300 && boards.data?.[0]?.standby === false && !!boards.data?.[0]?.checked_in_at,
+    `got ${boards.status} ${said(boards).slice(0, 110)}`);
+  const leftAfter = await reg.rpc("passes_left", { p_voyage: aVid });
+  note("regional", "and now counts against the hull", Number(leftAfter.data) === 0, `passes_left ${JSON.stringify(leftAfter.data)}`);
+
+  /* ── 4. by request: the Bridge decides, and its offer is the key ─────── */
+  const c = await raise("request", { passes_total: 4, by_request: true });
+  const cVid = c.id;
+  note("staff", "raises a by-request episode", !!cVid && c.res.data?.[0]?.by_request === true, `got ${c.res.status} ${said(c.res).slice(0, 90)}`);
+  if (cVid) {
+    const me = uid(p.regional);
+    const direct = await reg.post("passes", { episode_id: cVid, profile_id: me, status: "aboard" });
+    note("regional", "a by-request night takes no pass from the door, and says so",
+      direct.status >= 400 && /by request/.test(said(direct)), `got ${direct.status} ${said(direct).slice(0, 110)}`);
+    if (direct.status === 201) await release("regional", direct.data[0].id);
+
+    /* The line runs by segment, so the night is given a composition; a
+       segmented sailing then asks for the vetting file and the Preference
+       Sheet at the gate, as every gated sale does (see ratioAndRadarRules). */
+    const caps = await stf.post("episode_segment_caps", [
+      { episode_id: cVid, segment: "single_man", cap: 2 },
+      { episode_id: cVid, segment: "single_woman", cap: 2 },
+    ]);
+    note("staff", "gives the by-request night a composition for the line to run in", caps.status === 201, `got ${caps.status}`);
+    const vf = await stf.patch(`vetting_files?profile_id=eq.${me}`, { id_verified_at: nowIso(), age_ok: true, background_state: "cleared" });
+    if (!(vf.data || []).length) {
+      await stf.post("vetting_files", { profile_id: me, id_verified_at: nowIso(), age_ok: true, background_state: "cleared" });
+    }
+    const sheet = await reg.patch(`preference_sheets?profile_id=eq.${me}`, { completed_at: nowIso() });
+    if (!(sheet.data || []).length) {
+      await reg.post("preference_sheets", { profile_id: me, drinks: ["Zero proof"], flag_green: "E2E fixture", completed_at: nowIso() });
+    }
+
+    const ask = await reg.post("waitlist_entries", { episode_id: cVid, profile_id: me, segment: "single_man", place: 1 });
+    const askId = ask.data?.[0]?.id;
+    note("regional", "asks for a place", ask.status === 201 && !!askId, `got ${ask.status} ${said(ask).slice(0, 90)}`);
+    const early = await reg.rpc("claim_your_place", { p_entry: askId });
+    note("regional", "cannot take a place the Bridge has not offered", early.status >= 400 && /nothing has opened/.test(said(early)), said(early).slice(0, 90));
+    const offered = await stf.rpc("offer_the_next_place", { p_episode: cVid, p_segment: "single_man" });
+    note("staff", "the Bridge writes back with a place", offered.status < 400 && offered.data === askId, `got ${offered.status} ${JSON.stringify(offered.data).slice(0, 60)}`);
+    const claimed = await reg.rpc("claim_your_place", { p_entry: askId });
+    note("regional", "the offer is the key — the claim is admitted where the door was not",
+      claimed.status < 400 && typeof claimed.data === "string", `got ${claimed.status} ${said(claimed).slice(0, 110)}`);
+    const cPass = await stf.get(`passes?episode_id=eq.${cVid}&profile_id=eq.${me}&select=id,status,segment`);
+    note("regional", "and the pass is aboard in the segment it was asked for",
+      cPass.data?.[0]?.status === "aboard" && cPass.data?.[0]?.segment === "single_man", JSON.stringify(cPass.data ?? "").slice(0, 90));
+    const stillShut = await nat.post("passes", { episode_id: cVid, profile_id: uid(p.national), status: "aboard", segment: "single_woman" });
+    note("national", "the door stays shut to everyone the Bridge has not written to",
+      stillShut.status >= 400 && /by request/.test(said(stillShut)), `got ${stillShut.status} ${said(stillShut).slice(0, 110)}`);
+    if (stillShut.status === 201) await release("national", stillShut.data[0].id);
+
+    await release("regional", cPass.data?.[0]?.id);
+    const cDel = await stf.del(`episodes?id=eq.${cVid}`);
+    note("staff", "the by-request fixture is struck", cDel.status < 300, `got ${cDel.status}`);
+  }
+
+  /* ── 8. a member votes on a question, never on a person ──────────────── */
+  const poll = await stf.post("polls", { question: `E2E where next? ${stamp}`, options: ["Havana", "Nassau"], closes_at: new Date(Date.now() + 3600_000).toISOString() });
+  const pollId = poll.data?.[0]?.id;
+  note("staff", "puts a question with two options and a closing hour", !!pollId, `got ${poll.status} ${said(poll).slice(0, 90)}`);
+  const memberPoll = await reg.post("polls", { question: "E2E who is the best?", options: ["a", "b"], closes_at: new Date(Date.now() + 3600_000).toISOString() });
+  note("regional", "a member cannot put a question", memberPoll.status >= 400, `got ${memberPoll.status}`);
+  const onePlan = await stf.post("polls", { question: `E2E one option ${stamp}`, options: ["only"], closes_at: new Date(Date.now() + 3600_000).toISOString() });
+  note("staff", "a question needs at least two options", onePlan.status >= 400, `got ${onePlan.status}`);
+  if (onePlan.status === 201) await stf.del(`polls?id=eq.${onePlan.data[0].id}`);
+  if (pollId) {
+    const v1 = await reg.rpc("cast_vote", { p_poll: pollId, p_option: 0 });
+    const v2 = await reg.rpc("cast_vote", { p_poll: pollId, p_option: 1 });
+    const mine = await reg.get(`poll_votes?poll_id=eq.${pollId}&select=option`);
+    note("regional", "votes, changes their mind while the question is open, and holds one vote",
+      v1.status < 400 && v2.status < 400 && (mine.data || []).length === 1 && mine.data[0].option === 1,
+      `got ${v1.status}/${v2.status} ${JSON.stringify(mine.data ?? "")}`);
+    const outOfRange = await reg.rpc("cast_vote", { p_poll: pollId, p_option: 2 });
+    note("regional", "an option off the list is refused", outOfRange.status >= 400 && /pick one of the options/.test(said(outOfRange)), said(outOfRange).slice(0, 90));
+    const pausedVote = await pau.rpc("cast_vote", { p_poll: pollId, p_option: 0 });
+    note("paused", "a held membership does not vote", pausedVote.status >= 400, `got ${pausedVote.status} ${said(pausedVote).slice(0, 80)}`);
+    const sealed = await reg.rpc("poll_results", { p_poll: pollId });
+    note("regional", "the tally is sealed while the question is open", sealed.status < 400 && Array.isArray(sealed.data) && sealed.data.length === 0, `got ${sealed.status} ${JSON.stringify(sealed.data).slice(0, 80)}`);
+    const tally = await stf.rpc("poll_results", { p_poll: pollId });
+    note("staff", "the Bridge reads the tally as it stands",
+      tally.status < 400 && tally.data?.length === 1 && tally.data[0].option === 1 && Number(tally.data[0].votes) === 1, JSON.stringify(tally.data ?? "").slice(0, 80));
+    const others = await nat.get(`poll_votes?poll_id=eq.${pollId}&select=option`);
+    note("national", "another member's vote is not readable", (others.data || []).length === 0, `${(others.data || []).length} rows`);
+    const forgeVote = await reg.post("poll_votes", { poll_id: pollId, profile_id: uid(p.regional), option: 0 });
+    note("regional", "a vote is cast through the function, never written by hand", forgeVote.status >= 400, `got ${forgeVote.status}`);
+    const pollDel = await stf.del(`polls?id=eq.${pollId}`);
+    note("staff", "the question is struck", pollDel.status < 300, `got ${pollDel.status}`);
+  }
+
+  /* ── 7 · 6. a member chooses the channel; a notice has somewhere to go ── */
+  const me = uid(p.regional);
+  const prefsRow = await reg.get(`profiles?id=eq.${me}&select=notification_prefs,email`);
+  const prefsWas = prefsRow.data?.[0]?.notification_prefs ?? {};
+  const regEmail = prefsRow.data?.[0]?.email;
+  const off = { ...prefsWas, channels: { ...(prefsWas.channels ?? {}), email: false, push: false } };
+  const flipped = await reg.patch(`profiles?id=eq.${me}`, { notification_prefs: off });
+  note("regional", "switches their own mail and push channels off",
+    flipped.status < 300 && flipped.data?.[0]?.notification_prefs?.channels?.email === false, `got ${flipped.status} ${said(flipped).slice(0, 90)}`);
+  const outboxIds = [];
+  try {
+    const marketing = await stf.rpc("queue_email", { p_to: regEmail, p_template: "bridge-word", p_payload: { name: "E2E", title: "E2E", body: "E2E" } });
+    if (typeof marketing.data === "string") outboxIds.push(marketing.data);
+    const mrow = (await stf.get(`email_outbox?id=eq.${marketing.data}&select=status,last_error`)).data?.[0];
+    /* Two BEFORE INSERT triggers set status and last_error on this row, and
+       they fire in name order: marketing_mail_honours_the_switch, then
+       no_real_mail_to_a_fixture — which overwrites the reason on any fixture
+       address. Both leave the row skipped, so that is asserted; the marketing
+       REASON is asserted when it survives and declared skipped when the
+       fixture guard has written over it (SQL in the gate report). */
+    if (mrow && /marketing mail off/.test(mrow.last_error ?? "")) {
+      note("staff", "a marketing letter to a member who turned mail off is skipped, and says why", mrow.status === "skipped", JSON.stringify(mrow));
+    } else if (mrow?.status === "skipped") {
+      note("staff", "SKIPPED the marketing reason — no_real_mail_to_a_fixture fires after marketing_mail_honours_the_switch and overwrites last_error on a fixture address; the row is skipped either way (SQL in the gate report)", true, JSON.stringify(mrow));
+    } else {
+      note("staff", "a marketing letter to a member who turned mail off is skipped", false, `got ${marketing.status} ${JSON.stringify(mrow ?? said(marketing))}`);
+    }
+    const transactional = await stf.rpc("queue_email", { p_to: regEmail, p_template: "boarding-pass", p_payload: { name: "E2E" } });
+    if (typeof transactional.data === "string") outboxIds.push(transactional.data);
+    const trow = (await stf.get(`email_outbox?id=eq.${transactional.data}&select=status,last_error`)).data?.[0];
+    note("staff", "a boarding pass is not marketing — the mail switch does not touch it",
+      !!trow && !/marketing/.test(trow.last_error ?? ""), JSON.stringify(trow ?? said(transactional)));
+
+    /* Push is where the channel is observable end to end: the fan-out reads
+       channels.push, and staff read push_outbox. */
+    const pushSince = nowIso();
+    const wordOff = await stf.rpc("notify_member", { p_profile: me, p_kind: "word", p_title: `E2E channel off ${stamp}`, p_body: "E2E" });
+    const pushOff = await stf.get(`push_outbox?profile_id=eq.${me}&created_at=gt.${pushSince}&select=id`);
+    note("staff", "with push off, a notice does not fan out to push", wordOff.status < 400 && (pushOff.data || []).length === 0, `got ${wordOff.status}; ${(pushOff.data || []).length} pushes`);
+    const wordRow = await reg.get(`notifications?id=eq.${wordOff.data}&select=href,kind`);
+    note("regional", "a bare word points at the Inbox", wordRow.data?.[0]?.href === "/inbox", JSON.stringify(wordRow.data ?? "").slice(0, 80));
+  } finally {
+    const restored = await reg.patch(`profiles?id=eq.${me}`, { notification_prefs: prefsWas });
+    note("regional", "the channels are back as they were", restored.status < 300, `got ${restored.status}`);
+  }
+  const pushSince2 = nowIso();
+  const wordOn = await stf.rpc("notify_member", { p_profile: me, p_kind: "manifest", p_title: `E2E channel on ${stamp}`, p_body: "E2E" });
+  const pushOn = await stf.get(`push_outbox?profile_id=eq.${me}&created_at=gt.${pushSince2}&select=url`);
+  note("staff", "with push on, a manifest notice fans out carrying its destination",
+    wordOn.status < 400 && (pushOn.data || []).length === 1 && pushOn.data[0].url === "/passes", `got ${wordOn.status} ${JSON.stringify(pushOn.data ?? "").slice(0, 80)}`);
+  for (const id of outboxIds) await stf.del(`email_outbox?id=eq.${id}`);
+
+  /* ── cleanup ─────────────────────────────────────────────────────────── */
+  await release("regional", regPassId);
+  await release("regional", regBId);
+  /* debriefs and broadcasts have no DELETE policy. The debrief goes with its
+     episode (cascade); the broadcast rows stay, and saying so is better than
+     a delete that quietly does nothing.
+
+     Declared footprint, as notifications cannot be swept: this section leaves
+     the regional persona its aboard notices (three), "A seat opened", the two
+     E2E channel words and the broadcast word; the national persona its aboard
+     notice and the broadcast word. fixtures:reset clears them. */
+  await stf.del("broadcasts?title=like.E2E*");
+  const broadcastsLeft = await stf.get(`broadcasts?title=like.E2E*${stamp}&select=id`);
+  if ((broadcastsLeft.data || []).length) {
+    note("staff", "SKIPPED striking the broadcast rows — broadcasts has no DELETE policy; the queued word is aimed at a struck episode and reaches nobody (SQL in the gate report)", true, `${broadcastsLeft.data.length} rows stay`);
+  }
+  for (const vid of [aVid, bVid]) {
+    const del = await stf.del(`episodes?id=eq.${vid}`);
+    note("staff", "a September 4 fixture is struck", del.status < 300, `got ${del.status} ${said(del).slice(0, 90)}`);
+  }
+  if (delayedId) {
+    const gone = await stf.del(`automations?id=eq.${delayedId}`);
+    const queueLeft = await stf.get(`automation_queue?automation_id=eq.${delayedId}&select=id`);
+    note("staff", "the delayed rule is struck and takes its queue with it", gone.status < 300 && (queueLeft.data || []).length === 0, `got ${gone.status}; ${(queueLeft.data || []).length} queued`);
+  }
+}
+
 async function main() {
   console.log(`e2e against ${BASE}\n`);
   const personas = {};
@@ -4601,6 +5072,7 @@ async function main() {
   await decisionRules(personas);
   await decisionsOfSept2(personas);
   await taxonomyOfSept2(personas);
+  await rulesOfSept4(personas);
   for (const [who, before] of Object.entries(kitBefore)) {
     const after = await knotsFor(personas[who], personas.staff);
     note(who, "activity, charter and membership leave the ledger as they found it",
