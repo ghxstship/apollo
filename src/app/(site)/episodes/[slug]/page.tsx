@@ -9,6 +9,9 @@ import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
 import { durationChip, onSaleChip, vesselSpec } from "@/components/site/episode-chips";
 import { fleetFor, framesFor } from "@/components/site/episode-data";
+import { googleCalendarUrl, outlookCalendarUrl } from "@/components/site/calendar-links";
+import { guestLine, listWords, plansAtOrAbove } from "@/components/site/plan-copy";
+import { readPublicPlans } from "@/components/site/plans-data";
 import { readLegs, readStops } from "@/app/(member)/itinerary/data";
 import { Enquire } from "@/components/member/enquire";
 
@@ -18,7 +21,9 @@ const SEAS: Record<string, string> = {
   dawn: "var(--sea-dawn)",
 };
 
-/* Per-class FAQ — what to bring, weather holds, guests. */
+/* Per-class FAQ — what to bring, weather holds. The guest answer is not here:
+   it reads the plans' guest_allowance at render, because the figure is a
+   column and the plan it used to name (Global) is the geography axis now. */
 const FAQS: Record<string, Array<[string, string]>> = {
   sea: [
     [
@@ -33,10 +38,6 @@ const FAQS: Record<string, Array<[string, string]>> = {
       "What if the weather turns?",
       "Holds are called by 18:00 the night before — a word, not an apology. Your pass carries forward in full.",
     ],
-    [
-      "Can I bring a guest?",
-      "Guests ride on Global passes, two per episode. Everyone signs the manifest at the gangway.",
-    ],
   ],
   shore: [
     [
@@ -47,10 +48,6 @@ const FAQS: Record<string, Array<[string, string]>> = {
       "What if the weather turns?",
       "Ashore, we hold for rain, not for clouds. Holds are called by 18:00 the night before and your pass carries forward.",
     ],
-    [
-      "Can I bring a guest?",
-      "Guests ride on Global passes, two per episode. Everyone signs the manifest at the gangway.",
-    ],
   ],
   sky: [
     [
@@ -60,10 +57,6 @@ const FAQS: Record<string, Array<[string, string]>> = {
     [
       "What if the weather turns?",
       "Anything ashore carries on regardless. Night passages hold by 18:00 the night before, and your pass carries forward.",
-    ],
-    [
-      "Can I bring a guest?",
-      "Guests ride on Global passes, two per episode. Everyone signs the manifest at the gangway.",
     ],
   ],
 };
@@ -101,7 +94,7 @@ export default async function EpisodePage({
     .maybeSingle();
   if (!episode) notFound();
 
-  const [{ data: cap }, { data: { user } }, { data: formatRow }] = await Promise.all([
+  const [{ data: cap }, { data: { user } }, { data: formatRow }, plans, { data: cityRow }] = await Promise.all([
     supabase.from("episode_capacity").select("*").eq("episode_id", episode.id).maybeSingle(),
     supabase.auth.getUser(),
     /* The format decides the door. 'open' formats sell a pass; 'on_request'
@@ -115,7 +108,42 @@ export default async function EpisodePage({
           .eq("slug", episode.series)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    /* The guest FAQ and the door's ruler both read the live plans. */
+    readPublicPlans(supabase),
+    /* The city is the market and is public; the venue is the place and is not. */
+    episode.city_id
+      ? supabase.from("cities").select("name").eq("id", episode.city_id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
+  const cityName = cityRow?.name ?? null;
+  const guests = guestLine(plans);
+  /* Which plans may book this episode, by the guard's own ruler — falls back
+     to the geography word only when no plan is published to name. */
+  const openTo = plansAtOrAbove(plans, episode.min_tier);
+  const openToLine = openTo.length > 0 ? `Open to ${listWords(openTo)}` : `${TIER_LABEL[episode.min_tier]} tier and up`;
+  const openToData = openTo.length > 0 ? openTo.join(" · ") : `${TIER_LABEL[episode.min_tier]}+`;
+
+  /* Progressive reveal. The venue's name, position, address and muster
+     render only to someone who holds an aboard pass on this episode, or to
+     staff; everyone else gets the city, the series and the hour, and the
+     line that the address comes with the pass. The markup for the place is
+     absent from the anonymous HTML, not hidden in it. passes is
+     profile_id = auth.uid() under RLS, so the member's own row is the one
+     row this read can return. */
+  let reveal = false;
+  if (user) {
+    const [{ data: ownPass }, { data: me }] = await Promise.all([
+      supabase
+        .from("passes")
+        .select("id")
+        .eq("episode_id", episode.id)
+        .eq("profile_id", user.id)
+        .eq("status", "aboard")
+        .limit(1),
+      supabase.from("profiles").select("is_staff").eq("id", user.id).maybeSingle(),
+    ]);
+    reveal = (ownPass ?? []).length > 0 || Boolean(me?.is_staff);
+  }
   const format = (formatRow ?? null) as
     | { slug: string; label: string; access: string; category: string }
     | null;
@@ -218,7 +246,13 @@ export default async function EpisodePage({
   const paragraphs = (episode.description ?? episode.blurb ?? "")
     .split(/\n\n+/)
     .filter(Boolean);
-  const faq = FAQS[episode.setting] ?? FAQS.sea;
+  const faq: Array<[string, string]> = [
+    ...(FAQS[episode.setting] ?? FAQS.sea),
+    ["Can I bring a guest?", `${guests} Everyone signs the manifest at the gangway.`],
+  ];
+  /* Standby: passes past the ceiling that board only into a seat a no-show
+     frees. Named as a possibility when the episode is full and holds some. */
+  const standby = episode.standby_passes > 0;
   const seatsWord = "passes";
   const full = left === 0;
 
@@ -285,11 +319,27 @@ export default async function EpisodePage({
        presenting partner first. A credit, never an ad, and never the money. */
     supabase.rpc("sponsor_credits", { p_episode: episode.id }),
     episode.venue_id
-      ? supabase.from("venues").select("name").eq("id", episode.venue_id).maybeSingle()
+      ? supabase.from("venues").select("name, address, access_note").eq("id", episode.venue_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
   const credits = creditsRes.data ?? [];
-  const venueName = venueRes.data?.name ?? null;
+  const venue = venueRes.data ?? null;
+  /* The access note is public on purpose: step-free, lift, quiet room is what
+     an access need wants to know BEFORE booking, and it names no address. */
+  const accessNote = venue?.access_note ?? null;
+  const ageLine = episode.age_line ?? "21+ · vetted";
+
+  /* The calendar quick-adds, on the city and never the venue — a link is
+     copied around, and the address comes with the pass. */
+  const calendarWindow = {
+    title: episode.title,
+    startsAt: episode.starts_at,
+    endsAt: episode.ends_at,
+    location: cityName,
+    details: [episode.blurb, "The address comes with your pass.", "Weather holds are called by 18:00 the night before."]
+      .filter(Boolean)
+      .join("\n"),
+  };
 
   /* The wrapper used to be <div data-theme={episode.setting}>, which overloaded
      the light/ink attribute to carry the afloat/ashore taxonomy and repointed
@@ -309,7 +359,13 @@ export default async function EpisodePage({
             <span>{logDate(episode.starts_at, zone)}</span>
             <span>·</span>
             <span>{logTime(episode.starts_at, zone)}</span>
-            {episode.coordinates ? (
+            {cityName ? (
+              <>
+                <span>·</span>
+                <span>{cityName}</span>
+              </>
+            ) : null}
+            {reveal && episode.coordinates ? (
               <>
                 <span>·</span>
                 <span>{episode.coordinates}</span>
@@ -451,6 +507,13 @@ export default async function EpisodePage({
                 <p>{a}</p>
               </details>
             ))}
+            {/* The register: who the door admits, and what the venue has said
+                about getting in. The age line falls back to the club's rule;
+                the access note is absent rather than invented. */}
+            <div className="ev-register">
+              <span className="ev-register__line">{ageLine}</span>
+              {accessNote ? <p className="ev-register__note">Access — {accessNote}</p> : null}
+            </div>
           </div>
         </div>
 
@@ -546,6 +609,9 @@ export default async function EpisodePage({
                 <p className="ev-note ev-note--above">
                   Passes release in order — join the waitlist{user ? " on the manifest" : " at the gangway"} and
                   you&rsquo;ll get the word first.
+                  {standby
+                    ? ` Standby is open too: ${episode.standby_passes} ${episode.standby_passes === 1 ? "pass stands" : "passes stand"} outside the count and board into a seat a no-show frees.`
+                    : ""}
                 </p>
                 <LinkButton
                   href={user ? "/passes" : `/gangway?next=/episodes/${episode.slug}`}
@@ -553,6 +619,22 @@ export default async function EpisodePage({
                   fullWidth
                 >
                   Join the waitlist
+                </LinkButton>
+              </>
+            ) : episode.by_request ? (
+              /* Places are requested and the Bridge offers them; the door
+                 never says a number, so the CTA never says reserve. */
+              <>
+                <p className="ev-note ev-note--above">
+                  Places on this one are offered, not sold. Ask, and the Bridge
+                  answers{user ? "" : " — sign in first"}.
+                </p>
+                <LinkButton
+                  href={user ? "/passes" : `/gangway?next=/episodes/${episode.slug}`}
+                  variant="gold"
+                  fullWidth
+                >
+                  Request a place
                 </LinkButton>
               </>
             ) : user ? (
@@ -571,11 +653,11 @@ export default async function EpisodePage({
             {closed ? null : onRequest || byInvitation ? (
               /* "On request" is a complete answer, never a placeholder — no
                  price stands beside a door that is not a sale. */
-              <p className="ev-mono-note">{TIER_LABEL[episode.min_tier]} tier and up</p>
+              <p className="ev-mono-note">{openToLine}</p>
             ) : (
               <p className="ev-mono-note">
                 {onSaleLine ? <>{onSaleLine} · </> : null}
-                {price(episode.price_cents)} · {TIER_LABEL[episode.min_tier]} tier and up
+                {price(episode.price_cents)} · {openToLine}
               </p>
             )}
           </div>
@@ -626,18 +708,45 @@ export default async function EpisodePage({
               <span>Boards</span>
               <span>{logTime(boards, zone)}</span>
             </div>
-            {episode.coordinates ? (
+            {cityName ? (
               <div>
-                <span>Position</span>
-                <span>{episode.coordinates}</span>
+                <span>City</span>
+                <span>{cityName}</span>
               </div>
             ) : null}
-            {venueName ? (
+            {reveal ? (
+              <>
+                {episode.coordinates ? (
+                  <div>
+                    <span>Position</span>
+                    <span>{episode.coordinates}</span>
+                  </div>
+                ) : null}
+                {venue?.name ? (
+                  <div>
+                    <span>Venue</span>
+                    <span>{venue.name}</span>
+                  </div>
+                ) : null}
+                {venue?.address ? (
+                  <div>
+                    <span>Address</span>
+                    <span>{venue.address}</span>
+                  </div>
+                ) : null}
+                {episode.muster ? (
+                  <div>
+                    <span>Muster</span>
+                    <span>{episode.muster}</span>
+                  </div>
+                ) : null}
+              </>
+            ) : (
               <div>
                 <span>Venue</span>
-                <span>{venueName}</span>
+                <span>The address comes with your pass</span>
               </div>
-            ) : null}
+            )}
             {episode.distance_nm != null ? (
               <div>
                 <span>Distance</span>
@@ -645,8 +754,8 @@ export default async function EpisodePage({
               </div>
             ) : null}
             <div>
-              <span>Tier</span>
-              <span>{TIER_LABEL[episode.min_tier]}+</span>
+              <span>Open to</span>
+              <span>{openToData}</span>
             </div>
             <div>
               <span>Calendar</span>
@@ -655,7 +764,45 @@ export default async function EpisodePage({
                   href={`/api/calendar/episode/${episode.slug}`}
                   style={{ color: "inherit", textDecoration: "underline" }}
                 >
-                  Add to calendar
+                  .ics
+                </a>
+                {" · "}
+                <a
+                  href={googleCalendarUrl(calendarWindow)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{ color: "inherit", textDecoration: "underline" }}
+                >
+                  Google
+                </a>
+                {" · "}
+                <a
+                  href={outlookCalendarUrl(calendarWindow)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{ color: "inherit", textDecoration: "underline" }}
+                >
+                  Outlook
+                </a>
+              </span>
+            </div>
+            {/* The share card — a slate for a story or a post, built on the
+                public facts only. Nothing on it a pass-holder alone may see. */}
+            <div>
+              <span>Share card</span>
+              <span>
+                <a
+                  href={`/episodes/${episode.slug}/share`}
+                  style={{ color: "inherit", textDecoration: "underline" }}
+                >
+                  Story
+                </a>
+                {" · "}
+                <a
+                  href={`/episodes/${episode.slug}/share?ratio=4x5`}
+                  style={{ color: "inherit", textDecoration: "underline" }}
+                >
+                  Post
                 </a>
               </span>
             </div>

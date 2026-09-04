@@ -141,7 +141,6 @@ export default async function EpisodesPage({
       status: v.status,
       date: logDate(v.starts_at, v.time_zone),
       time: logTime(v.starts_at, v.time_zone),
-      coordinates: v.coordinates,
       distance: v.distance_nm != null ? `${v.distance_nm} NM` : null,
       price: price(v.price_cents),
       priceCents: v.price_cents,

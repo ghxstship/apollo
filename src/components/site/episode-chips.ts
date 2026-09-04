@@ -48,7 +48,7 @@ export function weekChip(iso: string): string {
   return `WEEK ${weekNumber(iso)}`;
 }
 
-/* "3 YACHTS · 10 PASSES EACH" — the flotilla, on Sea Days only. Falls back to
+/* "3 YACHTS · 10 PASSES EACH" — the flotilla, afloat only. Falls back to
    the hull count when the boats carry different numbers. */
 export function fleetChip(vessels: Array<{ capacity: number }>): string | null {
   if (vessels.length === 0) return null;

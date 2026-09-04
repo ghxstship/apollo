@@ -287,6 +287,15 @@ main .ls-section + .ls-section{padding-top:0}
 .ev-faq details[open] summary:after{content:"−"}
 .ev-faq summary::-webkit-details-marker{display:none}
 .ev-faq p{font-size:var(--text-sm);color:var(--text-2);padding:0 0 16px;max-width:60ch}
+
+/* The data register under the FAQ — the age line and the venue's access note.
+   Mono, tracked, the ship's-log voice; the access note keeps sentence case
+   because it is prose a venue wrote and a reader with the need reads twice. */
+.ev-register{margin-top:24px;display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--line-faint)}
+.ev-register__line{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase}
+.ev-register__note{font-size:var(--text-sm);color:var(--text-2);max-width:60ch}
+/* Room above the loading block, matching .ws-phead's top offset. */
+.ws-loading{padding:72px 0 96px}
 .ev-plan{margin-top:48px}
 .ev-plan__row{display:grid;grid-template-columns:72px 1fr;gap:20px;padding:14px 0;border-top:1px solid var(--line-faint);align-items:baseline}
 .ev-plan__row:last-of-type{border-bottom:1px solid var(--line-faint)}

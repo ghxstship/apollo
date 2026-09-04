@@ -23,7 +23,6 @@ export interface ManifestItem {
   status: string;
   date: string;
   time: string;
-  coordinates: string | null;
   distance: string | null;
   price: string;
   /** The number behind the formatted price, so the sort can order on it. */
@@ -454,8 +453,10 @@ export function EpisodeManifest({
           <section key={g.key}>
             {g.label ? <h2 className="ws-vmonth">{g.label}</h2> : null}
             {g.rows.map((v) => {
+              /* No position here: coordinates are the venue's, and the
+                 address comes with the pass — the episode page holds the same
+                 line for anyone not aboard. */
               const meta = [
-                v.coordinates,
                 v.distance,
                 v.week,
                 v.fleet,

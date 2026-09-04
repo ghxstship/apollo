@@ -3,9 +3,17 @@
 import React from "react";
 import { Button, Checkbox, Input, Select, StateBlock, Textarea } from "@/components/ds";
 import { submitApplication } from "./actions";
-import { APPLY_INITIAL, CITIES } from "./apply-shared";
+import {
+  ANSWER_MAX,
+  APPLY_INITIAL,
+  CITIES,
+  PROPOSER_MAX,
+  answerField,
+  questionOptions,
+  type ApplyQuestion,
+} from "./apply-shared";
 
-export function ApplyForm() {
+export function ApplyForm({ questions = [] }: { questions?: ApplyQuestion[] }) {
   const [state, action, pending] = React.useActionState(submitApplication, APPLY_INITIAL);
 
   if (state.ok) {
@@ -59,6 +67,18 @@ export function ApplyForm() {
         placeholder="A member's name, or how you found us"
         defaultValue={state.values.referral}
       />
+      {/* The proposer is a member who puts their name to the application —
+          distinct from a referral, which may be a podcast. Shoreside reads
+          the two apart, so the form asks them apart. */}
+      <Input
+        label="Who proposed you, if anyone?"
+        name="proposer"
+        placeholder="A member's name — leave it blank if no one yet"
+        defaultValue={state.values.proposer}
+        error={state.errors.proposer}
+        maxLength={PROPOSER_MAX}
+        autoComplete="off"
+      />
       <Input
         label="Invite code"
         name="invite"
@@ -84,6 +104,50 @@ export function ApplyForm() {
         placeholder="A few honest lines. No résumés."
         defaultValue={state.values.note}
       />
+      {/* The Bridge's own questions, in position order. A required one is
+          marked in the label and refused by the action if left blank; the
+          browser's `required` is the first word, not the last. */}
+      {questions.map((q) => {
+        const name = answerField(q.key);
+        const label = q.required ? q.prompt : `${q.prompt} (optional)`;
+        const common = {
+          name,
+          label,
+          required: q.required,
+          error: state.errors[name],
+        };
+        if (q.kind === "choice") {
+          return (
+            <Select
+              key={q.key}
+              {...common}
+              placeholder="Choose one"
+              defaultValue={state.values.answers[q.key] ?? ""}
+              options={questionOptions(q.options)}
+            />
+          );
+        }
+        if (q.kind === "long") {
+          return (
+            <Textarea
+              key={q.key}
+              {...common}
+              rows={4}
+              maxLength={ANSWER_MAX}
+              placeholder="A few honest lines."
+              defaultValue={state.values.answers[q.key] ?? ""}
+            />
+          );
+        }
+        return (
+          <Input
+            key={q.key}
+            {...common}
+            maxLength={ANSWER_MAX}
+            defaultValue={state.values.answers[q.key] ?? ""}
+          />
+        );
+      })}
       <Checkbox
         name="conduct"
         label="I'll sail by the code of conduct."

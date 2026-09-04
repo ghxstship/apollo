@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MAILBOX } from "@/lib/brand";
+import { guestLine } from "@/components/site/plan-copy";
+import { readPublicPlans } from "@/components/site/plans-data";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/support" },
@@ -64,15 +66,20 @@ const FAQS: Array<[string, Array<[string, string]>]> = [
         "What if weather turns?",
         "Holds are called by 18:00 the night before — a word, not an apology. Your pass carries over.",
       ],
-      [
-        "Can I bring a guest?",
-        "Two per episode on Global passes. Everyone signs the manifest at the gangway.",
-      ],
     ],
   ],
 ];
 
-export default function SupportPage() {
+export default async function SupportPage() {
+  /* The guest rule reads the plans' guest_allowance rather than a figure typed
+     here — "Two per episode on Global passes" named a plan that no longer
+     exists and a number that is a column. */
+  const guests = guestLine(await readPublicPlans());
+  const faqs: typeof FAQS = FAQS.map(([group, items]) =>
+    group === "On the day"
+      ? [group, [...items, ["Can I bring a guest?", `${guests} Everyone signs the manifest at the gangway.`]]]
+      : [group, items]
+  );
   return (
     <div className="lg-wrap">
       {/* Route = nav = title = h1: the footer, the 404 and every "hail
@@ -85,7 +92,7 @@ export default function SupportPage() {
       </p>
 
       <div className="sp-faq">
-        {FAQS.map(([group, items]) => (
+        {faqs.map(([group, items]) => (
           <div key={group}>
             <div className="sp-group">{group}</div>
             {items.map(([q, a]) => (
