@@ -72,6 +72,8 @@ Apple/Google wallet passes require platform signing credentials the project does
 
 ## Gates — what "done" means
 
+Two demo tools sign the demo personas in through the auth API and walk production as them: `scripts/demo-walk.mjs` keeps every screen as a frozen snapshot (`scripts/serve-dir.mjs` shows them), and `scripts/demo-scenarios.mjs` runs the workflows end to end — the file, a booking, a guest's signing link, the gangway, a pass handed on, the Open Deck, a table, a poll, two-step with a generated code, the Bridge's search, audience, word, rule, letter and door, and an applicant from the shore to the roll — recording each step. Both take `DEMO_PERSONAS` as JSON and `BASE_URL`; neither types a credential into a browser.
+
 `npm run check:bundle` (in `gates:full` after the build) holds every client chunk under 300 KB and the client bundle under 2.6 MB; the icon wrapper once shipped 522 KB to every page and nothing measured it. `.github/workflows/nightly-e2e.yml` runs the route audit and the persona suite twice nightly against the live database (needs the `E2E_PASSWORD` secret).
 
 Every change ships only when all of these are green, on the commit (not the working tree):
