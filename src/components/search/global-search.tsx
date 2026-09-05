@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import React from "react";
 import { createPortal } from "react-dom";
 import { Icon, IconButton, SearchField } from "@/components/ds";
+import { useExitPhase } from "@/components/ds/use-exit-phase";
 import { useModal } from "@/components/ds/use-modal";
 import "./search.css";
 
@@ -38,6 +39,11 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
   const [cursor, setCursor] = React.useState(0);
   const boxRef = useModal(open, () => setOpen(false));
   const inputRef = React.useRef<HTMLInputElement>(null);
+  /* The slate arrived on --dur-enter and then ceased to exist between two
+     frames. It leaves the way the Dialog does: the closing phase holds it
+     mounted for one --dur-exit with the --out class on the veil, and the
+     animationend that ends the phase unmounts it. */
+  const { present, closing, onAnimationEnd } = useExitPhase(open);
 
   /* One flat list behind the visual grouping — what the arrow keys walk. */
   const flat = React.useMemo(() => sections.flatMap((s) => s.items), [sections]);
@@ -152,7 +158,12 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
   }, [open, active]);
 
   const slate = (
-    <div className="gs-veil" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+    <div
+      className={"gs-veil" + (closing ? " gs-veil--out" : "")}
+      aria-hidden={closing || undefined}
+      onClick={(e) => { if (!closing && e.target === e.currentTarget) setOpen(false); }}
+      onAnimationEnd={onAnimationEnd}
+    >
       <div
         className="gs"
         role="dialog"
@@ -241,7 +252,7 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
       >
         <Icon name="Search" size={18} />
       </IconButton>
-      {open ? createPortal(slate, document.body) : null}
+      {present ? createPortal(slate, document.body) : null}
     </>
   );
 }

@@ -42,6 +42,15 @@
 .ws-menu__links a:hover{color:var(--bone);text-decoration:none}
 .ws-menu__base{margin-top:auto;display:flex;flex-direction:column;gap:20px}
 .ws-menu__coords{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3);text-transform:uppercase}
+/* The menu arrived as a reveal and left as a cut — a full-screen ink panel
+   over the page, gone between two frames. It leaves the way it came now, on
+   the shorter --dur-exit: the panel fades, the list falls the --rise it rose.
+   Driven from nav.tsx by the closing phase every other overlay in the kit
+   uses (useExitPhase in components/ds) — the panel keeps the --out class for
+   one exit and unmounts on animationend. `forwards` is safe for the same
+   reason it is on the dialog: the node is gone the next frame. */
+.ws-menu--out{animation:ls-fade-out var(--dur-exit) var(--ease-exit) forwards;pointer-events:none}
+.ws-menu--out .ws-menu__links{animation:ls-fall var(--dur-exit) var(--ease-exit) forwards}
 @media (max-width:960px){
   .ws-nav__links,.ws-nav__coords,.ws-nav__cta{display:none}
   .ws-nav__burger{display:inline-flex}

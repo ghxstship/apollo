@@ -3,6 +3,7 @@
 import React from "react";
 import { Button } from "./actions";
 import { Icon, Tag } from "./display";
+import { useExitPhase } from "./use-exit-phase";
 import { useModal } from "./use-modal";
 
 /* THE list toolbar. One row, every list, no exceptions.
@@ -171,6 +172,9 @@ function FilterButton({
      Escape and focus, and never traps Tab or locks the page. */
   const boxRef = useModal(open, () => setOpen(false), { modal: false });
   const panelId = React.useId();
+  /* Both panels arrived on --dur-enter and left between two frames. They are
+     held for one --dur-exit now, the same way the Dialog holds its veil. */
+  const { present, closing, onAnimationEnd } = useExitPhase(open);
 
   return (
     <span className="ls-pop">
@@ -185,16 +189,20 @@ function FilterButton({
         Filter
         {count > 0 ? <span className="ls-toolbar__n">{count}</span> : null}
       </Button>
-      {open ? (
+      {present ? (
         <>
           {/* Catches the click that dismisses. Invisible, and it does not veil
-              the page — the results underneath are the point. */}
-          <span className="ls-pop__catch" onClick={() => setOpen(false)} />
+              the page — the results underneath are the point. Dropped the
+              instant the exit starts, so a click during it lands on the page
+              rather than on a sheet that is already leaving. */}
+          {closing ? null : <span className="ls-pop__catch" onClick={() => setOpen(false)} />}
           <div
             id={panelId}
-            className="ls-pop__panel ls-filterpanel"
+            className={"ls-pop__panel ls-filterpanel" + (closing ? " ls-pop__panel--out" : "")}
             role="dialog"
             aria-label="Filters"
+            aria-hidden={closing || undefined}
+            onAnimationEnd={onAnimationEnd}
             ref={boxRef}
             tabIndex={-1}
           >
@@ -234,6 +242,7 @@ function SortButton({
   const [open, setOpen] = React.useState(false);
   const boxRef = useModal(open, () => setOpen(false), { modal: false });
   const menuId = React.useId();
+  const { present, closing, onAnimationEnd } = useExitPhase(open);
 
   return (
     <span className="ls-pop">
@@ -248,9 +257,9 @@ function SortButton({
         <Icon name="ArrowUpDown" size={14} />
         {label ?? "Sort"}
       </Button>
-      {open ? (
+      {present ? (
         <>
-          <span className="ls-pop__catch" onClick={() => setOpen(false)} />
+          {closing ? null : <span className="ls-pop__catch" onClick={() => setOpen(false)} />}
           {/* It claimed to be a listbox and behaved like a toolbar: no
               accessible name, no aria-activedescendant, no arrow keys, and Tab
               walking the options — which is exactly what a menu of buttons is,
@@ -261,9 +270,11 @@ function SortButton({
               itself so the reader knows what the choice is about. */}
           <div
             id={menuId}
-            className="ls-pop__panel ls-sortmenu"
+            className={"ls-pop__panel ls-sortmenu" + (closing ? " ls-pop__panel--out" : "")}
             role="menu"
             aria-label="Sort by"
+            aria-hidden={closing || undefined}
+            onAnimationEnd={onAnimationEnd}
             ref={boxRef}
             tabIndex={-1}
           >

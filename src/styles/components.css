@@ -15,7 +15,8 @@
 /* Pending: the two labels share one grid cell; the inactive one is hidden but
    still measured, so the button is as wide as the wider label from the first
    paint and nothing beside it moves when the state flips. aria-busy carries
-   the state; the face is the disabled fade. */
+   the state; the face is the shared pending face below — NOT the disabled
+   fade, which said "unavailable" about a control that was working. */
 .ls-btn__stack{display:inline-grid;align-items:center;justify-items:center}
 .ls-btn__stack>*{grid-area:1/1;display:inline-flex;align-items:center;gap:var(--space-2);white-space:nowrap}
 .ls-btn:not(.ls-btn--pending) .ls-btn__alt,.ls-btn--pending .ls-btn__label{visibility:hidden}
@@ -65,7 +66,7 @@
 /* — IconButton — */
 .ls-iconbtn{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);cursor:pointer;border:1px solid transparent;transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out);flex:none;position:relative}
 .ls-iconbtn:active{transform:scale(var(--press))}
-.ls-iconbtn[disabled]{opacity:var(--opacity-disabled);pointer-events:none}
+.ls-iconbtn[disabled],.ls-iconbtn--disabled{opacity:var(--opacity-disabled);pointer-events:none}
 .ls-iconbtn--sm{width:var(--control-sm);height:var(--control-sm)}
 .ls-iconbtn--md{width:var(--control-md);height:var(--control-md)}
 .ls-iconbtn--lg{width:var(--control-lg);height:var(--control-lg)}
@@ -251,8 +252,11 @@
    global :focus-visible rule. It hugs the button rather than the pill (the
    pill's own +2px ring is drawn by .ls-tag--click:focus-visible, which no
    longer fires now that the span is not focusable). */
-.ls-tag__press{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--space-2);align-self:stretch;flex:1 1 auto;min-width:0;cursor:inherit}
+.ls-tag__press{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--space-2);align-self:stretch;flex:1 1 auto;min-width:0;cursor:inherit;transition:transform var(--dur-hover) var(--ease-out)}
 .ls-tag__press[disabled]{cursor:default}
+/* The press lives on the inner control, not on the pill: the pill is the face
+   and the button inside it is the thing being pushed. */
+.ls-tag__press:not([disabled]):active{transform:scale(var(--press))}
 .ls-tag__press{position:relative}
 .ls-tag:has(>.ls-tag__press){padding-inline-start:0}
 .ls-tag:has(>.ls-tag__press):not(:has(>.ls-tag__x)){padding-inline-end:0}
@@ -593,8 +597,9 @@
 .ls-tabs--grow{gap:0}
 .ls-tabs--grow .ls-tab{flex:1;justify-content:center}
 /* 12px above and below the 10px label, plus the 2px rule, is a 36px tab. */
-.ls-tab{all:unset;font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-3) 2px;cursor:pointer;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out);white-space:nowrap;flex:none}
+.ls-tab{all:unset;font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-3) 2px;cursor:pointer;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out);white-space:nowrap;flex:none}
 .ls-tab:hover{color:var(--text-1)}
+.ls-tab:not([disabled]):active{transform:scale(var(--press))}
 .ls-tab:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 /* The phone gets the 44px it needs from padding alone, so the rail's rule
    stays where it is. */
@@ -734,8 +739,17 @@
      the global :focus-visible ring — leaving Hail, Flag, Reply, Strike, Enter
      and Redeem with no keyboard focus indicator at all (WCAG 2.4.7). Overriding
      an inline declaration is the one case !important is actually for. — */
-.ls-bare{all:unset;position:relative;cursor:pointer;box-sizing:border-box;transition:color var(--dur-hover) var(--ease-out),opacity var(--dur-hover) var(--ease-out)}
+.ls-bare{all:unset;position:relative;cursor:pointer;box-sizing:border-box;transition:color var(--dur-hover) var(--ease-out),opacity var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
 .ls-bare[disabled]{cursor:default}
+/* Hail, Flag, Enter, Redeem and the composer's attach all set their colour
+   INLINE, so a hover that moves `color` is dead on arrival — an inline
+   declaration outranks any rule here. text-decoration is the one affordance
+   none of them spends, it is the kit's own signal for an action in running
+   copy (see base.css on links, and .ls-textbtn), and it adds contrast rather
+   than taking it away. TextButton is excluded because it is already
+   underlined at rest and states its own hover. */
+.ls-bare:not(.ls-textbtn):not([disabled]):hover{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.ls-bare:not([disabled]):active{transform:scale(var(--press))}
 .ls-bare:focus-visible{outline:2px solid var(--focus) !important;outline-offset:3px;border-radius:2px}
 /* Hail, Flag, Enter and Redeem are 24px of text. On a phone a pseudo carries
    them to 44px; the class sets position:relative for exactly this, which is why
@@ -747,14 +761,78 @@
    an action in running copy has to be visibly one), the UI weight, 24px tall
    at rest and 44px on a phone through .ls-bare's pseudo. `quiet` is faint
    until hovered; `danger` is the destructive step in text form. */
-.ls-textbtn{display:inline-flex;align-items:center;gap:var(--space-1);min-height:24px;font-family:var(--font-sans);font-weight:500;letter-spacing:var(--tracking-body);color:var(--text-1);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;text-decoration-color:var(--line-strong);white-space:nowrap;transition:color var(--dur-hover) var(--ease-out),text-decoration-color var(--dur-hover) var(--ease-out),opacity var(--dur-hover) var(--ease-out)}
+.ls-textbtn{display:inline-flex;align-items:center;gap:var(--space-1);min-height:24px;font-family:var(--font-sans);font-weight:500;letter-spacing:var(--tracking-body);color:var(--text-1);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;text-decoration-color:var(--line-strong);white-space:nowrap;transition:color var(--dur-hover) var(--ease-out),text-decoration-color var(--dur-hover) var(--ease-out),opacity var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
 .ls-textbtn:hover{text-decoration-color:currentColor}
+.ls-textbtn:not([disabled]):active{transform:scale(var(--press))}
 .ls-textbtn--md{font-size:var(--text-sm)}
 .ls-textbtn--sm{font-size:var(--text-xs)}
 .ls-textbtn--quiet{color:var(--text-3)}
 .ls-textbtn--quiet:hover{color:var(--text-1)}
 .ls-textbtn--danger{color:var(--danger);text-decoration-color:color-mix(in srgb, var(--danger) 55%, transparent)}
-.ls-textbtn[disabled]{opacity:var(--opacity-disabled);pointer-events:none}
+.ls-textbtn[disabled],.ls-textbtn--disabled{opacity:var(--opacity-disabled);pointer-events:none}
+
+/* — Pending — the in-flight face, shared by Button, IconButton, LinkButton and
+     TextButton.
+
+     Pending is not disabled. The action was accepted and is running, and the
+     two states were rendering identically: .ls-iconbtn--pending and
+     .ls-textbtn--pending were emitted by the components and had no rule in this
+     file at all, so they fell through to the [disabled] fade, and
+     .ls-btn--pending only swapped a label. A reader was told the control was
+     unavailable when it was working — the opposite of what happened.
+
+     So: full colour, a progress cursor, and a mark that moves. pointer-events
+     goes back to auto because the native `disabled` attribute is what actually
+     refuses the click (a disabled <button> ignores one by itself), and
+     pointer-events:none would take the cursor with it — the one thing the state
+     has to be able to show. LinkButton is an anchor with no such attribute and
+     refuses the click in JS instead.
+
+     The mark is a 2px shuttle drawn as a background sweep on a pseudo: no DOM,
+     nothing a caller's inline style can reset, and it inherits the label's
+     colour so it reads on every variant including gold. Under
+     prefers-reduced-motion it stops travelling and rests as a quiet static rule
+     — base.css collapses the duration, this states what is left. — */
+.ls-btn--pending,.ls-iconbtn--pending,.ls-textbtn--pending,
+.ls-btn--pending[disabled],.ls-iconbtn--pending[disabled],.ls-textbtn--pending[disabled]{opacity:1;pointer-events:auto;cursor:progress}
+.ls-btn--pending:before,.ls-iconbtn--pending:before,.ls-textbtn--pending:before{content:"";position:absolute;bottom:2px;height:2px;border-radius:var(--radius-pill);background:linear-gradient(90deg,transparent,currentColor,transparent) no-repeat;background-size:45% 100%;background-position:50% 100%;animation:ls-pending-shuttle var(--dur-cine) var(--ease-inout) infinite;pointer-events:none}
+@keyframes ls-pending-shuttle{from{background-position:-100% 100%}to{background-position:200% 100%}}
+/* Inset to the label's own width so the bar never crosses the pill's curve. */
+.ls-btn--pending:before{inset-inline:var(--space-4)}
+/* A circle: the bar sits on the widest chord it can without leaving the disc. */
+.ls-iconbtn--pending:before{inset-inline:25%;bottom:4px}
+/* The text button already has an underline, so the shuttle BECOMES it rather
+   than double-ruling the word. */
+.ls-textbtn--pending{text-decoration-color:transparent}
+.ls-textbtn--pending:before{inset-inline:0;bottom:0}
+@media (prefers-reduced-motion:reduce){
+  .ls-btn--pending:before,.ls-iconbtn--pending:before,.ls-textbtn--pending:before{animation:none;background-size:100% 100%;opacity:.45}
+}
+
+/* — Skeleton — the shape of what is coming, holding its own space.
+
+     Nothing in the kit held layout while data loaded: StateBlock replaced a
+     whole region with a centred bar, and the surfaces that fetch their own
+     rows returned null and then popped their content in — a reflow the reader
+     reads as the page having changed its mind. A skeleton is not decoration;
+     it is the promise that the box it occupies is the box the content will
+     occupy.
+
+     aria-hidden on the wrapper, always: there is nothing here to announce, and
+     the region that owns the skeleton carries aria-busy. The sweep is the same
+     ls-shuttle the loading bar uses, at the same 45% width, over the sunken
+     step — visible in both themes because --surface-raised sits on the far
+     side of --surface-sunken whichever way the theme runs. Under
+     prefers-reduced-motion it stops and becomes a flat wash. — */
+.ls-skel{display:flex;flex-direction:column;gap:var(--space-2);width:100%}
+.ls-skel__line{display:block;width:100%;height:var(--space-4);background:var(--surface-sunken);border-radius:var(--radius-sharp);position:relative;overflow:hidden}
+.ls-skel--round .ls-skel__line{border-radius:var(--radius-pill)}
+/* A paragraph does not end flush, and a skeleton that does reads as a table. */
+.ls-skel__line:last-child:not(:only-child){width:62%}
+.ls-skel__line:after{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:45%;background:linear-gradient(90deg,transparent,var(--surface-raised),transparent);animation:ls-shuttle var(--dur-cine) var(--ease-inout) infinite}
+@media (prefers-reduced-motion:reduce){
+  .ls-skel__line:after{animation:none;width:100%;background:var(--surface-raised);opacity:.35}
+}
 
 /* — Focus — one ring for every control the kit renders: 2px of --focus, 2px
    off the edge, in both themes (--focus flips with the theme; controls on
@@ -925,6 +1003,13 @@
 .gs-veil{position:fixed;inset:0;z-index:1000;background:var(--veil);backdrop-filter:var(--blur-glass);-webkit-backdrop-filter:var(--blur-glass);display:flex;align-items:flex-start;justify-content:center;padding:10vh var(--space-6) var(--space-6);overflow-y:auto;animation:ls-fade var(--dur-enter) var(--ease-enter)}
 .gs{width:min(640px,100%);background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);display:flex;flex-direction:column;max-height:76vh;overflow:hidden;animation:ls-rise var(--dur-enter) var(--ease-enter)}
 .gs:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+/* The slate arrived on --dur-enter and then simply ceased to exist. It leaves
+   the way the dialog does — the veil fades, the slate falls the --rise it came
+   up — on the shorter --dur-exit, held mounted for exactly that long by the
+   closing phase in global-search.tsx. `forwards` is safe because the node is
+   unmounted on the animationend that ends the phase. */
+.gs-veil--out{animation:ls-fade-out var(--dur-exit) var(--ease-exit) forwards;pointer-events:none}
+.gs-veil--out .gs{animation:ls-fall var(--dur-exit) var(--ease-exit) forwards}
 .gs__field{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4);border-bottom:1px solid var(--line-faint);flex:none;color:var(--text-3)}
 .gs__input{flex:1;min-width:0;all:unset;font-family:var(--font-sans);font-size:var(--text-md);color:var(--text-1);min-height:28px} /* ds-exempt: the field row carries the focus indication (.gs__field:focus-within below) — a ring on the input inside a ruled row would double-ring the slate */
 .gs__field:focus-within{border-bottom-color:var(--focus);color:var(--text-1)}
@@ -935,7 +1020,11 @@
    a badge stuck on a row — so it gets a rule of its own rather than a colour. */
 .gs__seclabel{display:block;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);padding:var(--space-2) var(--space-5);border-top:1px solid var(--line-faint)}
 .gs__sec:first-child .gs__seclabel{border-top:none}
-.gs__hit{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:var(--space-3);width:100%;padding:var(--space-2) var(--space-5);cursor:pointer;min-height:40px;transition:background var(--dur-hover) var(--ease-out)}
+.gs__hit{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:var(--space-3);width:100%;padding:var(--space-2) var(--space-5);cursor:pointer;min-height:40px;transition:background var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
+/* NOTE: search.css restates this transition without `transform`, and loads
+   after this sheet — the scale still happens, it simply snaps rather than
+   easing until that line is extended or dropped. */
+.gs__hit:not([disabled]):active{transform:scale(var(--press))}
 .gs__hit--on{background:var(--surface-sunken)}
 .gs__hit:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .gs__hitt{font-size:var(--text-sm);color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1008,6 +1097,13 @@
 .ls-pop__catch{position:fixed;inset:0;z-index:930}
 .ls-pop__panel{position:absolute;z-index:940;top:calc(100% + var(--space-2));inset-inline-start:0;background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);animation:ls-rise var(--dur-enter) var(--ease-enter)}
 .ls-pop__panel:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+/* Both panels — the filter panel and the sort menu are one object — fall back
+   the --rise they came up. Driven by the same closing phase the Dialog uses
+   (toolbar.tsx, via useExitPhase): the class goes on, the panel stays mounted
+   until animationend or the safety timer, then it unmounts. The catch layer is
+   dropped the moment closing starts, so a click during the exit lands on the
+   page rather than on an invisible sheet. */
+.ls-pop__panel--out{animation:ls-fall var(--dur-exit) var(--ease-exit) forwards;pointer-events:none}
 /* Both panels hang from their button's START edge, so a reader's eye travels
    the same way from either control. The end-anchored variant is kept for a
    button that ends up near the viewport edge, where a start-anchored panel
@@ -1015,8 +1111,9 @@
 .ls-pop__panel--end{inset-inline-start:auto;inset-inline-end:0}
 
 .ls-sortmenu{min-width:190px;padding:var(--space-1);display:flex;flex-direction:column}
-.ls-sortmenu__opt{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);cursor:pointer;min-height:36px;padding:0 var(--space-3);border-radius:var(--radius-sharp);font-size:var(--text-sm);color:var(--text-2);transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out)}
+.ls-sortmenu__opt{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);cursor:pointer;min-height:36px;padding:0 var(--space-3);border-radius:var(--radius-sharp);font-size:var(--text-sm);color:var(--text-2);transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
 .ls-sortmenu__opt:hover{background:var(--surface-sunken);color:var(--text-1)}
+.ls-sortmenu__opt:not([disabled]):active{transform:scale(var(--press))}
 .ls-sortmenu__opt--on{color:var(--text-1)}
 .ls-sortmenu__opt:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 @media (pointer:coarse){.ls-sortmenu__opt{min-height:44px}.gs__hit{min-height:44px}}
@@ -1039,4 +1136,7 @@
   .ls-pop__panel{position:fixed;inset:auto 0 0 0;top:auto;width:auto;max-width:none;border-inline:none;border-bottom:none;border-radius:var(--radius-md) var(--radius-md) 0 0;animation-name:ls-sheet-up}
   .ls-filterpanel{width:auto;max-height:78vh}
   @keyframes ls-sheet-up{from{transform:translateY(calc(var(--rise) * 2));opacity:0}to{transform:none;opacity:1}}
+  /* A sheet leaves the way it came: down, past the edge it rose from. */
+  .ls-pop__panel--out{animation-name:ls-sheet-down}
+  @keyframes ls-sheet-down{from{transform:none;opacity:1}to{transform:translateY(calc(var(--rise) * 2));opacity:0}}
 }

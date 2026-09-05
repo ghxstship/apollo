@@ -3,7 +3,7 @@ export { Card, Badge, Tag, Avatar, AvatarGroup, Stat, Table, tableColumns, Revie
 export type { TableColumn, TableGroup } from "./display";
 export { Input, Textarea, Select, SearchField, Checkbox, Radio, OptionRow, Switch, Stepper } from "./forms";
 export type { FieldWidth } from "./forms";
-export { Dialog, Progress, StateBlock, Notice, Toast, Tooltip } from "./feedback";
+export { Dialog, Progress, Skeleton, StateBlock, Notice, Toast, Tooltip } from "./feedback";
 export { FilterPills } from "./filters";
 export type { FilterOption } from "./filters";
 export { ListToolbar } from "./toolbar";

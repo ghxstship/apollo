@@ -34,7 +34,7 @@ export function Button({
   /** Shown in place of the children while `pending`. Width is reserved for both. */
   pendingLabel?: React.ReactNode;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", pending ? "ls-btn--pending" : "", className].filter(Boolean).join(" ");
+  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", disabled && !pending ? "ls-btn--disabled" : "", pending ? "ls-btn--pending" : "", className].filter(Boolean).join(" ");
   return (
     <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
       {pendingLabel == null ? children : (
@@ -58,7 +58,7 @@ export function IconButton({
   pending?: boolean; pendingLabel?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const name = pending && pendingLabel ? pendingLabel : label;
-  const cls = ["ls-iconbtn", "ls-iconbtn--" + variant, "ls-iconbtn--" + size, inverse ? "ls-iconbtn--inverse" : "", pending ? "ls-iconbtn--pending" : "", className].filter(Boolean).join(" ");
+  const cls = ["ls-iconbtn", "ls-iconbtn--" + variant, "ls-iconbtn--" + size, inverse ? "ls-iconbtn--inverse" : "", disabled && !pending ? "ls-iconbtn--disabled" : "", pending ? "ls-iconbtn--pending" : "", className].filter(Boolean).join(" ");
   return <button type="button" aria-label={name} title={name} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>{children}</button>;
 }
 
@@ -72,28 +72,59 @@ export function IconButton({
 
    `disabled` on an anchor is aria-disabled plus the button's faded face and no
    pointer; the href stays so the destination is still discoverable. Use it for
-   a placeholder CTA whose gate has not opened, not to hide a route. */
+   a placeholder CTA whose gate has not opened, not to hide a route.
+
+   `pending` is Button's, and it is here because it was not: three of the four
+   button components had it and this one did not, so a CTA that kicks off a
+   navigation nobody has finished paying for had nothing to say about it and
+   call sites reached for `disabled` instead — which tells a reader the link is
+   unavailable rather than busy. Same class, same swapped label, same reserved
+   width. An anchor has no `disabled` attribute, so the click is refused here
+   rather than by the UA, and aria-disabled and tabIndex carry the state to
+   everything that is not a pointer. */
 const EXTERNAL_HREF = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
 export function LinkButton({
   href, variant = "primary", size = "md", inverse = false, fullWidth = false, disabled = false,
-  external, prefetch, className = "", children, rel, ...rest
+  pending = false, pendingLabel, external, prefetch, className = "", children, rel, ...rest
 }: {
   href: string;
   variant?: "primary" | "gold" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
   inverse?: boolean; fullWidth?: boolean; disabled?: boolean;
+  /** The navigation this CTA starts is in flight: aria-busy, the click
+      refused, the label swapped for `pendingLabel` if given. */
+  pending?: boolean;
+  /** Shown in place of the children while `pending`. Width is reserved for both. */
+  pendingLabel?: React.ReactNode;
   /** Force a plain <a>. Inferred from the href when omitted. */
   external?: boolean;
   prefetch?: React.ComponentProps<typeof Link>["prefetch"];
   children?: React.ReactNode;
 } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href">) {
-  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", disabled ? "ls-btn--disabled" : "", className].filter(Boolean).join(" ");
+  const off = disabled || pending;
+  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", disabled && !pending ? "ls-btn--disabled" : "", pending ? "ls-btn--pending" : "", className].filter(Boolean).join(" ");
   const isExternal = external ?? EXTERNAL_HREF.test(href);
-  const a11y = disabled ? { "aria-disabled": true as const, tabIndex: -1 } : {};
+  const a11y = off
+    ? { "aria-disabled": true as const, tabIndex: -1, "aria-busy": pending || undefined }
+    : {};
+  /* .ls-btn--disabled takes pointer-events away, but the pending face keeps
+     them so the progress cursor can be seen — so the navigation is refused
+     here rather than by the cascade. In either off state the caller's own
+     onClick is replaced, not merely preceded: an anchor that is busy or gated
+     should do nothing at all when it is clicked. */
+  const onClick = off
+    ? (e: React.MouseEvent<HTMLAnchorElement>) => { e.preventDefault(); }
+    : rest.onClick;
+  const body = pendingLabel == null ? children : (
+    <span className="ls-btn__stack">
+      <span className="ls-btn__label" aria-hidden={pending || undefined}>{children}</span>
+      <span className="ls-btn__alt" aria-hidden={!pending || undefined}>{pendingLabel}</span>
+    </span>
+  );
   if (isExternal) {
-    return <a href={href} className={cls} rel={rel ?? "noopener noreferrer"} {...a11y} {...rest}>{children}</a>;
+    return <a href={href} className={cls} rel={rel ?? "noopener noreferrer"} {...rest} {...a11y} onClick={onClick}>{body}</a>;
   }
-  return <Link href={href} className={cls} prefetch={prefetch} rel={rel} {...a11y} {...rest}>{children}</Link>;
+  return <Link href={href} className={cls} prefetch={prefetch} rel={rel} {...rest} {...a11y} onClick={onClick}>{body}</Link>;
 }
 
 /* — TextButton —
@@ -111,7 +142,7 @@ export function TextButton({
   tone?: "default" | "quiet" | "danger"; size?: "sm" | "md";
   pending?: boolean; pendingLabel?: React.ReactNode;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = ["ls-bare", "ls-textbtn", "ls-textbtn--" + tone, "ls-textbtn--" + size, pending ? "ls-textbtn--pending" : "", className].filter(Boolean).join(" ");
+  const cls = ["ls-bare", "ls-textbtn", "ls-textbtn--" + tone, "ls-textbtn--" + size, disabled && !pending ? "ls-textbtn--disabled" : "", pending ? "ls-textbtn--pending" : "", className].filter(Boolean).join(" ");
   return (
     <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
       {pending && pendingLabel != null ? pendingLabel : children}

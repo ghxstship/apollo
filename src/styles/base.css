@@ -75,6 +75,15 @@ img{max-width:100%;height:auto}
 /* — microinteraction utilities — */
 @keyframes ls-rise{from{opacity:0;transform:translateY(var(--rise))}to{opacity:1;transform:none}}
 @keyframes ls-fade{from{opacity:0}to{opacity:1}}
+/* The exits. A surface that arrives on ls-rise/ls-fade and then simply
+   disappears is not animated, it is edited out — the eye is told a thing
+   happened but never told it stopped. These are the same two moves played
+   backwards, kept here beside their entrances so a new overlay does not have
+   to invent one: fall the same --rise it came up, fade the same fade, on the
+   shorter --dur-exit. Both end at the state the element is about to be
+   unmounted from, so `forwards` is safe wherever they are used. */
+@keyframes ls-fall{from{opacity:1;transform:none}to{opacity:0;transform:translateY(var(--rise))}}
+@keyframes ls-fade-out{from{opacity:1}to{opacity:0}}
 @keyframes ls-pulse{0%,100%{opacity:1}50%{opacity:.45}}
 /* `backwards`, not `both`. An element with an animation applied creates a
    stacking context, and `both` keeps the fill applied FOREVER after the

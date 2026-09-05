@@ -314,6 +314,55 @@ export function Toast({
   return mounted ? createPortal(node, document.body) : null;
 }
 
+/* — Skeleton —
+   The shape of what is coming, holding the space it will take.
+
+   Nothing in the kit held layout while data loaded, so every surface that
+   fetches its own rows either replaced a whole region with a centred bar
+   (StateBlock status="loading") or returned null and popped its content in
+   afterwards. Both are reflows, and a reader reads a reflow as the page having
+   changed its mind about what it was showing.
+
+     <Skeleton lines={3} />                    three lines of body copy
+     <Skeleton height="var(--control-md)" />   the button that is about to land
+     <Skeleton rounded width="40px" height="40px" />   an avatar
+
+   `lines` is how many blocks; the last of several is short, the way a
+   paragraph ends. `width` and `height` are handed straight to the blocks so a
+   caller can reserve exactly the box the real thing will occupy — pass a token
+   (`var(--control-md)`) rather than a number wherever one exists.
+
+   aria-hidden, always. There is nothing here to announce and no reader should
+   hear a placeholder described; the region that owns the skeleton carries the
+   aria-busy that says something is on its way. Under prefers-reduced-motion the
+   sweep stops and the block rests as a flat wash — see components.css. */
+export function Skeleton({
+  lines = 1, width, height, rounded = false, className = "", style,
+}: {
+  /** How many blocks. More than one and the last is short, like a paragraph. */
+  lines?: number;
+  /** Width of each block — any CSS length. Defaults to the full column. */
+  width?: string;
+  /** Height of each block. Defaults to one line of body copy. */
+  height?: string;
+  /** Fully round the corners — an avatar, a pill, a dot. */
+  rounded?: boolean;
+  className?: string; style?: React.CSSProperties;
+}) {
+  const n = Math.max(1, Math.floor(lines));
+  return (
+    <span
+      className={["ls-skel", rounded ? "ls-skel--round" : "", className].filter(Boolean).join(" ")}
+      style={style}
+      aria-hidden="true"
+    >
+      {Array.from({ length: n }, (_, i) => (
+        <span key={i} className="ls-skel__line" style={{ width, height }} />
+      ))}
+    </span>
+  );
+}
+
 /* — Tooltip —
    Shown on hover and on focus-within (CSS), so the child has to be focusable
    for a keyboard reader to reach it — wrap a Button or an IconButton, not a

@@ -9,6 +9,7 @@ import { GlobalSearch } from "@/components/search/global-search";
 import { LockupHorizontal } from "./logo";
 import { LinkButton } from "./link-button";
 import { useModal } from "@/components/ds/use-modal";
+import { useExitPhase } from "@/components/ds/use-exit-phase";
 
 const LINKS: Array<[string, string]> = [
   /* One name per destination. The public listing is Episodes in the nav, the
@@ -52,6 +53,7 @@ export function SiteNav() {
      said aria-modal while focus stayed on the burger behind it, Tab walked
      straight out into the page under the veil, and closing left focus nowhere. */
   const menuRef = useModal(open, close);
+  const { present, closing, onAnimationEnd } = useExitPhase(open);
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
@@ -95,8 +97,13 @@ export function SiteNav() {
           </span>
         </div>
       </div>
-      {open ? (
-        <div className="ws-menu" role="dialog" aria-modal="true" aria-label="Menu" ref={menuRef} tabIndex={-1}>
+      {present ? (
+        <div
+          className={"ws-menu" + (closing ? " ws-menu--out" : "")}
+          aria-hidden={closing || undefined}
+          onAnimationEnd={onAnimationEnd}
+          role="dialog" aria-modal="true" aria-label="Menu" ref={menuRef} tabIndex={-1}
+        >
           <div className="ws-menu__top">
             <Link href="/" className="ws-nav__logo" aria-label={`${ANCHOR} — home`} onClick={close}>
               <LockupHorizontal height={30} />
