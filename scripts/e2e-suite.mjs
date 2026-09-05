@@ -1933,7 +1933,11 @@ async function roundThreeRules(p) {
   // — The free pass, through every door —
   const ahead = await stf.get(
     "episodes?status=eq.scheduled&select=id,price_cents&price_cents=gt.0" +
-      `&starts_at=gt.${new Date().toISOString()}${await homeWater(stf)}&order=starts_at.asc&limit=1`
+      /* Three days out, not merely ahead: the release rules credit only outside
+         the 48-hour window, so the soonest episode goes inside it during the
+         day and the "charged again" assertions read a forfeited charge as a
+         free pass. */
+      `&starts_at=gt.${new Date(Date.now() + 72 * 3600e3).toISOString()}${await homeWater(stf)}&order=starts_at.asc&limit=1`
   );
   const v = ahead.data?.[0];
   if (v) {

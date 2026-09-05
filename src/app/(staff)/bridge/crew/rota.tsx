@@ -3,7 +3,7 @@
 import React from "react";
 import { Badge, Button, Dialog, Input, Select, StateBlock, Stat, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { assignCrew, grantTheDoor, revokeTheDoor, setAssignmentStatus, setEpisodeNeed } from "./actions";
+import { assignCrew, grantTheDoor, linkCrewProfile, revokeTheDoor, setAssignmentStatus, setEpisodeNeed } from "./actions";
 
 export type GapRow = {
   episodeId: string;
@@ -43,6 +43,7 @@ export type BillingRow = {
 /* A confirmed assignment on a night ahead, and whether it holds the door. */
 export type DoorRow = {
   assignmentId: string;
+  crewId: string;
   episodeTitle: string;
   when: string;
   startsAt: string;
@@ -86,6 +87,8 @@ export function Rota({
   const [pick, setPick] = React.useState("");
   /* A night's own headcount for a position, typed but not yet set. */
   const [need, setNeed] = React.useState<Record<string, string>>({});
+  /* The handle typed to link a crew row to a member, keyed by assignment. */
+  const [handle, setHandle] = React.useState<Record<string, string>>({});
 
   const short = gaps.filter((g) => g.short > 0);
   const soon = short.filter((g) => g.daysOut <= 14);
@@ -295,7 +298,28 @@ export function Rota({
                 ) : d.linked ? (
                   <Badge tone="outline">No grant</Badge>
                 ) : (
-                  <Badge tone="caution">No member login</Badge>
+                  <span className="hm-need">
+                    <Badge tone="caution">No member login</Badge>
+                    <Input
+                      label="Handle"
+                      placeholder="@handle"
+                      value={handle[d.assignmentId] ?? ""}
+                      onChange={(e) => setHandle((s) => ({ ...s, [d.assignmentId]: e.target.value }))}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={pending || !(handle[d.assignmentId] ?? "").trim()}
+                      onClick={() =>
+                        run(
+                          () => linkCrewProfile(d.crewId, handle[d.assignmentId] ?? ""),
+                          () => show({ msg: `${d.crewName} is linked — the door can be handed over.`, meta: "CREW" })
+                        )
+                      }
+                    >
+                      Link
+                    </Button>
+                  </span>
                 )}
                 <span className="hm-door__act">
                   {d.grantId ? (

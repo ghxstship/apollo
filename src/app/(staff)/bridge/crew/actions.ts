@@ -168,6 +168,27 @@ export async function setAssignmentStatus(
 
 const UUID = /^[0-9a-f-]{36}$/;
 
+/* A door grant is handed to a PROFILE; a crew row with none has nobody for
+   the gangway to recognise. The link is made by handle, the one public name
+   a member chooses, and refused if that member already stands on the crew
+   list as somebody else. */
+export async function linkCrewProfile(crewId: string, handle: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!/^[0-9a-f-]{36}$/.test(crewId)) return { error: ERR_LAND };
+  const h = handle.trim().replace(/^@/, "");
+  if (!/^[a-z0-9._-]{2,32}$/i.test(h)) return { error: "A handle, as it reads on their page." };
+
+  const { data: person } = await supabase.from("profiles").select("id, full_name").ilike("handle", h).maybeSingle();
+  if (!person) return { error: `No member answers to @${h}.` };
+  const { data: taken } = await supabase.from("crew").select("id, display_name").eq("profile_id", person.id).neq("id", crewId).maybeSingle();
+  if (taken) return { error: `${person.full_name ?? "That member"} is already on the crew list as ${taken.display_name}.` };
+
+  const { error } = await supabase.from("crew").update({ profile_id: person.id }).eq("id", crewId);
+  if (error) return { error: ERR_LAND };
+  return done();
+}
+
 export async function grantTheDoor(assignmentId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };

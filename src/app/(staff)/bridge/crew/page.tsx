@@ -123,6 +123,7 @@ export default async function CrewPage() {
         : undefined;
       return {
         assignmentId: b.id,
+        crewId: b.crew_id,
         episodeTitle: night.title,
         when: logDateTime(night.starts_at, night.time_zone),
         startsAt: night.starts_at,

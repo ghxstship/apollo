@@ -70,7 +70,9 @@ export default async function KioskPage() {
       ? await Promise.all([
           staff
             ? supabase.from("profiles").select("id, full_name").in("id", profileIds)
-            : supabase.from("member_directory").select("id, full_name").in("id", profileIds),
+            : Promise.all(episodeIds.map((id) => supabase.rpc("door_manifest", { p_episode: id }))).then((rs) => ({
+                data: rs.flatMap((r) => (r.data ?? []).map((d) => ({ id: d.profile_id, full_name: d.full_name, waiver: d.waiver_current }))),
+              })),
           staff
             ? supabase
                 .from("member_waiver_standing")
@@ -80,16 +82,20 @@ export default async function KioskPage() {
         ])
       : [{ data: [] }, { data: [] }];
     const nameOf = new Map((profilesRes.data ?? []).map((p) => [p.id, p.full_name ?? "Sailor"]));
-    const waiverCurrent = new Map(
+    const waiverCurrent = new Map<string | null, boolean>(
       (waiverRes.data ?? []).map((w) => [w.profile_id, Boolean(w.current)])
     );
+    /* door_manifest carries the waiver state a door could not otherwise read. */
+    for (const p of profilesRes.data ?? []) {
+      if ("waiver" in p && typeof p.waiver === "boolean") waiverCurrent.set(p.id, p.waiver);
+    }
 
     passes = (passRows ?? []).map((r) => ({
       passId: r.id,
       episodeId: r.episode_id,
       code: r.boarding_code ?? "",
       name: nameOf.get(r.profile_id) ?? "Sailor",
-      waiverSigned: staff ? (waiverCurrent.get(r.profile_id) ?? false) : null,
+      waiverSigned: waiverCurrent.has(r.profile_id) ? (waiverCurrent.get(r.profile_id) ?? false) : staff ? false : null,
       checkedInAt: r.checked_in_at,
     }));
   }

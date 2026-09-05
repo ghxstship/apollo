@@ -81,8 +81,19 @@ export default async function GangwayPage({
     ? { data: [] as Array<{ id: string; full_name: string | null; member_no: string | null }> }
     : staff
       ? await supabase.from("profiles").select("id, full_name, member_no").in("id", profileIds)
-      : await supabase.from("member_directory").select("id, full_name, member_no").in("id", profileIds);
-  const profiles = new Map((must(profilesRes)).map((p) => [p.id, p]));
+      : { data: [] as Array<{ id: string; full_name: string | null; member_no: string | null }> };
+  /* A door is not staff and not the directory: door_manifest names everyone
+     on the episode it was granted, opted-out or not, with their waiver state. */
+  const doorRows = staff
+    ? []
+    : (await Promise.all(episodes.map((e) => supabase.rpc("door_manifest", { p_episode: e.id }))))
+        .flatMap((r) => r.data ?? []);
+  const profiles = new Map(
+    [
+      ...must(profilesRes),
+      ...doorRows.map((d) => ({ id: d.profile_id, full_name: d.full_name, member_no: d.member_no })),
+    ].map((p) => [p.id, p])
+  );
 
   /* Waiver standing is derived from the signature record, never from a flag on
      the profile — one question, one answer. The view is security_invoker over
@@ -96,9 +107,10 @@ export default async function GangwayPage({
         .select("profile_id, current")
         .in("profile_id", profileIds)
     : { data: [] as Array<{ profile_id: string | null; current: boolean | null }> };
-  const waiverCurrent = new Map(
+  const waiverCurrent = new Map<string | null, boolean>(
     (must(waiverRes)).map((w) => [w.profile_id, Boolean(w.current)])
   );
+  for (const d of doorRows) waiverCurrent.set(d.profile_id, d.waiver_current);
 
   const vesselIds = [...new Set(passes.map((r) => r.vessel_id).filter((id): id is string => !!id))];
   const vesselsRes = vesselIds.length
@@ -185,7 +197,7 @@ export default async function GangwayPage({
       guestNames: guestList.map((g) => g.name),
       guestList,
       guests: r.guests,
-      waiverSigned: staff ? (waiverCurrent.get(r.profile_id) ?? false) : null,
+      waiverSigned: waiverCurrent.has(r.profile_id) ? (waiverCurrent.get(r.profile_id) ?? false) : staff ? false : null,
       checkedInAt: r.checked_in_at,
       daybed: daybedPasses.has(r.id),
       cabin: cabin?.name ?? null,

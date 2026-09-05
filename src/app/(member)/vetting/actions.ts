@@ -235,6 +235,22 @@ export async function leaveTheLine(entryId: string): Promise<VettingResult> {
    The RPC is staff-only and checks the room exists before it promises it, so
    the button cannot write to somebody once and then refuse them at the gate six
    hours later. */
+/* The same offer, aimed at one named request rather than the front of the
+   line. offer_this_place carries the ceiling and hull checks itself. */
+export async function offerThisPlace(entryId: string): Promise<VettingResult> {
+  const { supabase, db, user } = await me();
+  if (!user) return { error: "Sign in first." };
+  const { data: staff } = await supabase.rpc("is_staff");
+  if (!staff) return { error: "Offering a place is the Bridge's to do." };
+  if (!/^[0-9a-f-]{36}$/.test(entryId)) return { error: "That request is not on the line." };
+
+  const { error } = await db.rpc("offer_this_place", { p_entry: entryId });
+  if (error) return { error: await voiceWith(supabase, error) };
+  revalidatePath("/vetting");
+  revalidatePath("/bridge/composition");
+  return { ok: true };
+}
+
 export async function offerTheNextPlace(episodeId: string, segment: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };

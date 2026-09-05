@@ -11,7 +11,7 @@ import {
   type Segment,
   type SegmentCapacityRow,
 } from "@/lib/vetting";
-import { offerTheNextPlace } from "../../../(member)/vetting/actions";
+import { offerTheNextPlace, offerThisPlace } from "../../../(member)/vetting/actions";
 import { useToast } from "../../ui";
 import { liftTheComposition, setHullCeiling, setTheComposition } from "./actions";
 
@@ -208,13 +208,22 @@ export function CompositionPanel({
       setConfirmLift(false);
     });
 
+  /* One named request rather than the front of the line — the Bridge choosing
+     who comes, which is what a by-request night is for. */
+  const offerOne = (id: string, who: string) =>
+    startTransition(async () => {
+      const res = await offerThisPlace(id);
+      if (res.error) show({ msg: res.error, tone: "danger" });
+      else show({ msg: `Offered to ${who}. One notice, the claim window runs.`, meta: "BY REQUEST", tone: "positive" });
+    });
+
   const offer = (s: Segment) =>
     startTransition(async () => {
       const res = await offerTheNextPlace(episodeId, s);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
-          msg: `Offered to first in line, ${SEGMENT_LABEL[s].toLowerCase()}. One notice, six hours.`,
+          msg: `Offered to first in line, ${SEGMENT_LABEL[s].toLowerCase()}. One notice, the claim window runs.`,
         });
     });
 
@@ -451,7 +460,15 @@ export function CompositionPanel({
                           Offer
                         </Button>
                       ) : (
-                        <span className="hm-mono">IN LINE</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={pending || !room}
+                          title={room ? "Offer this request its place, ahead of the line" : `${SEGMENT_LABEL[r.segment]} is at its ceiling — raise it first.`}
+                          onClick={() => offerOne(r.id, r.name)}
+                        >
+                          Offer this one
+                        </Button>
                       )}
                     </span>
                   </div>
