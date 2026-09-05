@@ -8,7 +8,7 @@
 .gs__hit--on{box-shadow:inset 2px 0 0 var(--focus)}
 /* A search in flight over a list already on the slate: the old answers dim
    rather than vanish, so the list does not flash empty between keystrokes. */
-.gs__body[aria-busy="true"] .gs__sec{opacity:.55;transition:opacity var(--dur-hover) var(--ease-out)}
+.gs__body[aria-busy="true"] .gs__sec{opacity:.55;transition:opacity var(--dur-hover) var(--ease-hover)}
 .gs__hint{margin:0}
 .gs__sec+.gs__sec{margin-top:2px}
 

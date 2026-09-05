@@ -7,17 +7,17 @@
    a phone in one hand: a wider, larger waiver measure, a signature field that
    reads as a signature, and one card shape for every terminal state. */
 .gsn{min-height:100vh;min-height:100dvh;background:var(--surface-page);padding:32px 24px 64px;max-width:760px;margin-inline:auto;box-sizing:border-box;min-width:0;overflow-wrap:anywhere}
-.gsn-head{padding-bottom:24px;border-bottom:1px solid var(--line-faint);margin-bottom:32px}
+.gsn-head{padding-bottom:24px;border-bottom:1px solid var(--border-subtle);margin-bottom:32px}
 /* The lede is the page's h1 — a standalone bearer link needs a top-level
    heading — so it pins the weight an h1 would otherwise bring with it. */
-.gsn-lede{margin:18px 0 0;font:400 var(--text-sm)/1.7 var(--font-sans);color:var(--text-2);max-width:56ch}
-.gsn-lede b{font-weight:700;color:var(--text-1)}
+.gsn-lede{margin:18px 0 0;font:400 var(--text-sm)/var(--leading-loose) var(--font-sans);color:var(--text-muted);max-width:var(--measure-tight)}
+.gsn-lede b{font-weight:700;color:var(--text-body)}
 
 /* The waiver body: body size, a long line-height, and a measure under 70ch.
-   The kit sets it at 14px in --text-2 for a member who has read it before. */
+   The kit sets it at 14px in --text-muted for a member who has read it before. */
 .gsn .sgn{max-width:none}
-.gsn .sgn-body{max-height:56vh;padding:14px 20px 20px;font-size:var(--text-md);line-height:1.7;color:var(--text-1)}
-.gsn .sgn-body p{max-width:66ch;margin:0 0 16px}
+.gsn .sgn-body{max-height:56vh;padding:14px 20px 20px;font-size:var(--text-md);line-height:var(--leading-loose);color:var(--text-body)}
+.gsn .sgn-body p{max-width:var(--measure-body);margin:0 0 16px}
 .gsn .sgn-body p:last-child{margin-bottom:0}
 
 /* The typed signature is the signature — the editorial face, italic, on a
@@ -25,33 +25,33 @@
    than filled in. The field is the one that directly follows the "how would
    you like to sign" fieldset; the guardian field further down keeps the kit's
    look. */
-.gsn .sgn-field+.ls-field .ls-input{height:60px;padding:0 18px;font:400 var(--text-xl)/1 var(--font-editorial);font-style:italic;color:var(--text-1);border-bottom-width:2px;caret-color:var(--text-1)}
+.gsn .sgn-field+.ls-field .ls-input{height:60px;padding:0 18px;font:400 var(--text-xl)/var(--leading-flat) var(--font-editorial);font-style:italic;color:var(--text-body);border-bottom-width:2px;caret-color:var(--text-body)}
 .gsn .sgn-field+.ls-field .ls-input::placeholder{font-style:italic}
 
 /* Consent: the box on the first line of a label that runs to three. */
 .gsn .sgn-consent .ls-check{align-items:flex-start;gap:14px}
 .gsn .sgn-consent .ls-check__box{margin-top:2px}
-.gsn .sgn-consent .ls-check__label{line-height:1.5}
+.gsn .sgn-consent .ls-check__label{line-height:var(--leading-body)}
 
 /* Signed, already signed, called off, gone: one box, one motion, and the
    rule's tone is the only difference — positive for a signature on file,
    neutral for a night that is not happening. */
-.gsn .sgn-done{border:1px solid var(--line-faint);border-inline-start:2px solid var(--positive);background:var(--surface-card);padding:24px;animation:ls-rise var(--dur-enter) var(--ease-enter)}
+.gsn .sgn-done{border:1px solid var(--border-subtle);border-inline-start:2px solid var(--positive);background:var(--surface-card);padding:24px;animation:ls-rise var(--dur-enter) var(--ease-enter)}
 .gsn .sgn-done p{margin:0}
-.gsn .gsn-done--gone{border-inline-start-color:var(--line-strong)}
+.gsn .gsn-done--gone{border-inline-start-color:var(--border-strong)}
 
 /* The night card, under the paper: a guest's one page, reread on the way down.
    Each row is a hairline apart with term and detail on one baseline. */
-.gsn-card{margin-top:32px;padding:20px 22px 22px;border:1px solid var(--line-faint);background:var(--surface-card)}
-.gsn-card h2{margin:0 0 8px;font:700 var(--text-lg)/1.2 var(--font-sans);color:var(--text-1)}
+.gsn-card{margin-top:32px;padding:20px 22px 22px;border:1px solid var(--border-subtle);background:var(--surface-card)}
+.gsn-card h2{margin:0 0 8px;font:700 var(--text-lg)/var(--leading-snug) var(--font-sans);color:var(--text-body)}
 .gsn-card dl{margin:0;display:grid;gap:0}
-.gsn-card dl>div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:16px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line-faint)}
+.gsn-card dl>div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:16px;align-items:baseline;padding:10px 0;border-top:1px solid var(--border-subtle)}
 .gsn-card dl>div:first-child{border-top:0}
-.gsn-card dt{margin:0;font:700 var(--text-2xs)/1.4 var(--font-mono);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
-.gsn-card dd{margin:0;min-width:0;font:400 var(--text-sm)/1.5 var(--font-sans);color:var(--text-1)}
-.gsn-card .gsn-code{font:700 var(--text-lg)/1.3 var(--font-mono);letter-spacing:var(--tracking-label);color:var(--text-1)}
-.gsn-card__foot{margin:14px 0 0;font:400 var(--text-xs)/1.5 var(--font-sans);color:var(--text-2)}
-.gsn-card__foot a{color:var(--text-2)}
+.gsn-card dt{margin:0;font:700 var(--text-2xs)/var(--leading-body) var(--font-mono);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint)}
+.gsn-card dd{margin:0;min-width:0;font:400 var(--text-sm)/var(--leading-body) var(--font-sans);color:var(--text-body)}
+.gsn-card .gsn-code{font:700 var(--text-lg)/var(--leading-snug) var(--font-mono);letter-spacing:var(--tracking-label);color:var(--text-body)}
+.gsn-card__foot{margin:14px 0 0;font:400 var(--text-xs)/var(--leading-body) var(--font-sans);color:var(--text-muted)}
+.gsn-card__foot a{color:var(--text-muted)}
 
 /* A phone: tighter gutters, a narrower term column, the canvas to the edge. */
 @media (max-width:480px){

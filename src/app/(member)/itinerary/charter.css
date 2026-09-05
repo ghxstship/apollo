@@ -7,8 +7,8 @@
    red: a leg that moved is not an emergency, and a red notice on a boat means
    something else. */
 
-.cht-lede{max-width:62ch;font:var(--type-body);color:var(--text-muted);margin:var(--space-3) 0 0}
-.cht-empty{margin-top:var(--space-6);padding:var(--space-5);border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-card);max-width:62ch;font:var(--type-body);color:var(--text-muted)}
+.cht-lede{max-width:var(--measure-body);font:var(--type-body);color:var(--text-muted);margin:var(--space-3) 0 0}
+.cht-empty{margin-top:var(--space-6);padding:var(--space-5);border:1px solid var(--border-subtle);border-radius:var(--radius-md);background:var(--surface-card);max-width:var(--measure-body);font:var(--type-body);color:var(--text-muted)}
 
 /* — the itinerary one-pager — */
 .cht-legs{margin-top:var(--space-4);border-top:1px solid var(--border-subtle)}
@@ -18,7 +18,7 @@
 .cht-leg__port{font:var(--type-caption);color:var(--text-body)}
 .cht-leg__port b{font-weight:700}
 .cht-leg__posted{font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint)}
-.cht-legs__foot{margin-top:var(--space-3);font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint);line-height:1.7}
+.cht-legs__foot{margin-top:var(--space-3);font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-faint);line-height:var(--leading-loose)}
 
 /* — weather hold — reason, then the new plan, then what is unchanged — */
 .cht-hold{margin-top:var(--space-2);padding:var(--space-3) var(--space-4);background:var(--surface-sunken);border-inline-start:3px solid var(--caution);border-radius:var(--radius-sm);display:flex;flex-direction:column;gap:var(--space-1)}
@@ -59,7 +59,10 @@
 .cht-state__name{flex:none;width:96px;font:var(--type-label);letter-spacing:var(--tracking-label);color:var(--text-body)}
 .cht-state__line{font:var(--type-caption);color:var(--text-muted)}
 
-@media (max-width:600px){
+/* 640, the kit's phone breakpoint, rather than the 600 this rule was written
+   at: it only narrows two columns, so meeting the shared breakpoint costs
+   nothing and removes a value nothing else in the app used. */
+@media (max-width:640px){
   .cht-plan__name{width:110px}
   .cht-plan__count{width:96px}
 }

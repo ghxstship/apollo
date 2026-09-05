@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Badge, Card, Icon, LinkButton, Stat, StateBlock } from "@/components/ds";
+import { Badge, Card, Icon, LinkButton, Stat, StateBlock, type IconName } from "@/components/ds";
 import { CURRENCY, knots, LOGBOOK, PLACE, SURFACES } from "@/lib/brand";
 import { logDate, logMeta, price } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
@@ -18,7 +18,7 @@ const LIVE_LIMIT = 12;
 /* The destinations that left the top bar when it was trimmed to a dozen. Each
    is still a page with its own name; this is where a member finds it. Portal,
    Standing and Agreements are not here because they folded into You. */
-const ALSO_ABOARD: Array<[string, string, string, string]> = [
+const ALSO_ABOARD: Array<[string, IconName, string, string]> = [
   ["/open-deck", "MessageCircle", SURFACES.openDeck, "MEMBERS ONLY · MIND THE CODE"],
   ["/directory", "Users", "Directory", `THE ROSTER · BY ${PLACE.market.toUpperCase()} AND LEAGUE`],
   ["/card", "IdCard", SURFACES.passbook, "SCAN AT THE GANGWAY"],
@@ -315,7 +315,7 @@ async function HomeBody() {
             {word.map((n) => (
               <NoticeLink key={n.id} id={n.id} href={noticeHref(n.kind, n.href)} read={n.read}>
                 <span className="wrd-ic">
-                  <Icon name={KIND_ICON[n.kind] ?? "Radio"} size={15} />
+                  <Icon name={KIND_ICON[n.kind] ?? "Radio"} size={16} />
                 </span>
                 <div>
                   <b>{n.title}</b>

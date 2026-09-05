@@ -1,61 +1,61 @@
 /* Brand kit page — ported from ui_kits/website/WebsiteBrandKit.jsx */
 .bk-head{padding:72px 0 0}
 .bk-head h1{font-size:var(--text-display-l)}
-.bk-head__sub{color:var(--text-2);margin-top:var(--space-4);max-width:56ch}
-.bk-boiler{margin-top:24px;padding:24px;background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);display:flex;gap:24px;align-items:flex-start}
-.bk-boiler p{font-size:var(--text-md);color:var(--text-2);max-width:70ch}
+.bk-head__sub{color:var(--text-muted);margin-top:var(--space-4);max-width:var(--measure-tight)}
+.bk-boiler{margin-top:24px;padding:24px;background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);display:flex;gap:24px;align-items:flex-start}
+.bk-boiler p{font-size:var(--text-md);color:var(--text-muted);max-width:var(--measure-wide)}
 .bk-sec{padding:72px 0 0}
 .bk-lockups{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.bk-lock{border:1px solid var(--line-faint);border-radius:var(--radius-sharp);min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative}
-.bk-lock .cap{position:absolute;left:14px;bottom:12px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3)}
+.bk-lock{border:1px solid var(--border-subtle);border-radius:var(--radius-sm);min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative}
+.bk-lock .cap{position:absolute;left:14px;bottom:12px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-faint)}
 .bk-lock--ink{background:var(--surface-deep)}
 .bk-lock--ink .cap{color:var(--text-inverse-3)}
 .bk-lock img{max-width:70%;height:auto}
 /* 9vw plus .3em of tracking and a .15em nudge put the wordmark 14px past a
    375px viewport, which makes the whole page scroll sideways. */
-.bk-wm{font-family:var(--font-display);letter-spacing:.3em;transform:translateX(.15em);font-size:clamp(16px,6.2vw,34px);color:var(--text-1);white-space:nowrap;text-transform:uppercase}/* ds-exempt: logo specimen — §Type exempts a mark shown as a specimen (concept sheets, reduction ladders, clear-space diagrams), set optically to the artboard. The chrome around it stays on-ladder. */
+.bk-wm{font-family:var(--font-display);letter-spacing:.3em;transform:translateX(.15em);font-size:clamp(16px,6.2vw,34px);color:var(--text-body);white-space:nowrap;text-transform:uppercase}/* ds-exempt: logo specimen — §Type exempts a mark shown as a specimen (concept sheets, reduction ladders, clear-space diagrams), set optically to the artboard. The chrome around it stays on-ladder. */
 .bk-stack .a{font-family:var(--font-display);font-size:var(--text-3xl);letter-spacing:.42em;transform:translateX(.21em);color:var(--bone);text-transform:uppercase}/* ds-exempt: logo specimen — the suffix lockup shown as a specimen, set optically to the artboard like .bk-wm above. The chrome around it stays on-ladder. */
 .bk-stack .b{font:700 10px var(--font-sans);font-stretch:var(--stretch-wide);letter-spacing:.6em;transform:translateX(.3em);text-transform:uppercase;color:var(--gold-bright);text-align:center;margin-top:4px}/* ds-exempt: logo specimen — the suffix lockup shown as a specimen, set optically to the artboard like .bk-wm above. The chrome around it stays on-ladder. */
 .bk-rules{margin:20px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:0 32px}
-.bk-rules li{font-size:var(--text-xs);color:var(--text-2);padding:10px 0;border-top:1px solid var(--line-faint)}
-.bk-rules li b{font-weight:700;color:var(--text-1)}
+.bk-rules li{font-size:var(--text-xs);color:var(--text-muted);padding:10px 0;border-top:1px solid var(--border-subtle)}
+.bk-rules li b{font-weight:700;color:var(--text-body)}
 .bk-swgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.bk-sw{border:none;padding:0;text-align:left;cursor:pointer;background:none;border-radius:var(--radius-sharp);font-family:var(--font-sans);display:flex;flex-direction:column;align-items:stretch}
-.bk-sw .chip{height:84px;border-radius:var(--radius-sharp);border:1px solid var(--line-faint);display:flex;align-items:flex-end;padding:10px 12px;box-sizing:border-box;transition:transform var(--dur-hover) var(--ease-out)}
+.bk-sw{border:none;padding:0;text-align:left;cursor:pointer;background:none;border-radius:var(--radius-sm);font-family:var(--font-sans);display:flex;flex-direction:column;align-items:stretch}
+.bk-sw .chip{height:84px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);display:flex;align-items:flex-end;padding:10px 12px;box-sizing:border-box;transition:transform var(--dur-hover) var(--ease-hover)}
 .bk-sw:hover .chip{transform:translateY(-2px)}
 .bk-sw .hex{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data)}
-.bk-sw .nm{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;margin-top:8px;color:var(--text-1)}
-.bk-sw .use{font-size:var(--text-xs);color:var(--text-3);margin-top:2px}
-.bk-swlbl{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin:28px 0 12px}
+.bk-sw .nm{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;margin-top:8px;color:var(--text-body)}
+.bk-sw .use{font-size:var(--text-xs);color:var(--text-faint);margin-top:2px}
+.bk-swlbl{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);margin:28px 0 12px}
 /* Four fixed columns against seven gradients left the last row as three items
    and a hole. auto-fit fills whatever count it is handed. */
 .bk-lavas{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:4px}
 .bk-lava .bar{height:34px}
 .bk-lava .nm{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;margin-top:8px}
-.bk-lava .use{font-family:var(--font-mono);font-size:10px;color:var(--text-3)}
-.bk-note{margin-top:24px;font-size:var(--text-xs);color:var(--text-2);max-width:64ch}
+.bk-lava .use{font-family:var(--font-mono);font-size:10px;color:var(--text-faint)}
+.bk-note{margin-top:24px;font-size:var(--text-xs);color:var(--text-muted);max-width:var(--measure-body)}
 .bk-note b{font-weight:700}
 /* Under a SectionHeader the note is the first thing in the section, so the top margin the class carries is doubled space. */
 .bk-note--flush{margin-top:0}
 .bk-typegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-.bk-type{border:1px solid var(--line-faint);background:var(--surface-card);border-radius:var(--radius-sharp);padding:24px;display:flex;flex-direction:column}
-.bk-type .aa{font-size:64px;line-height:1;color:var(--text-1)}
+.bk-type{border:1px solid var(--border-subtle);background:var(--surface-card);border-radius:var(--radius-sm);padding:24px;display:flex;flex-direction:column}
+.bk-type .aa{font-size:64px;line-height:var(--leading-flat);color:var(--text-body)}
 .bk-type h3{font-size:var(--text-display-xs);margin-top:18px}
-.bk-type .use{font-size:var(--text-xs);color:var(--text-2);margin-top:6px;flex:1}
+.bk-type .use{font-size:var(--text-xs);color:var(--text-muted);margin-top:6px;flex:1}
 .bk-type .lnk{margin-top:16px;font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data)}
 .bk-voice{display:grid;grid-template-columns:1fr 1fr;gap:32px}
-.bk-voice .h{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin-bottom:6px}
-.bk-voice .ex{font-size:var(--text-sm);padding:10px 0;border-top:1px solid var(--line-faint)}
-.bk-voice .no .ex{color:var(--text-3);text-decoration:line-through}
+.bk-voice .h{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);margin-bottom:6px}
+.bk-voice .ex{font-size:var(--text-sm);padding:10px 0;border-top:1px solid var(--border-subtle)}
+.bk-voice .no .ex{color:var(--text-faint);text-decoration:line-through}
 .bk-lex{margin-top:32px;display:flex;flex-wrap:wrap;gap:8px}
 .bk-img{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.bk-img .ph{aspect-ratio:4/3;border-radius:var(--radius-sharp);position:relative}
+.bk-img .ph{aspect-ratio:4/3;border-radius:var(--radius-sm);position:relative}
 .bk-img .ph span{position:absolute;left:12px;bottom:10px;font-family:var(--font-mono);font-size:9px;letter-spacing:var(--tracking-dense);color:var(--text-on-media)}
-.bk-img .cap{font-size:12px;color:var(--text-2);margin-top:8px}
-.bk-facts{border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
-.bk-facts:before{content:"";display:block;border-top:1px solid var(--line-strong)}
-.bk-facts .row{display:grid;grid-template-columns:200px 1fr;gap:24px;padding:14px 0;border-bottom:1px solid var(--line-faint);font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data)}
-.bk-facts .k{color:var(--text-3);text-transform:uppercase;font-size:var(--text-data-s)}
+.bk-img .cap{font-size:12px;color:var(--text-muted);margin-top:8px}
+.bk-facts{border-top:1px solid var(--border-strong);position:relative;padding-top:3px}
+.bk-facts:before{content:"";display:block;border-top:1px solid var(--border-strong)}
+.bk-facts .row{display:grid;grid-template-columns:200px 1fr;gap:24px;padding:14px 0;border-bottom:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data)}
+.bk-facts .k{color:var(--text-faint);text-transform:uppercase;font-size:var(--text-data-s)}
 /* Section 05 stacks eight of these lists in a row — roughly forty rows of one
    identical shape, which reads as a rope rather than a reference. Two columns
    on a wide viewport makes it a matrix you can scan across as well as down. */
@@ -76,5 +76,5 @@
 @media (max-width:960px){.bk-lockups{grid-template-columns:1fr}.bk-typegrid{grid-template-columns:1fr}.bk-dl__in{grid-template-columns:1fr;gap:32px}.bk-rules{grid-template-columns:1fr}}
 @media (max-width:640px){.bk-swgrid,.bk-lavas{grid-template-columns:1fr 1fr}.bk-voice{grid-template-columns:1fr}.bk-img{grid-template-columns:1fr}.bk-boiler{flex-direction:column}.bk-facts .row{grid-template-columns:1fr;gap:4px}}
 /* the rooms of the house */
-.bk-rooms__role{font-family:var(--font-sans);font-size:var(--text-xs);letter-spacing:0;text-transform:none;color:var(--text-2)}
-.bk-rooms__cities{font-family:var(--font-mono);font-size:var(--text-display-xs);letter-spacing:var(--track-data);color:var(--text-1)}
+.bk-rooms__role{font-family:var(--font-sans);font-size:var(--text-xs);letter-spacing:0;text-transform:none;color:var(--text-muted)}
+.bk-rooms__cities{font-family:var(--font-mono);font-size:var(--text-display-xs);letter-spacing:var(--track-data);color:var(--text-body)}

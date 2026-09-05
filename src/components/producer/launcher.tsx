@@ -129,7 +129,7 @@ export function ProducerLauncher() {
       aria-busy={fetching || undefined}
     >
       <span>
-        <Icon name="Compass" size={15} />
+        <Icon name="Compass" size={16} />
         {SURFACES.agent}
       </span>
     </button>

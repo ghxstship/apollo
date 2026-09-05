@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { LinkButton } from "@/components/ds";
+import { LinkButton, useClientSnapshot } from "@/components/ds";
 import "./wallet.css";
 
 /* Add-to-wallet — two links, or nothing.
@@ -27,15 +27,10 @@ import "./wallet.css";
 type Status = { apple: boolean; google: boolean };
 
 /* The platform is an external fact, not React state — read it as a store so
-   the server renders neither link and the client settles it on hydration. */
-const NO_SUBSCRIBE = () => () => {};
-
+   the server renders neither link and the client settles it on hydration. The
+   constant subscribe lives in the kit now — see ds/use-mounted. */
 function useAndroid(): boolean {
-  return React.useSyncExternalStore<boolean>(
-    NO_SUBSCRIBE,
-    () => /Android/i.test(navigator.userAgent),
-    () => false
-  );
+  return useClientSnapshot(() => /Android/i.test(navigator.userAgent), false);
 }
 
 export function AddToWallet({ className, inverse = false }: { className?: string; inverse?: boolean }) {

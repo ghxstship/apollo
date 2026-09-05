@@ -6,7 +6,7 @@
    push_outbox, so enabling here is the whole of the member's part. */
 
 import React from "react";
-import { Switch } from "@/components/ds";
+import { Switch, useClientSnapshot } from "@/components/ds";
 import { removePushSubscription, savePushSubscription } from "./signal-actions";
 import "./push-controls.css";
 
@@ -25,14 +25,14 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 }
 
 /* Capability is an external fact, not React state — read it as a store so the
-   server renders "checking" and the client settles it on hydration. */
-const NO_SUBSCRIBE = () => () => {};
-
+   server renders "checking" and the client settles it on hydration. The
+   constant subscribe this needs lives in the kit now (ds/use-mounted), because
+   four components wanted it and two of them wrote it inline, where it is a new
+   identity every render and React resubscribes on every pass. */
 function usePushSupport(): boolean | null {
-  return React.useSyncExternalStore<boolean | null>(
-    NO_SUBSCRIBE,
+  return useClientSnapshot<boolean | null>(
     () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window,
-    () => null
+    null
   );
 }
 

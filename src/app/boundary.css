@@ -2,11 +2,12 @@
    layout alone, where only the global sheets load: no nav, no footer, and none
    of the page-head rhythm the public site gets from .ws-phead in site.css.
    Both files import this sheet so that rhythm is a class rather than a run of
-   inline margins. Tokens only; the one literal is the section rhythm, because
-   --rhythm-section is declared in site.css and does not resolve here. */
-.rb-page{padding-block:96px}
+   inline margins. Tokens only — --rhythm-section used to be declared inside
+   site.css, which does not load here, so this rule carried a literal 96px; the
+   pair now lives in tokens.css and resolves everywhere. */
+.rb-page{padding-block:var(--rhythm-section)}
 .rb-page h1{margin-top:var(--space-3)}
 .rb-page__eyebrow{display:block}
 .rb-page__sub{max-width:460px;margin-top:var(--space-3)}
 .rb-page__cta{margin-top:var(--space-6);display:flex;gap:var(--space-4);flex-wrap:wrap}
-.rb-page__ref{margin-top:var(--space-6);color:var(--text-3)}
+.rb-page__ref{margin-top:var(--space-6);color:var(--text-faint)}

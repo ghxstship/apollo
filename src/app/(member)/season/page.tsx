@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { CopyLink } from "@/components/copy-link";
-import { KitPassageLog, LinkButton, StateBlock, Tag, type LogFigure } from "@/components/ds";
+import { FigureGrid, LinkButton, StateBlock, Tag, type LogFigure } from "@/components/ds";
 import { CITY_CODES, CLUB_ZONE, CURRENCY, PLACE, SITE_DOMAIN, knots } from "@/lib/brand";
 import { SETTING_LABEL, endOfDay, logDate, logDateYear, startOfDay } from "@/lib/format";
 import { getMember } from "../data";
@@ -206,7 +206,7 @@ export default async function SeasonPage() {
 
       {!sailed ? (
         <div className="mbr-sec">
-          <KitPassageLog
+          <FigureGrid
             figures={[]}
             emptyLabel={`Nothing on the record yet. ${season.title} opened ${logDate(from, seasonZone)}; the first episode writes the first line.`}
           />
@@ -218,7 +218,7 @@ export default async function SeasonPage() {
         <>
           <section className="mbr-sec">
             <span className="mbr-eyebrow">In numbers</span>
-            <KitPassageLog figures={figures} since={logDate(episodes[0].starts_at, zone)} />
+            <FigureGrid figures={figures} since={logDate(episodes[0].starts_at, zone)} />
             {card?.longest_title && card.longest_nm ? (
               <p className="ssn-note">
                 Longest leg: {card.longest_title}, {nm(Number(card.longest_nm))} NM.

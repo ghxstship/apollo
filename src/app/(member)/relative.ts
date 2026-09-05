@@ -1,3 +1,5 @@
+import type { IconName } from "@/components/ds";
+
 /* Mono-caps relative timestamps for feed rows — "12 MIN AGO", "2D AGO". */
 export function relTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -25,7 +27,7 @@ export function relTime(iso: string): string {
    The five newer kinds (pass, dues, thread, crew, radar) arrived with
    notifications.href on 2026-09-04; the legacy keys stay beside them for the
    rows already written. */
-export const KIND_ICON: Record<string, string> = {
+export const KIND_ICON: Record<string, IconName> = {
   word: "Radio",
   manifest: "Ticket",
   weather: "Wind",

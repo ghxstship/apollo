@@ -1,5 +1,5 @@
 import { LOGBOOK, MARK_KIND, PLACE } from "@/lib/brand";
-import { KitPassageLog, MarksList, type LogFigure, type MarkItem } from "@/components/ds";
+import { FigureGrid, MarksList, type LogFigure, type MarkItem } from "@/components/ds";
 import { logDate } from "@/lib/format";
 import type { createClient } from "@/lib/supabase/server";
 
@@ -121,7 +121,7 @@ export function PassageLog({
         <span className="mbr-eyebrow">{LOGBOOK.log}</span>
       </div>
       {!sailed ? (
-        <KitPassageLog
+        <FigureGrid
           figures={[]}
           emptyLabel={
             own
@@ -132,7 +132,7 @@ export function PassageLog({
       ) : (
         <>
           <div className="mbr-sub--md">
-            <KitPassageLog
+            <FigureGrid
               figures={figures}
               since={log?.firstSailAt ? logDate(log.firstSailAt, zone) : undefined}
             />

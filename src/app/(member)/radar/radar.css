@@ -63,7 +63,7 @@
 }
 .rdr-eyebrow--live { color: var(--positive); }
 
-.rdr-note { font: var(--type-caption); color: var(--text-faint); margin: 0; max-width: 56ch; }
+.rdr-note { font: var(--type-caption); color: var(--text-faint); margin: 0; max-width:var(--measure-tight); }
 
 /* The plot. Three concentric rings and a centre dot for self, with the pins
    arranged around the circle. The rings carry no data — there is no distance
@@ -113,7 +113,7 @@
   border: 1px solid var(--border-strong);
   display: grid;
   place-items: center;
-  font: 400 var(--text-2xs)/1 var(--font-mono);
+  font: 400 var(--text-2xs)/var(--leading-flat) var(--font-mono);
   color: var(--text-muted);
   background: var(--surface-raised);
 }
@@ -166,7 +166,7 @@
   flex: none;
 }
 .rdr-slot--filled .rdr-slot__n { color: var(--text-accent); }
-.rdr-slot__who { flex: 1; font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+.rdr-slot__who { flex: 1; font: 700 var(--text-sm)/var(--leading-snug) var(--font-body); color: var(--text-body); }
 .rdr-slot__who--empty { font-weight: 400; color: var(--text-faint); }
 
 /* The anchor list and its countdown. Precise, because there is no extension and
@@ -179,7 +179,7 @@
   border-top: 1px solid var(--border-subtle);
 }
 .rdr-row:last-child { border-bottom: 1px solid var(--border-subtle); }
-.rdr-row__name { flex: 1; font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
+.rdr-row__name { flex: 1; font: 700 var(--text-sm)/var(--leading-snug) var(--font-body); color: var(--text-body); }
 /* The clock is a figure, not a state — it does not change colour as it runs
    down, because there is no threshold at which the answer becomes different. It
    takes the accent's type step so it reads as the row's load-bearing value. */
@@ -207,10 +207,10 @@
   color: var(--text-muted);
 }
 .rdr-strip--credit .rdr-strip__badge { color: var(--positive); }
-.rdr-strip__title { font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
-.rdr-strip__body { font: var(--type-caption); color: var(--text-muted); margin: 0; max-width: 52ch; }
+.rdr-strip__title { font: 700 var(--text-sm)/var(--leading-snug) var(--font-body); color: var(--text-body); }
+.rdr-strip__body { font: var(--type-caption); color: var(--text-muted); margin: 0; max-width:var(--measure-tight); }
 
-.rdr-rules { display: flex; flex-direction: column; max-width: 42ch; }
+.rdr-rules { display: flex; flex-direction: column; max-width:var(--measure-note); }
 .rdr-rule {
   font: var(--type-caption);
   color: var(--text-muted);

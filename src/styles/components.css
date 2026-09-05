@@ -8,7 +8,7 @@
    --dur-exit; anything that travels (thumb, indicator, tick) moves on
    --dur-move/--ease-move. No component names a millisecond. base.css collapses
    all of it under prefers-reduced-motion. */
-.ls-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);border-radius:var(--radius-pill);font-family:var(--font-sans);font-weight:500;font-stretch:var(--stretch-wide);letter-spacing:var(--tracking-body);cursor:pointer;border:1px solid transparent;transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out),box-shadow var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out);white-space:nowrap;user-select:none;position:relative;height:var(--control-md);padding:0 var(--space-6);font-size:var(--text-sm)}
+.ls-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);border-radius:var(--radius-pill);font-family:var(--font-sans);font-weight:500;font-stretch:var(--stretch-wide);letter-spacing:var(--tracking-body);cursor:pointer;border:1px solid transparent;transition:background var(--dur-hover) var(--ease-hover),color var(--dur-hover) var(--ease-hover),border-color var(--dur-hover) var(--ease-hover),box-shadow var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover);white-space:nowrap;user-select:none;position:relative;height:var(--control-md);padding:0 var(--space-6);font-size:var(--text-sm)}
 /* The base carries the md size (restated by --md below, overridden by --sm and
    --lg), so a bare `ls-btn` never renders with no height and no padding — the
    error pages shipped that way when the size modifier was left off. */
@@ -33,15 +33,15 @@
 .ls-btn--primary{background:var(--action-primary);color:var(--action-on-primary)}
 .ls-btn--primary:hover{background:var(--action-primary-hover)}
 .ls-btn--primary.ls-btn--inverse{background:var(--bone);color:var(--ink)}
-.ls-btn--primary.ls-btn--inverse:hover{background:var(--sail)}
-.ls-btn--gold{background:var(--action-accent);color:var(--action-on-accent);box-shadow:var(--shadow-glow-accent)}
+.ls-btn--primary.ls-btn--inverse:hover{background:var(--ivory-50)}
+.ls-btn--gold{background:var(--gradient-accent);color:var(--on-accent);box-shadow:var(--shadow-glow-accent)}
 .ls-btn--gold:hover{background:var(--accent-hover)}
 .ls-btn--gold:active{background:var(--accent-press)}/* §Hover/Press: "Press: darken one step" */
-.ls-btn--outline{background:transparent;color:var(--text-1);border-color:var(--line-strong)}
+.ls-btn--outline{background:transparent;color:var(--text-body);border-color:var(--border-strong)}
 .ls-btn--outline:hover{border-color:var(--ink);background:var(--wash-ink)}
 .ls-btn--outline.ls-btn--inverse{color:var(--text-inverse-1);border-color:var(--line-inverse-strong)}
 .ls-btn--outline.ls-btn--inverse:hover{border-color:var(--bone);background:var(--wash-bone)}
-.ls-btn--ghost{background:transparent;color:var(--text-1)}
+.ls-btn--ghost{background:transparent;color:var(--text-body)}
 .ls-btn--ghost:hover{background:var(--wash-ink)}
 .ls-btn--ghost.ls-btn--inverse{color:var(--text-inverse-1)}
 .ls-btn--ghost.ls-btn--inverse:hover{background:var(--wash-bone)}
@@ -64,7 +64,7 @@
 .ls-btn--sm:after{content:"";position:absolute;inset:-7px;border-radius:inherit}
 
 /* — IconButton — */
-.ls-iconbtn{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);cursor:pointer;border:1px solid transparent;transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out);flex:none;position:relative}
+.ls-iconbtn{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);cursor:pointer;border:1px solid transparent;transition:background var(--dur-hover) var(--ease-hover),color var(--dur-hover) var(--ease-hover),border-color var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover);flex:none;position:relative}
 .ls-iconbtn:active{transform:scale(var(--press))}
 .ls-iconbtn[disabled],.ls-iconbtn--disabled{opacity:var(--opacity-disabled);pointer-events:none}
 .ls-iconbtn--sm{width:var(--control-sm);height:var(--control-sm)}
@@ -73,11 +73,11 @@
 .ls-iconbtn--solid{background:var(--action-primary);color:var(--action-on-primary)}
 .ls-iconbtn--solid:hover{background:var(--action-primary-hover)}
 .ls-iconbtn--solid.ls-iconbtn--inverse{background:var(--bone);color:var(--ink)}
-.ls-iconbtn--outline{background:transparent;color:var(--text-1);border-color:var(--line-strong)}
+.ls-iconbtn--outline{background:transparent;color:var(--text-body);border-color:var(--border-strong)}
 .ls-iconbtn--outline:hover{border-color:var(--ink);background:var(--wash-ink)}
 .ls-iconbtn--outline.ls-iconbtn--inverse{color:var(--text-inverse-1);border-color:var(--line-inverse-strong)}
 .ls-iconbtn--outline.ls-iconbtn--inverse:hover{border-color:var(--bone);background:var(--wash-bone)}
-.ls-iconbtn--ghost{background:transparent;color:var(--text-1)}
+.ls-iconbtn--ghost{background:transparent;color:var(--text-body)}
 .ls-iconbtn--ghost:hover{background:var(--wash-ink)}
 .ls-iconbtn--ghost.ls-iconbtn--inverse{color:var(--text-inverse-1)}
 .ls-iconbtn--ghost.ls-iconbtn--inverse:hover{background:var(--wash-bone)}
@@ -88,35 +88,35 @@
 .ls-iconbtn--sm:after{content:"";position:absolute;inset:-8px;border-radius:inherit}
 
 /* — ThemeToggle — */
-.ls-themetog{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:var(--radius-pill);padding:2px;background:var(--surface-card)}
+.ls-themetog{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--border-strong);border-radius:var(--radius-pill);padding:2px;background:var(--surface-card)}
 /* 28x28 was below the 44px touch minimum — on a phone the three theme
    buttons sat 2px apart and were hard to hit without catching a neighbour.
    The visual size stays; the hit area is grown with a transparent border so
    the pill does not change shape on desktop. */
-.ls-themetog button{all:unset;cursor:pointer;width:28px;height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:var(--text-3);transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out)}
-.ls-themetog button:hover{color:var(--text-1)}
+.ls-themetog button{all:unset;cursor:pointer;width:28px;height:28px;min-width:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);color:var(--text-faint);transition:background var(--dur-hover) var(--ease-hover),color var(--dur-hover) var(--ease-hover)}
+.ls-themetog button:hover{color:var(--text-body)}
 @media (pointer:coarse){.ls-themetog button{width:44px;height:44px}.ls-themetog{padding:0}}
 .ls-themetog button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .ls-themetog button.on{background:var(--action-primary);color:var(--action-on-primary)}
 
 /* — Card — */
-.ls-card{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-sans);transition:border-color var(--dur-hover) var(--ease-out)}
+.ls-card{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-sans);transition:border-color var(--dur-hover) var(--ease-hover)}
 .ls-card--sea{background:var(--surface-deep);border-color:var(--line-inverse-faint);color:var(--text-inverse-1);position:relative}
-.ls-card--sea:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-card);mix-blend-mode:multiply;pointer-events:none;z-index:0}
-.ls-card--sea .ls-card__body{position:relative;z-index:1}
+.ls-card--sea:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-card);mix-blend-mode:multiply;pointer-events:none;z-index:var(--layer-base)}
+.ls-card--sea .ls-card__body{position:relative;z-index:var(--layer-raised)}
 .ls-card__media{position:relative;aspect-ratio:16/9;overflow:hidden}
 .ls-card__media:after{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
-.ls-card__media>div,.ls-card__media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform var(--dur-cine) var(--ease-out)}
+.ls-card__media>div,.ls-card__media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform var(--dur-cine) var(--ease-move)}
 .ls-card__tk{position:absolute;left:var(--space-3);bottom:var(--space-2);font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--tracking-dense);color:var(--text-on-media)}
 .ls-card__body{padding:var(--space-6);display:flex;flex-direction:column;flex:1}
 .ls-card__eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);margin-bottom:var(--space-2)}
 .ls-card--sea .ls-card__eyebrow{color:var(--gold-bright)}
 .ls-card__title{font-family:var(--font-display);font-size:var(--text-xl);line-height:var(--leading-display);letter-spacing:var(--track-display);text-transform:uppercase;text-wrap:balance}
-.ls-card__meta{display:flex;gap:var(--space-2);flex-wrap:wrap;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);margin-top:var(--space-4)}
+.ls-card__meta{display:flex;gap:var(--space-2);flex-wrap:wrap;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);margin-top:var(--space-4)}
 .ls-card--sea .ls-card__meta{color:var(--text-inverse-3)}
-.ls-card__children{font-size:var(--text-body-s);color:var(--text-2);margin-top:var(--space-3);line-height:var(--leading-body)}
+.ls-card__children{font-size:var(--text-sm);color:var(--text-muted);margin-top:var(--space-3);line-height:var(--leading-body)}
 .ls-card--sea .ls-card__children{color:var(--text-inverse-2)}
-.ls-card__footer{margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--line-faint);display:flex;align-items:center;gap:var(--space-3)}
+.ls-card__footer{margin-top:var(--space-6);padding-top:var(--space-4);border-top:1px solid var(--border-subtle);display:flex;align-items:center;gap:var(--space-3)}
 .ls-card--sea .ls-card__footer{border-top-color:var(--line-inverse-faint)}
 @media (max-width:640px){.ls-card__body{padding:var(--space-4)}}
 
@@ -151,7 +151,7 @@
    floor, because a wash tinted with the text's own hue closes the gap from both
    ends. The ramps bottom out too bright to fix by deepening (--acid-600 reaches
    3.65:1, --amber-600 3.37:1), and tokens.css is verbatim, so the hue moves to
-   the rule and the wash — where nothing has to be read — and --text-1 takes the
+   the rule and the wash — where nothing has to be read — and --text-body takes the
    text. Every status tone now measures 11.2:1 or better in both themes.
 
    SPECIFICITY. Every tone is written `.ls-badge.ls-badge--x`, not
@@ -159,7 +159,7 @@
    this app carry a `.some-block span{...}` rule; at (0,1,1) each of those
    outranks a (0,1,0) tone rule and repaints the badge from outside the
    component. That is not hypothetical: `.ws-plans__label span` captured the
-   membership grid's "Most aboard" and painted it --text-3 grey on the accent
+   membership grid's "Most aboard" and painted it --text-faint grey on the accent
    fill at 1.5:1, then display:block stretched a content-sized marker into a
    full-width band under the tier name. Doubling the class puts the component at
    (0,2,0), so a page has to mean it to override.
@@ -171,14 +171,14 @@
    would otherwise sit the text half a step left of centre. */
 /* A badge never animates: it states a fact, and a fact does not arrive. No
    transition here, and none on the tones. */
-.ls-badge{font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);min-height:28px;padding-inline:var(--space-3) calc(var(--space-3) - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid transparent;letter-spacing:var(--tracking-label);text-transform:uppercase;white-space:nowrap;max-width:max-content}
+.ls-badge{font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);min-height:28px;padding-inline:var(--space-3) calc(var(--space-3) - var(--tracking-label));border-radius:var(--radius-sm);border:1px solid transparent;letter-spacing:var(--tracking-label);text-transform:uppercase;white-space:nowrap;max-width:max-content}
 /* Identity. The family's only fills, and the only pills.
    --lava is gone from here: it is the accent SEAM (the 3–8px bands on the
    member card, the gangway, the site header), a gradient whose stops are
    --acid-400 and --acid-500. Across a 22px chip that makes contrast a function
    of x-position, and its lighter stop is the accent's HOVER step, not the
    accent. A chip takes the flat accent. */
-.ls-badge.ls-badge--gold{border-radius:var(--radius-pill);background:var(--accent);color:var(--action-on-accent)}
+.ls-badge.ls-badge--gold{border-radius:var(--radius-pill);background:var(--accent);color:var(--on-accent)}
 .ls-badge.ls-badge--ink{border-radius:var(--radius-pill);background:var(--action-primary);color:var(--action-on-primary)}
 /* Status. Caution reads --caution, not --terracotta: terracotta is the Shop's
    commerce hue ("Commerce, not a division" — compat.css), and a weather hold
@@ -190,13 +190,13 @@
    hues for paper. They stay gone: the polarity inverted with the rebrand, so
    paper is the unattributed default and there is no "light" attribute to hang
    them off — and with the hue off the text there is nothing left to deepen. */
-.ls-badge.ls-badge--positive{background:color-mix(in srgb, var(--positive) 16%, transparent);border-color:var(--positive);color:var(--text-1)}
-.ls-badge.ls-badge--caution{background:color-mix(in srgb, var(--caution) 16%, transparent);border-color:var(--caution);color:var(--text-1)}
-.ls-badge.ls-badge--danger{background:color-mix(in srgb, var(--danger) 16%, transparent);border-color:var(--danger);color:var(--text-1)}
+.ls-badge.ls-badge--positive{background:color-mix(in srgb, var(--positive) 16%, transparent);border-color:var(--positive);color:var(--text-body)}
+.ls-badge.ls-badge--caution{background:color-mix(in srgb, var(--caution) 16%, transparent);border-color:var(--caution);color:var(--text-body)}
+.ls-badge.ls-badge--danger{background:color-mix(in srgb, var(--danger) 16%, transparent);border-color:var(--danger);color:var(--text-body)}
 /* The neutral member of the status set — Open, Retired, Closed. */
-.ls-badge.ls-badge--outline{border-color:var(--line-strong);color:var(--text-1)}
+.ls-badge.ls-badge--outline{border-color:var(--border-strong);color:var(--text-body)}
 /* Surfaces that stay ink in BOTH themes (the member card, the stub, the
-   Bridge's dark panels). The status text is --text-1 now, which flips with the
+   Bridge's dark panels). The status text is --text-body now, which flips with the
    theme, so every status tone needs the inverse escape the outline tone
    already had — not only the one that happens to be used today. */
 .ls-badge.ls-badge--outline.ls-badge--inverse{border-color:var(--line-inverse-strong);color:var(--text-inverse-1)}
@@ -224,13 +224,13 @@
 
    Doubled class for the same reason the badge has one: Tag is a bare <span>
    too. */
-.ls-tag{font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);min-height:28px;padding-inline:var(--space-3) calc(var(--space-3) - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid var(--line);letter-spacing:var(--tracking-label);color:var(--text-1);text-transform:uppercase;cursor:default;max-width:max-content;white-space:nowrap;transition:border-color var(--dur-hover) var(--ease-out),background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out)}
+.ls-tag{font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);min-height:28px;padding-inline:var(--space-3) calc(var(--space-3) - var(--tracking-label));border-radius:var(--radius-sm);border:1px solid var(--border-strong);letter-spacing:var(--tracking-label);color:var(--text-body);text-transform:uppercase;cursor:default;max-width:max-content;white-space:nowrap;transition:border-color var(--dur-hover) var(--ease-hover),background var(--dur-hover) var(--ease-hover),color var(--dur-hover) var(--ease-hover)}
 .ls-tag.ls-tag--active{background:var(--action-primary);border-color:var(--action-primary);color:var(--action-on-primary)}
 .ls-tag.ls-tag--click{cursor:pointer}
 /* 28px clears WCAG 2.5.8's 24px floor; on a phone the pill grows to 44px of hit
    area vertically only, so neighbours in the same row never overlap. */
 @media (pointer:coarse){.ls-tag__press:before{content:"";position:absolute;inset:-8px 0}}
-.ls-tag.ls-tag--click:hover{border-color:var(--line-strong)}
+.ls-tag.ls-tag--click:hover{border-color:var(--border-strong)}
 /* Present, not choosable. Stays in the row so the axis keeps its shape. */
 .ls-tag.ls-tag--disabled{opacity:var(--opacity-disabled);cursor:default;pointer-events:none}
 .ls-tag.ls-tag--active.ls-tag--click:hover{background:var(--action-primary-hover)}
@@ -252,7 +252,7 @@
    global :focus-visible rule. It hugs the button rather than the pill (the
    pill's own +2px ring is drawn by .ls-tag--click:focus-visible, which no
    longer fires now that the span is not focusable). */
-.ls-tag__press{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--space-2);align-self:stretch;flex:1 1 auto;min-width:0;cursor:inherit;transition:transform var(--dur-hover) var(--ease-out)}
+.ls-tag__press{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--space-2);align-self:stretch;flex:1 1 auto;min-width:0;cursor:inherit;transition:transform var(--dur-hover) var(--ease-hover)}
 .ls-tag__press[disabled]{cursor:default}
 /* The press lives on the inner control, not on the pill: the pill is the face
    and the button inside it is the thing being pushed. */
@@ -262,9 +262,9 @@
 .ls-tag:has(>.ls-tag__press):not(:has(>.ls-tag__x)){padding-inline-end:0}
 .ls-tag__press{padding-inline-start:var(--space-3)}
 .ls-tag:not(:has(>.ls-tag__x)) .ls-tag__press{padding-inline-end:calc(var(--space-3) - var(--tracking-label))}
-.ls-tag__press:focus-visible{outline:2px solid var(--focus) !important;outline-offset:2px;border-radius:2px}
-.ls-tag__x{all:unset;cursor:pointer;line-height:0;display:inline-flex;opacity:.6;position:relative;transition:opacity var(--dur-hover) var(--ease-out)}
-.ls-tag__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+.ls-tag__press:focus-visible{outline:2px solid var(--focus) !important;outline-offset:2px;border-radius:var(--radius-sm)}
+.ls-tag__x{all:unset;cursor:pointer;line-height:0;display:inline-flex;opacity:.6;position:relative;transition:opacity var(--dur-hover) var(--ease-hover)}
+.ls-tag__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--radius-sm)}
 .ls-tag__x:before{content:"";position:absolute;inset:-8px}
 @media (pointer:coarse){.ls-tag__x:before{inset:-14px}}
 .ls-tag__x:hover{opacity:1}
@@ -272,12 +272,12 @@
 /* — Avatar — */
 .ls-avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);font-family:var(--font-sans);font-weight:700;letter-spacing:var(--track-data);text-transform:uppercase;flex:none;user-select:none;box-sizing:border-box}
 .ls-avatar--ink{background:var(--ink);color:var(--bone)}
-.ls-avatar--sea{background:var(--sea);color:var(--bone)}
+.ls-avatar--sea{background:var(--grid-500);color:var(--bone)}
 /* --gold is the accent, and the accent is ink on paper since 2026-09-02 — so
-   `background:var(--gold);color:var(--abyss)` was ink initials on an ink disc
+   `background:var(--gold);color:var(--noir-950)` was ink initials on an ink disc
    in the paper theme. The accent's own knockout pair flips with it. */
 .ls-avatar--gold{background:var(--accent);color:var(--on-accent)}
-.ls-avatar--sand{background:var(--sand);color:var(--ink)}
+.ls-avatar--sand{background:var(--ivory-500);color:var(--ink)}
 .ls-avatar--sm{width:28px;height:28px;font-size:var(--text-2xs)}
 .ls-avatar--md{width:38px;height:38px;font-size:var(--text-xs)}
 .ls-avatar--lg{width:56px;height:56px;font-size:var(--text-md)}
@@ -288,12 +288,12 @@
 
 /* — Stat — */
 .ls-stat{display:flex;flex-direction:column;gap:var(--space-2);font-family:var(--font-sans)}
-.ls-stat__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
+.ls-stat__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint)}
 /* Anton is proportional, so a Stat that ticks — the gangway's checked/total
    counter — visibly jitters as the digits change width, and Stats in a row do
    not align down a column. tabular-nums fixes both without changing the face. */
-.ls-stat__value{font-family:var(--font-display);font-size:var(--text-3xl);line-height:1;letter-spacing:var(--track-display);text-transform:uppercase;color:var(--text-1);font-variant-numeric:tabular-nums}
-.ls-stat__sub{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);font-variant-numeric:tabular-nums}
+.ls-stat__value{font-family:var(--font-display);font-size:var(--text-3xl);line-height:var(--leading-flat);letter-spacing:var(--track-display);text-transform:uppercase;color:var(--text-body);font-variant-numeric:tabular-nums}
+.ls-stat__sub{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);font-variant-numeric:tabular-nums}
 .ls-stat--inverse .ls-stat__label{color:var(--text-inverse-3)}
 .ls-stat--inverse .ls-stat__value{color:var(--bone)}
 .ls-stat--inverse .ls-stat__sub{color:var(--text-inverse-3)}
@@ -323,13 +323,13 @@
    draws the closing rule and sets the figure heavy. <dl> semantics: dt is the
    label, dd the figure, each row a wrapping div. */
 .ls-review{display:flex;flex-direction:column;margin:0;font-family:var(--font-sans);font-size:var(--text-sm)}
-.ls-review__row{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);padding-block:var(--space-2);border-top:1px solid var(--line-faint)}
+.ls-review__row{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);padding-block:var(--space-2);border-top:1px solid var(--border-subtle)}
 .ls-review__row--first,.ls-review__row:first-child{border-top:none;padding-top:0}
-.ls-review__label{color:var(--text-2);min-width:0}
-.ls-review__value{margin:0;font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-1);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:end}
-.ls-review__row--muted .ls-review__label,.ls-review__row--muted .ls-review__value{color:var(--text-3)}
-.ls-review__row--total{border-top:1px solid var(--line-strong);margin-top:var(--space-1);padding-top:var(--space-3)}
-.ls-review__row--total .ls-review__label{color:var(--text-1);font-weight:700}
+.ls-review__label{color:var(--text-muted);min-width:0}
+.ls-review__value{margin:0;font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-body);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:end}
+.ls-review__row--muted .ls-review__label,.ls-review__row--muted .ls-review__value{color:var(--text-faint)}
+.ls-review__row--total{border-top:1px solid var(--border-strong);margin-top:var(--space-1);padding-top:var(--space-3)}
+.ls-review__row--total .ls-review__label{color:var(--text-body);font-weight:700}
 .ls-review__row--total .ls-review__value{font-weight:700;font-size:var(--text-sm)}
 .ls-review--dense .ls-review__row{padding-block:var(--space-1)}
 .ls-review--inverse .ls-review__row{border-top-color:var(--line-inverse-faint)}
@@ -341,13 +341,13 @@
 
 /* — Table — */
 .ls-table{width:100%;border-collapse:collapse;font-family:var(--font-sans);font-size:var(--text-sm)}
-.ls-table th{font:700 var(--text-3xs)/1 var(--font-mono);text-align:start;letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--line)}
+.ls-table th{font:700 var(--text-3xs)/var(--leading-flat) var(--font-mono);text-align:start;letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-faint);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-strong)}
 /* One cell padding: 12/16, dense 8/16. The header used to sit at 10/14 and the
    body at 13/14 — three values for one grid. */
-.ls-table td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--line-faint);color:var(--text-1);vertical-align:middle}
+.ls-table td{padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-subtle);color:var(--text-body);vertical-align:middle}
 .ls-table--dense td{padding:var(--space-2) var(--space-4)}
 /* Quiet: a wash, on the hover clock, and nothing moves. */
-.ls-table tr.ls-table__row--click{cursor:pointer;transition:background var(--dur-hover) var(--ease-out)}
+.ls-table tr.ls-table__row--click{cursor:pointer;transition:background var(--dur-hover) var(--ease-hover)}
 .ls-table tr.ls-table__row--click:hover{background:var(--wash-ink)}
 /* outline-offset would draw the ring outside the row and be clipped by the
    scroll wrapper on a narrow table; inset keeps every edge of it on screen. */
@@ -365,14 +365,14 @@
 /* A row header reads in the body face, not the column-header face: it is a
    cell that happens to name its row, so it keeps the body's size and colour
    and takes the heading's weight. */
-.ls-table tbody th{font:500 var(--text-sm)/inherit var(--font-sans);letter-spacing:var(--tracking-body);text-transform:none;color:var(--text-1);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--line-faint);text-align:start;vertical-align:middle}
+.ls-table tbody th{font:500 var(--text-sm)/inherit var(--font-sans);letter-spacing:var(--tracking-body);text-transform:none;color:var(--text-body);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border-subtle);text-align:start;vertical-align:middle}
 .ls-table--dense tbody th{padding:var(--space-2) var(--space-4)}
 /* The group header — a statement's month, a roster's watch — spans the table
    in the label face, ruled above so the groups read as sections. */
-.ls-table tr.ls-table__group th{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);padding:var(--space-4) var(--space-4) var(--space-2);border-bottom:1px solid var(--line);background:var(--surface-card)}
-.ls-table tbody+tbody tr.ls-table__group th{border-top:1px solid var(--line)}
+.ls-table tr.ls-table__group th{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);padding:var(--space-4) var(--space-4) var(--space-2);border-bottom:1px solid var(--border-strong);background:var(--surface-card)}
+.ls-table tbody+tbody tr.ls-table__group th{border-top:1px solid var(--border-strong)}
 /* The group's closing row: the subtotal. Heavy figures, a rule above. */
-.ls-table tr.ls-table__row--total td{font-weight:700;border-top:1px solid var(--line-strong);border-bottom:none}
+.ls-table tr.ls-table__row--total td{font-weight:700;border-top:1px solid var(--border-strong);border-bottom:none}
 .ls-table--inverse tbody th{color:var(--text-inverse-1);border-bottom-color:var(--line-inverse-faint)}
 .ls-table--inverse tr.ls-table__group th{color:var(--text-inverse-3);border-color:var(--line-inverse);background:var(--surface-abyss)}
 /* A badge in a cell sits on the cell's centre line, not the text baseline. */
@@ -392,21 +392,21 @@
    away and an operator is reading unlabelled columns — on documents, keys,
    members, orders and all four tables on reports. */
 .ls-table-wrap--tall{max-height:70vh;overflow:auto}
-.ls-table-wrap--tall .ls-table thead th{position:sticky;top:0;z-index:1;background:var(--surface-card)}
+.ls-table-wrap--tall .ls-table thead th{position:sticky;top:0;z-index:var(--layer-raised);background:var(--surface-card)}
 .ls-table-wrap--tall .ls-table--inverse thead th{background:var(--surface-abyss)}
 
 /* — Wordmark — */
-.ls-wm{display:inline-flex;flex-direction:column;line-height:1}
+.ls-wm{display:inline-flex;flex-direction:column;line-height:var(--leading-flat)}
 
 /* — Checkbox — */
 .ls-check{display:inline-flex;gap:var(--space-3);align-items:flex-start;cursor:pointer;font-family:var(--font-sans);user-select:none}
 .ls-check input{position:absolute;opacity:0;width:0;height:0}
-.ls-check__box{width:18px;height:18px;flex:none;margin-top:1px;border:1px solid var(--line-strong);border-radius:var(--radius-sharp);background:var(--surface-card);position:relative;transition:background var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out)}
-.ls-check:hover .ls-check__box{border-color:var(--text-1)}
+.ls-check__box{width:18px;height:18px;flex:none;margin-top:1px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface-card);position:relative;transition:background var(--dur-hover) var(--ease-hover),border-color var(--dur-hover) var(--ease-hover)}
+.ls-check:hover .ls-check__box{border-color:var(--text-body)}
 .ls-check input:checked+.ls-check__box{background:var(--action-primary);border-color:var(--action-primary)}
 /* The tick is always drawn and grows in from its centre when checked, rather
    than appearing whole — the fill and the mark land together. */
-.ls-check__box:after{content:"";position:absolute;left:5px;top:1.5px;width:5px;height:9px;border:solid var(--action-on-primary);border-width:0 1.5px 1.5px 0;transform:rotate(45deg) scale(.4);opacity:0;transition:transform var(--dur-move) var(--ease-move),opacity var(--dur-hover) var(--ease-out)}
+.ls-check__box:after{content:"";position:absolute;left:5px;top:1.5px;width:5px;height:9px;border:solid var(--action-on-primary);border-width:0 1.5px 1.5px 0;transform:rotate(45deg) scale(.4);opacity:0;transition:transform var(--dur-move) var(--ease-move),opacity var(--dur-hover) var(--ease-hover)}
 .ls-check input:checked+.ls-check__box:after{transform:rotate(45deg) scale(1);opacity:1}
 .ls-check input:focus-visible+.ls-check__box{outline:2px solid var(--focus);outline-offset:2px}
 /* An 18px box is the whole visible control and the label text may be a single
@@ -415,8 +415,8 @@
    because :after draws the tick (and the radio's dot, and the switch's thumb). */
 @media (pointer:coarse){.ls-check__box:before,.ls-radio__dot:before{content:"";position:absolute;inset:-13px}.ls-switch__track:before{content:"";position:absolute;inset:-11px -2px}}
 .ls-check--disabled{opacity:var(--opacity-disabled);pointer-events:none}
-.ls-check__label{font-size:var(--text-sm);color:var(--text-1);line-height:1.4}
-.ls-check__desc{display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:2px}
+.ls-check__label{font-size:var(--text-sm);color:var(--text-body);line-height:var(--leading-body)}
+.ls-check__desc{display:block;font-size:var(--text-xs);color:var(--text-faint);margin-top:2px}
 .ls-check__desc--error{color:var(--danger)}
 
 /* — Choices — two or more Checkbox, Radio or Switch controls as siblings —
@@ -433,7 +433,7 @@
 /* — Note — a small muted line of running copy under a control: a refusal, a
    status, a caveat. The global twin of the Bridge's .hm-note, which three
    member components asked for on routes where bridge.css never loads. */
-.ls-note{font-size:var(--text-xs);color:var(--text-3)}
+.ls-note{font-size:var(--text-xs);color:var(--text-faint)}
 /* The two tones a note under a control takes when it is a verdict rather than
    a caveat. For anything longer than a line, or anything that needs a rule and
    a role, reach for Notice. */
@@ -442,17 +442,30 @@
 
 /* — Field / Input — */
 .ls-field{display:flex;flex-direction:column;gap:var(--space-2);font-family:var(--font-sans)}
-.ls-field__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2)}
+.ls-field__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 /* A text field's focus is its border thickening to the focus colour — the ring
    is inside the control's own edge, so it cannot be clipped by a scroll wrapper
    and does not fight the label above it. outline:none is safe because the
    box-shadow IS the replacement; every other control keeps the outline ring. */
-.ls-input{width:100%;box-sizing:border-box;height:var(--control-md);padding:0 var(--space-4);background:var(--surface-card);border:1px solid var(--line);border-radius:var(--radius-sharp);font:400 var(--text-sm) var(--font-sans);color:var(--text-1);transition:border-color var(--dur-hover) var(--ease-out),box-shadow var(--dur-hover) var(--ease-out);caret-color:var(--gold)}
-.ls-input:hover{border-color:var(--line-strong)}
+.ls-input{width:100%;box-sizing:border-box;height:var(--control-md);padding:0 var(--space-4);background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font:400 var(--text-sm) var(--font-sans);color:var(--text-body);transition:border-color var(--dur-hover) var(--ease-hover),box-shadow var(--dur-hover) var(--ease-hover);caret-color:var(--gold)}
+.ls-input:hover{border-color:var(--border-strong)}
 .ls-input:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}
 .ls-input[disabled]{opacity:var(--opacity-disabled);background:var(--surface-tint)}
+/* Read-only is not disabled, and the difference is the whole point of having a
+   face for it. A disabled field is out of the interaction, so it dims. A
+   read-only field is still focusable, still selectable, still copyable, and its
+   value is usually the thing the member came to read — dimming it would be H4
+   again, a record faded because it is not a control. So it keeps full contrast
+   and simply stops LOOKING editable: the sunken ground, the faint hairline,
+   no caret, no hover.
+
+   The :not([disabled]) is load-bearing, not belt and braces — per selectors-4 a
+   DISABLED input also matches :read-only, so without it this rule would repaint
+   the disabled face at equal specificity and undo the line above. */
+.ls-input:read-only:not([disabled]){background:var(--surface-tint);border-color:var(--border-subtle);caret-color:transparent;cursor:default}
+.ls-input:read-only:not([disabled]):hover{border-color:var(--border-subtle)}
 .ls-field--error .ls-input{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
-.ls-field__hint{font-size:var(--text-xs);color:var(--text-3)}
+.ls-field__hint{font-size:var(--text-xs);color:var(--text-faint)}
 .ls-field__error{font-size:var(--text-xs);color:var(--danger)}
 @media (pointer:coarse){.ls-input{font-size:var(--text-md)}}
 /* — field widths — three the form can ask for; the default fills its parent. */
@@ -466,7 +479,7 @@
    it. The start slot is a glyph that says what the field is and does not take
    the pointer, so a click on it lands in the input. */
 .ls-input-wrap{position:relative;display:flex;align-items:center}
-.ls-input__adorn{position:absolute;inset-inline-end:0;top:0;height:var(--control-md);width:var(--control-md);display:flex;align-items:center;justify-content:center;color:var(--text-3)}
+.ls-input__adorn{position:absolute;inset-inline-end:0;top:0;height:var(--control-md);width:var(--control-md);display:flex;align-items:center;justify-content:center;color:var(--text-faint)}
 .ls-input__adorn--start{inset-inline-end:auto;inset-inline-start:0;pointer-events:none}
 .ls-input--adorned{padding-inline-end:var(--control-md)}
 .ls-input--adorned-start{padding-inline-start:var(--control-md)}
@@ -475,10 +488,10 @@
    text input. The glyph pulses while results are in flight. */
 .ls-input[type=search]{appearance:none;-webkit-appearance:none}
 .ls-input[type=search]::-webkit-search-cancel-button,.ls-input[type=search]::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
-.ls-searchfield__glyph{display:inline-flex;color:var(--text-3);transition:color var(--dur-hover) var(--ease-out)}
-.ls-searchfield .ls-input-wrap:focus-within .ls-searchfield__glyph{color:var(--text-1)}
+.ls-searchfield__glyph{display:inline-flex;color:var(--text-faint);transition:color var(--dur-hover) var(--ease-hover)}
+.ls-searchfield .ls-input-wrap:focus-within .ls-searchfield__glyph{color:var(--text-body)}
 .ls-searchfield--pending .ls-searchfield__glyph{animation:ls-pulse var(--dur-cine) var(--ease-inout) infinite alternate}
-.ls-searchfield__clear{color:var(--text-3)}
+.ls-searchfield__clear{color:var(--text-faint)}
 /* Any text field the app styles inline rather than through .ls-input still has
    to clear 16px, or iOS zooms the page the moment it is focused — which on the
    Open Deck composer meant posting always jerked the layout. */
@@ -488,14 +501,14 @@
 /* — Radio — */
 .ls-radio{display:inline-flex;gap:var(--space-3);align-items:center;cursor:pointer;font-family:var(--font-sans);user-select:none}
 .ls-radio input{position:absolute;opacity:0;width:0;height:0}
-.ls-radio__dot{width:18px;height:18px;flex:none;border:1px solid var(--line-strong);border-radius:var(--radius-pill);background:var(--surface-card);position:relative;transition:border-color var(--dur-hover) var(--ease-out)}
-.ls-radio:hover .ls-radio__dot{border-color:var(--text-1)}
-.ls-radio input:checked+.ls-radio__dot{border-color:var(--text-1)}
-.ls-radio__dot:after{content:"";position:absolute;inset:4px;border-radius:var(--radius-pill);background:var(--text-1);transform:scale(.4);opacity:0;transition:transform var(--dur-move) var(--ease-move),opacity var(--dur-hover) var(--ease-out)}
+.ls-radio__dot{width:18px;height:18px;flex:none;border:1px solid var(--border-strong);border-radius:var(--radius-pill);background:var(--surface-card);position:relative;transition:border-color var(--dur-hover) var(--ease-hover)}
+.ls-radio:hover .ls-radio__dot{border-color:var(--text-body)}
+.ls-radio input:checked+.ls-radio__dot{border-color:var(--text-body)}
+.ls-radio__dot:after{content:"";position:absolute;inset:4px;border-radius:var(--radius-pill);background:var(--text-body);transform:scale(.4);opacity:0;transition:transform var(--dur-move) var(--ease-move),opacity var(--dur-hover) var(--ease-hover)}
 .ls-radio input:checked+.ls-radio__dot:after{transform:scale(1);opacity:1}
 .ls-radio input:focus-visible+.ls-radio__dot{outline:2px solid var(--focus);outline-offset:2px}
 .ls-radio--disabled{opacity:var(--opacity-disabled);pointer-events:none}
-.ls-radio__label{font-size:var(--text-sm);color:var(--text-1)}
+.ls-radio__label{font-size:var(--text-sm);color:var(--text-body)}
 
 /* — OptionRow — the boxed choice. Carries .ls-radio or .ls-check for the mark
    (the dot and the tick are drawn by those rules) and restates the layout: a
@@ -503,18 +516,18 @@
    middle, a mono figure at the end. Checked and disabled faces come off the
    input's own state, so an uncontrolled row needs no prop to look chosen.
    The 44px floor is the row's own height, so no touch pseudo is needed. */
-.ls-option{display:flex;align-items:center;gap:var(--space-3);width:100%;min-height:var(--control-md);padding:var(--space-3) var(--space-4);border:1px solid var(--line);border-radius:var(--radius-sharp);background:var(--surface-card);cursor:pointer;position:relative;transition:border-color var(--dur-hover) var(--ease-out),background var(--dur-hover) var(--ease-out)}
-.ls-option:hover{border-color:var(--line-strong)}
-.ls-option:has(input:checked){border-color:var(--text-1);background:var(--wash-ink)}
+.ls-option{display:flex;align-items:center;gap:var(--space-3);width:100%;min-height:var(--control-md);padding:var(--space-3) var(--space-4);border:1px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface-card);cursor:pointer;position:relative;transition:border-color var(--dur-hover) var(--ease-hover),background var(--dur-hover) var(--ease-hover)}
+.ls-option:hover{border-color:var(--border-strong)}
+.ls-option:has(input:checked){border-color:var(--text-body);background:var(--wash-ink)}
 .ls-option:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
 /* The mark's own ring would double the row's. */
 .ls-option input:focus-visible+.ls-radio__dot,.ls-option input:focus-visible+.ls-check__box{outline:none}
 .ls-option .ls-check__box{margin-top:0}
 .ls-option__text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
-.ls-option__label{font-size:var(--text-sm);font-weight:500;color:var(--text-1);line-height:1.4}
-.ls-option__desc{font-size:var(--text-xs);color:var(--text-3);line-height:1.4}
+.ls-option__label{font-size:var(--text-sm);font-weight:500;color:var(--text-body);line-height:var(--leading-body)}
+.ls-option__desc{font-size:var(--text-xs);color:var(--text-faint);line-height:var(--leading-body)}
 .ls-option__desc--error{color:var(--danger)}
-.ls-option__figure{flex:none;font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-1);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ls-option__figure{flex:none;font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-body);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ls-option--disabled{opacity:var(--opacity-disabled);pointer-events:none}
 .ls-option--error{border-color:var(--danger)}
 /* Stacked rows share their rules, so a list of options is one ruled block. */
@@ -522,11 +535,11 @@
 
 /* — Select — */
 .ls-select-wrap{position:relative}
-.ls-select{appearance:none;-webkit-appearance:none;width:100%;box-sizing:border-box;height:var(--control-md);padding-block:0;padding-inline:var(--space-4) var(--space-10);background:var(--surface-card);border:1px solid var(--line);border-radius:var(--radius-sharp);font:400 var(--text-sm) var(--font-sans);color:var(--text-1);cursor:pointer;transition:border-color var(--dur-hover) var(--ease-out),box-shadow var(--dur-hover) var(--ease-out)}
-.ls-select:hover{border-color:var(--line-strong)}
+.ls-select{appearance:none;-webkit-appearance:none;width:100%;box-sizing:border-box;height:var(--control-md);padding-block:0;padding-inline:var(--space-4) var(--space-10);background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font:400 var(--text-sm) var(--font-sans);color:var(--text-body);cursor:pointer;transition:border-color var(--dur-hover) var(--ease-hover),box-shadow var(--dur-hover) var(--ease-hover)}
+.ls-select:hover{border-color:var(--border-strong)}
 .ls-select:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}
 .ls-select[disabled]{opacity:var(--opacity-disabled);background:var(--surface-tint)}
-.ls-select-wrap:after{content:"▾";position:absolute;inset-inline-end:var(--space-4);top:50%;transform:translateY(-52%);pointer-events:none;color:var(--text-3);font-size:var(--text-xs)}
+.ls-select-wrap:after{content:"▾";position:absolute;inset-inline-end:var(--space-4);top:50%;transform:translateY(-52%);pointer-events:none;color:var(--text-faint);font-size:var(--text-xs)}
 .ls-field--error .ls-select{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
 @media (pointer:coarse){.ls-select{font-size:var(--text-md)}}
 
@@ -535,11 +548,11 @@
    away entirely, so the declared 40x40 hit area never existed and the quantity
    control on every purchase stayed a 28x28 target. The children carry the
    rounding themselves. */
-.ls-stepper{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:var(--radius-pill);background:var(--surface-card)}
+.ls-stepper{display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:var(--radius-pill);background:var(--surface-card)}
 .ls-stepper>:first-child{border-start-start-radius:var(--radius-pill);border-end-start-radius:var(--radius-pill)}
 .ls-stepper>:last-child{border-start-end-radius:var(--radius-pill);border-end-end-radius:var(--radius-pill)}
 .ls-stepper--inverse{background:transparent;border-color:var(--line-inverse-strong)}
-.ls-stepper button{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-1);font:500 var(--text-sm) var(--font-sans);transition:background var(--dur-hover) var(--ease-out);position:relative}
+.ls-stepper button{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-body);font:500 var(--text-sm) var(--font-sans);transition:background var(--dur-hover) var(--ease-hover);position:relative}
 .ls-stepper button:hover{background:var(--wash-ink)}
 /* `all: unset` strips the global :focus-visible ring, and these are the
    quantity controls in the checkout dialog — a keyboard user tabbing through a
@@ -550,7 +563,7 @@
 .ls-stepper--disabled button[disabled]{opacity:1}
 .ls-stepper--inverse button{color:var(--text-inverse-1)}
 .ls-stepper--inverse button:hover{background:var(--wash-bone)}
-.ls-stepper__val{font-family:var(--font-mono);letter-spacing:var(--track-data);color:var(--text-1);text-align:center;font-variant-numeric:tabular-nums}
+.ls-stepper__val{font-family:var(--font-mono);letter-spacing:var(--track-data);color:var(--text-body);text-align:center;font-variant-numeric:tabular-nums}
 .ls-stepper--inverse .ls-stepper__val{color:var(--text-inverse-1)}
 .ls-stepper--md button{width:36px;height:36px}
 .ls-stepper--md .ls-stepper__val{min-width:36px;font-size:var(--text-xs)}
@@ -567,10 +580,10 @@
 /* — Switch — */
 .ls-switch{display:inline-flex;gap:var(--space-3);align-items:center;cursor:pointer;font-family:var(--font-sans);user-select:none}
 .ls-switch input{position:absolute;opacity:0;width:0;height:0}
-.ls-switch__track{width:40px;height:22px;flex:none;border-radius:var(--radius-pill);background:var(--surface-tint);border:1px solid var(--line);position:relative;transition:background var(--dur-move) var(--ease-move),border-color var(--dur-move) var(--ease-move)}
+.ls-switch__track{width:40px;height:22px;flex:none;border-radius:var(--radius-pill);background:var(--surface-tint);border:1px solid var(--border-strong);position:relative;transition:background var(--dur-move) var(--ease-move),border-color var(--dur-move) var(--ease-move)}
 /* The thumb travels on the move clock and recolours on the same one, so it
    arrives and turns at once. */
-.ls-switch__track:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:var(--radius-pill);background:var(--sail);box-shadow:0 1px 2px rgba(0,0,0,.4);transition:transform var(--dur-move) var(--ease-move),background var(--dur-move) var(--ease-move)}
+.ls-switch__track:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:var(--radius-pill);background:var(--ivory-50);box-shadow:0 1px 2px rgba(0,0,0,.4);transition:transform var(--dur-move) var(--ease-move),background var(--dur-move) var(--ease-move)}
 /* The checked state is the checkbox's: primary fill, on-primary mark. It was
    a --graphite track with a --neon-cyan thumb, and --neon-cyan aliases the
    accent — ink on paper — so a checked switch on the paper theme was a
@@ -580,31 +593,33 @@
 .ls-switch input:checked+.ls-switch__track:after{transform:translateX(18px);background:var(--action-on-primary)}
 .ls-switch input:focus-visible+.ls-switch__track{outline:2px solid var(--focus);outline-offset:2px}
 .ls-switch--disabled{opacity:var(--opacity-disabled);pointer-events:none}
-.ls-switch__label{font-size:var(--text-sm);color:var(--text-1)}
+.ls-switch__label{font-size:var(--text-sm);color:var(--text-body)}
 
 /* — Textarea — */
-.ls-textarea{width:100%;box-sizing:border-box;padding:var(--space-3) var(--space-4);background:var(--surface-card);border:1px solid var(--line);border-radius:var(--radius-sharp);font:400 var(--text-sm) var(--font-sans);line-height:1.5;color:var(--text-1);transition:border-color var(--dur-hover) var(--ease-out),box-shadow var(--dur-hover) var(--ease-out);caret-color:var(--gold);resize:vertical}
-.ls-textarea:hover{border-color:var(--line-strong)}
+.ls-textarea{width:100%;box-sizing:border-box;padding:var(--space-3) var(--space-4);background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font:400 var(--text-sm) var(--font-sans);line-height:var(--leading-body);color:var(--text-body);transition:border-color var(--dur-hover) var(--ease-hover),box-shadow var(--dur-hover) var(--ease-hover);caret-color:var(--gold);resize:vertical}
+.ls-textarea:hover{border-color:var(--border-strong)}
 .ls-textarea:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}
 .ls-textarea[disabled]{opacity:var(--opacity-disabled);background:var(--surface-tint)}
+.ls-textarea:read-only:not([disabled]){background:var(--surface-tint);border-color:var(--border-subtle);caret-color:transparent;cursor:default;resize:none}
+.ls-textarea:read-only:not([disabled]):hover{border-color:var(--border-subtle)}
 .ls-field--error .ls-textarea{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
 @media (pointer:coarse){.ls-textarea{font-size:var(--text-md)}}
 
 /* — Tabs — */
-.ls-tabs{display:flex;gap:var(--space-6);border-bottom:1px solid var(--line-faint);font-family:var(--font-sans);overflow-x:auto;scrollbar-width:none;position:relative}
+.ls-tabs{display:flex;gap:var(--space-6);border-bottom:1px solid var(--border-subtle);font-family:var(--font-sans);overflow-x:auto;scrollbar-width:none;position:relative}
 .ls-tabs::-webkit-scrollbar{display:none}
 .ls-tabs--inverse{border-bottom-color:var(--line-inverse-faint)}
 .ls-tabs--grow{gap:0}
 .ls-tabs--grow .ls-tab{flex:1;justify-content:center}
 /* 12px above and below the 10px label, plus the 2px rule, is a 36px tab. */
-.ls-tab{all:unset;font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-3) 2px;cursor:pointer;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out);white-space:nowrap;flex:none}
-.ls-tab:hover{color:var(--text-1)}
+.ls-tab{all:unset;font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-3) 2px;cursor:pointer;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--dur-hover) var(--ease-hover),border-color var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover);white-space:nowrap;flex:none}
+.ls-tab:hover{color:var(--text-body)}
 .ls-tab:not([disabled]):active{transform:scale(var(--press))}
 .ls-tab:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 /* The phone gets the 44px it needs from padding alone, so the rail's rule
    stays where it is. */
 @media (pointer:coarse){.ls-tab{padding:var(--space-4) 2px}}
-.ls-tab--active{color:var(--text-1);border-bottom-color:var(--neon-cyan)}
+.ls-tab--active{color:var(--text-body);border-bottom-color:var(--neon-cyan)}
 .ls-tabs--inverse .ls-tab{color:var(--text-inverse-3)}
 .ls-tabs--inverse .ls-tab:hover{color:var(--text-inverse-1)}
 .ls-tabs--inverse .ls-tab--active{color:var(--text-inverse-1);border-bottom-color:var(--neon-cyan)}
@@ -620,8 +635,8 @@
 /* — Dialog — */
 /* overflow-y:auto so a tall dialog on a short phone can still be scrolled
    to its own footer, rather than the footer being unreachable. */
-.ls-dialog-veil{position:fixed;inset:0;background:var(--veil);backdrop-filter:var(--blur-glass);-webkit-backdrop-filter:var(--blur-glass);display:flex;align-items:center;justify-content:center;padding:var(--space-6);overflow-y:auto;z-index:1000;animation:ls-veil-in var(--dur-enter) var(--ease-enter)}
-.ls-dialog{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);box-shadow:var(--shadow-overlay);width:100%;display:flex;flex-direction:column;animation:ls-dialog-in var(--dur-enter) var(--ease-enter);font-family:var(--font-sans);max-height:85vh;overflow:auto}
+.ls-dialog-veil{position:fixed;inset:0;background:var(--surface-overlay);backdrop-filter:var(--blur-glass);-webkit-backdrop-filter:var(--blur-glass);display:flex;align-items:center;justify-content:center;padding:var(--space-6);overflow-y:auto;z-index:var(--layer-overlay);animation:ls-veil-in var(--dur-enter) var(--ease-enter)}
+.ls-dialog{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);box-shadow:var(--shadow-overlay);width:100%;display:flex;flex-direction:column;animation:ls-dialog-in var(--dur-enter) var(--ease-enter);font-family:var(--font-sans);max-height:85vh;overflow:auto}
 .ls-dialog:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 @keyframes ls-veil-in{from{opacity:0}to{opacity:1}}
 @keyframes ls-dialog-in{from{opacity:0;transform:translateY(var(--rise))}to{opacity:1;transform:none}}
@@ -638,22 +653,22 @@
 .ls-dialog__head{padding:var(--space-8) var(--space-8) 0;display:flex;align-items:flex-start;gap:var(--space-4)}
 .ls-dialog__eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);margin-bottom:var(--space-2)}
 .ls-dialog__title{font-family:var(--font-display);font-size:var(--text-display-s);line-height:var(--leading-display);letter-spacing:var(--track-display);text-transform:uppercase;text-wrap:balance}
-.ls-dialog__x{all:unset;cursor:pointer;margin-left:auto;color:var(--text-3);line-height:1;padding:var(--space-1);font-size:var(--text-sm);position:relative;transition:color var(--dur-hover) var(--ease-out)}
-.ls-dialog__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+.ls-dialog__x{all:unset;cursor:pointer;margin-left:auto;color:var(--text-faint);line-height:var(--leading-flat);padding:var(--space-1);font-size:var(--text-sm);position:relative;transition:color var(--dur-hover) var(--ease-hover)}
+.ls-dialog__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:var(--radius-sm)}
 .ls-dialog__x:before{content:"";position:absolute;inset:-8px}
 @media (pointer:coarse){.ls-dialog__x:before{inset:-12px}}
-.ls-dialog__x:hover{color:var(--text-1)}
-.ls-dialog__body{padding:var(--space-4) var(--space-8);color:var(--text-2);font-size:var(--text-md);line-height:var(--leading-body)}
-.ls-dialog__foot{padding:var(--space-4) var(--space-8) var(--space-8);display:flex;gap:var(--space-3);justify-content:flex-end;border-top:1px solid var(--line-faint);margin-top:var(--space-2);padding-top:var(--space-4)}
+.ls-dialog__x:hover{color:var(--text-body)}
+.ls-dialog__body{padding:var(--space-4) var(--space-8);color:var(--text-muted);font-size:var(--text-md);line-height:var(--leading-body)}
+.ls-dialog__foot{padding:var(--space-4) var(--space-8) var(--space-8);display:flex;gap:var(--space-3);justify-content:flex-end;border-top:1px solid var(--border-subtle);margin-top:var(--space-2);padding-top:var(--space-4)}
 @media (max-width:640px){.ls-dialog-veil{padding:var(--space-4)}.ls-dialog__head{padding:var(--space-5) var(--space-5) 0}.ls-dialog__body{padding:var(--space-4) var(--space-5)}.ls-dialog__foot{padding:var(--space-3) var(--space-5) var(--space-5);flex-wrap:wrap}}
 
 /* — Progress — */
 .ls-progress{display:flex;flex-direction:column;gap:var(--space-2);font-family:var(--font-sans)}
 .ls-progress__head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:2px var(--space-3);min-width:0}
-.ls-progress__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2)}
-.ls-progress__val{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);font-variant-numeric:tabular-nums}
-.ls-progress__track{height:6px;background:var(--surface-tint);border:1px solid var(--line-faint);border-radius:var(--radius-pill);overflow:hidden}
-.ls-progress__fill{height:100%;background:var(--gradient-accent);border-radius:var(--radius-pill);transition:width var(--dur-cine) var(--ease-out)}
+.ls-progress__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
+.ls-progress__val{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);font-variant-numeric:tabular-nums}
+.ls-progress__track{height:6px;background:var(--surface-tint);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);overflow:hidden}
+.ls-progress__fill{height:100%;background:var(--gradient-accent);border-radius:var(--radius-pill);transition:width var(--dur-cine) var(--ease-move)}
 /* A meter that exists to say "this sailing is under water below thirty" was
    accent green at 4/30 and at 30/30 alike — the severity lived only in a badge
    beside it. The tone is set by the caller, which knows what the threshold
@@ -668,13 +683,13 @@
 .ls-progress--inverse .ls-progress__fill{background:var(--gradient-accent)}
 
 /* — StateBlock — */
-.ls-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--space-10) var(--space-6);gap:var(--space-2);border:1px dashed var(--line);background:var(--surface-card)}
+.ls-state{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--space-10) var(--space-6);gap:var(--space-2);border:1px dashed var(--border-strong);background:var(--surface-card)}
 .ls-state--bare{border:none;background:none}
-.ls-state__icon{color:var(--text-3);margin-bottom:var(--space-1)}
-.ls-state__title{font:var(--type-heading);color:var(--text-1);text-wrap:balance}
-.ls-state__detail{font-size:var(--text-xs);color:var(--text-2);max-width:38ch;text-wrap:pretty}
+.ls-state__icon{color:var(--text-faint);margin-bottom:var(--space-1)}
+.ls-state__title{font:var(--type-heading);color:var(--text-body);text-wrap:balance}
+.ls-state__detail{font-size:var(--text-xs);color:var(--text-muted);max-width:var(--measure-note);text-wrap:pretty}
 .ls-state__act{margin-top:var(--space-4)}
-.ls-state__bar{width:120px;height:6px;background:var(--surface-tint);border:1px solid var(--line-faint);border-radius:var(--radius-pill);overflow:hidden;margin-bottom:var(--space-3)}
+.ls-state__bar{width:120px;height:6px;background:var(--surface-tint);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);overflow:hidden;margin-bottom:var(--space-3)}
 .ls-state__bar div{height:100%;width:45%;background:var(--gradient-accent);animation:ls-shuttle var(--dur-cine) var(--ease-inout) infinite alternate}
 .ls-state--error .ls-state__icon{color:var(--danger)}
 .ls-state--offline .ls-state__icon{color:var(--warn)}
@@ -685,8 +700,8 @@
    surface), ink text in both themes, on the badge's reasoning: the hue lives
    where nothing has to be read. Not animated on entry — a notice is usually
    there on load, and one that appears mid-page is announced by its role. */
-.ls-notice{display:flex;flex-direction:column;gap:var(--space-1);padding:var(--space-3) var(--space-4);border:1px solid var(--line-faint);border-inline-start:3px solid var(--line-strong);border-radius:var(--radius-sharp);background:var(--surface-card);font-family:var(--font-sans);font-size:var(--text-sm);line-height:var(--leading-body);color:var(--text-2);text-wrap:pretty}
-.ls-notice__title{font-weight:500;color:var(--text-1)}
+.ls-notice{display:flex;flex-direction:column;gap:var(--space-1);padding:var(--space-3) var(--space-4);border:1px solid var(--border-subtle);border-inline-start:3px solid var(--border-strong);border-radius:var(--radius-sm);background:var(--surface-card);font-family:var(--font-sans);font-size:var(--text-sm);line-height:var(--leading-body);color:var(--text-muted);text-wrap:pretty}
+.ls-notice__title{font-weight:500;color:var(--text-body)}
 .ls-notice__body{min-width:0}
 .ls-notice__body a{color:inherit}
 .ls-notice--info{border-inline-start-color:var(--accent)}
@@ -696,12 +711,12 @@
 .ls-notice--compact{padding:var(--space-2) var(--space-3);font-size:var(--text-xs);flex-direction:row;align-items:baseline;gap:var(--space-2)}
 
 /* — Toast — */
-.ls-toast{display:inline-flex;align-items:center;gap:var(--space-3);background:var(--surface-deep);color:var(--text-inverse-1);border:1px solid var(--line-inverse-faint);border-radius:var(--radius-sharp);padding:var(--space-3) var(--space-4);box-shadow:var(--shadow-float);font-family:var(--font-sans);font-size:var(--text-body-s);animation:ls-toast-in var(--dur-enter) var(--ease-enter);max-width:calc(100vw - var(--space-8));box-sizing:border-box}
+.ls-toast{display:inline-flex;align-items:center;gap:var(--space-3);background:var(--surface-deep);color:var(--text-inverse-1);border:1px solid var(--line-inverse-faint);border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);box-shadow:var(--shadow-card);font-family:var(--font-sans);font-size:var(--text-sm);animation:ls-toast-in var(--dur-enter) var(--ease-enter);max-width:calc(100vw - var(--space-8));box-sizing:border-box}
 @keyframes ls-toast-in{from{opacity:0;transform:translateY(var(--rise))}to{opacity:1;transform:none}}
 /* Clear of the member tab bar and the home indicator on a phone. The fixed
    toast lives at the foot of the screen, so it comes up from that edge — twice
    the rise, settling on the ease-out — rather than fading in place. */
-.ls-toast--fixed{position:fixed;left:50%;bottom:var(--toast-bottom);transform:translateX(-50%);z-index:1100;animation-name:ls-toast-in-fixed}
+.ls-toast--fixed{position:fixed;left:50%;bottom:var(--toast-bottom);transform:translateX(-50%);z-index:var(--layer-toast);animation-name:ls-toast-in-fixed}
 @keyframes ls-toast-in-fixed{from{opacity:0;transform:translate(-50%,calc(var(--rise) * 2))}to{opacity:1;transform:translate(-50%,0)}}
 /* The exit — Dialog's, on the shorter clock and the in-out curve. Toast holds
    itself mounted for one --dur-exit with this class and unmounts on
@@ -713,8 +728,8 @@
 .ls-toast--fixed.ls-toast--out{animation-name:ls-toast-out-fixed}
 .ls-toast__rule{width:3px;align-self:stretch;border-radius:1px;flex:none;background:var(--accent)}
 .ls-toast__meta{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3)}
-.ls-toast__x{all:unset;cursor:pointer;color:var(--text-inverse-3);line-height:1;padding:2px;font-size:var(--text-xs);position:relative;transition:color var(--dur-hover) var(--ease-out)}
-.ls-toast__x:focus-visible{outline:2px solid var(--focus-on-dark);outline-offset:2px;border-radius:2px}
+.ls-toast__x{all:unset;cursor:pointer;color:var(--text-inverse-3);line-height:var(--leading-flat);padding:2px;font-size:var(--text-xs);position:relative;transition:color var(--dur-hover) var(--ease-hover)}
+.ls-toast__x:focus-visible{outline:2px solid var(--focus-on-dark);outline-offset:2px;border-radius:var(--radius-sm)}
 .ls-toast__x:before{content:"";position:absolute;inset:-8px}
 @media (pointer:coarse){.ls-toast__x:before{inset:-14px}}
 /* The tone rule. The map used to live in an inline style keyed on the previous
@@ -728,7 +743,7 @@
 
 /* — Tooltip — */
 .ls-tip{position:relative;display:inline-flex}
-.ls-tip__bubble{font:var(--type-label);position:absolute;left:50%;transform:translate(-50%,-4px);bottom:100%;margin-bottom:var(--space-2);background:var(--surface-deep);color:var(--text-inverse-1);letter-spacing:var(--tracking-label);text-transform:uppercase;padding:var(--space-2) var(--space-3);border-radius:var(--radius-sharp);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out);z-index:900}
+.ls-tip__bubble{font:var(--type-label);position:absolute;left:50%;transform:translate(-50%,-4px);bottom:100%;margin-bottom:var(--space-2);background:var(--surface-deep);color:var(--text-inverse-1);letter-spacing:var(--tracking-label);text-transform:uppercase;padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover);z-index:var(--layer-tip)}
 .ls-tip--bottom .ls-tip__bubble{bottom:auto;top:100%;margin-bottom:0;margin-top:var(--space-2);transform:translate(-50%,4px)}
 .ls-tip:hover .ls-tip__bubble,.ls-tip:focus-within .ls-tip__bubble{opacity:1;transform:translate(-50%,0)}
 /* Escape dismissed it; stays down until hover or focus leaves. */
@@ -739,7 +754,7 @@
      the global :focus-visible ring — leaving Hail, Flag, Reply, Strike, Enter
      and Redeem with no keyboard focus indicator at all (WCAG 2.4.7). Overriding
      an inline declaration is the one case !important is actually for. — */
-.ls-bare{all:unset;position:relative;cursor:pointer;box-sizing:border-box;transition:color var(--dur-hover) var(--ease-out),opacity var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
+.ls-bare{all:unset;position:relative;cursor:pointer;box-sizing:border-box;transition:color var(--dur-hover) var(--ease-hover),opacity var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover)}
 .ls-bare[disabled]{cursor:default}
 /* Hail, Flag, Enter, Redeem and the composer's attach all set their colour
    INLINE, so a hover that moves `color` is dead on arrival — an inline
@@ -750,24 +765,37 @@
    underlined at rest and states its own hover. */
 .ls-bare:not(.ls-textbtn):not([disabled]):hover{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .ls-bare:not([disabled]):active{transform:scale(var(--press))}
-.ls-bare:focus-visible{outline:2px solid var(--focus) !important;outline-offset:3px;border-radius:2px}
+.ls-bare:focus-visible{outline:2px solid var(--focus) !important;outline-offset:3px;border-radius:var(--radius-sm)}
 /* Hail, Flag, Enter and Redeem are 24px of text. On a phone a pseudo carries
    them to 44px; the class sets position:relative for exactly this, which is why
    the kit's own bare buttons no longer repeat `all:unset` inline — an inline
    `all` would reset that position and the pseudo would anchor to the card. */
 @media (pointer:coarse){.ls-bare:after{content:"";position:absolute;inset:-10px 0}}
+/* The logbook's Redeem control, as a class. Its face was written inline on the
+   element in ds/logbook.tsx — including a `cursor:pointer` that outranked
+   .ls-bare[disabled]{cursor:default} above, so the disabled control still
+   offered a pointing hand, and an inline opacity that spelled out
+   --opacity-disabled by hand. Both belong to a state, and a state belongs in a
+   sheet. Redeem is off when the held balance will not cover the reward, so the
+   off face also drops the gold rule and the gold figure: an affordance that
+   cannot be taken should not still be wearing the colour of the thing it
+   grants. 24px min-height matches .ls-textbtn, the other 24px-of-text control.
+   Carried by .ls-bare, which supplies the reset, the hover, the press and the
+   focus ring. */
+.ls-redeem{font:500 var(--text-xs)/var(--leading-flat) var(--font-sans);color:var(--text-gold);border:1px solid var(--border-gold);border-radius:var(--radius-pill);padding:var(--space-2) var(--space-4);min-height:24px}
+.ls-redeem[disabled]{opacity:var(--opacity-disabled);color:var(--text-faint);border-color:var(--border-subtle)}
 
 /* — TextButton — the bare reset with a face. Underlined like a link (base.css:
    an action in running copy has to be visibly one), the UI weight, 24px tall
    at rest and 44px on a phone through .ls-bare's pseudo. `quiet` is faint
    until hovered; `danger` is the destructive step in text form. */
-.ls-textbtn{display:inline-flex;align-items:center;gap:var(--space-1);min-height:24px;font-family:var(--font-sans);font-weight:500;letter-spacing:var(--tracking-body);color:var(--text-1);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;text-decoration-color:var(--line-strong);white-space:nowrap;transition:color var(--dur-hover) var(--ease-out),text-decoration-color var(--dur-hover) var(--ease-out),opacity var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
+.ls-textbtn{display:inline-flex;align-items:center;gap:var(--space-1);min-height:24px;font-family:var(--font-sans);font-weight:500;letter-spacing:var(--tracking-body);color:var(--text-body);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;text-decoration-color:var(--border-strong);white-space:nowrap;transition:color var(--dur-hover) var(--ease-hover),text-decoration-color var(--dur-hover) var(--ease-hover),opacity var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover)}
 .ls-textbtn:hover{text-decoration-color:currentColor}
 .ls-textbtn:not([disabled]):active{transform:scale(var(--press))}
 .ls-textbtn--md{font-size:var(--text-sm)}
 .ls-textbtn--sm{font-size:var(--text-xs)}
-.ls-textbtn--quiet{color:var(--text-3)}
-.ls-textbtn--quiet:hover{color:var(--text-1)}
+.ls-textbtn--quiet{color:var(--text-faint)}
+.ls-textbtn--quiet:hover{color:var(--text-body)}
 .ls-textbtn--danger{color:var(--danger);text-decoration-color:color-mix(in srgb, var(--danger) 55%, transparent)}
 .ls-textbtn[disabled],.ls-textbtn--disabled{opacity:var(--opacity-disabled);pointer-events:none}
 
@@ -825,7 +853,7 @@
      side of --surface-sunken whichever way the theme runs. Under
      prefers-reduced-motion it stops and becomes a flat wash. — */
 .ls-skel{display:flex;flex-direction:column;gap:var(--space-2);width:100%}
-.ls-skel__line{display:block;width:100%;height:var(--space-4);background:var(--surface-sunken);border-radius:var(--radius-sharp);position:relative;overflow:hidden}
+.ls-skel__line{display:block;width:100%;height:var(--space-4);background:var(--surface-sunken);border-radius:var(--radius-sm);position:relative;overflow:hidden}
 .ls-skel--round .ls-skel__line{border-radius:var(--radius-pill)}
 /* A paragraph does not end flush, and a skeleton that does reads as a table. */
 .ls-skel__line:last-child:not(:only-child){width:62%}
@@ -848,17 +876,17 @@
 /* — Scroll containers — the same thin bar, in the line ramp, on every one the
    kit declares. Firefox and Chromium honour these two properties; WebKit keeps
    its overlay bars, which need no styling. */
-.ls-table-wrap,.ls-dialog,.gs__body,.ls-filterpanel__body,.sgn-body{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.ls-table-wrap,.ls-dialog,.gs__body,.ls-filterpanel__body,.sgn-body{scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
 
 /* ── moved here from src/app/globals.css when src/styles/globals.css became
       the entry point per handoff §2. Two files called globals.css, one
       importing the other, is a coin toss for whoever edits next. ── */
 
 /* — shared layout primitives used across the site and app — */
-.ls-container{max-width:var(--container);margin-inline:auto;padding-inline:var(--gutter)}
+.ls-container{max-width:var(--container-max);margin-inline:auto;padding-inline:var(--gutter)}
 .ls-section{padding-block:var(--space-14)}
-.ls-double-rule{border-top:1px solid var(--line);position:relative;margin-top:3px}
-.ls-double-rule:before{content:"";position:absolute;top:-4px;left:0;right:0;border-top:1px solid var(--line)}
+.ls-double-rule{border-top:1px solid var(--border-strong);position:relative;margin-top:3px}
+.ls-double-rule:before{content:"";position:absolute;top:-4px;left:0;right:0;border-top:1px solid var(--border-strong)}
 .ls-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gutter)}
 .ls-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gutter)}
 .ls-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gutter)}
@@ -871,10 +899,10 @@
    vet-note / shw-note; …). Spacing and type only, tokens only, and none of them
    owns a margin: the layout around a utility places it. .ls-eyebrow and
    .ls-mono-data are in base.css; the eyebrow's two tones are here. */
-.ls-eyebrow--muted{color:var(--text-3)}
+.ls-eyebrow--muted{color:var(--text-faint)}
 .ls-eyebrow--gold{color:var(--gold-deep)}
 /* The standfirst under a heading: body size, the muted step, a 60ch measure. */
-.ls-lede{font-size:var(--text-md);line-height:var(--leading-body);color:var(--text-2);max-width:60ch;text-wrap:pretty}
+.ls-lede{font-size:var(--text-md);line-height:var(--leading-body);color:var(--text-muted);max-width:var(--measure-body);text-wrap:pretty}
 /* Mono for a figure or a code in running copy, digits tabular. Size inherits. */
 .ls-mono{font-family:var(--font-mono);letter-spacing:var(--track-data);font-variant-numeric:tabular-nums}
 /* A row of actions: wraps, --space-3 between, and --end sends it to the end. */
@@ -882,7 +910,7 @@
 .ls-acts--end{justify-content:flex-end}
 /* A bordered surface for a block of related content that is not a Card (no
    media, no title chrome) — a settings group, a form section, a summary. */
-.ls-panel{background:var(--surface-card);border:1px solid var(--line);border-radius:var(--radius-md);padding:var(--space-5)}
+.ls-panel{background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:var(--space-5)}
 /* Vertical rhythm: a column with one gap between its children. */
 .ls-stack{display:flex;flex-direction:column;gap:var(--space-4)}
 .ls-stack--tight{gap:var(--space-2)}
@@ -892,7 +920,7 @@
 .ls-inline{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2)}
 /* The one-line empty state inside a list or a table cell, where a StateBlock
    would be too much furniture. */
-.ls-empty{padding:var(--space-4);font-size:var(--text-xs);color:var(--text-3);text-align:center;text-wrap:pretty}
+.ls-empty{padding:var(--space-4);font-size:var(--text-xs);color:var(--text-faint);text-align:center;text-wrap:pretty}
 /* A record that has not been earned yet — a mark still ahead in the logbook, a
    step still ahead on the casting ladder. Mute by COLOUR at full opacity, never
    by opacity.
@@ -904,35 +932,35 @@
    record of something not yet done is neither inactive nor a control, it is
    copy, and it has to be readable to say what is still ahead.
 
-   One step down the text ramp says the same thing and stays legible: --text-2
+   One step down the text ramp says the same thing and stays legible: --text-muted
    is 7.01:1 on the page and 7.53:1 on ink. Children that already carry their
-   own muted token (--text-2 detail, --text-3 state) are unaffected and stay
+   own muted token (--text-muted detail, --text-faint state) are unaffected and stay
    where they are — the class only governs what inherits. */
-.ls-ahead{color:var(--text-2)}
+.ls-ahead{color:var(--text-muted)}
 
 /* — signing — the document reads as a document, not a form field. Focus rings
    stay visible (2.4.7), the scrollable text is keyboard-reachable (2.1.1), and
    every interactive target clears 24px (2.5.8). — */
 .sgn{display:flex;flex-direction:column;gap:var(--space-6);max-width:720px}
-.sgn-doc{border:1px solid var(--line-faint);background:var(--surface-card)}
-.sgn-doc>.mbr-eyebrow{display:block;padding:var(--space-4) var(--space-5) 0;color:var(--text-3)}
-.sgn-body{max-height:46vh;overflow-y:auto;padding:var(--space-3) var(--space-5) var(--space-5);font-size:var(--text-sm);line-height:1.75;color:var(--text-2)}
+.sgn-doc{border:1px solid var(--border-subtle);background:var(--surface-card)}
+.sgn-doc>.mbr-eyebrow{display:block;padding:var(--space-4) var(--space-5) 0;color:var(--text-faint)}
+.sgn-body{max-height:46vh;overflow-y:auto;padding:var(--space-3) var(--space-5) var(--space-5);font-size:var(--text-sm);line-height:var(--leading-loose);color:var(--text-muted)}
 .sgn-body p{margin:0 0 var(--space-4)}
 .sgn-body:focus-visible{outline:2px solid var(--gold-deep);outline-offset:-2px}
 .sgn-field{border:0;padding:0;margin:0}
-.sgn-field legend{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);padding:0 0 var(--space-3)}
+.sgn-field legend{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);padding:0 0 var(--space-3)}
 .sgn-choices{display:flex;gap:var(--space-3);flex-wrap:wrap}
-.sgn-choice{display:inline-flex;align-items:center;gap:var(--space-2);min-height:var(--control-md);padding:0 var(--space-4);border:1px solid var(--line-faint);background:var(--surface-card);font-size:var(--text-sm);cursor:pointer}
-.sgn-choice:has(input:checked){border-color:var(--gold-deep);color:var(--text-1)}
+.sgn-choice{display:inline-flex;align-items:center;gap:var(--space-2);min-height:var(--control-md);padding:0 var(--space-4);border:1px solid var(--border-subtle);background:var(--surface-card);font-size:var(--text-sm);cursor:pointer}
+.sgn-choice:has(input:checked){border-color:var(--gold-deep);color:var(--text-body)}
 .sgn-choice:has(input:focus-visible){outline:2px solid var(--gold-deep);outline-offset:2px}
 .sgn-choice input{width:16px;height:16px;accent-color:var(--gold-deep)}
 .sgn-draw{display:flex;flex-direction:column;gap:var(--space-2)}
-.sgn-draw__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
-.sgn-canvas{width:100%;max-width:520px;height:140px;border:1px solid var(--line-strong);background:#fff;border-radius:2px;touch-action:none;cursor:crosshair} /* ds-exempt: signature canvas — the pad must be white because the strokes are painted through the canvas API, which cannot read a custom property. */
+.sgn-draw__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint)}
+.sgn-canvas{width:100%;max-width:520px;height:140px;border:1px solid var(--border-strong);background:#fff;border-radius:var(--radius-sm);touch-action:none;cursor:crosshair} /* ds-exempt: signature canvas — the pad must be white because the strokes are painted through the canvas API, which cannot read a custom property. */
 .sgn-draw__acts{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap}
-.sgn-draw__alt{color:var(--text-3)}
+.sgn-draw__alt{color:var(--text-faint)}
 .sgn-link{background:none;border:0;padding:4px 2px;min-height:24px;color:var(--gold-deep);font:inherit;text-decoration:underline;cursor:pointer}
-.sgn-consent{border-top:1px solid var(--line-faint);padding-top:var(--space-5)}
+.sgn-consent{border-top:1px solid var(--border-subtle);padding-top:var(--space-5)}
 /* --danger, not --caution. Caution is #B67707 on the page ground: 3.18:1, under
    AA and under the 3:1 large-text floor as well, in the one place a reader is
    being told what to correct before they can sign. Danger is 4.66:1 on the page
@@ -942,14 +970,14 @@
 .sgn-error{color:var(--danger);font-size:var(--text-xs);min-height:1.2em}
 .sgn-error:empty{min-height:0}
 .sgn-done h2{font-family:var(--font-display);font-weight:400;font-size:var(--text-xl);letter-spacing:var(--track-display);text-transform:uppercase;margin:0 0 var(--space-2)}
-.sgn-done p{font-size:var(--text-sm);color:var(--text-2);max-width:52ch;line-height:1.7}
+.sgn-done p{font-size:var(--text-sm);color:var(--text-muted);max-width:var(--measure-tight);line-height:var(--leading-loose)}
 
 
 /* ————— filters: the two shapes ————— */
 /* Pills and a tray, and nothing else. Both write a URL through
    useFilterParams, so what a reader narrows is what they can send. */
 .ls-filters{display:flex;gap:var(--space-2);flex-wrap:wrap;align-items:center}
-.ls-filters__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);flex:none;min-width:54px}
+.ls-filters__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);flex:none;min-width:54px}
 /* The count a pill leads to. Mono, dimmer than the label, and it inherits the
    pill's colour when the pill is active so it cannot go invisible on the ink
    fill — the reason it is currentColor at a fraction rather than a token.
@@ -977,8 +1005,9 @@
 /* — Badge and Tag are ONE size, 2026-09-02.
      They were 22px and 28px, and on an episode row the two sat fourteen pixels
      apart on the same line: same face, same tracking, same corner, same border
-     value (--line and --line-strong both alias --border-strong, so the two
-     border weights this kit believed it had were always one). Six pixels of
+     value (--line and --line-strong were both aliases of --border-strong, so
+     the two border weights this kit believed it had were always one — the pair
+     has since been collapsed into --border-strong outright). Six pixels of
      height, two of gap and a card fill were the entire difference, which reads
      as a mistake rather than as hierarchy — because it is one.
 
@@ -1000,8 +1029,8 @@
 /* Not a page and not a dropdown: a slate that lands near the top of the view,
    where the eye already is, with the results under the field rather than
    beside it. Modal, unlike the filter tray — this one IS the task. */
-.gs-veil{position:fixed;inset:0;z-index:1000;background:var(--veil);backdrop-filter:var(--blur-glass);-webkit-backdrop-filter:var(--blur-glass);display:flex;align-items:flex-start;justify-content:center;padding:10vh var(--space-6) var(--space-6);overflow-y:auto;animation:ls-fade var(--dur-enter) var(--ease-enter)}
-.gs{width:min(640px,100%);background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);display:flex;flex-direction:column;max-height:76vh;overflow:hidden;animation:ls-rise var(--dur-enter) var(--ease-enter)}
+.gs-veil{position:fixed;inset:0;z-index:var(--layer-overlay);background:var(--surface-overlay);backdrop-filter:var(--blur-glass);-webkit-backdrop-filter:var(--blur-glass);display:flex;align-items:flex-start;justify-content:center;padding:10vh var(--space-6) var(--space-6);overflow-y:auto;animation:ls-fade var(--dur-enter) var(--ease-enter)}
+.gs{width:min(640px,100%);background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);display:flex;flex-direction:column;max-height:76vh;overflow:hidden;animation:ls-rise var(--dur-enter) var(--ease-enter)}
 .gs:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 /* The slate arrived on --dur-enter and then simply ceased to exist. It leaves
    the way the dialog does — the veil fades, the slate falls the --rise it came
@@ -1010,25 +1039,25 @@
    unmounted on the animationend that ends the phase. */
 .gs-veil--out{animation:ls-fade-out var(--dur-exit) var(--ease-exit) forwards;pointer-events:none}
 .gs-veil--out .gs{animation:ls-fall var(--dur-exit) var(--ease-exit) forwards}
-.gs__field{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4);border-bottom:1px solid var(--line-faint);flex:none;color:var(--text-3)}
-.gs__input{flex:1;min-width:0;all:unset;font-family:var(--font-sans);font-size:var(--text-md);color:var(--text-1);min-height:28px} /* ds-exempt: the field row carries the focus indication (.gs__field:focus-within below) — a ring on the input inside a ruled row would double-ring the slate */
-.gs__field:focus-within{border-bottom-color:var(--focus);color:var(--text-1)}
+.gs__field{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4);border-bottom:1px solid var(--border-subtle);flex:none;color:var(--text-faint)}
+.gs__input{flex:1;min-width:0;all:unset;font-family:var(--font-sans);font-size:var(--text-md);color:var(--text-body);min-height:28px} /* ds-exempt: the field row carries the focus indication (.gs__field:focus-within below) — a ring on the input inside a ruled row would double-ring the slate */
+.gs__field:focus-within{border-bottom-color:var(--focus);color:var(--text-body)}
 .gs__body{overflow-y:auto;padding:var(--space-2) 0}
-.gs__hint{padding:var(--space-6) var(--space-5);font-size:var(--text-sm);color:var(--text-3);max-width:52ch}
+.gs__hint{padding:var(--space-6) var(--space-5);font-size:var(--text-sm);color:var(--text-faint);max-width:var(--measure-tight)}
 .gs__sec{padding:var(--space-2) 0}
 /* The section heading IS the privacy boundary — Yours reads as a place, not as
    a badge stuck on a row — so it gets a rule of its own rather than a colour. */
-.gs__seclabel{display:block;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);padding:var(--space-2) var(--space-5);border-top:1px solid var(--line-faint)}
+.gs__seclabel{display:block;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);padding:var(--space-2) var(--space-5);border-top:1px solid var(--border-subtle)}
 .gs__sec:first-child .gs__seclabel{border-top:none}
-.gs__hit{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:var(--space-3);width:100%;padding:var(--space-2) var(--space-5);cursor:pointer;min-height:40px;transition:background var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
+.gs__hit{all:unset;box-sizing:border-box;display:flex;align-items:baseline;gap:var(--space-3);width:100%;padding:var(--space-2) var(--space-5);cursor:pointer;min-height:40px;transition:background var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover)}
 /* NOTE: search.css restates this transition without `transform`, and loads
    after this sheet — the scale still happens, it simply snaps rather than
    easing until that line is extended or dropped. */
 .gs__hit:not([disabled]):active{transform:scale(var(--press))}
 .gs__hit--on{background:var(--surface-sunken)}
 .gs__hit:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
-.gs__hitt{font-size:var(--text-sm);color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gs__hitm{margin-inline-start:auto;flex:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
+.gs__hitt{font-size:var(--text-sm);color:var(--text-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gs__hitm{margin-inline-start:auto;flex:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%}
 @media (max-width:640px){
   .gs-veil{padding:0}
   .gs{width:100%;max-height:100dvh;height:100dvh;border:none;border-radius:0}
@@ -1053,17 +1082,17 @@
    while the space below separates it from the list it governs, which it should
    stay visually attached to. */
 .ls-toolbar{display:flex;flex-direction:column;gap:var(--space-3);margin-block:var(--space-8) var(--space-5)}
-.ls-toolbar__bar{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;padding-bottom:var(--space-3);border-bottom:1px solid var(--line-faint)}
+.ls-toolbar__bar{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;padding-bottom:var(--space-3);border-bottom:1px solid var(--border-subtle)}
 .ls-toolbar__q{flex:1 1 200px;min-width:0;max-width:420px}
 /* The count is the answer to everything to its left, so it sits at the far end
    of the line and holds the same mono register as the rest of the data. */
-.ls-toolbar__count{margin-inline-start:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ls-toolbar__count{margin-inline-start:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase;white-space:nowrap;font-variant-numeric:tabular-nums}
 .ls-toolbar__n{margin-inline-start:var(--space-2);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--tracking-label);font-variant-numeric:tabular-nums}
 .ls-toolbar__under{display:flex;align-items:center;gap:var(--space-2) var(--space-3);flex-wrap:wrap}
 .ls-toolbar__chip{padding-inline-end:var(--space-2)}
-.ls-toolbar__chipk{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3);margin-inline-end:var(--space-2)}
-.ls-toolbar__clear{all:unset;cursor:pointer;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:underline;text-underline-offset:3px;min-height:28px;display:inline-flex;align-items:center;transition:color var(--dur-hover) var(--ease-out)}
-.ls-toolbar__clear:hover{color:var(--text-1)}
+.ls-toolbar__chipk{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-faint);margin-inline-end:var(--space-2)}
+.ls-toolbar__clear{all:unset;cursor:pointer;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);text-decoration:underline;text-underline-offset:3px;min-height:28px;display:inline-flex;align-items:center;transition:color var(--dur-hover) var(--ease-hover)}
+.ls-toolbar__clear:hover{color:var(--text-body)}
 .ls-toolbar__clear:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 @media (pointer:coarse){.ls-toolbar__clear{position:relative}.ls-toolbar__clear:after{content:"";position:absolute;inset:-8px 0}}
 .ls-toolbar__trail{margin-inline-start:auto}
@@ -1094,8 +1123,8 @@
    mid-animation. */
 .ls-pop{position:relative;display:inline-flex}
 /* Invisible, and deliberately not a veil: the results underneath are the point. */
-.ls-pop__catch{position:fixed;inset:0;z-index:930}
-.ls-pop__panel{position:absolute;z-index:940;top:calc(100% + var(--space-2));inset-inline-start:0;background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);animation:ls-rise var(--dur-enter) var(--ease-enter)}
+.ls-pop__catch{position:fixed;inset:0;z-index:var(--layer-catch)}
+.ls-pop__panel{position:absolute;z-index:var(--layer-popover);top:calc(100% + var(--space-2));inset-inline-start:0;background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-md);box-shadow:var(--shadow-raised);animation:ls-rise var(--dur-enter) var(--ease-enter)}
 .ls-pop__panel:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 /* Both panels — the filter panel and the sort menu are one object — fall back
    the --rise they came up. Driven by the same closing phase the Dialog uses
@@ -1111,10 +1140,10 @@
 .ls-pop__panel--end{inset-inline-start:auto;inset-inline-end:0}
 
 .ls-sortmenu{min-width:190px;padding:var(--space-1);display:flex;flex-direction:column}
-.ls-sortmenu__opt{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);cursor:pointer;min-height:36px;padding:0 var(--space-3);border-radius:var(--radius-sharp);font-size:var(--text-sm);color:var(--text-2);transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out),transform var(--dur-hover) var(--ease-out)}
-.ls-sortmenu__opt:hover{background:var(--surface-sunken);color:var(--text-1)}
+.ls-sortmenu__opt{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);cursor:pointer;min-height:36px;padding:0 var(--space-3);border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--text-muted);transition:background var(--dur-hover) var(--ease-hover),color var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover)}
+.ls-sortmenu__opt:hover{background:var(--surface-sunken);color:var(--text-body)}
 .ls-sortmenu__opt:not([disabled]):active{transform:scale(var(--press))}
-.ls-sortmenu__opt--on{color:var(--text-1)}
+.ls-sortmenu__opt--on{color:var(--text-body)}
 .ls-sortmenu__opt:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 @media (pointer:coarse){.ls-sortmenu__opt{min-height:44px}.gs__hit{min-height:44px}}
 
@@ -1125,7 +1154,7 @@
 .ls-filterpanel__body{overflow-y:auto;padding:var(--space-5);display:flex;flex-direction:column;gap:var(--space-5)}
 /* Fixed to the foot so the count stays in view however far down the axes the
    reader has scrolled — the rule the mobile research is firmest about. */
-.ls-filterpanel__foot{flex:none;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4) var(--space-5);border-top:1px solid var(--line-faint)}
+.ls-filterpanel__foot{flex:none;display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4) var(--space-5);border-top:1px solid var(--border-subtle)}
 .ls-filterpanel__foot>:last-child{margin-inline-start:auto}
 
 /* On a phone both become bottom sheets, which is the one place a sheet is the

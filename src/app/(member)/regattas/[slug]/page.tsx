@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, Icon, StandingsTable, type StandingRow } from "@/components/ds";
+import { Badge, Icon, StandingsTable, type StandingsEntry } from "@/components/ds";
 import { CONTEST_METRIC, knots, LOGBOOK } from "@/lib/brand";
 import { logDate, roman, yearIn } from "@/lib/format";
 import { getMember } from "../../data";
@@ -104,7 +104,7 @@ export default async function ContestPage({
   const youName = standing.find((r) => r.profile_id === user.id)
     ? nameOf(standing.find((r) => r.profile_id === user.id)!)
     : null;
-  const rows: StandingRow[] = standing.map((row) => ({
+  const rows: StandingsEntry[] = standing.map((row) => ({
     name: nameOf(row),
     score: score(contest.metric, Number(row.score ?? 0)),
     place: row.place,

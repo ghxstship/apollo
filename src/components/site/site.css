@@ -2,7 +2,7 @@
    Ported from ui_kits/website; tokens do all the color work. */
 
 /* ————— chrome: nav ————— */
-.ws-nav{position:sticky;top:0;z-index:500;background:var(--surface-deep);color:var(--text-inverse-1);border-bottom:1px solid var(--line-inverse-faint)}
+.ws-nav{position:sticky;top:0;z-index:var(--layer-nav);background:var(--surface-deep);color:var(--text-inverse-1);border-bottom:1px solid var(--line-inverse-faint)}
 .ws-nav__in{display:flex;align-items:center;gap:28px;height:72px}
 /* The wordmark is an <a>, so the global `a{color:var(--text-link)}` and
    `a:hover{color:var(--ink)}` beat anything inherited from .ws-nav. In light
@@ -22,7 +22,7 @@
 .ws-nav__logo:hover{color:var(--bone);text-decoration:none}
 .ws-nav__logo svg{display:block;height:34px;width:auto}
 .ws-nav__links{display:flex;gap:26px}
-.ws-nav__link{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-inverse-2);padding:6px 0;border-bottom:2px solid transparent;transition:color var(--dur-hover) var(--ease-out),border-bottom-color var(--dur-hover) var(--ease-out)}
+.ws-nav__link{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-inverse-2);padding:6px 0;border-bottom:2px solid transparent;transition:color var(--dur-hover) var(--ease-hover),border-bottom-color var(--dur-hover) var(--ease-hover)}
 /* A faint rule under the pointer, the bright one under the page you are on —
    the hover says "this is a place" before the click says "you are there". */
 .ws-nav__link:hover{color:var(--bone);text-decoration:none;border-bottom-color:var(--line-inverse)}
@@ -34,12 +34,20 @@
 @media (max-width:1180px){.ws-nav__coords{display:none}.ws-nav__end{margin-left:auto}}
 .ws-nav__end{display:flex;align-items:center;gap:14px}
 .ws-nav__burger{display:none}
-.ws-menu{position:fixed;inset:0;z-index:920;background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px;animation:ls-fade var(--dur-enter) var(--ease-enter) backwards}
+.ws-menu{position:fixed;inset:0;z-index:var(--layer-menu);background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px;animation:ls-fade var(--dur-enter) var(--ease-enter) backwards}
 .ws-menu__top{display:flex;align-items:center;justify-content:space-between}
 /* The veil fades and the list rises behind it — one reveal, not a pop. */
-.ws-menu__links{display:flex;flex-direction:column;gap:4px;margin-top:48px;animation:ls-rise var(--dur-slow) var(--ease-out) backwards}
-.ws-menu__links a{font-family:var(--font-display);font-size:var(--text-3xl);color:var(--bone);padding:10px 0;border-bottom:1px solid var(--line-inverse-faint);text-transform:uppercase}
-.ws-menu__links a:hover{color:var(--bone);text-decoration:none}
+.ws-menu__links{display:flex;flex-direction:column;gap:4px;margin-top:48px;animation:ls-rise var(--dur-entrance) var(--ease-enter) backwards}
+/* The hover here used to set --bone, which is already the rest colour, so the
+   rule was live CSS doing no work at all — on the one surface that is nothing
+   BUT links. The nav's own links answer a hover by brightening their rule
+   (.ws-nav__link:hover above) and a row-shaped link answers a press by dimming
+   (.ws-vrow__link:active below); a full-screen menu item is both, so it takes
+   both. text-decoration:none stays deliberately: base.css underlines a hovered
+   link and a 36px Anton headline is not a thing to underline. */
+.ws-menu__links a{font-family:var(--font-display);font-size:var(--text-3xl);color:var(--bone);padding:10px 0;border-bottom:1px solid var(--line-inverse-faint);text-transform:uppercase;transition:border-bottom-color var(--dur-hover) var(--ease-hover),opacity var(--dur-hover) var(--ease-hover)}
+.ws-menu__links a:hover{color:var(--bone);text-decoration:none;border-bottom-color:var(--line-inverse)}
+.ws-menu__links a:active{opacity:.7}
 .ws-menu__base{margin-top:auto;display:flex;flex-direction:column;gap:20px}
 .ws-menu__coords{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-inverse-3);text-transform:uppercase}
 /* The menu arrived as a reveal and left as a cut — a full-screen ink panel
@@ -69,7 +77,7 @@
 .ws-footer__in{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px;padding:64px 0 48px}
 .ws-footer__blurb{font-size:var(--text-xs);margin-top:16px;max-width:26ch;color:var(--text-inverse-3)}
 .ws-footer__col b{font:var(--type-label);display:block;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-inverse-3);margin-bottom:14px}
-.ws-footer__col a{display:block;color:var(--text-inverse-2);font-size:var(--text-xs);padding:5px 0;transition:color var(--dur-hover) var(--ease-out)}
+.ws-footer__col a{display:block;color:var(--text-inverse-2);font-size:var(--text-xs);padding:5px 0;transition:color var(--dur-hover) var(--ease-hover)}
 .ws-footer__col a:hover{color:var(--bone);text-decoration:none}
 .ws-footer__harbor{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-size:var(--text-xs)}
 .ws-footer__harbor span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-inverse-3);text-transform:uppercase}
@@ -86,20 +94,9 @@
    bare anchor at ~80px and does not need to shrink. */
 
 /* ————— shared ————— */
-/* — section rhythm. The marketing surfaces run on two paddings and nothing
-     else: the full one a section takes on its own, and the tight one the
-     tinted bands and the reading columns take. The home page used to carry
-     four values across five sections, three of them written inline on the
-     element (96 · "0 96" · "0 96") over an .ls-section that had already been
-     set, so the rhythm lived in three places and agreed in none.
-
-     The pair is named here rather than added to the token scale: the published
-     spacing scale stops at --space-20 (80px), tokens.css is a verbatim copy of
-     the handoff package (a step added there is dropped the next time it is
-     regenerated, and a padding-block reading a var that no longer resolves
-     silently computes to zero), and compat.css takes aliases only. One name,
-     one place, every marketing surface reading it. — */
-:root{--rhythm-section:96px;--rhythm-section-tight:72px}
+/* — section rhythm. --rhythm-section / --rhythm-section-tight moved to the
+     fenced app block in tokens.css, where they are on the spacing scale and
+     resolve for every sheet rather than only the ones site.css loads. — */
 /* Qualified by the site's own <main> so the marketing rhythm wins over the
    shared .ls-section default (--space-14) wherever the two sheets land in the
    bundle — CSS order across chunks is an import-order promise, not a
@@ -109,7 +106,7 @@ main .ls-section--tight{padding-block:var(--rhythm-section-tight)}
 /* Sections in a run meet on one rhythm, not two stacked ones. This is what the
    inline `paddingBlock:"0 96px"` on every section after the first was saying. */
 main .ls-section + .ls-section{padding-top:0}
-.ws-shead{display:flex;align-items:flex-end;gap:24px;margin-bottom:var(--space-7)}
+.ws-shead{display:flex;align-items:flex-end;gap:24px;margin-bottom:var(--space-10)}
 .ws-shead__eb{color:var(--gold-deep);margin-bottom:12px}
 .ws-shead h2{font-size:var(--text-display-m)}
 .ws-shead__aside{margin-left:auto}
@@ -121,7 +118,7 @@ main .ls-section + .ls-section{padding-top:0}
    /apply-status and /episodes, which are the four page heads that do NOT use
    .ws-phead; the modifier is the same setting under a name they can use. */
 .ls-eyebrow--page,.ws-phead .ls-eyebrow{color:var(--gold-deep);margin-bottom:16px;display:block}
-.ws-phead__sub{color:var(--text-2);margin-top:16px;max-width:52ch}
+.ws-phead__sub{color:var(--text-muted);margin-top:16px;max-width:var(--measure-tight)}
 /* the tagline is lockup-adjacent only — it is the view's single accent */
 /* — the tagline lockup (brand-architecture §Tagline · Option 1 "Active Rule").
    These three rules are the ONE css setting of the mark; the markup half lives
@@ -130,32 +127,32 @@ main .ls-section + .ls-section{padding-top:0}
    string the brand never capitalises. */
 .ws-tagline{text-transform:none;display:inline-flex;align-items:baseline;flex-wrap:wrap}
 .ws-tagline__anchor{font-family:var(--font-display);letter-spacing:var(--tracking-display);text-transform:none}/* the anchor's case is part of the mark — typed lowercase, never transformed (owner ruling 2026-08-31); ds-exempt: the wordmark/tagline lockup types its own case */
-.ws-tagline__line{font:400 .65em/1.2 var(--font-mono);letter-spacing:normal;margin-left:.61em;border-bottom:1.5pt solid var(--accent);padding-bottom:.06em;text-transform:lowercase}
+.ws-tagline__line{font:400 .65em/var(--leading-snug) var(--font-mono);letter-spacing:normal;margin-left:.61em;border-bottom:1.5pt solid var(--accent);padding-bottom:.06em;text-transform:lowercase}
 /* Was Anton + uppercase + a lava gradient on {TAGLINE} — three violations in
    one rule (the tagline is lowercase-always and in mono, and decorative
    gradients are banned on UI surfaces), none visible to a gate because
    text-transform never reaches the HTML. Now a sized placement of the mark. */
 .ws-phead__tag{font-size:22px;margin-top:14px;width:fit-content}
-.ws-ledger-row{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:22px 0;border-top:1px solid var(--line-faint)}
-.ws-ledger-row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.ws-ledger-row{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;padding:22px 0;border-top:1px solid var(--border-subtle)}
+.ws-ledger-row:last-of-type{border-bottom:1px solid var(--border-subtle)}
 .ws-ledger-row__t{font-family:var(--font-display);font-size:var(--text-xl);text-transform:uppercase}
-.ws-ledger-row__m{display:flex;gap:8px;margin-top:6px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);flex-wrap:wrap;text-transform:uppercase}
-.ws-ledger-row__body{font-size:var(--text-xs);color:var(--text-2);margin-top:8px;max-width:64ch}
+.ws-ledger-row__m{display:flex;gap:8px;margin-top:6px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);flex-wrap:wrap;text-transform:uppercase}
+.ws-ledger-row__body{font-size:var(--text-xs);color:var(--text-muted);margin-top:8px;max-width:var(--measure-body)}
 @media (max-width:640px){.ws-ledger-row{grid-template-columns:1fr}}
 .ws-upper{text-transform:uppercase}
 
 /* ————— home ————— */
 .ws-hero{background:var(--scene-night);color:var(--text-inverse-1);position:relative}
 .ws-hero:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
-.ws-hero:after{content:"";position:absolute;inset:0;background:var(--scrim);pointer-events:none}
-.ws-hero__in{position:relative;z-index:1;min-height:600px;display:flex;flex-direction:column;justify-content:center;padding-top:64px;padding-bottom:48px}
+.ws-hero:after{content:"";position:absolute;inset:0;background:var(--gradient-protect);pointer-events:none}
+.ws-hero__in{position:relative;z-index:var(--layer-raised);min-height:600px;display:flex;flex-direction:column;justify-content:center;padding-top:64px;padding-bottom:48px}
 .ws-hero__in .ls-eyebrow{color:var(--gold-bright);margin-bottom:24px}
 /* The hero h1 IS the tagline lockup: the anchor sets the size, the phrase
    rides at .65 of it. 12ch capped the old single-face setting; the lockup
    manages its own width and wraps at the baseline flex. */
-.ws-hero h1{font-size:var(--text-display-xl);color:var(--bone)}
+.ws-hero h1{font-size:var(--text-5xl);color:var(--bone)}
 @media (max-width:720px){.ws-hero h1{font-size:var(--text-3xl)}}
-.ws-hero__sub{font-size:var(--text-body-l);color:var(--text-inverse-2);margin-top:24px;max-width:44ch}
+.ws-hero__sub{font-size:var(--text-lg);color:var(--text-inverse-2);margin-top:24px;max-width:44ch}
 .ws-hero__cta{display:flex;gap:16px;margin-top:40px;align-items:center;flex-wrap:wrap}
 .ws-liveseam{height:3px;background:var(--lava)}
 .ws-livestrip{background:var(--surface-deep);color:var(--text-inverse-1);border-bottom:1px solid var(--line-inverse-faint)}
@@ -164,10 +161,10 @@ main .ls-section + .ls-section{padding-top:0}
 .ws-livestrip a{color:var(--text-inverse-2)}
 .ws-livestrip a:hover{color:var(--bone)}
 .ws-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-.ws-step{border-top:1px solid var(--line-strong);padding-top:16px}
+.ws-step{border-top:1px solid var(--border-strong);padding-top:16px}
 .ws-step b{display:block;font-family:var(--font-mono);font-weight:400;font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--gold-deep);margin-bottom:10px}
 .ws-step h3{font-size:var(--text-display-xs)}
-.ws-step p{font-size:var(--text-xs);color:var(--text-2);margin-top:8px;max-width:30ch}
+.ws-step p{font-size:var(--text-xs);color:var(--text-muted);margin-top:8px;max-width:30ch}
 @media (max-width:960px){.ws-steps{grid-template-columns:1fr}.ws-hero__in{min-height:460px}}
 /* Renamed from .ws-city-row with the harbor→city rename, which updated the
    markup and left this file behind. The class in the JSX has therefore matched
@@ -179,19 +176,19 @@ main .ls-section + .ls-section{padding-top:0}
    baseline is its own first line box rather than the text's — against a display
    heading and a mono line of different sizes, baseline hung it low. Centring is
    what the eye reads as aligned when three different type sizes share a row. */
-.ws-city-row{display:grid;grid-template-columns:1fr auto auto;gap:24px;align-items:center;padding:18px 0;border-top:1px solid var(--line-faint)}
-.ws-city-row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.ws-city-row{display:grid;grid-template-columns:1fr auto auto;gap:24px;align-items:center;padding:18px 0;border-top:1px solid var(--border-subtle)}
+.ws-city-row:last-of-type{border-bottom:1px solid var(--border-subtle)}
 .ws-city-row h3{font-size:var(--text-display-xs)}
-.ws-city-row .hm{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.ws-city-row .hm{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 @media (max-width:640px){.ws-city-row{grid-template-columns:1fr;gap:8px;justify-items:start}}
-.ws-city-note{margin-top:24px;font-size:var(--text-sm);color:var(--text-3)}
+.ws-city-note{margin-top:24px;font-size:var(--text-sm);color:var(--text-faint)}
 .ws-dispatch-teaser{background:var(--surface-tint);padding-block:var(--rhythm-section-tight)}
-.ws-dp-row{display:grid;grid-template-columns:110px 1fr auto;gap:24px;padding:22px 0;border-bottom:1px solid var(--line-faint);align-items:baseline}
-.ws-dp-row:first-of-type{border-top:1px solid var(--line-faint)}
-.ws-dp-row__d{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
-.ws-dp-row__t{font-family:var(--font-display);font-size:22px;transition:color var(--dur-hover) var(--ease-out);text-transform:uppercase}
-.ws-dp-row:hover .ws-dp-row__t{color:var(--aegean)}
-.ws-dp-row__dek{font-size:var(--text-xs);color:var(--text-2);margin-top:4px;max-width:60ch}
+.ws-dp-row{display:grid;grid-template-columns:110px 1fr auto;gap:24px;padding:22px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline}
+.ws-dp-row:first-of-type{border-top:1px solid var(--border-subtle)}
+.ws-dp-row__d{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
+.ws-dp-row__t{font-family:var(--font-display);font-size:22px;transition:color var(--dur-hover) var(--ease-hover);text-transform:uppercase}
+.ws-dp-row:hover .ws-dp-row__t{color:var(--accent)}
+.ws-dp-row__dek{font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;max-width:var(--measure-body)}
 /* The tag rides the title, not the row's baseline. A Badge is a 28px
    inline-flex box, so baseline-aligning it against the 22px display title
    dropped it a line; centred on the title's own box it reads as its qualifier
@@ -206,7 +203,7 @@ main .ls-section + .ls-section{padding-top:0}
 /* ————— voyages manifest ————— */
 /* How many sailings the filters left, and the months they span — the answer to
    the question the controls above it just asked. Rides in the Sort row. */
-.ws-vcount{margin-left:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.ws-vcount{margin-left:auto;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 /* The bespoke disclosure that used to sit here — .ws-vdisc and .ws-vsecondary —
    is gone, replaced by the kit's FilterTray, which every list in the app now
    shares. It does the same job properly: a panel over the results rather than
@@ -219,18 +216,18 @@ main .ls-section + .ls-section{padding-top:0}
 .ws-vsecondary{display:flex;flex-direction:column;gap:10px}
 /* The month rule — fifty sailings were one unbroken run of identical stripes.
    Same mono treatment as the plan grid's header row. */
-.ws-vmonth{position:sticky;top:72px;z-index:1;background:var(--surface-page);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase;padding:14px 0 8px}
+.ws-vmonth{position:sticky;top:72px;z-index:var(--layer-raised);background:var(--surface-page);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase;padding:14px 0 8px}
 @media (max-width:960px){.ws-vmonth{top:64px}}
-.ws-vrow{display:grid;grid-template-columns:110px 1fr auto;gap:24px;align-items:center;padding:24px 0;border-top:1px solid var(--line-faint)}
-.ws-vrow:last-of-type{border-bottom:1px solid var(--line-faint)}
-.ws-vrow__date{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase}
-.ws-vrow__date b{display:block;font-size:var(--text-sm);font-weight:400;color:var(--text-1)}
-.ws-vrow__title{font-family:var(--font-display);font-size:var(--text-2xl);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:color var(--dur-hover) var(--ease-out);text-transform:uppercase}
-.ws-vrow:hover .ws-vrow__title{color:var(--aegean)}
+.ws-vrow{display:grid;grid-template-columns:110px 1fr auto;gap:24px;align-items:center;padding:24px 0;border-top:1px solid var(--border-subtle)}
+.ws-vrow:last-of-type{border-bottom:1px solid var(--border-subtle)}
+.ws-vrow__date{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-muted);text-transform:uppercase}
+.ws-vrow__date b{display:block;font-size:var(--text-sm);font-weight:400;color:var(--text-body)}
+.ws-vrow__title{font-family:var(--font-display);font-size:var(--text-2xl);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:color var(--dur-hover) var(--ease-hover);text-transform:uppercase}
+.ws-vrow:hover .ws-vrow__title{color:var(--accent)}
 .ws-vrow__eyebrow{color:var(--gold-deep);display:block;margin-bottom:6px}
-.ws-vrow__meta{display:flex;gap:8px;margin-top:8px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);flex-wrap:wrap;text-transform:uppercase}
+.ws-vrow__meta{display:flex;gap:8px;margin-top:8px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);flex-wrap:wrap;text-transform:uppercase}
 .ws-vrow__act{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.ws-vrow__price{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-2)}
+.ws-vrow__price{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-muted)}
 .ws-live-label{text-transform:uppercase;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep)}
 @media (max-width:640px){.ws-vrow{grid-template-columns:1fr;gap:8px}.ws-vrow__act{flex-direction:row;align-items:center}}
 
@@ -238,9 +235,9 @@ main .ls-section + .ls-section{padding-top:0}
 /* An empty list is still a list: it keeps the hairlines the rows would have
    drawn, says what is missing in the mono register the meta uses, and — where
    the reader put the filters there — carries the control that undoes it. */
-.ws-zero{border-top:1px solid var(--line-faint);border-bottom:1px solid var(--line-faint);padding:48px 0;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+.ws-zero{border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle);padding:48px 0;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
 .ws-zero__label{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
-.ws-zero p{font-size:var(--text-sm);color:var(--text-2);max-width:56ch}
+.ws-zero p{font-size:var(--text-sm);color:var(--text-muted);max-width:var(--measure-tight)}
 
 /* ————— event page ————— */
 /* — the four [data-theme="sea"|"shore"] accent rules that used to sit here are
@@ -275,9 +272,9 @@ main .ls-section + .ls-section{padding-top:0}
      accent on an episode page as it is everywhere else. — */
 .ev-hero{color:var(--text-inverse-1);position:relative;min-height:420px;display:flex;align-items:flex-end}
 .ev-hero__bg{position:absolute;inset:0}
-.ev-hero__bg:after{content:"";position:absolute;inset:0;background:var(--scrim)}
+.ev-hero__bg:after{content:"";position:absolute;inset:0;background:var(--gradient-protect)}
 .ev-hero__bg:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply}
-.ev-hero__in{position:relative;z-index:1;width:100%;padding-block:96px 40px}
+.ev-hero__in{position:relative;z-index:var(--layer-raised);width:100%;padding-block:96px 40px}
 /* Knockout, not accent. This eyebrow sits at the BOTTOM of the hero, where
    every --scene-* gradient has run down to #0D0D0D and the scrim is over it, so
    it is type on media and takes --text-on-media like the --bone headline beside
@@ -290,8 +287,9 @@ main .ls-section + .ls-section{padding-top:0}
    The note that stood here — that the nav's active underline, the hero eyebrow
    and the live strip carried the same defect — is retired: compat.css already makes
    the exact one-line fix it asked for (--gold-bright:var(--ivory-100), the
-   knockout step, alongside --gilt-bright and --brass-bright), so all three read
-   ivory on both themes. It is deleted rather than left standing because a note
+   knockout step), so it reads ivory on both themes. Its two siblings
+   --gilt-bright and --brass-bright had one consumer each and were retired
+   outright on 2026-09-05; both call sites read --ivory-100 directly now. It is deleted rather than left standing because a note
    pointing at a fixed defect sends the next reader to re-fix nothing while a
    real one goes unread — which is what happened to the --gold-400 defect at the
    top of this file, reported nowhere and shipped for months. */
@@ -299,61 +297,61 @@ main .ls-section + .ls-section{padding-top:0}
 .ev-hero h1{font-size:var(--text-display-l);color:var(--bone);max-width:16ch}
 .ev-hero__meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-inverse-2);text-transform:uppercase}
 .ev-body{display:grid;grid-template-columns:1fr 360px;gap:64px;padding-block:64px 96px}
-.ev-desc p{margin-top:20px;font-size:16px;line-height:1.75;max-width:var(--measure)}
+.ev-desc p{margin-top:20px;font-size:16px;line-height:var(--leading-loose);max-width:var(--measure-body)}
 /* The column's section heads — "The plan.", "Ports.", "The fleet.", "Frames.",
    "Asked often." — were six copies of the same two inline declarations. */
 .ev-h2{font-size:var(--text-display-xs);margin-bottom:12px}
 .ev-h2--mid{margin-top:20px}
 .ev-faq{margin-top:48px}
-.ev-faq details{border-top:1px solid var(--line-faint)}
-.ev-faq details:last-of-type{border-bottom:1px solid var(--line-faint)}
-.ev-faq summary{cursor:pointer;padding:14px 0;font-size:14px;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-hover) var(--ease-out)}
+.ev-faq details{border-top:1px solid var(--border-subtle)}
+.ev-faq details:last-of-type{border-bottom:1px solid var(--border-subtle)}
+.ev-faq summary{cursor:pointer;padding:14px 0;font-size:14px;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-hover) var(--ease-hover)}
 /* Shoreside's FAQ already answered the pointer; this one did not. */
 .ev-faq summary:hover{color:var(--text-link)}
-.ev-faq summary:after{content:"+";font-family:var(--font-mono);color:var(--text-3)}
+.ev-faq summary:after{content:"+";font-family:var(--font-mono);color:var(--text-faint)}
 .ev-faq details[open] summary:after{content:"−"}
 .ev-faq summary::-webkit-details-marker{display:none}
-.ev-faq p{font-size:var(--text-sm);color:var(--text-2);padding:0 0 16px;max-width:60ch}
+.ev-faq p{font-size:var(--text-sm);color:var(--text-muted);padding:0 0 16px;max-width:var(--measure-body)}
 
 /* The data register under the FAQ — the age line and the venue's access note.
    Mono, tracked, the ship's-log voice; the access note keeps sentence case
    because it is prose a venue wrote and a reader with the need reads twice. */
-.ev-register{margin-top:24px;display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--line-faint)}
-.ev-register__line{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase}
-.ev-register__note{font-size:var(--text-sm);color:var(--text-2);max-width:60ch}
+.ev-register{margin-top:24px;display:flex;flex-direction:column;gap:8px;padding-top:16px;border-top:1px solid var(--border-subtle)}
+.ev-register__line{font-family:var(--font-mono);font-size:var(--text-xs);letter-spacing:var(--track-data);color:var(--text-muted);text-transform:uppercase}
+.ev-register__note{font-size:var(--text-sm);color:var(--text-muted);max-width:var(--measure-body)}
 /* Room above the loading block, matching .ws-phead's top offset. */
 .ws-loading{padding:72px 0 96px}
 .ev-plan{margin-top:48px}
-.ev-plan__row{display:grid;grid-template-columns:72px 1fr;gap:20px;padding:14px 0;border-top:1px solid var(--line-faint);align-items:baseline}
-.ev-plan__row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.ev-plan__row{display:grid;grid-template-columns:72px 1fr;gap:20px;padding:14px 0;border-top:1px solid var(--border-subtle);align-items:baseline}
+.ev-plan__row:last-of-type{border-bottom:1px solid var(--border-subtle)}
 .ev-plan__t{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
 .ev-plan__title{font-size:var(--text-sm);font-weight:700}
-.ev-plan__note{font-size:var(--text-xs);color:var(--text-2);margin-top:4px;max-width:56ch}
+.ev-plan__note{font-size:var(--text-xs);color:var(--text-muted);margin-top:4px;max-width:var(--measure-tight)}
 .ev-fleet{margin-top:48px}
-.ev-fleet__row{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:baseline;padding:14px 0;border-top:1px solid var(--line-faint)}
-.ev-fleet__row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.ev-fleet__row{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:baseline;padding:14px 0;border-top:1px solid var(--border-subtle)}
+.ev-fleet__row:last-of-type{border-bottom:1px solid var(--border-subtle)}
 .ev-fleet__name{font-family:var(--font-sans);font-weight:700;font-size:var(--text-lg)}
-.ev-fleet__spec{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.ev-fleet__spec{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 @media (max-width:640px){.ev-fleet__row{grid-template-columns:1fr;gap:4px}}
 .ev-frames{margin-top:48px}
 .ev-frames__strip{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
-.ev-frames__img{flex:none;width:288px;height:186px;object-fit:cover;border-radius:var(--radius-sharp)}
-.ev-frames__tk{position:relative;height:186px;border-radius:var(--radius-sharp);overflow:hidden;display:flex;align-items:flex-end;padding:14px}
+.ev-frames__img{flex:none;width:288px;height:186px;object-fit:cover;border-radius:var(--radius-sm)}
+.ev-frames__tk{position:relative;height:186px;border-radius:var(--radius-sm);overflow:hidden;display:flex;align-items:flex-end;padding:14px}
 .ev-frames__tk:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-card);mix-blend-mode:multiply}
-.ev-frames__tk:after{content:"";position:absolute;inset:0;background:var(--scrim);opacity:.85}
-.ev-frames__tk span{position:relative;z-index:1;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-on-media);text-transform:uppercase}
-.ev-crew-names{font-size:var(--text-xs);color:var(--text-2);margin-top:12px}
+.ev-frames__tk:after{content:"";position:absolute;inset:0;background:var(--gradient-protect);opacity:.85}
+.ev-frames__tk span{position:relative;z-index:var(--layer-raised);font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-on-media);text-transform:uppercase}
+.ev-crew-names{font-size:var(--text-xs);color:var(--text-muted);margin-top:12px}
 .ev-side{position:sticky;top:96px;align-self:start;display:flex;flex-direction:column;gap:20px}
-.ev-panel{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);padding:24px}
-.ev-panel__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin-bottom:12px}
+.ev-panel{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:24px}
+.ev-panel__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);margin-bottom:12px}
 /* The passage panel's short answers — cancelled, sailed, held, underway, on
    request, by invitation, full, and who's aboard. Ten call sites carried the
    same off-ladder pair inline; --above is the copy that stands over a button,
    --fine the consent line under the roster. */
-.ev-note{font-size:var(--text-sm);color:var(--text-2)}
+.ev-note{font-size:var(--text-sm);color:var(--text-muted)}
 .ev-note--above{margin-bottom:16px}
-.ev-note--fine{font-size:var(--text-xs);color:var(--text-3);margin-top:10px}
-.ev-log{background:var(--surface-deep);border-radius:var(--radius-sharp);padding:20px;display:flex;flex-direction:column;gap:8px}
+.ev-note--fine{font-size:var(--text-xs);color:var(--text-faint);margin-top:10px}
+.ev-log{background:var(--surface-deep);border-radius:var(--radius-sm);padding:20px;display:flex;flex-direction:column;gap:8px}
 /* The calendar and share-card links inside the log. Five copies of the same
    inline pair carried this: the global `a` colour is ink-on-paper, which on the
    deep surface is ink on ink, so the links inherit the log's own ivory. */
@@ -374,27 +372,27 @@ main .ls-section + .ls-section{padding-top:0}
 .ev-log__lead>div{display:block}
 .ev-log__lead>div span:first-child{display:block}
 .ev-log__lead>div span:last-child{display:block;text-align:start;font-size:var(--text-sm);margin-top:4px}
-.ev-mono-note{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);margin-top:12px;text-transform:uppercase}
+.ev-mono-note{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-faint);margin-top:12px;text-transform:uppercase}
 @media (max-width:960px){.ev-body{grid-template-columns:1fr;gap:40px}.ev-side{position:static}}
 
 /* ————— membership ————— */
-.ws-mprice{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-2);margin:6px 0 2px;text-transform:uppercase}
+.ws-mprice{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-muted);margin:6px 0 2px;text-transform:uppercase}
 .ws-mfeat{list-style:none;margin:16px 0 0;padding:0}
-.ws-mfeat li{padding:9px 0;border-top:1px solid var(--line-faint);font-size:var(--text-xs);color:var(--text-2)}
+.ws-mfeat li{padding:9px 0;border-top:1px solid var(--border-subtle);font-size:var(--text-xs);color:var(--text-muted)}
 .ls-card--sea .ws-mfeat li{border-top-color:var(--line-inverse-faint);color:var(--text-inverse-2)}
 .ls-card--sea .ws-mprice{color:var(--text-inverse-3)}
-.ws-knots{margin:64px 0 0;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
-.ws-knots:before{content:"";display:block;border-top:1px solid var(--line-strong)}
+.ws-knots{margin:64px 0 0;border-top:1px solid var(--border-strong);position:relative;padding-top:3px}
+.ws-knots:before{content:"";display:block;border-top:1px solid var(--border-strong)}
 .ws-knots>div{display:grid;grid-template-columns:auto 1fr;gap:32px;padding-top:24px;align-items:baseline}
 .ws-knots__n{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase;white-space:nowrap}
-.ws-knots p{font-size:var(--text-xs);color:var(--text-2);max-width:64ch}
+.ws-knots p{font-size:var(--text-xs);color:var(--text-muted);max-width:var(--measure-body)}
 @media (max-width:640px){.ws-knots>div{grid-template-columns:1fr;gap:8px}}
 /* ————— membership: live plan grid ————— */
-.ws-plans{margin-top:48px;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
-.ws-plans:before{content:"";display:block;border-top:1px solid var(--line-strong)}
-.ws-plans__row{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:24px;padding:20px 0;border-bottom:1px solid var(--line-faint);align-items:start}
+.ws-plans{margin-top:48px;border-top:1px solid var(--border-strong);position:relative;padding-top:3px}
+.ws-plans:before{content:"";display:block;border-top:1px solid var(--border-strong)}
+.ws-plans__row{display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:24px;padding:20px 0;border-bottom:1px solid var(--border-subtle);align-items:start}
 .ws-plans__cell--span{grid-column:2 / -1}
-.ws-plans__row--head{padding:16px 0 10px;border-bottom:1px solid var(--line-strong)}
+.ws-plans__row--head{padding:16px 0 10px;border-bottom:1px solid var(--border-strong)}
 .ws-plans__th{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
 .ws-plans__label b{font-family:var(--font-display);font-weight:400;font-size:22px;display:inline-block;margin-right:10px;text-transform:uppercase}
 /* :not(.ls-badge), and a child combinator, because this row also holds the
@@ -402,30 +400,30 @@ main .ls-section + .ls-section{padding-top:0}
    outranked every (0,1,0) rule in the Badge component and repainted it from
    outside: display:block stretched a content-sized distinction marker into a
    full-width band under the tier name, where it read as a section header, and
-   color:var(--text-3) put grey #8A8A85 on the accent fill at 1.5:1. The badge
+   color:var(--text-faint) put grey #8A8A85 on the accent fill at 1.5:1. The badge
    belongs inline after the name, on the same line, sized to its own text —
    which is where a reader looks for a qualifier on a heading. This selector
    describes the blurb underneath it and nothing else. */
-.ws-plans__label>span:not(.ls-badge){display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:4px;max-width:22ch}
+.ws-plans__label>span:not(.ls-badge){display:block;font-size:var(--text-xs);color:var(--text-faint);margin-top:4px;max-width:22ch}
 .ws-plans__cell{display:flex;flex-direction:column;gap:5px}
 .ws-plans__tier{display:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase}
-.ws-plans__price{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-1);text-transform:uppercase}
-.ws-plans__ev{font-size:var(--text-xs);color:var(--text-2)}
-.ws-plans__note{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
-.ws-plans__dash{color:var(--text-3);font-family:var(--font-mono)}
+.ws-plans__price{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-body);text-transform:uppercase}
+.ws-plans__ev{font-size:var(--text-xs);color:var(--text-muted)}
+.ws-plans__note{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
+.ws-plans__dash{color:var(--text-faint);font-family:var(--font-mono)}
 @media (max-width:800px){
   .ws-plans__row{grid-template-columns:1fr;gap:14px}
   .ws-plans__row--head{display:none}
   .ws-plans__tier{display:block}
-  .ws-plans__cell{padding-left:16px;border-left:1px solid var(--line-faint)}
+  .ws-plans__cell{padding-left:16px;border-left:1px solid var(--border-subtle)}
 }
 .ws-apply{margin:72px 0 96px;max-width:560px}
 .ws-apply h2{font-size:var(--text-display-m)}
 .ws-apply form{display:flex;flex-direction:column;gap:18px;margin-top:32px}
-.ws-apply__meta{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.ws-apply__meta{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 
 /* ————— LORE ————— */
-.dp-head{padding:72px 0 40px;border-bottom:1px solid var(--line-strong);position:relative}
+.dp-head{padding:72px 0 40px;border-bottom:1px solid var(--border-strong);position:relative}
 /* the masthead — Anton, tracked wide; type-only, the magazine's one mark */
 /* Display type tracks at --tracking-display (.01em). This masthead carried
    .3em with a -.3em right margin to cancel the trailing gap — thirty times the
@@ -433,69 +431,69 @@ main .ls-section + .ls-section{padding-top:0}
    like a poster. The compensation margin goes with it: at .01em there is no
    trailing gap worth cancelling. */
 .dp-mast{font-family:var(--font-display);font-size:var(--text-display-l);letter-spacing:var(--tracking-display);text-transform:uppercase}
-.dp-mast__sub{font-size:var(--text-body-l);color:var(--text-2);margin-top:12px}
-.dp-head:after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid var(--line-strong)}
+.dp-mast__sub{font-size:var(--text-lg);color:var(--text-muted);margin-top:12px}
+.dp-head:after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid var(--border-strong)}
 .dp-head h1{font-size:var(--text-display-l)}
 .dp-list{padding-bottom:48px}
 .dp-art{max-width:680px;margin:0 auto;padding-block:var(--rhythm-section-tight) var(--rhythm-section)}
 .dp-art h1{font-size:var(--text-display-m);margin:14px 0 10px}
-.dp-art__dek{font-size:var(--text-body-l);color:var(--text-2)}
-.dp-kick{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);display:flex;gap:10px;flex-wrap:wrap;text-transform:uppercase}
+.dp-art__dek{font-size:var(--text-lg);color:var(--text-muted)}
+.dp-kick{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);display:flex;gap:10px;flex-wrap:wrap;text-transform:uppercase}
 .dp-kick .tag{color:var(--gold-deep)}
-.dp-art__body{max-width:var(--measure)}
-.dp-art__body p{margin-top:20px;font-size:16px;line-height:1.75}
-.dp-art__foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--line-faint);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-.dp-art__coords{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.dp-art__body{max-width:var(--measure-body)}
+.dp-art__body p{margin-top:20px;font-size:16px;line-height:var(--leading-loose)}
+.dp-art__foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--border-subtle);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.dp-art__coords{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 
 /* ————— gallery ————— */
 /* Rows are a floor, not a cap: a tile that spans two rows sets its own height,
    and a group that has grown past its placeholder is not clipped to 180px. */
 .gl-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(180px,auto);gap:12px;padding:40px 0 48px}
-.gl-tile{border-radius:var(--radius-sharp);position:relative;overflow:hidden}
+.gl-tile{border-radius:var(--radius-sm);position:relative;overflow:hidden}
 .gl-tile__bg{position:absolute;inset:0}
 .gl-tile__bg:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply}
-.gl-tile:after{content:"";position:absolute;inset:0;background:var(--scrim);opacity:.85}
-.gl-tile__cap{position:absolute;left:14px;right:14px;bottom:12px;z-index:1;color:var(--bone)}
+.gl-tile:after{content:"";position:absolute;inset:0;background:var(--gradient-protect);opacity:.85}
+.gl-tile__cap{position:absolute;left:14px;right:14px;bottom:12px;z-index:var(--layer-raised);color:var(--bone)}
 .gl-tile__cap b{display:block;font-family:var(--font-sans);font-weight:700;font-size:16px}
 .gl-tile__cap span{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--tracking-dense);color:var(--text-on-media);text-transform:uppercase}
 .gl-tile__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .gl-tile--frame:after{opacity:.45}
-.gl-group__head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:40px;border-top:1px solid var(--line-faint)}
+.gl-group__head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding-top:40px;border-top:1px solid var(--border-subtle)}
 .gl-group__head h2{font-size:var(--text-display-xs)}
 .gl-group__head h2 a{color:inherit}
-.gl-group__meta{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.gl-group__meta{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 .gl-grid--group{padding:16px 0 32px}
 .gl-tile--tall{grid-row:span 2}
 .gl-tile--wide{grid-column:span 2}
-.gl-caption{border-top:1px solid var(--line-faint);padding:20px 0 96px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap}
-.gl-caption p{font-size:var(--text-xs);color:var(--text-3);max-width:58ch}
-.gl-caption span{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.gl-caption{border-top:1px solid var(--border-subtle);padding:20px 0 96px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap}
+.gl-caption p{font-size:var(--text-xs);color:var(--text-faint);max-width:var(--measure-body)}
+.gl-caption span{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 @media (max-width:960px){.gl-grid{grid-template-columns:1fr 1fr}}
 @media (max-width:640px){.gl-grid{grid-template-columns:1fr;grid-auto-rows:minmax(200px,auto)}.gl-tile--wide{grid-column:span 1}}
 
 /* ————— legal / support ————— */
 .lg-wrap{max-width:760px;margin:0 auto;padding-inline:24px;padding-block:var(--rhythm-section-tight) var(--rhythm-section)}
 .lg-wrap h1{font-size:var(--text-display-l)}
-.lg-anchors{display:flex;gap:18px;flex-wrap:wrap;margin-top:32px;padding-bottom:16px;border-bottom:1px solid var(--line-faint)}
-.lg-anchors a{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2)}
+.lg-anchors{display:flex;gap:18px;flex-wrap:wrap;margin-top:32px;padding-bottom:16px;border-bottom:1px solid var(--border-subtle)}
+.lg-anchors a{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-muted)}
 .lg-sec{margin-top:48px;scroll-margin-top:96px}
-.lg-sec h2{font-size:var(--text-display-s);padding-top:20px;border-top:1px solid var(--line-strong)}
+.lg-sec h2{font-size:var(--text-display-s);padding-top:20px;border-top:1px solid var(--border-strong)}
 .lg-sec h3{font-size:var(--text-display-xs);margin-top:28px}
-.lg-sec p,.lg-sec li{font-size:14px;line-height:1.7;color:var(--text-2);margin-top:10px;max-width:var(--measure)}
+.lg-sec p,.lg-sec li{font-size:14px;line-height:var(--leading-loose);color:var(--text-muted);margin-top:10px;max-width:var(--measure-body)}
 .lg-sec ul{margin:10px 0 0;padding-inline-start:18px}
-.lg-mono{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.lg-mono{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 /* ————— apply-status: the ladder ————— */
 /* Fifteen inline style objects used to carry this, including a 600 weight
    Archivo does not ship (the browser faked it) and three off-ladder sizes. The
    state that mattered was missing too: opacity was the only signal, so the
    stage the applicant is AT looked exactly like the two after it — on the page
    whose whole purpose is where they stand. Three states now: done, now, ahead. */
-.as-ladder{list-style:none;margin:28px 0 0;padding:0;border-top:1px solid var(--line-faint)}
-.as-ladder li{display:grid;grid-template-columns:28px 1fr;gap:14px;padding:16px 0;border-bottom:1px solid var(--line-faint)}
-.as-ladder__dot{width:12px;height:12px;margin-top:5px;border-radius:var(--radius-pill);border:1px solid var(--line-strong)}
+.as-ladder{list-style:none;margin:28px 0 0;padding:0;border-top:1px solid var(--border-subtle)}
+.as-ladder li{display:grid;grid-template-columns:28px 1fr;gap:14px;padding:16px 0;border-bottom:1px solid var(--border-subtle)}
+.as-ladder__dot{width:12px;height:12px;margin-top:5px;border-radius:var(--radius-pill);border:1px solid var(--border-strong)}
 .as-ladder__t{font:var(--type-heading)}
-.as-ladder__note{font-size:var(--text-xs);color:var(--text-2);margin-top:5px}
-.as-ladder__state{display:block;margin-top:6px;font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
+.as-ladder__note{font-size:var(--text-xs);color:var(--text-muted);margin-top:5px}
+.as-ladder__state{display:block;margin-top:6px;font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-faint)}
 .as-ladder li[data-state="done"] .as-ladder__dot{background:var(--gold-deep);border-color:var(--gold-deep)}
 /* The one row the reader came for: full strength, the accent in the dot, and a
    ring so it reads down a column of hairlines at a glance. */
@@ -505,41 +503,41 @@ main .ls-section + .ls-section{padding-top:0}
    unearned record — one step down the text ramp at FULL opacity, never a fade.
    At .55 the step title composited to 3.90:1, its note to 2.53:1 and its state
    word to 2.16:1: three failures of §1.4.3 on copy that is not a control, and
-   §1.4.3's inactive-control exemption does not reach it. --text-2 is 7.01:1 on
+   §1.4.3's inactive-control exemption does not reach it. --text-muted is 7.01:1 on
    the page. The dot takes the faint rule instead of the strong one so the
    column keeps the hierarchy the fade used to draw; the state is said in words
    by .as-ladder__state either way, so the dot is decoration. */
-.as-ladder li[data-state="ahead"]{color:var(--text-2)}
-.as-ladder li[data-state="ahead"] .as-ladder__dot{border-color:var(--line-faint)}
+.as-ladder li[data-state="ahead"]{color:var(--text-muted)}
+.as-ladder li[data-state="ahead"] .as-ladder__dot{border-color:var(--border-subtle)}
 
 .sp-faq{margin-top:32px}
-.sp-faq details{border-top:1px solid var(--line-faint)}
-.sp-faq details:last-of-type{border-bottom:1px solid var(--line-faint)}
-.sp-faq summary{cursor:pointer;padding:15px 0;font-size:var(--text-sm);font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-hover) var(--ease-out)}
+.sp-faq details{border-top:1px solid var(--border-subtle)}
+.sp-faq details:last-of-type{border-bottom:1px solid var(--border-subtle)}
+.sp-faq summary{cursor:pointer;padding:15px 0;font-size:var(--text-sm);font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-hover) var(--ease-hover)}
 .sp-faq summary:hover{color:var(--text-link)}
-.sp-faq summary:after{content:"+";font-family:var(--font-mono);color:var(--text-3)}
+.sp-faq summary:after{content:"+";font-family:var(--font-mono);color:var(--text-faint)}
 .sp-faq details[open] summary:after{content:"−"}
 .sp-faq summary::-webkit-details-marker{display:none}
-.sp-faq p{font-size:var(--text-sm);color:var(--text-2);padding:0 0 16px;max-width:60ch;line-height:1.65}
-.sp-group{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin:24px 0 6px}
-.sp-contact{margin-top:56px;border-top:1px solid var(--line-strong);position:relative;padding-top:3px}
-.sp-contact:before{content:"";display:block;border-top:1px solid var(--line-strong)}
+.sp-faq p{font-size:var(--text-sm);color:var(--text-muted);padding:0 0 16px;max-width:var(--measure-body);line-height:var(--leading-loose)}
+.sp-group{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);margin:24px 0 6px}
+.sp-contact{margin-top:56px;border-top:1px solid var(--border-strong);position:relative;padding-top:3px}
+.sp-contact:before{content:"";display:block;border-top:1px solid var(--border-strong)}
 /* Three panels — Write, Applicants, Hours — in a two-track grid left Hours
    alone on a second row beside an empty cell. The track count follows the
    children instead of being asserted. */
 .sp-contact>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:32px;padding-top:24px}
-.sp-contact b{font:var(--type-label);display:block;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);margin-bottom:8px}
-.sp-contact p{font-size:var(--text-sm);color:var(--text-2)}
-.sp-hours{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase;line-height:2}
+.sp-contact b{font:var(--type-label);display:block;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-faint);margin-bottom:8px}
+.sp-contact p{font-size:var(--text-sm);color:var(--text-muted)}
+.sp-hours{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-muted);text-transform:uppercase;line-height:var(--leading-loose)}
 @media (max-width:640px){.sp-contact>div{grid-template-columns:1fr}}
 
 /* — the Log's year spine, the same device the manifest uses for months: fifty
      dispatches in one unbroken column give the reader no landmark at all. — */
-.dp-year{position:sticky;top:72px;z-index:1;background:var(--surface-page);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase;padding:14px 0 8px}
+.dp-year{position:sticky;top:72px;z-index:var(--layer-raised);background:var(--surface-page);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep);text-transform:uppercase;padding:14px 0 8px}
 @media (max-width:960px){.dp-year{top:64px}}
 .dp-link{color:inherit;text-decoration:none;display:block}
 .ws-dp-row--flat{display:block}
-.dp-footnote{padding:40px 0 48px;font-size:var(--text-xs);color:var(--text-3);max-width:58ch}
+.dp-footnote{padding:40px 0 48px;font-size:var(--text-xs);color:var(--text-faint);max-width:var(--measure-body)}
 
 /* — the standing view controls. A standing filter that cannot be seen is a bug
      report waiting to happen, so the manifest says it is in force and puts the
@@ -577,21 +575,21 @@ main .ls-section + .ls-section{padding-top:0}
 
 /* ————— crew: postings and the application ————— */
 .crew-list{padding:64px 0 96px}
-.crew-row{display:flex;align-items:flex-start;gap:24px;padding:24px 0;border-top:1px solid var(--line-faint);color:inherit;text-decoration:none}
-.crew-row:last-of-type{border-bottom:1px solid var(--line-faint)}
+.crew-row{display:flex;align-items:flex-start;gap:24px;padding:24px 0;border-top:1px solid var(--border-subtle);color:inherit;text-decoration:none}
+.crew-row:last-of-type{border-bottom:1px solid var(--border-subtle)}
 .crew-row>div{flex:1;min-width:0}
 .crew-row__go{flex:none;align-self:center}
-.crew-row:hover .ws-ledger-row__t{color:var(--aegean)}
-.crew-none{margin-top:24px;font-size:var(--text-sm);color:var(--text-3);max-width:58ch}
+.crew-row:hover .ws-ledger-row__t{color:var(--accent)}
+.crew-none{margin-top:24px;font-size:var(--text-sm);color:var(--text-faint);max-width:var(--measure-body)}
 .crew-back{color:inherit;text-decoration:none}
 .crew-back:hover{text-decoration:underline}
-.crew-facts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.crew-facts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 
 /* The posting reads in a column, the form sits beside it and sticks — a
    candidate who has just read why they want it should not have to scroll back
    up to say so. */
 .crew-role{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:56px;padding:56px 0 96px;align-items:start}
-.crew-role__lede{font-size:var(--text-body-l);color:var(--text-2);max-width:60ch}
+.crew-role__lede{font-size:var(--text-lg);color:var(--text-muted);max-width:var(--measure-body)}
 .crew-role__apply{position:sticky;top:96px}
 @media (max-width:960px){
   .crew-role{grid-template-columns:1fr;gap:40px;padding:40px 0 72px}
@@ -599,28 +597,28 @@ main .ls-section + .ls-section{padding-top:0}
 }
 .crew-sec{margin-top:40px}
 .crew-sec h2{font-size:var(--text-2xl);margin-bottom:16px}
-.crew-sec ul{margin:0;padding:0;list-style:none;max-width:64ch}
-.crew-sec li{padding:10px 0 10px 22px;border-top:1px solid var(--line-faint);font-size:var(--text-sm);color:var(--text-2);position:relative}
+.crew-sec ul{margin:0;padding:0;list-style:none;max-width:var(--measure-body)}
+.crew-sec li{padding:10px 0 10px 22px;border-top:1px solid var(--border-subtle);font-size:var(--text-sm);color:var(--text-muted);position:relative}
 .crew-sec li:before{content:"";position:absolute;inset-inline-start:0;top:19px;width:8px;border-top:1px solid var(--border-strong)}
-.crew-sec p{font-size:var(--text-sm);color:var(--text-2);max-width:64ch}
+.crew-sec p{font-size:var(--text-sm);color:var(--text-muted);max-width:var(--measure-body)}
 /* Numbered because the process really is a sequence — the one place on this
    page where order carries information the reader needs. */
-.crew-steps{margin:0;padding:0;list-style:none;counter-reset:none;max-width:64ch}
-.crew-steps li{display:flex;gap:16px;padding:12px 0;border-top:1px solid var(--line-faint);font-size:var(--text-sm);color:var(--text-2)}
+.crew-steps{margin:0;padding:0;list-style:none;counter-reset:none;max-width:var(--measure-body)}
+.crew-steps li{display:flex;gap:16px;padding:12px 0;border-top:1px solid var(--border-subtle);font-size:var(--text-sm);color:var(--text-muted)}
 .crew-steps__n{flex:none;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--gold-deep)}
 
-.crew-form{display:flex;flex-direction:column;gap:14px;background:var(--surface-card);border:1px solid var(--line-strong);border-radius:var(--radius-md);padding:24px}
+.crew-form{display:flex;flex-direction:column;gap:14px;background:var(--surface-card);border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:24px}
 .crew-form__eyebrow{color:var(--gold-deep);display:block}
-.crew-form__fine{font-size:var(--text-xs);color:var(--text-3);margin:0}
-.crew-closed{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);padding:24px;display:flex;flex-direction:column;gap:12px}
-.crew-closed p{font-size:var(--text-sm);color:var(--text-2);margin:0}
+.crew-form__fine{font-size:var(--text-xs);color:var(--text-faint);margin:0}
+.crew-closed{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:24px;display:flex;flex-direction:column;gap:12px}
+.crew-closed p{font-size:var(--text-sm);color:var(--text-muted);margin:0}
 
 /* — the crew index and a crew member — */
-.crew-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--line-faint);border:1px solid var(--line-faint)}
+.crew-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--border-subtle);border:1px solid var(--border-subtle)}
 .crew-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px 20px;background:var(--surface-page);color:inherit;text-decoration:none}
 .crew-card:hover{background:var(--surface-card)}
-.crew-card__name{font-family:var(--font-display);font-size:var(--text-xl);letter-spacing:var(--track-display);text-transform:uppercase;line-height:1}
-.crew-card__role{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.crew-card__name{font-family:var(--font-display);font-size:var(--text-xl);letter-spacing:var(--track-display);text-transform:uppercase;line-height:var(--leading-flat)}
+.crew-card__role{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 .crew-hero{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
 .crew-hero h1{margin:0}
 .crew-billing__h{font-size:var(--text-2xl);margin:0 0 8px}
@@ -628,12 +626,12 @@ main .ls-section + .ls-section{padding-top:0}
 /* — the billing on an episode. A different question from who is aboard, and a
      public one: this is the reason somebody books the night. — */
 .ev-crew{display:flex;flex-direction:column;gap:2px;margin-top:10px}
-.ev-crew__one{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line-faint);color:inherit;text-decoration:none}
+.ev-crew__one{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--border-subtle);color:inherit;text-decoration:none}
 .ev-crew__one:first-child{border-top:none}
-.ev-crew__one:hover b{color:var(--aegean)}
+.ev-crew__one:hover b{color:var(--accent)}
 .ev-crew__who{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ev-crew__who b{font-size:var(--text-sm);font-weight:500}
-.ev-crew__who span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
+.ev-crew__who span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-faint);text-transform:uppercase}
 /* "3 episodes together" — a fact the club has, not an inference about anybody. */
 .ev-crew__met{font-style:normal;color:var(--gold-deep);margin-inline-start:5px}
 /* The reading column of a crew posting. min-width:0 so a long line wraps
@@ -654,7 +652,7 @@ main .ls-section + .ls-section{padding-top:0}
      pages' head. 320ms, ten pixels, the cinematic ease-out. The home cards keep
      their own staggered rise under it; nothing else on a page moves on load.
      base.css collapses the animation under prefers-reduced-motion. — */
-main .ws-hero__in,main .ws-phead,main .ev-hero__in,main .dp-head,main .lg-head{animation:ls-rise var(--dur-slow) var(--ease-out) backwards}
+main .ws-hero__in,main .ws-phead,main .ev-hero__in,main .dp-head,main .lg-head{animation:ls-rise var(--dur-entrance) var(--ease-enter) backwards}
 
 /* — the card as a link. The home grid wrapped each Card in a bare <Link> with
      the same two inline declarations; the Card itself is not clickable in the
@@ -663,8 +661,8 @@ main .ws-hero__in,main .ws-phead,main .ev-hero__in,main .dp-head,main .lg-head{a
      to the strong line, the media easing in — the kit's own hover, reached from
      outside. :active settles it back down, which is the pressed state. — */
 .ws-card-link{display:block;color:inherit;text-decoration:none}
-.ws-card-link .ls-card{transition:border-color var(--dur-hover) var(--ease-out),transform var(--dur-move) var(--ease-move)}
-.ws-card-link:hover .ls-card{border-color:var(--line-strong);transform:translateY(-2px)}
+.ws-card-link .ls-card{transition:border-color var(--dur-hover) var(--ease-hover),transform var(--dur-move) var(--ease-move)}
+.ws-card-link:hover .ls-card{border-color:var(--border-strong);transform:translateY(-2px)}
 .ws-card-link:hover .ls-card__media>div,.ws-card-link:hover .ls-card__media>img{transform:scale(1.03)}
 .ws-card-link:active .ls-card{transform:none}
 .ws-card-link:focus-visible{outline:2px solid var(--focus);outline-offset:4px;border-radius:var(--radius-md)}
@@ -672,7 +670,7 @@ main .ws-hero__in,main .ws-phead,main .ev-hero__in,main .dp-head,main .lg-head{a
 /* — pressed state for the row links. A button drops a pixel on press; a row
      that is a link dims instead, so the hand knows the click took before the
      route does. — */
-.ws-vrow__link,.dp-link,.crew-row,.crew-card{transition:opacity var(--dur-hover) var(--ease-out)}
+.ws-vrow__link,.dp-link,.crew-row,.crew-card{transition:opacity var(--dur-hover) var(--ease-hover)}
 .ws-vrow__link:active,.dp-link:active,.crew-row:active,.crew-card:active{opacity:.7}
 
 /* — validation. The kit announces a field error (role=alert on .ls-field__error)
@@ -698,9 +696,9 @@ main .ls-field__error{animation:ls-rise var(--dur-enter) var(--ease-enter) backw
 /* — membership: the application block. The lede used to pull itself up 24px
      against the section head's 40px margin; the head yields here instead. — */
 .ws-apply .ws-shead{margin-bottom:16px}
-.ws-apply__lede{color:var(--text-2);max-width:52ch}
+.ws-apply__lede{color:var(--text-muted);max-width:var(--measure-tight)}
 .ws-apply__lede+.ws-apply__lede{font-size:var(--text-sm);margin-top:12px}
-.ws-apply__after{font-size:var(--text-sm);color:var(--text-2);margin-top:20px}
+.ws-apply__after{font-size:var(--text-sm);color:var(--text-muted);margin-top:20px}
 .ws-apply__meta--center{text-align:center;margin-top:16px}
 /* The invite code is a mono field. Was a re-pointed --font-sans on the wrapper. */
 .ws-field--code .ls-input{font-family:var(--font-mono);letter-spacing:var(--track-data)}
@@ -710,8 +708,8 @@ main .ls-field__error{animation:ls-rise var(--dur-enter) var(--ease-enter) backw
 
 /* — the reading pages (the-show, support, legal, apply-status): one head. — */
 .lg-head{display:block}
-.lg-lede{color:var(--text-2);margin-top:16px;max-width:56ch}
-.lg-after{margin-top:40px;font-size:var(--text-sm);color:var(--text-2)}
+.lg-lede{color:var(--text-muted);margin-top:16px;max-width:var(--measure-tight)}
+.lg-after{margin-top:40px;font-size:var(--text-sm);color:var(--text-muted)}
 .lg-sec>.lg-mono{margin-top:24px}
 .sp-contact p+p{margin-top:10px}
 
@@ -726,9 +724,9 @@ main .ls-field__error{animation:ls-rise var(--dur-enter) var(--ease-enter) backw
 .as-lookup__go{padding-top:18px}
 @media (max-width:480px){.as-lookup__form{flex-direction:column;align-items:stretch}.as-lookup__go{padding-top:0}.as-lookup__go .ls-btn{width:100%}}
 .as-answer{margin-top:24px;animation:ls-rise var(--dur-enter) var(--ease-enter) backwards}
-.as-answer p{font-size:var(--text-sm);color:var(--text-2);max-width:48ch}
-.as-answer__next{color:var(--text-1);margin-top:8px}
-.as-answer__closed{display:block;margin-top:14px;font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
+.as-answer p{font-size:var(--text-sm);color:var(--text-muted);max-width:var(--measure-tight)}
+.as-answer__next{color:var(--text-body);margin-top:8px}
+.as-answer__closed{display:block;margin-top:14px;font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-faint)}
 
 /* — the placeholder seas, chosen by data. The hero, the frames placeholder and
      the gallery tiles each read the media key into an inline background; the
@@ -739,7 +737,7 @@ main .ls-field__error{animation:ls-rise var(--dur-enter) var(--ease-enter) backw
 .ev-hero__bg[data-sea="dawn"],.ev-frames__tk[data-sea="dawn"],.gl-tile__bg[data-sea="dawn"]{background:var(--sea-dawn)}
 
 /* — the episode page — */
-.ev-lede{font-size:var(--text-body-l);max-width:56ch}
+.ev-lede{font-size:var(--text-lg);max-width:var(--measure-tight)}
 .ev-plan__foot{margin-top:14px}
 /* The passage panel's state line: the badge, and under it the guest rule while
    the door is open. One block with one gap, in place of a 16px margin and a
@@ -747,10 +745,10 @@ main .ls-field__error{animation:ls-rise var(--dur-enter) var(--ease-enter) backw
 .ev-panel__state{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:16px}
 .ev-panel__state .ev-note--fine{margin-top:0}
 .ev-aboard{display:flex;align-items:center;gap:12px}
-.ev-aboard__n{color:var(--text-2)}
+.ev-aboard__n{color:var(--text-muted)}
 
 /* — the Log article — */
-.dp-art__back{color:var(--text-2)}
+.dp-art__back{color:var(--text-muted)}
 .dp-art .dp-kick{margin-top:28px}
 
 /* — page heads. The facts line under a series head; the head that is the whole
@@ -759,10 +757,10 @@ main .ls-field__error{animation:ls-rise var(--dur-enter) var(--ease-enter) backw
 .ws-phead__facts{margin-top:16px}
 .ws-phead--solo{padding-bottom:var(--rhythm-section)}
 .ws-phead__cta{margin-top:24px;display:flex;gap:16px;flex-wrap:wrap}
-.ws-phead__ref{margin-top:24px;color:var(--text-3)}
+.ws-phead__ref{margin-top:24px;color:var(--text-faint)}
 .ws-phead+.ws-zero,.ws-phead+.ws-ledger-row,.ws-phead+.ws-vrow__link{margin-top:40px}
 .ws-zero__acts{display:flex;gap:12px;flex-wrap:wrap}
-.ws-zero__fine{color:var(--text-3)}
+.ws-zero__fine{color:var(--text-faint)}
 /* The last thing on a page that has no section of its own to end it. */
 .ws-page-foot{padding-bottom:var(--rhythm-section)}
 

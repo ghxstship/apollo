@@ -395,7 +395,7 @@ export function ProducerPanel({
           <span>MEMBER · ACTIONS ASK FIRST</span>
         </div>
         <IconButton label={`Close ${SURFACES.agent}`} variant="ghost" size="sm" onClick={onClose}>
-          <Icon name="X" size={15} />
+          <Icon name="X" size={16} />
         </IconButton>
       </div>
       <div className="pr-seam"></div>

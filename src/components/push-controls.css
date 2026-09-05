@@ -1,8 +1,8 @@
 /* Push controls sit as a row of the You page's "The word" card, which pads
    nothing itself — the row carries the card's 14/18 padding and hairline, as
    .you-row does. States are said in the kit's data mono; nothing spins. */
-.push{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-top:1px solid var(--line-faint)}
+.push{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-top:1px solid var(--border-subtle)}
 .push:first-child{border-top:0}
-.push__mono{font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
-.push__note{margin:0;font-size:var(--text-xs);color:var(--text-3);max-width:42ch}
+.push__mono{font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-faint)}
+.push__note{margin:0;font-size:var(--text-xs);color:var(--text-faint);max-width:var(--measure-note)}
 .push__err{margin:0;font-size:var(--text-xs);color:var(--danger);animation:ls-fade var(--dur-enter) var(--ease-enter)}

@@ -3,13 +3,13 @@
 
 /* 400, not 900. The pill floats above page content — that is all it needs —
    and at 900 it painted over the public nav's whole subtree (.ws-nav is a
-   sticky z-index:500 stacking context, so its 920 menu could never escape it)
+   sticky z-index:var(--layer-nav) stacking context, so its 920 menu could never escape it)
    and swallowed the "Come aboard" CTA. It sits vertically above the tab bar
    (300) already, so it does not need to outrank it.
 
    44px tall: 2px of lava around a 40px pill. It was 38. */
-.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:400;display:inline-flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);transition:bottom var(--dur-move) var(--ease-move),transform var(--dur-hover) var(--ease-out);animation:ls-rise var(--dur-enter) var(--ease-enter)}
-.pr-fab span{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:0 20px;letter-spacing:var(--tracking-label);text-transform:uppercase;transition:background var(--dur-hover) var(--ease-out)}
+.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:var(--layer-fab);display:inline-flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);transition:bottom var(--dur-move) var(--ease-move),transform var(--dur-hover) var(--ease-hover);animation:ls-rise var(--dur-enter) var(--ease-enter)}
+.pr-fab span{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:0 20px;letter-spacing:var(--tracking-label);text-transform:uppercase;transition:background var(--dur-hover) var(--ease-hover)}
 .pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 /* The one persistent floating action in the product, and it answered neither
    the pointer nor the finger: no hover, no press. The carbon face lifts a rung
@@ -25,43 +25,43 @@
    steps above it: toast bottom + toast height (~46px) + 8px. */
 body:has(.ls-toast--fixed) .pr-fab{bottom:80px}
 
-.pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:950;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--line);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;transform-origin:bottom right;animation:pr-in var(--dur-enter) var(--ease-enter)}
+.pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:var(--layer-drawer);width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--border-strong);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;transform-origin:bottom right;animation:pr-in var(--dur-enter) var(--ease-enter)}
 .pr-panel--out{animation:pr-out var(--dur-exit) var(--ease-exit) forwards;pointer-events:none}
 @keyframes pr-in{from{opacity:0;transform:translateY(var(--rise)) scale(var(--press))}to{opacity:1;transform:none}}
 @keyframes pr-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(var(--rise)) scale(var(--press))}}
 .pr-panel:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
-.pr-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-faint)}
+.pr-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border-subtle)}
 .pr-head__glyph{color:var(--neon-cyan)}
 .pr-head__t{flex:1}
 .pr-head b{font-family:var(--font-sans);font-weight:700;font-size:var(--text-md)}
-.pr-head span{display:block;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3)}
+.pr-head span{display:block;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-faint)}
 .pr-seam{height:3px;background:var(--lava);flex:none}
 .pr-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.pr-msg{max-width:85%;padding:10px 14px;font-size:var(--text-sm);line-height:1.5}
+.pr-msg{max-width:85%;padding:10px 14px;font-size:var(--text-sm);line-height:var(--leading-body)}
 .pr-msg--user{align-self:flex-end;background:var(--action-primary);color:var(--action-on-primary)}
-.pr-msg--bot{align-self:flex-start;background:var(--surface-tint);color:var(--text-1)}
+.pr-msg--bot{align-self:flex-start;background:var(--surface-tint);color:var(--text-body)}
 /* The mailto in the Producer's opening line used to be re-coloured and
    un-underlined here. --text-link now resolves to the body colour, so the only
    thing separating the link from the sentence around it was the pointer — and
    this rule outranks base.css's global underline defence at (0,1,1), so it was
    the reason it looked that way. Both halves deleted: the default applies,
    which is the underline the rest of the app uses. */
-.pr-msg--sys{align-self:center;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);background:none;padding:2px;text-align:center}
-.pr-card{align-self:flex-start;width:100%;border:1px solid var(--line);background:var(--surface-page)}
+.pr-msg--sys{align-self:center;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-faint);background:none;padding:2px;text-align:center}
+.pr-card{align-self:flex-start;width:100%;border:1px solid var(--border-strong);background:var(--surface-page)}
 .pr-card__seam{height:4px;background:var(--lava)}
 .pr-card__in{padding:14px 16px}
 .pr-card__t{font-family:var(--font-sans);font-weight:700;font-size:var(--text-md)}
-.pr-card__m{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);margin-top:6px}
+.pr-card__m{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-faint);margin-top:6px}
 .pr-card__acts{display:flex;gap:8px;margin-top:12px}
 .pr-typing{align-self:flex-start;display:inline-flex;gap:4px;padding:12px 14px;background:var(--surface-tint)}
-.pr-typing i{width:5px;height:5px;border-radius:999px;background:var(--text-3);animation:pr-blink 1.2s var(--ease-inout) infinite}/* ds-exempt: state indicator, not a transition — §Motion's 120–560ms band governs reveals and UI transitions; a "still thinking" pulse is an opacity fade whose period is the signal. Collapses under prefers-reduced-motion. */
+.pr-typing i{width:5px;height:5px;border-radius:var(--radius-pill);background:var(--text-faint);animation:pr-blink 1.2s var(--ease-inout) infinite}/* ds-exempt: state indicator, not a transition — §Motion's 120–560ms band governs reveals and UI transitions; a "still thinking" pulse is an opacity fade whose period is the signal. Collapses under prefers-reduced-motion. */
 .pr-typing i:nth-child(2){animation-delay:.2s}.pr-typing i:nth-child(3){animation-delay:.4s}
 @keyframes pr-blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
 .pr-quick{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 10px}
 /* The quick asks are the kit's outline Buttons at sm; the field is the kit's
    Input (44px, its own focus ring, 16px on a touch screen), so the Send beside
    it stands at md to match. */
-.pr-foot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line-faint)}
+.pr-foot{display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--border-subtle)}
 
 /* Clear the member tab bar on small screens. The pill's 84px is what
    member.css pads .mbr-main for — move one, move the other. */

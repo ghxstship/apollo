@@ -283,7 +283,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
       body={post.body}
       style={
         answered
-          ? { borderInlineStartWidth: 3, borderInlineStartColor: "var(--line-strong)" }
+          ? { borderInlineStartWidth: 3, borderInlineStartColor: "var(--border-strong)" }
           : undefined
       }
       footer={
@@ -317,7 +317,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
       {showComments ? (
         <div>
           <CommentThread
-            comments={post.comments.map((c) => ({ author: c.who, tone: "sand", body: c.body }))}
+            comments={post.comments.map((c) => ({ id: c.id, author: c.who, tone: "sand", body: c.body }))}
           />
           <div className="wd-cmt__form">
             <Textarea

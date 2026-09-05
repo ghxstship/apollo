@@ -198,7 +198,7 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
             onKeyDown={onKeyDown}
           />
           <IconButton size="sm" variant="ghost" label="Close search" onClick={() => setOpen(false)}>
-            <Icon name="X" size={15} />
+            <Icon name="X" size={16} />
           </IconButton>
         </div>
 

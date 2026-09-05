@@ -174,14 +174,10 @@
    while gaining an ivory glow, because box-shadow reads --shadow-glow-accent
    directly and background reads it through one level of indirection. Every
    alias that points at the accent has to be restated here. */
---action-accent:var(--ivory-100);
---action-on-accent:var(--noir-950);
 --text-link:var(--ivory-100);
 --gold:var(--ivory-100);
 --gold-deep:var(--ivory-100);
---brass:var(--ivory-100);
 --brass-deep:var(--ivory-100);
---aegean:var(--ivory-100);
 --neon-cyan:var(--ivory-100);
 --lava:var(--ivory-100);
 --border-gold:rgba(241,241,237,.38);
@@ -253,14 +249,10 @@
    while gaining an ivory glow, because box-shadow reads --shadow-glow-accent
    directly and background reads it through one level of indirection. Every
    alias that points at the accent has to be restated here. */
---action-accent:var(--ivory-100);
---action-on-accent:var(--noir-950);
 --text-link:var(--ivory-100);
 --gold:var(--ivory-100);
 --gold-deep:var(--ivory-100);
---brass:var(--ivory-100);
 --brass-deep:var(--ivory-100);
---aegean:var(--ivory-100);
 --neon-cyan:var(--ivory-100);
 --lava:var(--ivory-100);
 --border-gold:rgba(241,241,237,.38);
@@ -280,6 +272,14 @@
    section eyebrow, the rail label, the bulk bar and the funnel chart's fill
    (1.00:1 on the shell ground). Both consumers now read --accent-hover directly
    and compat.css has retired the name, so there is nothing left here to
-   restate — see compat.css §"the metallic channel". */
---neon-violet:var(--ivory-300);
+   restate — see compat.css §"the metallic channel".
+
+   --neon-violet has since gone the same way, and so have --brass, --aegean,
+   --action-accent and --action-on-accent: each had exactly one consumer file,
+   each of those now reads the step it aliased (--accent-press, --accent,
+   --gradient-accent, --on-accent), and every one of those steps is restated
+   above. Five fewer names that a future edit here could forget. The rule the
+   list encodes is unchanged and is what the `ink-aliases` check enforces: if
+   an alias reaching one of these accents is ever added back to compat.css, it
+   is restated here on the same commit. */
 }

@@ -168,7 +168,7 @@ export default async function HomePage() {
             title="Next up. Nobody knows how it ends."
             aside={
               <LinkButton href="/episodes" variant="ghost">
-                View all episodes <Icon name="ArrowUpRight" size={15} />
+                View all episodes <Icon name="ArrowUpRight" size={16} />
               </LinkButton>
             }
           />
@@ -293,7 +293,7 @@ export default async function HomePage() {
               /* The written record, which is the Log — not the listing at
                  /episodes, which is where the club's episodes are sold. */
               <LinkButton href="/log" variant="ghost">
-                The Log <Icon name="ArrowUpRight" size={15} />
+                The Log <Icon name="ArrowUpRight" size={16} />
               </LinkButton>
             }
           />

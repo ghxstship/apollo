@@ -191,12 +191,104 @@
 --ease-enter:var(--ease-out);
 --ease-exit:var(--ease-inout);
 --ease-move:var(--ease-out);
+--ease-hover:var(--ease-out);/* the pointer's own curve — the fourth name the set was missing, so a hover reads a pair instead of a duration and a primitive */
+--dur-entrance:var(--dur-slow);/* a page or section arriving on first paint — longer than a surface's --dur-enter because nothing is waiting behind it */
 --rise:8px;/* the enter translate; exits fall the same distance */
 --press:.98;/* scale of a button under the finger — §Hover/Press */
 --opacity-disabled:.45;
 --control-sm:32px;--control-md:44px;--control-lg:52px;/* sm · md (the touch minimum, and the input height) · lg */
+/* — measure. The package publishes no line length, so 66 rules across 22
+   distinct `max-width:Nch` values were each answering the question again, and
+   nine of those values (52–66ch) were the same answer written seven ways.
+   Three steps, named for the role rather than the number. A measure that is
+   genuinely doing something else — a headline's wrap cap, a field's width, a
+   column inside a two-up card — is not on this scale and stays literal. */
+--measure-note:40ch;/* a note or caption in a narrow column, beside or under a control */
+--measure-tight:52ch;/* a lede or standfirst — a paragraph that sets up a page */
+--measure-body:62ch;/* running body copy — the default, and the old --measure */
+--measure-wide:70ch;/* a long-form document body: a waiver, a policy, a brief */
+/* — leading. tokens/typography.css publishes tight/snug/body; the app needed
+   two more names it had been writing as bare numbers. --leading-loose is the
+   one that mattered: running prose was set at 1.6, 1.65, 1.7 and 1.75 in four
+   sheets that all meant "long-form", and stacked mono label lists at 1.7–2.
+   --leading-flat is the glyph box itself, which is not a leading at all but was
+   spelled `/1` in 25 font shorthands. */
+--leading-flat:1;
+--leading-loose:1.7;
+/* — section rhythm. The marketing surfaces run on two paddings and nothing
+   else: the full one a section takes on its own, and the tight one the tinted
+   bands and the reading columns take. Both were declared as `:root{...96px/72px}`
+   from inside site.css — a component sheet minting global vocabulary, off the
+   spacing scale, and unresolvable in any sheet site.css does not load (which is
+   why boundary.css carried a literal 96px). They belong here, in the fenced
+   block, which is exactly the place the package leaves implicit and which a
+   package regeneration does not touch.
+
+   The values stay 96 and 72. The published scale stops at --space-20 (80px),
+   so snapping to it would have taken 17% off every band on the marketing site
+   — a redesign, which moving a declaration is not allowed to be. The two rungs
+   the rhythm needs are added here instead, in the app's own block, on the same
+   4px rhythm the scale keeps. */
+--space-18:72px;
+--space-24:96px;
+--rhythm-section:var(--space-24);
+--rhythm-section-tight:var(--space-18);
+/* — layers. Twelve bare z-index values across nine sheets, chosen by whoever
+   was last surprised — 40 here, 300 there, 920/930/940/950 in a run nobody
+   could read. The numbers below are the ones already in force, unchanged, so
+   the stacking order is exactly what shipped; what is new is that each has a
+   name saying WHICH thing it is, and that a new surface picks a name rather
+   than a number one higher than the last one it noticed. */
+--layer-base:0;/* establishes a stacking context and nothing more */
+--layer-raised:1;/* content over a decorative ground inside its own section */
+--layer-local:40;/* a list anchored inside a section — over its siblings, under all chrome */
+--layer-sticky:300;/* a sticky page header, and the member tab bar */
+--layer-fab:400;/* the one floating action */
+--layer-nav:500;/* the site's sticky nav, over the floating action */
+--layer-tip:900;/* a tooltip bubble */
+--layer-menu:920;/* the full-screen mobile menu */
+--layer-catch:930;/* the invisible catcher that closes an open popover */
+--layer-popover:940;/* the popover panel itself, and a drawer's veil */
+--layer-drawer:950;/* a drawer, and the producer panel, over that veil */
+--layer-overlay:1000;/* a modal veil: the dialog, the search slate */
+--layer-toast:1100;/* a toast, over everything it reports on */
+--layer-skip:1200;/* the skip link, which has to beat all of it */
 --toast-bottom:var(--space-6);/* where a fixed toast (and any sheet that must clear it) sits above the viewport's foot */
 }
+/* ── breakpoints ────────────────────────────────────────────────────────────
+   Not tokens: a custom property cannot be read inside an @media prelude, so
+   every breakpoint in this app is a literal and always will be. This is the
+   register instead — the list a new media query is checked against before it
+   invents a twentieth value.
+
+   THE PAIR. 640px is the phone step (40 queries) and 960px the tablet step
+   (21). Anything a new rule needs is one of these two unless the CONTENT is
+   what breaks, not the device.
+
+   THE OFF-BY-ONE THAT IS NOT ONE. `max-width:959px` (the member tab bar, the
+   toast offset above it, the Producer's fab) is the deliberate partner of
+   `min-width:960px` (the You rail), and 719/720 is the same pattern for the
+   agreements row. max and min at the SAME number both match at exactly that
+   width; 959/960 is the pair that does not overlap. Where a sheet uses
+   max-width:960px it is a one-sided query with no min-width partner, which is
+   why it can sit on the round number.
+
+   CONTENT BREAKPOINTS, kept on purpose — each is the width at which a specific
+   piece of content stops fitting, and snapping it to 640/960 would move a
+   layout rather than tidy a number:
+     400  bridge · the two-column Bridge row on the narrowest phone
+     480  sign, site · the signing pad and the lookup form going vertical
+     560  member · the chandlery's 3→2→1 tile ladder, third step
+     720  member, site · the agreements row, and the hero headline stepping down
+     768  kiosk · the dock display's own device width, portrait iPad
+     800  site · the four-column plans table stacking
+     820  bridge · the inbox list/detail split
+     860  bridge · two Bridge panels collapsing (×2)
+     900  bridge, brand · the Bridge outbox, and the brand sheet going two-up
+     1100 bridge · the plan id grid (×2)
+     1180 site · the nav's coordinates readout dropping out
+     1280 bridge · the Bridge rail appearing on a wide desk display (×2)
+   600 was a twentieth value doing 640's job in charter.css and is gone. */
 /* Under the member tab bar's breakpoint the foot is the bar (96px) plus the
    home indicator; the toast and anything offset against it rise together. */
 @media (max-width:959px){:root{--toast-bottom:calc(96px + env(safe-area-inset-bottom))}}

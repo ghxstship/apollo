@@ -221,7 +221,7 @@ export default function BrandKitPage() {
           <SectionHeader
             eyebrow="02 — Color"
             title="Paper by default; one accent per view."
-            aside={<span className="ls-mono-data" style={{ color: "var(--text-3)" }}>CLICK ANY SWATCH TO COPY</span>}
+            aside={<span className="ls-mono-data" style={{ color: "var(--text-faint)" }}>CLICK ANY SWATCH TO COPY</span>}
           />
           <div className="bk-swlbl">The noir — the ink theme and every knockout ground</div>
           <div className="bk-swgrid">
@@ -504,7 +504,7 @@ export default function BrandKitPage() {
           <div className="bk-dl__list">
             {/* A static file, not a route: the download attribute makes next/link hand the click to the browser, and prefetch is off so the router never asks for it as a page. */}
               <LinkButton variant="gold" fullWidth href="/brand/un-tokens.css" download prefetch={false}>
-              <Icon name="Download" size={15} />
+              <Icon name="Download" size={16} />
               Color &amp; type tokens · CSS
             </LinkButton>
             <CopyTextButton label="Boilerplate" text={BOILER} variant="outline" inverse fullWidth>

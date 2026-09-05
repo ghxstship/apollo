@@ -46,7 +46,7 @@
 
 /* The page's answer, said once, before the panels that explain it. */
 .vet-summary {
-  font: 700 var(--text-sm)/1 var(--font-mono);
+  font: 700 var(--text-sm)/var(--leading-flat) var(--font-mono);
   letter-spacing: var(--tracking-dense);
   text-transform: uppercase;
   color: var(--text-body);
@@ -89,7 +89,7 @@
   font: var(--type-caption);
   color: var(--text-faint);
   margin: 0;
-  max-width: 56ch;
+  max-width:var(--measure-tight);
 }
 
 /* Rule-separated row. Fixed first column, flexible middle, right-aligned token
@@ -142,8 +142,8 @@
   color: var(--caution);
 }
 .vet-strip--queue .vet-strip__badge { color: var(--text-muted); }
-.vet-strip__title { font: 700 var(--text-sm)/1.3 var(--font-body); color: var(--text-body); }
-.vet-strip__body { font: var(--type-caption); color: var(--text-muted); margin: 0; max-width: 52ch; }
+.vet-strip__title { font: 700 var(--text-sm)/var(--leading-snug) var(--font-body); color: var(--text-body); }
+.vet-strip__body { font: var(--type-caption); color: var(--text-muted); margin: 0; max-width:var(--measure-tight); }
 
 /* The four background states, as the kit draws them: a stack of left-rule
    strips, the rule carrying the state and nothing else coloured. The member's
@@ -167,7 +167,7 @@
   letter-spacing: var(--tracking-dense);
   text-transform: uppercase;
 }
-.vet-state__line { font: 400 var(--text-xs)/1.4 var(--font-body); color: var(--text-muted); }
+.vet-state__line { font: 400 var(--text-xs)/var(--leading-body) var(--font-body); color: var(--text-muted); }
 
 /* The funnel. Six bars sharing one baseline and one scale, and only the seated
    stage accented — "the funnel is a filter, not a scoreboard". */
@@ -199,8 +199,8 @@
 
 /* Whose move it is. Shown only on an open gate — once a gate is cleared, who
    cleared it stops mattering to the person reading. */
-.vet-whose{margin-inline-start:auto;padding-inline-end:12px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
-.vet-standing{margin-top:12px;font-size:var(--text-xs);color:var(--text-2);max-width:52ch}
+.vet-whose{margin-inline-start:auto;padding-inline-end:12px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-faint)}
+.vet-standing{margin-top:12px;font-size:var(--text-xs);color:var(--text-muted);max-width:var(--measure-tight)}
 
 /* — DS convergence 2026-09-05. The seat and drink chips and the stance buttons
    are the kit's Tag now (laid out by .ls-inline / .vet-stances), and the
