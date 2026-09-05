@@ -131,10 +131,7 @@ export default async function TablesPage({
         room here — number and chairs — and strike a table only while nobody
         has confirmed a seat at it.
       </p>
-      <p
-        className="ls-mono-data"
-        style={{ marginTop: 16, color: "var(--text-2)", textTransform: "uppercase" }}
-      >
+      <p className="ls-mono-data hm-strap">
         {night.title.replace(/\.+$/, "")} · {logDate(night.starts_at, night.time_zone)} ·{" "}
         {logTime(night.starts_at, night.time_zone)} · {rows.length}{" "}
         {rows.length === 1 ? "table" : "tables"} · {filled}/{laid} seats taken

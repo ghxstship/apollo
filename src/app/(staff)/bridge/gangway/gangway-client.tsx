@@ -470,13 +470,13 @@ export function GangwayConsole({
       <div className="ls-mono-data hm-gang__meta">
         {identity.toUpperCase()} · {voyageTitle.replace(/\.+$/, "").toUpperCase()} · {departs} · {checked}/{rows.length} ABOARD
       </div>
-      <div className="hm-sec" style={{ marginTop: 20 }}>
+      <div className="hm-sec hm-sec--tight">
         <Select
           label="Episode"
           options={options}
           value={episodeId}
           onChange={(e) => router.replace(`/bridge/gangway?episode=${e.target.value}`)}
-          style={{ maxWidth: 420 }}
+          className="hm-picker"
         />
       </div>
 
@@ -587,7 +587,6 @@ export function GangwayConsole({
               type="button"
               className="ls-btn ls-btn--ghost ls-btn--sm"
               onClick={() => setStuck([])}
-              style={{ marginTop: 8 }}
             >
               Dismiss
             </button>
@@ -606,7 +605,6 @@ export function GangwayConsole({
               type="button"
               className="ls-btn ls-btn--ghost ls-btn--sm"
               onClick={() => setRejected([])}
-              style={{ marginTop: 8 }}
             >
               Clear
             </button>

@@ -121,7 +121,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
               </button>
             ))}
             {inCat.length === 0 ? (
-              <p style={{ color: "var(--text-3)", fontSize: "var(--text-sm)" }}>Nothing on this shelf.</p>
+              <p className="hm-empty">Nothing on this shelf.</p>
             ) : null}
           </div>
         </div>
@@ -129,10 +129,10 @@ export function PosClient({ items }: { items: PosItem[] }) {
         <aside className="hm-ticket">
           <div className="hm-ticket__head">
             {member ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div className="hm-ticket__who">
                 <Avatar name={member.name} tone="gold" size="sm" />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "var(--text-sm)" }}>{member.name}</div>
+                <div>
+                  <div className="hm-body">{member.name}</div>
                   <span className="hm-mono">
                     {member.memberNo} · {(TIER_LABEL[member.tier] ?? member.tier).toUpperCase()}
                   </span>
@@ -142,7 +142,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
                 </Button>
               </div>
             ) : (
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+              <div className="hm-ticket__attach">
                 <Input
                   label="Member"
                   placeholder="UN-0214"
@@ -151,7 +151,6 @@ export function PosClient({ items }: { items: PosItem[] }) {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") attach();
                   }}
-                  style={{ flex: 1 }}
                 />
                 <Button variant="outline" disabled={pending} onClick={attach}>
                   Attach
@@ -162,7 +161,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
 
           <div className="hm-ticket__lines">
             {lines.length === 0 ? (
-              <p style={{ padding: "20px 0", color: "var(--text-3)", fontSize: "var(--text-xs)" }}>
+              <p className="hm-empty">
                 Ring the first item — tap the catalog.
               </p>
             ) : (
@@ -204,7 +203,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
             </Button>
           </div>
           {!member && lines.length ? (
-            <p className="hm-note" style={{ padding: "0 16px 14px", marginTop: 0 }}>
+            <p className="hm-note hm-note--flush">
               Attach a member to settle — every round lands on a record.
             </p>
           ) : null}

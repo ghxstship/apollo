@@ -29,9 +29,15 @@
 .hm-cmd__input{width:100%;height:32px;padding:0 10px;background:var(--surface-card);color:var(--text-1);border:1px solid var(--line-faint);font:400 var(--text-xs)/1 var(--font-sans);outline:none}
 .hm-cmd__input::placeholder{color:var(--text-3)}
 .hm-cmd__input:focus-visible{border-color:var(--line);box-shadow:0 0 0 2px var(--surface-abyss),0 0 0 3px var(--text-3)}
-.hm-cmd__list{position:absolute;top:36px;inset-inline:0;z-index:40;background:var(--surface-card);border:1px solid var(--line-faint);max-height:360px;overflow:auto;padding:4px}
+/* The results appear rather than pop: a short fade on the token's fast step.
+   The selected row is the one the arrow keys have reached; hover and focus
+   share its look so the pointer and the keyboard never disagree about which
+   result Enter will open. */
+.hm-cmd__list{position:absolute;top:38px;inset-inline:0;z-index:40;background:var(--surface-card);border:1px solid var(--line);max-height:360px;overflow:auto;padding:4px;box-shadow:var(--shadow-raised);animation:ls-fade var(--dur-fast) var(--ease-out) backwards}
 .hm-cmd__item{display:grid;grid-template-columns:84px 1fr;gap:2px 10px;padding:8px 10px;text-decoration:none;color:var(--text-1)}
-.hm-cmd__item:hover,.hm-cmd__item:focus-visible{background:var(--surface-page);outline:none}
+.hm-cmd__item{transition:background var(--dur-fast) var(--ease-out)}
+.hm-cmd__item:hover,.hm-cmd__item:focus-visible,.hm-cmd__item[aria-selected="true"]{background:var(--surface-page);outline:none}
+.hm-cmd__item[aria-selected="true"]{box-shadow:inset 2px 0 0 var(--focus)}
 .hm-cmd__kind{grid-row:1 / span 2;align-self:start;font:700 var(--text-3xs)/1.6 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3)}
 .hm-cmd__title{font:700 var(--text-sm)/1.3 var(--font-sans)}
 .hm-cmd__sub{font:400 var(--text-2xs)/1.3 var(--font-mono);color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -47,6 +53,8 @@
 }
 @media (max-width:640px){
   /* phone: the clock and operator line yield; the back link keeps its post */
+  .hm-top__in,.hm-tabs__in{padding-inline:16px}
+  .hm-main{padding:22px 16px 96px}
   .hm-top__clock{display:none}
   .hm-top__op{margin-inline-start:auto}
   .hm-top__op .hm-mono{display:none}
@@ -67,19 +75,35 @@
 .hm-tabs__in a{font:var(--type-label);flex:none;padding:12px 14px;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;border-bottom:2px solid transparent;transition:color var(--dur-1) var(--ease-swell)}
 .hm-tabs__in a:hover{color:var(--text-1);background:var(--wash-ink)}
 .hm-tabs__in a[aria-current="page"]{color:var(--text-1);border-bottom-color:var(--neon-cyan)}
+.hm-tabs__in a:focus-visible{outline-offset:-2px}
 /* A 12px block on a 10px label is a 34px target on the dock, under a thumb, in
    the wet. 16px takes it past 44. */
 @media (pointer:coarse){.hm-tabs__in a{padding-block:16px}}
 
 /* — page scaffolding — */
 .hm-main{flex:1;width:100%;max-width:1240px;margin-inline:auto;padding:30px 28px 96px;box-sizing:border-box}
-.hm-eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep)}
-.hm-h1{font-family:var(--font-display);font-size:var(--text-display-m);line-height:1.1;margin-top:6px;text-transform:uppercase}
-.hm-lede{font-size:var(--text-sm);color:var(--text-2);margin-top:8px;max-width:56ch}
+/* The page head, one rhythm on every section: eyebrow → 8 → h1 → 10 → lede.
+   The eyebrow is a block so the 8px is the h1's margin and not a line-height
+   accident; a note that follows the lede keeps the lede's measure and gap. */
+.hm-eyebrow{display:block;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep)}
+.hm-h1{font-family:var(--font-display);font-size:var(--text-display-m);line-height:1.1;margin-top:8px;text-transform:uppercase;text-wrap:balance}
+.hm-lede{font-size:var(--text-sm);color:var(--text-2);margin-top:10px;max-width:56ch}
+.hm-lede+.hm-note{margin-top:10px;max-width:60ch}
+.hm-sec>h2+.hm-lede{margin-top:4px}
+.hm-sec--tight{margin-top:20px}
+.hm-block{margin-top:20px}
 .hm-mono{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3)}
 .hm-sec{margin-top:36px}
 .hm-sec>h2{font-family:var(--font-display);font-size:var(--text-display-xs);margin-bottom:4px;text-transform:uppercase}
-.hm-row{display:flex;gap:32px;margin:20px 0 4px;flex-wrap:wrap}
+/* The stat row is a grid so it reflows in steps — as many as fit at a desk,
+   two across on a phone, one under 400px — rather than wrapping wherever the
+   widest figure happened to land. */
+.hm-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:20px 32px;margin:20px 0 4px}
+@media (max-width:640px){.hm-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 20px}}
+@media (max-width:400px){.hm-row{grid-template-columns:minmax(0,1fr)}}
+.hm-row .ls-stat{min-width:0}
+.hm-tone--danger{color:var(--danger)}
+.hm-tone--caution{color:var(--caution)}
 /* The attention band. Semantic status colour, not the house accent — what is
    wrong is a different fact from what the club is, and the two must not
    compete. Renders only when something is actually non-zero, so a clean season
@@ -94,6 +118,12 @@
 .hm-form__row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:640px){.hm-form__row{grid-template-columns:1fr}}
 .hm-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hm-acts--right{justify-content:flex-end}
+.hm-acts--below{margin-top:12px}
+/* A pending action says so on the button itself: dimmed, the cursor a clock,
+   and inert until the answer lands. Distinct from disabled, which is .4 and
+   means "not now"; this means "working". */
+.hm-shell .ls-btn[aria-busy="true"]{opacity:.7;cursor:progress;pointer-events:none}
 
 /* — voyage ops rows — */
 .hm-voy{background:var(--surface-card);border:1px solid var(--line-faint);padding:16px 18px;margin-top:10px}
@@ -169,9 +199,11 @@
 
 /* — gangway door console — */
 .hm-gang__scan{margin-top:24px;display:flex;flex-direction:column;gap:16px;max-width:640px}
-.hm-gang__input .ls-input{font-family:var(--font-mono);font-size:22px;letter-spacing:var(--track-data);padding:16px 18px;height:auto;text-transform:uppercase}
+.hm-gang__input .ls-input{font-family:var(--font-mono);font-size:22px;letter-spacing:var(--track-data);padding:16px 18px;height:auto;min-height:60px;text-transform:uppercase}
 .hm-gang__result{border:1px solid var(--line-faint);background:var(--surface-card);padding:22px 24px;display:flex;flex-direction:column;gap:8px}
-.hm-gang__result b{font-family:var(--font-mono);font-weight:700;font-size:var(--text-lg);letter-spacing:var(--track-data);line-height:1.3}
+.hm-gang__result b{font-family:var(--font-mono);font-weight:700;font-size:var(--text-lg);letter-spacing:var(--track-data);line-height:1.3;overflow-wrap:anywhere}
+.hm-gang__result>.ls-btn{margin-top:8px;align-self:flex-start}
+.hm-gang__result{animation:ls-fade var(--dur-base) var(--ease-out) backwards}
 .hm-gang__result span{font-size:var(--text-xs);color:var(--text-2)}
 .hm-gang__result--aboard{border-color:var(--positive);background:color-mix(in srgb,var(--positive) 10%,var(--surface-card))}
 .hm-gang__result--aboard b{color:var(--positive)}
@@ -265,6 +297,10 @@
    3px would not survive. This paints inside the cell and always lands. */
 .hm-outbox tr.is-failed td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
 .hm-outbox tr.is-skipped td:first-child{box-shadow:inset 3px 0 0 var(--caution)}
+.hm-outbox tbody tr{animation:ls-fade var(--dur-base) var(--ease-out) backwards;transition:opacity var(--dur-base) var(--ease-out)}
+.hm-outbox tr.is-gone{opacity:0}
+.hm-outbox td:last-child{white-space:nowrap}
+.hm-outbox.ls-table-wrap{margin-bottom:16px}
 
 /* — running prose on the console —
    .hm-body is a paragraph inside a dialog or under a heading; .hm-empty is the
@@ -273,6 +309,9 @@
    retyped at each of sixty-eight call sites. */
 .hm-body{font-size:var(--text-sm);line-height:var(--leading-body);color:var(--text-2);margin:0}
 .hm-body+.hm-body{margin-top:10px}
+.hm-body--muted{color:var(--text-3)}
+.hm-body--below{margin-top:8px}
+.hm-muted{color:var(--text-3)}
 .hm-empty{padding:20px 4px;font-size:var(--text-xs);color:var(--text-3)}
 
 /* — a row of small named panels (keys, hooks, rules) — */
@@ -285,7 +324,8 @@
 
 /* — media curation grid — */
 .hm-media{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:20px}
-.hm-media__card{background:var(--surface-card);border:1px solid var(--line-faint);display:flex;flex-direction:column}
+.hm-media__card{margin:0;background:var(--surface-card);border:1px solid var(--line-faint);display:flex;flex-direction:column}
+.hm-media__missing{display:block;padding:12px}
 .hm-media__shot{aspect-ratio:4/3;overflow:hidden;background:var(--wash-ink);border-bottom:1px solid var(--line-faint)}
 .hm-media__shot img{width:100%;height:100%;object-fit:cover;display:block}
 .hm-media__body{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
@@ -295,7 +335,9 @@
 /* — the concierge inbox — */
 .hm-inbox{display:grid;grid-template-columns:280px 1fr;gap:24px;margin-top:20px;align-items:start}
 .hm-inbox__list{background:var(--surface-card);border:1px solid var(--line-faint);display:flex;flex-direction:column;max-height:560px;overflow:auto}
-.hm-inbox__row{all:unset;cursor:pointer;box-sizing:border-box;padding:13px 16px;border-inline-start:2px solid transparent;border-top:1px solid var(--line-faint)}
+.hm-inbox__row{all:unset;cursor:pointer;box-sizing:border-box;padding:13px 16px;border-inline-start:2px solid transparent;border-top:1px solid var(--line-faint);transition:background var(--dur-fast) var(--ease-out)}
+.hm-inbox__head{padding:14px 18px}
+.hm-inbox__list .hm-empty{padding:16px}
 .hm-inbox__row:first-child{border-top:0}
 .hm-inbox__row:hover{background:var(--wash-ink)}
 .hm-inbox__row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
@@ -364,7 +406,8 @@
 .hm-plan__head b{font-size:var(--text-sm)}
 .hm-plan__holders{margin-inline-start:auto;color:var(--text-3)}
 .hm-plan__ids{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:12px;align-items:end;margin-top:12px}
-@media (max-width:860px){.hm-plan__ids{grid-template-columns:1fr}}
+@media (max-width:1100px){.hm-plan__ids{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.hm-plan__ids{grid-template-columns:minmax(0,1fr)}}
 
 /* Reconciliation. Exceptions only, so the list is short by design and each row
    has to say which direction the disagreement runs in. */
@@ -462,7 +505,7 @@
 
 /* — Plans: the free tier's one field and its note share the grid — */
 .hm-plan__free{grid-column:2 / -2;margin-top:0;align-self:center}
-@media (max-width:860px){.hm-plan__free{grid-column:auto}}
+@media (max-width:1100px){.hm-plan__free{grid-column:auto}}
 
 /* — Broadcast: the buttons sit on the input's baseline. The four channels are
    an .ls-choices row now, not a rule of their own. — */
@@ -508,9 +551,10 @@
 .hm-audience__head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .hm-audience__match{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .hm-rules{display:flex;flex-direction:column;gap:10px}
-.hm-rule{display:grid;grid-template-columns:180px 130px 1fr auto;gap:10px;align-items:start}
+.hm-rule{display:grid;grid-template-columns:180px 130px 1fr auto;gap:10px;align-items:start;animation:ls-rise var(--dur-base) var(--ease-out) backwards;transition:opacity var(--dur-base) var(--ease-out),transform var(--dur-base) var(--ease-out)}
+.hm-rule--leaving{opacity:0;transform:translateY(-4px)}
 .hm-rule__value{min-width:0}
-.hm-rule__pair{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center}
+.hm-rule__pair{display:grid;grid-template-columns:minmax(0,140px) minmax(0,1fr) auto;gap:8px;align-items:center}
 .hm-rule__set{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .hm-rule__set .ls-field{min-width:220px;flex:1}
 .hm-audience__foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--line-faint)}
@@ -518,3 +562,141 @@
 .hm-reach{font-size:var(--text-sm);color:var(--text-1)}
 .hm-reach__names{color:var(--text-2)}
 @media (max-width:960px){.hm-rule{grid-template-columns:1fr 1fr}.hm-rule__value{grid-column:1 / -1}}
+@media (max-width:640px){.hm-rule{grid-template-columns:minmax(0,1fr)}.hm-rule__value{grid-column:auto}.hm-rule>.ls-btn{justify-self:start}}
+
+/* ── the console's small furniture ──────────────────────────────────────────
+   Each of these stood in as an inline style object at two to seventeen call
+   sites — the same six declarations retyped per file, drifting by a pixel or a
+   grey each time. One rule each, on the console's own rhythm. */
+
+/* A name over its detail, in a table cell: the person or the thing in 700,
+   the number, slug or e-mail under it two pixels down. The sub line is mono
+   where the data is (a member number), plain and faint where it is prose. */
+.hm-who{display:block;min-width:0}
+.hm-who>b{font-weight:700}
+.hm-who>.hm-mono,.hm-who__sub{display:block;margin-top:2px}
+.hm-who__sub{color:var(--text-3)}
+.hm-who__note{display:block;margin-top:4px;color:var(--text-2)}
+
+/* Small stacks and runs inside a cell. */
+.hm-stack{display:inline-flex;flex-direction:column;gap:4px;align-items:start}
+.hm-inline{display:inline-flex;align-items:center;gap:10px}
+.hm-chips{display:inline-flex;gap:6px;flex-wrap:wrap}
+.hm-lines{display:block;line-height:1.7}
+.hm-lines span{display:block}
+
+/* A title with its register beside it, on one baseline. */
+.hm-titleline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hm-titleline b{font-weight:700}
+
+/* Key and value rows — a hook's deliveries, a member's recent passes. The key
+   column is wide enough for a log date; the badge or figure rides the end. */
+.hm-kv{list-style:none;padding:0;margin:0;font-size:var(--text-sm)}
+.hm-kv--below{margin-top:6px}
+.hm-kv li{display:flex;gap:10px;align-items:center;padding:3px 0}
+.hm-kv__k{flex:none;min-width:108px}
+.hm-kv__v{flex:1;min-width:0}
+
+/* A labelled fact in a detail dialog: the mono caption, then the sentence. */
+.hm-fact{font-size:var(--text-sm);margin-top:4px}
+.hm-fact--row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* A row of fields with a button on their baseline — the place-a-sponsor row,
+   the link-an-episode row. Fields share the width; the button keeps its own. */
+.hm-fieldrow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.hm-fieldrow--below{margin-top:12px}
+.hm-fieldrow>.ls-field{flex:1 1 200px;min-width:0}
+
+/* The row of page-level actions under a picker, before the list. */
+.hm-switcher{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:22px 0 14px}
+
+/* The episode picker that heads a per-episode console. */
+.hm-picker{max-width:420px}
+
+/* A mono strap under the page head that names the episode and its clock. */
+.hm-strap{margin-top:14px;color:var(--text-2);text-transform:uppercase}
+
+/* A hook's address: mono, and it breaks anywhere rather than widening a card. */
+.hm-url{font-family:var(--font-mono);font-size:var(--text-sm);overflow-wrap:anywhere}
+
+/* A panel that is a card with a head, not a table's frame. */
+.hm-panel--pad{padding:16px 20px}
+.hm-item--nested{border-top:1px solid var(--line);padding-top:10px}
+.hm-item__acts .ls-switch{margin-inline-start:4px}
+
+/* A comped pass wears the guest hue, not a status. */
+.hm-badge--comp{color:var(--neon-violet);border-color:var(--neon-violet)}
+
+/* — tables on the console —
+   Figures read down the last digit; a badge sits on the row's middle rather
+   than its baseline; a dense row still clears 44px under a thumb. */
+.hm-shell .ls-table .num{font-variant-numeric:tabular-nums}
+.hm-shell .ls-table .ls-badge{vertical-align:middle}
+.hm-shell .ls-table td>.hm-acts{justify-content:flex-end}
+@media (pointer:coarse){
+  .hm-shell .ls-table--dense td{padding-block:11px}
+  .hm-item__acts .ls-btn--sm,.hm-acts .ls-btn--sm{min-height:44px}
+}
+
+/* — the error boundary —
+   It rendered a second <main id="main"> inside the layout's, with a nested
+   .hm-shell; it is a block in the page now, on the page head's rhythm. */
+.hm-err{padding:64px 0 96px}
+.hm-err h1{margin-top:12px}
+.hm-err p{max-width:460px;margin-top:12px}
+.hm-err__acts{margin-top:24px;display:flex;gap:16px;flex-wrap:wrap}
+.hm-err__ref{margin-top:24px;font-size:var(--text-xs)}
+
+/* — the rail — a focus ring inside the sticky, scrolling column, where the
+   overflow cannot clip it. */
+@media (min-width:1280px){.hm-rail__group a:focus-visible{outline-offset:-2px}}
+
+/* Colour and case, as single words, where a span was coloured by hand. */
+.hm-dim{color:var(--text-2)}
+.hm-caps{text-transform:uppercase}
+.hm-fine{font-size:var(--text-xs);color:var(--text-3)}
+/* The gap under a caption, and the heading a card carries in its own head. */
+.hm-below{margin-top:10px}
+.hm-form--below{margin-top:10px}
+.hm-form--wide{margin-top:18px;max-width:720px}
+.hm-form__row--end{align-items:end}
+.hm-form__row--center{align-items:center}
+.hm-note--gap{margin-top:14px}
+.hm-note--flush{margin-top:0}
+.hm-note--caution{color:var(--caution)}
+.hm-body--lead{margin-bottom:14px}
+.hm-mono+.hm-body{margin-top:4px}
+.hm-mono--block{display:block}
+.hm-mono--gilt{display:block;margin-top:4px;color:var(--gold-bright)}
+.hm-h2{font-family:var(--font-display);font-size:var(--text-display-xs);margin-top:4px;text-transform:uppercase}
+.hm-kv__n{flex:none;min-width:24px}
+.hm-stack--block{display:flex;gap:2px}
+/* A field that should not take the row: the heads figure and the certificate
+   line on the composition card, at their own widths. */
+.hm-field--narrow{width:110px;flex:none}
+.hm-field--wide{width:320px;max-width:100%}
+/* A code is typed in caps; the field shows it that way as it is typed. */
+.hm-field--caps .ls-input{text-transform:uppercase}
+/* The clause picker in the compose dialog: a scrolling list of ruled rows,
+   each a tick, a title and a condition. */
+.hm-scroll{display:grid;gap:10px;max-height:48vh;overflow-y:auto}
+.hm-clause{display:grid;grid-template-columns:auto 1fr 150px;gap:12px;align-items:center;border-top:1px solid var(--line-faint);padding-top:10px}
+@media (max-width:640px){.hm-clause{grid-template-columns:auto 1fr}.hm-clause>:last-child{grid-column:1 / -1}}
+/* An itinerary leg in the raise-an-episode dialog: offset, name, note, remove. */
+.hm-leg{display:grid;grid-template-columns:90px 1fr 1fr auto;gap:8px;align-items:end;margin-top:8px}
+@media (max-width:640px){.hm-leg{grid-template-columns:90px 1fr auto}.hm-leg>:nth-child(3){grid-column:1 / -1}}
+/* The flotilla progress bar under the episode row. */
+.hm-progress{margin-top:12px;max-width:460px}
+/* The galley ticket's head: the attached member, or the field to attach one. */
+.hm-ticket__who{display:flex;align-items:center;gap:12px}
+.hm-ticket__who>div{flex:1;min-width:0}
+.hm-ticket__who .hm-body{color:var(--text-1)}
+.hm-ticket__attach{display:flex;gap:8px;align-items:flex-end}
+.hm-ticket__attach>.ls-field{flex:1;min-width:0}
+.hm-ticket__lines .hm-empty{padding-inline:0}
+.hm-ticket .hm-note--flush{padding:0 16px 14px}
+/* An action row that stands 18px under the tabs, 14px over the list. */
+.hm-switcher--tabs{margin:18px 0 14px}
+.hm-block--tabs{margin-top:22px}
+.hm-block--under{margin-top:18px}
+.hm-below--lead{margin-bottom:14px}

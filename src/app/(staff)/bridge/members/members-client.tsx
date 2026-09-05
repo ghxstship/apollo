@@ -302,9 +302,9 @@ export function MembersClient({
       key: "name",
       label: "Member",
       render: (r: MemberRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.name}</b>
-          <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
+        <span className="hm-who">
+          <b>{r.name}</b>
+          <span className="hm-mono">
             {r.memberNo}
             {r.staff ? " · CREW" : ""}
           </span>
@@ -321,13 +321,14 @@ export function MembersClient({
       render: (r: MemberRow) => <span title={r.leagueName}>{`L${r.league}`}</span>,
     },
     { key: "cityCode", label: PLACE.market, width: 80, mono: true },
-    { key: "passes", label: "Passes", width: 70, mono: true },
-    { key: "attended", label: "Aboard", width: 70, mono: true },
+    { key: "passes", label: "Passes", width: 70, mono: true, align: "end" as const },
+    { key: "attended", label: "Aboard", width: 70, mono: true, align: "end" as const },
     {
       key: "knots",
       label: "Knots",
       width: 90,
       mono: true,
+      align: "end" as const,
       render: (r: MemberRow) => r.knots.toLocaleString("en-US"),
     },
     {
@@ -511,7 +512,7 @@ export function MembersClient({
           <Table rowKey={(r: MemberRow) => r.id} columns={columns} rows={filtered} onRowClick={openMember} />
         </div>
       ) : (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock
             status="empty"
             title="Nobody matches that."
@@ -554,7 +555,7 @@ export function MembersClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: "var(--text-sm)" }}>
+          <p className="hm-body">
             The filters as they stand are stored with the name — load it again from the Saved views
             list.
           </p>
@@ -580,16 +581,16 @@ export function MembersClient({
           <div className="hm-form">
             <div>
               <span className="hm-mono">STANDING</span>
-              <p style={{ fontSize: "var(--text-sm)", marginTop: 4, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <p className="hm-fact hm-fact--row">
                 <Badge tone={standing(detail).tone}>{standing(detail).label}</Badge>
                 {detail.holdReason === "dues" ? (
-                  <span style={{ color: "var(--text-2)" }}>{DUES_HOLD_NOTE}.</span>
+                  <span className="hm-dim">{DUES_HOLD_NOTE}.</span>
                 ) : null}
               </p>
             </div>
             <div>
               <span className="hm-mono">CONTACT</span>
-              <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>
+              <p className="hm-fact">
                 {detail.email} · {detail.phone}
                 {detail.phone !== "—" ? (
                   <>
@@ -605,7 +606,7 @@ export function MembersClient({
             </div>
             <div>
               <span className="hm-mono">PLAN AND DUES</span>
-              <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>
+              <p className="hm-fact">
                 {detail.planLine} — {detail.duesLine}
                 <br />
                 House account: {detail.balanceCents ? price(Math.abs(detail.balanceCents)) : "Complimentary"}
@@ -621,37 +622,37 @@ export function MembersClient({
             <div>
               <span className="hm-mono">KNOTS — {knots(detail.knotsBalance).toUpperCase()} ON THE LEDGER</span>
               {detail.knotsRecent.length ? (
-                <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: "var(--text-sm)" }}>
+                <ul className="hm-kv hm-kv--below">
                   {detail.knotsRecent.map((k) => (
-                    <li key={k.id} style={{ display: "flex", gap: 10, padding: "3px 0" }}>
-                      <span className="hm-mono" style={{ minWidth: 96 }}>
+                    <li key={k.id}>
+                      <span className="hm-mono hm-kv__k">
                         {logDateTime(k.when, CLUB_ZONE)}
                       </span>
-                      <span style={{ flex: 1 }}>{k.reason}</span>
+                      <span className="hm-kv__v">{k.reason}</span>
                       <span className="hm-mono">{knots(k.delta)}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>Nothing banked yet.</p>
+                <p className="hm-fact">Nothing banked yet.</p>
               )}
             </div>
             <div>
               <span className="hm-mono">RECENT PASSES</span>
               {detail.passes.length ? (
-                <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", fontSize: "var(--text-sm)" }}>
+                <ul className="hm-kv hm-kv--below">
                   {detail.passes.map((p) => (
-                    <li key={p.id} style={{ display: "flex", gap: 10, padding: "3px 0" }}>
-                      <span className="hm-mono" style={{ minWidth: 96 }}>
+                    <li key={p.id}>
+                      <span className="hm-mono hm-kv__k">
                         {logDate(p.when, p.zone || null)}
                       </span>
-                      <span style={{ flex: 1 }}>{p.title}</span>
+                      <span className="hm-kv__v">{p.title}</span>
                       <span className="hm-mono">{p.status.replace("_", " ").toUpperCase()}</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p style={{ fontSize: "var(--text-sm)", marginTop: 4 }}>No passes on the record.</p>
+                <p className="hm-fact">No passes on the record.</p>
               )}
             </div>
             <div className="hm-acts">
@@ -773,7 +774,7 @@ export function MembersClient({
           </>
         }
       >
-        <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>
+        <p className="hm-body">
           {detail?.status === "paused"
             ? detail.holdReason === "dues"
               ? `${DUES_HOLD_NOTE}. Booking, posting and contests open back up, and the member is told.`
@@ -876,7 +877,7 @@ export function MembersClient({
           </>
         }
       >
-        <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.6 }}>
+        <p className="hm-body">
           {detail?.phone ?? "—"} — verify only a number you have called or seen
           answered. The weather-hold texts ride on it. If the member changes
           their number later, the flag drops on its own and it is verified

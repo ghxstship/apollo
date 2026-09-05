@@ -63,6 +63,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
   const [vesselDraft, setVesselDraft] = React.useState<Record<string, Omit<VesselCard, "id">>>(() =>
     Object.fromEntries(vessels.map(({ id, ...rest }) => [id, rest]))
   );
+  /* The id of the card whose save is in flight — that card's button reads
+     "Saving…" and the others keep their own state. */
+  const [saving, setSaving] = React.useState<string | null>(null);
   const [newCity, setNewCity] = React.useState<Omit<CityCard, "id"> | null>(null);
   const [newVessel, setNewVessel] = React.useState<Omit<VesselCard, "id"> | null>(null);
 
@@ -70,11 +73,13 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
 
   const runCity = (id: string | null, d: Omit<CityCard, "id">, after?: () => void) =>
     startTransition(async () => {
+      setSaving(id ?? "new-city");
       const res = await saveCity(id, {
         name: d.name, slug: d.slug, status: d.status, time_zone: d.timeZone,
         coordinates: d.coordinates, launch_year: d.launchYear, position: d.position,
       });
-      if (res.error) show({ msg: res.error, tone: "danger" });
+      setSaving(null);
+      if (res.error) show({ msg: res.error, meta: (d.name || "CITY").toUpperCase(), tone: "danger" });
       else {
         show({ msg: `${d.name || "City"} saved.`, meta: "FLEET" });
         after?.();
@@ -83,11 +88,13 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
 
   const runVessel = (id: string | null, d: Omit<VesselCard, "id">, after?: () => void) =>
     startTransition(async () => {
+      setSaving(id ?? "new-vessel");
       const res = await saveVessel(id, {
         name: d.name, capacity: d.capacity, home_city: d.homeCity, day_rate: d.dayRate,
         length_ft: d.lengthFt, year: d.year, cabins: d.cabins, active: d.active,
       });
-      if (res.error) show({ msg: res.error, tone: "danger" });
+      setSaving(null);
+      if (res.error) show({ msg: res.error, meta: (d.name || "HULL").toUpperCase(), tone: "danger" });
       else {
         show({ msg: `${d.name || "Hull"} saved.`, meta: "FLEET" });
         after?.();
@@ -149,9 +156,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 <Badge tone="caution">Not saved</Badge>
               </div>
               {cityFields(newCity, (p) => setNewCity((s) => (s ? { ...s, ...p } : s)))}
-              <div className="hm-acts" style={{ marginTop: 12 }}>
+              <div className="hm-acts hm-acts--below">
                 <Button variant="ghost" size="sm" onClick={() => setNewCity(null)}>Not now</Button>
-                <Button variant="gold" size="sm" disabled={pending} onClick={() => runCity(null, newCity, () => setNewCity(null))}>Open it</Button>
+                <Button variant="gold" size="sm" disabled={pending && saving !== "new-city"} aria-busy={saving === "new-city" || undefined} onClick={() => runCity(null, newCity, () => setNewCity(null))}>{saving === "new-city" ? "Opening…" : "Open it"}</Button>
               </div>
             </div>
           ) : null}
@@ -168,9 +175,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 </div>
                 {c.changed ? <div className="hm-item__meta">{c.changed.toUpperCase()}</div> : null}
                 {cityFields(d, (p) => setCityDraft((s) => ({ ...s, [id]: { ...s[id], ...p } })))}
-                <div className="hm-acts" style={{ marginTop: 12 }}>
-                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={pending || !dirty} onClick={() => runCity(id, d)}>
-                    {dirty ? "Save" : "Saved"}
+                <div className="hm-acts hm-acts--below">
+                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={!dirty || (pending && saving !== id)} aria-busy={saving === id || undefined} onClick={() => runCity(id, d)}>
+                    {saving === id ? "Saving…" : dirty ? "Save" : "Saved"}
                   </Button>
                 </div>
               </div>
@@ -196,9 +203,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 <Badge tone="caution">Not saved</Badge>
               </div>
               {vesselFields(newVessel, (p) => setNewVessel((s) => (s ? { ...s, ...p } : s)))}
-              <div className="hm-acts" style={{ marginTop: 12 }}>
+              <div className="hm-acts hm-acts--below">
                 <Button variant="ghost" size="sm" onClick={() => setNewVessel(null)}>Not now</Button>
-                <Button variant="gold" size="sm" disabled={pending} onClick={() => runVessel(null, newVessel, () => setNewVessel(null))}>Name it</Button>
+                <Button variant="gold" size="sm" disabled={pending && saving !== "new-vessel"} aria-busy={saving === "new-vessel" || undefined} onClick={() => runVessel(null, newVessel, () => setNewVessel(null))}>{saving === "new-vessel" ? "Naming…" : "Name it"}</Button>
               </div>
             </div>
           ) : null}
@@ -217,9 +224,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 </div>
                 {v.changed ? <div className="hm-item__meta">{v.changed.toUpperCase()}</div> : null}
                 {vesselFields(d, (p) => setVesselDraft((s) => ({ ...s, [id]: { ...s[id], ...p } })))}
-                <div className="hm-acts" style={{ marginTop: 12 }}>
-                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={pending || !dirty} onClick={() => runVessel(id, d)}>
-                    {dirty ? "Save" : "Saved"}
+                <div className="hm-acts hm-acts--below">
+                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={!dirty || (pending && saving !== id)} aria-busy={saving === id || undefined} onClick={() => runVessel(id, d)}>
+                    {saving === id ? "Saving…" : dirty ? "Save" : "Saved"}
                   </Button>
                 </div>
               </div>

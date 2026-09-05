@@ -117,17 +117,17 @@ export function TablesClient({
 
   return (
     <>
-      <div className="hm-sec" style={{ marginTop: 20 }}>
+      <div className="hm-sec hm-sec--tight">
         <Select
           label="Night"
           options={options}
           value={episodeId}
           onChange={(e) => router.replace(`/bridge/tonight?episode=${e.target.value}`)}
-          style={{ maxWidth: 420 }}
+          className="hm-picker"
         />
       </div>
 
-      <div style={{ margin: "22px 0 14px", display: "flex", gap: 10 }}>
+      <div className="hm-switcher">
         <Button
           variant="gold"
           onClick={() => {
@@ -154,12 +154,12 @@ export function TablesClient({
         <Table columns={columns} rows={rows} rowKey={(r) => r.id} />
       )}
 
-      <p style={{ marginTop: 14, color: "var(--text-3)", fontSize: "var(--text-xs)" }}>
+      <p className="hm-note hm-note--gap">
         A held seat lapses on its own in fifteen minutes. A confirmed seat is
         somebody&rsquo;s evening — the table stays until it is released from the
         member side, or the pass is struck and the seat follows it.
       </p>
-      <p style={{ marginTop: 6, color: "var(--text-3)", fontSize: "var(--text-xs)" }}>
+      <p className="hm-note">
         AGAIN counts the prior-night picks that name a seated member as someone to sit near
         again. It is a hint for laying the room, not a match, and no member sees it.
       </p>
@@ -247,7 +247,7 @@ export function TablesClient({
           ) : null
         }
       >
-        <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>
+        <p className="hm-body">
           {striking && striking.held > 0
             ? `${striking.held} ${striking.held === 1 ? "seat is" : "seats are"} held here and will go with it. Nobody has confirmed.`
             : "Nobody is seated here. It comes off the member page at once."}

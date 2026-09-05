@@ -52,7 +52,7 @@ export function EpisodePicker({
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/itinerary?episode=${e.target.value}`)}
-      style={{ maxWidth: 420 }}
+      className="hm-picker"
     />
   );
 }
@@ -492,7 +492,7 @@ export function ItineraryClient({
           </>
         }
       >
-        <p className="hm-body" style={{ marginBottom: 12 }}>
+        <p className="hm-body hm-body--lead">
           A hold does not cancel a leg — it swaps it. All three lines are
           required, and the database refuses a hold that is missing one, because
           a hold without a new plan is just bad news.

@@ -19,7 +19,9 @@ export type LetterRow = {
 };
 
 export function LettersClient({ rows }: { rows: LetterRow[] }) {
-  const [pending, startTransition] = React.useTransition();
+  /* The code of the letter being sent, so that one button says "Sending…"
+     and the others stay themselves — one transition flag dimmed all forty. */
+  const [sending, setSending] = React.useState<string | null>(null);
   const { toast, show, clear } = useToast();
   return (
     <>
@@ -33,16 +35,20 @@ export function LettersClient({ rows }: { rows: LetterRow[] }) {
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={pending || !r.active}
-                onClick={() =>
-                  startTransition(async () => {
+                disabled={!r.active || (sending !== null && sending !== r.code)}
+                aria-busy={sending === r.code || undefined}
+                onClick={async () => {
+                  setSending(r.code);
+                  try {
                     const res = await sendLetterToMe(r.code);
-                    if (res.error) show({ msg: res.error, tone: "danger" });
+                    if (res.error) show({ msg: res.error, meta: r.label.toUpperCase(), tone: "danger" });
                     else show({ msg: res.note ?? "Queued.", meta: r.label.toUpperCase() });
-                  })
-                }
+                  } finally {
+                    setSending(null);
+                  }
+                }}
               >
-                Send to me
+                {sending === r.code ? "Sending…" : "Send to me"}
               </Button>
             </div>
           </div>

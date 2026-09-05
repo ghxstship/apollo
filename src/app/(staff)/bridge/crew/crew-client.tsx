@@ -149,7 +149,7 @@ export function CrewClient({
 
   if (roles.length === 0) {
     return (
-      <div style={{ marginTop: 20 }}>
+      <div className="hm-block">
         <StateBlock
           status="empty"
           icon="Users"
@@ -194,7 +194,7 @@ export function CrewClient({
               <div className="hm-head">
                 <div>
                   <span className="hm-eyebrow">{role.city}</span>
-                  <h2 style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-display-xs)", marginTop: 4 }}>
+                  <h2 className="hm-h2">
                     {role.title}
                   </h2>
                 </div>
@@ -255,7 +255,7 @@ export function CrewClient({
               {/* A stage with nobody at it rendered four column headings over
                   an empty body, with the explanation stranded below them. */}
               {list.length === 0 ? (
-                <div style={{ marginTop: 20 }}>
+                <div className="hm-block">
                   <StateBlock
                     status="empty"
                     title={q ? "Nobody by that name." : "Nobody at this stage."}
@@ -272,9 +272,9 @@ export function CrewClient({
                       key: "name",
                       label: "Candidate",
                       render: (c: CandidateRow) => (
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+                        <span className="hm-inline">
                           <Avatar name={c.name} size="sm" tone="sand" />
-                          <b style={{ fontWeight: 700 }}>{c.name}</b>
+                          <b>{c.name}</b>
                         </span>
                       ),
                     },
@@ -330,7 +330,7 @@ export function CrewClient({
         }
       >
         {current ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="hm-form">
             <div className="hm-mod__meta">
               <span>APPLIED {current.applied}</span>
               <span>·</span>
@@ -348,9 +348,9 @@ export function CrewClient({
                   ))}
               </div>
             ) : null}
-            <p style={{ fontSize: 14 }}>{current.note || "No note on file."}</p>
+            <p className="hm-body">{current.note || "No note on file."}</p>
             {current.stage === "offer" ? (
-              <p className="hm-note" style={{ marginTop: 0 }}>
+              <p className="hm-note hm-note--flush">
                 Offer&apos;s out — the tide decides from here.
               </p>
             ) : null}

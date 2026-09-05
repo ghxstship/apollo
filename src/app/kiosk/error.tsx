@@ -2,24 +2,27 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import "./kiosk.css";
 
 /* Dockside: a reload may be impossible offline, so the door stays usable and says what to do. */
-/* Global classes only, as src/app/error.tsx: this boundary renders where
-   bridge.css does not load, and .hm-eyebrow and .hm-mono drew nothing here. */
+/* kiosk.css is imported by the page, not by a layout, so this boundary imports
+   it itself — rendered where the page's stylesheet has not loaded, .kio-*
+   would otherwise draw nothing. The classes are the kiosk's own rather than
+   the Bridge's; bridge.css never loads under /kiosk. */
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error(error);
   }, [error]);
   return (
-    <main id="main" className="ls-container" style={{ paddingTop: 96, paddingBottom: 96 }}>
-      <span className="ls-eyebrow" style={{ display: "block", color: "var(--gold-deep)" }}>Something broke</span>
-      <h1 style={{ marginTop: 12 }}>The kiosk lost the signal.</h1>
-      <p style={{ maxWidth: 460, marginTop: 12 }}>Check-ins you have already stamped are held on this device and go up when the bars come back. Tap Try again, or wave a member through by hand and stamp them later.</p>
-      <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
+    <main id="main" className="ls-container kio-err">
+      <span className="ls-eyebrow">Something broke</span>
+      <h1>The kiosk lost the signal.</h1>
+      <p>Check-ins you have already stamped are held on this device and go up when the bars come back. Tap Try again, or wave a member through by hand and stamp them later.</p>
+      <p className="kio-err__acts">
         <button className="ls-btn ls-btn--gold" onClick={reset} type="button">Try again</button>
         <Link className="ls-btn ls-btn--ghost" href="/kiosk">Back to the door</Link>
       </p>
-      {error.digest ? <p className="ls-mono-data" style={{ marginTop: 24, color: "var(--text-3)" }}>REF {error.digest.toUpperCase()}</p> : null}
+      {error.digest ? <p className="ls-mono-data kio-err__ref">REF {error.digest.toUpperCase()}</p> : null}
     </main>
   );
 }

@@ -79,9 +79,9 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       key: "name",
       label: "Applicant",
       render: (a: AppRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{a.name}</b>
-          <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
+        <span className="hm-who">
+          <b>{a.name}</b>
+          <span className="hm-mono">
             {a.email.toUpperCase()}
           </span>
         </span>
@@ -94,7 +94,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       label: "The water",
       render: (a: AppRow) =>
         a.interests.length ? (
-          <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap" as const }}>
+          <span className="hm-chips">
             {a.interests.map((t) => (
               <Tag key={t}>{t}</Tag>
             ))}
@@ -114,7 +114,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       key: "act",
       label: "",
       render: (a: AppRow) => (
-        <span className="hm-acts" style={{ justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+        <span className="hm-acts hm-acts--right" onClick={(e) => e.stopPropagation()}>
           {a.status === "received" ? (
             <Button
               variant="outline"
@@ -212,11 +212,11 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
           <Table rowKey={(a: AppRow) => a.id} columns={columns} rows={shown} onRowClick={setReading} />
         </div>
       ) : apps.length ? (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock status="empty" title="Nobody under that filter." detail="Widen the search, or clear the status filter." />
         </div>
       ) : (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock
             status="empty"
             title="No applications on the desk."

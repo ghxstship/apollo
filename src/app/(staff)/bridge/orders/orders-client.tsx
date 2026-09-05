@@ -113,7 +113,7 @@ export function OrdersClient({
 
   return (
     <>
-      <div className="hm-head" style={{ marginTop: 20 }}>
+      <div className="hm-head hm-tabbody">
         <div className="hm-acts">
           {(
             [
@@ -145,9 +145,9 @@ export function OrdersClient({
               key: "member",
               label: "Member",
               render: (e: LedgerRow) => (
-                <span>
-                  <b style={{ fontWeight: 700 }}>{e.member}</b>
-                  <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
+                <span className="hm-who">
+                  <b>{e.member}</b>
+                  <span className="hm-mono">
                     {e.memberNo}
                   </span>
                 </span>
@@ -161,7 +161,7 @@ export function OrdersClient({
               ),
             },
             { key: "memo", label: "Memo", render: (e: LedgerRow) => e.memo || "—" },
-            { key: "amount", label: "Amount", mono: true, width: 100 },
+            { key: "amount", label: "Amount", mono: true, align: "end" as const, width: 100 },
             { key: "created", label: "Posted", mono: true, width: 110 },
             {
               key: "act",
@@ -185,7 +185,7 @@ export function OrdersClient({
           rows={visible}
         />
         {visible.length === 0 ? (
-          <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
+          <p className="hm-empty">
             Nothing in the record under that filter.
           </p>
         ) : null}
@@ -221,7 +221,7 @@ export function OrdersClient({
             rows={shopOrders}
           />
           {shopOrders.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
+            <p className="hm-empty">
               No Shop orders on the books.
             </p>
           ) : null}
@@ -250,7 +250,7 @@ export function OrdersClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: "var(--text-sm)" }}>
+          <p className="hm-body">
             Financial actions log to the ship&apos;s record with your name on them.
           </p>
           <Select
@@ -306,8 +306,8 @@ export function OrdersClient({
           </>
         }
       >
-        <p style={{ fontSize: "var(--text-sm)" }}>{repeat?.why}</p>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
+        <p className="hm-body">{repeat?.why}</p>
+        <p className="hm-body hm-body--muted">
           Two operators working the same request is how a member gets refunded
           twice out of the club&rsquo;s money. Nothing has been posted yet.
         </p>
@@ -393,7 +393,7 @@ export function OrdersClient({
         }
       >
         <div className="hm-form">
-          <p style={{ fontSize: "var(--text-sm)" }}>
+          <p className="hm-body">
             This returns money to the card that paid, not to the member account. It
             cannot be taken back. The ledger row appears when Stripe confirms the
             credit, usually within a minute.

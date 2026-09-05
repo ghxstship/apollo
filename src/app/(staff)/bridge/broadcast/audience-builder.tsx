@@ -52,7 +52,20 @@ export function AudienceBuilder({
   }, [key, ready]);
 
   const setRule = (i: number, r: Rule) => onChange({ ...value, rules: value.rules.map((x, j) => (j === i ? r : x)) });
-  const dropRule = (i: number) => onChange({ ...value, rules: value.rules.filter((_, j) => j !== i) });
+  /* A removed row fades for one beat before it goes, so the list closes up
+     rather than jumping; a reader who has asked for reduced motion gets the
+     jump, which is what they asked for. */
+  const [leaving, setLeaving] = React.useState<number | null>(null);
+  const dropRule = (i: number) => {
+    const now = () => onChange({ ...value, rules: value.rules.filter((_, j) => j !== i) });
+    if (leaving !== null) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return now();
+    setLeaving(i);
+    setTimeout(() => {
+      setLeaving(null);
+      now();
+    }, 200);
+  };
   const addRule = () => {
     const used = new Set(value.rules.map((r) => r.field));
     const next = RULE_FIELDS.find((f) => !used.has(f)) ?? "standing";
@@ -76,7 +89,7 @@ export function AudienceBuilder({
 
       <div className="hm-rules">
         {value.rules.map((r, i) => (
-          <RuleRow key={i} rule={r} lookups={lookups} onChange={(next) => setRule(i, next)} onRemove={value.rules.length > 1 ? () => dropRule(i) : undefined} />
+          <RuleRow key={i} rule={r} lookups={lookups} leaving={leaving === i} onChange={(next) => setRule(i, next)} onRemove={value.rules.length > 1 ? () => dropRule(i) : undefined} />
         ))}
       </div>
 
@@ -121,10 +134,10 @@ export function AudienceBuilder({
   );
 }
 
-function RuleRow({ rule, lookups, onChange, onRemove }: { rule: Rule; lookups: Lookups; onChange: (r: Rule) => void; onRemove?: () => void }) {
+function RuleRow({ rule, lookups, leaving = false, onChange, onRemove }: { rule: Rule; lookups: Lookups; leaving?: boolean; onChange: (r: Rule) => void; onRemove?: () => void }) {
   const f = FIELDS[rule.field];
   return (
-    <div className="hm-rule">
+    <div className={leaving ? "hm-rule hm-rule--leaving" : "hm-rule"} aria-hidden={leaving || undefined}>
       <Select
         aria-label="Rule"
         value={rule.field}

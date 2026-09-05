@@ -176,7 +176,7 @@ export default async function ManifestsPage({
         {logDate(episode.starts_at, episode.time_zone)}&apos;s manifest — {episode.title.replace(/\.+$/, "")}.
       </h1>
 
-      <div className="hm-sec" style={{ marginTop: 20 }}>
+      <div className="hm-sec hm-sec--tight">
         <EpisodePicker
           options={episodes.map((v) => ({
             value: v.id,

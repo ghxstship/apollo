@@ -69,10 +69,10 @@ export function CodesClient({
       label: "Code",
       mono: true,
       render: (r: CodeRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.code}</b>
+        <span className="hm-who">
+          <b>{r.code}</b>
           {r.note ? (
-            <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.note}</span>
+            <span className="hm-who__sub">{r.note}</span>
           ) : null}
         </span>
       ),
@@ -149,7 +149,7 @@ export function CodesClient({
 
   return (
     <>
-      <div className="hm-acts" style={{ marginTop: 20 }}>
+      <div className="hm-acts hm-block">
         <Button variant="gold" size="sm" onClick={() => setCutting(true)}>
           New code
         </Button>
@@ -190,11 +190,11 @@ export function CodesClient({
           <Table rowKey={(r: CodeRow) => r.code} columns={columns} rows={shown} />
         </div>
       ) : rows.length ? (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock status="empty" title="No code by that name." detail="Clear the search to see every code cut." />
         </div>
       ) : (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock
             status="empty"
             title="No codes cut."
@@ -254,7 +254,7 @@ export function CodesClient({
             placeholder="FOUNDING24"
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
-            style={{ textTransform: "uppercase" }}
+            className="hm-field--caps"
           />
           <div className="hm-form__row">
             <Select

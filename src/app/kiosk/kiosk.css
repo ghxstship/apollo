@@ -12,6 +12,21 @@
 @media (min-width:768px){.kio h1{font-size:var(--text-4xl)}}
 .kio p{font-size:18px;line-height:1.6;color:var(--text-inverse-2);max-width:38ch}
 .kio-mono{font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--tracking-label);color:var(--text-inverse-3);text-transform:uppercase}
-.kio-cam{width:min(440px,90vw);border:1px solid var(--border-gold);border-radius:var(--radius-md);overflow:hidden}
+/* min(440px, 100%) rather than 90vw: at 375px the padding already takes 48,
+   and 90vw was 337 in a 327 column — ten pixels of sideways scroll on the one
+   screen that must never scroll sideways. */
+.kio-cam{width:min(440px,100%);border:1px solid var(--border-gold);border-radius:var(--radius-md);overflow:hidden}
+/* Each screen arrives on a fade — the kiosk swaps whole screens, and a cut
+   between two full-bleed states reads as a glitch on a device facing a queue. */
+.kio[data-screen]{animation:ls-fade var(--dur-base) var(--ease-out) backwards}
+.kio .ls-btn[aria-busy="true"]{opacity:.7;cursor:progress;pointer-events:none}
+@media (max-width:640px){.kio{padding:32px 16px;gap:22px}}
+/* The boundary: kiosk.css is imported by the page, not a layout, so the
+   error file imports it too and draws on these rather than on bare globals. */
+.kio-err{padding:96px 24px}
+.kio-err h1{margin-top:12px}
+.kio-err p{max-width:460px;margin-top:12px}
+.kio-err__acts{margin-top:24px;display:flex;gap:16px;flex-wrap:wrap}
+.kio-err__ref{margin-top:24px;color:var(--text-3)}
 .kio .ls-btn{min-height:48px;min-width:220px}
 .kio[data-refused="1"] h1{color:var(--danger)}

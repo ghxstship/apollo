@@ -112,18 +112,18 @@ export function ProposalsClient({
       key: "title",
       label: "Proposal",
       render: (r: ProposalRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.title}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+        <span className="hm-who">
+          <b>{r.title}</b>
+          <span className="hm-who__sub">
             {r.proposerMark ? `${r.proposer} · ${r.proposerMark}` : r.proposer}
           </span>
           {r.note ? (
-            <span style={{ display: "block", marginTop: 4, color: "var(--text-2)" }}>
+            <span className="hm-who__note">
               {r.note.length > 140 ? r.note.slice(0, 140) + "…" : r.note}
             </span>
           ) : null}
           {r.voyageLabel ? (
-            <span style={{ display: "block", marginTop: 4, color: "var(--text-2)" }}>
+            <span className="hm-who__note">
               Episode: {r.voyageLabel}
             </span>
           ) : null}
@@ -162,7 +162,7 @@ export function ProposalsClient({
       width: 260,
       render: (r: ProposalRow) =>
         r.status === "submitted" || r.status === "considering" ? (
-          <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span className="hm-acts">
             {r.status === "submitted" ? (
               <Button
                 size="sm"
@@ -206,12 +206,11 @@ export function ProposalsClient({
             </Button>
           </span>
         ) : r.status === "approved" && !r.episodeId ? (
-          <span style={{ display: "flex", gap: 6, alignItems: "flex-end", flexWrap: "wrap" }}>
+          <span className="hm-fieldrow">
             <Select
               aria-label={`Episode for ${r.title}`}
               value={links[r.id] ?? ""}
               onChange={(e) => setLinks((p) => ({ ...p, [r.id]: e.target.value }))}
-              style={{ minWidth: 180 }}
               options={[
                 { value: "", label: episodes.length ? "Link the episode" : "Nothing on the board" },
                 ...episodes,
@@ -232,7 +231,7 @@ export function ProposalsClient({
             </Button>
           </span>
         ) : r.status === "declined" && r.decisionNote ? (
-          <span className="hm-body" style={{ color: "var(--text-3)" }}>{r.decisionNote}</span>
+          <span className="hm-body hm-body--muted">{r.decisionNote}</span>
         ) : null,
     },
   ];
@@ -242,13 +241,13 @@ export function ProposalsClient({
       key: "proposer",
       label: "Member",
       render: (r: CharterRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.proposer}</b>
+        <span className="hm-who">
+          <b>{r.proposer}</b>
           {r.proposerMark ? (
-            <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.proposerMark}</span>
+            <span className="hm-who__sub">{r.proposerMark}</span>
           ) : null}
           {r.note ? (
-            <span style={{ display: "block", marginTop: 4, color: "var(--text-2)" }}>
+            <span className="hm-who__note">
               {r.note.length > 160 ? r.note.slice(0, 160) + "…" : r.note}
             </span>
           ) : null}
@@ -294,7 +293,7 @@ export function ProposalsClient({
       width: 170,
       render: (r: CharterRow) =>
         r.status === "submitted" ? (
-          <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <span className="hm-acts">
             <Button
               size="sm"
               variant="ghost"
@@ -319,7 +318,7 @@ export function ProposalsClient({
             </Button>
           </span>
         ) : r.decisionNote ? (
-          <span className="hm-body" style={{ color: "var(--text-3)" }}>{r.decisionNote}</span>
+          <span className="hm-body hm-body--muted">{r.decisionNote}</span>
         ) : null,
     },
   ];
@@ -357,7 +356,7 @@ export function ProposalsClient({
         </div>
       )}
 
-      <p className="hm-body" style={{ marginTop: 14, color: "var(--text-3)" }}>
+      <p className="hm-body hm-body--muted hm-block">
         Approval is the word, not the episode. The episode itself gets raised on
         Episodes, with access set by the series — link it here once it exists, so
         the row and the member both know which episode it became.
@@ -365,7 +364,7 @@ export function ProposalsClient({
 
       <section className="hm-sec">
         <h2>Private episode requests.</h2>
-        <p className="hm-lede" style={{ marginTop: 4 }}>
+        <p className="hm-lede">
           An on-request series has a door. A member asks for an episode of their
           own — a shape, a party and some dates; the Bridge answers with a line,
           or passes with one. Either way the line reaches them as a word.

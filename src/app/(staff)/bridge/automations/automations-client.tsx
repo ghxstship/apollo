@@ -108,6 +108,21 @@ export function AutomationsClient({
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
   const [writing, setWriting] = React.useState(false);
+  /* The switch moves the moment it is pressed and the badge follows; the
+     server's answer either confirms it (the row arrives with the new state and
+     the local mark is dropped) or refuses it, and the switch goes back with a
+     toast saying why. Waiting on the round trip for a two-state control read
+     as a switch that did not work. */
+  /* Each mark remembers the state it was flipped FROM, and speaks only while
+     the row still shows that state — the moment the server's row catches up
+     the mark falls silent on its own, with no effect to sweep it. */
+  const [flipped, setFlipped] = React.useState<Record<string, { from: boolean; to: boolean }>>({});
+  const isLive = (r: RuleRow) => {
+    const f = flipped[r.id];
+    return f && f.from === r.active ? f.to : r.active;
+  };
+  /* Which rule is being fired at the operator, so that one button says so. */
+  const [firing, setFiring] = React.useState<string | null>(null);
 
   const [name, setName] = React.useState("");
   const [trigger, setTrigger] = React.useState<TriggerEvent>("pass_confirmed");
@@ -129,7 +144,7 @@ export function AutomationsClient({
   const shown = q
     ? rows.filter((r) => r.name.toLowerCase().includes(q) || actionLine(r.action, webhooks).toLowerCase().includes(q))
     : rows;
-  const live = rows.filter((r) => r.active).length;
+  const live = rows.filter(isLive).length;
 
   return (
     <>
@@ -167,32 +182,42 @@ export function AutomationsClient({
           <div className="hm-item" key={r.id}>
             <div className="hm-item__head">
               <b>{r.name}</b>
-              {r.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Held</Badge>}
+              {isLive(r) ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Held</Badge>}
               <div className="hm-item__acts">
                 <Button
                   size="sm"
                   variant="ghost"
-                  disabled={pending}
-                  onClick={() =>
-                    startTransition(async () => {
+                  disabled={firing !== null && firing !== r.id}
+                  aria-busy={firing === r.id || undefined}
+                  onClick={async () => {
+                    setFiring(r.id);
+                    try {
                       const res = await fireAutomationAtMe(r.id);
-                      if (res.error) show({ msg: res.error, tone: "danger" });
+                      if (res.error) show({ msg: res.error, meta: r.name.toUpperCase(), tone: "danger" });
                       else show({ msg: res.note ?? "Fired.", meta: r.name.toUpperCase() });
-                    })
-                  }
+                    } finally {
+                      setFiring(null);
+                    }
+                  }}
                 >
-                  Fire at me
+                  {firing === r.id ? "Firing…" : "Fire at me"}
                 </Button>
                 <Switch
-                  label={r.active ? "Live" : "Held"}
-                  checked={r.active}
-                  disabled={pending}
+                  label={isLive(r) ? "Live" : "Held"}
+                  checked={isLive(r)}
                   onChange={(e) => {
                     const next = e.target.checked;
+                    setFlipped((f) => ({ ...f, [r.id]: { from: r.active, to: next } }));
                     startTransition(async () => {
                       const res = await setAutomationActive(r.id, next);
-                      if (res.error) show({ msg: res.error, tone: "danger" });
-                      else
+                      if (res.error) {
+                        setFlipped((f) => {
+                          const rest = { ...f };
+                          delete rest[r.id];
+                          return rest;
+                        });
+                        show({ msg: res.error, meta: r.name.toUpperCase(), tone: "danger" });
+                      } else
                         show({
                           msg: next ? "Rule is live." : "Rule held.",
                           meta: r.name.toUpperCase(),
@@ -221,11 +246,11 @@ export function AutomationsClient({
           </div>
         ))
       ) : rows.length ? (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock status="empty" title="No rule by that name." detail="Clear the search to see every rule." />
         </div>
       ) : (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock
             status="empty"
             title="No rules written."
@@ -248,6 +273,7 @@ export function AutomationsClient({
             <Button
               variant="gold"
               disabled={pending}
+              aria-busy={pending || undefined}
               onClick={() => {
                 const action: RuleAction =
                   actionKind === "email"
@@ -284,7 +310,7 @@ export function AutomationsClient({
                 });
               }}
             >
-              Save and go live
+              {pending ? "Saving…" : "Save and go live"}
             </Button>
           </>
         }

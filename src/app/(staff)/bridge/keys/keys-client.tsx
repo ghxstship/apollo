@@ -66,9 +66,9 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       key: "label",
       label: "Key",
       render: (k: KeyRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{k.label}</b>
-          <span className="hm-mono" style={{ display: "block", marginTop: 2 }}>
+        <span className="hm-who">
+          <b>{k.label}</b>
+          <span className="hm-mono">
             {k.prefix}…
           </span>
         </span>
@@ -141,7 +141,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
             </div>
           </>
         ) : (
-          <div style={{ marginTop: 20 }}>
+          <div className="hm-block">
             <StateBlock
               status="empty"
               title="No keys cut."
@@ -172,7 +172,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           {hooks.map((h) => (
             <div className="hm-item" key={h.id}>
               <div className="hm-item__head">
-                <b style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-sm)", wordBreak: "break-all" }}>
+                <b className="hm-url">
                   {h.url}
                 </b>
                 {h.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Held</Badge>}
@@ -203,15 +203,11 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               </div>
               <div className="hm-item__body">
                 {h.deliveries.length ? (
-                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  <ul className="hm-kv">
                     {h.deliveries.map((d) => (
-                      <li
-                        key={d.id}
-                        className="hm-mono"
-                        style={{ display: "flex", gap: 10, padding: "2px 0" }}
-                      >
-                        <span style={{ minWidth: 108 }}>{logDateTime(d.createdAt, CLUB_ZONE)}</span>
-                        <span style={{ flex: 1 }}>{d.event.toUpperCase()}</span>
+                      <li key={d.id} className="hm-mono">
+                        <span className="hm-kv__k">{logDateTime(d.createdAt, CLUB_ZONE)}</span>
+                        <span className="hm-kv__v">{d.event.toUpperCase()}</span>
                         {/* Three outcomes told by a hand-patched text colour on
                             a 10px mono line, with no shape to it — a delivery
                             that failed looked like one that succeeded. */}
@@ -237,7 +233,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           ))}
           </>
         ) : (
-          <div style={{ marginTop: 20 }}>
+          <div className="hm-block">
             <StateBlock
               status="empty"
               title="No hooks set."

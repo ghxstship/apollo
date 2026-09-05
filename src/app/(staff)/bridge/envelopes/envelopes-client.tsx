@@ -49,7 +49,7 @@ export function EpisodePicker({
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/envelopes?episode=${e.target.value}`)}
-      style={{ maxWidth: 420 }}
+      className="hm-picker"
     />
   );
 }
@@ -107,9 +107,9 @@ export function EnvelopesClient({
       key: "name",
       label: "Guest",
       render: (r: EnvelopeRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.name}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.memberNo}</span>
+        <span className="hm-who">
+          <b>{r.name}</b>
+          <span className="hm-who__sub">{r.memberNo}</span>
         </span>
       ),
     },
@@ -142,7 +142,7 @@ export function EnvelopesClient({
       </div>
 
       {!radarOpen ? (
-        <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
+        <p className="hm-note hm-note--caution" role="status">
           Radar has never been opened on this episode, so a printed token opens
           nothing — the log refuses with &ldquo;radar does not run on this
           sailing&rdquo;. Set the clock on the Radar tab before these go on

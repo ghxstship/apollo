@@ -187,9 +187,9 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
       key: "name",
       label: "Element",
       render: (r: ElementListRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.name}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+        <span className="hm-who">
+          <b>{r.name}</b>
+          <span className="hm-who__sub">
             {r.elementId} · {r.urid}
           </span>
         </span>
@@ -202,7 +202,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
       render: (r: ElementListRow) => (
         <span>
           {r.department}
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.discipline}</span>
+          <span className="hm-who__sub">{r.discipline}</span>
         </span>
       ),
     },
@@ -235,7 +235,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
         <span>
           <Badge tone={stateTone(r.elementState)}>{r.elementState}</Badge>
           {r.criticalPath ? (
-            <span className="hm-mono" style={{ display: "block", marginTop: 4, color: "var(--gold-bright)" }}>
+            <span className="hm-mono hm-mono--gilt">
               CRITICAL PATH
             </span>
           ) : null}
@@ -330,7 +330,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
         <div className="hm-sec">
           <Table columns={columns} rows={shown} rowKey={(r) => r.id} onRowClick={(r) => openEdit(r)} />
           {unsubstituted.length ? (
-            <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
+            <p className="hm-note hm-note--caution" role="status">
               {unsubstituted.map((r) => r.elementId).join(", ")} —{" "}
               {unsubstituted.length === 1 ? "is" : "are"} indoor_only in the
               activity phase with no named substitute. The database refuses to
@@ -558,7 +558,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
           </>
         }
       >
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
+        <p className="hm-body">
           {confirmRemove?.elementId} — {confirmRemove?.name} leaves the
           catalogue, and its substitute goes with it. Retiring it instead keeps
           the specification and the cost history where a rollup can still read

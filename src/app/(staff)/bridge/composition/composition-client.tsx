@@ -60,7 +60,7 @@ export function EpisodePicker({
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/composition?episode=${e.target.value}`)}
-      style={{ maxWidth: 420 }}
+      className="hm-picker"
     />
   );
 }
@@ -277,7 +277,7 @@ export function CompositionPanel({
           is refused without one. At or below {clubCeiling} the certificate is
           optional.
         </p>
-        <div className="hm-form" style={{ marginTop: 18, maxWidth: 720 }}>
+        <div className="hm-form hm-form--wide">
           <div className="hm-item">
             <div className="hm-item__head">
               <b>Ceiling</b>
@@ -294,7 +294,7 @@ export function CompositionPanel({
                   placeholder={String(clubCeiling)}
                   value={ceilingDraft}
                   onChange={(e) => setCeilingDraft(e.target.value)}
-                  style={{ width: 110 }}
+                  className="hm-field--narrow"
                 />
                 <Input
                   label="Certificate"
@@ -303,7 +303,7 @@ export function CompositionPanel({
                   placeholder="Vessel · authority · certified heads"
                   value={certificateDraft}
                   onChange={(e) => setCertificateDraft(e.target.value)}
-                  style={{ width: 320 }}
+                  className="hm-field--wide"
                 />
               </span>
             </div>
@@ -320,7 +320,7 @@ export function CompositionPanel({
           </div>
         </div>
         {needsCertificate ? (
-          <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
+          <p className="hm-note hm-note--caution" role="status">
             {draftCeiling} heads is above the club&apos;s {clubCeiling}. The database
             refuses this ceiling until the certificate is named.
           </p>
@@ -347,7 +347,7 @@ export function CompositionPanel({
           segment at its ceiling offers the line and never another segment.
         </p>
 
-        <div className="hm-form" style={{ marginTop: 18, maxWidth: 720 }}>
+        <div className="hm-form hm-form--wide">
           {SEGMENTS.map((s) => {
             const row = rows.find((r) => r.segment === s);
             const line = lineOf(s);
@@ -377,7 +377,7 @@ export function CompositionPanel({
                           [s]: Math.max(0, Math.min(96, Math.round(Number(e.target.value) || 0))),
                         }))
                       }
-                      style={{ width: 110 }}
+                      className="hm-field--narrow"
                     />
                   </span>
                 </div>
@@ -403,7 +403,7 @@ export function CompositionPanel({
         </div>
 
         {overHull ? (
-          <p className="hm-note" role="status" style={{ color: "var(--caution)" }}>
+          <p className="hm-note hm-note--caution" role="status">
             {draftHeads} heads against a hull certified for {effectiveCeiling}
             {hullCeiling === null ? " (the club default)" : ""}. The database
             refuses this composition as it stands — lower a ceiling, or raise
@@ -495,12 +495,12 @@ export function CompositionPanel({
           </>
         }
       >
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
+        <p className="hm-body">
           {voyageTitle.replace(/\.+$/, "")} stops being ratio-gated. The segment
           gate stops counting, and the vetting gate stops running — a pass with
           no clearance and no verified identity will board.
         </p>
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 10 }}>
+        <p className="hm-body">
           Passes already sold keep their seats. Nobody may be standing in the
           line when this happens.
         </p>

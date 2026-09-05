@@ -127,9 +127,9 @@ export function VettingClient({
       key: "name",
       label: "Member",
       render: (r: FileRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.name}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.memberNo}</span>
+        <span className="hm-who">
+          <b>{r.name}</b>
+          <span className="hm-who__sub">{r.memberNo}</span>
         </span>
       ),
     },
@@ -147,7 +147,7 @@ export function VettingClient({
          set as mono data alongside the dates. The badge uppercases, so these
          read exactly as VERIFIED / NOT SEEN / AGE OK / AGE UNCONFIRMED did. */
       render: (r: FileRow) => (
-        <span style={{ display: "inline-flex", flexDirection: "column", gap: 4, alignItems: "start" }}>
+        <span className="hm-stack">
           <Badge tone={r.idVerified ? "positive" : "caution"}>
             {r.idVerified ? "Verified" : "Not seen"}
           </Badge>
@@ -287,7 +287,7 @@ export function VettingClient({
           value={newProfile}
           onChange={(e) => setNewProfile(e.target.value)}
         />
-        <p className="hm-body" style={{ marginTop: 12 }}>
+        <p className="hm-body hm-body--below">
           The file opens SUBMITTED. The member reads &ldquo;with the vetting
           team, 48 hours&rdquo; and nothing else — no counts, no queue position,
           nothing about anybody else.

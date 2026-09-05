@@ -26,6 +26,8 @@ const pct = (bp: number | null) => (bp === null ? "—" : `${(bp / 100).toFixed(
 export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
+  /* The city whose determination is being recorded, so its button says so. */
+  const [saving, setSaving] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState<Record<string, Draft>>(() =>
     Object.fromEntries(
       cards.map((c) => [
@@ -45,6 +47,7 @@ export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
   const save = (c: CityTaxCard) => {
     const d = draft[c.cityId];
     startTransition(async () => {
+      setSaving(c.cityId);
       const res = await setCityTax(c.cityId, {
         admissions_rate_bp: d.adm.trim() === "" ? null : Number(d.adm),
         goods_rate_bp: d.goods.trim() === "" ? null : Number(d.goods),
@@ -53,7 +56,8 @@ export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
         determined_on: d.on,
         note: d.note,
       });
-      if (res.error) show({ msg: res.error, tone: "danger" });
+      setSaving(null);
+      if (res.error) show({ msg: res.error, meta: c.name.toUpperCase(), tone: "danger" });
       else show({ msg: `${c.name} recorded.`, meta: "TAX" });
     });
   };
@@ -123,10 +127,11 @@ export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
                 <Button
                   variant={dirty ? "gold" : "outline"}
                   size="sm"
-                  disabled={pending || !dirty}
+                  disabled={!dirty || (pending && saving !== c.cityId)}
+                  aria-busy={saving === c.cityId || undefined}
                   onClick={() => save(c)}
                 >
-                  {dirty ? "Record" : "Recorded"}
+                  {saving === c.cityId ? "Recording…" : dirty ? "Record" : "Recorded"}
                 </Button>
               </div>
               <div className="hm-plan__ids">

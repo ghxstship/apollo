@@ -67,9 +67,9 @@ export function RegattasClient({
       key: "title",
       label: "Contest",
       render: (r: ContestRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.title}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+        <span className="hm-who">
+          <b>{r.title}</b>
+          <span className="hm-who__sub">
             /regattas/{r.slug}
           </span>
         </span>
@@ -82,7 +82,7 @@ export function RegattasClient({
       render: (r: ContestRow) => (
         <span>
           {r.shape === "regatta" ? "Regatta" : "Challenge"}
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+          <span className="hm-who__sub">
             {r.shape === "challenge" && r.target
               ? `${r.target} ${CONTEST_METRIC[r.metric] ?? r.metric}`
               : (CONTEST_METRIC[r.metric] ?? r.metric)}
@@ -145,7 +145,7 @@ export function RegattasClient({
 
   return (
     <>
-      <div style={{ margin: "22px 0 14px", display: "flex", gap: 10 }}>
+      <div className="hm-switcher">
         <Button variant="gold" onClick={() => setCalling(true)}>
           Call a contest
         </Button>
@@ -214,7 +214,7 @@ export function RegattasClient({
           </>
         }
       >
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Input label="Name" value={title} onChange={(e) => setTitle(e.target.value)} />
           <Input
             label="Address"
@@ -343,7 +343,7 @@ export function RegattasClient({
           </>
         }
       >
-        <p style={{ fontSize: 14, color: "var(--text-2)", lineHeight: 1.6 }}>
+        <p className="hm-body">
           Standings freeze, Knots pay out, and everyone who entered is notified.
           This cannot be undone — a settled result is the record.
         </p>

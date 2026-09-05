@@ -115,15 +115,15 @@ export function DocumentsClient({
       key: "title",
       label: "Clause",
       render: (c: ClauseRow) => (
-        <span style={{ opacity: c.active ? 1 : 0.55 }}>
-          <b style={{ fontWeight: 700 }}>{c.title}</b>
+        <span className="hm-who" style={{ opacity: c.active ? 1 : 0.55 }}>
+          <b>{c.title}</b>
           {c.active ? null : (
             <>
               {" "}
               <Badge tone="outline">Out of use</Badge>
             </>
           )}
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{c.code}</span>
+          <span className="hm-who__sub">{c.code}</span>
         </span>
       ),
     },
@@ -170,15 +170,15 @@ export function DocumentsClient({
       key: "title",
       label: "Document",
       render: (d: DocRow) => (
-        <span style={{ opacity: d.active ? 1 : 0.55 }}>
-          <b style={{ fontWeight: 700 }}>{d.title}</b>
+        <span className="hm-who" style={{ opacity: d.active ? 1 : 0.55 }}>
+          <b>{d.title}</b>
           {d.active ? null : (
             <>
               {" "}
               <Badge tone="outline">Not in use</Badge>
             </>
           )}
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+          <span className="hm-who__sub">
             {d.audience} · {d.kind}
             {d.validityMonths ? ` · renews every ${d.validityMonths}m` : ""}
           </span>
@@ -200,7 +200,7 @@ export function DocumentsClient({
       render: (d: DocRow) =>
         d.publishedVersion ? `v${d.publishedVersion} · ${d.publishedClauses} clauses` : "—",
     },
-    { key: "signedCount", label: "Signed", width: 90, mono: true },
+    { key: "signedCount", label: "Signed", width: 90, mono: true, align: "end" as const },
     {
       key: "draftVersion",
       label: "Draft",
@@ -218,7 +218,7 @@ export function DocumentsClient({
       width: 210,
       render: (d: DocRow) =>
         d.draftVersionId ? (
-          <span style={{ display: "flex", gap: 8 }}>
+          <span className="hm-acts">
             <Button size="sm" variant="ghost" onClick={() => setComposing(d)}>
               Compose
             </Button>
@@ -305,7 +305,7 @@ export function DocumentsClient({
       width: 160,
       render: (s: SignatureRow) =>
         s.redacted ? null : (
-          <span style={{ display: "flex", gap: 8 }}>
+          <span className="hm-acts">
             {s.isContract && !s.counterSignedBy ? (
               <Button size="sm" variant="ghost" onClick={() => setCountering(s)}>
                 Counter-sign
@@ -368,7 +368,7 @@ export function DocumentsClient({
         />
       </div>
 
-      <div style={{ marginTop: 22 }}>
+      <div className="hm-block hm-block--tabs">
         <Tabs
           items={[
             { id: "library", label: `Clause library (${clauses.length})` },
@@ -382,7 +382,7 @@ export function DocumentsClient({
 
       {tab === "library" ? (
         <>
-          <div style={{ margin: "18px 0 14px" }}>
+          <div className="hm-switcher hm-switcher--tabs">
             <Button variant="gold" onClick={() => setWriting(true)}>
               Write a clause
             </Button>
@@ -412,7 +412,7 @@ export function DocumentsClient({
       ) : null}
 
       {tab === "documents" ? (
-        <div style={{ marginTop: 18 }}>
+        <div className="hm-block hm-block--under">
           <ListToolbar resultCount={docs.length} resultNoun="document" countSuffix={` · ${drafts} in draft`} />
           {docs.length === 0 ? (
             <StateBlock
@@ -426,8 +426,8 @@ export function DocumentsClient({
       ) : null}
 
       {tab === "register" ? (
-        <div style={{ marginTop: 18 }}>
-          <div style={{ marginBottom: 14 }}>
+        <div className="hm-block hm-block--under">
+          <div className="hm-below--lead">
             <Button variant="ghost" onClick={() => setCardsOpen(true)}>
               Send the season&rsquo;s cards
             </Button>
@@ -484,7 +484,7 @@ export function DocumentsClient({
           </>
         }
       >
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
           <Input label="Code" hint="Short, lowercase, hyphenated." value={code} onChange={(e) => setCode(e.target.value)} />
           <Select label="Category" value={category} onChange={(e) => setCategory(e.target.value as ClauseCategory)}>
@@ -523,13 +523,13 @@ export function DocumentsClient({
           </>
         }
       >
-        <p className="hm-body" style={{ marginBottom: 14 }}>
+        <p className="hm-body hm-body--lead">
           This publishes the next version alongside the last. Signatures already
           taken keep pointing at the wording they were given — nothing already
           agreed to changes. Documents pick up the new wording when you draft
           their next version.
         </p>
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Textarea label="Wording" rows={8} value={body} onChange={(e) => setBody(e.target.value)} />
           <Input label="What changed" hint="Kept with the version." value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
@@ -541,12 +541,12 @@ export function DocumentsClient({
         title={composing ? `Compose — ${composing.title} v${composing.draftVersion}` : "Compose"}
         footer={<Button variant="ghost" onClick={() => setComposing(null)}>Done</Button>}
       >
-        <p className="hm-body" style={{ marginBottom: 14 }}>
+        <p className="hm-body hm-body--lead">
           Tick the clauses this document carries and say when each one applies. A
           clause held to afloat is left out when the document renders for a night
           ashore — one document, assembled per occasion.
         </p>
-        <div style={{ display: "grid", gap: 10, maxHeight: "48vh", overflowY: "auto" }}>
+        <div className="hm-scroll">
           {offerable.map((c, i) => {
             const chosen = composition.get(c.code);
             /* Ticked at a version that is no longer the newest wording. Say so,
@@ -559,17 +559,7 @@ export function DocumentsClient({
                the condition. */
             const cond = chosen?.condition?.class ?? "";
             return (
-              <div
-                key={c.code}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "auto 1fr 150px",
-                  gap: 12,
-                  alignItems: "center",
-                  borderTop: "1px solid var(--line-faint)",
-                  paddingTop: 10,
-                }}
-              >
+              <div key={c.code} className="hm-clause">
                 <input
                   type="checkbox"
                   aria-label={`Include ${c.title}`}
@@ -603,7 +593,7 @@ export function DocumentsClient({
                       <Badge tone="caution">Older wording in this draft</Badge>
                     </>
                   ) : null}
-                  <span className="hm-mono" style={{ display: "block" }}>
+                  <span className="hm-mono hm-mono--block">
                     v{c.latestVersion}
                   </span>
                 </span>
@@ -704,7 +694,7 @@ export function DocumentsClient({
           </>
         }
       >
-        <p className="hm-body" style={{ marginBottom: 14 }}>
+        <p className="hm-body hm-body--lead">
           Until the club signs, this is an offer rather than an agreement. Signing
           puts it in force and tells the other party. Like every signature here it
           is a record — it cannot be edited or withdrawn afterwards.
@@ -747,13 +737,13 @@ export function DocumentsClient({
           </>
         }
       >
-        <p className="hm-body" style={{ marginBottom: 14 }}>
+        <p className="hm-body hm-body--lead">
           One card per member who actually sailed inside the window — miles,
           episodes, cities, crew met, and any Marks rounded. Members who did not
           sail get nothing; a card reading nought miles is a reproach, not a
           keepsake.
         </p>
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Input label="Season opens" type="date" value={seasonFrom} onChange={(e) => setSeasonFrom(e.target.value)} />
           <Input label="Season closes" type="date" value={seasonTo} onChange={(e) => setSeasonTo(e.target.value)} />
           <Input label="What to call it" hint="Reads in the subject line." value={seasonLabel} onChange={(e) => setSeasonLabel(e.target.value)} />

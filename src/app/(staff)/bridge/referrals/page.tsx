@@ -114,17 +114,17 @@ export default async function ReferralsPage() {
               columns={[
                 { key: "sponsor", label: "Sponsor" },
                 { key: "code", label: "Code", mono: true, width: 130 },
-                { key: "uses", label: "Used", mono: true, width: 80 },
+                { key: "uses", label: "Used", mono: true, align: "end", width: 80 },
                 { key: "aboard", label: "Came aboard" },
-                { key: "knotsAwarded", label: "Knots", mono: true, width: 100 },
-                { key: "cut", label: "Cut", mono: true, width: 80 },
+                { key: "knotsAwarded", label: "Knots", mono: true, align: "end", width: 100 },
+                { key: "cut", label: "Cut", mono: true, align: "end", width: 80 },
               ]}
               rows={rows}
             />
           </div>
           </>
         ) : (
-          <div style={{ marginTop: 20 }}>
+          <div className="hm-block">
             <StateBlock
               status="empty"
               title="No codes in hands yet."

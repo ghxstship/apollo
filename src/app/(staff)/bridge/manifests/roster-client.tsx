@@ -35,7 +35,7 @@ export function EpisodePicker({
       options={options}
       value={value}
       onChange={(e) => router.replace(`/bridge/manifests?episode=${e.target.value}`)}
-      style={{ maxWidth: 380 }}
+      className="hm-picker"
     />
   );
 }
@@ -191,7 +191,7 @@ export function AddToManifest({
             checked={comp}
             onChange={(e) => setComp(e.target.checked)}
           />
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          <span className="hm-inline">
             <span className="hm-mono">GUESTS</span>
             <Stepper size="sm" min={0} max={2} value={guests} onChange={setGuests} />
           </span>
@@ -306,9 +306,9 @@ export function RosterTable({
       key: "name",
       label: "Name",
       render: (r: RosterRow) => (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+        <span className="hm-inline">
           <Avatar name={r.name} size="sm" tone={avatarTone(r.tone)} />
-          <b style={{ fontWeight: 700 }}>{r.name}</b>
+          <b>{r.name}</b>
         </span>
       ),
     },
@@ -318,12 +318,12 @@ export function RosterTable({
       label: "Guests",
       width: 140,
       render: (r: RosterRow) => (
-        <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <span className="hm-mono" style={{ color: "var(--text-2)" }}>
+        <span className="hm-stack hm-stack--block">
+          <span className="hm-mono hm-dim">
             {r.guests}
           </span>
           {r.guestParty.length ? (
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)" }}>
+            <span className="hm-fine">
               {r.guestParty.map((g, i) => (
                 <span key={g.name + i}>
                   {i > 0 ? ", " : ""}
@@ -333,7 +333,7 @@ export function RosterTable({
               ))}
             </span>
           ) : r.guestNames.length ? (
-            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)" }}>{r.guestNames.join(", ")}</span>
+            <span className="hm-fine">{r.guestNames.join(", ")}</span>
           ) : null}
         </span>
       ),
@@ -369,7 +369,7 @@ export function RosterTable({
       key: "status",
       label: "Status",
       render: (r: RosterRow) => (
-        <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap" as const }}>
+        <span className="hm-chips">
           {r.checkedInAt ? (
             <Badge tone="positive">Checked in</Badge>
           ) : r.status === "waitlist" ? (
@@ -380,7 +380,7 @@ export function RosterTable({
           {r.comp ? (
             <Badge
               tone="outline"
-              style={{ color: "var(--neon-violet)", borderColor: "var(--neon-violet)" }}
+              className="hm-badge--comp"
             >
               Comp
             </Badge>

@@ -95,7 +95,7 @@ export function MediaClient({
       {shown.length ? (
         <div className="hm-media">
           {shown.map((c) => (
-            <figure className="hm-media__card" key={c.id} style={{ margin: 0 }}>
+            <figure className="hm-media__card" key={c.id}>
               <div className="hm-media__shot">
                 {c.src ? (
                   /* eslint-disable-next-line @next/next/no-img-element -- member uploads served from a signed bucket URL; no loader in front of it */
@@ -109,7 +109,7 @@ export function MediaClient({
                     loading="lazy"
                   />
                 ) : (
-                  <span className="hm-mono" style={{ padding: 12, display: "block" }}>
+                  <span className="hm-mono hm-media__missing">
                     FILE MISSING — CLEAR THIS RECORD
                   </span>
                 )}
@@ -169,7 +169,7 @@ export function MediaClient({
           ))}
         </div>
       ) : (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock
             status="empty"
             title={cards.length ? "Nothing under that filter." : "Nothing waiting."}

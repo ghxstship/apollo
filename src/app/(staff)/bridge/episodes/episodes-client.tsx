@@ -228,13 +228,13 @@ function FlotillaMeter({ row }: { row: EpisodeOpsRow }) {
       ? "ls-progress--positive"
       : "ls-progress--caution";
   return (
-    <div style={{ marginTop: 12, maxWidth: 460 }}>
+    <div className="hm-progress">
       <Progress
         thick
         className={tone}
         value={(row.aboard / FLOTILLA_FORMS_AT) * 100}
         label={
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <span className="hm-inline">
             FLOTILLA FORMS AT {FLOTILLA_FORMS_AT} — profitable at 3 yachts
             {holding ? <Badge tone="danger">Under 30 inside T-72h</Badge> : null}
           </span>
@@ -463,8 +463,8 @@ export function EpisodesClient({
         <Stat size="sm" label="Under 30 inside T-72" value={shortInsideT72} />
       </div>
 
-      <div className="hm-head" style={{ marginTop: 20 }}>
-        <p className="hm-note" style={{ marginTop: 0 }}>
+      <div className="hm-head hm-tabbody">
+        <p className="hm-note hm-note--flush">
           Holds, completions, and cancellations fan out to every pass — each one asks first. Held
           passes are off sale — capacity for sale = total − holds.
         </p>
@@ -613,7 +613,7 @@ export function EpisodesClient({
       ))}
 
       {shown.length === 0 ? (
-        <div style={{ marginTop: 20 }}>
+        <div className="hm-block">
           <StateBlock
             status="empty"
             icon="CalendarDays"
@@ -847,7 +847,7 @@ export function EpisodesClient({
       >
         <div className="hm-form">
           {program?.edition?.role === "template" ? (
-            <p className="hm-note" style={{ marginTop: 0 }}>
+            <p className="hm-note hm-note--flush">
               {program.edition.occurrences === 1
                 ? "1 occurrence will not follow this change"
                 : `${program.edition.occurrences} occurrences will not follow this change`}{" "}
@@ -1025,15 +1025,15 @@ function FlotillaBody({
       {row.hulls.length ? (
         <div>
           <span className="hm-mono">ASSIGNED · IN POSITION ORDER</span>
-          <ul className="hm-body" style={{ listStyle: "none", padding: 0, margin: "6px 0 0" }}>
+          <ul className="hm-kv hm-kv--below">
             {row.hulls.map((h) => (
-              <li key={h.vesselId} style={{ display: "flex", gap: 10, alignItems: "center", padding: "4px 0" }}>
-                <span className="hm-mono" style={{ minWidth: 24 }}>
+              <li key={h.vesselId}>
+                <span className="hm-mono hm-kv__n">
                   {h.position}
                 </span>
-                <span style={{ flex: 1 }}>
+                <span className="hm-kv__v">
                   {h.name}
-                  <span style={{ color: "var(--text-3)" }}> · {h.capacity} passes</span>
+                  <span className="hm-muted"> · {h.capacity} passes</span>
                 </span>
                 {arming === h.vesselId ? (
                   <>
@@ -1053,21 +1053,21 @@ function FlotillaBody({
             ))}
           </ul>
           {arming ? (
-            <p className="hm-note" style={{ marginTop: 6 }}>
+            <p className="hm-note">
               Passes already spread onto this hull keep their hull note — spread
               the manifest again after taking it off.
             </p>
           ) : null}
         </div>
       ) : (
-        <p className="hm-note" style={{ marginTop: 0 }}>
+        <p className="hm-note hm-note--flush">
           No hulls assigned yet. The manifest cannot spread across a flotilla
           that has no yachts in it.
         </p>
       )}
 
       {open.length ? (
-        <div className="hm-form__row" style={{ alignItems: "end" }}>
+        <div className="hm-form__row hm-form__row--end">
           <Select
             label="Hull"
             value={pick}
@@ -1077,7 +1077,7 @@ function FlotillaBody({
               ...open.map((v) => ({ value: v.id, label: `${v.name} · ${v.capacity} passes` })),
             ]}
           />
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 10, paddingBottom: 2 }}>
+          <span className="hm-inline">
             <span className="hm-mono">POSITION</span>
             <Stepper size="sm" min={1} max={96} value={pos} onChange={setPos} />
           </span>
@@ -1413,8 +1413,8 @@ function NewEpisodeDialog({
             onChange={(e) => set("presaleHours", e.target.value)}
           />
         </div>
-        <div className="hm-form__row" style={{ alignItems: "center" }}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+        <div className="hm-form__row hm-form__row--center">
+          <span className="hm-inline">
             <span className="hm-mono">CAPACITY</span>
             <Stepper size="sm" min={1} max={96} value={f.passes} onChange={(n) => set("passes", n)} />
           </span>
@@ -1446,16 +1446,7 @@ function NewEpisodeDialog({
             </Button>
           </div>
           {f.itinerary.map((leg, i) => (
-            <div
-              key={i}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "90px 1fr 1fr auto",
-                gap: 8,
-                alignItems: "end",
-                marginTop: 8,
-              }}
-            >
+            <div key={i} className="hm-leg">
               <Input
                 label={i === 0 ? "Offset" : undefined}
                 type="number"

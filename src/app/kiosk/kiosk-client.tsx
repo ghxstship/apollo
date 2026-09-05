@@ -361,12 +361,19 @@ export function KioskClient({ passes: serverPasses }: { passes: KioskPass[] }) {
   }
 
   return (
-    <main id="main" className="kio" data-screen="scan">
+    <main id="main" className="kio" data-screen="scan" aria-busy={busy || undefined}>
       <h1>Hold your code to the camera.</h1>
       <div className="kio-cam">
         <CameraScanner onScan={onScan} />
       </div>
-      <p className="kio-mono">MEMBER CARD OR BOARDING STUB · THE CAMERAS ARE ON</p>
+      {/* A scan in flight said nothing: the screen held the scan prompt while
+          the manifest was asked, and a person who had just held up a card saw
+          no sign it had been read. The same word the gangway console uses. */}
+      {busy ? (
+        <p className="kio-mono" role="status">CHECKING…</p>
+      ) : (
+        <p className="kio-mono">MEMBER CARD OR BOARDING STUB · THE CAMERAS ARE ON</p>
+      )}
       {queuedCount > 0 ? (
         <p className="kio-mono">
           {queuedCount} RECORDED OFFLINE · LANDS WHEN THE SIGNAL RETURNS

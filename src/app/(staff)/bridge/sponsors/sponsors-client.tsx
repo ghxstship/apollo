@@ -148,15 +148,15 @@ export function SponsorsClient({
       key: "name",
       label: "Sponsor",
       render: (r: SponsorItem) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.name}</b>
+        <span className="hm-who">
+          <b>{r.name}</b>
           {r.contactEmail ? (
-            <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+            <span className="hm-who__sub">
               {r.contactEmail}
             </span>
           ) : null}
           {r.signedBy ? (
-            <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>
+            <span className="hm-who__sub">
               signed by {r.signedBy}
             </span>
           ) : null}
@@ -217,7 +217,7 @@ export function SponsorsClient({
 
   return (
     <>
-      <div style={{ margin: "22px 0 14px", display: "flex", gap: 10 }}>
+      <div className="hm-switcher">
         <Button variant="gold" onClick={() => setSigning(true)} disabled={tiers.length === 0}>
           Sign a sponsor
         </Button>
@@ -246,7 +246,7 @@ export function SponsorsClient({
       {rows.length > 0 ? (
         <section className="hm-sec">
           <h2>Placements.</h2>
-          <p className="hm-lede" style={{ marginTop: 4 }}>
+          <p className="hm-lede">
             An activation puts the name on an episode — the public page reads it as a
             credit line, presenting partner first. Placement is a note for the crew,
             not copy for the shore. Each activation carries the tier&rsquo;s assets as a
@@ -259,23 +259,23 @@ export function SponsorsClient({
             const open = episodes.filter((v) => !taken.has(v.value));
             const card = cardFor(s.tier);
             return (
-              <div key={s.id} className="hm-panel" style={{ padding: "16px 20px" }}>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                  <b style={{ fontWeight: 700 }}>{s.name}</b>
-                  <span className="ls-mono-data" style={{ color: "var(--text-3)", textTransform: "uppercase" }}>
+              <div key={s.id} className="hm-panel hm-panel--pad">
+                <div className="hm-titleline">
+                  <b>{s.name}</b>
+                  <span className="ls-mono-data hm-muted hm-caps">
                     {s.tierLabel}
                     {s.active ? "" : " · RETIRED"}
                   </span>
                 </div>
 
                 {card && card.assets.length > 0 ? (
-                  <p className="hm-body" style={{ marginTop: 6, color: "var(--text-3)" }}>
+                  <p className="hm-body hm-body--muted hm-body--below">
                     Owed on activation: {card.assets.join(" · ")}
                   </p>
                 ) : null}
 
                 {s.activations.length > 0 ? (
-                  <div style={{ marginTop: 10, display: "grid", gap: 12 }}>
+                  <div className="hm-form hm-form--below">
                     {s.activations.map((a) => {
                       const owed = card?.assets ?? [];
                       const delivered = a.assetsDelivered.filter((x) => owed.includes(x)).length;
@@ -284,14 +284,13 @@ export function SponsorsClient({
                       return (
                         <div
                           key={a.episodeId}
-                          className="hm-item"
-                          style={{ borderTop: "1px solid var(--line)", paddingTop: 10 }}
+                          className="hm-item hm-item--nested"
                         >
                           <div className="hm-item__head">
                             <span className="hm-body">
                               {a.label}
                               {a.placement ? (
-                                <span style={{ color: "var(--text-3)" }}> · {a.placement}</span>
+                                <span className="hm-muted"> · {a.placement}</span>
                               ) : null}
                             </span>
                             {owed.length > 0 ? (
@@ -314,7 +313,7 @@ export function SponsorsClient({
                           </div>
 
                           {owed.length > 0 ? (
-                            <div style={{ marginTop: 8 }}>
+                            <div className="hm-below">
                               <span className="hm-mono">ASSETS DELIVERED</span>
                               <div className="ls-choices">
                                 {owed.map((asset) => (
@@ -329,25 +328,25 @@ export function SponsorsClient({
                               </div>
                             </div>
                           ) : (
-                            <p className="hm-body" style={{ marginTop: 8, color: "var(--text-3)" }}>
+                            <p className="hm-body hm-body--muted hm-body--below">
                               This tier lists no assets, so there is nothing to tick off.
                             </p>
                           )}
 
-                          <div style={{ marginTop: 10 }}>
+                          <div className="hm-below">
                             <span className="hm-mono">
                               {a.comps.length === 0
                                 ? "NO PASSES COMPED ON THIS ACCOUNT"
                                 : `${a.comps.length} COMPED ON THIS ACCOUNT`}
                             </span>
                             {a.comps.length > 0 ? (
-                              <p className="hm-body" style={{ marginTop: 4 }}>
+                              <p className="hm-body">
                                 {a.comps.map((c, i) => (
                                   <span key={c.id}>
                                     {i > 0 ? ", " : ""}
                                     {c.name}
                                     {c.status !== "aboard" && c.status !== "confirmed" ? (
-                                      <span style={{ color: "var(--text-3)" }}>
+                                      <span className="hm-muted">
                                         {" "}({c.status.replace(/_/g, " ")})
                                       </span>
                                     ) : null}
@@ -358,15 +357,7 @@ export function SponsorsClient({
                           </div>
 
                           {s.active && a.open ? (
-                            <div
-                              style={{
-                                marginTop: 10,
-                                display: "flex",
-                                gap: 10,
-                                alignItems: "flex-end",
-                                flexWrap: "wrap",
-                              }}
-                            >
+                            <div className="hm-fieldrow hm-fieldrow--below">
                               <Select
                                 label="Comp a pass"
                                 hint="A member in standing boards on the sponsor's account."
@@ -374,7 +365,6 @@ export function SponsorsClient({
                                 onChange={(e) =>
                                   setCompPicks((p) => ({ ...p, [key]: e.target.value }))
                                 }
-                                style={{ minWidth: 260 }}
                                 options={[
                                   {
                                     value: "",
@@ -398,26 +388,17 @@ export function SponsorsClient({
                     })}
                   </div>
                 ) : (
-                  <p className="hm-body" style={{ marginTop: 10, color: "var(--text-3)" }}>
+                  <p className="hm-body hm-body--muted hm-body--below">
                     On no episode yet.
                   </p>
                 )}
 
                 {s.active ? (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "flex-end",
-                      flexWrap: "wrap",
-                    }}
-                  >
+                  <div className="hm-fieldrow hm-fieldrow--below">
                     <Select
                       label="Episode"
                       value={pick.episode}
                       onChange={(e) => setPick(s.id, { episode: e.target.value })}
-                      style={{ minWidth: 260 }}
                       options={[
                         {
                           value: "",
@@ -431,7 +412,6 @@ export function SponsorsClient({
                       hint="Optional — where the asset sits."
                       value={pick.placement}
                       onChange={(e) => setPick(s.id, { placement: e.target.value })}
-                      style={{ minWidth: 220 }}
                     />
                     <Button
                       variant="outline"
@@ -536,7 +516,7 @@ export function SponsorsClient({
           </>
         }
       >
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
           <Select
             label="Tier"
@@ -557,7 +537,7 @@ export function SponsorsClient({
             ))}
           </Select>
           {cardFor(tier)?.assets.length ? (
-            <p className="hm-body" style={{ marginTop: -6, color: "var(--text-3)" }}>
+            <p className="hm-body hm-body--muted">
               This tier carries: {cardFor(tier)!.assets.join(" · ")}
             </p>
           ) : null}

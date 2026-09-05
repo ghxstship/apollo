@@ -152,7 +152,7 @@ export default async function ApplicationsPage() {
           />
         </div>
         ) : (
-          <div style={{ marginTop: 20 }}>
+          <div className="hm-block">
             <StateBlock
               status="empty"
               title="The roll is empty."

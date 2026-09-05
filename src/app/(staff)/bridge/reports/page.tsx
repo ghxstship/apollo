@@ -644,7 +644,7 @@ export default async function ReportsPage() {
                   key={label}
                   size="sm"
                   label={label}
-                  value={<span style={{ color: `var(--${tone})` }}>{n}</span>}
+                  value={<span className={`hm-tone--${tone}`}>{n}</span>}
                 />
               ))}
             </div>
@@ -944,14 +944,14 @@ export default async function ReportsPage() {
               { key: "title", label: "Episode" },
               { key: "fill", label: "Fill", mono: true, width: 90 },
               { key: "perYacht", label: "Per yacht", mono: true, width: 140 },
-              { key: "nm", label: "NM", mono: true, width: 70 },
-              { key: "knots", label: "Knots paid", mono: true, width: 110 },
-              { key: "revenue", label: "Revenue", mono: true, width: 100 },
+              { key: "nm", label: "NM", mono: true, align: "end", width: 70 },
+              { key: "knots", label: "Knots paid", mono: true, align: "end", width: 110 },
+              { key: "revenue", label: "Revenue", mono: true, align: "end", width: 100 },
             ]}
             rows={fillRows}
           />
           {fillRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
+            <p className="hm-empty">
               No episodes on the books yet.
             </p>
           ) : null}
@@ -978,7 +978,7 @@ export default async function ReportsPage() {
             rows={changeRows}
           />
           {changeRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
+            <p className="hm-empty">
               Nothing recorded yet.
             </p>
           ) : null}
@@ -1005,7 +1005,7 @@ export default async function ReportsPage() {
             rows={errorRows}
           />
           {errorRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
+            <p className="hm-empty">
               Nothing has failed that the app knows of.
             </p>
           ) : null}
@@ -1033,12 +1033,7 @@ export default async function ReportsPage() {
                 render: (r: SchedulerRow) => {
                   const t = schedulerTone(r);
                   return (
-                    <Badge
-                      tone={t.tone}
-                      /* The badge set has no danger tone; a failed drain wears
-                         the danger colour on the caution frame. */
-                      style={t.danger ? { color: "var(--danger)", borderColor: "var(--danger)" } : undefined}
-                    >
+                    <Badge tone={t.danger ? "danger" : t.tone}>
                       {t.label}
                     </Badge>
                   );
@@ -1056,7 +1051,7 @@ export default async function ReportsPage() {
             rows={schedulerRows}
           />
           {schedulerRows.length === 0 ? (
-            <p style={{ padding: "20px 4px", color: "var(--text-3)", fontSize: "var(--text-sm)" }}>
+            <p className="hm-empty">
               The scheduler has not answered yet.
             </p>
           ) : null}

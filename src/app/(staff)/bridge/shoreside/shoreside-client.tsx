@@ -41,7 +41,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
 
   if (threads.length === 0) {
     return (
-      <div style={{ marginTop: 24 }}>
+      <div className="hm-block">
         <StateBlock
           status="empty"
           title="Nothing from the shore."
@@ -84,7 +84,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
       <div className="hm-inbox">
         <div className="hm-inbox__list">
           {shown.length === 0 ? (
-            <p style={{ padding: "16px", fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
+            <p className="hm-empty">
               Nobody by that name. Clear the search to see every thread.
             </p>
           ) : null}
@@ -107,7 +107,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
 
         {active ? (
           <div className="hm-inbox__pane">
-            <div className="hm-item__head" style={{ padding: "14px 18px" }}>
+            <div className="hm-item__head hm-inbox__head">
               <b>{active.member}</b>
               {active.waiting ? <Badge tone="caution">Waiting on us</Badge> : null}
               {active.closed ? <Badge tone="outline">Closed</Badge> : null}
@@ -127,7 +127,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
                   </div>
                 ))
               ) : (
-                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
+                <p className="hm-body hm-body--muted">
                   The thread is open and empty. Say the first thing.
                 </p>
               )}

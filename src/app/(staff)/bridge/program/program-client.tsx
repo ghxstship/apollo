@@ -139,9 +139,9 @@ export function ProgramClient({
       key: "title",
       label: "Season",
       render: (r: SeasonPanelRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.title}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>/{r.slug}</span>
+        <span className="hm-who">
+          <b>{r.title}</b>
+          <span className="hm-who__sub">/{r.slug}</span>
         </span>
       ),
     },
@@ -152,7 +152,7 @@ export function ProgramClient({
       mono: true,
       render: (r: SeasonPanelRow) => `${onDay(r.startsOn)} — ${onDay(r.endsOn)}`,
     },
-    { key: "episodes", label: "Episodes", width: 90, mono: true },
+    { key: "episodes", label: "Episodes", width: 90, mono: true, align: "end" as const },
     {
       key: "active",
       label: "State",
@@ -179,9 +179,9 @@ export function ProgramClient({
       key: "name",
       label: "Venue",
       render: (r: VenuePanelRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.name}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>/{r.slug}</span>
+        <span className="hm-who">
+          <b>{r.name}</b>
+          <span className="hm-who__sub">/{r.slug}</span>
         </span>
       ),
     },
@@ -246,9 +246,9 @@ export function ProgramClient({
       key: "title",
       label: "Series",
       render: (r: SeriesPanelRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.title}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>/{r.slug}</span>
+        <span className="hm-who">
+          <b>{r.title}</b>
+          <span className="hm-who__sub">/{r.slug}</span>
         </span>
       ),
     },
@@ -265,7 +265,7 @@ export function ProgramClient({
       width: 200,
       render: (r: SeriesPanelRow) => r.template,
     },
-    { key: "occurrences", label: "Raised", width: 80, mono: true },
+    { key: "occurrences", label: "Raised", width: 80, mono: true, align: "end" as const },
     {
       key: "active",
       label: "State",
@@ -280,7 +280,7 @@ export function ProgramClient({
       width: "min(260px, 100%)",
       render: (r: SeriesPanelRow) =>
         r.active ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span className="hm-inline">
             <Stepper
               size="sm"
               min={1}
@@ -359,7 +359,7 @@ export function ProgramClient({
             </div>
           </>
         ) : (
-          <div style={{ marginTop: 20 }}>
+          <div className="hm-block">
             <StateBlock
               status="empty"
               title="No seasons on the books."
@@ -394,7 +394,7 @@ export function ProgramClient({
             </div>
           </>
         ) : (
-          <div style={{ marginTop: 20 }}>
+          <div className="hm-block">
             <StateBlock
               status="empty"
               title="No venues charted."
@@ -430,7 +430,7 @@ export function ProgramClient({
             </div>
           </>
         ) : (
-          <div style={{ marginTop: 20 }}>
+          <div className="hm-block">
             <StateBlock
               status="empty"
               title="No series laid."
@@ -481,7 +481,7 @@ export function ProgramClient({
           </>
         }
       >
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Input label="Name" value={sTitle} onChange={(e) => setSTitle(e.target.value)} />
           <Input
             label="Address"
@@ -543,7 +543,7 @@ export function ProgramClient({
           </>
         }
       >
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Input label="Name" value={vName} onChange={(e) => setVName(e.target.value)} />
           <Input
             label="Address"
@@ -664,7 +664,7 @@ export function ProgramClient({
           </>
         }
       >
-        <div style={{ display: "grid", gap: 14 }}>
+        <div className="hm-form">
           <Input label="Name" value={rTitle} onChange={(e) => setRTitle(e.target.value)} />
           <Input
             label="Address"

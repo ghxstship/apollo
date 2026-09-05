@@ -93,9 +93,9 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       key: "title",
       label: "Episode",
       render: (r: RadarOpsRow) => (
-        <span>
-          <b style={{ fontWeight: 700 }}>{r.title.replace(/\.+$/, "")}</b>
-          <span style={{ display: "block", marginTop: 2, color: "var(--text-3)" }}>{r.departs}</span>
+        <span className="hm-who">
+          <b>{r.title.replace(/\.+$/, "")}</b>
+          <span className="hm-who__sub">{r.departs}</span>
         </span>
       ),
     },
@@ -114,9 +114,9 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       mono: true,
       render: (r: RadarOpsRow) =>
         r.opens ? (
-          <span style={{ display: "block", lineHeight: 1.7 }}>
+          <span className="hm-lines">
             OPENS {r.opens} · LOCKS {r.locks}
-            <span style={{ display: "block" }}>
+            <span>
               LOG {r.unlocks} · GONE {r.expires}
             </span>
           </span>
@@ -160,7 +160,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       width: 150,
       render: (r: RadarOpsRow) =>
         r.opens ? (
-          <span style={{ display: "inline-flex", flexDirection: "column", gap: 4, alignItems: "start" }}>
+          <span className="hm-stack">
             <Button
               size="sm"
               variant="ghost"
