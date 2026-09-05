@@ -38,7 +38,7 @@ export default async function TaxPage() {
     <div>
       <span className="hm-eyebrow">Tax</span>
       <h1 className="hm-h1">What each city taxes, and who said so.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Nothing is charged until a city carries a rate and the club is registered
         to collect it. A blank rate means undetermined; zero means determined to be
         untaxed. Admissions covers passes, deposits and add-ons; goods covers the

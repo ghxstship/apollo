@@ -113,7 +113,7 @@ export default async function VettingOpsPage() {
     <div>
       <span className="hm-eyebrow">Vetting</span>
       <h1 className="hm-h1">The files.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Identity, age, and the background state. Four of the six gates a member
         reads on their own page turn here and nowhere else, and no ratio-gated
         episode will seat a member whose file is not open and cleared.

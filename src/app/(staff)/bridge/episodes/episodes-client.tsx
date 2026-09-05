@@ -223,18 +223,18 @@ function FlotillaMeter({ row }: { row: EpisodeOpsRow }) {
      the line met is positive, short inside T-72 is the danger case, and short
      with time still on the clock is a caution. */
   const tone = holding
-    ? "ls-progress--danger"
+    ? "danger"
     : row.aboard >= FLOTILLA_FORMS_AT
-      ? "ls-progress--positive"
-      : "ls-progress--caution";
+      ? "positive"
+      : "caution";
   return (
     <div className="hm-progress">
       <Progress
         thick
-        className={tone}
+        tone={tone}
         value={(row.aboard / FLOTILLA_FORMS_AT) * 100}
         label={
-          <span className="hm-inline">
+          <span className="ls-inline">
             FLOTILLA FORMS AT {FLOTILLA_FORMS_AT} — profitable at 3 yachts
             {holding ? <Badge tone="danger">Under 30 inside T-72h</Badge> : null}
           </span>
@@ -1077,7 +1077,7 @@ function FlotillaBody({
               ...open.map((v) => ({ value: v.id, label: `${v.name} · ${v.capacity} passes` })),
             ]}
           />
-          <span className="hm-inline">
+          <span className="ls-inline">
             <span className="hm-mono">POSITION</span>
             <Stepper size="sm" min={1} max={96} value={pos} onChange={setPos} />
           </span>
@@ -1414,7 +1414,7 @@ function NewEpisodeDialog({
           />
         </div>
         <div className="hm-form__row hm-form__row--center">
-          <span className="hm-inline">
+          <span className="ls-inline">
             <span className="hm-mono">CAPACITY</span>
             <Stepper size="sm" min={1} max={96} value={f.passes} onChange={(n) => set("passes", n)} />
           </span>

@@ -125,7 +125,7 @@ export default async function TablesPage({
     <div>
       <span className="hm-eyebrow">Tonight</span>
       <h1 className="hm-h1">Tonight.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Blind tables for six, laid on a shore night. A member takes a seat and
         confirms it at the door; matches come from tables, not swiping. Lay the
         room here — number and chairs — and strike a table only while nobody

@@ -46,7 +46,7 @@ export default async function RegattasPage() {
     <div>
       <span className="hm-eyebrow">{LOGBOOK.regattas}</span>
       <h1 className="hm-h1">Contests, and their endings.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         A regatta ranks the members who entered it; a challenge asks for a number.
         Both run inside a window and both get settled — the standing freezes, the
         award posts, and the result becomes history. The club keeps no all-time table.

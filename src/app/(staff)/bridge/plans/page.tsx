@@ -42,7 +42,7 @@ export default async function PlansPage() {
           plan is set in a migration; this is the one field that has to be typed
           by a person, because the price it names is created by a person in
           Stripe and the two have to be matched by hand. */}
-      <p className="hm-lede">
+      <p className="ls-lede">
         A tier is only sellable once it carries the Stripe price it sells at.
         Create the price in Stripe first, then record its id here.
       </p>

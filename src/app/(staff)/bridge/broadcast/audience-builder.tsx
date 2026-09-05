@@ -94,7 +94,7 @@ export function AudienceBuilder({
       </div>
 
       <div className="hm-audience__foot">
-        <div className="hm-acts">
+        <div className="ls-acts">
           <Button size="sm" variant="outline" disabled={value.rules.length >= MAX_RULES} onClick={addRule}>
             Add a rule
           </Button>
@@ -154,7 +154,7 @@ function RuleRow({ rule, lookups, leaving = false, onChange, onRemove }: { rule:
         {f.shape === "set" && f.source ? (
           <SetValue values={Array.isArray(rule.value) ? rule.value : []} options={optionsFor(f.source, lookups)} onChange={(v) => onChange({ ...rule, value: v })} />
         ) : f.shape === "bool" ? (
-          <div className="hm-acts">
+          <div className="ls-acts">
             <Button size="sm" variant={rule.value === true ? "gold" : "outline"} aria-pressed={rule.value === true} onClick={() => onChange({ ...rule, value: true })}>Yes</Button>
             <Button size="sm" variant={rule.value === false ? "gold" : "outline"} aria-pressed={rule.value === false} onClick={() => onChange({ ...rule, value: false })}>No</Button>
           </div>
@@ -188,7 +188,7 @@ function SetValue({ values, options, onChange }: { values: string[]; options: Ar
   const toggle = (v: string) => onChange(values.includes(v) ? values.filter((x) => x !== v) : [...values, v]);
   if (options.length <= 6) {
     return (
-      <div className="hm-acts" role="group">
+      <div className="ls-acts" role="group">
         {options.map((o) => (
           <Button key={o.value} size="sm" variant={values.includes(o.value) ? "gold" : "outline"} aria-pressed={values.includes(o.value)} onClick={() => toggle(o.value)}>
             {o.label}

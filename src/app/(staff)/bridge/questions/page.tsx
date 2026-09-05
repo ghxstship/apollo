@@ -25,7 +25,7 @@ export default async function QuestionsPage() {
     <div>
       <span className="hm-eyebrow">Questions</span>
       <h1 className="hm-h1">What the application asks.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         The door asks these, in this order, of everyone who applies. Answers file under the
         question&apos;s key and read back in Vetting under its prompt — so a question is switched
         off rather than deleted, and its key never changes once anyone has answered it.

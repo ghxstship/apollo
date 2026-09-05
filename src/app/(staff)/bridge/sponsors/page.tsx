@@ -140,7 +140,7 @@ export default async function SponsorsPage() {
     <div>
       <span className="hm-eyebrow">Sponsors</span>
       <h1 className="hm-h1">The sponsor book.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         A sponsor keeps a monthly retainer and gets a credit — a name carried on
         an episode, never an ad. The terms live here on the Bridge; the shore reads
         names and tiers through one window, and nothing else.

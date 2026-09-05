@@ -246,7 +246,7 @@ export function SponsorsClient({
       {rows.length > 0 ? (
         <section className="hm-sec">
           <h2>Placements.</h2>
-          <p className="hm-lede">
+          <p className="ls-lede">
             An activation puts the name on an episode — the public page reads it as a
             credit line, presenting partner first. Placement is a note for the crew,
             not copy for the shore. Each activation carries the tier&rsquo;s assets as a

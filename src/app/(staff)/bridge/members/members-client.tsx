@@ -2,8 +2,7 @@
 
 import React from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Badge, Button, Checkbox, Dialog, FilterPills, Input, ListToolbar, Select, StateBlock, Table, Textarea, Toast, type ToolbarChip } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, FilterPills, Input, LinkButton, ListToolbar, Select, StateBlock, Table, Textarea, Toast, tableColumns, type ToolbarChip } from "@/components/ds";
 import { CLUB_ZONE, LEAGUES, PLACE, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -280,7 +279,7 @@ export function MembersClient({
     });
   };
 
-  const columns = [
+  const columns = tableColumns<MemberRow>([
     {
       key: "pick",
       label: <span className="ls-visually-hidden">Selected</span>,
@@ -289,8 +288,7 @@ export function MembersClient({
          also open the drawer. Enter/Space on the row itself still opens it. */
       render: (r: MemberRow) => (
         <span className="hm-pick" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox"
+          <Checkbox
             aria-label={`Select ${r.name}`}
             checked={selected.has(r.id)}
             onChange={() => toggleOne(r.id)}
@@ -321,14 +319,13 @@ export function MembersClient({
       render: (r: MemberRow) => <span title={r.leagueName}>{`L${r.league}`}</span>,
     },
     { key: "cityCode", label: PLACE.market, width: 80, mono: true },
-    { key: "passes", label: "Passes", width: 70, mono: true, align: "end" as const },
-    { key: "attended", label: "Aboard", width: 70, mono: true, align: "end" as const },
+    { key: "passes", label: "Passes", width: 70, numeric: true },
+    { key: "attended", label: "Aboard", width: 70, numeric: true },
     {
       key: "knots",
       label: "Knots",
       width: 90,
-      mono: true,
-      align: "end" as const,
+      numeric: true,
       render: (r: MemberRow) => r.knots.toLocaleString("en-US"),
     },
     {
@@ -344,7 +341,7 @@ export function MembersClient({
       width: 100,
       render: (r: MemberRow) => <Badge tone={DUES_TONE[r.dues] ?? "outline"}>{r.duesLabel}</Badge>,
     },
-  ];
+  ]);
 
   return (
     <>
@@ -487,7 +484,7 @@ export function MembersClient({
             {chosen.length} {chosen.length === 1 ? "MEMBER" : "MEMBERS"} SELECTED
             {selected.size > chosen.length ? ` · ${selected.size - chosen.length} MORE OUTSIDE THIS FILTER` : ""}
           </span>
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button variant="outline" size="sm" disabled={pending} onClick={() => setBulk("hold")}>
               Hold
             </Button>
@@ -655,7 +652,7 @@ export function MembersClient({
                 <p className="hm-fact">No passes on the record.</p>
               )}
             </div>
-            <div className="hm-acts">
+            <div className="ls-acts">
               <Button
                 size="sm"
                 variant="outline"
@@ -690,15 +687,15 @@ export function MembersClient({
                   Mark number verified
                 </Button>
               ) : null}
-              <Link className="ls-btn ls-btn--outline ls-btn--sm" href="/bridge/manifests">
+              <LinkButton variant="outline" size="sm" href="/bridge/manifests">
                 Manifests
-              </Link>
-              <Link className="ls-btn ls-btn--outline ls-btn--sm" href="/bridge/orders">
+              </LinkButton>
+              <LinkButton variant="outline" size="sm" href="/bridge/orders">
                 House account
-              </Link>
-              <Link className="ls-btn ls-btn--outline ls-btn--sm" href="/bridge/shoreside">
+              </LinkButton>
+              <LinkButton variant="outline" size="sm" href="/bridge/shoreside">
                 Shoreside
-              </Link>
+              </LinkButton>
             </div>
           </div>
         )}

@@ -37,7 +37,7 @@ export default async function CodesPage() {
     <div>
       <span className="hm-eyebrow">Codes</span>
       <h1 className="hm-h1">Access and promo codes.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Founding-member drops, partner comps, press. A code is either a share off, a sum off, or the
         whole thing complimentary — scoped to one episode or to all of them.
       </p>

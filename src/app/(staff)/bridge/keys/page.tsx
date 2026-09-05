@@ -64,7 +64,7 @@ export default async function KeysPage() {
     <div>
       <span className="hm-eyebrow">Keys and hooks</span>
       <h1 className="hm-h1">What we let through the hull.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Keys for reading the club from outside; hooks for telling another system what happened. Both
         are scoped narrowly and both can be shut off from here.
       </p>

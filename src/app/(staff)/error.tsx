@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
+import { Button, LinkButton } from "@/components/ds";
 
 /* The Bridge's boundary — the operator gets the reference to quote, not a stack. */
 /* A block, not a second shell: this renders INSIDE the layout's <main
@@ -18,8 +18,8 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <h1>The Bridge lost the thread.</h1>
       <p>Our end. Try again; if it holds, the reference below is what engineering needs.</p>
       <p className="hm-err__acts">
-        <button className="ls-btn ls-btn--gold" onClick={reset} type="button">Try again</button>
-        <Link className="ls-btn ls-btn--ghost" href="/bridge">Back to the Bridge</Link>
+        <Button variant="gold" onClick={reset}>Try again</Button>
+        <LinkButton variant="ghost" href="/bridge">Back to the Bridge</LinkButton>
       </p>
       {error.digest ? <p className="hm-mono hm-err__ref">REF {error.digest.toUpperCase()}</p> : null}
     </div>

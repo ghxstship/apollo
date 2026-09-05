@@ -260,7 +260,7 @@ export function CompositionPanel({
       <section className="hm-sec">
         <div className="hm-head">
           <h2>The hull.</h2>
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button variant="outline" size="sm" disabled={pending || !ceilingDirty} onClick={saveCeiling}>
               Save the ceiling
             </Button>
@@ -330,7 +330,7 @@ export function CompositionPanel({
       <section className="hm-sec">
         <div className="hm-head">
           <h2>The ceilings.</h2>
-          <span className="hm-acts">
+          <span className="ls-acts">
             {gated ? (
               <Button variant="ghost" size="sm" disabled={pending} onClick={() => setConfirmLift(true)}>
                 Lift the composition
@@ -433,7 +433,7 @@ export function CompositionPanel({
             six hours — the line is served in order, so the button sits on the person it reaches.
           </p>
           {requested.length === 0 ? (
-            <p className="hm-empty">Nobody is asking. A request lands here the moment a member joins the line.</p>
+            <p className="ls-empty">Nobody is asking. A request lands here the moment a member joins the line.</p>
           ) : (
             <div className="hm-req">
               {requested.map((r) => {

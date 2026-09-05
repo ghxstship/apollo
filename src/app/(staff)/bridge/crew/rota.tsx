@@ -282,7 +282,7 @@ export function Rota({
           ends; revoke it sooner from here.
         </p>
         {doors.length === 0 ? (
-          <p className="hm-empty">Nobody is confirmed on a night ahead. Confirm an offer above and the name lands here.</p>
+          <p className="ls-empty">Nobody is confirmed on a night ahead. Confirm an offer above and the name lands here.</p>
         ) : (
           <div className="hm-door">
             {doors.map((d) => (

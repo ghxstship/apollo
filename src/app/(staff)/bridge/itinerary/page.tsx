@@ -137,7 +137,7 @@ export default async function ItineraryPage({
     <div>
       <span className="hm-eyebrow">Itinerary</span>
       <h1 className="hm-h1">Legs and stops.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         The episode itinerary and the port guide card, as rows. A leg can be
         revised and a revision is timestamped; a hold swaps a leg rather than
         cancelling it, and states the reason, the new plan, and what is

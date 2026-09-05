@@ -84,7 +84,7 @@ export default async function RadarOpsPage() {
     <div>
       <span className="hm-eyebrow">Radar</span>
       <h1 className="hm-h1">The sweep.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Radar runs on an episode or it does not run at all. Opening it sets four
         times off that episode&apos;s own departure and its city&apos;s clock:
         the sweep opens at 17:15, picks close at 17:30, the Captain&apos;s Log

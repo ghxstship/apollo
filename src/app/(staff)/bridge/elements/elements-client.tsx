@@ -247,7 +247,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
       label: "",
       width: 120,
       render: (r: ElementListRow) => (
-        <span className="hm-acts">
+        <span className="ls-acts">
           <Button size="sm" variant="ghost" onClick={() => openEdit(r)}>
             Edit
           </Button>

@@ -160,7 +160,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       width: 150,
       render: (r: RadarOpsRow) =>
         r.opens ? (
-          <span className="hm-stack">
+          <span className="ls-stack ls-stack--tight">
             <Button
               size="sm"
               variant="ghost"

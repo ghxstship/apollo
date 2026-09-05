@@ -42,7 +42,7 @@ export default async function PollsPage() {
     <div>
       <span className="hm-eyebrow">Polls</span>
       <h1 className="hm-h1">Ask the club.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         One question, two to six answers, a closing hour. Members vote once and see the count when
         it closes; the Bridge sees it as it runs. A question is about the club — a venue, a night,
         a name — and is never about a person.

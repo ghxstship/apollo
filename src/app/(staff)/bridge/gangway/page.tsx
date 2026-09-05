@@ -212,7 +212,7 @@ export default async function GangwayPage({
       {/* Stable statement; event state lives in the mono line below (client,
           so the aboard count ticks live). */}
       <h1 className="hm-h1">Boarding.</h1>
-      <p className="hm-lede">Scan a pass or type its code.</p>
+      <p className="ls-lede">Scan a pass or type its code.</p>
       {/* The door's own header: which episode the grant is for and when it
           runs out. Staff already have the Bridge around them; a door has this
           line and the console, and nothing else to follow. */}

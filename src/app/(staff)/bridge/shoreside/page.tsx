@@ -91,7 +91,7 @@ export default async function ShoresidePage() {
     <div>
       <span className="hm-eyebrow">Shoreside</span>
       <h1 className="hm-h1">The concierge line.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         A member asking a person, not the agent. Answer in your own words.
       </p>
       <p className="hm-note">

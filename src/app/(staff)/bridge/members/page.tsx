@@ -128,7 +128,7 @@ export default async function MembersPage() {
     <div>
       <span className="hm-eyebrow">Members</span>
       <h1 className="hm-h1">Who is on the roll.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Every member, what they pay, how far they have sailed. Narrow it down, save the view for
         next time, take the file with you.
       </p>

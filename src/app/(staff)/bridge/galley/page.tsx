@@ -25,7 +25,7 @@ export default async function GalleyPage() {
     <div>
       <span className="hm-eyebrow">Galley POS</span>
       <h1 className="hm-h1">The register.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Ring it, attach the member, settle to the account or record the till. Charges land on the
         ship&apos;s record.
       </p>

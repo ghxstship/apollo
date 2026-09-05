@@ -191,7 +191,7 @@ export function AddToManifest({
             checked={comp}
             onChange={(e) => setComp(e.target.checked)}
           />
-          <span className="hm-inline">
+          <span className="ls-inline">
             <span className="hm-mono">GUESTS</span>
             <Stepper size="sm" min={0} max={2} value={guests} onChange={setGuests} />
           </span>
@@ -306,7 +306,7 @@ export function RosterTable({
       key: "name",
       label: "Name",
       render: (r: RosterRow) => (
-        <span className="hm-inline">
+        <span className="ls-inline">
           <Avatar name={r.name} size="sm" tone={avatarTone(r.tone)} />
           <b>{r.name}</b>
         </span>
@@ -318,7 +318,7 @@ export function RosterTable({
       label: "Guests",
       width: 140,
       render: (r: RosterRow) => (
-        <span className="hm-stack hm-stack--block">
+        <span className="ls-stack ls-stack--tight">
           <span className="hm-mono hm-dim">
             {r.guests}
           </span>

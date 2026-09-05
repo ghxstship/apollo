@@ -90,7 +90,7 @@ export default async function ApplicationsPage() {
     <div>
       <span className="hm-eyebrow">Applications</span>
       <h1 className="hm-h1">The application queue.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         {openCount
           ? "Move them to review, invite them ashore, then call it."
           : "Nothing waiting on a decision. The queue below is the record."}

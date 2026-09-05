@@ -153,7 +153,7 @@ export function EnvelopesClient({
       <section className="hm-sec">
         <div className="hm-head">
           <h2>The sheet.</h2>
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button variant="gold" size="sm" disabled={pending || aboard === 0} onClick={issue}>
               {rows.length === 0 ? "Issue the envelopes" : "Issue any missing"}
             </Button>

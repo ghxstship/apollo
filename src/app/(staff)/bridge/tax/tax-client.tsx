@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Input, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Input, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { setCityTax } from "./actions";
 
@@ -128,21 +128,20 @@ export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
                   variant={dirty ? "gold" : "outline"}
                   size="sm"
                   disabled={!dirty || (pending && saving !== c.cityId)}
-                  aria-busy={saving === c.cityId || undefined}
+                  pending={saving === c.cityId}
+                  pendingLabel="Recording…"
                   onClick={() => save(c)}
                 >
-                  {saving === c.cityId ? "Recording…" : dirty ? "Record" : "Recorded"}
+                  {dirty ? "Record" : "Recorded"}
                 </Button>
               </div>
               <div className="hm-plan__ids">
-                <label className="hm-check">
-                  <input
-                    type="checkbox"
-                    checked={d.registered}
-                    onChange={(e) => setD({ registered: e.target.checked })}
-                  />
-                  <span>Registered to collect in this state</span>
-                </label>
+                <Checkbox
+                  className="hm-check"
+                  label="Registered to collect in this state"
+                  checked={d.registered}
+                  onChange={(e) => setD({ registered: e.target.checked })}
+                />
                 <Input
                   label="Note"
                   placeholder="Which statute, which filing, what is exempt"

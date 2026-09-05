@@ -42,7 +42,7 @@ export default async function LettersPage() {
     <div>
       <span className="hm-eyebrow">Letters</span>
       <h1 className="hm-h1">Every letter the club writes, seen first by you.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         The registry the automations and the clock read. Send any of them to your own
         address with sample details and read it as a member would; the counts are the last
         thirty days of the outbox.

@@ -149,7 +149,7 @@ export default async function CrewPage() {
     <div>
       <span className="hm-eyebrow">Crew</span>
       <h1 className="hm-h1">Hiring, and who is working.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         The pipeline fills the crew list; the rota puts them on nights. A gap is
         a night nobody has confirmed for — an offer is not cover.
       </p>

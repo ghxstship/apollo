@@ -107,7 +107,7 @@ export default async function AutomationsPage() {
     <div>
       <span className="hm-eyebrow">Automations</span>
       <h1 className="hm-h1">Rules that run themselves.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         When something happens on the water, and the member matches, send the word. Write the rule
         once; it holds for the season.
       </p>

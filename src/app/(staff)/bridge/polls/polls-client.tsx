@@ -151,7 +151,7 @@ export function PollsClient({ rows }: { rows: PollView[] }) {
               onChange={(e) => setOptions((s) => s.map((v, j) => (j === i ? e.target.value : v)))}
             />
           ))}
-          <div className="hm-acts">
+          <div className="ls-acts">
             <Button variant="ghost" size="sm" disabled={options.length >= 6} onClick={() => setOptions((s) => [...s, ""])}>
               Another answer
             </Button>

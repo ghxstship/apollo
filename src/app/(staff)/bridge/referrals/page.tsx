@@ -90,7 +90,7 @@ export default async function ReferralsPage() {
     <div>
       <span className="hm-eyebrow">Referrals</span>
       <h1 className="hm-h1">Who vouched for whom.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         A member puts their name on someone. When that signature holds, the ledger says so — 250
         Knots, once, and no more than that. These are sponsorships, not sales.
       </p>

@@ -103,7 +103,7 @@ export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: Sen
               value={sendAt}
               onChange={(e) => setSendAt(e.target.value)}
             />
-            <span className="hm-acts hm-acts--end">
+            <span className="ls-acts ls-acts--end hm-acts--baseline">
               <Button variant="outline" size="sm" disabled={pending || !title.trim() || !body.trim() || picked.length === 0} onClick={test}>
                 Send me a test
               </Button>
@@ -141,7 +141,7 @@ export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: Sen
             rows={sent}
           />
           {sent.length === 0 ? (
-            <p className="hm-empty">Nothing said yet. The first one lands here with its count.</p>
+            <p className="ls-empty">Nothing said yet. The first one lands here with its count.</p>
           ) : null}
         </div>
       </section>

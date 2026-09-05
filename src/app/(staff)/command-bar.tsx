@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { SearchField } from "@/components/ds";
 import { searchBridge, type BridgeHit } from "./search";
 
 const KIND_LABEL: Record<string, string> = {
@@ -76,18 +77,15 @@ export function CommandBar() {
 
   return (
     <div className="hm-cmd" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
-      <input
+      <SearchField
         ref={input}
-        className="hm-cmd__input"
-        type="search"
+        label="Search the Bridge"
         placeholder="Search the Bridge · ⌘K"
-        aria-label="Search the Bridge"
         role="combobox"
         aria-expanded={show}
         aria-controls="hm-cmd-list"
         aria-autocomplete="list"
         aria-activedescendant={show && active >= 0 && hits[active] ? optionId(active) : undefined}
-        autoComplete="off"
         value={q}
         onChange={(e) => { setQ(e.target.value); setActive(-1); setOpen(true); }}
         onFocus={() => setOpen(true)}

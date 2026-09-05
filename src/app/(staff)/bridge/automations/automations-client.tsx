@@ -188,7 +188,8 @@ export function AutomationsClient({
                   size="sm"
                   variant="ghost"
                   disabled={firing !== null && firing !== r.id}
-                  aria-busy={firing === r.id || undefined}
+                  pending={firing === r.id}
+                  pendingLabel="Firing…"
                   onClick={async () => {
                     setFiring(r.id);
                     try {
@@ -200,7 +201,7 @@ export function AutomationsClient({
                     }
                   }}
                 >
-                  {firing === r.id ? "Firing…" : "Fire at me"}
+                  Fire at me
                 </Button>
                 <Switch
                   label={isLive(r) ? "Live" : "Held"}
@@ -272,8 +273,8 @@ export function AutomationsClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
-              aria-busy={pending || undefined}
+              pending={pending}
+              pendingLabel="Saving…"
               onClick={() => {
                 const action: RuleAction =
                   actionKind === "email"
@@ -310,7 +311,7 @@ export function AutomationsClient({
                 });
               }}
             >
-              {pending ? "Saving…" : "Save and go live"}
+              Save and go live
             </Button>
           </>
         }

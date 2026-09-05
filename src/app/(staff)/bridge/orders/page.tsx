@@ -102,7 +102,7 @@ export default async function OrdersPage() {
     <div>
       <span className="hm-eyebrow">Orders &amp; refunds</span>
       <h1 className="hm-h1">The ship&apos;s record.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Charges, payments and refunds on the member accounts — newest first, logged with a
         name.
       </p>

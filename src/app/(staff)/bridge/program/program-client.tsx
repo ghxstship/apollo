@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Stepper, Switch, Table, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Stepper, Switch, Table, Toast, tableColumns } from "@/components/ds";
 import { PLACE } from "@/lib/brand";
 import { useToast } from "../../ui";
 import {
@@ -134,7 +134,7 @@ export function ProgramClient({
       else show({ msg: "Back on the program.", meta: what.toUpperCase() });
     });
 
-  const seasonColumns = [
+  const seasonColumns = tableColumns<SeasonPanelRow>([
     {
       key: "title",
       label: "Season",
@@ -152,7 +152,7 @@ export function ProgramClient({
       mono: true,
       render: (r: SeasonPanelRow) => `${onDay(r.startsOn)} — ${onDay(r.endsOn)}`,
     },
-    { key: "episodes", label: "Episodes", width: 90, mono: true, align: "end" as const },
+    { key: "episodes", label: "Episodes", width: 90, numeric: true },
     {
       key: "active",
       label: "State",
@@ -172,7 +172,7 @@ export function ProgramClient({
         />
       ),
     },
-  ];
+  ]);
 
   const venueColumns = [
     {
@@ -201,7 +201,7 @@ export function ProgramClient({
       key: "access",
       label: "Access",
       render: (r: VenuePanelRow) => (
-        <span className="hm-acts">
+        <span className="ls-acts">
           <span className={r.accessNote ? "hm-access" : "hm-access hm-access--none"}>
             {r.accessNote || "Nothing noted"}
           </span>
@@ -241,7 +241,7 @@ export function ProgramClient({
     },
   ];
 
-  const seriesColumns = [
+  const seriesColumns = tableColumns<SeriesPanelRow>([
     {
       key: "title",
       label: "Series",
@@ -265,7 +265,7 @@ export function ProgramClient({
       width: 200,
       render: (r: SeriesPanelRow) => r.template,
     },
-    { key: "occurrences", label: "Raised", width: 80, mono: true, align: "end" as const },
+    { key: "occurrences", label: "Raised", width: 80, numeric: true },
     {
       key: "active",
       label: "State",
@@ -280,7 +280,7 @@ export function ProgramClient({
       width: "min(260px, 100%)",
       render: (r: SeriesPanelRow) =>
         r.active ? (
-          <span className="hm-inline">
+          <span className="ls-inline">
             <Stepper
               size="sm"
               min={1}
@@ -330,7 +330,7 @@ export function ProgramClient({
         />
       ),
     },
-  ];
+  ]);
 
   return (
     <>

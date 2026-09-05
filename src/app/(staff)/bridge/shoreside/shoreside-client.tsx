@@ -84,11 +84,12 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
       <div className="hm-inbox">
         <div className="hm-inbox__list">
           {shown.length === 0 ? (
-            <p className="hm-empty">
+            <p className="ls-empty">
               Nobody by that name. Clear the search to see every thread.
             </p>
           ) : null}
           {shown.map((t) => (
+            /* ds-exempt: a thread row in the inbox list — a selectable list row marked by its edge and its ground; the kit draws no list-row button, and .hm-inbox__row carries the reset and a :focus-visible ring of its own */
             <button
               type="button"
               key={t.id}
@@ -141,7 +142,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
                 onChange={(e) => setDraft(e.target.value)}
                 disabled={active.closed}
               />
-              <div className="hm-acts">
+              <div className="ls-acts">
                 <Button
                   variant="gold"
                   size="sm"

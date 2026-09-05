@@ -99,7 +99,7 @@ export default async function ElementsPage() {
     <div>
       <span className="hm-eyebrow">Elements</span>
       <h1 className="hm-h1">The catalogue.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Every produced element, filed against the element schema. Two
         classification axes apply to all of them and they are orthogonal: the
         Five-A phase says when in the guest&apos;s day it appears, and the

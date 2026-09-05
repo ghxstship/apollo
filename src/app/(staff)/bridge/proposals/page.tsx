@@ -105,7 +105,7 @@ export default async function ProposalsPage() {
     <div>
       <span className="hm-eyebrow">Proposals</span>
       <h1 className="hm-h1">What the members would raise.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Gatherings and mixers raised from the member side, newest first. Every
         ruling reaches the proposer as a word — considering, approved, or
         declined with your reason on it. Nothing here is decided silently.

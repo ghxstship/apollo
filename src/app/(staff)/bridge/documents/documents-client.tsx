@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE, SETTING_LABEL } from "@/lib/brand";
-import { Badge, Button, Dialog, Input, ListToolbar, Select, Stat, StateBlock, Table, Tabs, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, ListToolbar, Select, Stat, StateBlock, Table, Tabs, Textarea, Toast, tableColumns } from "@/components/ds";
 import type { ClauseCategory } from "@/lib/supabase/types";
 import { logDate } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -115,7 +115,7 @@ export function DocumentsClient({
       key: "title",
       label: "Clause",
       render: (c: ClauseRow) => (
-        <span className="hm-who" style={{ opacity: c.active ? 1 : 0.55 }}>
+        <span className={c.active ? "hm-who" : "hm-who hm-who--retired"}>
           <b>{c.title}</b>
           {c.active ? null : (
             <>
@@ -165,12 +165,12 @@ export function DocumentsClient({
     },
   ];
 
-  const docColumns = [
+  const docColumns = tableColumns<DocRow>([
     {
       key: "title",
       label: "Document",
       render: (d: DocRow) => (
-        <span className="hm-who" style={{ opacity: d.active ? 1 : 0.55 }}>
+        <span className={d.active ? "hm-who" : "hm-who hm-who--retired"}>
           <b>{d.title}</b>
           {d.active ? null : (
             <>
@@ -200,7 +200,7 @@ export function DocumentsClient({
       render: (d: DocRow) =>
         d.publishedVersion ? `v${d.publishedVersion} · ${d.publishedClauses} clauses` : "—",
     },
-    { key: "signedCount", label: "Signed", width: 90, mono: true, align: "end" as const },
+    { key: "signedCount", label: "Signed", width: 90, numeric: true },
     {
       key: "draftVersion",
       label: "Draft",
@@ -218,7 +218,7 @@ export function DocumentsClient({
       width: 210,
       render: (d: DocRow) =>
         d.draftVersionId ? (
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button size="sm" variant="ghost" onClick={() => setComposing(d)}>
               Compose
             </Button>
@@ -254,7 +254,7 @@ export function DocumentsClient({
           </Button>
         ),
     },
-  ];
+  ]);
 
   const registerColumns = [
     { key: "document", label: "Document", width: 210, mono: true },
@@ -305,7 +305,7 @@ export function DocumentsClient({
       width: 160,
       render: (s: SignatureRow) =>
         s.redacted ? null : (
-          <span className="hm-acts">
+          <span className="ls-acts">
             {s.isContract && !s.counterSignedBy ? (
               <Button size="sm" variant="ghost" onClick={() => setCountering(s)}>
                 Counter-sign
@@ -560,8 +560,7 @@ export function DocumentsClient({
             const cond = chosen?.condition?.class ?? "";
             return (
               <div key={c.code} className="hm-clause">
-                <input
-                  type="checkbox"
+                <Checkbox
                   aria-label={`Include ${c.title}`}
                   checked={Boolean(chosen)}
                   disabled={pending}

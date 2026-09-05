@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Toast } from "@/components/ds";
+import { Badge, Button, Table, Toast, tableColumns } from "@/components/ds";
 import { useToast } from "../../ui";
 import { requeueOutbox, strikeOutbox, type OutboxTable } from "./actions";
 
@@ -94,65 +94,61 @@ export function OutboxTable({ rows }: { rows: StrandedRow[] }) {
 
   const shown = rows.filter((r) => !gone.has(r.key));
 
+  const columns = tableColumns<StrandedRow>([
+    { key: "channel", label: "Channel" },
+    { key: "letter", label: "Letter" },
+    { key: "recipient", label: "To", mono: true },
+    {
+      key: "status",
+      label: "State",
+      render: (row) => <Badge tone={STATE_TONE[row.status]}>{STATE_LABEL[row.status]}</Badge>,
+    },
+    { key: "lastError", label: "What went wrong", render: (row) => row.lastError ?? "—" },
+    { key: "attempts", label: "Tries", numeric: true },
+    { key: "queued", label: "Queued", mono: true },
+    {
+      key: "act",
+      label: "",
+      render: (row) => {
+        const mine = busy?.key === row.key ? busy.what : null;
+        return row.status !== "sending" ? (
+          <span className="ls-acts">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy !== null && mine === null}
+              pending={mine === "requeue"}
+              pendingLabel="Requeuing…"
+              onClick={() => void act(row, "requeue")}
+            >
+              Requeue
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy !== null && mine === null}
+              pending={mine === "strike"}
+              pendingLabel="Striking…"
+              onClick={() => void act(row, "strike")}
+            >
+              Strike
+            </Button>
+          </span>
+        ) : null;
+      },
+    },
+  ]);
+
   return (
     <>
-      <div className="ls-table-wrap hm-outbox">
-        <table className="ls-table ls-table--dense">
-          <thead>
-            <tr>
-              <th scope="col">Channel</th>
-              <th scope="col">Letter</th>
-              <th scope="col">To</th>
-              <th scope="col">State</th>
-              <th scope="col">What went wrong</th>
-              <th scope="col" className="num--end">Tries</th>
-              <th scope="col">Queued</th>
-              <th scope="col"><span className="ls-visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((row) => {
-              const mine = busy?.key === row.key ? busy.what : null;
-              return (
-                <tr key={row.key} className={[STATE_CLASS[row.status], leaving.has(row.key) ? "is-gone" : ""].filter(Boolean).join(" ") || undefined}>
-                  <td>{row.channel}</td>
-                  <td>{row.letter}</td>
-                  <td className="num">{row.recipient}</td>
-                  <td>
-                    <Badge tone={STATE_TONE[row.status]}>{STATE_LABEL[row.status]}</Badge>
-                  </td>
-                  <td>{row.lastError ?? "—"}</td>
-                  <td className="num num--end">{row.attempts}</td>
-                  <td className="num">{row.queued}</td>
-                  <td>
-                    {row.status !== "sending" ? (
-                      <span className="hm-acts">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={busy !== null && mine === null}
-                          aria-busy={mine === "requeue" || undefined}
-                          onClick={() => void act(row, "requeue")}
-                        >
-                          {mine === "requeue" ? "Requeuing…" : "Requeue"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={busy !== null && mine === null}
-                          aria-busy={mine === "strike" || undefined}
-                          onClick={() => void act(row, "strike")}
-                        >
-                          {mine === "strike" ? "Striking…" : "Strike"}
-                        </Button>
-                      </span>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="hm-outbox">
+        <Table
+          dense
+          columns={columns}
+          rows={shown}
+          rowKey={(row) => row.key}
+          rowClassName={(row) => [STATE_CLASS[row.status], leaving.has(row.key) ? "is-gone" : ""].filter(Boolean).join(" ")}
+        />
       </div>
       {toast ? (
         <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />

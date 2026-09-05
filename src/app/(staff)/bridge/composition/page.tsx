@@ -144,7 +144,7 @@ export default async function CompositionPage({
     <div>
       <span className="hm-eyebrow">Composition</span>
       <h1 className="hm-h1">The ratio gate.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         An episode is ratio-gated when it carries a composition, and not
         otherwise. Setting these three ceilings is what turns the gate on: from
         then on every pass must name its segment, must pass the vetting file,

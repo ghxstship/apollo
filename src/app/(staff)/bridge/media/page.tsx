@@ -68,7 +68,7 @@ export default async function MediaPage() {
     <div>
       <span className="hm-eyebrow">Media</span>
       <h1 className="hm-h1">What came back from the water.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Members aboard send frames up; nothing shows until it is cleared here. Look at the faces
         before you clear it — consent is the whole test.
       </p>

@@ -51,7 +51,7 @@ export default async function BroadcastPage() {
     <div>
       <span className="hm-eyebrow">Broadcast</span>
       <h1 className="hm-h1">A word to everyone it concerns.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Pick who, say it once — now, or at an hour you name. A notice lands in the
         app and, if you choose, by email, push or text. Every send is kept below
         with who it reached, so nobody wonders whether the venue change went out.

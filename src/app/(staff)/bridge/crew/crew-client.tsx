@@ -169,6 +169,7 @@ export function CrewClient({
               (c) => c.roleId === r.id && c.stage !== "passed"
             ).length;
             return (
+              /* ds-exempt: the role rail — a selectable list row marked by its edge and its ground, one of a column; the kit draws no list-row button, and .hm-role carries the reset and a :focus-visible ring of its own */
               <button
                 type="button"
                 key={r.id}
@@ -272,7 +273,7 @@ export function CrewClient({
                       key: "name",
                       label: "Candidate",
                       render: (c: CandidateRow) => (
-                        <span className="hm-inline">
+                        <span className="ls-inline">
                           <Avatar name={c.name} size="sm" tone="sand" />
                           <b>{c.name}</b>
                         </span>

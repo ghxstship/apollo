@@ -147,7 +147,7 @@ export function VettingClient({
          set as mono data alongside the dates. The badge uppercases, so these
          read exactly as VERIFIED / NOT SEEN / AGE OK / AGE UNCONFIRMED did. */
       render: (r: FileRow) => (
-        <span className="hm-stack">
+        <span className="ls-stack ls-stack--tight">
           <Badge tone={r.idVerified ? "positive" : "caution"}>
             {r.idVerified ? "Verified" : "Not seen"}
           </Badge>

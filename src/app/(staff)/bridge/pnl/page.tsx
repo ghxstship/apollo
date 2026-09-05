@@ -59,7 +59,7 @@ export default async function PnlPage() {
           invoice they hold. Nothing here is estimated from a rate card,
           because the club has not written one — vessels, venues and crew all
           carry a day rate that is deliberately null. */}
-      <p className="hm-lede">
+      <p className="ls-lede">
         Revenue is the ledger, net of credits and comps. Costs are what somebody
         recorded. A night nobody has costed shows no margin — a zero cost reads
         as a perfect one, which is worse than no number at all.

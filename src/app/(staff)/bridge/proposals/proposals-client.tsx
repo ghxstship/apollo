@@ -162,7 +162,7 @@ export function ProposalsClient({
       width: 260,
       render: (r: ProposalRow) =>
         r.status === "submitted" || r.status === "considering" ? (
-          <span className="hm-acts">
+          <span className="ls-acts">
             {r.status === "submitted" ? (
               <Button
                 size="sm"
@@ -293,7 +293,7 @@ export function ProposalsClient({
       width: 170,
       render: (r: CharterRow) =>
         r.status === "submitted" ? (
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button
               size="sm"
               variant="ghost"
@@ -364,7 +364,7 @@ export function ProposalsClient({
 
       <section className="hm-sec">
         <h2>Private episode requests.</h2>
-        <p className="hm-lede">
+        <p className="ls-lede">
           An on-request series has a door. A member asks for an episode of their
           own — a shape, a party and some dates; the Bridge answers with a line,
           or passes with one. Either way the line reaches them as a word.

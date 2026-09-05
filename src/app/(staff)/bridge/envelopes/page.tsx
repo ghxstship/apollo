@@ -111,7 +111,7 @@ export default async function EnvelopesPage({
     <div>
       <span className="hm-eyebrow">Envelopes</span>
       <h1 className="hm-h1">The sealed envelope.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         One gold-foil card per aboard pass, carrying one token. The guest types
         it off the card to open their Captain&apos;s Log at 19:00, and it is the
         only way in — so an episode whose envelopes were never printed is an

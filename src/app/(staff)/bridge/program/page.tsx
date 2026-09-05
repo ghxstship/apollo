@@ -81,7 +81,7 @@ export default async function ProgramPage() {
     <div>
       <span className="hm-eyebrow">Program</span>
       <h1 className="hm-h1">The standing furniture.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         Seasons frame the calendar, venues are the places the club returns to, and a
         series clones one episode forward on a cadence. Nothing here is deleted —
         retired entries stand aside, and their episodes keep the record.

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Input, Select, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Input, Select, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { saveCity, saveVessel } from "./actions";
 
@@ -129,10 +129,7 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
         <Input label="Length (ft)" type="number" min={1} max={1000} value={d.lengthFt} onChange={(e) => set({ lengthFt: e.target.value })} />
         <Input label="Year" type="number" min={1900} max={2100} value={d.year} onChange={(e) => set({ year: e.target.value })} />
         <Input label="Cabins" type="number" min={0} max={200} value={d.cabins} onChange={(e) => set({ cabins: e.target.value })} />
-        <label className="hm-check">
-          <input type="checkbox" checked={d.active} onChange={(e) => set({ active: e.target.checked })} />
-          <span>In service</span>
-        </label>
+        <Checkbox className="hm-check" label="In service" checked={d.active} onChange={(e) => set({ active: e.target.checked })} />
       </div>
     </>
   );
@@ -142,7 +139,7 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
       <section className="hm-sec">
         <div className="hm-head">
           <h2>Cities.</h2>
-          <div className="hm-acts">
+          <div className="ls-acts">
             <Button variant="outline" size="sm" disabled={pending || !!newCity} onClick={() => setNewCity({ ...NEW_CITY, position: String(cities.length + 1) })}>
               Open a city
             </Button>
@@ -156,9 +153,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 <Badge tone="caution">Not saved</Badge>
               </div>
               {cityFields(newCity, (p) => setNewCity((s) => (s ? { ...s, ...p } : s)))}
-              <div className="hm-acts hm-acts--below">
+              <div className="ls-acts hm-acts--below">
                 <Button variant="ghost" size="sm" onClick={() => setNewCity(null)}>Not now</Button>
-                <Button variant="gold" size="sm" disabled={pending && saving !== "new-city"} aria-busy={saving === "new-city" || undefined} onClick={() => runCity(null, newCity, () => setNewCity(null))}>{saving === "new-city" ? "Opening…" : "Open it"}</Button>
+                <Button variant="gold" size="sm" disabled={pending && saving !== "new-city"} pending={saving === "new-city"} pendingLabel="Opening…" onClick={() => runCity(null, newCity, () => setNewCity(null))}>Open it</Button>
               </div>
             </div>
           ) : null}
@@ -175,9 +172,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 </div>
                 {c.changed ? <div className="hm-item__meta">{c.changed.toUpperCase()}</div> : null}
                 {cityFields(d, (p) => setCityDraft((s) => ({ ...s, [id]: { ...s[id], ...p } })))}
-                <div className="hm-acts hm-acts--below">
-                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={!dirty || (pending && saving !== id)} aria-busy={saving === id || undefined} onClick={() => runCity(id, d)}>
-                    {saving === id ? "Saving…" : dirty ? "Save" : "Saved"}
+                <div className="ls-acts hm-acts--below">
+                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={!dirty || (pending && saving !== id)} pending={saving === id} pendingLabel="Saving…" onClick={() => runCity(id, d)}>
+                    {dirty ? "Save" : "Saved"}
                   </Button>
                 </div>
               </div>
@@ -189,7 +186,7 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
       <section className="hm-sec">
         <div className="hm-head">
           <h2>Hulls.</h2>
-          <div className="hm-acts">
+          <div className="ls-acts">
             <Button variant="outline" size="sm" disabled={pending || !!newVessel} onClick={() => setNewVessel({ ...NEW_VESSEL })}>
               Name a hull
             </Button>
@@ -203,9 +200,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 <Badge tone="caution">Not saved</Badge>
               </div>
               {vesselFields(newVessel, (p) => setNewVessel((s) => (s ? { ...s, ...p } : s)))}
-              <div className="hm-acts hm-acts--below">
+              <div className="ls-acts hm-acts--below">
                 <Button variant="ghost" size="sm" onClick={() => setNewVessel(null)}>Not now</Button>
-                <Button variant="gold" size="sm" disabled={pending && saving !== "new-vessel"} aria-busy={saving === "new-vessel" || undefined} onClick={() => runVessel(null, newVessel, () => setNewVessel(null))}>{saving === "new-vessel" ? "Naming…" : "Name it"}</Button>
+                <Button variant="gold" size="sm" disabled={pending && saving !== "new-vessel"} pending={saving === "new-vessel"} pendingLabel="Naming…" onClick={() => runVessel(null, newVessel, () => setNewVessel(null))}>Name it</Button>
               </div>
             </div>
           ) : null}
@@ -224,9 +221,9 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                 </div>
                 {v.changed ? <div className="hm-item__meta">{v.changed.toUpperCase()}</div> : null}
                 {vesselFields(d, (p) => setVesselDraft((s) => ({ ...s, [id]: { ...s[id], ...p } })))}
-                <div className="hm-acts hm-acts--below">
-                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={!dirty || (pending && saving !== id)} aria-busy={saving === id || undefined} onClick={() => runVessel(id, d)}>
-                    {saving === id ? "Saving…" : dirty ? "Save" : "Saved"}
+                <div className="ls-acts hm-acts--below">
+                  <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={!dirty || (pending && saving !== id)} pending={saving === id} pendingLabel="Saving…" onClick={() => runVessel(id, d)}>
+                    {dirty ? "Save" : "Saved"}
                   </Button>
                 </div>
               </div>

@@ -149,7 +149,7 @@ export function CodesClient({
 
   return (
     <>
-      <div className="hm-acts hm-block">
+      <div className="ls-acts hm-block">
         <Button variant="gold" size="sm" onClick={() => setCutting(true)}>
           New code
         </Button>

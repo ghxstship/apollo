@@ -114,7 +114,7 @@ export function OrdersClient({
   return (
     <>
       <div className="hm-head hm-tabbody">
-        <div className="hm-acts">
+        <div className="ls-acts">
           {(
             [
               ["all", "All"],
@@ -127,7 +127,7 @@ export function OrdersClient({
             </Tag>
           ))}
         </div>
-        <div className="hm-acts">
+        <div className="ls-acts">
           <Button variant="outline" size="sm" onClick={() => setPosting("payment")}>
             Post payment
           </Button>
@@ -161,7 +161,7 @@ export function OrdersClient({
               ),
             },
             { key: "memo", label: "Memo", render: (e: LedgerRow) => e.memo || "—" },
-            { key: "amount", label: "Amount", mono: true, align: "end" as const, width: 100 },
+            { key: "amount", label: "Amount", numeric: true, width: 100 },
             { key: "created", label: "Posted", mono: true, width: 110 },
             {
               key: "act",
@@ -185,7 +185,7 @@ export function OrdersClient({
           rows={visible}
         />
         {visible.length === 0 ? (
-          <p className="hm-empty">
+          <p className="ls-empty">
             Nothing in the record under that filter.
           </p>
         ) : null}
@@ -221,7 +221,7 @@ export function OrdersClient({
             rows={shopOrders}
           />
           {shopOrders.length === 0 ? (
-            <p className="hm-empty">
+            <p className="ls-empty">
               No Shop orders on the books.
             </p>
           ) : null}

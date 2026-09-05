@@ -46,7 +46,7 @@ export default async function FleetPage() {
     <div>
       <span className="hm-eyebrow">Fleet</span>
       <h1 className="hm-h1">The cities, and the hulls that sail from them.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         A city is a market with a clock: every departure on the manifest reads in
         its time zone, and its status is the badge the home page shows. A hull
         carries the capacity the ratio caps and the fill figures count, and a day

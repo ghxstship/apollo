@@ -836,7 +836,7 @@ export default async function ReportsPage() {
           — the recoverable kind — as a share of the cohort.
         </p>
         {cohorts.length === 0 ? (
-          <p className="hm-empty">Nobody on the roll yet.</p>
+          <p className="ls-empty">Nobody on the roll yet.</p>
         ) : (
           <div className="hm-panel">
             <Table
@@ -874,7 +874,7 @@ export default async function ReportsPage() {
           A stage is where an application IS, so the rows sum to the whole and not to a flow.
         </p>
         {funnelRows.length === 0 ? (
-          <p className="hm-empty">No applications on file.</p>
+          <p className="ls-empty">No applications on file.</p>
         ) : (
           <div className="hm-funnel">
             {funnelRows.map((f) => {
@@ -951,7 +951,7 @@ export default async function ReportsPage() {
             rows={fillRows}
           />
           {fillRows.length === 0 ? (
-            <p className="hm-empty">
+            <p className="ls-empty">
               No episodes on the books yet.
             </p>
           ) : null}
@@ -978,7 +978,7 @@ export default async function ReportsPage() {
             rows={changeRows}
           />
           {changeRows.length === 0 ? (
-            <p className="hm-empty">
+            <p className="ls-empty">
               Nothing recorded yet.
             </p>
           ) : null}
@@ -1005,7 +1005,7 @@ export default async function ReportsPage() {
             rows={errorRows}
           />
           {errorRows.length === 0 ? (
-            <p className="hm-empty">
+            <p className="ls-empty">
               Nothing has failed that the app knows of.
             </p>
           ) : null}
@@ -1051,7 +1051,7 @@ export default async function ReportsPage() {
             rows={schedulerRows}
           />
           {schedulerRows.length === 0 ? (
-            <p className="hm-empty">
+            <p className="ls-empty">
               The scheduler has not answered yet.
             </p>
           ) : null}

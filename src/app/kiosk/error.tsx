@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
+import { Button, LinkButton } from "@/components/ds";
 import "./kiosk.css";
 
 /* Dockside: a reload may be impossible offline, so the door stays usable and says what to do. */
@@ -19,8 +19,8 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
       <h1>The kiosk lost the signal.</h1>
       <p>Check-ins you have already stamped are held on this device and go up when the bars come back. Tap Try again, or wave a member through by hand and stamp them later.</p>
       <p className="kio-err__acts">
-        <button className="ls-btn ls-btn--gold" onClick={reset} type="button">Try again</button>
-        <Link className="ls-btn ls-btn--ghost" href="/kiosk">Back to the door</Link>
+        <Button variant="gold" onClick={reset}>Try again</Button>
+        <LinkButton variant="ghost" href="/kiosk">Back to the door</LinkButton>
       </p>
       {error.digest ? <p className="ls-mono-data kio-err__ref">REF {error.digest.toUpperCase()}</p> : null}
     </main>

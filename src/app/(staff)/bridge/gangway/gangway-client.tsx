@@ -583,13 +583,9 @@ export function GangwayConsole({
                 {r.code} — {r.reason}
               </span>
             ))}
-            <button
-              type="button"
-              className="ls-btn ls-btn--ghost ls-btn--sm"
-              onClick={() => setStuck([])}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setStuck([])}>
               Dismiss
-            </button>
+            </Button>
           </div>
         ) : null}
 
@@ -601,13 +597,9 @@ export function GangwayConsole({
                 {r.code} — {r.reason}
               </span>
             ))}
-            <button
-              type="button"
-              className="ls-btn ls-btn--ghost ls-btn--sm"
-              onClick={() => setRejected([])}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setRejected([])}>
               Clear
-            </button>
+            </Button>
           </div>
         ) : null}
 
@@ -628,7 +620,7 @@ export function GangwayConsole({
       <section className="hm-sec">
         <div className="hm-head">
           <h2>The gangway list.</h2>
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button variant="outline" size="sm" onClick={() => window.print()}>
               Print the gangway list
             </Button>
@@ -650,6 +642,7 @@ export function GangwayConsole({
               <h1>Door list — {voyageTitle}</h1>
               <p>{departs} · {rows.length} passes · printed {logTime(new Date().toISOString(), timeZone)}</p>
               {muster ? <p>Muster: {muster}</p> : null}
+              {/* ds-exempt: print-only door list — the sheet prints black on white and Table's scroll wrapper is a screen affordance */}
               <table>
                 <thead>
                   <tr>

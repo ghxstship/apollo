@@ -123,7 +123,7 @@ export function ItineraryClient({
       <section className="hm-sec">
         <div className="hm-head">
           <h2>The legs.</h2>
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button
               variant="gold"
               size="sm"
@@ -235,7 +235,7 @@ export function ItineraryClient({
       <section className="hm-sec">
         <div className="hm-head">
           <h2>The port guide.</h2>
-          <span className="hm-acts">
+          <span className="ls-acts">
             <Button
               variant="gold"
               size="sm"

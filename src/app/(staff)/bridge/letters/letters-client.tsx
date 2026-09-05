@@ -36,7 +36,8 @@ export function LettersClient({ rows }: { rows: LetterRow[] }) {
                 size="sm"
                 variant="ghost"
                 disabled={!r.active || (sending !== null && sending !== r.code)}
-                aria-busy={sending === r.code || undefined}
+                pending={sending === r.code}
+                pendingLabel="Sending…"
                 onClick={async () => {
                   setSending(r.code);
                   try {
@@ -48,7 +49,7 @@ export function LettersClient({ rows }: { rows: LetterRow[] }) {
                   }
                 }}
               >
-                {sending === r.code ? "Sending…" : "Send to me"}
+                Send to me
               </Button>
             </div>
           </div>

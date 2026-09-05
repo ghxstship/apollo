@@ -132,7 +132,7 @@ export default async function DocumentsPage() {
     <div>
       <span className="hm-eyebrow">Documents</span>
       <h1 className="hm-h1">Clauses, documents, signatures.</h1>
-      <p className="hm-lede">
+      <p className="ls-lede">
         A clause is written once and versioned forever — rewording it publishes
         the next version rather than changing the last. A document is a
         composition of clause versions, assembled per context, and a signature

@@ -115,13 +115,14 @@ export function PosClient({ items }: { items: PosItem[] }) {
           <Tabs items={CATS} value={cat} onChange={setCat} />
           <div className="hm-pos__grid">
             {inCat.map((item) => (
+              /* ds-exempt: a catalogue tile — a two-line card (name over price) that rings the item; the kit draws no tile button, and .hm-pos__item carries the reset and a :focus-visible ring of its own */
               <button type="button" key={item.id} className="hm-pos__item" onClick={() => add(item)}>
                 <b>{item.name}</b>
                 <span>{price(item.priceCents)}</span>
               </button>
             ))}
             {inCat.length === 0 ? (
-              <p className="hm-empty">Nothing on this shelf.</p>
+              <p className="ls-empty">Nothing on this shelf.</p>
             ) : null}
           </div>
         </div>
@@ -161,7 +162,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
 
           <div className="hm-ticket__lines">
             {lines.length === 0 ? (
-              <p className="hm-empty">
+              <p className="ls-empty">
                 Ring the first item — tap the catalog.
               </p>
             ) : (
