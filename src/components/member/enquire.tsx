@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Input, Textarea, Toast } from "@/components/ds";
+import { Button, Input, Notice, Textarea, Toast } from "@/components/ds";
 import {
   raiseCharterRequest,
   type CharterRequestState,
@@ -43,14 +43,16 @@ export function Enquire({
 
   return (
     <>
-      <form ref={formRef} action={formAction}>
+      {/* Kit classes only: this form renders on the public episode page, where
+          member.css does not load. */}
+      <form ref={formRef} action={formAction} className="ls-stack">
         <input type="hidden" name="sailing" value={sailingTitle} />
         {formatSlug ? <input type="hidden" name="series" value={formatSlug} /> : null}
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginBottom: 12 }}>
+        <p className="ls-lede">
           {seriesLabel ?? "This one"} is on request. Say who and when; the Bridge
           answers by word.
         </p>
-        <div style={{ display: "grid", gap: 10 }}>
+        <div className="ls-stack ls-stack--tight">
           <Input
             label="How many of you"
             name="party_size"
@@ -77,15 +79,13 @@ export function Enquire({
           />
         </div>
         {state.error && !state.field ? (
-          <p role="alert" style={{ color: "var(--siren)", fontSize: "var(--text-xs)", marginTop: 12 }}>
+          <Notice tone="danger" compact>
             {state.error}
-          </p>
+          </Notice>
         ) : null}
-        <div style={{ marginTop: 14 }}>
-          <Button type="submit" variant="gold" size="sm" fullWidth disabled={pending}>
-            {pending ? "Sending…" : "Enquire"}
-          </Button>
-        </div>
+        <Button type="submit" variant="gold" size="sm" fullWidth disabled={pending}>
+          {pending ? "Sending…" : "Enquire"}
+        </Button>
       </form>
       {showToast ? (
         <Toast

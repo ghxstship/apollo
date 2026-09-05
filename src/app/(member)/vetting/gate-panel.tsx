@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Input } from "@/components/ds";
+import { Button, Input, Notice, Tag } from "@/components/ds";
 import {
   SEGMENTS,
   SEGMENT_CHOICE,
@@ -87,7 +87,7 @@ export function GatePanel({
 
   return (
     <div className="vet-panel">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "var(--space-3)" }}>
+      <div className="mbr-spread">
         <span className="vet-eyebrow">Capacity by segment</span>
         {/* The head total, second and quieter. 34 of 40 is only true because a
             couple counts two — the same arithmetic the database holds. */}
@@ -160,17 +160,11 @@ export function GatePanel({
         </div>
       ) : (
         <>
-          <div className="vet-chips" role="group" aria-label="Which seat">
+          <div className="ls-inline" role="group" aria-label="Which seat">
             {SEGMENTS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className="vet-chip"
-                aria-pressed={choice === s}
-                onClick={() => setChoice(s)}
-              >
+              <Tag key={s} active={choice === s} onClick={() => setChoice(s)}>
                 {SEGMENT_CHOICE[s]}
-              </button>
+              </Tag>
             ))}
           </div>
 
@@ -205,7 +199,7 @@ export function GatePanel({
                   autoComplete="off"
                   onChange={(e) => setPartner(e.target.value)}
                   hint="They get their own boarding code and sign their own waiver."
-                  style={{ marginTop: "var(--space-3)" }}
+                  className="mbr-sub--md"
                 />
               ) : null}
               <div className="vet-acts">
@@ -228,9 +222,9 @@ export function GatePanel({
            the hull holds, that the clearance lapsed and when — or from
            voiceWith, which asked the database whether the membership is paused
            before saying so. */
-        <p className="vet-note" role="alert" style={{ color: "var(--danger)" }}>
+        <Notice tone="danger" compact>
           {error}
-        </p>
+        </Notice>
       ) : null}
 
       <p className="vet-note">

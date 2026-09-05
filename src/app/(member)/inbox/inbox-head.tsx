@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ds";
+import { Button, Notice } from "@/components/ds";
 import { archiveRead, markAllRead } from "./actions";
 
 /* The standfirst and the two sweeps. Both were bare <form action> posts with
@@ -72,9 +72,9 @@ export function InboxHead({
         </div>
       </div>
       {error ? (
-        <p role="alert" className="mbr-alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {error}
-        </p>
+        </Notice>
       ) : null}
       {children}
     </div>

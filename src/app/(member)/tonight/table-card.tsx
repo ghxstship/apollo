@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Checkbox } from "@/components/ds";
+import { Badge, Button, Checkbox, Notice } from "@/components/ds";
 import { claimSeat, confirmSeat, pickFromTable, releaseSeat } from "./actions";
 
 export type TableView = {
@@ -73,7 +73,7 @@ export function TableCard({ table }: { table: TableView }) {
           )}
         </span>
       </div>
-      <p className="mbr-note mbr-note--lg">Blind table for six · {t.nightTitle}</p>
+      <p className="ls-note mbr-note--lg mbr-line">Blind table for six · {t.nightTitle}</p>
 
       {!t.started ? (
         <div className="tbl-card__acts">
@@ -129,9 +129,9 @@ export function TableCard({ table }: { table: TableView }) {
       ) : null}
 
       {error ? (
-        <p role="alert" className="mbr-alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {error}
-        </p>
+        </Notice>
       ) : null}
     </div>
   );

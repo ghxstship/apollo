@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { headers } from "next/headers";
 import { CopyLink } from "@/components/copy-link";
-import { KitPassageLog, StateBlock, Tag, type LogFigure } from "@/components/ds";
+import { KitPassageLog, LinkButton, StateBlock, Tag, type LogFigure } from "@/components/ds";
 import { CITY_CODES, CLUB_ZONE, CURRENCY, PLACE, SITE_DOMAIN, knots } from "@/lib/brand";
 import { SETTING_LABEL, endOfDay, logDate, logDateYear, startOfDay } from "@/lib/format";
 import { getMember } from "../data";
@@ -211,9 +210,9 @@ export default async function SeasonPage() {
             figures={[]}
             emptyLabel={`Nothing on the record yet. ${season.title} opened ${logDate(from, seasonZone)}; the first episode writes the first line.`}
           />
-          <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
+          <LinkButton href="/passes" variant="outline" size="sm">
             Passes
-          </Link>
+          </LinkButton>
         </div>
       ) : (
         <>

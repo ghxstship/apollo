@@ -2,6 +2,7 @@
 
 import React from "react";
 import { sendAWord, type WordResult } from "@/app/(member)/directory/actions";
+import { Button, Notice } from "@/components/ds";
 
 /* The button that opens a conversation, and the one place its refusal can be
    read. The action used to redirect on every failure, so a member on hold — or
@@ -23,17 +24,17 @@ export function SendAWord({
   return (
     <form action={formAction} className={className}>
       <input type="hidden" name="other" value={otherId} />
-      <button type="submit" className="ls-btn ls-btn--gold ls-btn--sm" disabled={pending}>
+      <Button type="submit" variant="gold" size="sm" disabled={pending}>
         {label}
-      </button>
+      </Button>
       {state.error ? (
         /* alert, not status: a refusal arrives at the worst moment and has to
            interrupt what a screen reader is saying, the way enquire.tsx already
            does. A polite region waits its turn, and a member who has moved on
            never hears it. */
-        <p className="mbr-alert" role="alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {state.error}
-        </p>
+        </Notice>
       ) : null}
     </form>
   );

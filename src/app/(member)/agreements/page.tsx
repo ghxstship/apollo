@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getMember } from "../data";
+import { LinkButton } from "@/components/ds";
 
 export const metadata: Metadata = { title: "Agreements" };
 
@@ -22,7 +22,7 @@ export default async function AgreementsPage() {
     <div className="ls-fade">
       <span className="mbr-eyebrow">What you&rsquo;ve put your name to</span>
       <h1 className="mbr-h1">Agreements.</h1>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         Your agreements live on your page now — each kept with the exact wording
         you agreed to and the date you agreed to it.
       </p>
@@ -32,9 +32,9 @@ export default async function AgreementsPage() {
         </p>
       ) : null}
       <div className="mbr-sub--lg">
-        <Link href="/you#you-agreements" className="ls-btn ls-btn--gold ls-btn--sm">
+        <LinkButton href="/you#you-agreements" variant="gold" size="sm">
           Agreements, on You
-        </Link>
+        </LinkButton>
       </div>
     </div>
   );

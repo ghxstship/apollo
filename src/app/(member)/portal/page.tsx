@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SettledNotice } from "./settle-card";
+import { LinkButton } from "@/components/ds";
 
 export const metadata: Metadata = { title: "Portal" };
 
@@ -21,20 +21,20 @@ export default async function PortalPage({
     <div className="ls-fade">
       <span className="mbr-eyebrow">Knots · Leagues · Rewards</span>
       <h1 className="mbr-h1">Portal.</h1>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         The knots ledger, the league you ride at and the rewards they buy are on
         your page now. What stands on your account is on Account.
       </p>
-      <div className="mbr-acts mbr-sub--lg">
-        <Link href="/you#you-knots" className="ls-btn ls-btn--gold ls-btn--sm">
+      <div className="ls-acts mbr-sub--lg">
+        <LinkButton href="/you#you-knots" variant="gold" size="sm">
           Knots and rewards, on You
-        </Link>
-        <Link href="/you#you-invite" className="ls-btn ls-btn--outline ls-btn--sm">
+        </LinkButton>
+        <LinkButton href="/you#you-invite" variant="outline" size="sm">
           Bring a good one
-        </Link>
-        <Link href="/account" className="ls-btn ls-btn--outline ls-btn--sm">
+        </LinkButton>
+        <LinkButton href="/account" variant="outline" size="sm">
           Account statement
-        </Link>
+        </LinkButton>
       </div>
       {settled === "1" ? <SettledNotice /> : null}
     </div>

@@ -466,7 +466,7 @@ async function PassesBody() {
 
   return (
     <>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         Every episode ahead, and the pass on each one. Passes are few by design.
         Claim one
         {guestAllowance > 0

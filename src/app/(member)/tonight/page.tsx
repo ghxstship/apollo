@@ -83,7 +83,7 @@ export default async function TablesPage() {
     <div className="ls-fade">
       <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
       <h1 className="mbr-h1">Tonight.</h1>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         Blind tables for six. Matches come from tables, not swiping — take a
         seat, and after the night say who you&rsquo;d meet again. Only a mutual
         pick surfaces anything.

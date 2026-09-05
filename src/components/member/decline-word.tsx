@@ -2,6 +2,7 @@
 
 import React from "react";
 import { setBlock, type WordResult } from "@/app/(member)/directory/actions";
+import { Button, Notice } from "@/components/ds";
 
 /* The quiet exit from a conversation you did not ask for. One button, two
    directions: decline messages from this member, or allow them again. The
@@ -29,13 +30,9 @@ export function DeclineWord({
       <input type="hidden" name="other" value={otherId} />
       {handle ? <input type="hidden" name="handle" value={handle} /> : null}
       <input type="hidden" name="intent" value={blocked ? "unblock" : "block"} />
-      <button
-        type="submit"
-        className="ls-btn ls-btn--outline ls-btn--sm"
-        disabled={pending}
-      >
+      <Button type="submit" variant="outline" size="sm" disabled={pending}>
         {blocked ? "Allow messages again" : `Decline messages from ${firstName}`}
-      </button>
+      </Button>
       {blocked ? (
         <p className="mbr-status" role="status">
           {firstName} can&rsquo;t open a conversation with you. Allowing again
@@ -45,9 +42,9 @@ export function DeclineWord({
       {state.error ? (
         /* alert, not status — a refusal interrupts; see enquire.tsx. The note
            above it stays a status: it reports a state, not a failure. */
-        <p className="mbr-alert" role="alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {state.error}
-        </p>
+        </Notice>
       ) : null}
     </form>
   );

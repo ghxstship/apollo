@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Toast } from "@/components/ds";
+import { Button, Notice, Toast } from "@/components/ds";
 import { price } from "@/lib/format";
 import { CARD_UNAVAILABLE } from "@/lib/errors";
 
@@ -32,9 +32,9 @@ async function handOff(url: string, body?: unknown): Promise<string> {
 function ErrorLine({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <span role="alert" className="mbr-alert mbr-alert--inline">
+    <Notice tone="danger" compact>
       {message}
-    </span>
+    </Notice>
   );
 }
 
@@ -133,7 +133,7 @@ export function ManageBillingButton() {
   };
 
   return (
-    <div className="mbr-acts">
+    <div className="ls-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={open}>
         {pending ? "Casting off…" : "Manage in Stripe"}
       </Button>

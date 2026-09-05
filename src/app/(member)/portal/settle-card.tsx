@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Toast } from "@/components/ds";
+import { Button, Notice, Toast } from "@/components/ds";
 import { CARD_UNAVAILABLE } from "@/lib/errors";
 
 /* — Settle a negative house-account balance by card via Stripe Checkout.
@@ -31,14 +31,14 @@ export function SettleCardButton({ amountLabel }: { amountLabel: string }) {
   };
 
   return (
-    <div className="mbr-acts">
+    <div className="ls-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={settle}>
         {pending ? "Casting off…" : `Settle ${amountLabel} with card`}
       </Button>
       {error ? (
-        <span role="alert" className="mbr-alert mbr-alert--inline">
+        <Notice tone="danger" compact>
           {error}
-        </span>
+        </Notice>
       ) : null}
     </div>
   );

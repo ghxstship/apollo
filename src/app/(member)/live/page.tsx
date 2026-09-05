@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
-import Link from "next/link";
-import { Badge, StateBlock } from "@/components/ds";
+import { Badge, LinkButton, StateBlock } from "@/components/ds";
 import { SURFACES } from "@/lib/brand";
 import { logDateTime, logTime, price } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
@@ -226,7 +225,7 @@ export default async function LivePage() {
         {lastNight ? (
           <div className="mbr-sec">
             <span className="mbr-eyebrow">{lastNight.title} · wrapped</span>
-            <p className="mbr-lede">
+            <p className="ls-lede mbr-sub--sm">
               The night is on the record. Anything you shot still lands in the
               queue for the Bridge&rsquo;s eye — nobody sees it until it is cleared.
             </p>
@@ -247,14 +246,14 @@ export default async function LivePage() {
               next ? (
                 <div className="now-next">
                   <Countdown target={next.starts_at} />
-                  <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
+                  <LinkButton href="/passes" variant="outline" size="sm">
                     Passes
-                  </Link>
+                  </LinkButton>
                 </div>
               ) : (
-                <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
+                <LinkButton href="/passes" variant="outline" size="sm">
                   Passes
-                </Link>
+                </LinkButton>
               )
             }
           />

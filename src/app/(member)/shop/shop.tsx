@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Button, Dialog, FilterPills, Icon, ListToolbar, Select, Stepper, Toast } from "@/components/ds";
+import { Badge, Button, Dialog, FilterPills, Icon, IconButton, ListToolbar, Select, Stepper, Toast } from "@/components/ds";
 import { logDate, price } from "@/lib/format";
 import { SURFACES } from "@/lib/brand";
 import { useModal } from "@/components/ds/use-modal";
@@ -239,7 +239,7 @@ export function Shop({
 
       <div className="chd-grid">
         {shown.map((p) => (
-          <button key={p.id} type="button" className="chd-tile" onClick={() => openProduct(p)}>
+          <button key={p.id} type="button" className="chd-tile" onClick={() => openProduct(p)} /* ds-exempt: a product tile is a category-coloured media block with a badge laid over it and a name and price beneath; Card's media slot takes only an image or a sea key */>
             <span className="chd-tile__media" style={{ background: CATEGORY_SEA[p.category] }}>
               {p.badge ? <Badge tone="gold">{p.badge}</Badge> : null}
             </span>
@@ -251,7 +251,7 @@ export function Shop({
         ))}
       </div>
       {shown.length === 0 ? (
-        <p className="mbr-note mbr-note--lg mbr-sub">
+        <p className="ls-note mbr-note--lg mbr-sub">
           Nothing on this shelf yet.
         </p>
       ) : null}
@@ -287,7 +287,7 @@ export function Shop({
                 error={error}
               />
             ) : null}
-            <div className="mbr-acts">
+            <div className="ls-acts">
               <span className="mbr-mono">QTY</span>
               <Stepper size="sm" min={1} max={12} value={qty} onChange={setQty} />
             </div>
@@ -301,13 +301,13 @@ export function Shop({
           <aside className="chd-drawer" role="dialog" aria-modal="true" aria-label="The crate" ref={drawerRef} tabIndex={-1}>
             <div className="chd-drawer__head">
               <b>The crate</b>
-              <button type="button" className="wd-x" aria-label="Close the crate" onClick={() => setDrawer(false)}>
-                ✕
-              </button>
+              <IconButton label="Close the crate" variant="ghost" size="sm" onClick={() => setDrawer(false)}>
+                <Icon name="X" size={16} />
+              </IconButton>
             </div>
             <div className="chd-drawer__body">
               {cart.length === 0 ? (
-                <p className="mbr-note mbr-note--lg">Empty. The shelves are right there.</p>
+                <p className="ls-note mbr-note--lg mbr-line">Empty. The shelves are right there.</p>
               ) : (
                 cart.map((l, i) => (
                   <div key={l.productId + (l.size ?? "")} className="chd-line">

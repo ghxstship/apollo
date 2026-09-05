@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Dialog, KnotsLedger, Toast, type LedgerEntry, type LedgerReward } from "@/components/ds";
+import { Button, Dialog, KnotsLedger, Notice, Toast, type LedgerEntry, type LedgerReward } from "@/components/ds";
 import { mintInvite, redeemReward } from "./actions";
 
 /* RedeemButton stood here — exported, never mounted, and it spent knots on a
@@ -22,14 +22,14 @@ export function MintInvite() {
   };
 
   return (
-    <div className="mbr-acts">
+    <div className="ls-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={mint}>
         Mint invite code
       </Button>
       {error ? (
-        <span role="alert" className="mbr-alert mbr-alert--inline">
+        <Notice tone="danger" compact>
           {error}
-        </span>
+        </Notice>
       ) : null}
     </div>
   );
@@ -104,16 +104,16 @@ export function KnotsPanel({
           ) : null
         }
       >
-        <p className="mbr-lede">
+        <p className="ls-lede mbr-sub--sm">
           Your balance is {balance} knots
           {confirming?.costValue != null ? `; ${balance - confirming.costValue} stay with you after this` : ""}.
           Spent knots do not come back — Shoreside makes the reward so.
         </p>
       </Dialog>
       {error ? (
-        <span role="alert" className="mbr-alert mbr-mono--block">
+        <Notice tone="danger" compact>
           {error}
-        </span>
+        </Notice>
       ) : null}
       {redeemed ? (
         <Toast

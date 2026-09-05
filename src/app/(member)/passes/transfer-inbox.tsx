@@ -5,7 +5,7 @@
    posts to the Inbox itself, so nothing is notified from here. */
 
 import React from "react";
-import { Button } from "@/components/ds";
+import { Button, Notice } from "@/components/ds";
 import { acceptOffer, declineOffer } from "./actions";
 
 export type IncomingOffer = {
@@ -37,11 +37,11 @@ export function TransferInbox({ offers }: { offers: IncomingOffer[] }) {
           <div className="xfr-offer__line">
             {o.fromName} offers you a pass — {o.voyageTitle}
           </div>
-          <p className="mbr-note">
+          <p className="ls-note mbr-line">
             Take it and the pass is yours: a new code is cut, and what they paid
             moves to your account.
           </p>
-          <div className="mbr-acts mbr-sub--sm">
+          <div className="ls-acts mbr-sub--sm">
             <Button
               variant="gold"
               size="sm"
@@ -60,9 +60,9 @@ export function TransferInbox({ offers }: { offers: IncomingOffer[] }) {
             </Button>
           </div>
           {error ? (
-            <p className="mbr-alert" role="alert">
+            <Notice tone="danger" compact className="mbr-sub--xs">
               {error}
-            </p>
+            </Notice>
           ) : null}
         </div>
       ))}

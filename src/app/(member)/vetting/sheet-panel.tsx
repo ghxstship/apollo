@@ -1,14 +1,13 @@
 "use client";
 
 import React from "react";
-import { Button, Textarea } from "@/components/ds";
+import { Button, Notice, Tag, Textarea } from "@/components/ds";
 import {
   BOUNDARY_LABEL,
   BOUNDARY_TOPICS,
   DRINKS,
   STANCES,
   STANCE_LABEL,
-  STANCE_TONE,
   type BoundaryRow,
   type PreferenceSheetRow,
   type Stance,
@@ -68,18 +67,11 @@ export function SheetPanel({
       <div className="vet-panel">
         <span className="vet-eyebrow">Part 1 · Drinks</span>
         <p className="vet-title">What are you drinking?</p>
-        <div className="vet-chips" role="group" aria-label="Drinks">
+        <div className="ls-inline" role="group" aria-label="Drinks">
           {DRINKS.map((d) => (
-            <button
-              key={d}
-              type="button"
-              className="vet-chip"
-              aria-pressed={drinks.includes(d)}
-              onClick={() => toggleDrink(d)}
-              disabled={pending}
-            >
+            <Tag key={d} active={drinks.includes(d)} disabled={pending} onClick={() => toggleDrink(d)}>
               {d}
-            </button>
+            </Tag>
           ))}
         </div>
         <p className="vet-note">
@@ -97,22 +89,14 @@ export function SheetPanel({
             const current = stances[topic];
             return (
               <div className="vet-row" key={topic}>
-                <span className="vet-row__value" style={{ flex: 1 }}>
+                <span className="vet-row__value">
                   {BOUNDARY_LABEL[topic]}
                 </span>
                 <span className="vet-stances" role="group" aria-label={BOUNDARY_LABEL[topic]}>
                   {STANCES.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className="vet-stance"
-                      aria-pressed={current === s}
-                      style={current === s ? { color: STANCE_TONE[s] } : undefined}
-                      onClick={() => pickStance(topic, s)}
-                      disabled={pending}
-                    >
+                    <Tag key={s} active={current === s} disabled={pending} onClick={() => pickStance(topic, s)}>
                       {STANCE_LABEL[s]}
-                    </button>
+                    </Tag>
                   ))}
                 </span>
               </div>
@@ -164,13 +148,13 @@ export function SheetPanel({
       </div>
 
       {error ? (
-        <p className="vet-note" role="alert" style={{ color: "var(--danger)", gridColumn: "1 / -1" }}>
+        <Notice tone="danger" compact className="vet-grid__span">
           {error}
-        </p>
+        </Notice>
       ) : saved ? (
-        <p className="vet-note" role="status" style={{ gridColumn: "1 / -1" }}>
+        <Notice tone="positive" compact className="vet-grid__span">
           {saved} saved.
-        </p>
+        </Notice>
       ) : null}
     </div>
   );

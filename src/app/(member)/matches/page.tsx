@@ -95,7 +95,7 @@ export default async function MatchesPage() {
     <div className="ls-fade">
       <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
       <h1 className="mbr-h1">Matches.</h1>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         Everyone here shared a table with you and said your name back. That is
         the only way in.
       </p>
@@ -141,7 +141,7 @@ export default async function MatchesPage() {
       {anchors.length > 0 ? (
         <section className="mbr-sub--lg">
           <span className="mbr-eyebrow">From the water — Shared Anchors</span>
-          <p className="mbr-lede">
+          <p className="ls-lede mbr-sub--sm">
             Anchors come from an episode&rsquo;s radar, mutual only. Each one
             holds for twenty-four hours from the reveal, then the contact goes
             on both sides — no extension and no reminder.

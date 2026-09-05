@@ -5,9 +5,13 @@ import Link from "next/link";
 import {
   Badge,
   Button,
-  Checkbox,
   Dialog,
   Input,
+  LinkButton,
+  Notice,
+  OptionRow,
+  ReviewList,
+  ReviewRow,
   Select,
   Stepper,
   Switch,
@@ -421,10 +425,10 @@ export function PassControls({
 
   const errorBlock = (onWaitlist?: () => void) =>
     error ? (
-      <p className="mbr-alert" role="alert">
+      <Notice tone="danger" compact className="mbr-sub--xs">
         {error}
         {offerWaitlist ? fullDoors(onWaitlist) : null}
-      </p>
+      </Notice>
     ) : null;
 
   const pausedLine = `Your membership is paused — resume it on the You page to change this pass. Release still works, and the ${creditHours}-hour clock is running.`;
@@ -493,9 +497,9 @@ export function PassControls({
             </>
           ) : null}
           {boardingCode ? (
-            <Link href={`/stub/${boardingCode}`} className="ls-btn ls-btn--outline ls-btn--sm">
+            <LinkButton href={`/stub/${boardingCode}`} variant="outline" size="sm">
               Boarding stub
-            </Link>
+            </LinkButton>
           ) : null}
           <span className="voy-foot__spacer"></span>
           {/* A standing offer stays visible to be withdrawn; a fresh one is
@@ -568,11 +572,11 @@ export function PassControls({
             <div className="voy-daybed">
               <span className="mbr-mono mbr-mono--block">BOW DAYBED</span>
               {daybedHeld ? (
-                <span className="mbr-note mbr-note--lg">
+                <span className="ls-note mbr-note--lg">
                   Bow daybed held — the steward knows your name
                 </span>
               ) : (
-                <span className="mbr-acts mbr-sub--sm">
+                <span className="ls-acts mbr-sub--sm">
                   <span className="mbr-mono mbr-mono--lg">
                     {price(daybed.priceCents)} · group of {countWord(daybed.party)} ·{" "}
                     {countWord(daybed.cap)} per episode
@@ -667,20 +671,20 @@ export function PassControls({
               writes that rsvp — the vetting page does, with the segment. */}
           <span className="mbr-mono">SEATED BY SEGMENT</span>
           <span className="voy-foot__spacer"></span>
-          <Link
+          <LinkButton
             href="/vetting"
-            className={`ls-btn ls-btn--${recommended ? "gold" : "outline"} ls-btn--sm`}
+            variant={recommended ? "gold" : "outline"} size="sm"
           >
             Take a seat on the vetting page →
-          </Link>
+          </LinkButton>
         </>
       ) : enquiryHref ? (
         <>
           <span className="mbr-mono">ON REQUEST</span>
           <span className="voy-foot__spacer"></span>
-          <Link href={enquiryHref} className="ls-btn ls-btn--outline ls-btn--sm">
+          <LinkButton href={enquiryHref} variant="outline" size="sm">
             Enquire
-          </Link>
+          </LinkButton>
         </>
       ) : inviteOnly ? (
         <span className="mbr-mono">BY INVITATION — THE WORD ARRIVES WITH THE PASS</span>
@@ -818,10 +822,10 @@ export function PassControls({
       )}
 
       {error && !dialogOpen ? (
-        <span className="mbr-alert voy-alert" role="alert">
+        <Notice tone="danger" compact className="voy-alert">
           {error}
           {offerWaitlist ? fullDoors() : null}
-        </span>
+        </Notice>
       ) : null}
 
       {toast ? (
@@ -872,39 +876,43 @@ export function PassControls({
               muster; if none does, the pass releases and every charge credits back in full.
             </p>
           ) : null}
-          <div className="mbr-row mbr-row--first">
-            <span>{coStandby ? "Standby pass" : "Pass"}</span>
-            <span className="mbr-row__val">{price(passDue)}</span>
-          </div>
-          {depositDue ? (
-            <div className="mbr-row">
-              <span>
-                <Badge tone="gold">Deposit</Badge>{" "}
-                <span className="mbr-row__sub">
-                  credited to the galley aboard, forfeited on no-show
-                </span>
-              </span>
-              <span className="mbr-row__val">{money(depositCents)}</span>
-            </div>
-          ) : null}
-          {guestsAllowed ? (
-            <div className="mbr-row mbr-row--center">
-              <span className="mbr-mono">
-                GUESTS · UP TO {guestAllowance} ON YOUR PLAN
-              </span>
-              <Stepper
-                size="sm"
-                label="Guests"
-                min={0}
-                max={guestAllowance}
-                value={coGuests}
-                onChange={(n) => {
-                  setCoGuests(n);
-                  setCoNames((prev) => sizeNames(n, prev));
-                }}
+          <ReviewList>
+            <ReviewRow first label={coStandby ? "Standby pass" : "Pass"} value={price(passDue)} />
+            {depositDue ? (
+              <ReviewRow
+                label={
+                  <>
+                    <Badge tone="gold">Deposit</Badge>{" "}
+                    <span className="ls-note mbr-line">
+                      credited to the galley aboard, forfeited on no-show
+                    </span>
+                  </>
+                }
+                value={money(depositCents)}
               />
-            </div>
-          ) : null}
+            ) : null}
+            {guestsAllowed ? (
+              <ReviewRow
+                label={
+                  <span className="mbr-mono">
+                    GUESTS · UP TO {guestAllowance} ON YOUR PLAN
+                  </span>
+                }
+              >
+                <Stepper
+                  size="sm"
+                  label="Guests"
+                  min={0}
+                  max={guestAllowance}
+                  value={coGuests}
+                  onChange={(n) => {
+                    setCoGuests(n);
+                    setCoNames((prev) => sizeNames(n, prev));
+                  }}
+                />
+              </ReviewRow>
+            ) : null}
+          </ReviewList>
           {coGuests > 0 ? (
             <GuestNameInputs
               names={checkoutNames}
@@ -914,27 +922,19 @@ export function PassControls({
             />
           ) : null}
           {addons.map((a) => (
-            <div key={a.id} className="mbr-row mbr-row--center">
-              <Checkbox
-                /* The price sat in a sibling span outside the <label>, so the
-                   accessible name of this box was the add-on's name and
-                   nothing else — at qty 1 there is no description either, and
-                   a reader was asked to tick a charge whose amount was never
-                   said. Repeated silently for the screen, read aloud once. */
-                label={
-                  <>
-                    {a.name}
-                    <span className="ls-visually-hidden">{`, ${money(a.price_cents * qty)}`}</span>
-                  </>
-                }
-                description={qty > 1 ? `${money(a.price_cents)} × ${qty} (you and ${coGuests} guest${coGuests > 1 ? "s" : ""})` : undefined}
-                checked={chosen.has(a.id)}
-                onChange={() => toggleAddon(a.id)}
-              />
-              <span className="mbr-row__val" aria-hidden="true">
-                {money(a.price_cents * qty)}
-              </span>
-            </div>
+            /* The kit's option row: the figure sits inside the <label>, so the
+               accessible name of the box carries the amount once — the price
+               used to live in a sibling span outside it and a reader was asked
+               to tick a charge whose amount was never said. */
+            <OptionRow
+              kind="checkbox"
+              key={a.id}
+              label={a.name}
+              description={qty > 1 ? `${money(a.price_cents)} × ${qty} (you and ${coGuests} guest${coGuests > 1 ? "s" : ""})` : undefined}
+              figure={money(a.price_cents * qty)}
+              checked={chosen.has(a.id)}
+              onChange={() => toggleAddon(a.id)}
+            />
           ))}
           <PromoField
             episodeId={episodeId}
@@ -942,53 +942,40 @@ export function PassControls({
             onApplied={setPromo}
             onCleared={() => setPromo(null)}
           />
-          {splitEligible ? (
-            <div className="mbr-row mbr-row--center">
-              <span>
-                <b>Split it</b>
-                <span className="mbr-row__sub">No interest. The rest is drawn monthly.</span>
-              </span>
-              <span className="mbr-row__pair" role="group" aria-label="Draws">
-                {[2, 3, 4].map((n) => (
-                  <Tag
-                    key={n}
-                    active={split === n}
-                    onClick={() => setSplit(split === n ? null : n)}
-                  >
-                    {n} draws
-                  </Tag>
-                ))}
-              </span>
-            </div>
-          ) : null}
-          {creditApplied > 0 ? (
-            <div className="mbr-row">
-              <span>Plan credit</span>
-              <span className="mbr-row__val">−{price(creditApplied)}</span>
-            </div>
-          ) : null}
-          <div className="mbr-row mbr-row--total">
-            <span className="mbr-mono">
-              {splitDraws ? "DUE TODAY" : "DUE TO MEMBER ACCOUNT"}
-            </span>
-            <span className="mbr-row__val">
-              {splitDraws || dueToday - creditApplied > 0 ? price(splitDraws ? dueToday : dueToday - creditApplied) : "$0"}
-            </span>
-          </div>
-          {splitDraws ? (
-            <div className="mbr-row">
-              <span className="mbr-row__dim">Then</span>
-              <span className="mbr-row__val">
-                {splitDraws - 1} × {money(perDraw)}
-              </span>
-            </div>
-          ) : null}
-          {knotsOnCompletion != null ? (
-            <div className="mbr-row">
-              <span className="mbr-row__dim">On completion</span>
-              <span className="mbr-row__val mbr-row__val--up">+{knotsOnCompletion} KN</span>
-            </div>
-          ) : null}
+          <ReviewList>
+            {splitEligible ? (
+              <ReviewRow
+                label={
+                  <>
+                    <b>Split it</b>
+                    <span className="ls-note mbr-line">No interest. The rest is drawn monthly.</span>
+                  </>
+                }
+              >
+                <span className="ls-inline" role="group" aria-label="Draws">
+                  {[2, 3, 4].map((n) => (
+                    <Tag
+                      key={n}
+                      active={split === n}
+                      onClick={() => setSplit(split === n ? null : n)}
+                    >
+                      {n} draws
+                    </Tag>
+                  ))}
+                </span>
+              </ReviewRow>
+            ) : null}
+            {creditApplied > 0 ? <ReviewRow label="Plan credit" value={`−${price(creditApplied)}`} /> : null}
+            <ReviewRow
+              total
+              label={<span className="mbr-mono">{splitDraws ? "DUE TODAY" : "DUE TO MEMBER ACCOUNT"}</span>}
+              value={splitDraws || dueToday - creditApplied > 0 ? price(splitDraws ? dueToday : dueToday - creditApplied) : "$0"}
+            />
+            {splitDraws ? <ReviewRow label="Then" value={`${splitDraws - 1} × ${money(perDraw)}`} /> : null}
+            {knotsOnCompletion != null ? (
+              <ReviewRow label="On completion" value={<span className="ls-note--positive">+{knotsOnCompletion} KN</span>} />
+            ) : null}
+          </ReviewList>
           <p className="mbr-dlg__note">{policyLine(creditHours)}</p>
           {errorBlock(() => setCheckout(false))}
         </div>
@@ -1028,23 +1015,27 @@ export function PassControls({
           }
         >
           <div className="mbr-dlg">
-            <div className="mbr-row mbr-row--first">
-              <span>
-                Bow daybed
-                <span className="mbr-row__sub">{voyageTitle}</span>
-              </span>
-              <span className="mbr-row__val">{price(daybed.priceCents)}</span>
-            </div>
-            <div className="mbr-row">
-              <span className="mbr-row__dim">
-                Room for {countWord(daybed.party)}. {countWord(daybed.cap).replace(/^./, (c) => c.toUpperCase())}{" "}
-                per episode, one per pass.
-              </span>
-            </div>
-            <div className="mbr-row mbr-row--total">
-              <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
-              <span className="mbr-row__val">{price(daybed.priceCents)}</span>
-            </div>
+            <ReviewList>
+              <ReviewRow
+                first
+                label={
+                  <>
+                    Bow daybed
+                    <span className="ls-note mbr-line">{voyageTitle}</span>
+                  </>
+                }
+                value={price(daybed.priceCents)}
+              />
+              <ReviewRow
+                label={
+                  <>
+                    Room for {countWord(daybed.party)}. {countWord(daybed.cap).replace(/^./, (c) => c.toUpperCase())}{" "}
+                    per episode, one per pass.
+                  </>
+                }
+              />
+              <ReviewRow total label={<span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>} value={price(daybed.priceCents)} />
+            </ReviewList>
             <p className="mbr-dlg__note">
               It rides on your pass. Release the pass and the daybed goes with it —
               credited in full more than {creditHours} hours out, forfeit inside.
@@ -1130,28 +1121,22 @@ export function PassControls({
         }
       >
         <div className="mbr-dlg">
-          {unattached.map((a, i) => (
-            <div key={a.id} className={i === 0 ? "mbr-row mbr-row--center mbr-row--first" : "mbr-row mbr-row--center"}>
-              <Checkbox
-                label={
-                  <>
-                    {a.name}
-                    <span className="ls-visually-hidden">{`, ${money(a.price_cents * aboardQty)}`}</span>
-                  </>
-                }
-                description={aboardQty > 1 ? `${money(a.price_cents)} × ${aboardQty} (you and ${guests} guest${guests > 1 ? "s" : ""})` : undefined}
-                checked={improveChosen.has(a.id)}
-                onChange={() => toggleImprove(a.id)}
-              />
-              <span className="mbr-row__val" aria-hidden="true">
-                {money(a.price_cents * aboardQty)}
-              </span>
-            </div>
+          {unattached.map((a) => (
+            /* The figure is inside the <label>, so the amount is part of the
+               accessible name once — see the checkout above. */
+            <OptionRow
+              kind="checkbox"
+              key={a.id}
+              label={a.name}
+              description={aboardQty > 1 ? `${money(a.price_cents)} × ${aboardQty} (you and ${guests} guest${guests > 1 ? "s" : ""})` : undefined}
+              figure={money(a.price_cents * aboardQty)}
+              checked={improveChosen.has(a.id)}
+              onChange={() => toggleImprove(a.id)}
+            />
           ))}
-          <div className="mbr-row mbr-row--total">
-            <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
-            <span className="mbr-row__val">{money(improveTotal)}</span>
-          </div>
+          <ReviewList>
+            <ReviewRow total label={<span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>} value={money(improveTotal)} />
+          </ReviewList>
           <p className="mbr-dlg__note">
             Add-ons stay open until 18:00 the night before departure.
           </p>

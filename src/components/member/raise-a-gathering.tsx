@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Badge, Button, Input, Select, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Input, Notice, Select, Textarea, Toast } from "@/components/ds";
 import {
   raiseAProposal,
   withdrawProposal,
@@ -116,11 +116,11 @@ export function RaiseAGathering({
         {/* Anything not about one control — a paused membership, a refusal
             from the table — is the form's to say, not the title's. */}
         {state.error && !state.field ? (
-          <p role="alert" className="mbr-alert">
+          <Notice tone="danger" compact className="mbr-sub--xs">
             {state.error}
-          </p>
+          </Notice>
         ) : null}
-        <div className="mbr-acts mbr-acts--end mbr-acts--top">
+        <div className="ls-acts ls-acts--end mbr-acts--top">
           <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
             {pending ? "Raising" : "Raise it"}
           </Button>
@@ -181,9 +181,9 @@ export function RaiseAGathering({
             </div>
           ))}
           {withdrawError ? (
-            <p role="alert" className="mbr-alert">
+            <Notice tone="danger" compact className="mbr-sub--xs">
               {withdrawError}
-            </p>
+            </Notice>
           ) : null}
         </div>
       ) : null}

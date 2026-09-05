@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Switch } from "@/components/ds";
+import { Notice, Switch } from "@/components/ds";
 import { setManifestVisibility } from "./actions";
 
 /* Every member was on every manifest, visible to the whole club, having never
@@ -36,9 +36,9 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
             : "You sail unlisted. The crew still hold your boarding pass; the other members see only that a seat is taken."}
         </p>
         {failed ? (
-          <p className="mbr-alert" role="alert">
+          <Notice tone="danger" compact className="mbr-sub--xs">
             That didn&rsquo;t save. Try again, or hail Shoreside.
-          </p>
+          </Notice>
         ) : null}
       </div>
       <Switch

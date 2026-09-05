@@ -132,7 +132,7 @@ export default async function RadarPage() {
       <div>
         <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
         <h1 className="mbr-h1">Radar.</h1>
-        <p className="rdr-note" style={{ marginTop: 10 }}>
+        <p className="rdr-note mbr-sub--sm">
           {sailing.title} · mutual only, never one-sided. No scores, no streaks,
           and nothing that says who looked at you.
         </p>
@@ -208,7 +208,7 @@ export default async function RadarPage() {
         ) : null}
 
         <div className="rdr-rules">
-          <span className="rdr-eyebrow" style={{ paddingBottom: 8 }}>Radar rules</span>
+          <span className="rdr-eyebrow rdr-eyebrow--lead">Radar rules</span>
           <p className="rdr-rule">
             Radar is live aboard only, and dark everywhere else. It is not
             something you scroll at home.

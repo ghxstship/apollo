@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ds";
+import { Button, Notice } from "@/components/ds";
 import { enterContest, withdrawFromContest, type ContestResult } from "../actions";
 
 /* Enter, Withdraw, and the one place their refusal can be read. The page keeps
@@ -31,9 +31,9 @@ export function ContestEntry({
         {entered ? "Withdraw" : "Enter"}
       </Button>
       {state.error ? (
-        <p role="alert" className="mbr-alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {state.error}
-        </p>
+        </Notice>
       ) : null}
     </form>
   );

@@ -3,7 +3,7 @@
 import React from "react";
 import { GALLEY_QUEUE_KEY } from "@/lib/device-storage";
 import { useRouter } from "next/navigation";
-import { Button, StateBlock, Stepper, Toast } from "@/components/ds";
+import { Button, Notice, StateBlock, Stepper, Toast } from "@/components/ds";
 import { price } from "@/lib/format";
 import { placeGalleyOrder, type GalleyLine } from "./actions";
 
@@ -208,9 +208,9 @@ export function GalleyOrderForm({
         </Button>
       </div>
       {error ? (
-        <p className="mbr-alert" role="alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {error}
-        </p>
+        </Notice>
       ) : null}
 
       {queued ? (

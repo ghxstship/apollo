@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { CameraConsent } from "./camera-consent";
 import { ManifestConsent } from "./manifest-consent";
 import Link from "next/link";
-import { Avatar, Badge, Button, Stat, StateBlock, ThemeToggle, Wordmark, type LedgerEntry } from "@/components/ds";
+import { Avatar, Badge, Button, LinkButton, Stat, StateBlock, ThemeToggle, Wordmark, type LedgerEntry } from "@/components/ds";
 import { CURRENCY, knots, LEAGUES } from "@/lib/brand";
 import { logDate, logDateTime, logDateYear, roman, yearIn } from "@/lib/format";
 import { PushControls } from "@/components/push-controls";
@@ -335,7 +335,7 @@ async function YouBody() {
       <section id="you-standing">
         <div className="you-h">Standing</div>
         <div className="you-sec you-sec--pad">
-          <p className="mbr-lede">
+          <p className="ls-lede mbr-sub--sm">
             One card, two media. The printed one is static and gate-checked; this
             one rotates. Both carry the same number, and the number stays yours
             through a pause.
@@ -349,7 +349,7 @@ async function YouBody() {
             </div>
             <Credential initialQr={initialQr} initialExpiry={first?.expires_at ?? null} />
           </div>
-          <div className="std-state" style={{ ["--std-tone" as string]: STANDING_TONE[standingState], marginTop: 16 }}>
+          <div className="std-state mbr-acts--top" style={{ ["--std-tone" as string]: STANDING_TONE[standingState] }}>
             <span className="std-state__name">{STANDING_LABEL[standingState]}</span>
             <p className="std-state__line">{STANDING_LINE[standingState]}</p>
             {pause.cap > 0 ? (
@@ -368,7 +368,7 @@ async function YouBody() {
       <section id="you-agreements">
         <div className="you-h">Agreements</div>
         <div className="you-sec you-sec--pad">
-          <p className="mbr-lede">
+          <p className="ls-lede mbr-sub--sm">
             Each one is kept with the exact wording you agreed to and the date you
             agreed to it. When the wording changes, you&rsquo;ll be asked again — the
             old copy stays as it was.
@@ -406,7 +406,7 @@ async function YouBody() {
               </p>
             </div>
           </div>
-          <p className="mbr-note mbr-note--lg mbr-sub--sm">
+          <p className="ls-note mbr-note--lg mbr-sub--sm">
             Knots are earned under sail, ashore, and by bringing good people. {CURRENCY.line}
           </p>
           {entries.length === 0 && (rewards ?? []).length === 0 ? (
@@ -438,7 +438,7 @@ async function YouBody() {
       <section id="you-invite">
         <div className="you-h">Bring a good one</div>
         <div className="you-sec you-sec--pad">
-          <p className="mbr-lede">
+          <p className="ls-lede mbr-sub--sm">
             Good for one night ashore as your guest. The rest is on them.
           </p>
           {invite ? (
@@ -500,9 +500,9 @@ async function YouBody() {
                 </p>
               ) : null}
             </div>
-            <Link href="/account" className="ls-btn ls-btn--outline ls-btn--sm">
+            <LinkButton href="/account" variant="outline" size="sm">
               Manage membership
-            </Link>
+            </LinkButton>
           </div>
           {balanceCents < 0 && stripeEnabled() ? (
             <div className="you-row">

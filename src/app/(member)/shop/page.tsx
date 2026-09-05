@@ -56,7 +56,7 @@ export default async function ShopPage() {
     <div>
       <span className="mbr-eyebrow">Ship&rsquo;s stores</span>
       <h1 className="mbr-h1">The Shop.</h1>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         Kit worth its salt. Charged to your member account; collect at the
         venue or the next shore night.
       </p>

@@ -150,7 +150,7 @@ export default async function ShowPage() {
       <div>
         <span className="mbr-eyebrow"><LockupText division="limited" /></span>
         <h1 className="mbr-h1">Show.</h1>
-        <p className="shw-strap" style={{ display: "block", marginTop: 10 }}>
+        <p className="shw-strap mbr-sub--sm">
           Crew surfaces · 24-hour local time · critical-path items carry the
           accent · the signal flag states the deck state so nobody has to ask
         </p>
@@ -312,7 +312,7 @@ export default async function ShowPage() {
           </div>
 
           <div className="shw-card">
-            <span className="shw-strap" style={{ paddingBottom: 8 }}>
+            <span className="shw-strap shw-strap--lead">
               Substitution on a hold
             </span>
             {kit.length === 0 ? (

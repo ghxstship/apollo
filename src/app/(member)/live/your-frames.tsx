@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button } from "@/components/ds";
+import { Badge, Button, Notice } from "@/components/ds";
 import { withdrawFrame } from "./actions";
 
 export type OwnFrame = {
@@ -90,11 +90,11 @@ export function YourFrames({ frames }: { frames: OwnFrame[] }) {
         ))}
       </ul>
       {error ? (
-        <p role="alert" className="mbr-alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {error}
-        </p>
+        </Notice>
       ) : null}
-      <p className="mbr-note mbr-sub--sm">
+      <p className="ls-note mbr-sub--sm">
         Withdrawing takes the file down with the record, not just the listing. It does not
         come back.
       </p>

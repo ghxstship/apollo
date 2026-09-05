@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Dialog, FilterPills, ListToolbar, Select, StateBlock, Textarea, Toast } from "@/components/ds";
+import { Button, Dialog, FilterPills, ListToolbar, Notice, Select, StateBlock, Textarea, TextButton, Toast } from "@/components/ds";
 import {
   PostCard as DeckPost,
   Hail,
@@ -74,20 +74,21 @@ export function Composer({
 
   return (
     <form ref={formRef} action={formAction} className="wd-compose" aria-busy={pending || undefined}>
-      <textarea
+      <Textarea
         name="body"
         rows={3}
         maxLength={2000}
         placeholder="The deck is open. Say it like you mean it."
-        aria-label="Post to the deck"
-        className="ls-writein wd-compose__field"
+        label="Post to the deck"
+        labelHidden
+        className="wd-compose__field"
       />
       {state.error ? (
-        <p role="alert" className="mbr-alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {state.error}
-        </p>
+        </Notice>
       ) : null}
-      <div className="mbr-acts">
+      <div className="ls-acts">
         {attaching && episodes.length > 0 ? (
           <Select
             name="episode_id"
@@ -97,9 +98,9 @@ export function Composer({
             className="wd-compose__pick"
           />
         ) : episodes.length > 0 ? (
-          <button className="ls-bare wd-attach" type="button" onClick={() => setAttaching(true)}>
+          <TextButton tone="quiet" size="sm" className="wd-attach" onClick={() => setAttaching(true)}>
             + ATTACH AN EPISODE
-          </button>
+          </TextButton>
         ) : (
           <span />
         )}
@@ -281,27 +282,27 @@ function FeedEntry({ post }: { post: FeedPost }) {
       footer={
         <>
           <Hail count={hailShown.count} hailed={hailShown.hailed} onToggle={pending ? undefined : hail} />
-          <button
-            className="ls-bare wd-reply"
-            type="button"
+          <TextButton
+            size="sm"
+            className="wd-reply"
             onClick={() => setShowComments((s) => !s)}
             aria-expanded={showComments}
           >
             {post.comments.length > 0 ? `WORDS · ${post.comments.length}` : "REPLY"}
-          </button>
+          </TextButton>
           <span className="wd-end">
             {post.mine ? (
-              <button className="ls-bare wd-strike" type="button" onClick={() => setConfirming(true)}>
+              <TextButton tone="quiet" size="sm" className="wd-strike" onClick={() => setConfirming(true)}>
                 STRIKE
-              </button>
+              </TextButton>
             ) : (
               <FlagButton flagged={flagged} onFlag={() => setReporting(true)} />
             )}
           </span>
           {actionError ? (
-            <span role="alert" className="mbr-alert mbr-mono--block">
+            <Notice tone="danger" compact>
               {actionError}
-            </span>
+            </Notice>
           ) : null}
         </>
       }

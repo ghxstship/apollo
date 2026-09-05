@@ -7,7 +7,7 @@
 import React from "react";
 import Link from "next/link";
 import { CopyLink } from "@/components/copy-link";
-import { Button, Input, Select, Switch, Textarea, Dialog } from "@/components/ds";
+import { Button, Dialog, Input, Notice, Select, Switch, Textarea } from "@/components/ds";
 import {
   applyPromo,
   offerPass,
@@ -37,9 +37,9 @@ function useOrigin(): string {
 function Problem({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p className="mbr-alert" role="alert">
+    <Notice tone="danger" compact className="mbr-sub--xs">
       {message}
-    </p>
+    </Notice>
   );
 }
 
@@ -99,7 +99,7 @@ export function WaitlistClaim({
           on it is taken for you the moment it frees — there is no offer and no
           clock to beat. The clock that does exist here is the release window,
           and it is the club's figure, not a typed 48. */}
-      <p className="mbr-note">
+      <p className="ls-note mbr-line">
         {on
           ? `We take the pass for you the moment one frees, in order. Once it is yours, release it more than ${creditHours} hours out for full credit.`
           : `When one frees you are told, in order, and the Confirm button appears here — first come, first aboard. Release a claimed pass more than ${creditHours} hours out for full credit.`}
@@ -148,9 +148,9 @@ export function HandOff({
           </Button>
         </span>
         {error ? (
-          <span className="mbr-alert voy-alert" role="alert">
+          <Notice tone="danger" compact className="voy-alert">
             {error}
-          </span>
+          </Notice>
         ) : null}
       </>
     );

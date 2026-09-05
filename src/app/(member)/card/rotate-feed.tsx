@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Button, Dialog, Toast } from "@/components/ds";
+import { Button, Dialog, Notice, Toast } from "@/components/ds";
 import { rotateSeasonFeed } from "./actions";
 
 /* The way back from a season-feed address that got out. It asks first, because
@@ -55,15 +55,15 @@ export function RotateFeed() {
         }
       >
         <div className="mbr-stack">
-          <p className="mbr-note mbr-note--lg mbr-flush">
+          <p className="ls-note mbr-note--lg mbr-flush">
             The address on this page stops answering straight away, and so does
             anyone else&rsquo;s copy of it. Your own calendars go quiet until you
             subscribe again with the new address.
           </p>
           {error ? (
-            <p role="alert" className="mbr-alert mbr-flush">
+            <Notice tone="danger" compact>
               {error}
-            </p>
+            </Notice>
           ) : null}
         </div>
       </Dialog>

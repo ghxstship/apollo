@@ -220,3 +220,6 @@
 .rdr-rule:last-child { border-bottom: 1px solid var(--border-subtle); }
 
 .rdr-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: flex-end; }
+
+/* The eyebrow that heads the rules list sits a step clear of its first rule. */
+.rdr-eyebrow--lead { padding-bottom: var(--space-2); }

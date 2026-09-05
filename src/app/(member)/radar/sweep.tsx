@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Input } from "@/components/ds";
+import { Button, Input, Notice } from "@/components/ds";
 import {
   PHASE_LINE,
   minutesUntil,
@@ -84,7 +84,7 @@ export function Sweep({
   return (
     <>
       <div className={`rdr-panel${phase === "open" ? " rdr-panel--live" : ""}`}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <div className="mbr-spread">
           <span className={`rdr-eyebrow${phase === "open" ? " rdr-eyebrow--live" : ""}`}>
             {phase === "open" ? "Radar · live" : "Radar"}
           </span>
@@ -117,7 +117,7 @@ export function Sweep({
           <span className="rdr-ring rdr-ring--3" aria-hidden="true" />
           <span className="rdr-self" aria-hidden="true" />
           {pins.map((pin, i) => (
-            <button
+            <button /* ds-exempt: a radar pin is a dot-and-name toggle placed on the plot by angle; no kit control has that shape or takes a position */
               key={pin.passId}
               type="button"
               className={`rdr-pin${pin.plotted ? " rdr-pin--plotted" : ""}`}
@@ -161,9 +161,9 @@ export function Sweep({
         </div>
 
         {error ? (
-          <p className="rdr-note" role="alert" style={{ color: "var(--danger)" }}>
+          <Notice tone="danger" compact>
             {error}
-          </p>
+          </Notice>
         ) : null}
       </div>
 

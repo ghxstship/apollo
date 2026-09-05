@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Badge, Progress, StateBlock, Table } from "@/components/ds";
+import { Badge, LinkButton, Progress, StateBlock, Table } from "@/components/ds";
 import { logDate, price, logDateYear } from "@/lib/format";
 import { stripeEnabled } from "@/lib/stripe";
 import { subscriptionToShow } from "@/lib/dues";
@@ -140,7 +139,7 @@ export default async function AccountPage({
           only heading said Dues and receipts. */}
       <span className="mbr-eyebrow">Dues · receipts · the card</span>
       <h1 className="mbr-h1">Account.</h1>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         What the club draws, when it draws it, and the card it draws on. Change
         anything here and it takes at the next turn of the period.
       </p>
@@ -191,7 +190,7 @@ export default async function AccountPage({
               </p>
             ) : null}
             {status === "past_due" ? (
-              <p className="mbr-note mbr-note--mid mbr-sub--sm">
+              <p className="ls-note mbr-note--mid mbr-sub--sm">
                 The card was declined. Put a good one on file and the standing
                 holds — nothing else changes.
               </p>
@@ -203,7 +202,7 @@ export default async function AccountPage({
             <p className="mbr-mono mbr-sub--sm acc-gold">
               COMPLIMENTARY UNTIL {logDateYear(compedUntil, zone)}
             </p>
-            <p className="mbr-note mbr-note--mid mbr-sub--sm">
+            <p className="ls-note mbr-note--mid mbr-sub--sm">
               The Bridge has waived your dues until then. Nothing is drawn; the plan stands as it is.
             </p>
           </div>
@@ -215,9 +214,9 @@ export default async function AccountPage({
             title="No dues running."
             detail="Take a standing on the membership page and the ledger starts here."
             action={
-              <Link href="/membership" className="ls-btn ls-btn--outline ls-btn--sm">
+              <LinkButton href="/membership" variant="outline" size="sm">
                 See the standings
-              </Link>
+              </LinkButton>
             }
           />
         )}
@@ -229,7 +228,7 @@ export default async function AccountPage({
             Change the standing
           </span>
           <div className="ptl-panel">
-            <p className="mbr-lede">
+            <p className="ls-lede mbr-sub--sm">
               Pay by the month, or pay by the year and the club keeps two months
               off the bill.
             </p>
@@ -265,7 +264,7 @@ export default async function AccountPage({
               <ManageBillingButton />
             </div>
           ) : (
-            <p className="mbr-note mbr-line">
+            <p className="ls-note mbr-line">
               Cards are taken at the gangway or by invoice — Shoreside posts them.
             </p>
           )}
@@ -355,7 +354,7 @@ export default async function AccountPage({
                 </p>
               </div>
             ))}
-            <p className="mbr-note mbr-sub">
+            <p className="ls-note mbr-sub">
               Draws post to the account statement below. No interest, ever.
             </p>
           </div>
@@ -389,7 +388,7 @@ export default async function AccountPage({
           Your record
         </span>
         <div className="ptl-panel">
-          <p className="mbr-lede">
+          <p className="ls-lede mbr-sub--sm">
             Everything the club holds in your name — the papers, the passes, both
             ledgers, the word — as one JSON file. Boarding codes and the
             processor&rsquo;s references stay with the club.
@@ -397,7 +396,7 @@ export default async function AccountPage({
           <div className="mbr-sub">
             <ExportDataButton memberNo={profile?.member_no ?? null} />
           </div>
-          <p className="mbr-note mbr-sub--sm">
+          <p className="ls-note mbr-sub--sm">
             Erasure runs {erasureDays} days after departure. The ledger keeps its
             figures; your name comes off them.
           </p>

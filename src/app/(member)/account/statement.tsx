@@ -1,5 +1,5 @@
 import { LEDGER_KIND } from "@/lib/brand";
-import { Stat } from "@/components/ds";
+import { Stat, Table, tableColumns } from "@/components/ds";
 import { logDate, logDateYear, type Zone } from "@/lib/format";
 import { SettleCardButton } from "../portal/settle-card";
 
@@ -95,63 +95,49 @@ function withBalances(rows: StatementRow[], balanceCents: number): Line[] {
   return lines;
 }
 
+/* The kit's Table, grouped: one <tbody> per month under a rowgroup header,
+   and the month's net drawn as that group's summary row — the shape the kit
+   built `groups` for. */
 function StatementTable({ lines, zone }: { lines: Line[]; zone: Zone }) {
+  const columns = tableColumns<Line>([
+    { key: "date", label: "Date", width: 90, mono: true, render: (l) => logDate(l.row.created_at, zone) },
+    {
+      key: "entry",
+      label: "Entry",
+      render: (l) => (
+        <>
+          {l.row.memo ?? (LEDGER_KIND[l.row.kind] ?? l.row.kind).toUpperCase()}
+          {/* Tax is inside the amount, not beside it, so the line says so.
+              Charged only where a city has recorded a rate and the club
+              is registered to collect — see /bridge/tax. */}
+          {typeof l.row.tax_cents === "number" && l.row.tax_cents > 0 ? (
+            <span className="mbr-mono stm-memo">
+              INCL. ${(l.row.tax_cents / 100).toFixed(2)} TAX
+            </span>
+          ) : null}
+        </>
+      ),
+    },
+    { key: "kind", label: "Kind", width: 90, mono: true, render: (l) => (LEDGER_KIND[l.row.kind] ?? l.row.kind).toUpperCase() },
+    {
+      key: "amount",
+      label: "Amount",
+      numeric: true,
+      render: (l) => <span className={l.row.delta_cents < 0 ? "stm-neg" : "stm-pos"}>{signed(l.row.delta_cents)}</span>,
+    },
+    { key: "balance", label: "Balance", numeric: true, render: (l) => signed(l.balance) },
+  ]);
   return (
-    <div className="ls-table-wrap">
-      <table className="ls-table stm-table">
-        <thead>
-          <tr>
-            <th scope="col" className="stm-col">
-              Date
-            </th>
-            <th scope="col">Entry</th>
-            <th scope="col" className="stm-col">
-              Kind
-            </th>
-            <th scope="col" className="num--end">
-              Amount
-            </th>
-            <th scope="col" className="num--end">
-              Balance
-            </th>
-          </tr>
-        </thead>
-        {byMonth(lines, zone).map((m) => (
-          <tbody key={m.key}>
-            <tr className="stm-month">
-              <th scope="rowgroup" colSpan={3}>
-                {m.key}
-              </th>
-              <td className="num num--end">{signed(m.net)}</td>
-              <td></td>
-            </tr>
-            {m.lines.map(({ row, balance }) => (
-              <tr key={row.id}>
-                <td className="num">{logDate(row.created_at, zone)}</td>
-                <td>
-                  {row.memo ?? (LEDGER_KIND[row.kind] ?? row.kind).toUpperCase()}
-                  {/* Tax is inside the amount, not beside it, so the line says so.
-                      Charged only where a city has recorded a rate and the club
-                      is registered to collect — see /bridge/tax. */}
-                  {typeof row.tax_cents === "number" && row.tax_cents > 0 ? (
-                    <span className="mbr-mono stm-memo">
-                      INCL. ${(row.tax_cents / 100).toFixed(2)} TAX
-                    </span>
-                  ) : null}
-                </td>
-                <td className="num">{(LEDGER_KIND[row.kind] ?? row.kind).toUpperCase()}</td>
-                <td className="num num--end">
-                  <span className={row.delta_cents < 0 ? "stm-neg" : "stm-pos"}>
-                    {signed(row.delta_cents)}
-                  </span>
-                </td>
-                <td className="num num--end">{signed(balance)}</td>
-              </tr>
-            ))}
-          </tbody>
-        ))}
-      </table>
-    </div>
+    <Table<Line>
+      columns={columns}
+      rowKey={(l) => l.row.id}
+      groups={byMonth(lines, zone).map((m) => ({
+        key: m.key,
+        label: m.key,
+        rows: m.lines,
+        summary: { amount: signed(m.net) },
+      }))}
+    />
   );
 }
 
@@ -190,7 +176,7 @@ export function AccountStatement({
           <SettleCardButton amountLabel={money(balanceCents)} />
         </div>
       ) : balanceCents < 0 ? (
-        <p className="mbr-note mbr-sub--sm">
+        <p className="ls-note mbr-sub--sm">
           Settled at the gangway or by invoice — Shoreside posts payments.
         </p>
       ) : null}

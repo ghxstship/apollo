@@ -33,7 +33,7 @@
 .mbr-nav{display:flex;align-items:center;gap:4px;margin-inline-start:8px;min-width:0;flex:1 1 auto;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 18px,#000 calc(100% - 18px),transparent 100%)} /* ds-exempt: mask stencil — a mask reads alpha only, so #000 here means "fully opaque", not black. There is no colour decision to tokenise. */
 .mbr-nav::-webkit-scrollbar{display:none}
 .mbr-nav a{flex:none}
-.mbr-nav a{position:relative;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:8px 10px;border-radius:var(--radius-sharp);transition:color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
+.mbr-nav a{position:relative;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:8px 10px;border-radius:var(--radius-sharp);transition:color var(--dur-hover) var(--ease-out),background var(--dur-hover) var(--ease-out)}
 .mbr-nav a:hover{color:var(--text-1);background:var(--wash-ink)}
 /* Colour alone did not mark where you are — the gold step against --text-3 is
    one hue apart and gone entirely to a reader who cannot separate them. The
@@ -50,7 +50,7 @@
    of setting the height of the bar, and the labels below are single-line by
    construction. */
 .mbr-tabbar{display:none;position:fixed;inset-inline:0;bottom:0;z-index:300;align-items:flex-start;background:var(--surface-deep);border-top:1px solid var(--line-inverse-faint);padding:10px 8px calc(10px + env(safe-area-inset-bottom))}
-.mbr-tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text-inverse-3);text-decoration:none;padding:4px 0;transition:color var(--dur-1) var(--ease-swell)}
+.mbr-tab{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--text-inverse-3);text-decoration:none;padding:4px 0;transition:color var(--dur-hover) var(--ease-out)}
 /* The label span only — the icon span holds the unread badge, which hangs
    outside its box and must not be clipped with it. */
 .mbr-tab>span:not(.mbr-tab__ic){max-width:100%;font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -93,7 +93,7 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .hbr-live__row{display:flex;align-items:center;gap:12px;border:1px solid var(--line-faint);background:var(--surface-card);padding:12px 16px}
 .hbr-live__row b{font-family:var(--font-sans);font-weight:700;font-size:16px;flex:1}
 .hbr-links{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.hbr-link{display:flex;align-items:center;gap:10px;border:1px solid var(--line-faint);background:var(--surface-card);padding:14px 16px;text-decoration:none;color:inherit;transition:border-color var(--dur-1) var(--ease-swell)}
+.hbr-link{display:flex;align-items:center;gap:10px;border:1px solid var(--line-faint);background:var(--surface-card);padding:14px 16px;text-decoration:none;color:inherit;transition:border-color var(--dur-hover) var(--ease-out)}
 .hbr-link:hover{border-color:var(--line-strong)}
 .hbr-link b{font-size:var(--text-xs);font-weight:700}
 .hbr-link span{display:block;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3);margin-top:2px}
@@ -160,13 +160,10 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .wd-post__who span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3)}
 .wd-post__body{margin-top:14px;font-size:var(--text-sm);line-height:1.6;max-width:62ch;white-space:pre-wrap}
 .wd-post__acts{display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line-faint);align-items:center}
-.wd-hail{all:unset;font:var(--type-label);cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:var(--radius-pill);border:1px solid var(--line);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2);transition:border-color var(--dur-1) var(--ease-swell),color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
+.wd-hail{all:unset;font:var(--type-label);cursor:pointer;display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:var(--radius-pill);border:1px solid var(--line);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2);transition:border-color var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out),background var(--dur-hover) var(--ease-out)}
 .wd-hail:hover{border-color:var(--line-strong)}
 .wd-hail:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .wd-hail.on{border-color:var(--neon-cyan);color:var(--neon-cyan)}
-.wd-x{all:unset;cursor:pointer;margin-inline-start:auto;color:var(--text-3);font-size:var(--text-xs);padding:4px 8px}
-.wd-x:hover{color:var(--danger)}
-.wd-x:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .wd-cmt{display:flex;gap:10px;margin-top:14px}
 .wd-cmt__b{background:var(--surface-tint);border-radius:var(--radius-sharp);padding:10px 14px;font-size:var(--text-xs);flex:1}
 .wd-cmt__b b{font-weight:700;margin-right:6px}
@@ -178,7 +175,7 @@ a.mbr-plain,a.mbr-plain:hover{text-decoration:none;color:inherit}
 .chd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
 @media (max-width:960px){.chd-grid{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.chd-grid{grid-template-columns:1fr}}
-.chd-tile{all:unset;cursor:pointer;display:flex;flex-direction:column;border:1px solid var(--line-faint);background:var(--surface-card);transition:border-color var(--dur-1) var(--ease-swell)}
+.chd-tile{all:unset;cursor:pointer;display:flex;flex-direction:column;border:1px solid var(--line-faint);background:var(--surface-card);transition:border-color var(--dur-hover) var(--ease-out)}
 .chd-tile:hover{border-color:var(--line-strong)}
 .chd-tile:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .chd-tile__media{position:relative;display:block;aspect-ratio:4/3}
@@ -280,7 +277,7 @@ legend.you-h{padding-bottom:0;border-bottom:0}
   .you-col{margin-inline:0}
   .you-rail{display:flex;flex-direction:column;gap:2px;position:sticky;top:74px}
 }
-.you-rail a{font:700 var(--text-3xs)/1.4 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:7px 0 7px 10px;border-inline-start:1px solid var(--line-faint);transition:color var(--dur-1) var(--ease-swell),border-color var(--dur-1) var(--ease-swell)}
+.you-rail a{font:700 var(--text-3xs)/1.4 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:7px 0 7px 10px;border-inline-start:1px solid var(--line-faint);transition:color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out)}
 .you-rail a:hover{color:var(--text-1);border-inline-start-color:var(--line-strong);text-decoration:none}
 .you-rail a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
@@ -290,7 +287,7 @@ legend.you-h{padding-bottom:0;border-bottom:0}
 .dir{margin-top:0}
 .dir-count{margin-top:16px;text-transform:uppercase}
 .dir-list{display:flex;flex-direction:column;margin-top:6px}
-.dir-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:16px 2px;border-top:1px solid var(--line-faint);text-decoration:none;color:inherit;transition:background var(--dur-1) var(--ease-swell)}
+.dir-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:16px 2px;border-top:1px solid var(--line-faint);text-decoration:none;color:inherit;transition:background var(--dur-hover) var(--ease-out)}
 a.dir-row:hover,a.dir-row:hover *{text-decoration:none;color:inherit}
 a.dir-row:hover{background:var(--wash-ink)}
 a.dir-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
@@ -333,7 +330,7 @@ a.dir-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 
 /* — threads: the inbox — */
 .thr-list{display:flex;flex-direction:column;margin-top:22px}
-.thr-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:16px 2px;border-top:1px solid var(--line-faint);text-decoration:none;color:inherit;transition:background var(--dur-1) var(--ease-swell)}
+.thr-row{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:16px 2px;border-top:1px solid var(--line-faint);text-decoration:none;color:inherit;transition:background var(--dur-hover) var(--ease-out)}
 a.thr-row:hover,a.thr-row:hover *{text-decoration:none;color:inherit}
 a.thr-row:hover{background:var(--wash-ink)}
 a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
@@ -532,8 +529,6 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .dir-head__who{min-width:0}
 .dir-row__body{min-width:0;flex:1}
 /* The month band in the statement: a row group heading, not a data row. */
-.stm-month th{padding-top:28px;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-align:left}
-.stm-month:first-child th{padding-top:0}
 /* Everything older than the current month, folded away by default. */
 .stm-more{margin-top:32px}
 .stm-more summary{cursor:pointer;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep)}
@@ -611,14 +606,14 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
    keeps the row's dress and takes a hover rule, so the fact that it goes
    somewhere is drawn and not merely true. */
 a.wrd-item,a.wrd-item:hover{text-decoration:none;color:inherit}
-a.wrd-item{transition:border-color var(--dur-1) var(--ease-swell)}
+a.wrd-item{transition:border-color var(--dur-hover) var(--ease-out)}
 a.wrd-item:hover{border-color:var(--line-strong)}
 a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 /* — home: the first week — */
 .hbr-first{border:1px solid var(--line-strong);background:var(--surface-card);padding:18px 18px 8px}
 .hbr-first__head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:10px}
-.hbr-first__row{display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--line-faint);text-decoration:none;color:inherit;transition:background var(--dur-1) var(--ease-swell)}
+.hbr-first__row{display:grid;grid-template-columns:24px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-top:1px solid var(--line-faint);text-decoration:none;color:inherit;transition:background var(--dur-hover) var(--ease-out)}
 .hbr-first__row:hover,.hbr-first__row:hover *{text-decoration:none;color:inherit}
 .hbr-first__row:hover{background:var(--wash-ink)}
 .hbr-first__row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
@@ -668,7 +663,6 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
    h1, so a page that forgets it still lands on the rhythm. */
 .mbr-eyebrow+.mbr-h1{margin-top:6px}
 .mbr-h1{text-wrap:balance}
-.mbr-lede{margin-top:10px;font-size:var(--text-sm);color:var(--text-2);max-width:56ch}
 .mbr-eyebrow--quiet{color:var(--text-3)}
 .mbr-eyebrow--block{display:block}
 
@@ -685,28 +679,14 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
    tall, under the touch minimum. The active state was colour alone (cyan
    against ivory-3), so the rule at the top of the bar carries it in shape too,
    and it slides between tabs rather than appearing. The badge fades in over
-   --dur-1 so a count arriving mid-scroll does not pop. */
+   --dur-enter so a count arriving mid-scroll does not pop. */
 .mbr-tab{position:relative;min-height:44px;justify-content:center;-webkit-tap-highlight-color:transparent}
-.mbr-tab__ic{transition:transform var(--dur-1) var(--ease-swell)}
+.mbr-tab__ic{transition:transform var(--dur-hover) var(--ease-out)}
 .mbr-tab:active .mbr-tab__ic{transform:scale(.9)}
-.mbr-tab:before{content:"";position:absolute;top:-10px;inset-inline-start:50%;width:24px;height:2px;margin-inline-start:-12px;background:var(--neon-cyan);transform:scaleX(0);transition:transform var(--dur-2) var(--ease-out)}
+.mbr-tab:before{content:"";position:absolute;top:-10px;inset-inline-start:50%;width:24px;height:2px;margin-inline-start:-12px;background:var(--neon-cyan);transform:scaleX(0);transition:transform var(--dur-move) var(--ease-move)}
 .mbr-tab[aria-current="page"]:before{transform:scaleX(1)}
-.mbr-worddot{animation:ls-fade var(--dur-1) var(--ease-swell) backwards}
+.mbr-worddot{animation:ls-fade var(--dur-enter) var(--ease-enter) backwards}
 
-/* — a line in a review: what it is on the left, the figure on the right.
-   The checkout, the daybed, the improve and the release dialogs each carried
-   this as a spread object; the total row and the first row were variations
-   spelled out inline every time. — */
-.mbr-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid var(--line-faint)}
-.mbr-row--first{border-top:0}
-.mbr-row--center{align-items:center}
-.mbr-row--total{border-top-color:var(--line-strong)}
-.mbr-row__val{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
-.mbr-row--total .mbr-row__val{font-size:var(--text-sm);color:var(--text-1)}
-.mbr-row__val--up{color:var(--laurel)}
-.mbr-row__sub{display:block;font-size:12px;color:var(--text-3)}
-.mbr-row__dim{color:var(--text-2)}
-.mbr-row__pair{display:flex;gap:6px;flex-wrap:wrap}
 /* The body of a review dialog: --text-sm throughout, a lede above the rows
    and a policy note under them. */
 .mbr-dlg{font-size:var(--text-sm)}
@@ -718,19 +698,11 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
    of these was the same three declarations written in --siren or --danger by
    whichever hand wrote the file. The status hue is --danger throughout, as
    the kit's own .ls-field__error sets it. — */
-.mbr-alert{margin:8px 0 0;font-size:var(--text-xs);color:var(--danger);line-height:1.5}
-.mbr-alert--inline{margin:0;font-size:12px}
 .mbr-status{margin:8px 0 0;font-size:12px;color:var(--text-2)}
 .mbr-status--inline{margin:0}
-.mbr-note{margin:6px 0 0;font-size:12px;color:var(--text-3);max-width:46ch}
 .mbr-note--lg{font-size:var(--text-sm);color:var(--text-2);max-width:52ch}
-/* .you-row p is (0,1,1) and paints --text-3 at --text-2xs; a refusal inside a
-   row has to outrank it or it reads as a caption. */
-.you-row p.mbr-alert{margin-top:6px;font-size:var(--text-xs);color:var(--danger)}
 
 /* — the small boxes every surface draws — */
-.mbr-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.mbr-acts--end{justify-content:flex-end}
 .mbr-acts--top{margin-top:16px}
 .mbr-stack{display:flex;flex-direction:column;gap:10px}
 .mbr-stack--wide{gap:14px}
@@ -759,7 +731,6 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .mbr-err{padding-block:96px}
 .mbr-err h1{margin-top:12px}
 .mbr-err__lede{margin-top:12px;max-width:460px}
-.mbr-err__acts{margin-top:24px;display:flex;gap:16px;flex-wrap:wrap}
 .mbr-err__ref{margin-top:24px;color:var(--text-3)}
 
 /* — home — */
@@ -777,7 +748,7 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .wrd-head--first{margin-top:8px}
 .wrd-head__count{font-size:var(--text-sm);color:var(--text-2)}
 .wrd-head__acts{display:flex;gap:8px;flex-wrap:wrap}
-.wrd-sweep[aria-busy="true"] .wrd-list{opacity:.55;transition:opacity var(--dur-2) var(--ease-swell)}
+.wrd-sweep[aria-busy="true"] .wrd-list{opacity:.55;transition:opacity var(--dur-enter) var(--ease-out)}
 
 /* — tonight: a table for six — */
 .tbl-list{display:grid;gap:14px;margin-top:24px}
@@ -789,7 +760,7 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .tbl-card__note{margin-top:28px}
 /* The badge changes state as the seat is taken, confirmed, let go — the
    optimistic reading and the server's answer both land here. */
-.tbl-card__state .ls-badge{animation:ls-fade var(--dur-2) var(--ease-swell) backwards}
+.tbl-card__state .ls-badge{animation:ls-fade var(--dur-enter) var(--ease-enter) backwards}
 
 /* — passes — */
 .voy-cabin{margin-top:14px;width:100%}
@@ -824,7 +795,7 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .you-sec--pad{padding:18px}
 .you-sec--hold{margin-top:0;border-color:var(--brass-deep)}
 .you-sec--closed{margin-top:0;border-color:var(--line-strong)}
-.you-sec>.mbr-lede{margin-top:0}
+.you-sec>.ls-lede{margin-top:0}
 .you-who{display:flex;align-items:center;gap:14px;min-width:0}
 .you-handle{font-size:var(--text-xs);color:var(--text-2);margin-top:2px}
 .you-row--flush{padding-inline:0}
@@ -847,8 +818,6 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .acc-opt{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 0;border-top:1px solid var(--line-faint)}
 .acc-opt__line{display:block;font-size:12px;color:var(--text-2);margin-top:2px}
 .acc-receipt{font-size:var(--text-xs);color:var(--text-link)}
-.stm-table{min-width:640px}
-.stm-col{width:90px}
 .stm-memo{display:block;font-size:var(--text-xs);color:var(--text-3)}
 .stm-neg{color:var(--siren)}
 .stm-pos{color:var(--laurel)}
@@ -895,7 +864,6 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .wd-col{max-width:720px;margin-inline:auto;display:flex;flex-direction:column;gap:var(--space-5)}
 .wd-closed{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);padding:16px 18px;font-size:var(--text-sm);color:var(--text-2)}
 .wd-compose{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.wd-compose__field{resize:vertical;background:transparent;border:none;font-family:var(--font-sans);font-weight:400;line-height:1.55;color:var(--text-1);min-height:56px}
 .wd-compose__pick{min-width:200px}
 .wd-attach{font:700 9px/1 var(--font-mono);letter-spacing:var(--tracking-dense);color:var(--text-3);min-height:24px;white-space:nowrap}
 .wd-reply{font:700 10px/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-2);min-height:24px;white-space:nowrap}
@@ -920,3 +888,19 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 /* — agreements: the line under a title, and the one that says in force — */
 .agr-line{display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:2px}
 .agr-line--force{color:var(--laurel)}
+
+/* ── DS convergence 2026-09-05 ─────────────────────────────────────────────
+   APPEND-ONLY BLOCK. The kit landed .ls-lede, .ls-note, .ls-acts, Notice,
+   ReviewList and OptionRow, and this sheet stopped restating them: .mbr-lede,
+   .mbr-note, .mbr-alert, .mbr-acts and .mbr-row are gone and their callers
+   read the kit. .mbr-note--lg / --mid stay as modifiers on .ls-note and
+   .mbr-acts--top as the bare top margin it always was. What follows is
+   placement the kit does not own — tokens only. */
+.mbr-sub--xs{margin-top:var(--space-2)}
+.mbr-sub--md{margin-top:var(--space-3)}
+/* The sign-out form sits in the top bar's flex row beside an icon button; as a
+   block it would carry a line box's descender and sit a hair low. */
+.mbr-top__meta>form{display:inline-flex}
+/* The composer's field is the kit Textarea, drawn borderless inside the
+   composer's own card. */
+.wd-compose__field .ls-textarea{resize:vertical;background:transparent;border:none;padding:0;min-height:var(--space-14)}

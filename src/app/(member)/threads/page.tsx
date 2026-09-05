@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Avatar, Icon, StateBlock } from "@/components/ds";
+import { Avatar, Icon, LinkButton, StateBlock } from "@/components/ds";
 import { SETTING_LABEL } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 import { getMember, type DirectoryMember, type Profile } from "../data";
@@ -141,9 +141,9 @@ export default async function ThreadsPage() {
           title="Nothing said yet."
           detail="Crew threads arrive with your next pass. Until then, the roster is the way in."
           action={
-            <Link href="/directory" className="ls-btn ls-btn--outline ls-btn--sm">
+            <LinkButton href="/directory" variant="outline" size="sm">
               Open the directory
-            </Link>
+            </LinkButton>
           }
         />
       ) : (

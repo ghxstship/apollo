@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LinkButton } from "@/components/ds";
 
 export const metadata: Metadata = { title: "Standing" };
 
@@ -17,20 +17,20 @@ export default function StandingPage() {
     <div className="ls-fade">
       <span className="mbr-eyebrow">Membership · the card and the record</span>
       <h1 className="mbr-h1">Standing.</h1>
-      <p className="mbr-lede">
+      <p className="ls-lede mbr-sub--sm">
         Your standing lives on your page now — the rotating code, the lifecycle
         and your pause days, in one place with the rest of your papers.
       </p>
-      <div className="mbr-acts mbr-sub--lg">
-        <Link href="/you#you-standing" className="ls-btn ls-btn--gold ls-btn--sm">
+      <div className="ls-acts mbr-sub--lg">
+        <LinkButton href="/you#you-standing" variant="gold" size="sm">
           Standing, on You
-        </Link>
-        <Link href="/card" className="ls-btn ls-btn--outline ls-btn--sm">
+        </LinkButton>
+        <LinkButton href="/card" variant="outline" size="sm">
           Member Card
-        </Link>
-        <Link href="/membership" className="ls-btn ls-btn--outline ls-btn--sm">
+        </LinkButton>
+        <LinkButton href="/membership" variant="outline" size="sm">
           What the club sells
-        </Link>
+        </LinkButton>
       </div>
     </div>
   );

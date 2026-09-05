@@ -131,11 +131,12 @@ export function PassageLog({
         />
       ) : (
         <>
-          <KitPassageLog
-            figures={figures}
-            since={log?.firstSailAt ? logDate(log.firstSailAt, zone) : undefined}
-            style={{ marginTop: 12 }}
-          />
+          <div className="mbr-sub--md">
+            <KitPassageLog
+              figures={figures}
+              since={log?.firstSailAt ? logDate(log.firstSailAt, zone) : undefined}
+            />
+          </div>
           <div className="plog-marks">
             <span className="mbr-eyebrow plog-sub">
               {LOGBOOK.marks} {LOGBOOK.markVerb}

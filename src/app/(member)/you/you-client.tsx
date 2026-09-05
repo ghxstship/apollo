@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { MAILBOX, PLACE, SURFACES } from "@/lib/brand";
-import { Button, Checkbox, Dialog, Icon, Input, Select, Switch, Textarea, Toast } from "@/components/ds";
+import { Button, Checkbox, Dialog, Icon, Input, LinkButton, Notice, Select, Switch, Table, Textarea, Toast, type TableColumn } from "@/components/ds";
 import { BIO_MAX, INTERESTS } from "./interests";
 import type { NotificationPrefs, PrefCategory, PrefChannel } from "./prefs";
 import {
@@ -116,7 +115,7 @@ export function ProfileForm({
           aria-label="List me in the directory"
         />
       </div>
-      <div className="mbr-acts mbr-acts--end mbr-acts--top">
+      <div className="ls-acts ls-acts--end mbr-acts--top">
         <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
           {pending ? "Logging" : "Log the changes"}
         </Button>
@@ -192,73 +191,76 @@ export function NotificationMatrix({
   const [chans, setChans] = React.useState(prefs.channels);
   const smsUsable = phoneVerified;
 
+  /* The kit's Table: the row heading is the notice with its own switch
+     (`rowHeader` renders it as <th scope="row">), the column headings carry
+     the channel switches, and every cell is a Mark. */
+  type PrefRow = (typeof PREF_ROWS)[number];
+  const columns: TableColumn<PrefRow>[] = [
+    {
+      key: "notice",
+      label: <span className="ls-visually-hidden">Notice</span>,
+      render: (r) => (
+        <div className="you-matrix__row">
+          <Switch
+            name={r.key}
+            checked={cats[r.key]}
+            label=""
+            aria-label={r.label}
+            onChange={(e) => setCats((prev) => ({ ...prev, [r.key]: e.target.checked }))}
+          />
+          <span>
+            <b>{r.label}</b>
+            <span className="you-matrix__line">{r.line}</span>
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "inapp",
+      label: (
+        <>
+          <span className="you-matrix__col">In app</span>
+          <span className="you-matrix__always">Always</span>
+        </>
+      ),
+      render: (r) => <Mark on={cats[r.key]} what={`${r.label} in the Inbox`} />,
+    },
+    ...PREF_COLUMNS.map((c): TableColumn<PrefRow> => {
+      const disabled = c.key === "sms" && !smsUsable;
+      return {
+        key: c.key,
+        label: (
+          <>
+            <span className="you-matrix__col">{c.label}</span>
+            <Switch
+              name={`channel_${c.key}`}
+              checked={chans[c.key]}
+              disabled={disabled}
+              label=""
+              aria-label={`${c.label} — every notice on this channel`}
+              onChange={(e) => setChans((prev) => ({ ...prev, [c.key]: e.target.checked }))}
+            />
+            {disabled ? (
+              <input type="hidden" name={`channel_${c.key}`} value={chans[c.key] ? "on" : "off"} />
+            ) : null}
+          </>
+        ),
+        render: (r) => <Mark on={!disabled && cats[r.key] && chans[c.key]} what={`${r.label} by ${c.label.toLowerCase()}`} />,
+      };
+    }),
+  ];
+
   return (
     <form action={formAction}>
       <div className="you-matrix-wrap">
-        <table className="you-matrix">
-          <thead>
-            <tr>
-              <th scope="col">
-                <span className="ls-visually-hidden">Notice</span>
-              </th>
-              <th scope="col">
-                <span className="you-matrix__col">In app</span>
-                <span className="you-matrix__always">Always</span>
-              </th>
-              {PREF_COLUMNS.map((c) => {
-                const disabled = c.key === "sms" && !smsUsable;
-                return (
-                  <th scope="col" key={c.key}>
-                    <span className="you-matrix__col">{c.label}</span>
-                    <Switch
-                      name={`channel_${c.key}`}
-                      checked={chans[c.key]}
-                      disabled={disabled}
-                      label=""
-                      aria-label={`${c.label} — every notice on this channel`}
-                      onChange={(e) => setChans((prev) => ({ ...prev, [c.key]: e.target.checked }))}
-                    />
-                    {disabled ? (
-                      <input type="hidden" name={`channel_${c.key}`} value={chans[c.key] ? "on" : "off"} />
-                    ) : null}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {PREF_ROWS.map((r) => (
-              <tr key={r.key}>
-                <th scope="row">
-                  <div className="you-matrix__row">
-                    <Switch
-                      name={r.key}
-                      checked={cats[r.key]}
-                      label=""
-                      aria-label={r.label}
-                      onChange={(e) => setCats((prev) => ({ ...prev, [r.key]: e.target.checked }))}
-                    />
-                    <span>
-                      <b>{r.label}</b>
-                      <span className="you-matrix__line">{r.line}</span>
-                    </span>
-                  </div>
-                </th>
-                <td>
-                  <Mark on={cats[r.key]} what={`${r.label} in the Inbox`} />
-                </td>
-                {PREF_COLUMNS.map((c) => {
-                  const usable = c.key !== "sms" || smsUsable;
-                  return (
-                    <td key={c.key}>
-                      <Mark on={usable && cats[r.key] && chans[c.key]} what={`${r.label} by ${c.label.toLowerCase()}`} />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table<PrefRow>
+          className="you-matrix"
+          columns={columns}
+          rows={PREF_ROWS}
+          rowKey={(r) => r.key}
+          rowHeader="notice"
+          minWidth={520}
+        />
       </div>
       {!smsUsable ? (
         <p className="you-matrix__why">
@@ -268,9 +270,9 @@ export function NotificationMatrix({
       <div className="you-row">
         <div>
           {state.error ? (
-            <p className="mbr-alert" role="alert">
+            <Notice tone="danger" compact className="mbr-sub--xs">
               {state.error}
-            </p>
+            </Notice>
           ) : null}
         </div>
         <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
@@ -319,9 +321,9 @@ export function ClosedPlaceNotice() {
             they will open it again.
           </p>
         </div>
-        <a className="ls-btn ls-btn--outline ls-btn--sm" href={`mailto:${MAILBOX.shore}?subject=Coming%20back%20aboard`}>
+        <LinkButton variant="outline" size="sm" href={`mailto:${MAILBOX.shore}?subject=Coming%20back%20aboard`}>
           Hail Shoreside
-        </a>
+        </LinkButton>
       </div>
     </div>
   );
@@ -344,9 +346,9 @@ export function ClubHoldNotice() {
             yours. Your log, your ledger and what you owe stay open.
           </p>
         </div>
-        <a className="ls-btn ls-btn--outline ls-btn--sm" href={`mailto:${MAILBOX.shore}?subject=Lifting%20the%20hold`}>
+        <LinkButton variant="outline" size="sm" href={`mailto:${MAILBOX.shore}?subject=Lifting%20the%20hold`}>
           Hail Shoreside
-        </a>
+        </LinkButton>
       </div>
     </div>
   );
@@ -367,9 +369,9 @@ export function DuesHoldNotice() {
             ledger and the passes you hold stay as they are.
           </p>
         </div>
-        <Link href="/account" className="ls-btn ls-btn--outline ls-btn--sm">
+        <LinkButton href="/account" variant="outline" size="sm">
           Settle on Account
-        </Link>
+        </LinkButton>
       </div>
     </div>
   );
@@ -403,9 +405,9 @@ export function ResumeBanner() {
             Your dues are on your <a href="/account">account page</a>.
           </p>
           {error ? (
-            <p className="mbr-alert" role="alert">
+            <Notice tone="danger" compact className="mbr-sub--xs">
               {error}
-            </p>
+            </Notice>
           ) : null}
         </div>
         <Button
@@ -503,7 +505,7 @@ export function Offboarding({
       {/* Wrapping. Nowrap put "Depart the club" 9.7px past a 375px viewport,
           which is enough to make the page scroll sideways and the phone zoom
           out — the same defect the Open Deck bylines had. */}
-      <div className="you-pair mbr-acts">
+      <div className="you-pair ls-acts">
         {status !== "paused" ? (
           <Button variant="ghost" size="sm" onClick={() => setMode("pause")}>
             Pause membership
@@ -556,9 +558,9 @@ export function Offboarding({
           turned.
         </p>
         {error && mode === "pause" ? (
-          <p role="alert" className="mbr-alert">
+          <Notice tone="danger" compact className="mbr-sub--xs">
             {error}
-          </p>
+          </Notice>
         ) : null}
       </Dialog>
       <Dialog
@@ -618,9 +620,9 @@ export function Offboarding({
           <p className="mbr-sub--sm">No passes to square.</p>
         )}
         {error && mode === "depart" ? (
-          <p role="alert" className="mbr-alert">
+          <Notice tone="danger" compact className="mbr-sub--xs">
             {error}
-          </p>
+          </Notice>
         ) : null}
       </Dialog>
       {toast ? (

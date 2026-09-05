@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Switch } from "@/components/ds";
+import { Notice, Switch } from "@/components/ds";
 import { setOnCamera } from "./actions";
 
 /* The show is the point, so the default is in — but the choice is standing,
@@ -30,9 +30,9 @@ export function CameraConsent({ onCamera }: { onCamera: boolean }) {
         {/* The switch used to spring back in silence when the write was
             refused — a consent control that looks like it took and did not. */}
         {failed ? (
-          <p className="mbr-alert" role="alert">
+          <Notice tone="danger" compact className="mbr-sub--xs">
             {failed}
-          </p>
+          </Notice>
         ) : null}
       </div>
       <Switch

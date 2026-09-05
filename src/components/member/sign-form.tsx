@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Checkbox, Input } from "@/components/ds";
+import { Button, Checkbox, Input, Radio, TextButton } from "@/components/ds";
 
 /* Signing, to WCAG 2.2 AA.
 
@@ -176,26 +176,22 @@ export function SignForm({
       <fieldset className="sgn-field">
         <legend>How would you like to sign?</legend>
         <div className="sgn-choices">
-          <label className="sgn-choice">
-            <input
-              type="radio"
-              name="signature-kind"
-              value="typed"
-              checked={kind === "typed"}
-              onChange={() => setKind("typed")}
-            />
-            <span>Type my name</span>
-          </label>
-          <label className="sgn-choice">
-            <input
-              type="radio"
-              name="signature-kind"
-              value="drawn"
-              checked={kind === "drawn"}
-              onChange={() => setKind("drawn")}
-            />
-            <span>Draw it</span>
-          </label>
+          <Radio
+            className="sgn-choice"
+            name="signature-kind"
+            value="typed"
+            checked={kind === "typed"}
+            onChange={() => setKind("typed")}
+            label="Type my name"
+          />
+          <Radio
+            className="sgn-choice"
+            name="signature-kind"
+            value="drawn"
+            checked={kind === "drawn"}
+            onChange={() => setKind("drawn")}
+            label="Draw it"
+          />
         </div>
       </fieldset>
 
@@ -230,7 +226,7 @@ export function SignForm({
               Clear
             </Button>
             <span className="ls-mono-data sgn-draw__alt">
-              Prefer the keyboard? <button type="button" className="sgn-link" onClick={() => setKind("typed")}>Type your name instead</button>
+              Prefer the keyboard? <TextButton size="sm" className="sgn-link" onClick={() => setKind("typed")}>Type your name instead</TextButton>
             </span>
           </div>
         </div>

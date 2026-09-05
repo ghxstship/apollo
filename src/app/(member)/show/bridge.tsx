@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Select } from "@/components/ds";
+import { Button, Notice, Select } from "@/components/ds";
 import {
   DECK_FLAGS,
   DECK_STATES,
@@ -41,7 +41,7 @@ export function SignalFlags({
           const flag = DECK_FLAGS[s];
           const isFlying = flying === s;
           return (
-            <button
+            <button /* ds-exempt: a signal flag is a drawn mark with its name and caption beneath; the kit has no tile-shaped toggle, and a Button's pill face cannot carry the flag */
               key={s}
               type="button"
               className={[
@@ -52,7 +52,6 @@ export function SignalFlags({
               ]
                 .filter(Boolean)
                 .join(" ")}
-              style={{ background: "none", border: 0, padding: 0, cursor: "pointer", textAlign: "start" }}
               aria-pressed={isFlying}
               disabled={pending}
               onClick={() => raise(isFlying ? null : s)}
@@ -67,9 +66,9 @@ export function SignalFlags({
         })}
       </div>
       {error ? (
-        <p className="shw-note" role="alert" style={{ color: "var(--danger)" }}>
+        <Notice tone="danger" compact>
           {error}
-        </p>
+        </Notice>
       ) : null}
       <p className="shw-note">
         One flag flies at a time — pressing the flying one lowers it. Geometry
@@ -115,7 +114,7 @@ export function PodQueue({
     });
 
   const enqueue = candidates.length ? (
-    <div className="shw-acts" style={{ alignItems: "end", gap: 10 }}>
+    <div className="shw-acts shw-acts--field">
       <Select
         label="Add a guest"
         value={pick}
@@ -143,9 +142,9 @@ export function PodQueue({
         <p className="shw-note">Nobody in the queue. The Pod opens at 12:45.</p>
         {enqueue}
         {error ? (
-          <p className="shw-note" role="alert" style={{ color: "var(--danger)" }}>
+          <Notice tone="danger" compact>
             {error}
-          </p>
+          </Notice>
         ) : null}
       </>
     );
@@ -201,9 +200,9 @@ export function PodQueue({
       </div>
       {enqueue}
       {error ? (
-        <p className="shw-note" role="alert" style={{ color: "var(--danger)" }}>
+        <Notice tone="danger" compact>
           {error}
-        </p>
+        </Notice>
       ) : null}
       <p className="shw-note">
         Blur requested is set from the Preference Sheet and cannot be overridden
@@ -247,13 +246,13 @@ export function BoardControls({ episodeId, empty }: { episodeId: string; empty: 
         Issue the envelopes
       </Button>
       {error ? (
-        <p className="shw-note" role="alert" style={{ color: "var(--danger)" }}>
+        <Notice tone="danger" compact>
           {error}
-        </p>
+        </Notice>
       ) : said ? (
-        <p className="shw-note" role="status">
+        <Notice tone="positive" compact>
           {said}
-        </p>
+        </Notice>
       ) : null}
     </div>
   );

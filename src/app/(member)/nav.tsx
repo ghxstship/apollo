@@ -268,7 +268,7 @@ export function MemberTopBar({
               BANNED_TERMS, and this one line put it on all sixteen member
               surfaces. The column is not touched — it is on their papers. */}
           {memberNo ? <span className="mbr-top__no">{memberMark(memberNo)}</span> : null}
-          <SignOutForm style={{ display: "inline-flex" }}>
+          <SignOutForm>
             <IconButton label="Sign out" variant="ghost" size="sm" type="submit">
               <Icon name="LogOut" size={16} />
             </IconButton>

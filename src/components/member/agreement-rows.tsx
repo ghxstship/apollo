@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Badge } from "@/components/ds";
+import { Badge, LinkButton } from "@/components/ds";
 import { logDate, logDateYear } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 
@@ -75,9 +74,9 @@ export function AgreementRow({
           {r.expires_at ? ` · UNTIL ${logDateYear(r.expires_at, zone)}` : ""}
         </span>
       ) : (
-        <Link href={`/agreements/${r.document_code}`} className="ls-btn ls-btn--sm">
+        <LinkButton href={`/agreements/${r.document_code}`} variant="ghost" size="sm">
           Read and sign
-        </Link>
+        </LinkButton>
       )}
     </li>
   );

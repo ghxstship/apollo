@@ -129,10 +129,11 @@ export default async function DirectoryPage({
       </p>
       <DirectoryList members={members} cities={cityOptions} total={total} />
       {more ? (
-        <div className="mbr-acts mbr-sub--lg">
+        <div className="ls-acts mbr-sub--lg">
           <Link
             href={`/directory?show=${pages + 1}`}
             scroll={false}
+            /* ds-exempt: scroll={false} keeps the reader's place on "Show more"; LinkButton does not forward next/link's scroll prop */
             className="ls-btn ls-btn--outline ls-btn--sm"
           >
             Show more

@@ -105,7 +105,7 @@ export default async function MemberCardPage() {
           <span className="mbr-eyebrow mbr-eyebrow--block mbr-eyebrow--quiet">
             Subscribe to your season
           </span>
-          <p className="mbr-lede">
+          <p className="ls-lede mbr-sub--sm">
             Every episode you are confirmed on, in your own calendar, kept current as the
             season moves. Subscribe once — new boarding passes arrive on their own.
           </p>

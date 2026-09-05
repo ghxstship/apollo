@@ -183,27 +183,6 @@
 .vet-funnel__bar { height: 14px; background: var(--surface-sunken); }
 .vet-funnel__bar--seated { background: var(--accent); }
 
-.vet-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-
-/* A selectable chip. The selected state is a border and a weight change, never
-   a fill — a filled chip at 12px in the accent is a button, and these are
-   answers. */
-.vet-chip {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--text-muted);
-  padding: 7px 13px;
-  font: 500 var(--text-xs)/1 var(--font-body);
-  cursor: pointer;
-}
-.vet-chip[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--text-body);
-  font-weight: 700;
-}
-.vet-chip:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-
 .vet-grid {
   display: grid;
   gap: var(--space-6);
@@ -213,23 +192,8 @@
 
 .vet-stack { display: flex; flex-direction: column; gap: var(--space-5); }
 
-/* The stance control: three radio-shaped buttons in a row, the chosen one
-   carrying its own tone. Not a select — a boundary is read at a glance by the
-   person setting it and by the crew reading it back. */
+/* The three stances are the kit's Tag; this is only the row they sit in. */
 .vet-stances { display: flex; gap: var(--space-1); flex: none; }
-.vet-stance {
-  border: 1px solid var(--border-subtle);
-  background: transparent;
-  border-radius: var(--radius-sm);
-  padding: 5px 9px;
-  font: var(--type-label);
-  letter-spacing: var(--tracking-dense);
-  text-transform: uppercase;
-  color: var(--text-faint);
-  cursor: pointer;
-}
-.vet-stance[aria-pressed="true"] { border-color: currentColor; }
-.vet-stance:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 
 .vet-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
@@ -237,3 +201,9 @@
    cleared it stops mattering to the person reading. */
 .vet-whose{margin-inline-start:auto;padding-inline-end:12px;font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
 .vet-standing{margin-top:12px;font-size:var(--text-xs);color:var(--text-2);max-width:52ch}
+
+/* — DS convergence 2026-09-05. The seat and drink chips and the stance buttons
+   are the kit's Tag now (laid out by .ls-inline / .vet-stances), and the
+   refusal and receipt under the sheet are Notice. What is left is placement. — */
+.vet-note--lead { margin-bottom: var(--space-4); }
+.vet-grid__span { grid-column: 1 / -1; }

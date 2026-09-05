@@ -124,7 +124,7 @@ export default async function ContestPage({
       </span>
       <h1 className="mbr-h1">{contest.title}</h1>
       {contest.blurb ? (
-        <p className="mbr-lede">
+        <p className="ls-lede mbr-sub--sm">
           {contest.blurb}
         </p>
       ) : null}
@@ -148,16 +148,16 @@ export default async function ContestPage({
       </div>
 
       {contest.prize ? (
-        <p className="mbr-lede">{contest.prize}</p>
+        <p className="ls-lede mbr-sub--sm">{contest.prize}</p>
       ) : null}
 
       {open && !closed && onHold ? (
-        <p className="mbr-lede">
+        <p className="ls-lede mbr-sub--sm">
           Entries wait while your membership is paused. Resume it on the You
           page and this contest opens back up.
         </p>
       ) : open && !closed && !mayEnter && !entered ? (
-        <p className="mbr-lede">
+        <p className="ls-lede mbr-sub--sm">
           This one is the crew&rsquo;s — it counts{" "}
           {sailing ? (
             <Link href={`/episodes/${sailing.slug}`} className="mbr-plain">
@@ -172,7 +172,7 @@ export default async function ContestPage({
         <div className="mbr-sub--lg">
           <ContestEntry contestId={contest.id} slug={contest.slug} entered={entered} />
           {!entered ? (
-            <p className="mbr-note mbr-line">
+            <p className="ls-note mbr-line">
               Entering counts only the episodes inside the window. Nothing before it.
             </p>
           ) : null}
@@ -184,7 +184,7 @@ export default async function ContestPage({
           {contest.status === "settled" ? "The result" : "Standing so far"}
         </span>
         {standing.length === 0 ? (
-          <p className="mbr-note mbr-note--lg">
+          <p className="ls-note mbr-note--lg mbr-line">
             No one has entered yet.
           </p>
         ) : (
@@ -198,7 +198,7 @@ export default async function ContestPage({
           </div>
         )}
         {contest.status !== "settled" ? (
-          <p className="mbr-note mbr-sub--sm">
+          <p className="ls-note mbr-sub--sm">
             Live from completed episodes inside the window. Final once the Bridge settles it.
           </p>
         ) : null}

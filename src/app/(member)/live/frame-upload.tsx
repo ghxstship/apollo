@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button, Input } from "@/components/ds";
+import { Button, Input, Notice } from "@/components/ds";
 import { uploadFrame } from "./actions";
 
 /* One frame at a time, straight to the Bridge's queue. No local queue here —
@@ -56,9 +56,9 @@ export function FrameUpload({ episodeId }: { episodeId: string }) {
         </Button>
       </div>
       {error ? (
-        <p role="alert" className="mbr-alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {error}
-        </p>
+        </Notice>
       ) : null}
       {sent ? (
         <p role="status" className="mbr-status">

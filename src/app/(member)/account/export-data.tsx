@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Button } from "@/components/ds";
+import { Button, Notice } from "@/components/ds";
 import { exportMyData } from "./export-actions";
 
 /* — The member's record, as a file. The server action returns the JSON; the
@@ -37,14 +37,14 @@ export function ExportDataButton({ memberNo }: { memberNo: string | null }) {
   };
 
   return (
-    <div className="mbr-acts">
+    <div className="ls-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={download}>
         {pending ? "Gathering it…" : "Export my data"}
       </Button>
       {error ? (
-        <span role="alert" className="mbr-alert mbr-alert--inline">
+        <Notice tone="danger" compact>
           {error}
-        </span>
+        </Notice>
       ) : done ? (
         <span role="status" className="mbr-status mbr-status--inline">
           Saved as JSON.

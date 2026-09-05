@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Badge, Card, Icon, Stat, StateBlock } from "@/components/ds";
+import { Badge, Card, Icon, LinkButton, Stat, StateBlock } from "@/components/ds";
 import { CURRENCY, knots, LOGBOOK, PLACE, SURFACES } from "@/lib/brand";
 import { logDate, logMeta, price } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
@@ -218,12 +218,12 @@ async function HomeBody() {
             footer={
               <>
                 <Badge tone="positive">Aboard</Badge>
-                <Link
+                <LinkButton
                   href="/passes"
-                  className="ls-btn ls-btn--ghost ls-btn--sm ls-btn--inverse"
+                  variant="ghost" size="sm" inverse
                 >
                   Passes <Icon name="ArrowUpRight" size={14} />
-                </Link>
+                </LinkButton>
               </>
             }
           >
@@ -238,9 +238,9 @@ async function HomeBody() {
             action={
               /* The destination's NAME, as the nav sets it — /passes was
                  reached under three different labels across two pages. */
-              <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
+              <LinkButton href="/passes" variant="outline" size="sm">
                 Passes
-              </Link>
+              </LinkButton>
             }
           />
         )}

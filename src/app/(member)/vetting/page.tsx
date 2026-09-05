@@ -155,7 +155,7 @@ export default async function VettingPage() {
       <div>
         <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
         <h1 className="mbr-h1">Vetting.</h1>
-        <p className="vet-note" style={{ marginTop: 10 }}>
+        <p className="vet-note mbr-sub--sm">
           Every sale passes the ratio gate, capacity is shown by segment and never
           as one number, and a decline is final and unexplained.
         </p>
@@ -167,7 +167,7 @@ export default async function VettingPage() {
       {mySegment && sailing ? (
         <section className="mbr-sec">
           <div className="vet-panel" style={{ maxWidth: 420 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <div className="mbr-spread">
               <span className="vet-eyebrow" style={{ color: "var(--text-accent)" }}>
                 Accepted · {sailing.title}
               </span>
@@ -299,7 +299,7 @@ export default async function VettingPage() {
 
       <section className="mbr-sec">
         <span className="mbr-eyebrow">Preference Sheet</span>
-        <p className="vet-note" style={{ marginBottom: 16 }}>
+        <p className="vet-note vet-note--lead">
           Three parts — drinks, boundaries, green and red flags. Answers are
           never shown to other guests.
         </p>

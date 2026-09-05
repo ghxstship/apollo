@@ -83,7 +83,7 @@ export function InstallPrompt() {
             <b>Add to your deck</b>
             <p>The club on your home screen — no store, no download, works past the breakwater.</p>
           </div>
-          <div className="mbr-acts">
+          <div className="ls-acts">
             <Button variant="outline" size="sm" onClick={dismiss}>
               Not now
             </Button>

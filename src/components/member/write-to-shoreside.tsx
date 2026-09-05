@@ -2,6 +2,7 @@
 
 import React from "react";
 import { writeToShoreside, type ThreadResult } from "@/app/(member)/threads/actions";
+import { Button, Notice } from "@/components/ds";
 
 /* The door to the concierge desk. One live Shoreside thread per member — the
    action opens it or rejoins it, and lands the member inside either way. */
@@ -12,14 +13,14 @@ export function WriteToShoreside({ className }: { className?: string }) {
   );
   return (
     <form action={formAction} className={className}>
-      <button type="submit" className="ls-btn ls-btn--outline ls-btn--sm" disabled={pending}>
+      <Button type="submit" variant="outline" size="sm" disabled={pending}>
         Write to Shoreside
-      </button>
+      </Button>
       {state.error ? (
         /* alert, not status — a refusal interrupts; see enquire.tsx. */
-        <p className="mbr-alert" role="alert">
+        <Notice tone="danger" compact className="mbr-sub--xs">
           {state.error}
-        </p>
+        </Notice>
       ) : null}
     </form>
   );
