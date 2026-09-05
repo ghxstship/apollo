@@ -238,6 +238,12 @@ async function sweep(p) {
   }
   await stf.del("club_products?slug=like.e2e-*");
   await stf.del("vessels?name=like.E2E Charter Hull*");
+  /* A fixture city outlives a stopped run and reads on the public home page. */
+  for (const c of (await stf.get("cities?slug=like.e2e-*&select=id")).data ?? []) {
+    await stf.del(`city_tax?city_id=eq.${c.id}`);
+    await stf.del(`vessels?home_city=eq.${c.id}`);
+    await stf.del(`cities?id=eq.${c.id}`);
+  }
   /* The pause windows the membership checks open and close. Not deletable by
      the member who owns one — a window whose dates can be edited is a budget
      with a dial on it — so the Bridge strikes them.

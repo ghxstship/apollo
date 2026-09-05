@@ -595,7 +595,15 @@ export async function run(p, ctx) {
       const raise = await stf.post("cities", { slug: CITY_SLUG, name: "E2E fixture harbour (closed)", status: "closed", time_zone: "America/New_York" });
       const found = await stf.get(`cities?slug=eq.${CITY_SLUG}&select=id,status,name`);
       cityId = first(found)?.id ?? null;
-      note("staff", "raises the closed fixture city once, and finds it on every run after", (raise.status === 201 || uniqueFired(raise)) && !!cityId, `got ${raise.status}, ${rows(found).length} row`);
+      /* Struck at the end, dependents first. A fixture city left on the roll
+         reads on the public home page ("… is next") and on the tax console; it
+         did, for a day. */
+      cleanup.push(async () => {
+        await stf.del(`city_tax?city_id=eq.${cityId}`);
+        await stf.del(`vessels?home_city=eq.${cityId}`);
+        await stf.del(`cities?slug=eq.${CITY_SLUG}`);
+      });
+      note("staff", "raises the closed fixture city", (raise.status === 201 || uniqueFired(raise)) && !!cityId, `got ${raise.status}, ${rows(found).length} row`);
       const renamed = await stf.patch(`cities?id=eq.${cityId}`, { name: `E2E fixture harbour (closed) ${EMOJI}` });
       const restored = await stf.patch(`cities?id=eq.${cityId}`, { name: "E2E fixture harbour (closed)", status: "closed" });
       note("staff", "renames the city with emoji and puts the name back", renamed.status < 300 && first(renamed)?.name?.includes("🌊") && restored.status < 300, `got ${renamed.status}/${restored.status}`);

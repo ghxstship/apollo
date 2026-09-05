@@ -30,10 +30,12 @@ export default async function StaffLayout({
   }
 
   const [{ data: cities }, { data: keysOpen }] = await Promise.all([
-    supabase.from("cities").select("name").order("position", { ascending: true }).limit(1),
+    supabase.from("cities").select("id, name").order("position", { ascending: true }),
     supabase.rpc("club_setting", { p_key: "keys_console_enabled" }),
   ]);
-  const city = profile.home_city ?? cities?.[0]?.name ?? SURFACES.shoreside;
+  /* home_city is an id; the bar printed the uuid for any operator with a home
+     city set. The name, or the first city, or Shoreside. */
+  const city = cities?.find((c) => c.id === profile.home_city)?.name ?? cities?.[0]?.name ?? SURFACES.shoreside;
   const hidden = keysOpen ? [] : ["/bridge/keys"];
 
   return (
