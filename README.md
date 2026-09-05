@@ -5,7 +5,7 @@ A membership club for experiential connection afloat and ashore — the boat, th
 ## Stack
 
 - **Next.js 16** (App Router, TypeScript, `src/` dir) — note: middleware lives in `src/proxy.ts` per the Next 16 convention
-- **Supabase** — Postgres, magic-link auth, RLS everywhere; migrations in `supabase/migrations/`
+- **Supabase** — Postgres, auth (magic link, password, TOTP two-step, optional providers), RLS everywhere; migrations in `supabase/migrations/`
 - **Design system** — Neon Brutalist v4 tokens in `src/styles/`, 25 React primitives in `src/components/ds/`; Marcellus / Archivo / Space Mono via Google Fonts, Lucide icons via `lucide-react`
 
 ## Surfaces
@@ -13,7 +13,7 @@ A membership club for experiential connection afloat and ashore — the boat, th
 | Surface | Routes |
 | --- | --- |
 | Marketing site | `/` · `/episodes` (the Manifest) · `/episodes/[slug]` · `/membership` · `/log` (the written record) · `/log/[slug]` · `/gallery` · `/crew` · `/brand` · `/legal` · `/support` · `/apply-status` |
-| Gangway (auth) | `/gangway` · `/auth/confirm` · `/auth/signout` — passwordless magic links, invited-only (enforced by a DB trigger on `auth.users`) |
+| Gangway (auth) | `/gangway` (magic link · email + password · reset link · provider buttons when `NEXT_PUBLIC_AUTH_PROVIDERS` names a configured provider) · `/gangway/reset` · `/gangway/verify` (two-step code) · `/auth/confirm` · `/auth/callback` · `/auth/signout` — invited-only either way (a DB trigger on `auth.users` refuses an address not on the roll); a member sets a password and turns on two-step (TOTP) from `/you#you-security`; the proxy sends an enrolled member to the code page once per session |
 | Member app | `/home` · `/live` · `/manifest` (passes) · `/open-deck` (feed) · `/directory` · `/regattas` (contests) · `/agreements` (waivers) · `/threads` · `/portal` (knots + leagues) · `/account` (dues) · `/card` (+ the Passage Log and Marks) · `/inbox` · `/you` |
 | Mobile | Same member routes; under 960px the shell becomes a 6-tab bottom bar. Installable PWA (`/manifest.webmanifest`, standalone, starts at `/home-port`) with a service worker, offline shell, and web push |
 | Signing | `/sign/[token]` — a guest signs their waiver by bearer link, no account. `noindex`, and marked credential-bearing so the audit never enumerates real tokens |

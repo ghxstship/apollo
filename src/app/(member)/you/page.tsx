@@ -33,6 +33,7 @@ import {
 } from "./you-client";
 import { readPrefs } from "./prefs";
 import { SignOutForm } from "@/components/sign-out-form";
+import { PasswordControl, TwoStepControl } from "./security";
 import { InstallPrompt } from "@/components/member/install-prompt";
 import { AgreementLists, latestStanding, type StandingRow } from "@/components/member/agreement-rows";
 import { RaiseAGathering, type ProposalCard } from "@/components/member/raise-a-gathering";
@@ -86,6 +87,9 @@ type LedgerRow = { id: string; created_at: string; reason: string; delta: number
    answers 200 before the gate has said its 3xx. */
 async function YouBody() {
   const { supabase, user, profile, onHold, zone } = await getMember();
+  /* Two-step is a fact of the auth user, not the profile: a verified factor
+     on the session's user object. */
+  const twoStep = (user.factors ?? []).some((f) => f.status === "verified");
   const nowIso = new Date().toISOString();
   const db = moduleTables(supabase);
   const [
@@ -513,6 +517,33 @@ async function YouBody() {
               />
             </div>
           ) : null}
+        </div>
+      </section>
+
+      <section id="you-security">
+        <div className="you-h">Your gangway</div>
+        <div className="you-sec">
+          <div className="you-row">
+            <div>
+              <b>Password</b>
+              <p>The magic link always works. A password is for the inbox that is far away, the kiosk and the door.</p>
+            </div>
+            <PasswordControl />
+          </div>
+          <div className="you-row">
+            <div>
+              <b>Two-step</b>
+              <p>
+                {twoStep
+                  ? "On. The gangway asks for a code from your app once per sign-in."
+                  : "A code from your phone beside your link or password. Off until you turn it on."}
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {twoStep ? <Badge tone="positive">On</Badge> : null}
+              <TwoStepControl enrolled={twoStep} />
+            </div>
+          </div>
         </div>
       </section>
 

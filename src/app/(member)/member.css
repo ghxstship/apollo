@@ -651,3 +651,6 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 /* — passes: the seat a request is for — */
 .voy-seats{display:inline-flex;gap:6px;flex-wrap:wrap}
+
+/* A stacked form inside a You dialog. */
+.you-stack{display:flex;flex-direction:column;gap:14px}

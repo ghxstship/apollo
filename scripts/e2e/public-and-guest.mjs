@@ -49,6 +49,27 @@ export async function run(p, ctx) {
   const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
   const REF = new URL(SUPA).hostname.split(".")[0];
 
+  /* The gangway offers every way aboard: the link, a password, a reset. The
+     two pages under it are a member's, and the provider callback with no code
+     goes back to the gangway with a reason rather than a stack trace. */
+  {
+    const gw = await fetch(`${BASE}/gangway`, { redirect: "manual" });
+    const html = await gw.text();
+    note("anon", "the gangway offers the magic link and a password", gw.status === 200 && /Magic link/.test(html) && /Password/.test(html) && /type="password"|Sign in/.test(html), `got ${gw.status}`);
+    for (const path of ["/gangway/reset", "/gangway/verify"]) {
+      const r = await fetch(`${BASE}${path}`, { redirect: "manual" });
+      note("anon", `${path} sends a stranger to the gangway`, r.status >= 300 && r.status < 400 && /\/gangway/.test(r.headers.get("location") ?? ""), `got ${r.status} → ${r.headers.get("location")}`);
+    }
+    const cb = await fetch(`${BASE}/auth/callback`, { redirect: "manual" });
+    note("anon", "the provider callback with no code goes back to the gangway with a reason", cb.status >= 300 && cb.status < 400 && /\/gangway\?error=provider/.test(cb.headers.get("location") ?? ""), `got ${cb.status} → ${cb.headers.get("location")}`);
+    const wrong = await fetch(`${SUPA}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "", "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "e2e-regional@fixtures.invalid", password: "not-the-password" }),
+    });
+    note("anon", "a wrong password is refused by the auth server", wrong.status >= 400, `got ${wrong.status}`);
+  }
+
   /* The address comes with the pass — at the API as on the page. Anon holds a
      column-level grant on episodes that leaves out coordinates and muster, so a
      "*" read is refused whole and a public page must name its columns. The

@@ -27,7 +27,9 @@
     "/show",
     "/polls",
     "/season",
-    "/debrief"
+    "/debrief",
+    "/gangway/reset",
+    "/gangway/verify"
   ],
   "routes": [
     {
@@ -231,6 +233,16 @@
       "type": "page",
       "dynamic": false,
       "access": "public"
+    },
+    {
+      "path": "/auth/callback",
+      "file": "src/app/auth/callback/route.ts",
+      "type": "handler",
+      "methods": [
+        "GET"
+      ],
+      "dynamic": false,
+      "access": "auth"
     },
     {
       "path": "/auth/confirm",
@@ -621,6 +633,20 @@
       "type": "page",
       "dynamic": false,
       "access": "auth"
+    },
+    {
+      "path": "/gangway/reset",
+      "file": "src/app/gangway/reset/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/gangway/verify",
+      "file": "src/app/gangway/verify/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
     },
     {
       "path": "/home",

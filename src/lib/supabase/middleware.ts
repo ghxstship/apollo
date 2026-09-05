@@ -17,7 +17,7 @@ import { NextResponse, type NextRequest } from "next/server";
    from any of these prefixes to disk. Change both together. The gate here is
    optimistic, per the Next 16 proxy docs: the (member) and (staff) layouts
    re-check the session, and every action and route handler checks its own. */
-const PROTECTED = ["/home", "/passes", "/itinerary", "/membership/standing", "/open-deck", "/directory", "/threads", "/portal", "/account", "/card", "/inbox", "/you", "/live", "/shop", "/stub", "/regattas", "/tonight", "/matches", "/agreements", "/kiosk", "/bridge", "/vetting", "/radar", "/show", "/polls", "/season", "/debrief"];
+const PROTECTED = ["/home", "/passes", "/itinerary", "/membership/standing", "/open-deck", "/directory", "/threads", "/portal", "/account", "/card", "/inbox", "/you", "/live", "/shop", "/stub", "/regattas", "/tonight", "/matches", "/agreements", "/kiosk", "/bridge", "/vetting", "/radar", "/show", "/polls", "/season", "/debrief", "/gangway/reset", "/gangway/verify"];
 
 /* /bridge is on the same list, and one address under it — the gangway — is
    the one Bridge screen a hired door may hold without being staff. The proxy
@@ -75,11 +75,30 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && PROTECTED.some((p) => path === p || path.startsWith(p + "/"))) {
+  const protectedPath = PROTECTED.some((p) => path === p || path.startsWith(p + "/"));
+  if (!user && protectedPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/gangway";
     url.searchParams.set("next", path);
     return NextResponse.redirect(url);
+  }
+
+  /* The second step. A member who has enrolled a code app holds a session at
+     the first level until the code is proven; every protected page sends them
+     to /gangway/verify until it is. Asked only when a verified factor exists,
+     so the common case costs nothing extra; /gangway and /auth are exempt so
+     the gate cannot loop on itself. */
+  if (user && protectedPath && !path.startsWith("/gangway") && !path.startsWith("/auth")) {
+    const enrolled = (user.factors ?? []).some((f) => f.status === "verified");
+    if (enrolled) {
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal && aal.currentLevel !== aal.nextLevel) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/gangway/verify";
+        url.searchParams.set("next", path);
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return supabaseResponse;
