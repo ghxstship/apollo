@@ -775,6 +775,110 @@ function checkContrast() {
   };
 }
 
+/* ── check: locally redeclared ramps ──────────────────────────────────────── */
+/* The other half of the blind spot, and the one that let a real regression
+   through under a green board.
+
+   checkContrast resolves a token at :root and at [data-theme="dark"], because
+   those are the two places the BROWSER is asked to resolve it. checkInkAliases
+   then covers the case where a surface redefines the accent pair on a selector
+   and an alias declared at :root fails to follow it down. Neither reads the
+   case in between: a selector that redeclares the whole TEXT AND BORDER RAMP
+   for itself, with its own ground, and gets one of the values wrong.
+
+   .hm-shell does exactly that. It is the always-ink console, so it restates
+   --text-body/-muted/-faint and --border-subtle/-strong as ivory alphas over
+   its own --surface-abyss. When --line and --line-strong were collapsed on the
+   premise that they were byte-identical everywhere, that premise was false
+   here: the console's strong hairline was .55 alpha and became .26. Three
+   rules carry STATE in that border — a gangway result that says "already
+   aboard", one that says "waiting", and the attention list's edge marker — so
+   they fell from 5.65:1 to 2.13:1, under §1.4.11's 3:1 floor for a UI
+   component, and 1.6x rather than 3x apart from the subtle hairline they have
+   to be told from. Every gate stayed green, because no gate resolved a token
+   anywhere but the document root.
+
+   THE RULE: a block that declares BOTH a ground and a ramp token is a local
+   theme, and its ramp is measured against its own ground. Text clears 4.5:1,
+   borders and rules clear 3:1.
+
+   Resolution order inside the block is the cascade's: a value that is itself a
+   var() is looked up in the block first — that is what makes it local — and
+   only then at :root/dark. `groundTheme` is not guessed: the ground is whatever
+   the block declares, which is the point.
+
+   WHAT IT DOES NOT CATCH. A block that redeclares the ramp but inherits its
+   ground from an ancestor has no ground in the same string and is skipped; so
+   is a ground painted by `background:` rather than by a surface token, since
+   the ramp may be intended for a different child. Both are the same
+   undecidable-from-text limit checkInkAliases states for its consumer half.
+   The rule is sound about what it measures and silent about the rest. */
+
+const RAMP_TEXT = ["--text-body", "--text-muted", "--text-faint"];
+/* Only edges that CARRY MEANING. §1.4.11 governs a UI component or a graphical
+   object needed to understand the content; a decorative divider is outside it,
+   and holding --border-subtle to 3:1 would be asking a hairline to shout. So
+   the floor lands on the token whose name says it draws state — the rung the
+   console added the day its state-bearing borders were found at 2.13:1 — and
+   on any status colour a block restates for itself. This is the same line
+   checkContrast draws when it measures --positive/--caution/--danger at 3:1
+   and leaves the hairlines alone. */
+const RAMP_EDGE = ["--border-state", "--positive", "--caution", "--danger"];
+const LOCAL_GROUNDS = ["--surface-page", "--surface-card", "--surface-abyss", "--surface-deep", "--surface-sunken"];
+
+function checkLocalRamps() {
+  const hits = [], exempted = [];
+  let total = 0;
+  for (const p of CSS) {
+    const relPath = relative(ROOT, p);
+    const src = decomment(readFileSync(p, "utf8"));
+    for (const m of src.matchAll(CSS_BLOCK)) {
+      const sel = m[1].trim().replace(/\s+/g, " ");
+      if (!sel || sel.startsWith("@") || /^:root$/.test(sel) || /^\[data-theme/.test(sel)) continue;
+      const local = new Map();
+      for (const d of m[2].matchAll(/(--[a-z0-9-]+)\s*:\s*([^;}]+)/gi)) local.set(d[1], d[2].trim());
+      if (!local.size) continue;
+      const grounds = LOCAL_GROUNDS.filter((g) => local.has(g));
+      const ramp = [...RAMP_TEXT, ...RAMP_EDGE].filter((t) => local.has(t));
+      if (!grounds.length || !ramp.length) continue;
+      /* The block's own theme: an ink ground is read on the ink side of every
+         token it does not restate itself. */
+      const resolveHere = (name, depth = 0) => {
+        if (depth > 6) return null;
+        const raw = local.get(name);
+        if (raw === undefined) return COLORS.resolve(name, "dark") ?? COLORS.resolve(name, "root");
+        const direct = parseColor(raw);
+        if (direct) return direct;
+        const alias = raw.match(/^var\(\s*(--[a-z0-9-]+)\s*(?:,\s*([^)]+))?\)$/i);
+        if (!alias) return null;
+        return resolveHere(alias[1], depth + 1) ?? (alias[2] ? parseColor(alias[2]) : null);
+      };
+      for (const groundName of grounds) {
+        const bg = resolveHere(groundName);
+        if (!bg) continue;
+        for (const name of ramp) {
+          const fg = resolveHere(name);
+          if (!fg) continue;
+          total++;
+          const floor = RAMP_TEXT.includes(name) ? AA_TEXT : AA_NONTEXT;
+          const ratio = contrastRatio(over(fg, bg), bg);
+          if (ratio >= floor) continue;
+          hits.push({
+            token: `${name} on ${groundName}`,
+            declaredAt: `${relPath} ${sel}`,
+            why: `${ratio.toFixed(2)}:1 — below ${floor}:1${RAMP_TEXT.includes(name) ? "" : " for a border or rule"} on the ground this block declares for itself`,
+          });
+        }
+      }
+    }
+  }
+  return {
+    name: "local-ramps",
+    rule: "a block that declares its own ground and its own text or border ramp clears AA against itself",
+    total, hits, exempted,
+  };
+}
+
 /* ── check: always-ink aliases ────────────────────────────────────────────── */
 /* The blind spot the contrast check above cannot see out of, and the reason a
    whole class of ink-on-ink shipped unmeasured.
@@ -1358,7 +1462,20 @@ function checkIcons() {
   ];
   for (const p of files) {
     if (p.endsWith("icon-set.ts")) continue;
-    lines(p).forEach((line, i) => {
+    /* A test file's fixture copy is not a glyph reference. The broad pattern
+       reads any quoted PascalCase word, so a one-word button label — "Send",
+       "Save", "Reply" — reads as a Lucide name and fails a gate about icons
+       nobody rendered. Tests ship to nobody; an empty box in one is not the
+       failure this check exists to prevent. */
+    if (/__tests__\/|\.test\.tsx?$/.test(p)) continue;
+    /* Comments are prose, not code. The broad "any quoted PascalCase" pattern
+       above is deliberately greedy, and a docblock that quotes a label —
+       `"Undo" becoming "Undoing…"` — is not a glyph reference. Blanking
+       comments first keeps the greed pointed at strings the runtime can
+       actually reach, without narrowing what it catches in real code. Line
+       numbers are preserved so a hit still names its own line. */
+    const blanked = decomment(readFileSync(p, "utf8")).replace(/\/\/[^\n]*/g, (c) => " ".repeat(c.length));
+    blanked.split("\n").forEach((line, i) => {
       for (const re of PATTERNS) {
         for (const m of line.matchAll(re)) {
           const name = m[1] ?? m[2];
@@ -1440,7 +1557,7 @@ function checkUnsetFocus() {
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
 const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear(), checkInline(), checkTracking(),
-                checkHueArc(), checkHueGap(), checkContrast(), checkInkAliases(), checkNoRawHex(), checkOrphanClasses(), checkIcons(), checkUnsetFocus()]
+                checkHueArc(), checkHueGap(), checkContrast(), checkLocalRamps(), checkInkAliases(), checkNoRawHex(), checkOrphanClasses(), checkIcons(), checkUnsetFocus()]
   .filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {
