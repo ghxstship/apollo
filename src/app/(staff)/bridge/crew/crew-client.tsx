@@ -202,7 +202,7 @@ export function CrewClient({
                 <Switch
                   label="Open on the crew page"
                   checked={role.open}
-                  disabled={pending}
+                  pending={pending}
                   onChange={(e) => {
                     const open = e.target.checked;
                     run(

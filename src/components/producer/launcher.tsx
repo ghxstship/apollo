@@ -7,6 +7,18 @@ import { Icon } from "@/components/ds";
 import { SURFACES } from "@/lib/brand";
 import "./producer.css";
 
+/* The pill's face, in one place, because two things now draw it: the control
+   itself, and the picture of the control that holds the corner while the lazy
+   boundary resolves. */
+function FabFace() {
+  return (
+    <span>
+      <Icon name="Compass" size={16} />
+      {SURFACES.agent}
+    </span>
+  );
+}
+
 /* The panel is four hundred and seventy lines, and it drags its seven server
    actions, the money and log-date formatters and half the kit in behind it.
    It was a static import, so every signed-in member downloaded and parsed the
@@ -14,29 +26,51 @@ import "./producer.css";
    payload none of them asked for and most of them never open.
 
    It arrives when it is asked for now. `ssr: false` because the panel cannot
-   exist before a tap, so there is nothing for the server to render into. */
+   exist before a tap, so there is nothing for the server to render into.
+
+   `loading` is not decoration. `dynamic` compiles to a `<Suspense>`, and with
+   no fallback its fallback is `null`; React.lazy's initializer resolves on a
+   MICROTASK even when the module is already sitting in the registry, so the
+   very first mount always suspends for a frame. The pill has unmounted by
+   then, so a null fallback is an empty corner — brief, but it is the one
+   frame the eye is watching, and it reads as the control having been lost.
+   The fallback is the pill's own shape, inert, standing exactly where the
+   pill stood until the panel takes the corner from it. */
 const ProducerPanel = dynamic(() => import("./panel").then((m) => m.ProducerPanel), {
   ssr: false,
+  loading: () => (
+    <div className="pr-fab pr-fab--ghost" aria-hidden="true">
+      <FabFace />
+    </div>
+  ),
 });
 
 /* Fetching the chunk and rendering it are two different moments, and the gap
    between them is the whole hazard of a lazy boundary: if `open` flips before
-   the module lands, next/dynamic renders nothing and the corner goes empty —
-   no pill, no panel, and no way to close a thing that is not there yet, which
-   is exactly the state the two-step close is not written for.
+   the module lands, next/dynamic renders its fallback and the panel is not
+   there yet — so the request is made first and the state flips on arrival.
+   One promise, shared between the warm-up on hover and the tap, so a member
+   who does both makes one request.
 
-   So the request is made first and the state flips on arrival. One promise,
-   shared between the warm-up on hover and the tap, so a member who does both
-   makes one request; `ready` short-circuits the microtask on every subsequent
-   open, and after the first one the panel mounts synchronously — the enter
-   animation plays from its first frame the way it always did. */
-let panelChunk: Promise<unknown> | null = null;
+   It never rejects. Two of its three call sites are fire-and-forget — a hover
+   and a focus — and a promise nobody caught is an unhandled rejection the
+   moment a chunk fetch fails on a bad connection. The failure is handled
+   here, where the retry state lives: the shared promise is cleared so the
+   next hover or tap is a fresh attempt, and the caller is told whether the
+   panel can be mounted rather than being handed something to catch. */
+let panelChunk: Promise<boolean> | null = null;
 let panelReady = false;
-function warmPanel(): Promise<unknown> {
-  panelChunk ??= import("./panel").then((m) => {
-    panelReady = true;
-    return m;
-  });
+function warmPanel(): Promise<boolean> {
+  panelChunk ??= import("./panel").then(
+    () => {
+      panelReady = true;
+      return true;
+    },
+    () => {
+      panelChunk = null;
+      return false;
+    }
+  );
   return panelChunk;
 }
 
@@ -92,24 +126,18 @@ export function ProducerLauncher() {
   }, [closing, settle]);
 
   const openPanel = () => {
-    if (panelReady) {
-      setOpen(true);
-      return;
-    }
-    setFetching(true);
-    void warmPanel()
-      .then(() => {
-        if (!alive.current) return;
-        setFetching(false);
-        setOpen(true);
-      })
-      .catch(() => {
-        /* A chunk that will not load leaves the pill exactly as it was, so the
-           next tap is a fresh attempt rather than a dead control. */
-        if (!alive.current) return;
-        panelChunk = null;
-        setFetching(false);
-      });
+    /* `panelReady` no longer skips the wait — the wait is one microtask on a
+       warm chunk and the pill holds the corner through it, which is the whole
+       point. It skips the BUSY FLAG: announcing a fetch that is already done
+       toggles aria-busy on and off inside a single frame for no reason. */
+    if (!panelReady) setFetching(true);
+    void warmPanel().then((ready) => {
+      if (!alive.current) return;
+      setFetching(false);
+      /* A chunk that will not load leaves the pill exactly as it was, so the
+         next tap is a fresh attempt rather than a dead control. */
+      if (ready) setOpen(true);
+    });
   };
 
   if (pathname === "/brand" || pathname.startsWith("/brand/")) return null;
@@ -128,10 +156,7 @@ export function ProducerLauncher() {
       aria-haspopup="dialog"
       aria-busy={fetching || undefined}
     >
-      <span>
-        <Icon name="Compass" size={16} />
-        {SURFACES.agent}
-      </span>
+      <FabFace />
     </button>
   );
 }

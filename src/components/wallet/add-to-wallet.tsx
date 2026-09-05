@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { LinkButton, useClientSnapshot } from "@/components/ds";
+import { LinkButton, cx, useClientSnapshot } from "@/components/ds";
 import "./wallet.css";
 
 /* Add-to-wallet — two links, or nothing.
@@ -54,14 +54,22 @@ export function AddToWallet({ className, inverse = false }: { className?: string
 
   /* Nothing while the status is on its way: the row this sits in already
      stands at button height beside Print, so there is nothing to hold open,
-     and a spinner for a fetch this small would be louder than the buttons. */
+     and a spinner for a fetch this small would be louder than the buttons.
+
+     A skeleton was weighed here and refused. It could not be sized: what
+     lands is nought, one or two links depending on the platform and on what
+     the club has configured, and the commonest answer on an unconfigured
+     install is nought — so a placeholder the width of two buttons would be a
+     wrong guess more often than a right one, and reserving space that never
+     fills is a worse jump than the one it prevents. The links carry ls-fade
+     instead, so they arrive rather than appear. */
   if (!status) return null;
   const showApple = status.apple && !android;
   const showGoogle = status.google;
   if (!showApple && !showGoogle) return null;
 
   return (
-    <div className={["wl", className].filter(Boolean).join(" ")}>
+    <div className={cx("wl", className)}>
       {showApple ? (
         <LinkButton className="wl__link" variant="outline" size="md" inverse={inverse} external href="/api/wallet/apple" rel="nofollow">
           Add to Apple Wallet

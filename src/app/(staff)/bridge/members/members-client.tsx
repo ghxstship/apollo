@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useSearchParams } from "next/navigation";
-import { Badge, Button, Checkbox, Dialog, FilterPills, Input, LinkButton, ListToolbar, Select, StateBlock, Table, Textarea, Toast, tableColumns, type ToolbarChip } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, FilterPills, Input, LinkButton, ListToolbar, Select, Skeleton, StateBlock, Table, Textarea, Toast, tableColumns, type ToolbarChip } from "@/components/ds";
 import { CLUB_ZONE, LEAGUES, PLACE, knots } from "@/lib/brand";
 import { logDate, logDateTime, price } from "@/lib/format";
 import { useToast } from "../../ui";
@@ -100,6 +100,11 @@ function standing(detail: MemberDetail): { label: string; tone: "positive" | "ca
 }
 
 const DUES_HOLD_NOTE = "Lifts when dues clear; a word from the Bridge lifts it now";
+
+/* The member record's shape, in fact-lines per labelled block: standing,
+   contact, plan and dues, the knots ledger, recent passes. The drawer holds
+   this while the record is on its way. */
+const RECORD_SHAPE = [1, 2, 3, 3, 3];
 
 const CSV_COLUMNS: Array<[string, (r: MemberRow) => string]> = [
   ["Member", (r) => r.name],
@@ -284,10 +289,14 @@ export function MembersClient({
       key: "pick",
       label: <span className="ls-visually-hidden">Selected</span>,
       width: 36,
-      /* A tick inside a clickable row: the click stops here so it does not
-         also open the drawer. Enter/Space on the row itself still opens it. */
+      /* A tick inside a clickable row. The stopPropagation that used to sit
+         on this span is gone: Table's onRowClick now asks whether the click
+         started inside a button, link or field and stands aside if it did, so
+         the guard belongs to the kit and every clickable row gets it rather
+         than only the two call sites that remembered. Enter/Space on the row
+         itself still opens the drawer. */
       render: (r: MemberRow) => (
-        <span className="hm-pick" onClick={(e) => e.stopPropagation()}>
+        <span className="hm-pick">
           <Checkbox
             aria-label={`Select ${r.name}`}
             checked={selected.has(r.id)}
@@ -575,7 +584,21 @@ export function MembersClient({
         title={openRow ? openRow.name : ""}
       >
         {loading || !detail ? (
-          <StateBlock status="loading" bare title="Hauling the record in." detail="A moment." />
+          /* The drawer's own shape, held. A centred bar in the middle of an
+             empty 560px dialog said only "wait" — it did not say what was
+             coming, and the panel jumped the moment the record landed. Five
+             labelled blocks is what lands, so five is what stands here. The
+             blocks are aria-hidden decoration; the sentence beside them is
+             what a reader is told, once, from the live region. */
+          <div className="hm-form" role="status" aria-busy="true">
+            <span className="ls-visually-hidden">Hauling the record in. A moment.</span>
+            {RECORD_SHAPE.map((facts, i) => (
+              <React.Fragment key={i}>
+                <Skeleton width="7rem" />
+                <Skeleton lines={facts} />
+              </React.Fragment>
+            ))}
+          </div>
         ) : (
           <div className="hm-form">
             <div>

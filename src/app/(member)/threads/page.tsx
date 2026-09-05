@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Avatar, Icon, LinkButton, StateBlock } from "@/components/ds";
+import { Avatar, Icon, LinkButton, StateBlock, cx } from "@/components/ds";
 import { SETTING_LABEL } from "@/lib/format";
 import type { Tables } from "@/lib/supabase/types";
 import { getMember, type DirectoryMember, type Profile } from "../data";
@@ -152,7 +152,7 @@ export default async function ThreadsPage() {
             <Link
               key={r.id}
               href={`/threads/${r.id}`}
-              className={["thr-row", r.closed ? "thr-row--closed" : ""].filter(Boolean).join(" ")}
+              className={cx("thr-row", r.closed && "thr-row--closed")}
             >
               {r.kind === "direct" && r.other ? (
                 <Avatar name={r.other.full_name ?? "A member"} tone={toneOf(r.other)} />

@@ -4,7 +4,7 @@ import { ANCHOR, EST_YEAR_ROMAN } from "@/lib/brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
-import { IconButton, ThemeToggle, Icon } from "@/components/ds";
+import { IconButton, ThemeToggle, Icon, cx } from "@/components/ds";
 import { GlobalSearch } from "@/components/search/global-search";
 import { LockupHorizontal } from "./logo";
 import { LinkButton } from "./link-button";
@@ -53,7 +53,11 @@ export function SiteNav() {
      said aria-modal while focus stayed on the burger behind it, Tab walked
      straight out into the page under the veil, and closing left focus nowhere. */
   const menuRef = useModal(open, close);
-  const { present, closing, onAnimationEnd } = useExitPhase(open);
+  /* The menu goes aria-hidden for the length of its exit, and the × that was
+     just pressed is inside it. The hook owns that blur now — hand it the ref
+     and focus is out of the hidden subtree before useModal's cleanup runs, so
+     the burger gets focus back rather than the body keeping it. */
+  const { present, closing, onAnimationEnd } = useExitPhase(open, { ref: menuRef });
 
   const isOn = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
@@ -99,7 +103,7 @@ export function SiteNav() {
       </div>
       {present ? (
         <div
-          className={"ws-menu" + (closing ? " ws-menu--out" : "")}
+          className={cx("ws-menu", closing && "ws-menu--out")}
           aria-hidden={closing || undefined}
           onAnimationEnd={onAnimationEnd}
           role="dialog" aria-modal="true" aria-label="Menu" ref={menuRef} tabIndex={-1}

@@ -121,7 +121,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       key: "act",
       label: "",
       render: (a: AppRow) => (
-        <span className="ls-acts ls-acts--end" onClick={(e) => e.stopPropagation()}>
+        <span className="ls-acts ls-acts--end">
           {a.status === "received" ? (
             <Button
               variant="outline"

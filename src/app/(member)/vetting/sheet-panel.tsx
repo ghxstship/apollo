@@ -39,6 +39,11 @@ export function SheetPanel({
   );
   const [error, setError] = React.useState<string | null>(null);
   const [saved, setSaved] = React.useState<string | null>(null);
+  /* The round trip is BUSY, not unavailable. Every drink and every stance
+     wore `disabled={pending}` while the write went out, which faded the
+     whole axis and — before Tag's aria-disabled landed — dropped focus
+     off the very tag the finger was on. `pending` is that wait named for
+     what it is: full colour, aria-busy, the press refused. */
   const [pending, start] = React.useTransition();
 
   /* Which of the three writes is in flight. The drinks and boundary tags share
@@ -77,7 +82,7 @@ export function SheetPanel({
         <p className="vet-title">What are you drinking?</p>
         <div className="ls-inline" role="group" aria-label="Drinks">
           {DRINKS.map((d) => (
-            <Tag key={d} active={drinks.includes(d)} disabled={pending} onClick={() => toggleDrink(d)}>
+            <Tag key={d} active={drinks.includes(d)} pending={pending} onClick={() => toggleDrink(d)}>
               {d}
             </Tag>
           ))}
@@ -102,7 +107,7 @@ export function SheetPanel({
                 </span>
                 <span className="vet-stances" role="group" aria-label={BOUNDARY_LABEL[topic]}>
                   {STANCES.map((s) => (
-                    <Tag key={s} active={current === s} disabled={pending} onClick={() => pickStance(topic, s)}>
+                    <Tag key={s} active={current === s} pending={pending} onClick={() => pickStance(topic, s)}>
                       {STANCE_LABEL[s]}
                     </Tag>
                   ))}

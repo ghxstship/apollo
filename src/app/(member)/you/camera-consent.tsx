@@ -37,7 +37,7 @@ export function CameraConsent({ onCamera }: { onCamera: boolean }) {
       </div>
       <Switch
         checked={on}
-        disabled={pending}
+        pending={pending}
         aria-label="Appear in the show"
         onChange={(e) => {
           const v = e.target.checked;

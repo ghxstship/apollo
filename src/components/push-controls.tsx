@@ -161,7 +161,7 @@ export function PushControls() {
         name="push"
         label="Send word to this device"
         checked={listening}
-        disabled={busy}
+        pending={busy}
         onChange={(e) => {
           if (busy) return;
           const want = e.currentTarget.checked;

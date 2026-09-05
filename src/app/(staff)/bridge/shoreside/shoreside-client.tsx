@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Button, Input, ListToolbar, StateBlock, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Input, ListToolbar, StateBlock, Textarea, Toast, cx } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { relTime, useToast } from "../../ui";
 import { replyToThread } from "./actions";
@@ -93,7 +93,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
             <button
               type="button"
               key={t.id}
-              className={["hm-inbox__row", t.id === active?.id ? "on" : ""].filter(Boolean).join(" ")}
+              className={cx("hm-inbox__row", t.id === active?.id && "on")}
               onClick={() => setActiveId(t.id)}
             >
               <b>{t.member}</b>
@@ -118,7 +118,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
               {active.messages.length ? (
                 active.messages.map((m) => (
                   <div
-                    className={["hm-msg", m.staff ? "hm-msg--staff" : ""].filter(Boolean).join(" ")}
+                    className={cx("hm-msg", m.staff && "hm-msg--staff")}
                     key={m.id}
                   >
                     <span>

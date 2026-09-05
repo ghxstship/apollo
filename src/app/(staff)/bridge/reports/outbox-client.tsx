@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Table, Toast, tableColumns } from "@/components/ds";
+import { Badge, Button, Table, Toast, cx, tableColumns } from "@/components/ds";
 import { useToast } from "../../ui";
 import { requeueOutbox, strikeOutbox, type OutboxTable } from "./actions";
 
@@ -147,7 +147,7 @@ export function OutboxTable({ rows }: { rows: StrandedRow[] }) {
           columns={columns}
           rows={shown}
           rowKey={(row) => row.key}
-          rowClassName={(row) => [STATE_CLASS[row.status], leaving.has(row.key) ? "is-gone" : ""].filter(Boolean).join(" ")}
+          rowClassName={(row) => cx(STATE_CLASS[row.status], leaving.has(row.key) && "is-gone")}
         />
       </div>
       {toast ? (

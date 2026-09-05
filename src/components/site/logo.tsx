@@ -4,7 +4,7 @@
    invariants are enforced. This component is a placement, not a second setting;
    anything it did on its own (its own display face, its own rule colour) would
    be a mark the brand does not own. */
-import { Wordmark } from "@/components/ds";
+import { Wordmark, cx } from "@/components/ds";
 import { ANCHOR, TAGLINE } from "@/lib/brand";
 
 export function LockupHorizontal({ height = 34 }: { height?: number }) {
@@ -46,7 +46,7 @@ export function LockupHorizontal({ height = 34 }: { height?: number }) {
    mark, so the hero and a 22px page tag are the same setting at two sizes. */
 export function TaglineMark({ className = "" }: { className?: string }) {
   return (
-    <span className={["ws-tagline", className].filter(Boolean).join(" ")}>
+    <span className={cx("ws-tagline", className)}>
       <span className="ws-tagline__anchor">{ANCHOR}</span>
       <span className="ws-tagline__line">{TAGLINE}</span>
     </span>

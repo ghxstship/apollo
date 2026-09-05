@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Avatar, Icon, StateBlock } from "@/components/ds";
+import { Avatar, Icon, StateBlock, cx } from "@/components/ds";
 import { SETTING_LABEL, logDateTime } from "@/lib/format";
 import { getMember, type DirectoryMember, type Profile } from "../../data";
 import { Composer, ThreadLive } from "./live";
@@ -174,7 +174,7 @@ export default async function ThreadPage({
             return (
               <div
                 key={m.id}
-                className={["thr-msg", own ? "thr-msg--own" : ""].filter(Boolean).join(" ")}
+                className={cx("thr-msg", own && "thr-msg--own")}
               >
                 <Avatar name={author?.full_name ?? "A member"} tone={toneOf(author)} size="sm" />
                 <div className="thr-msg__body">

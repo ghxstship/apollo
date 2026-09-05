@@ -43,7 +43,7 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
       </div>
       <Switch
         checked={on}
-        disabled={pending}
+        pending={pending}
         aria-label="Show my name on the episode manifest"
         onChange={(e) => {
           const v = e.target.checked;

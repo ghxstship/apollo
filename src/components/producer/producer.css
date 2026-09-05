@@ -11,6 +11,11 @@
 .pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:var(--layer-fab);display:inline-flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);transition:bottom var(--dur-move) var(--ease-move),transform var(--dur-hover) var(--ease-hover);animation:ls-rise var(--dur-enter) var(--ease-enter)}
 .pr-fab span{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:0 20px;letter-spacing:var(--tracking-label);text-transform:uppercase;transition:background var(--dur-hover) var(--ease-hover)}
 .pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* The lazy boundary's fallback wears the pill's shape so the corner is never
+   empty between the tap and the panel's first frame. It is a picture of the
+   control, not the control: no pointer, and no re-run of the rise the real
+   pill already played when the page loaded. */
+.pr-fab--ghost{pointer-events:none;animation:none}
 /* The one persistent floating action in the product, and it answered neither
    the pointer nor the finger: no hover, no press. The carbon face lifts a rung
    under the pointer — the lava ring is the pill's identity and stays put — and

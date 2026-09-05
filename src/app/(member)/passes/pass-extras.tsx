@@ -7,7 +7,7 @@
 import React from "react";
 import Link from "next/link";
 import { CopyLink } from "@/components/copy-link";
-import { Button, Dialog, Input, Notice, Select, Switch, Textarea } from "@/components/ds";
+import { Button, Dialog, Input, Notice, Select, Switch, Textarea, useClientSnapshot } from "@/components/ds";
 import {
   applyPromo,
   offerPass,
@@ -24,13 +24,12 @@ export type StandingOffer = { id: string; name: string };
 export type CrewSeeker = { id: string; name: string; handle: string | null; note: string | null };
 export type AppliedPromo = { code: string; kind: PromoKind; value: number; passCents: number };
 
-/* The page's own origin, for a link a member copies. Read through
-   useSyncExternalStore so the server renders nothing and the browser fills it
-   in, rather than a `typeof window` branch in render. */
-const subscribeNever = () => () => {};
-function useOrigin(): string {
-  return React.useSyncExternalStore(subscribeNever, () => window.location.origin, () => "");
-}
+/* The page's own origin, for a link a member copies: a fact only the browser
+   can state, so the server renders nothing and the client fills it in, rather
+   than a `typeof window` branch in render. That was a hand-rolled
+   useSyncExternalStore here — the kit's useClientSnapshot to the character,
+   including the hoisted subscribe constant — so it is the kit's now. */
+const readOrigin = () => window.location.origin;
 /* The refusal, beside the control that asked. --danger, as the kit's own
    field error paints it — it used to wear .voy-hold, which is --text-2 and
    reads as a footnote. */
@@ -90,7 +89,7 @@ export function WaitlistClaim({
       <Switch
         label="Claim it automatically"
         checked={on}
-        disabled={pending}
+        pending={pending}
         onChange={(e) => flip(e.target.checked)}
         className="mbr-sub--sm"
       />
@@ -224,7 +223,7 @@ export function HandOff({
    machinery as a guest and is listed here with them — under its own line,
    because it is not a companion and must not read as one. */
 export function GuestStubs({ guests, partner = null }: { guests: GuestStub[]; partner?: GuestStub | null }) {
-  const origin = useOrigin();
+  const origin = useClientSnapshot(readOrigin, "");
   const cut = guests.filter((g) => g.code);
   const head = partner?.code ? partner : null;
   if (cut.length === 0 && !head) return null;

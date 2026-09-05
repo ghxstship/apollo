@@ -4,7 +4,7 @@
    is per-stage; the confirm-first contract is Aurora's. */
 
 import React from "react";
-import { Button, Icon, IconButton, Input, LinkButton } from "@/components/ds";
+import { Button, Icon, IconButton, Input, LinkButton, cx } from "@/components/ds";
 import { useModal } from "@/components/ds/use-modal";
 import { knots, MAILBOX, SURFACES } from "@/lib/brand";
 import { logDateTime, price } from "@/lib/format";
@@ -379,7 +379,7 @@ export function ProducerPanel({
 
   return (
     <div
-      className={"pr-panel" + (closing ? " pr-panel--out" : "")}
+      className={cx("pr-panel", closing && "pr-panel--out")}
       role="dialog"
       aria-label={SURFACES.agent}
       ref={panelRef}

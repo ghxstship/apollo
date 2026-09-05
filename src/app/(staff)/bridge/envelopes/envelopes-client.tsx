@@ -3,7 +3,7 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Badge, Button, ListToolbar, Select, Stat, StateBlock, Table, Toast } from "@/components/ds";
+import { Badge, Button, ListToolbar, Select, Stat, StateBlock, Table, Toast, useMounted } from "@/components/ds";
 import { issueTheEnvelopes } from "../../../(member)/show/actions";
 import { useToast } from "../../ui";
 
@@ -74,11 +74,7 @@ export function EnvelopesClient({
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, toastOpen, show, clear } = useToast();
-  const mounted = React.useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false
-  );
+  const mounted = useMounted();
 
   const opened = rows.filter((r) => r.opened).length;
   const outstanding = Math.max(aboard - rows.length, 0);
