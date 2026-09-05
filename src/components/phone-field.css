@@ -1,0 +1,10 @@
+/* Phone capture — a row of the You page's "The word" card, padded and ruled
+   as .you-row is. */
+.phone{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-top:1px solid var(--line-faint)}
+.phone__row{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.phone__row .ls-field{flex:1 1 220px;min-width:0}
+/* Save stands on the input's line: down the label (10px) and the field gap
+   (8px), then centred on the 44px input. It used to hang off the bottom of
+   the field, so an error line under the input pushed the button down with it. */
+.phone__save{margin-top:19px}
+.phone__mono{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}

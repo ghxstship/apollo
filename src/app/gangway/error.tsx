@@ -14,14 +14,14 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
     console.error(error);
   }, [error]);
   return (
-    <main id="main" className="ls-container" style={{ paddingTop: 96, paddingBottom: 96 }}>
+    <main id="main" className="ls-container ls-rise" style={{ paddingTop: 96, paddingBottom: 96 }}>
       <span className="ls-eyebrow" style={{ display: "block", color: "var(--gold-deep)" }}>Something broke</span>
       <h1 style={{ marginTop: 12 }}>The gangway lost the signal.</h1>
       <p style={{ maxWidth: 460, marginTop: 12 }}>Our end, not yours. Try again — if it holds, write to Shoreside and quote the reference.</p>
       <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <button className="ls-btn ls-btn--gold" onClick={reset} type="button">Try again</button>
-        <Link className="ls-btn ls-btn--ghost" href="/gangway">Back to the gangway</Link>
-        <a className="ls-btn ls-btn--ghost" href={`mailto:${MAILBOX.shore}`}>Write to Shoreside</a>
+        <button className="ls-btn ls-btn--gold ls-btn--md" onClick={reset} type="button">Try again</button>
+        <Link className="ls-btn ls-btn--ghost ls-btn--md" href="/gangway">Back to the gangway</Link>
+        <a className="ls-btn ls-btn--ghost ls-btn--md" href={`mailto:${MAILBOX.shore}`}>Write to Shoreside</a>
       </p>
       {error.digest ? <p className="ls-mono-data" style={{ marginTop: 24, color: "var(--text-3)" }}>REF {error.digest.toUpperCase()}</p> : null}
     </main>

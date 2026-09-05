@@ -84,8 +84,46 @@ function accountLine(cents: number): string {
     : `Your member account holds ${abs} in credit.`;
 }
 
-export function ProducerPanel({ onClose }: { onClose: () => void }) {
+export function ProducerPanel({
+  onClose,
+  closing = false,
+  onClosed,
+}: {
+  onClose: () => void;
+  /* Set by the launcher once close is asked for: the panel plays pr-out and
+     reports back through onClosed, and the launcher unmounts it then. */
+  closing?: boolean;
+  onClosed?: () => void;
+}) {
+  /* Non-modal in useModal's terms — the page behind stays scrollable, no
+     aria-modal — but Tab is still kept inside: the panel is the thing a member
+     just opened, Escape and the X are always one key away, and walking out
+     the back into the page is never what the next Tab means here. */
   const panelRef = useModal(true, onClose, { modal: false });
+  const trapTab = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab") return;
+    const box = e.currentTarget;
+    const items = Array.from(
+      box.querySelectorAll<HTMLElement>(
+        'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => el.offsetParent !== null);
+    if (items.length === 0) {
+      e.preventDefault();
+      box.focus();
+      return;
+    }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || active === box)) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   const [msgs, setMsgs] = React.useState<Msg[]>([
     { kind: "sys", text: "READS YOUR MANIFEST · NEVER POSTS OR PAYS WITHOUT ASKING" },
@@ -325,11 +363,15 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="pr-panel"
+      className={"pr-panel" + (closing ? " pr-panel--out" : "")}
       role="dialog"
       aria-label={SURFACES.agent}
       ref={panelRef}
       tabIndex={-1}
+      onKeyDown={trapTab}
+      onAnimationEnd={(e) => {
+        if (closing && e.target === e.currentTarget) onClosed?.();
+      }}
     >
       <div className="pr-head">
         <Icon name="Compass" size={18} style={{ color: "var(--neon-cyan)" }} />
@@ -408,7 +450,7 @@ export function ProducerPanel({ onClose }: { onClose: () => void }) {
           }}
           aria-label="Message the Producer"
         />
-        <Button size="sm" onClick={send} disabled={!input.trim()}>
+        <Button size="sm" onClick={send} disabled={!input.trim()} aria-busy={typing || undefined}>
           Send
         </Button>
       </div>

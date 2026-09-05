@@ -1,0 +1,13 @@
+/* Global search — the slate's own rules live in components.css (.gs-*). This
+   sheet corrects and extends them for the component that renders them.
+
+   The kit's .gs__hit--on reads var(--surface-sunk), a token no file declares,
+   so the arrow-key cursor painted nothing: keyboard users had a selection they
+   could not see. Until components.css says --surface-sunken, this does. */
+.gs__hit{transition:background var(--dur-1) var(--ease-out)}
+.gs__hit--on{background:var(--surface-sunken);box-shadow:inset 2px 0 0 var(--focus)}
+/* A search in flight over a list already on the slate: the old answers dim
+   rather than vanish, so the list does not flash empty between keystrokes. */
+.gs__body[aria-busy="true"] .gs__sec{opacity:.55;transition:opacity var(--dur-1) var(--ease-out)}
+.gs__hint{margin:0}
+.gs__sec+.gs__sec{margin-top:2px}

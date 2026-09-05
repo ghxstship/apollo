@@ -1,0 +1,6 @@
+/* Add-to-wallet — the two links wear the kit's outline button at md, the
+   same height as the Print button they stand beside in .crd-acts. The row
+   they sit in does not wrap, so this wrapper shrinks to what is left and
+   wraps its own links inside that. */
+.wl{display:flex;gap:12px;flex-wrap:wrap;align-items:center;flex:1 1 auto;min-width:0}
+.wl__link{animation:ls-fade var(--dur-2) var(--ease-out)}

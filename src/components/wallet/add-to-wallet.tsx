@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import "./wallet.css";
 
 /* Add-to-wallet — two links, or nothing.
 
@@ -54,15 +55,18 @@ export function AddToWallet({ className, inverse = false }: { className?: string
     };
   }, []);
 
+  /* Nothing while the status is on its way: the row this sits in already
+     stands at button height beside Print, so there is nothing to hold open,
+     and a spinner for a fetch this small would be louder than the buttons. */
   if (!status) return null;
   const showApple = status.apple && !android;
   const showGoogle = status.google;
   if (!showApple && !showGoogle) return null;
 
-  const cls = ["ls-btn", "ls-btn--outline", "ls-btn--md", inverse ? "ls-btn--inverse" : ""].filter(Boolean).join(" ");
+  const cls = ["wl__link", "ls-btn", "ls-btn--outline", "ls-btn--md", inverse ? "ls-btn--inverse" : ""].filter(Boolean).join(" ");
 
   return (
-    <div className={className} style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+    <div className={["wl", className].filter(Boolean).join(" ")}>
       {showApple ? (
         <a className={cls} href="/api/wallet/apple" rel="nofollow">
           Add to Apple Wallet

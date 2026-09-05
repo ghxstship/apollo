@@ -56,7 +56,7 @@ export default async function GuestSignPage({
       </header>
 
       {row.voyage_state !== "ahead" ? (
-        <div className="sgn-done" role="status">
+        <div className="sgn-done gsn-done--gone" role="status">
           <h2>{row.voyage_state === "cancelled" ? "That episode was called off." : "That episode has gone."}</h2>
           <p>
             {row.voyage_state === "cancelled"

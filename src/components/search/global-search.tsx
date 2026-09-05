@@ -5,9 +5,13 @@ import React from "react";
 import { createPortal } from "react-dom";
 import { Icon, IconButton } from "@/components/ds";
 import { useModal } from "@/components/ds/use-modal";
+import "./search.css";
 
 type Hit = { id: string; title: string; meta: string | null; href: string };
 type Section = { kind: string; label: string; items: Hit[] };
+
+/* Option ids are the hit ids, prefixed so they cannot collide with the page. */
+const optId = (id: string) => `gs-opt-${id}`;
 
 /* The one field, and it finds everything.
 
@@ -119,11 +123,32 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setCursor((c) => (flat.length === 0 ? 0 : (c - 1 + flat.length) % flat.length));
+    } else if (e.key === "Home" && flat.length > 0) {
+      e.preventDefault();
+      setCursor(0);
+    } else if (e.key === "End" && flat.length > 0) {
+      e.preventDefault();
+      setCursor(flat.length - 1);
     } else if (e.key === "Enter" && flat[cursor]) {
       e.preventDefault();
       go(flat[cursor].href);
     }
   };
+
+  /* The list is a listbox the field drives (combobox pattern): the input keeps
+     the caret and names the current hit through aria-activedescendant, so a
+     reader hears the selection the arrow keys move without focus leaving the
+     field. Tab still walks the hits themselves, so useModal's trap keeps its
+     first and last. */
+  const listId = React.useId();
+  const active = flat[cursor];
+  const showList = q.trim().length >= 2 && sections.length > 0;
+
+  /* The cursor may have walked below the fold — bring the hit into view. */
+  React.useEffect(() => {
+    if (!open || !active) return;
+    document.getElementById(optId(active.id))?.scrollIntoView({ block: "nearest" });
+  }, [open, active]);
 
   const slate = (
     <div className="gs-veil" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
@@ -143,6 +168,13 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
             className="gs__input"
             placeholder="Episodes, members, the Log, the Shop…"
             aria-label="Search"
+            role="combobox"
+            aria-expanded={showList}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={showList && active ? optId(active.id) : undefined}
+            autoComplete="off"
+            spellCheck={false}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
@@ -152,28 +184,32 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
           </IconButton>
         </div>
 
-        <div className="gs__body">
+        <div className="gs__body" id={listId} role="listbox" aria-label="Results" aria-busy={busy || undefined}>
           {q.trim().length < 2 ? (
             <p className="gs__hint">
               Type two letters. Everything the club knows about is in here — the
               season, the roster, the Log, the Shop, and whatever is yours.
             </p>
           ) : busy && sections.length === 0 ? (
-            <p className="gs__hint">Looking…</p>
+            <p className="gs__hint" role="status">Looking…</p>
           ) : sections.length === 0 ? (
-            <p className="gs__hint">Nothing by that name.</p>
+            <p className="gs__hint" role="status">Nothing by that name.</p>
           ) : (
             sections.map((s) => (
-              <section key={s.kind} className="gs__sec">
-                <span className="gs__seclabel">{s.label}</span>
+              <section key={s.kind} className="gs__sec" role="group" aria-labelledby={`gs-sec-${s.kind}`}>
+                <span className="gs__seclabel" id={`gs-sec-${s.kind}`}>{s.label}</span>
                 {s.items.map((hit) => {
                   const i = flat.findIndex((f) => f.id === hit.id);
                   return (
                     <button
                       key={hit.id}
+                      id={optId(hit.id)}
                       type="button"
+                      role="option"
+                      aria-selected={i === cursor}
                       className={"gs__hit" + (i === cursor ? " gs__hit--on" : "")}
                       onMouseEnter={() => setCursor(i)}
+                      onFocus={() => setCursor(i)}
                       onClick={() => go(hit.href)}
                     >
                       <span className="gs__hitt">{hit.title}</span>

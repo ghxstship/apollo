@@ -5,11 +5,25 @@
    and at 900 it painted over the public nav's whole subtree (.ws-nav is a
    sticky z-index:500 stacking context, so its 920 menu could never escape it)
    and swallowed the "Come aboard" CTA. It sits vertically above the tab bar
-   (300) already, so it does not need to outrank it. */
-.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:400;display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava)}
-.pr-fab span{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:12px 20px;letter-spacing:var(--tracking-label);text-transform:uppercase}
+   (300) already, so it does not need to outrank it.
+
+   44px tall: 2px of lava around a 40px pill. It was 38. */
+.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:400;display:inline-flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);transition:bottom var(--dur-2) var(--ease-out);animation:pr-fab-in var(--dur-2) var(--ease-out)}
+.pr-fab span{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:0 20px;letter-spacing:var(--tracking-label);text-transform:uppercase}
 .pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:950;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--line);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column}
+@keyframes pr-fab-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* A fixed toast lands at bottom:24px (96px on a phone), centred, up to the
+   full width — the same corner the pill lives in. While one is up the pill
+   steps above it: toast bottom + toast height (~46px) + 8px. */
+body:has(.ls-toast--fixed) .pr-fab{bottom:80px}
+
+.pr-panel{position:fixed;bottom:24px;inset-inline-end:24px;z-index:950;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 48px));height:min(560px,calc(100dvh - 48px));background:var(--surface-card);border:1px solid var(--line);box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;transform-origin:bottom right;animation:pr-in var(--dur-2) var(--ease-out)}
+.pr-panel--out{animation:pr-out var(--dur-1) var(--ease-inout) forwards;pointer-events:none}
+@keyframes pr-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes pr-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(6px) scale(.98)}}
+.pr-panel:focus{outline:none}
+.pr-panel:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .pr-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line-faint)}
 .pr-head b{font-family:var(--font-sans);font-weight:700;font-size:var(--text-md)}
 .pr-head span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-3)}
@@ -36,13 +50,15 @@
 .pr-quick button:hover{border-color:var(--line-strong)}
 .pr-quick button:focus-visible{outline:2px solid var(--focus)}
 .pr-foot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line-faint)}
-.pr-foot input{flex:1;box-sizing:border-box;height:38px;padding:0 12px;background:var(--surface-page);border:1px solid var(--line);color:var(--text-1);font:400 var(--text-xs) var(--font-sans)}
+.pr-foot input{flex:1;min-width:0;box-sizing:border-box;height:38px;padding:0 12px;background:var(--surface-page);border:1px solid var(--line);color:var(--text-1);font:400 var(--text-xs) var(--font-sans)}
 /* var(--text-sm) zooms iOS on focus, and a var(--text-3xl) box is under the touch minimum. */
 @media (pointer:coarse){.pr-foot input{font-size:16px;height:44px}}
 .pr-foot input:focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}
 
-/* Clear the member tab bar on small screens. */
+/* Clear the member tab bar on small screens. The pill's 84px is what
+   member.css pads .mbr-main for — move one, move the other. */
 @media (max-width:959px){
-  .pr-fab{bottom:calc(84px + env(safe-area-inset-bottom))}
-  .pr-panel{bottom:calc(84px + env(safe-area-inset-bottom));height:min(520px,calc(100vh - 120px));height:min(520px,calc(100dvh - 120px))}
+  .pr-fab{bottom:calc(84px + env(safe-area-inset-bottom));inset-inline-end:16px}
+  body:has(.ls-toast--fixed) .pr-fab{bottom:calc(156px + env(safe-area-inset-bottom))}
+  .pr-panel{bottom:calc(84px + env(safe-area-inset-bottom));inset-inline-end:16px;height:min(520px,calc(100vh - 120px));height:min(520px,calc(100dvh - 120px))}
 }

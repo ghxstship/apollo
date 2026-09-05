@@ -1,12 +1,16 @@
-/* Gangway — sign-in by link, password or provider. Ported from the auth kit (au-*). */
+/* Gangway — sign-in by link, password or provider. Ported from the auth kit (au-*).
+
+   Rhythm: both columns pad 48px, and every vertical gap in the panel is a
+   multiple of 8, so the side's statement and the form's heading sit on the
+   same grid. Motion is the kit's two short steps and nothing longer. */
 .gw{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:1fr 460px;background:var(--surface-page)}
-.gw-side{background:var(--surface-abyss);position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:40px;overflow:hidden}
+.gw-side{background:var(--surface-abyss);position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:32px;padding:48px;overflow:hidden;box-sizing:border-box}
 .gw-side:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
 .gw-side__wm{position:relative}
 .gw-side__big{font-family:var(--font-display);font-size:var(--text-3xl);letter-spacing:var(--track-display);text-transform:uppercase;line-height:1.02;color:var(--paper);max-width:14ch;position:relative}
-.gw-side__log{position:relative;display:flex;gap:20px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-inverse-3)}
-.gw-seam{height:8px;max-width:260px;margin-top:28px;background:var(--lava);position:relative}
-.gw-main{padding:48px;display:flex;flex-direction:column;box-sizing:border-box}
+.gw-side__log{position:relative;display:flex;gap:24px;flex-wrap:wrap;font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-inverse-3)}
+.gw-seam{height:8px;max-width:260px;margin-top:32px;background:var(--lava);position:relative}
+.gw-main{padding:48px;display:flex;flex-direction:column;box-sizing:border-box;min-width:0}
 .gw-theme{display:flex;justify-content:flex-end;transform:scale(.82);transform-origin:bottom right;opacity:.55;transition:opacity var(--dur-1) var(--ease-swell)}
 /* On a touch device the scale turned a 44px target into 36px, and the
    opacity was only lifted by :hover/:focus-within — which never fire — so the
@@ -18,25 +22,73 @@
 .gw-theme .ls-themetog button.on{background:var(--wash-ink-2);color:var(--text-1)}
 .gw-panel{max-width:400px;width:100%;margin:auto}
 .gw-h{font-family:var(--font-display);font-size:var(--text-display-s);text-transform:uppercase}
-.gw-sub{font-size:var(--text-sm);color:var(--text-2);margin-top:8px}
-.gw-stack{display:flex;flex-direction:column;gap:16px;margin-top:28px}
-.gw-sent{border:1px solid var(--line-faint);background:var(--surface-card);padding:22px;margin-top:28px}
+/* Two lines reserved: the sub changes with the tab, and a one-line sub under a
+   two-line one moved everything below it. */
+.gw-sub{font-size:var(--text-sm);line-height:var(--leading-body);color:var(--text-2);margin-top:8px;min-height:calc(2em * 1.55)}
+.gw-stack{display:flex;flex-direction:column;gap:16px;margin-top:32px}
+
+/* The three forms share one grid cell, so the panel is as tall as the tallest
+   whichever tab is on — nothing below jumps. The two not showing are invisible
+   and inert (panel.tsx); the one arriving fades up 4px. */
+.gw-forms{display:grid;margin-top:32px}
+.gw-forms>.gw-form{grid-area:1/1;margin-top:0}
+.gw-form--off{visibility:hidden;pointer-events:none}
+.gw-form--on{animation:gw-in var(--dur-2) var(--ease-out)}
+@keyframes gw-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* The receipt — the same box for a magic link, a reset link and a saved
+   password. It carries the positive rule where the stale notice carries the
+   terracotta one: one shape, two tones. */
+.gw-sent{border:1px solid var(--line-faint);border-inline-start:2px solid var(--positive);background:var(--surface-card);padding:24px;margin-top:32px;animation:gw-in var(--dur-2) var(--ease-out)}
+.gw-sent:focus{outline:none}
+.gw-sent:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .gw-sent p{font-size:14px;margin-top:12px}
+.gw-sent__meta{margin-top:12px}
+.gw-sent__meta+.gw-sent__meta{margin-top:8px}
 .gw-mono{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3)}
 .gw-mono button,.gw-mono a{all:unset;cursor:pointer;color:var(--text-link)}
 .gw-mono button:hover,.gw-mono a:hover{text-decoration:underline}
-.gw-alt{margin-top:24px;padding-top:18px;border-top:1px solid var(--line-faint);font-size:var(--text-xs);color:var(--text-2)}
+.gw-mono button:focus-visible,.gw-mono a:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.gw-alt{margin-top:24px;padding-top:16px;border-top:1px solid var(--line-faint);font-size:var(--text-xs);color:var(--text-2)}
 .gw-alt a{color:var(--text-link);text-decoration:none}
 .gw-alt a:hover{text-decoration:underline}
-.gw-stale{border:1px solid var(--line-faint);border-inline-start:2px solid var(--terracotta);background:var(--surface-card);padding:12px 16px;margin-top:20px;font-size:var(--text-xs)}
-@media (max-width:960px){.gw{grid-template-columns:1fr}.gw-side{min-height:220px}.gw-main{padding:32px 20px}}
+.gw-stale{border:1px solid var(--line-faint);border-inline-start:2px solid var(--terracotta);background:var(--surface-card);padding:12px 16px;margin-top:24px;font-size:var(--text-xs);animation:gw-err var(--dur-2) var(--ease-out)}
+/* A field error arrives beside its field with the same small motion; the
+   kit's .ls-field__error already carries role="alert". */
+.gw-panel .ls-field__error{animation:gw-err var(--dur-2) var(--ease-out)}
+@keyframes gw-err{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 
-/* The ways aboard: two tabs over the form. */
-.gw-ways{display:flex;gap:0;margin-top:22px;border-bottom:1px solid var(--line-faint)}
-.gw-way{all:unset;cursor:pointer;padding:10px 14px 9px;font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px}
+/* The ways aboard: two tabs over the form, each a 44px target. */
+.gw-ways{display:flex;gap:0;margin-top:24px;border-bottom:1px solid var(--line-faint)}
+.gw-way{all:unset;cursor:pointer;display:inline-flex;align-items:center;box-sizing:border-box;min-height:44px;padding:0 14px;font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out)}
 .gw-way:hover{color:var(--text-1)}
 .gw-way:focus-visible{outline:2px solid var(--text-1);outline-offset:2px}
 .gw-way--on{color:var(--text-1);border-bottom-color:var(--text-1)}
-.gw-providers{display:flex;flex-direction:column;gap:10px;margin-top:22px}
-.gw-or{text-align:center;font:400 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3)}
-.gw-code input{font-family:var(--font-mono);font-size:var(--text-lg);letter-spacing:var(--tracking-label);text-align:center}
+.gw-providers{display:flex;flex-direction:column;gap:8px;margin-top:24px}
+.gw-or{text-align:center;font:400 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);padding-bottom:8px}
+
+/* Show/hide over the end of a password field. top = the label line (10px)
+   plus the field gap (8px), so it stays on the input when an error line is
+   added underneath. */
+.gw-pw{position:relative}
+.gw-pw .ls-input{padding-inline-end:64px}
+.gw-pw__eye{all:unset;cursor:pointer;position:absolute;top:18px;inset-inline-end:0;height:44px;min-width:44px;box-sizing:border-box;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);transition:color var(--dur-1) var(--ease-out)}
+.gw-pw__eye:hover{color:var(--text-1)}
+.gw-pw__eye:focus-visible{outline:2px solid var(--focus);outline-offset:-4px}
+
+/* The two-step code: six digits, large, centred, figures spaced a strap
+   apart. text-indent matches the tracking so the trailing space after the
+   sixth digit does not pull the group off centre. */
+.gw-code .ls-input{height:64px;font:700 var(--text-2xl)/1 var(--font-mono);letter-spacing:var(--tracking-strap);text-indent:var(--tracking-strap);text-align:center;font-variant-numeric:tabular-nums}
+.gw-code .ls-input::placeholder{color:var(--line-strong)}
+
+/* One column under 960: the form first, the statement as a footer strip. */
+@media (max-width:960px){
+  .gw{display:flex;flex-direction:column}
+  .gw-main{order:1;flex:1;padding:32px 20px 24px}
+  .gw-panel{margin:0 auto}
+  .gw-theme{margin-top:24px}
+  .gw-side{order:2;padding:32px 20px;gap:24px;min-height:0}
+  .gw-side__big{font-size:var(--text-xl)}
+  .gw-seam{margin-top:16px;height:6px}
+}

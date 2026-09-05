@@ -8,6 +8,7 @@
 import React from "react";
 import { Switch } from "@/components/ds";
 import { removePushSubscription, savePushSubscription } from "./signal-actions";
+import "./push-controls.css";
 
 /* Public half of the VAPID pair — safe in the browser bundle by design. */
 const VAPID_PUBLIC_KEY =
@@ -22,14 +23,6 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i);
   return out;
 }
-
-const MONO: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
-  fontSize: 10,
-  letterSpacing: "var(--track-data)",
-  textTransform: "uppercase",
-  color: "var(--text-3)",
-};
 
 /* Capability is an external fact, not React state — read it as a store so the
    server renders "checking" and the client settles it on hydration. */
@@ -136,37 +129,50 @@ export function PushControls() {
   };
 
   if (supported === null) {
-    return <span style={MONO}>CHECKING THIS DEVICE</span>;
+    return (
+      <div className="push">
+        <span className="push__mono">CHECKING THIS DEVICE</span>
+      </div>
+    );
   }
 
   if (!supported) {
-    return <span style={MONO}>NOT SUPPORTED ON THIS DEVICE</span>;
+    return (
+      <div className="push">
+        <span className="push__mono">NOT SUPPORTED ON THIS DEVICE</span>
+      </div>
+    );
+  }
+
+  /* A switch the browser will not let anyone flip is a dead control. When the
+     permission is refused the row says so and offers nothing to press. */
+  if (permission === "denied") {
+    return (
+      <div className="push">
+        <span className="push__mono">BLOCKED BY THE BROWSER</span>
+        <p className="push__note">This device is refusing the word. Change it in browser settings.</p>
+      </div>
+    );
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div className="push" aria-busy={busy || undefined}>
       <Switch
         name="push"
         label="Send word to this device"
         checked={subscribed}
-        disabled={busy || permission === "denied"}
+        disabled={busy}
         onChange={(e) => {
           if (busy) return;
           if (e.currentTarget.checked) void enable();
           else void disable();
         }}
       />
-      {permission === "denied" ? (
-        <p style={{ fontSize: "var(--text-xs)", color: "var(--text-3)", maxWidth: "42ch" }}>
-          This device is refusing the word. Change it in browser settings.
-        </p>
-      ) : (
-        <span style={MONO}>
-          {busy ? "WORKING" : subscribed ? "THIS DEVICE IS LISTENING" : "THIS DEVICE IS QUIET"}
-        </span>
-      )}
+      <span className="push__mono" role="status">
+        {busy ? "WORKING" : subscribed ? "THIS DEVICE IS LISTENING" : "THIS DEVICE IS QUIET"}
+      </span>
       {error ? (
-        <p style={{ fontSize: "var(--text-xs)", color: "var(--terracotta, var(--text-2))" }} role="alert">
+        <p className="push__err" role="alert">
           {error}
         </p>
       ) : null}
