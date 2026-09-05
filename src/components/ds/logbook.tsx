@@ -115,15 +115,23 @@ export function MarksList({
       {marks
         .filter((m) => m.held || showAhead)
         .map((m) => (
+          /* A mark still ahead is muted by COLOUR, not by opacity. The row is a
+             record, not a control, so §1.4.3's inactive-control exemption does
+             not reach it — and at opacity .55 the name read 3.90:1, the detail
+             2.53:1 and the trailing state 2.16:1, all three below AA. .ls-ahead
+             (components.css) drops what INHERITS to --text-2 at full opacity,
+             7.01:1 on the page, which is why the name below hands its colour
+             back rather than pinning --text-1. The kind and state spans already
+             carry their own muted tokens and are unchanged. */
           <div
             key={m.name}
+            className={m.held ? undefined : "ls-ahead"}
             style={{
               display: "flex",
               alignItems: "baseline",
               gap: "var(--space-4)",
               padding: "var(--space-3) 0",
               borderTop: "1px solid var(--line-faint)",
-              opacity: m.held ? 1 : 0.55,
             }}
           >
             <span
@@ -143,7 +151,7 @@ export function MarksList({
               {/* Anton at 16px sat six below its 22px floor, hidden from the inline gate
                   because the family arrived through a constant rather than a literal.
                   §Type: below 22px a heading is Archivo 700, sentence case. */}
-              <span style={{ font: `700 var(--text-md)/1.2 ${BODY}`, color: "var(--text-1)" }}>{m.name}</span>
+              <span style={{ font: `700 var(--text-md)/1.2 ${BODY}`, color: m.held ? "var(--text-1)" : undefined }}>{m.name}</span>
               {m.detail ? <span style={{ fontSize: "var(--text-xs)", color: "var(--text-2)" }}>{m.detail}</span> : null}
             </span>
             <span

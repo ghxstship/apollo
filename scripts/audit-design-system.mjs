@@ -775,6 +775,188 @@ function checkContrast() {
   };
 }
 
+/* ── check: always-ink aliases ────────────────────────────────────────────── */
+/* The blind spot the contrast check above cannot see out of, and the reason a
+   whole class of ink-on-ink shipped unmeasured.
+
+   checkContrast models --surface-page and --surface-card at :root and at
+   [data-theme="dark"] and nowhere else, because those are the only two places
+   the browser is asked to resolve them. But roughly a dozen surfaces in this
+   product are dark in BOTH themes, and palette.css handles them by REDEFINING
+   the accent pair on a selector — .hm-shell, .ws-nav, .ls-toast, [data-surface]
+   and the kit's --inverse variants. A property redefined on a selector is
+   invisible to a table keyed on the two themes, so every consumer inside those
+   surfaces was measured against the wrong ground or not measured at all.
+
+   What actually goes wrong there is one mechanism, and it is worth stating in
+   full because it looks like it worked every time:
+
+     A custom property resolves its var() AT THE ELEMENT THAT DECLARES IT.
+
+   compat.css declares its aliases at :root. --gold-400:var(--accent-hover) is
+   therefore --accent-hover AS COMPUTED ON <html> — near-black on the paper
+   theme — and that computed value is what inherits down. Restating
+   --accent-hover inside the always-ink block changes nothing for it: the
+   substitution already happened, one element up. palette.css knows this and
+   restates the whole alias list by hand for exactly this reason, and says so
+   twice; the check is here because a hand-maintained list is a list that will
+   one day be one short. It was: --gold-400 and --neon-violet were missing, and
+   between them they put the marketing nav's focus ring at 1.14:1, every Bridge
+   section eyebrow and the funnel chart at 1.00:1, and a Bridge badge at 1.23:1.
+
+   THE RULE, in two halves, both decidable without a DOM:
+
+     A · declaration side. An alias declared at :root whose var() chain reaches
+         a property the always-ink block restates must itself be restated there.
+         This fires whether or not a consumer exists today, which is the point —
+         the next consumer is the one nobody will check.
+
+     B · consumer side. A rule whose selector IS an always-ink selector (or is
+         scoped under one, `.ls-card--sea .x`) must not read such an alias. This
+         is the half that catches a route sheet re-aliasing on top of the block:
+         bridge.css set --gold-deep:var(--gold-400) on .hm-shell itself, which
+         wins on cascade order over palette.css's restatement at the same
+         specificity and re-broke four consumers underneath it.
+
+   WHAT IT DOES NOT CATCH, stated so nobody reads more into a green line than is
+   there. B needs the selector to name an always-ink surface in the same string;
+   a rule that is only a DESCENDANT of one at runtime (.hm-eyebrow, which is
+   inside .hm-shell on every Bridge page but says so nowhere) cannot be resolved
+   from CSS text alone, and is not tested. That is survivable because A fires on
+   the alias itself and A has no such condition — .hm-eyebrow's defect was
+   reachable only through --gold-deep:var(--gold-400), and A arraigns
+   --gold-400. The pair is sound about aliases and partial about consumers, and
+   the alias is where the bug is born. Compound values (--focus-ring's
+   box-shadow list) are also skipped: only a value that is exactly one var() is
+   an alias, which is compat.css's own stated idiom. */
+
+/* The always-ink contract's anchor. A block in palette.css that redefines
+   --accent is, by definition, a surface flipping the accent pair locally —
+   that is the whole move the block exists to make, and requiring it keeps a
+   future @media or print block in the same file from being read as one. */
+const INK_ANCHOR = "--accent";
+const INK_SOURCE = "src/styles/palette.css";
+const CSS_BLOCK = /([^{}@]+)\{([^{}]*)\}/g;
+const PURE_ALIAS = /^var\(\s*(--[a-z0-9-]+)\s*(?:,[\s\S]*)?\)$/i;
+const decomment = (t) => t.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+
+function buildInkBlock() {
+  const selectors = [];
+  const restated = new Set();
+  const src = decomment(readFileSync(join(ROOT, INK_SOURCE), "utf8"));
+  for (const m of src.matchAll(CSS_BLOCK)) {
+    const sel = m[1].trim().replace(/\s+/g, " ");
+    if (/^:root$/.test(sel) || /^\[data-theme/.test(sel)) continue;
+    const props = [...m[2].matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((d) => d[1]);
+    if (!props.includes(INK_ANCHOR)) continue;
+    for (const s of sel.split(",").map((x) => x.trim()).filter(Boolean)) selectors.push(s);
+    for (const p of props) restated.add(p);
+  }
+  return { selectors, restated };
+}
+
+/* :root declarations across the same three colour layers checkContrast reads,
+   in @import order, later winning — the cascade, not the file. */
+function buildRootDecls() {
+  const out = new Map();
+  for (const relPath of COLOR_LAYERS) {
+    const src = decomment(readFileSync(join(ROOT, relPath), "utf8"));
+    let inRoot = false;
+    src.split("\n").forEach((line, i) => {
+      if (/:root\s*\{/.test(line)) inRoot = true;
+      else if (/\{/.test(line)) inRoot = false;
+      else if (/^\s*\}/.test(line)) { inRoot = false; return; }
+      if (!inRoot) return;
+      for (const m of line.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;}]+)/gi)) {
+        out.set(m[1], { raw: m[2].trim(), file: relPath, line: i + 1 });
+      }
+    });
+  }
+  return out;
+}
+
+function checkInkAliases() {
+  const { selectors, restated } = buildInkBlock();
+  const rootDecls = buildRootDecls();
+  const hits = [];
+  let total = 0;
+
+  /* The alias chain from `name`, resolved at :root, up to the first property
+     the always-ink block restates. null when it never reaches one — which is
+     what "not accent-bearing" means operationally: the block does not control
+     it, so declaring it at :root is not a trap. */
+  const throughInk = (name, depth = 0, seen = []) => {
+    if (depth > 6) return null;
+    const chain = [...seen, name];
+    if (restated.has(name)) return chain;
+    const d = rootDecls.get(name);
+    const alias = d?.raw.match(PURE_ALIAS);
+    return alias ? throughInk(alias[1], depth + 1, chain) : null;
+  };
+
+  /* A — the declaration side. */
+  for (const [name, d] of rootDecls) {
+    const alias = d.raw.match(PURE_ALIAS);
+    if (!alias) continue;
+    total++;
+    if (restated.has(name)) continue;
+    const chain = throughInk(name);
+    if (!chain) continue;
+    const hit = {
+      file: d.file, line: d.line,
+      why: `${chain.join(" → ")} — declared at :root and not restated in ${INK_SOURCE}'s always-ink block, so it computes on <html> and inherits the paper accent into every surface that is ink in BOTH themes`,
+    };
+    const why = exempt(lines(join(ROOT, d.file))[d.line - 1] ?? "");
+    hits.push(why ? { ...hit, exempt: why } : hit);
+  }
+
+  /* B — the consumer side. A selector is "on" an always-ink surface when it is
+     one of the block's own selectors, or begins with one at a boundary that is
+     not a name character (`.ls-toast__x` is a different class; `.ls-card--sea
+     .x` and `.ls-btn--inverse:hover` are the same element or inside it). */
+  const inkOwner = (sel) =>
+    selectors.find((s) => sel === s || (sel.startsWith(s) && !/[\w-]/.test(sel[s.length])));
+
+  for (const p of APP_CSS) {
+    if (rel(p) === INK_SOURCE) continue; /* the block itself is the restatement */
+    const src = decomment(readFileSync(p, "utf8"));
+    const lineAt = (idx) => src.slice(0, idx).split("\n").length;
+    for (const m of src.matchAll(CSS_BLOCK)) {
+      const sels = m[1].split(",").map((x) => x.trim().replace(/\s+/g, " ")).filter(Boolean);
+      const owner = sels.map(inkOwner).find(Boolean);
+      if (!owner) continue;
+      /* A property the block declares for itself is resolved at this element,
+         so reading it here is correct however it is aliased. */
+      const own = new Set([...m[2].matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((d) => d[1]));
+      const body = m.index + m[0].indexOf("{") + 1;
+      const seen = new Set();
+      for (const v of m[2].matchAll(/var\(\s*(--[a-z0-9-]+)/gi)) {
+        const name = v[1];
+        total++;
+        if (restated.has(name) || own.has(name) || seen.has(name)) continue;
+        const chain = throughInk(name);
+        if (!chain) continue;
+        seen.add(name);
+        const line = lineAt(body + v.index);
+        const hit = {
+          file: rel(p), line,
+          why: `${sels.join(",")} is on the always-ink surface ${owner} and reads ${chain.join(" → ")}, which resolves at :root — the always-ink block's restatement cannot reach it`,
+        };
+        const why = exempt(lines(p)[line - 1] ?? "");
+        hits.push(why ? { ...hit, exempt: why } : hit);
+      }
+    }
+  }
+
+  return {
+    name: "ink-aliases",
+    rule: `an alias reaching an accent the always-ink block restates is restated there too, and no rule on an always-ink selector reads one through :root`,
+    total,
+    hits: hits.filter((h) => !h.exempt),
+    exempted: hits.filter((h) => h.exempt),
+  };
+}
+
 /* ── check: raw hex ───────────────────────────────────────────────────────── */
 /* A hex typed into a surface is a colour that cannot be re-decided. Option C
    repointed the accent, five divisions and three status hues in one file and
@@ -1258,7 +1440,7 @@ function checkUnsetFocus() {
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
 const checks = [checkWeights(), checkScale(), ...checkDisplay(), checkMotion(), checkTokens(), checkVocab(), checkFoundingYear(), checkInline(), checkTracking(),
-                checkHueArc(), checkHueGap(), checkContrast(), checkNoRawHex(), checkOrphanClasses(), checkIcons(), checkUnsetFocus()]
+                checkHueArc(), checkHueGap(), checkContrast(), checkInkAliases(), checkNoRawHex(), checkOrphanClasses(), checkIcons(), checkUnsetFocus()]
   .filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {

@@ -218,6 +218,14 @@
 .hm-top,.hm-tabs,.hm-shell,.kio,.crd-card,.ls-toast,.ls-tip__bubble,
 .ls-card--sea,.ws-nav,.ws-menu,.ws-hero,.ws-footer,.ws-livestrip,.ws-band,
 .ev-log,.bk-lock--ink,.bk-dl,.gw-side,.mbr-tabbar,.ptl-hero,
+/* Panels whose ground is a fixed fill or a --scene-* gradient rather than a
+   theme surface, so they are ink whichever theme is on. .cam-scan__frame is the
+   QR alignment frame used at the dock: its reticle reads --neon-cyan, which
+   resolved to INK on the paper theme and drew the guide black on near-black.
+   .now-hero has the same shape (.now-hero__tag reads --neon-cyan) and .cht-stop
+   the same ground with no accent child yet — listed now so the next child added
+   to either cannot inherit the paper accent onto a black card. */
+.cam-scan__frame,.cht-stop,.now-hero,
 /* The kit's `inverse` variants are, by contract, the component ON an always-ink
    ground — so they belong here as a class, not one consumer at a time. Before
    this, an inverse Progress on the paper theme drew an ink fill on a graphite
@@ -259,4 +267,19 @@
 --glow-cyan:0 0 0 3px rgba(241,241,237,.18);
 --focus:var(--ivory-100);
 --text-gold:var(--ivory-100);
+/* The one the list was missing, and the reason the `ink-aliases` check in
+   scripts/audit-design-system.mjs now exists. --neon-violet aliases
+   --accent-press at :root in compat.css, so on the paper theme it computed to
+   #000000 THERE and was inherited into every surface below — restating
+   --accent-press here notwithstanding — painting .hm-badge--comp black on the
+   Bridge's near-black card at 1.23:1. The step, not the alias it points at, for
+   the same reason every line above is written that way.
+
+   --gold-400 was the second, and the worse one: it carried --accent-hover to
+   .ws-nav's focus ring (1.14:1) and, through four more aliases, to every Bridge
+   section eyebrow, the rail label, the bulk bar and the funnel chart's fill
+   (1.00:1 on the shell ground). Both consumers now read --accent-hover directly
+   and compat.css has retired the name, so there is nothing left here to
+   restate — see compat.css §"the metallic channel". */
+--neon-violet:var(--ivory-300);
 }

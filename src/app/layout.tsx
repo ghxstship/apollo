@@ -86,9 +86,23 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  /* Paper, matching --surface-page in tokens.css. The palette inverted with the
-     rebrand: this used to be noir because the old system was dark-first. */
-  themeColor: "#EDEDEA",
+  /* The browser bar, painted to whichever ground is behind it. These are
+     --surface-page's two literals in tokens.css: #EDEDEA on paper, --noir-900
+     on ink. A single static light value gave every reader on the ink theme a
+     paper bar above a near-black page.
+
+     KNOWN LIMIT, and the reason this is two entries rather than three: a
+     <meta name="theme-color"> can only be selected by a media query, and this
+     product's theme is not decided by one — the bootstrap below reads a
+     persisted mode that DEFAULTS TO LIGHT and resolves prefers-color-scheme
+     only for mode "system". So these two agree with the page exactly in
+     "system" mode, and elsewhere agree whenever the reader's chosen mode and
+     their OS point the same way. Tracking it exactly needs the meta updated
+     from applyTheme() in ds/actions.tsx, which is where that belongs. */
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#EDEDEA" }, /* ds-exempt: browser chrome, not the document — a <meta name="theme-color"> is read by the user agent outside the page's cascade and cannot resolve var(--surface-page), so the literal is the only form available. The single static value this replaces was the same literal for the same reason; it escaped this check only because the key was spelled themeColor. Both track --surface-page in tokens.css and change with it. */
+    { media: "(prefers-color-scheme: dark)", color: "#141414" }, /* ds-exempt: browser chrome, not the document — see the light entry above; this is --surface-page's ink value, --noir-900. */
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

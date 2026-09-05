@@ -1,4 +1,23 @@
 /* Minimal base — element defaults so consumers start on-brand. */
+
+/* The one declaration that reaches the parts of the page we do not draw:
+   scrollbars, native <select> popups, date pickers, spin buttons and Chrome's
+   autofill wash. Without it the browser renders all of them light whatever the
+   theme is, so the ink theme shipped a white scrollbar down its edge and a
+   white autofill block inside its fields.
+
+   Keyed on the attribute, not on prefers-color-scheme, because that is how this
+   product's theme is actually decided: layout.tsx's bootstrap reads the
+   persisted mode (defaulting to LIGHT, not to the OS), resolves it, and stamps
+   data-theme="dark" only when the answer is dark — applyTheme in ds/actions.tsx
+   REMOVES the attribute for light rather than setting data-theme="light". So
+   the attribute's presence is the whole truth, and a
+   `@media (prefers-color-scheme:dark)` fallback would be worse than nothing: it
+   would hand dark scrollbars and a dark autofill wash to every OS-dark reader
+   who is on the default light theme — which is most of them. */
+:root{color-scheme:light}
+:root[data-theme="dark"]{color-scheme:dark}
+
 *,*:before,*:after{box-sizing:border-box}
 body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var(--font-sans);font-size:var(--text-md);line-height:var(--leading-body);-webkit-font-smoothing:antialiased}
 /* §Type: "Anton for display ≥22px, ALL CAPS always (via text-transform)". The
@@ -78,7 +97,7 @@ img{max-width:100%;height:auto}
 .ls-live{display:inline-flex;align-items:center;gap:var(--space-2)}
 .ls-eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase}
 .ls-mono-data{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);font-variant-numeric:tabular-nums}
-.ls-live:before{content:"";width:7px;height:7px;border-radius:999px;background:var(--neon-cyan);box-shadow:var(--glow-cyan);animation:ls-pulse 1.6s var(--ease-swell) infinite}/* ds-exempt: live indicator — §Shadows names the live indicator alongside the primary CTA as the one place --shadow-glow-accent belongs, so the system contemplates this element; the loop is an opacity fade and collapses under prefers-reduced-motion. */
+.ls-live:before{content:"";width:7px;height:7px;border-radius:999px;background:var(--neon-cyan);box-shadow:var(--glow-cyan);animation:ls-pulse 1.6s var(--ease-out) infinite}/* ds-exempt: live indicator — §Shadows names the live indicator alongside the primary CTA as the one place --shadow-glow-accent belongs, so the system contemplates this element; the loop is an opacity fade and collapses under prefers-reduced-motion. */
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 code,pre,kbd{font-family:var(--font-mono)}
 

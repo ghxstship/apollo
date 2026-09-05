@@ -10,7 +10,16 @@
   --action-primary:var(--ivory-100);--action-primary-hover:var(--ivory-50);--action-on-primary:var(--noir-950);
   --wash-ink:rgba(241,241,237,.07);--wash-ink-2:rgba(241,241,237,.12);
   --text-link:var(--neon-cyan);--focus:var(--neon-cyan);
-  --gold-deep:var(--gold-400);--bronze:var(--gold-400);--gilt:var(--gold-400);--gold:var(--gold-400);
+  /* --accent-hover, not --gold-400. A custom property resolves its var() at the
+     element that DECLARES it: --gold-400 was declared at :root in compat.css, so
+     on the paper theme it computed to --noir-950 there and was inherited into
+     the console whole — and these four aliases handed that near-black on to the
+     section eyebrow (.hm-eyebrow, every section label on the Bridge), the rail
+     label, the bulk bar's edge and the funnel chart's fill, at 1.00:1 on the
+     shell ground and 1.14:1 on a card. .hm-shell is in palette.css's always-ink
+     list, which restates --accent-hover locally, so reading it directly gets
+     --ivory-50 in both themes. Enforced by the `ink-aliases` check. */
+  --gold-deep:var(--accent-hover);--bronze:var(--accent-hover);--gilt:var(--accent-hover);--gold:var(--accent-hover);
 }
 
 /* — top chrome —
@@ -26,17 +35,22 @@
 .hm-top__clock{margin-inline-start:0}
 /* One search across the console, in the top bar. */
 .hm-cmd{position:relative;margin-inline-start:auto;flex:0 1 320px;min-width:160px}
-.hm-cmd__input{width:100%;height:32px;padding:0 10px;background:var(--surface-card);color:var(--text-1);border:1px solid var(--line-faint);font:400 var(--text-xs)/1 var(--font-sans);outline:none}
-.hm-cmd__input::placeholder{color:var(--text-3)}
-.hm-cmd__input:focus-visible{border-color:var(--line);box-shadow:0 0 0 2px var(--surface-abyss),0 0 0 3px var(--text-3)}
+/* The field is the kit's SearchField, sized to the top bar: the control-sm
+   step, the glyph slot squared to it, the xs face. The focus ring is the
+   kit's own — the hand-drawn input here had outline:none and a ring of its
+   own making. */
+.hm-cmd .ls-input{height:var(--control-sm);font-size:var(--text-xs)}
+.hm-cmd .ls-input__adorn{height:var(--control-sm);width:var(--control-sm)}
+.hm-cmd .ls-input--adorned-start{padding-inline-start:var(--control-sm)}
 /* The results appear rather than pop: a short fade on the token's fast step.
    The selected row is the one the arrow keys have reached; hover and focus
    share its look so the pointer and the keyboard never disagree about which
    result Enter will open. */
-.hm-cmd__list{position:absolute;top:38px;inset-inline:0;z-index:40;background:var(--surface-card);border:1px solid var(--line);max-height:360px;overflow:auto;padding:4px;box-shadow:var(--shadow-raised);animation:ls-fade var(--dur-fast) var(--ease-out) backwards}
+.hm-cmd__list{position:absolute;top:calc(100% + var(--space-1));inset-inline:0;z-index:40;background:var(--surface-card);border:1px solid var(--line);max-height:360px;overflow:auto;padding:4px;box-shadow:var(--shadow-raised);animation:ls-fade var(--dur-fast) var(--ease-out) backwards}
 .hm-cmd__item{display:grid;grid-template-columns:84px 1fr;gap:2px 10px;padding:8px 10px;text-decoration:none;color:var(--text-1)}
 .hm-cmd__item{transition:background var(--dur-fast) var(--ease-out)}
-.hm-cmd__item:hover,.hm-cmd__item:focus-visible,.hm-cmd__item[aria-selected="true"]{background:var(--surface-page);outline:none}
+.hm-cmd__item:hover,.hm-cmd__item:focus-visible,.hm-cmd__item[aria-selected="true"]{background:var(--surface-page)}
+.hm-cmd__item:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .hm-cmd__item[aria-selected="true"]{box-shadow:inset 2px 0 0 var(--focus)}
 .hm-cmd__kind{grid-row:1 / span 2;align-self:start;font:700 var(--text-3xs)/1.6 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3)}
 .hm-cmd__title{font:700 var(--text-sm)/1.3 var(--font-sans)}
@@ -44,7 +58,7 @@
 .hm-cmd__empty{padding:10px;font:400 var(--text-2xs)/1.4 var(--font-mono);color:var(--text-3)}
 @media (max-width:960px){.hm-cmd{display:none}}
 .hm-top__op{display:flex;align-items:center;gap:14px}
-.hm-top__back{font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:7px 10px;border:1px solid var(--line-faint);transition:color var(--dur-1) var(--ease-swell),border-color var(--dur-1) var(--ease-swell)}
+.hm-top__back{font:700 var(--text-3xs)/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:7px 10px;border:1px solid var(--line-faint);transition:color var(--dur-hover) var(--ease-out),border-color var(--dur-hover) var(--ease-out)}
 .hm-top__back:hover{color:var(--text-1);border-color:var(--line)}
 @media (max-width:960px){
   .hm-top__in,.hm-tabs__in{padding-inline:20px}
@@ -72,7 +86,7 @@
    is a stencil, not a colour: a mask reads the alpha channel, so this paints
    nothing and there is no token for it to take. */
 .hm-tabs__in{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 20px,#000 calc(100% - 20px),transparent 100%)} /* ds-exempt: mask stencil — a mask reads alpha only, so #000 here means "fully opaque", not black. There is no colour decision to tokenise. */
-.hm-tabs__in a{font:var(--type-label);flex:none;padding:12px 14px;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;border-bottom:2px solid transparent;transition:color var(--dur-1) var(--ease-swell)}
+.hm-tabs__in a{font:var(--type-label);flex:none;padding:12px 14px;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;border-bottom:2px solid transparent;transition:color var(--dur-hover) var(--ease-out)}
 .hm-tabs__in a:hover{color:var(--text-1);background:var(--wash-ink)}
 .hm-tabs__in a[aria-current="page"]{color:var(--text-1);border-bottom-color:var(--neon-cyan)}
 .hm-tabs__in a:focus-visible{outline-offset:-2px}
@@ -87,9 +101,11 @@
    accident; a note that follows the lede keeps the lede's measure and gap. */
 .hm-eyebrow{display:block;font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep)}
 .hm-h1{font-family:var(--font-display);font-size:var(--text-display-m);line-height:1.1;margin-top:8px;text-transform:uppercase;text-wrap:balance}
-.hm-lede{font-size:var(--text-sm);color:var(--text-2);margin-top:10px;max-width:56ch}
-.hm-lede+.hm-note{margin-top:10px;max-width:60ch}
-.hm-sec>h2+.hm-lede{margin-top:4px}
+/* The lede is the kit's .ls-lede; the utility owns no margin, so the head
+   places it. */
+.hm-h1+.ls-lede{margin-top:10px}
+.ls-lede+.hm-note{margin-top:10px;max-width:60ch}
+.hm-sec>h2+.ls-lede{margin-top:4px}
 .hm-sec--tight{margin-top:20px}
 .hm-block{margin-top:20px}
 .hm-mono{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data);color:var(--text-3)}
@@ -117,8 +133,8 @@
 .hm-form{display:flex;flex-direction:column;gap:12px}
 .hm-form__row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:640px){.hm-form__row{grid-template-columns:1fr}}
-.hm-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.hm-acts--right{justify-content:flex-end}
+/* An action row is the kit's .ls-acts (+ --end); this only places one under
+   a card's fields. */
 .hm-acts--below{margin-top:12px}
 /* A pending action says so on the button itself: dimmed, the cursor a clock,
    and inert until the answer lands. Distinct from disabled, which is .4 and
@@ -155,7 +171,7 @@
 /* — galley POS — */
 .hm-pos{display:grid;grid-template-columns:1fr 380px;gap:24px;margin-top:20px;align-items:start}
 .hm-pos__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:20px}
-.hm-pos__item{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);padding:16px 14px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;transition:border-color var(--dur-1) var(--ease-swell)}
+.hm-pos__item{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-sharp);padding:16px 14px;min-height:96px;display:flex;flex-direction:column;justify-content:space-between;transition:border-color var(--dur-hover) var(--ease-out)}
 .hm-pos__item:hover{border-color:var(--line)}
 .hm-pos__item:active{transform:translateY(1px)}
 .hm-pos__item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
@@ -182,7 +198,7 @@
 /* — crew ATS — */
 .hm-crew{display:grid;grid-template-columns:260px 1fr;gap:24px;margin-top:20px;align-items:start}
 .hm-roles{background:var(--surface-card);border:1px solid var(--line-faint);display:flex;flex-direction:column}
-.hm-role{all:unset;cursor:pointer;box-sizing:border-box;padding:14px 18px;border-inline-start:2px solid transparent;border-top:1px solid var(--line-faint);transition:background var(--dur-1) var(--ease-swell)}
+.hm-role{all:unset;cursor:pointer;box-sizing:border-box;padding:14px 18px;border-inline-start:2px solid transparent;border-top:1px solid var(--line-faint);transition:background var(--dur-hover) var(--ease-out)}
 .hm-role:first-child{border-top:0}
 .hm-role:hover{background:var(--wash-ink)}
 .hm-role:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
@@ -300,19 +316,18 @@
 .hm-outbox tbody tr{animation:ls-fade var(--dur-base) var(--ease-out) backwards;transition:opacity var(--dur-base) var(--ease-out)}
 .hm-outbox tr.is-gone{opacity:0}
 .hm-outbox td:last-child{white-space:nowrap}
-.hm-outbox.ls-table-wrap{margin-bottom:16px}
+.hm-outbox{margin-bottom:16px}
 
 /* — running prose on the console —
-   .hm-body is a paragraph inside a dialog or under a heading; .hm-empty is the
-   line that stands in for absent content. Both existed as inline fontSize
-   objects at 13, 13.5 and 12.5 — none of them on the ladder, all of them
-   retyped at each of sixty-eight call sites. */
+   .hm-body is a paragraph inside a dialog or under a heading. It existed as
+   inline fontSize objects at 13, 13.5 and 12.5 — none of them on the ladder,
+   all of them retyped at each of sixty-eight call sites. The line that stands
+   in for absent content is the kit's .ls-empty. */
 .hm-body{font-size:var(--text-sm);line-height:var(--leading-body);color:var(--text-2);margin:0}
 .hm-body+.hm-body{margin-top:10px}
 .hm-body--muted{color:var(--text-3)}
 .hm-body--below{margin-top:8px}
 .hm-muted{color:var(--text-3)}
-.hm-empty{padding:20px 4px;font-size:var(--text-xs);color:var(--text-3)}
 
 /* — a row of small named panels (keys, hooks, rules) — */
 .hm-item{background:var(--surface-card);border:1px solid var(--line-faint);padding:14px 16px;margin-top:10px}
@@ -337,7 +352,6 @@
 .hm-inbox__list{background:var(--surface-card);border:1px solid var(--line-faint);display:flex;flex-direction:column;max-height:560px;overflow:auto}
 .hm-inbox__row{all:unset;cursor:pointer;box-sizing:border-box;padding:13px 16px;border-inline-start:2px solid transparent;border-top:1px solid var(--line-faint);transition:background var(--dur-fast) var(--ease-out)}
 .hm-inbox__head{padding:14px 18px}
-.hm-inbox__list .hm-empty{padding:16px}
 .hm-inbox__row:first-child{border-top:0}
 .hm-inbox__row:hover{background:var(--wash-ink)}
 .hm-inbox__row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
@@ -440,10 +454,9 @@
    item defaults to min-content, so a long episode title pushed the columns wide
    and forced the row to scroll instead of truncating. */
 .hm-rota__what,.hm-pnl__what{min-width:0}
-/* A checkbox with its sentence, sitting on the same baseline as the inputs
-   beside it in a plan-style card. */
-.hm-check{display:flex;align-items:center;gap:10px;font-size:var(--text-sm);align-self:end;padding-bottom:10px}
-.hm-check input{width:18px;height:18px;accent-color:var(--gold)}
+/* The kit's Checkbox with its sentence, sat on the same baseline as the
+   inputs beside it in a plan-style card. */
+.hm-check{align-self:end;padding-bottom:10px}
 /* A night's own headcount for a post, inline with the row's actions. */
 .hm-need{display:inline-flex;align-items:end;gap:6px}
 .hm-need input{width:64px}
@@ -464,7 +477,7 @@
   .hm-rail__in{display:flex;flex-direction:column;gap:22px}
   .hm-rail__group{display:flex;flex-direction:column;gap:1px}
   .hm-rail__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);padding:0 12px 8px}
-  .hm-rail__group a{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:8px 12px;border-inline-start:2px solid transparent;transition:color var(--dur-1) var(--ease-swell),background var(--dur-1) var(--ease-swell)}
+  .hm-rail__group a{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);text-decoration:none;padding:8px 12px;border-inline-start:2px solid transparent;transition:color var(--dur-hover) var(--ease-out),background var(--dur-hover) var(--ease-out)}
   .hm-rail__group a:hover{color:var(--text-1);background:var(--wash-ink)}
   .hm-rail__group a[aria-current="page"]{color:var(--text-1);border-inline-start-color:var(--neon-cyan);background:var(--wash-ink)}
   .hm-main{max-width:none;margin-inline:0}
@@ -496,9 +509,8 @@
    The bar exists only while something is ticked; every button on it names the
    count before it asks. */
 .hm-pick{display:inline-flex;align-items:center;padding:4px}
-.hm-pick input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
 .hm-bulk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;padding:10px 16px;background:var(--surface-card);border:1px solid var(--line-faint);border-inline-start:3px solid var(--gold)}
-.hm-bulk .hm-acts{margin-inline-start:auto}
+.hm-bulk .ls-acts{margin-inline-start:auto}
 
 /* — Applications: an answer under its prompt — */
 .hm-answer{margin-top:4px;white-space:pre-wrap;color:var(--text-1)}
@@ -509,7 +521,7 @@
 
 /* — Broadcast: the buttons sit on the input's baseline. The four channels are
    an .ls-choices row now, not a rule of their own. — */
-.hm-acts--end{align-self:end;justify-content:flex-end;padding-bottom:10px}
+.hm-acts--baseline{align-self:end;padding-bottom:10px}
 
 /* — Program: the access note in the venue row — */
 .hm-access{font-size:var(--text-xs);color:var(--text-2);max-width:32ch}
@@ -558,7 +570,7 @@
 .hm-rule__set{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .hm-rule__set .ls-field{min-width:220px;flex:1}
 .hm-audience__foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--line-faint)}
-.hm-audience__foot .hm-acts .ls-field{min-width:200px}
+.hm-audience__foot .ls-acts .ls-field{min-width:200px}
 .hm-reach{font-size:var(--text-sm);color:var(--text-1)}
 .hm-reach__names{color:var(--text-2)}
 @media (max-width:960px){.hm-rule{grid-template-columns:1fr 1fr}.hm-rule__value{grid-column:1 / -1}}
@@ -577,10 +589,11 @@
 .hm-who>.hm-mono,.hm-who__sub{display:block;margin-top:2px}
 .hm-who__sub{color:var(--text-3)}
 .hm-who__note{display:block;margin-top:4px;color:var(--text-2)}
+/* A retired clause or document, still listed. */
+.hm-who--retired{opacity:.55}
 
-/* Small stacks and runs inside a cell. */
-.hm-stack{display:inline-flex;flex-direction:column;gap:4px;align-items:start}
-.hm-inline{display:inline-flex;align-items:center;gap:10px}
+/* Small runs inside a cell — stacks and inlines are the kit's .ls-stack and
+   .ls-inline. */
 .hm-chips{display:inline-flex;gap:6px;flex-wrap:wrap}
 .hm-lines{display:block;line-height:1.7}
 .hm-lines span{display:block}
@@ -632,10 +645,13 @@
    than its baseline; a dense row still clears 44px under a thumb. */
 .hm-shell .ls-table .num{font-variant-numeric:tabular-nums}
 .hm-shell .ls-table .ls-badge{vertical-align:middle}
-.hm-shell .ls-table td>.hm-acts{justify-content:flex-end}
+.hm-shell .ls-table td>.ls-acts{justify-content:flex-end}
+/* A stack in a cell hugs its content rather than stretching a button or a
+   badge to the column. */
+.hm-shell .ls-table .ls-stack{align-items:start}
 @media (pointer:coarse){
   .hm-shell .ls-table--dense td{padding-block:11px}
-  .hm-item__acts .ls-btn--sm,.hm-acts .ls-btn--sm{min-height:44px}
+  .hm-item__acts .ls-btn--sm,.hm-shell .ls-acts .ls-btn--sm{min-height:44px}
 }
 
 /* — the error boundary —
@@ -670,7 +686,6 @@
 .hm-mono--gilt{display:block;margin-top:4px;color:var(--gold-bright)}
 .hm-h2{font-family:var(--font-display);font-size:var(--text-display-xs);margin-top:4px;text-transform:uppercase}
 .hm-kv__n{flex:none;min-width:24px}
-.hm-stack--block{display:flex;gap:2px}
 /* A field that should not take the row: the heads figure and the certificate
    line on the composition card, at their own widths. */
 .hm-field--narrow{width:110px;flex:none}
@@ -693,7 +708,6 @@
 .hm-ticket__who .hm-body{color:var(--text-1)}
 .hm-ticket__attach{display:flex;gap:8px;align-items:flex-end}
 .hm-ticket__attach>.ls-field{flex:1;min-width:0}
-.hm-ticket__lines .hm-empty{padding-inline:0}
 .hm-ticket .hm-note--flush{padding:0 16px 14px}
 /* An action row that stands 18px under the tabs, 14px over the list. */
 .hm-switcher--tabs{margin:18px 0 14px}

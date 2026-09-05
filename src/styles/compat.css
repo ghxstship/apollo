@@ -108,7 +108,15 @@
      these lands on an acid step: the -deep step on paper (small type needs it
      to clear AA on #EDEDEA), the 400 step on ink. — */
 --gold:var(--accent);
---gold-400:var(--accent-hover);
+/* --gold-400 is retired. It had two consumers, and both were the same defect:
+   .ws-nav's focus ring and the Bridge's four metallic aliases read it, and a
+   custom property resolves its var() at the element that DECLARES it — so an
+   alias onto --accent-hover declared HERE, at :root, computed to --noir-950 on
+   the paper theme and was inherited whole into two surfaces that are ink in
+   both themes. Both now read --accent-hover directly, which palette.css's
+   always-ink block restates locally, and the name goes with them: an alias with
+   no consumer is a name the next person has to decide about, which is the same
+   reasoning that retired --clay above. */
 /* KNOCKOUT ONLY. Every consumer of these three sits on a ground that is dark in
    BOTH themes — the Bridge, .ls-card--sea, the brand download band, the site nav
    and hero. They must therefore take the on-dark step, not --accent: with the
@@ -124,10 +132,6 @@
 --aegean:var(--accent);
 --neon-cyan:var(--accent);
 --neon-violet:var(--accent-press);
-/* Commerce, not a division — the Shop carries whichever division's mark the
-   drop belongs to and has no mark of its own, so it gets the one commerce hue. */
---terracotta:var(--brand-shop);
-
 /* — status. The one channel permitted to override a division accent. — */
 --ok:var(--positive);
 --laurel:var(--positive);
@@ -190,14 +194,9 @@
 --sea-dusk:var(--scene-crimson); /* @kind color */
 --sea-dawn:var(--scene-golden); /* @kind color */
 
-/* — motion — the kit's own sheets read the semantic names in tokens.css
-   (--dur-hover/-enter/-exit/-move, --ease-enter/-exit/-move) since 2026-09-05;
-   these three remain for the page sheets that still say --dur-1. --dur-3 came
-   out the day nothing read it — the kit's card zoom and progress fill say
-   --dur-cine now, which is what it always meant. — */
---dur-1:var(--dur-fast);
---dur-2:var(--dur-base);
---ease-swell:var(--ease-out); /* @kind other */
+/* — motion — retired 2026-09-05. Every sheet reads the semantic names in
+   tokens.css (--dur-hover/-enter/-exit/-move, --ease-enter/-exit/-move);
+   --dur-1/--dur-2/--dur-3/--ease-swell came out the day nothing read them. — */
 }
 
 /* Ink theme. Only the aliases whose ground flips need restating — everything

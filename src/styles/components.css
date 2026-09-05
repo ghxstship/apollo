@@ -100,16 +100,12 @@
 
 /* — Card — */
 .ls-card{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column;font-family:var(--font-sans);transition:border-color var(--dur-hover) var(--ease-out)}
-.ls-card--click{cursor:pointer}
-.ls-card--click:hover{border-color:var(--line-strong)}
 .ls-card--sea{background:var(--surface-deep);border-color:var(--line-inverse-faint);color:var(--text-inverse-1);position:relative}
 .ls-card--sea:before{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-card);mix-blend-mode:multiply;pointer-events:none;z-index:0}
 .ls-card--sea .ls-card__body{position:relative;z-index:1}
-.ls-card--sea.ls-card--click:hover{border-color:var(--line-inverse-strong)}
 .ls-card__media{position:relative;aspect-ratio:16/9;overflow:hidden}
 .ls-card__media:after{content:"";position:absolute;inset:0;background:var(--grain);opacity:var(--grain-hero);mix-blend-mode:multiply;pointer-events:none}
 .ls-card__media>div,.ls-card__media>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform var(--dur-cine) var(--ease-out)}
-.ls-card--click:hover .ls-card__media>div,.ls-card--click:hover .ls-card__media>img{transform:scale(1.03)}
 .ls-card__tk{position:absolute;left:var(--space-3);bottom:var(--space-2);font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--tracking-dense);color:var(--text-on-media)}
 .ls-card__body{padding:var(--space-6);display:flex;flex-direction:column;flex:1}
 .ls-card__eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--gold-deep);margin-bottom:var(--space-2)}
@@ -229,14 +225,40 @@
    too. */
 .ls-tag{font:var(--type-label);display:inline-flex;align-items:center;gap:var(--space-2);min-height:28px;padding-inline:var(--space-3) calc(var(--space-3) - var(--tracking-label));border-radius:var(--radius-sharp);border:1px solid var(--line);letter-spacing:var(--tracking-label);color:var(--text-1);text-transform:uppercase;cursor:default;max-width:max-content;white-space:nowrap;transition:border-color var(--dur-hover) var(--ease-out),background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out)}
 .ls-tag.ls-tag--active{background:var(--action-primary);border-color:var(--action-primary);color:var(--action-on-primary)}
-.ls-tag.ls-tag--click{cursor:pointer;position:relative}
+.ls-tag.ls-tag--click{cursor:pointer}
 /* 28px clears WCAG 2.5.8's 24px floor; on a phone the pill grows to 44px of hit
    area vertically only, so neighbours in the same row never overlap. */
-@media (pointer:coarse){.ls-tag.ls-tag--click:before{content:"";position:absolute;inset:-8px 0}}
+@media (pointer:coarse){.ls-tag__press:before{content:"";position:absolute;inset:-8px 0}}
 .ls-tag.ls-tag--click:hover{border-color:var(--line-strong)}
 /* Present, not choosable. Stays in the row so the axis keeps its shape. */
 .ls-tag.ls-tag--disabled{opacity:var(--opacity-disabled);cursor:default;pointer-events:none}
 .ls-tag.ls-tag--active.ls-tag--click:hover{background:var(--action-primary-hover)}
+/* The pressable face of a clickable Tag. Tag is a <span>, and a removable Tag
+   already contains a real <button class="ls-tag__x"> — so putting role="button"
+   on the span nested a control inside a control, which has no accessibility
+   mapping and leaves the inner one unreachable in several AT modes. The span
+   goes back to being a span and the press becomes a button of its own, sitting
+   BEFORE .ls-tag__x rather than around it.
+
+   Nothing here restates the face. `all:unset` resolves every INHERITED property
+   to inherit, and family, size, weight, tracking, case, colour and cursor are
+   all inherited — so the button already wears the tag. Only the box, which is
+   not inherited, has to be said: stretch to the pill's height, take the free
+   inline space, and leave .ls-tag__x outside.
+
+   The ring is stated with !important for the reason .ls-bare gives above:
+   `all:unset` resets `outline` too, and an inline-level `all` outranks the
+   global :focus-visible rule. It hugs the button rather than the pill (the
+   pill's own +2px ring is drawn by .ls-tag--click:focus-visible, which no
+   longer fires now that the span is not focusable). */
+.ls-tag__press{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--space-2);align-self:stretch;flex:1 1 auto;min-width:0;cursor:inherit}
+.ls-tag__press[disabled]{cursor:default}
+.ls-tag__press{position:relative}
+.ls-tag:has(>.ls-tag__press){padding-inline-start:0}
+.ls-tag:has(>.ls-tag__press):not(:has(>.ls-tag__x)){padding-inline-end:0}
+.ls-tag__press{padding-inline-start:var(--space-3)}
+.ls-tag:not(:has(>.ls-tag__x)) .ls-tag__press{padding-inline-end:calc(var(--space-3) - var(--tracking-label))}
+.ls-tag__press:focus-visible{outline:2px solid var(--focus) !important;outline-offset:2px;border-radius:2px}
 .ls-tag__x{all:unset;cursor:pointer;line-height:0;display:inline-flex;opacity:.6;position:relative;transition:opacity var(--dur-hover) var(--ease-out)}
 .ls-tag__x:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
 .ls-tag__x:before{content:"";position:absolute;inset:-8px}
@@ -742,8 +764,8 @@
    component's, not the cascade's. Controls whose ring must sit inside a scroll
    wrapper (tabs, stepper, table rows, menus) keep their own inset offset above;
    text fields draw theirs on the border (see .ls-input). */
-.ls-btn:focus-visible,.ls-iconbtn:focus-visible,.ls-card--click:focus-visible,.ls-tag.ls-tag--click:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-.ls-btn--inverse:focus-visible,.ls-iconbtn--inverse:focus-visible,.ls-card--sea.ls-card--click:focus-visible{outline-color:var(--focus-on-dark)}
+.ls-btn:focus-visible,.ls-iconbtn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.ls-btn--inverse:focus-visible,.ls-iconbtn--inverse:focus-visible{outline-color:var(--focus-on-dark)}
 
 /* — Scroll containers — the same thin bar, in the line ramp, on every one the
    kit declares. Firefox and Chromium honour these two properties; WebKit keeps
@@ -793,6 +815,22 @@
 /* The one-line empty state inside a list or a table cell, where a StateBlock
    would be too much furniture. */
 .ls-empty{padding:var(--space-4);font-size:var(--text-xs);color:var(--text-3);text-align:center;text-wrap:pretty}
+/* A record that has not been earned yet — a mark still ahead in the logbook, a
+   step still ahead on the casting ladder. Mute by COLOUR at full opacity, never
+   by opacity.
+
+   opacity composites the whole subtree toward the ground and does it to every
+   colour in it at once, so a row faded to .55 took its heading to 3.90:1, its
+   detail to 2.53:1 and its trailing state to 2.16:1 — all three below AA, on
+   text that is not a control. §1.4.3's exemption is for INACTIVE CONTROLS; a
+   record of something not yet done is neither inactive nor a control, it is
+   copy, and it has to be readable to say what is still ahead.
+
+   One step down the text ramp says the same thing and stays legible: --text-2
+   is 7.01:1 on the page and 7.53:1 on ink. Children that already carry their
+   own muted token (--text-2 detail, --text-3 state) are unaffected and stay
+   where they are — the class only governs what inherits. */
+.ls-ahead{color:var(--text-2)}
 
 /* — signing — the document reads as a document, not a form field. Focus rings
    stay visible (2.4.7), the scrollable text is keyboard-reachable (2.1.1), and
@@ -817,7 +855,13 @@
 .sgn-draw__alt{color:var(--text-3)}
 .sgn-link{background:none;border:0;padding:4px 2px;min-height:24px;color:var(--gold-deep);font:inherit;text-decoration:underline;cursor:pointer}
 .sgn-consent{border-top:1px solid var(--line-faint);padding-top:var(--space-5)}
-.sgn-error{color:var(--caution);font-size:var(--text-xs);min-height:1.2em}
+/* --danger, not --caution. Caution is #B67707 on the page ground: 3.18:1, under
+   AA and under the 3:1 large-text floor as well, in the one place a reader is
+   being told what to correct before they can sign. Danger is 4.66:1 on the page
+   and 5.10:1 on a card, and it is what every other field error in the kit
+   already uses — caution here was also saying "be careful" where the message
+   means "this is wrong". */
+.sgn-error{color:var(--danger);font-size:var(--text-xs);min-height:1.2em}
 .sgn-error:empty{min-height:0}
 .sgn-done h2{font-family:var(--font-display);font-weight:400;font-size:var(--text-xl);letter-spacing:var(--track-display);text-transform:uppercase;margin:0 0 var(--space-2)}
 .sgn-done p{font-size:var(--text-sm);color:var(--text-2);max-width:52ch;line-height:1.7}
@@ -830,8 +874,14 @@
 .ls-filters__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3);flex:none;min-width:54px}
 /* The count a pill leads to. Mono, dimmer than the label, and it inherits the
    pill's colour when the pill is active so it cannot go invisible on the ink
-   fill — the reason it is currentColor at half opacity rather than a token. */
-.ls-tag__n{margin-inline-start:var(--space-2);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--tracking-label);color:currentColor;opacity:.55;font-variant-numeric:tabular-nums}
+   fill — the reason it is currentColor at a fraction rather than a token.
+
+   The fraction is .75, not .55. At .55 the count composited to 3.90:1 on the
+   page and 4.00:1 on a card — below AA, on 10px mono, which is the smallest and
+   least forgiving type in the kit. .75 puts it at 7.53:1 and 7.91:1 and still
+   reads a clear step below the label beside it. The active pill inherits
+   --action-on-primary and was never the problem. */
+.ls-tag__n{margin-inline-start:var(--space-2);font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--tracking-label);color:currentColor;opacity:.75;font-variant-numeric:tabular-nums}
 
 /* — the chips above the list — */
 

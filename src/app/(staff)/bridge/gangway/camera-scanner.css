@@ -5,7 +5,16 @@
    load under /kiosk) — so the frame, reticle and hint drew bare on the dock.
    Not an .hm- class: that prefix is the Bridge's and this is not only the
    Bridge's. Every value here is a global token, so it reads the same on both
-   grounds. */
+   grounds.
+
+   .cam-scan__frame is listed in palette.css's always-ink block. It has to be:
+   its background is --void-black, which is fixed near-black in BOTH themes,
+   while its reticle reads --neon-cyan — an alias onto --accent, and the accent
+   has been INK on the paper theme since 2026-09-02. The QR alignment guide was
+   therefore drawing black on black at 1.03:1 on the dock, in daylight, on the
+   one surface a member is pointed at. Listing the frame flips the accent pair
+   locally and the reticle comes back at 6.54:1 on both themes. Do not give this
+   file a local --neon-cyan; the list is where that decision lives. */
 .cam-scan{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .cam-scan__frame{position:relative;width:100%;max-width:420px;border:1px solid var(--line-faint);border-radius:var(--radius-sharp);overflow:hidden;background:var(--void-black);animation:ls-fade var(--dur-base) var(--ease-out) backwards}
 /* On the dock the toggle is pressed with a thumb, often wet: the small button

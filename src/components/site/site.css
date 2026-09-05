@@ -10,12 +10,19 @@
    it near-black on near-black (1.07:1) in BOTH themes — the brand name
    disappeared when you pointed at it. The chrome stays noir whatever the page
    does, so it carries the inverse tokens, focus ring included. */
-.ws-nav{--focus:var(--gold-400)}
+/* --accent-hover, not --gold-400: the alias was declared at :root in compat.css,
+   and a custom property resolves its var() at the element that DECLARES it — so
+   --gold-400 computed to --noir-950 on the paper theme and was inherited here
+   whole, ringing a near-black focus outline on the near-black bar at 1.14:1.
+   .ws-nav is in palette.css's always-ink list, which restates --accent-hover
+   locally, so reading the token directly gets --ivory-50 (15.88:1) in both
+   themes. See the `ink-aliases` check in scripts/audit-design-system.mjs. */
+.ws-nav{--focus:var(--accent-hover)}
 .ws-nav__logo{display:inline-flex;align-items:center;flex:none;color:var(--text-inverse-1)}
 .ws-nav__logo:hover{color:var(--bone);text-decoration:none}
 .ws-nav__logo svg{display:block;height:34px;width:auto}
 .ws-nav__links{display:flex;gap:26px}
-.ws-nav__link{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-inverse-2);padding:6px 0;border-bottom:2px solid transparent;transition:color var(--dur-1) var(--ease-swell),border-bottom-color var(--dur-1) var(--ease-swell)}
+.ws-nav__link{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-inverse-2);padding:6px 0;border-bottom:2px solid transparent;transition:color var(--dur-hover) var(--ease-out),border-bottom-color var(--dur-hover) var(--ease-out)}
 /* A faint rule under the pointer, the bright one under the page you are on —
    the hover says "this is a place" before the click says "you are there". */
 .ws-nav__link:hover{color:var(--bone);text-decoration:none;border-bottom-color:var(--line-inverse)}
@@ -27,7 +34,7 @@
 @media (max-width:1180px){.ws-nav__coords{display:none}.ws-nav__end{margin-left:auto}}
 .ws-nav__end{display:flex;align-items:center;gap:14px}
 .ws-nav__burger{display:none}
-.ws-menu{position:fixed;inset:0;z-index:920;background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px;animation:ls-fade var(--dur-2) var(--ease-swell) backwards}
+.ws-menu{position:fixed;inset:0;z-index:920;background:var(--surface-abyss);color:var(--text-inverse-1);display:flex;flex-direction:column;padding:24px 24px 40px;animation:ls-fade var(--dur-enter) var(--ease-enter) backwards}
 .ws-menu__top{display:flex;align-items:center;justify-content:space-between}
 /* The veil fades and the list rises behind it — one reveal, not a pop. */
 .ws-menu__links{display:flex;flex-direction:column;gap:4px;margin-top:48px;animation:ls-rise var(--dur-slow) var(--ease-out) backwards}
@@ -53,7 +60,7 @@
 .ws-footer__in{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:32px;padding:64px 0 48px}
 .ws-footer__blurb{font-size:var(--text-xs);margin-top:16px;max-width:26ch;color:var(--text-inverse-3)}
 .ws-footer__col b{font:var(--type-label);display:block;letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-inverse-3);margin-bottom:14px}
-.ws-footer__col a{display:block;color:var(--text-inverse-2);font-size:var(--text-xs);padding:5px 0;transition:color var(--dur-1) var(--ease-swell)}
+.ws-footer__col a{display:block;color:var(--text-inverse-2);font-size:var(--text-xs);padding:5px 0;transition:color var(--dur-hover) var(--ease-out)}
 .ws-footer__col a:hover{color:var(--bone);text-decoration:none}
 .ws-footer__harbor{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-size:var(--text-xs)}
 .ws-footer__harbor span{font-family:var(--font-mono);font-size:var(--text-3xs);letter-spacing:var(--track-data);color:var(--text-inverse-3);text-transform:uppercase}
@@ -173,7 +180,7 @@ main .ls-section + .ls-section{padding-top:0}
 .ws-dp-row{display:grid;grid-template-columns:110px 1fr auto;gap:24px;padding:22px 0;border-bottom:1px solid var(--line-faint);align-items:baseline}
 .ws-dp-row:first-of-type{border-top:1px solid var(--line-faint)}
 .ws-dp-row__d{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);text-transform:uppercase}
-.ws-dp-row__t{font-family:var(--font-display);font-size:22px;transition:color var(--dur-1) var(--ease-swell);text-transform:uppercase}
+.ws-dp-row__t{font-family:var(--font-display);font-size:22px;transition:color var(--dur-hover) var(--ease-out);text-transform:uppercase}
 .ws-dp-row:hover .ws-dp-row__t{color:var(--aegean)}
 .ws-dp-row__dek{font-size:var(--text-xs);color:var(--text-2);margin-top:4px;max-width:60ch}
 /* The tag rides the title, not the row's baseline. A Badge is a 28px
@@ -209,7 +216,7 @@ main .ls-section + .ls-section{padding-top:0}
 .ws-vrow:last-of-type{border-bottom:1px solid var(--line-faint)}
 .ws-vrow__date{font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-2);text-transform:uppercase}
 .ws-vrow__date b{display:block;font-size:var(--text-sm);font-weight:400;color:var(--text-1)}
-.ws-vrow__title{font-family:var(--font-display);font-size:var(--text-2xl);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:color var(--dur-1) var(--ease-swell);text-transform:uppercase}
+.ws-vrow__title{font-family:var(--font-display);font-size:var(--text-2xl);display:flex;align-items:center;gap:14px;flex-wrap:wrap;transition:color var(--dur-hover) var(--ease-out);text-transform:uppercase}
 .ws-vrow:hover .ws-vrow__title{color:var(--aegean)}
 .ws-vrow__eyebrow{color:var(--gold-deep);display:block;margin-bottom:6px}
 .ws-vrow__meta{display:flex;gap:8px;margin-top:8px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-3);flex-wrap:wrap;text-transform:uppercase}
@@ -271,13 +278,14 @@ main .ls-section + .ls-section{padding-top:0}
    the PAPER theme is now ink. Removing the block without this would have printed
    an ink eyebrow on a black hero.
 
-   NOTE, not fixed here because it is not this pass's call to make: lines 20, 129
-   and 140 — the nav's active underline, the marketing hero's eyebrow and the
-   live strip — have the identical defect and never had a setting block hiding
-   it. They are ink-on-dark on the paper theme today. The real fix is one line at
-   the compat layer (--gold-bright resolving to the on-dark accent for knockout
-   surfaces, the way --focus-on-dark already does for focus rings), which is why
-   it is reported rather than patched surface by surface here. */
+   The note that stood here — that the nav's active underline, the hero eyebrow
+   and the live strip carried the same defect — is retired: compat.css already makes
+   the exact one-line fix it asked for (--gold-bright:var(--ivory-100), the
+   knockout step, alongside --gilt-bright and --brass-bright), so all three read
+   ivory on both themes. It is deleted rather than left standing because a note
+   pointing at a fixed defect sends the next reader to re-fix nothing while a
+   real one goes unread — which is what happened to the --gold-400 defect at the
+   top of this file, reported nowhere and shipped for months. */
 .ev-hero__in .ls-eyebrow{color:var(--text-on-media);margin-bottom:16px;display:block}
 .ev-hero h1{font-size:var(--text-display-l);color:var(--bone);max-width:16ch}
 .ev-hero__meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;font-family:var(--font-mono);font-size:var(--text-data);letter-spacing:var(--track-data);color:var(--text-inverse-2);text-transform:uppercase}
@@ -290,7 +298,7 @@ main .ls-section + .ls-section{padding-top:0}
 .ev-faq{margin-top:48px}
 .ev-faq details{border-top:1px solid var(--line-faint)}
 .ev-faq details:last-of-type{border-bottom:1px solid var(--line-faint)}
-.ev-faq summary{cursor:pointer;padding:14px 0;font-size:14px;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-1) var(--ease-swell)}
+.ev-faq summary{cursor:pointer;padding:14px 0;font-size:14px;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-hover) var(--ease-out)}
 /* Shoreside's FAQ already answered the pointer; this one did not. */
 .ev-faq summary:hover{color:var(--text-link)}
 .ev-faq summary:after{content:"+";font-family:var(--font-mono);color:var(--text-3)}
@@ -484,12 +492,21 @@ main .ls-section + .ls-section{padding-top:0}
    ring so it reads down a column of hairlines at a glance. */
 .as-ladder li[data-state="now"] .as-ladder__dot{background:var(--accent);border-color:var(--accent);box-shadow:0 0 0 3px var(--wash-gold)}
 .as-ladder li[data-state="now"] .as-ladder__state{color:var(--gold-deep)}
-.as-ladder li[data-state="ahead"]{opacity:.55}
+/* The rows still ahead, muted the way components.css's .ls-ahead mutes an
+   unearned record — one step down the text ramp at FULL opacity, never a fade.
+   At .55 the step title composited to 3.90:1, its note to 2.53:1 and its state
+   word to 2.16:1: three failures of §1.4.3 on copy that is not a control, and
+   §1.4.3's inactive-control exemption does not reach it. --text-2 is 7.01:1 on
+   the page. The dot takes the faint rule instead of the strong one so the
+   column keeps the hierarchy the fade used to draw; the state is said in words
+   by .as-ladder__state either way, so the dot is decoration. */
+.as-ladder li[data-state="ahead"]{color:var(--text-2)}
+.as-ladder li[data-state="ahead"] .as-ladder__dot{border-color:var(--line-faint)}
 
 .sp-faq{margin-top:32px}
 .sp-faq details{border-top:1px solid var(--line-faint)}
 .sp-faq details:last-of-type{border-bottom:1px solid var(--line-faint)}
-.sp-faq summary{cursor:pointer;padding:15px 0;font-size:var(--text-sm);font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-1) var(--ease-swell)}
+.sp-faq summary{cursor:pointer;padding:15px 0;font-size:var(--text-sm);font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;transition:color var(--dur-hover) var(--ease-out)}
 .sp-faq summary:hover{color:var(--text-link)}
 .sp-faq summary:after{content:"+";font-family:var(--font-mono);color:var(--text-3)}
 .sp-faq details[open] summary:after{content:"−"}
@@ -637,7 +654,7 @@ main .ws-hero__in,main .ws-phead,main .ev-hero__in,main .dp-head,main .lg-head{a
      to the strong line, the media easing in — the kit's own hover, reached from
      outside. :active settles it back down, which is the pressed state. — */
 .ws-card-link{display:block;color:inherit;text-decoration:none}
-.ws-card-link .ls-card{transition:border-color var(--dur-1) var(--ease-swell),transform var(--dur-2) var(--ease-out)}
+.ws-card-link .ls-card{transition:border-color var(--dur-hover) var(--ease-out),transform var(--dur-move) var(--ease-move)}
 .ws-card-link:hover .ls-card{border-color:var(--line-strong);transform:translateY(-2px)}
 .ws-card-link:hover .ls-card__media>div,.ws-card-link:hover .ls-card__media>img{transform:scale(1.03)}
 .ws-card-link:active .ls-card{transform:none}
@@ -646,18 +663,18 @@ main .ws-hero__in,main .ws-phead,main .ev-hero__in,main .dp-head,main .lg-head{a
 /* — pressed state for the row links. A button drops a pixel on press; a row
      that is a link dims instead, so the hand knows the click took before the
      route does. — */
-.ws-vrow__link,.dp-link,.crew-row,.crew-card{transition:opacity var(--dur-1) var(--ease-swell)}
+.ws-vrow__link,.dp-link,.crew-row,.crew-card{transition:opacity var(--dur-hover) var(--ease-out)}
 .ws-vrow__link:active,.dp-link:active,.crew-row:active,.crew-card:active{opacity:.7}
 
 /* — validation. The kit announces a field error (role=alert on .ls-field__error)
      but paints it in place; a message that lands without moving is easy to read
-     as having always been there. A four-pixel slip, 200ms — the same easing as
-     everything else and well under the 560ms ceiling. The form-level alerts on
+     as having always been there. It takes the kit's own rise — var(--rise)
+     over --dur-enter with --ease-enter, the same arrival every surface makes,
+     well under the 560ms ceiling. The form-level alerts on
      the three forms and the two inline controls share it, and share one colour,
      so an error looks like an error wherever it appears. — */
-@keyframes ws-slip{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-main .ls-field__error{animation:ws-slip var(--dur-2) var(--ease-out) backwards}
-.ws-form__err,.ws-standing__err,.ws-plans__err{color:var(--danger);animation:ws-slip var(--dur-2) var(--ease-out) backwards}
+main .ls-field__error{animation:ls-rise var(--dur-enter) var(--ease-enter) backwards}
+.ws-form__err,.ws-standing__err,.ws-plans__err{color:var(--danger);animation:ls-rise var(--dur-enter) var(--ease-enter) backwards}
 .ws-form__err{font-size:var(--text-sm);margin:0}
 .ws-plans__err{display:block;font-size:var(--text-xs);margin-top:6px}
 /* Send it, while it is sending. The kit's [disabled] reads at .4, which is the
@@ -699,7 +716,7 @@ main .ls-field__error{animation:ws-slip var(--dur-2) var(--ease-out) backwards}
 .as-lookup__field{flex:1 1 260px;min-width:0}
 .as-lookup__go{padding-top:18px}
 @media (max-width:480px){.as-lookup__form{flex-direction:column;align-items:stretch}.as-lookup__go{padding-top:0}.as-lookup__go .ls-btn{width:100%}}
-.as-answer{margin-top:24px;animation:ls-rise var(--dur-2) var(--ease-out) backwards}
+.as-answer{margin-top:24px;animation:ls-rise var(--dur-enter) var(--ease-enter) backwards}
 .as-answer p{font-size:var(--text-sm);color:var(--text-2);max-width:48ch}
 .as-answer__next{color:var(--text-1);margin-top:8px}
 .as-answer__closed{display:block;margin-top:14px;font-family:var(--font-mono);font-size:var(--text-2xs);letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-3)}
