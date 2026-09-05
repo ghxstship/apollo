@@ -992,6 +992,13 @@ function checkOrphanClasses() {
    why Icon also warns in development. */
 import { createRequire } from "node:module";
 const LUCIDE = new Set(Object.keys(createRequire(import.meta.url)("lucide-react").icons));
+/* And the set the wrapper actually ships (src/components/ds/icon-set.ts): a
+   real Lucide name that is not in the set still renders an empty box, because
+   the bundle no longer carries the whole map. */
+const ICON_SET = new Set(
+  (readFileSync(join(ROOT, "src/components/ds/icon-set.ts"), "utf8").match(/export const ICONS = \{([\s\S]*?)\}/)?.[1] ?? "")
+    .split(",").map((s) => s.trim()).filter(Boolean)
+);
 
 function checkIcons() {
   const hits = [], exempted = [];
@@ -1009,8 +1016,13 @@ function checkIcons() {
           const name = m[1] ?? m[2];
           if (!name) continue;
           total++;
-          if (LUCIDE.has(name)) continue;
-          const hit = { file: rel(p), line: i + 1, why: `"${name}" is not a Lucide icon — Icon renders an empty box` };
+          if (LUCIDE.has(name) && ICON_SET.has(name)) continue;
+          const hit = {
+            file: rel(p), line: i + 1,
+            why: LUCIDE.has(name)
+              ? `"${name}" is not in src/components/ds/icon-set.ts — add it, or Icon renders an empty box`
+              : `"${name}" is not a Lucide icon — Icon renders an empty box`,
+          };
           const why = exempt(line);
           if (why) exempted.push({ ...hit, exempt: why });
           else hits.push(hit);
@@ -1018,7 +1030,7 @@ function checkIcons() {
       }
     });
   }
-  return { name: "icons", rule: `every literal icon name resolves in lucide-react (${LUCIDE.size} glyphs)`, total, hits, exempted };
+  return { name: "icons", rule: `every literal icon name resolves in lucide-react and is carried by icon-set.ts (${ICON_SET.size} of ${LUCIDE.size} glyphs shipped)`, total, hits, exempted };
 }
 
 /* ── check: focus after all:unset ─────────────────────────────────────────── */

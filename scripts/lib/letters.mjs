@@ -22,7 +22,10 @@
      6. the copy is on-lexicon: no retired term, no exclamation mark, no emoji,
         and nothing that names a camera — the route audit reads served pages,
         and a letter is not a page, so nothing else looks at this text;
-     7. no letter body ends on a variable.
+     7. no letter body ends on a variable;
+     8. the letters the Bridge's rule picker keeps off the list are exactly
+        those whose REQUIRES a rule's payload cannot fill, and the keys that
+        picker assumes are the keys the live run_automations body writes.
 
    ON READING THE REGISTRY. An earlier version lifted codes out of migrations
    with `insert into public\.email_templates[\s\S]*?;`, and two migrations in
@@ -209,7 +212,7 @@ function keysOf(jsonbBody) {
    is history, not a caller. Renames (alter function a rename to b) move the
    history with them: the last definition of handle_rsvp_aboard is superseded
    by the first definition of handle_pass_aboard. */
-export function liveCallers(root, knownCodes) {
+export function liveDefinitions(root) {
   const dir = join(root, "supabase/migrations");
   const defs = new Map(); // canonical name -> { file, body }
   const alias = new Map(); // old name -> new name
@@ -243,7 +246,11 @@ export function liveCallers(root, knownCodes) {
       defs.set(canon(ev.name), { file: f, body });
     }
   }
+  return defs;
+}
 
+export function liveCallers(root, knownCodes) {
+  const defs = liveDefinitions(root);
   const callers = [];
   for (const [fn, { file, body }] of defs) {
     const re = /insert\s+into\s+public\.email_outbox/gi;
@@ -477,4 +484,53 @@ export function letterInvariants({ root, note, banned }) {
   const trailing = copy.bodies.filter((b) => b.endsOnExpression);
   note(at, "no letter body ends on a variable", trailing.length === 0,
     trailing.length ? `${trailing.length} body literal(s) end on an interpolation` : "");
+
+  /* 8. a rule can only name a letter it can fill. run_automations queues a
+     letter with the member and the episode and nothing else; a letter that
+     REQUIRES more is refused by the sender at drain time, after the row is
+     queued, and the member gets nothing. The Bridge's picker drops those
+     letters by a list in automation-letters.ts, and this holds that list
+     equal to the sender's REQUIRES, and the keys it assumes equal to what the
+     live dispatcher body actually writes. */
+  const rulesAt = "src/app/(staff)/bridge/automations/automation-letters.ts";
+  let rulesSrc = null;
+  try { rulesSrc = stripComments(readFileSync(join(root, rulesAt), "utf8")); } catch { /* not in this checkout */ }
+  note(rulesAt, "the automation letter list could be read", !!rulesSrc);
+  if (rulesSrc && reqBlock) {
+    const keysM = rulesSrc.match(/AUTOMATION_LETTER_KEYS\s*=\s*\[([^\]]*)\]/);
+    const ruleKeys = new Set([...(keysM?.[1] ?? "").matchAll(/"([a-z_][a-z0-9_]*)"/g)].map((m) => m[1]));
+    const listM = rulesSrc.match(/LETTERS_A_RULE_CANNOT_FILL[^=]*=\s*\{([\s\S]*?)\n\};/);
+    const cannot = new Map();
+    for (const m of (listM?.[1] ?? "").matchAll(/"([a-z0-9-]+)":\s*"([^"]*)"/g)) cannot.set(m[1], m[2]);
+    note(rulesAt, "the list names the keys a rule carries", ruleKeys.size > 0, [...ruleKeys].join(", "));
+    for (const [c, needs] of requires) {
+      const unfilled = needs.filter((k) => !ruleKeys.has(k));
+      if (unfilled.length) {
+        const named = cannot.get(c);
+        note(rulesAt, `${c} is kept off the rule picker, naming what a rule cannot carry`,
+          !!named && unfilled.every((k) => named.split(/[\s,]+/).includes(k)),
+          named ? `lists "${named}", the sender requires ${unfilled.join(", ")}` : `the sender requires ${unfilled.join(", ")} — add it to LETTERS_A_RULE_CANNOT_FILL`);
+      } else {
+        note(rulesAt, `${c} is not kept off the rule picker — a rule can fill it`, !cannot.has(c),
+          cannot.has(c) ? `listed as needing ${cannot.get(c)}, but a rule carries ${needs.join(", ") || "nothing it requires"}` : "");
+      }
+    }
+    for (const c of cannot.keys()) {
+      note(rulesAt, `${c} in LETTERS_A_RULE_CANNOT_FILL is a letter the sender requires something of`, requires.has(c),
+        requires.has(c) ? "" : "the sender no longer requires anything of it — remove the entry");
+    }
+    /* What the dispatcher actually writes. Its insert names the code as a
+       variable, so liveCallers cannot see it; the body is read directly. */
+    const dispatcher = liveDefinitions(root).get("run_automations");
+    note(rulesAt, "the live run_automations body could be found", !!dispatcher, dispatcher?.file ?? "");
+    if (dispatcher) {
+      const m = /insert\s+into\s+public\.email_outbox/i.exec(dispatcher.body);
+      const stmt = m ? statementAt(dispatcher.body, m.index) : "";
+      const written = new Set();
+      for (const obj of jsonbObjects(stmt)) for (const k of keysOf(obj)) written.add(k);
+      const same = written.size > 0 && written.size === ruleKeys.size && [...written].every((k) => ruleKeys.has(k));
+      note(rulesAt, "AUTOMATION_LETTER_KEYS is what the live dispatcher writes", same,
+        `dispatcher writes ${[...written].join(", ") || "nothing"}; the list says ${[...ruleKeys].join(", ")} (${dispatcher.file})`);
+    }
+  }
 }

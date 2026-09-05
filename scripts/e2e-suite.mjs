@@ -147,6 +147,16 @@ const uid = (s) => s.user.id;
    That was the original point of sweeping before as well as after, and it is
    preserved. */
 const RUN_TOKEN = `r${Date.now().toString(36)}`;
+
+/* The committee's questions, as the door reads them. Since 2026-09-05 an
+   application without an answer to every required question is refused at the
+   table (guard_the_answers), so every lodging here carries one. Read once, as
+   anon, at the start of the run; the modules read it from ctx. */
+let ANSWERS = {};
+async function readTheCommitteesQuestions() {
+  const q = await rest(null).get("application_questions?select=key,required&active=is.true");
+  ANSWERS = Object.fromEntries((q.data || []).filter((r) => r.required).map((r) => [r.key, "An e2e answer, one line long."]));
+}
 const STALE_BEFORE = () => new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
 /* ---------- housekeeping ----------
@@ -332,7 +342,11 @@ async function anonSurface() {
   const anon = rest(null);
 
   for (const t of ANON_READABLE) {
-    const res = await anon.get(`${t}?select=*&limit=1`);
+    let res = await anon.get(`${t}?select=*&limit=1`);
+    /* episodes and venues hand the shore a column-level grant (the address
+       comes with the pass), so "*" is refused whole; the catalogue is still
+       open, asked by the id column alone. */
+    if (res.status !== 200 && /permission denied for table/.test(JSON.stringify(res.data))) res = await anon.get(`${t}?select=id&limit=1`);
     note("anon", `may read ${t}`, res.status === 200 && Array.isArray(res.data),
       `got ${res.status} ${JSON.stringify(res.data).slice(0, 80)}`);
   }
@@ -392,7 +406,7 @@ async function anonSurface() {
   // Writes: the two public funnels take an INSERT, nothing else takes anything.
   const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
   const apply = await anon.postMinimal("applications", {
-    email: `e2e-anon-${stamp}@example.com`, full_name: "E2E Anon Applicant",
+    email: `e2e-anon-${stamp}@example.com`, full_name: "E2E Anon Applicant", answers: ANSWERS,
   });
   note("anon", "the application funnel is open", apply.status < 400, `got ${apply.status}`);
 
@@ -406,7 +420,7 @@ async function anonSurface() {
   /* Lodging a form must not become a way to read the roll. An insert that asks
      to read itself back is refused, which is why the funnels send minimal. */
   const readback = await anon.post("applications", {
-    email: `e2e-anon-rb-${stamp}@example.com`, full_name: "E2E Anon Readback",
+    email: `e2e-anon-rb-${stamp}@example.com`, full_name: "E2E Anon Readback", answers: ANSWERS,
   });
   note("anon", "an application cannot read itself back", readback.status >= 400, `got ${readback.status}`);
 
@@ -848,7 +862,7 @@ async function opsRules(p) {
   /* Both funnels are open to anyone on the internet, so staff must be able to
      clear what arrives. Without a DELETE policy the queue only ever grew. */
   const junk = `e2e-anon-junk-${Date.now().toString(36)}@example.com`;
-  await rest(null).postMinimal("applications", { email: junk, full_name: "E2E Junk" });
+  await rest(null).postMinimal("applications", { email: junk, full_name: "E2E Junk", answers: ANSWERS });
   const cleared = await stf.del(`applications?email=eq.${junk}`);
   note("staff", "staff clear a spam application", cleared.status < 400, `got ${cleared.status}`);
   const gone = await stf.get(`applications?email=eq.${junk}&select=email`);
@@ -2642,7 +2656,7 @@ async function businessRules(p) {
   note("staff", "moderates (deletes) the post", stfDel.status === 200 || stfDel.status === 204, `got ${stfDel.status}`);
 
   // Application funnel privacy + vetting bypass resistance
-  const anonApp = await anon.post("applications", { email: `e2e-applicant-${Date.now()}@example.com`, full_name: "E2E Applicant" });
+  const anonApp = await anon.post("applications", { email: `e2e-applicant-${Date.now()}@example.com`, full_name: "E2E Applicant", answers: ANSWERS });
   note("applicant", "can file an application", anonApp.status === 201 || anonApp.status === 401 || anonApp.status === 403, `got ${anonApp.status}`);
   const anonRead = await anon.get("applications?select=email&limit=1");
   note("anon", "cannot read applications", (anonRead.data || []).length === 0 || anonRead.status >= 400, `got ${anonRead.status} ${JSON.stringify(anonRead.data).slice(0, 80)}`);
@@ -4127,8 +4141,8 @@ async function decisionRules(p) {
   const addr = `e2e-anon-twice-${stamp}@fixtures.invalid`;
   /* Minimal, as the public funnel sends it: an applicant cannot read the
      applications table back, and a representation insert is refused whole. */
-  const first = await anon.postMinimal("applications", { full_name: "E2E Twice", email: addr, city: "Miami" });
-  const second = await anon.postMinimal("applications", { full_name: "E2E Twice", email: addr.toUpperCase(), city: "Miami" });
+  const first = await anon.postMinimal("applications", { full_name: "E2E Twice", email: addr, city: "Miami", answers: ANSWERS });
+  const second = await anon.postMinimal("applications", { full_name: "E2E Twice", email: addr.toUpperCase(), city: "Miami", answers: ANSWERS });
   note("anon", "one open application to an address", first.status === 201 && second.status === 409, `got ${first.status}/${second.status}`);
 
   // — the bridge sees its errors and its scheduler; nobody else does —
@@ -4729,7 +4743,7 @@ async function rulesOfSept4(p) {
   note("national", "the door stamps an arrival", stamped.status < 300 && !!stamped.data?.[0]?.checked_in_at, `got ${stamped.status} ${said(stamped).slice(0, 100)}`);
   const forgeCode = regBId ? await nat.patch(`passes?id=eq.${regBId}`, { boarding_code: "UN-FORGED" }) : { status: 0, data: null };
   note("national", "the door cannot issue a boarding code",
-    forgeCode.status >= 400 && /issued by the club/.test(said(forgeCode)), `got ${forgeCode.status} ${said(forgeCode).slice(0, 100)}`);
+    forgeCode.status >= 400 && /issued by the club|stamps arrivals and nothing else/.test(said(forgeCode)), `got ${forgeCode.status} ${said(forgeCode).slice(0, 100)}`);
   const bridgeRead = await nat.get("broadcasts?select=id&limit=1");
   note("national", "the door is not the Bridge — staff tables stay shut", (bridgeRead.data || []).length === 0, `got ${bridgeRead.status}`);
   const revoke = await stf.del(`door_grants?episode_id=eq.${bVid}`);
@@ -5015,8 +5029,33 @@ async function rulesOfSept4(p) {
   }
 }
 
+/* The module contract: `export async function run(p, ctx)` where p is the
+   personas map and ctx carries the suite's own plumbing. A module must tag
+   every fixture slug with ctx.RUN_TOKEN so the sweep removes it, must never
+   change a persona's profile state (status, plan, prefs) without restoring it,
+   and reports through ctx.note like any section. */
+async function runModules(personas) {
+  const { readdirSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const path = await import("node:path");
+  const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "e2e");
+  let files = [];
+  try { files = readdirSync(dir).filter((f) => f.endsWith(".mjs") && !f.startsWith("_")).sort(); } catch { return; }
+  const ctx = { BASE, SUPA, rest, note, uid, RUN_TOKEN, STALE_BEFORE, homeWater, login, committeeAnswers: () => ANSWERS };
+  for (const f of files) {
+    const mod = await import(path.join(dir, f));
+    if (typeof mod.run !== "function") { note("suite", `${f} exports run()`, false, "no run export"); continue; }
+    try {
+      await mod.run(personas, ctx);
+    } catch (e) {
+      note("suite", `${f} completes`, false, String(e?.message ?? e).slice(0, 200));
+    }
+  }
+}
+
 async function main() {
   console.log(`e2e against ${BASE}\n`);
+  await readTheCommitteesQuestions();
   const personas = {};
   for (const [name, email] of [
     ["regional", "e2e-regional@fixtures.invalid"],
@@ -5098,6 +5137,12 @@ async function main() {
      update them — or the suite has started leaving something behind, which is
      how the balances quietly climbed until an audit of a real member's knots
      became ambiguous and cost an hour to explain. */
+  /* Domain modules. Each file under scripts/e2e/*.mjs exports run(p, ctx) and
+     is written by whoever owns that layer, so eight people can add cases
+     without editing this file. They run before the footprint check, so a
+     module that leaves knots behind is caught the same way a section is. */
+  await runModules(personas);
+
   const EXPECTED_KNOTS_DRIFT = { regional: 0, national: 0, global: 100, paused: 0 };
   for (const [name, before] of Object.entries(knotsAtStart)) {
     const after = await knotsFor(personas[name], personas.staff);
@@ -5114,4 +5159,12 @@ async function main() {
   console.log("all personas accounted for — the manifest holds");
 }
 
+export { rest, note, uid, login, homeWater, STALE_BEFORE, BASE, SUPA, RUN_TOKEN, results, failures };
+export const committeeAnswers = () => ANSWERS;
+
+/* Run the whole suite when invoked directly; stay quiet when imported by the
+   module harness (scripts/e2e/_run.mjs), which drives one module at a time. */
+const invokedDirectly = process.argv[1] && import.meta.url.endsWith(process.argv[1].split("/").pop());
+if (invokedDirectly) {
 main().catch((e) => { console.error(e); process.exit(1); });
+}
