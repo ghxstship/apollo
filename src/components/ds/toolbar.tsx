@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button } from "./actions";
+import { cx } from "./class";
 import { Icon, Tag } from "./display";
 import { useExitPhase } from "./use-exit-phase";
 import { useModal } from "./use-modal";
@@ -41,23 +42,7 @@ import { useModal } from "./use-modal";
 export type SortOption = { id: string; label: string };
 export type ToolbarChip = { key: string; label: string; value: string };
 
-export function ListToolbar({
-  search,
-  filters,
-  filterCount = 0,
-  sortOptions,
-  sortValue,
-  onSort,
-  resultCount,
-  resultNoun = "result",
-  resultNounPlural,
-  countSuffix,
-  chips = [],
-  onDropChip,
-  onClear,
-  actions,
-  trailing,
-}: {
+export interface ListToolbarProps {
   /** Rendered as the field. Omit on a surface with nothing to type. */
   search?: React.ReactNode;
   /** The axes, as FilterPills. Omit where a surface has none. */
@@ -81,7 +66,25 @@ export function ListToolbar({
   /** Rides the end of the chips line — the standing-view control, and nothing
       that needs to be seen when no filter is in force. */
   trailing?: React.ReactNode;
-}) {
+}
+
+export function ListToolbar({
+  search,
+  filters,
+  filterCount = 0,
+  sortOptions,
+  sortValue,
+  onSort,
+  resultCount,
+  resultNoun = "result",
+  resultNounPlural,
+  countSuffix,
+  chips = [],
+  onDropChip,
+  onClear,
+  actions,
+  trailing,
+}: ListToolbarProps) {
   const noun = resultCount === 1 ? resultNoun : (resultNounPlural ?? `${resultNoun}s`);
   const sortLabel = sortOptions?.find((s) => s.id === sortValue)?.label;
 
@@ -153,6 +156,74 @@ export function ListToolbar({
    whichever ancestor happens to be running an animation. On a phone both
    become bottom sheets, which is the one place a sheet is the right pattern. */
 
+/* The shell both of them are. It owns the open state, the anchor, the catch,
+   the exit phase, the panel element and everything the panel owes the keyboard;
+   what is left over — the trigger, and what is inside — is all that ever
+   differed. Two copies of this stood here, and the drift between them is on
+   record: one was a fixed drawer behind a scrim and the other a dropdown, and
+   after they were reconciled the exit phase still had to be added to each of
+   them separately.
+
+   `trigger` and `children` are functions rather than nodes so the caller can
+   reach the state it needs — `open` for aria-expanded, `close` for a button
+   inside the panel — without the shell guessing which of them it wants. */
+function Popover({
+  role,
+  label,
+  panelClass,
+  trigger,
+  children,
+}: {
+  /** dialog for a panel that persists across selections, menu for one choice
+      that closes on picking. */
+  role: "dialog" | "menu";
+  /** Names the panel. A popover with no accessible name is announced as
+      "dialog" and nothing else. */
+  label: string;
+  /** The panel's own class, beside `ls-pop__panel`. */
+  panelClass: string;
+  trigger: (state: { open: boolean; toggle: () => void; controls: string }) => React.ReactNode;
+  children: (close: () => void) => React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const close = React.useCallback(() => setOpen(false), []);
+  /* modal:false is load-bearing: the results behind the panel stay readable
+     and scrollable, which is the whole reason this is not a dialog. It takes
+     Escape and focus, and never traps Tab or locks the page. */
+  const boxRef = useModal(open, close, { modal: false });
+  const id = React.useId();
+  /* Both panels arrived on --dur-enter and left between two frames. They are
+     held for one --dur-exit now, the same way the Dialog holds its veil. */
+  const { present, closing, onAnimationEnd } = useExitPhase(open);
+
+  return (
+    <span className="ls-pop">
+      {trigger({ open, toggle: () => setOpen((o) => !o), controls: id })}
+      {present ? (
+        <>
+          {/* Catches the click that dismisses. Invisible, and it does not veil
+              the page — the results underneath are the point. Dropped the
+              instant the exit starts, so a click during it lands on the page
+              rather than on a sheet that is already leaving. */}
+          {closing ? null : <span className="ls-pop__catch" onClick={close} />}
+          <div
+            id={id}
+            className={cx("ls-pop__panel", panelClass, closing && "ls-pop__panel--out")}
+            role={role}
+            aria-label={label}
+            aria-hidden={closing || undefined}
+            onAnimationEnd={onAnimationEnd}
+            ref={boxRef}
+            tabIndex={-1}
+          >
+            {children(close)}
+          </div>
+        </>
+      ) : null}
+    </span>
+  );
+}
+
 function FilterButton({
   count,
   resultCount,
@@ -166,65 +237,39 @@ function FilterButton({
   onClear?: () => void;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = React.useState(false);
-  /* modal:false is load-bearing: the results behind the panel stay readable
-     and scrollable, which is the whole reason this is not a dialog. It takes
-     Escape and focus, and never traps Tab or locks the page. */
-  const boxRef = useModal(open, () => setOpen(false), { modal: false });
-  const panelId = React.useId();
-  /* Both panels arrived on --dur-enter and left between two frames. They are
-     held for one --dur-exit now, the same way the Dialog holds its veil. */
-  const { present, closing, onAnimationEnd } = useExitPhase(open);
-
   return (
-    <span className="ls-pop">
-      <Button
-        variant="outline"
-        size="sm"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <Icon name="SlidersHorizontal" size={14} />
-        Filter
-        {count > 0 ? <span className="ls-toolbar__n">{count}</span> : null}
-      </Button>
-      {present ? (
+    <Popover
+      role="dialog"
+      label="Filters"
+      panelClass="ls-filterpanel"
+      trigger={({ open, toggle, controls }) => (
+        <Button variant="outline" size="sm" aria-expanded={open} aria-controls={controls} onClick={toggle}>
+          <Icon name="SlidersHorizontal" size={14} />
+          Filter
+          {count > 0 ? <span className="ls-toolbar__n">{count}</span> : null}
+        </Button>
+      )}
+    >
+      {(close) => (
         <>
-          {/* Catches the click that dismisses. Invisible, and it does not veil
-              the page — the results underneath are the point. Dropped the
-              instant the exit starts, so a click during it lands on the page
-              rather than on a sheet that is already leaving. */}
-          {closing ? null : <span className="ls-pop__catch" onClick={() => setOpen(false)} />}
-          <div
-            id={panelId}
-            className={"ls-pop__panel ls-filterpanel" + (closing ? " ls-pop__panel--out" : "")}
-            role="dialog"
-            aria-label="Filters"
-            aria-hidden={closing || undefined}
-            onAnimationEnd={onAnimationEnd}
-            ref={boxRef}
-            tabIndex={-1}
-          >
-            <div className="ls-filterpanel__body">{children}</div>
-            {/* The count rides the foot so it stays in view however far down
-                the axes the reader has scrolled. Applying is not a step — the
-                filters are already live — so this only dismisses, and it says
-                what it is dismissing you back to. */}
-            <div className="ls-filterpanel__foot">
-              {count > 0 && onClear ? (
-                <Button variant="ghost" size="sm" onClick={onClear}>
-                  Clear all
-                </Button>
-              ) : null}
-              <Button variant="gold" size="sm" onClick={() => setOpen(false)}>
-                Show {resultCount} {noun}
+          <div className="ls-filterpanel__body">{children}</div>
+          {/* The count rides the foot so it stays in view however far down
+              the axes the reader has scrolled. Applying is not a step — the
+              filters are already live — so this only dismisses, and it says
+              what it is dismissing you back to. */}
+          <div className="ls-filterpanel__foot">
+            {count > 0 && onClear ? (
+              <Button variant="ghost" size="sm" onClick={onClear}>
+                Clear all
               </Button>
-            </div>
+            ) : null}
+            <Button variant="gold" size="sm" onClick={close}>
+              Show {resultCount} {noun}
+            </Button>
           </div>
         </>
-      ) : null}
-    </span>
+      )}
+    </Popover>
   );
 }
 
@@ -239,64 +284,48 @@ function SortButton({
   label?: string;
   onPick: (id: string) => void;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const boxRef = useModal(open, () => setOpen(false), { modal: false });
-  const menuId = React.useId();
-  const { present, closing, onAnimationEnd } = useExitPhase(open);
-
   return (
-    <span className="ls-pop">
-      <Button
-        variant="outline"
-        size="sm"
-        aria-expanded={open}
-        aria-controls={menuId}
-        aria-haspopup="menu"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <Icon name="ArrowUpDown" size={14} />
-        {label ?? "Sort"}
-      </Button>
-      {present ? (
-        <>
-          {closing ? null : <span className="ls-pop__catch" onClick={() => setOpen(false)} />}
-          {/* It claimed to be a listbox and behaved like a toolbar: no
-              accessible name, no aria-activedescendant, no arrow keys, and Tab
-              walking the options — which is exactly what a menu of buttons is,
-              and nothing like what a reader is promised when it hears
-              "listbox". It says what it is now. Each option is a
-              menuitemradio, because picking one is choosing among mutually
-              exclusive sorts rather than selecting an item; the panel names
-              itself so the reader knows what the choice is about. */}
-          <div
-            id={menuId}
-            className={"ls-pop__panel ls-sortmenu" + (closing ? " ls-pop__panel--out" : "")}
-            role="menu"
-            aria-label="Sort by"
-            aria-hidden={closing || undefined}
-            onAnimationEnd={onAnimationEnd}
-            ref={boxRef}
-            tabIndex={-1}
-          >
-            {options.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                role="menuitemradio"
-                aria-checked={o.id === value}
-                className={"ls-sortmenu__opt" + (o.id === value ? " ls-sortmenu__opt--on" : "")}
-                onClick={() => {
-                  onPick(o.id);
-                  setOpen(false);
-                }}
-              >
-                {o.label}
-                {o.id === value ? <Icon name="Check" size={14} /> : null}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : null}
-    </span>
+    /* It claimed to be a listbox and behaved like a toolbar: no accessible
+       name, no aria-activedescendant, no arrow keys, and Tab walking the
+       options — which is exactly what a menu of buttons is, and nothing like
+       what a reader is promised when it hears "listbox". It says what it is
+       now. Each option is a menuitemradio, because picking one is choosing
+       among mutually exclusive sorts rather than selecting an item; the panel
+       names itself so the reader knows what the choice is about. */
+    <Popover
+      role="menu"
+      label="Sort by"
+      panelClass="ls-sortmenu"
+      trigger={({ open, toggle, controls }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          aria-expanded={open}
+          aria-controls={controls}
+          aria-haspopup="menu"
+          onClick={toggle}
+        >
+          <Icon name="ArrowUpDown" size={14} />
+          {label ?? "Sort"}
+        </Button>
+      )}
+    >
+      {(close) => options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          role="menuitemradio"
+          aria-checked={o.id === value}
+          className={cx("ls-sortmenu__opt", o.id === value && "ls-sortmenu__opt--on")}
+          onClick={() => {
+            onPick(o.id);
+            close();
+          }}
+        >
+          {o.label}
+          {o.id === value ? <Icon name="Check" size={14} /> : null}
+        </button>
+      ))}
+    </Popover>
   );
 }

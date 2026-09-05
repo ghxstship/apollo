@@ -166,3 +166,17 @@ export const ICONS = {
   Wine,
   X,
 } as const;
+
+/** Every glyph the set carries. `Icon` takes this rather than a bare string,
+    so a name the set does not ship is a compile error at the call site instead
+    of an empty box on the page and a warning in a console nobody is reading.
+    The `icons` gate in check:ds stays in place — it also catches a name inside
+    a Record or a data table that this type never reaches. */
+export type IconName = keyof typeof ICONS;
+
+/** The icon ladder. A glyph beside text takes the rung that matches it:
+    `sm` beside --text-2xs, `md` beside --text-xs and --text-sm, `lg` (the
+    component default) beside --text-md. The larger rungs are for marks that
+    stand on their own rather than next to a word. */
+export const ICON_SIZE = { xs: 12, sm: 14, md: 16, lg: 18, xl: 20, "2xl": 26, "3xl": 36 } as const;
+export type IconSize = (typeof ICON_SIZE)[keyof typeof ICON_SIZE];

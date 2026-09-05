@@ -14,18 +14,7 @@ const BODY = "var(--font-sans)";
 
 type Tone = "ink" | "sea" | "gold" | "sand";
 
-export function PostCard({
-  author,
-  tone = "ink",
-  body,
-  sailing,
-  timestamp,
-  media = null,
-  mediaAlt = "",
-  footer,
-  children,
-  style,
-}: {
+export interface PostCardProps {
   author: string;
   tone?: Tone;
   body?: React.ReactNode;
@@ -42,12 +31,25 @@ export function PostCard({
   footer?: React.ReactNode;
   children?: React.ReactNode;
   style?: React.CSSProperties;
-}) {
+}
+
+export function PostCard({
+  author,
+  tone = "ink",
+  body,
+  sailing,
+  timestamp,
+  media = null,
+  mediaAlt = "",
+  footer,
+  children,
+  style,
+}: PostCardProps) {
   return (
     <div
       style={{
         background: "var(--surface-card)",
-        border: "1px solid var(--line-faint)",
+        border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-md)",
         boxShadow: "var(--shadow-card)",
         padding: "var(--space-4) var(--space-5)",
@@ -64,17 +66,17 @@ export function PostCard({
           the league and the age were simply unreachable. */}
       <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap", minWidth: 0 }}>
         <Avatar name={author} tone={tone} size="sm" />
-        <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--text-1)" }}>{author}</span>
+        <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--text-body)" }}>{author}</span>
         {/* A hand-rolled pill until now: 9px off the label step, in
             --brand-yacht, which is UN Limited's IDENTITY hue spent on a
             per-post qualifier — and at 2.1:1 on paper, unreadable. It is the
             neutral status face of the badge the whole app already uses. */}
         {sailing ? <Badge tone="outline">{sailing}</Badge> : null}
-        <span style={{ marginLeft: "auto", font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>
+        <span style={{ marginLeft: "auto", font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-faint)", whiteSpace: "nowrap" }}>
           {timestamp}
         </span>
       </div>
-      {body ? <div style={{ fontSize: "var(--text-sm)", lineHeight: 1.55, color: "var(--text-1)" }}>{body}</div> : null}
+      {body ? <div style={{ fontSize: "var(--text-sm)", lineHeight: 1.55, color: "var(--text-body)" }}>{body}</div> : null}
       {media ? (
         <div style={{ height: 180, borderRadius: "var(--radius-sm)", background: "var(--scene-night)", position: "relative", overflow: "hidden" }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- a signed storage URL that expires in an hour; next/image cannot cache what it may not fetch twice */}
@@ -87,7 +89,7 @@ export function PostCard({
       ) : null}
       {children}
       {footer ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", borderTop: "1px solid var(--line-faint)", paddingTop: "var(--space-3)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", borderTop: "1px solid var(--border-subtle)", paddingTop: "var(--space-3)" }}>
           {footer}
         </div>
       ) : null}
@@ -95,17 +97,19 @@ export function PostCard({
   );
 }
 
+export interface HailProps {
+  count?: number;
+  hailed?: boolean;
+  onToggle?: () => void;
+  style?: React.CSSProperties;
+}
+
 export function Hail({
   count = 0,
   hailed = false,
   onToggle,
   style,
-}: {
-  count?: number;
-  hailed?: boolean;
-  onToggle?: () => void;
-  style?: React.CSSProperties;
-}) {
+}: HailProps) {
   return (
     <button
       type="button"
@@ -120,7 +124,7 @@ export function Hail({
         font: `700 var(--text-2xs)/1 ${MONO}`,
         letterSpacing: "var(--tracking-label)",
         textTransform: "uppercase",
-        color: hailed ? "var(--text-gold)" : "var(--text-2)",
+        color: hailed ? "var(--text-gold)" : "var(--text-muted)",
         padding: "var(--space-1) 0",
         minHeight: 24,
         whiteSpace: "nowrap",
@@ -135,37 +139,54 @@ export function Hail({
   );
 }
 
-export type FeedComment = { author: string; tone?: Tone; timestamp?: string; body: string };
+export type FeedComment = {
+  /** The comment's own id, used as its React key. A thread is prepended to —
+      a new word lands at the top — and an index key would then hand every
+      existing row the state of the row above it: the wrong avatar, the wrong
+      timestamp, and any open control in the row reset. Omit it and the key
+      falls back to the comment's own content, which is stable under a
+      prepend in a way that a position is not. */
+  id?: string;
+  author: string; tone?: Tone; timestamp?: string; body: string;
+};
+
+/** A key that survives a prepend. The id when there is one; otherwise the
+    content, which does not change when a row moves down the list. */
+function commentKey(c: FeedComment): string {
+  return c.id ?? `${c.author}|${c.timestamp ?? ""}|${c.body}`;
+}
+
+export interface CommentThreadProps {
+  comments?: FeedComment[];
+  emptyLabel?: string;
+  style?: React.CSSProperties;
+}
 
 export function CommentThread({
   comments = [],
   emptyLabel = "No words yet. First names only.",
   style,
-}: {
-  comments?: FeedComment[];
-  emptyLabel?: string;
-  style?: React.CSSProperties;
-}) {
+}: CommentThreadProps) {
   if (!comments.length)
     return (
-      <div style={{ padding: "var(--space-4) 0", fontSize: "var(--text-sm)", color: "var(--text-3)", fontFamily: BODY, ...style }}>
+      <div style={{ padding: "var(--space-4) 0", fontSize: "var(--text-sm)", color: "var(--text-faint)", fontFamily: BODY, ...style }}>
         {emptyLabel}
       </div>
     );
   return (
     <div style={{ display: "flex", flexDirection: "column", fontFamily: BODY, ...style }}>
       {comments.map((c, i) => (
-        <div key={i} style={{ display: "flex", gap: "var(--space-3)", padding: "var(--space-3) 0", borderTop: i ? "1px solid var(--line-faint)" : "none" }}>
+        <div key={commentKey(c)} style={{ display: "flex", gap: "var(--space-3)", padding: "var(--space-3) 0", borderTop: i ? "1px solid var(--border-subtle)" : "none" }}>
           <Avatar name={c.author} tone={c.tone ?? "ink"} size="sm" />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", flex: 1 }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)" }}>
               {/* A comment is subordinate to the post it hangs off, and the
                   app's own comment bubble (.wd-cmt__b) is already --text-xs;
                   13 was doing the job of 12 here. */}
-              <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--text-1)" }}>{c.author}</span>
-              <span style={{ font: `400 var(--text-3xs)/1 ${MONO}`, color: "var(--text-3)" }}>{c.timestamp}</span>
+              <span style={{ fontSize: "var(--text-xs)", fontWeight: 500, color: "var(--text-body)" }}>{c.author}</span>
+              <span style={{ font: `400 var(--text-3xs)/1 ${MONO}`, color: "var(--text-faint)" }}>{c.timestamp}</span>
             </div>
-            <span style={{ fontSize: "var(--text-xs)", lineHeight: 1.5, color: "var(--text-1)" }}>{c.body}</span>
+            <span style={{ fontSize: "var(--text-xs)", lineHeight: 1.5, color: "var(--text-body)" }}>{c.body}</span>
           </div>
         </div>
       ))}
@@ -178,7 +199,44 @@ export function CommentThread({
    the textarea carries `name`, the button submits, and the parent's server
    action (or route) receives the FormData; React resets the form when the
    action settles and the button disables itself again. `pending` marks the
-   submit in flight either way. */
+   submit in flight either way. They are mutually exclusive: see below. */
+interface ComposerBase {
+  placeholder?: string;
+  /** Accessible name of the textarea. */
+  label?: string;
+  submitLabel?: React.ReactNode;
+  pendingLabel?: React.ReactNode;
+  /** Field name the form submits under. */
+  name?: string;
+  defaultValue?: string;
+  sailing?: string | null;
+  onAttachSailing?: () => void;
+  disabled?: boolean;
+  pending?: boolean;
+  style?: React.CSSProperties;
+}
+
+/** The form shape: the textarea carries `name`, the button submits, and the
+    parent's server action receives the FormData. */
+interface ComposerFormProps extends ComposerBase {
+  action: React.FormHTMLAttributes<HTMLFormElement>["action"];
+  onPost?: never;
+}
+
+/** The widget shape: the composer holds the text and hands it back. */
+interface ComposerWidgetProps extends ComposerBase {
+  action?: never;
+  onPost?: (text: string) => void;
+}
+
+/* Two ways to post, and exactly one of them per composer. The prose under
+   here said "`onPost` is ignored" when both were given, which is a rule only
+   a reader of this file could know and one the call site could not see at
+   all: a composer written with both looked like it worked and silently
+   dropped every post into the wrong one. It is a union now, so writing both
+   does not compile. */
+export type ComposerProps = ComposerFormProps | ComposerWidgetProps;
+
 export function Composer({
   placeholder = "The booth is open. Say it like the cameras are on.",
   label = "Post to the deck",
@@ -193,29 +251,12 @@ export function Composer({
   disabled,
   pending = false,
   style,
-}: {
-  placeholder?: string;
-  /** Accessible name of the textarea. */
-  label?: string;
-  submitLabel?: React.ReactNode;
-  pendingLabel?: React.ReactNode;
-  /** Field name the form submits under. */
-  name?: string;
-  /** Renders as a <form action> instead of a widget; `onPost` is ignored. */
-  action?: React.FormHTMLAttributes<HTMLFormElement>["action"];
-  defaultValue?: string;
-  sailing?: string | null;
-  onAttachSailing?: () => void;
-  onPost?: (text: string) => void;
-  disabled?: boolean;
-  pending?: boolean;
-  style?: React.CSSProperties;
-}) {
+}: ComposerProps) {
   const [text, setText] = React.useState(defaultValue ?? "");
   const canPost = !disabled && !pending && !!text.trim();
   const boxStyle: React.CSSProperties = {
     background: "var(--surface-card)",
-    border: "1px solid var(--line-faint)",
+    border: "1px solid var(--border-subtle)",
     borderRadius: "var(--radius-md)",
     padding: "var(--space-4)",
     display: "flex",
@@ -242,7 +283,7 @@ export function Composer({
           fontFamily: BODY,
           fontWeight: 400,
           lineHeight: 1.55,
-          color: "var(--text-1)",
+          color: "var(--text-body)",
           minHeight: 56,
         }}
       />
@@ -258,7 +299,7 @@ export function Composer({
               cursor: "pointer",
               font: `700 var(--text-3xs)/1 ${MONO}`,
               letterSpacing: "var(--tracking-dense)",
-              color: "var(--text-3)",
+              color: "var(--text-faint)",
               minHeight: 24,
               whiteSpace: "nowrap",
             }}
@@ -293,15 +334,17 @@ export function Composer({
   return <div style={boxStyle}>{inner}</div>;
 }
 
+export interface FlagButtonProps {
+  flagged?: boolean;
+  onFlag?: () => void;
+  style?: React.CSSProperties;
+}
+
 export function FlagButton({
   flagged = false,
   onFlag,
   style,
-}: {
-  flagged?: boolean;
-  onFlag?: () => void;
-  style?: React.CSSProperties;
-}) {
+}: FlagButtonProps) {
   return (
     <button
       type="button"
@@ -313,7 +356,7 @@ export function FlagButton({
         font: `700 var(--text-3xs)/1 ${MONO}`,
         letterSpacing: "var(--tracking-dense)",
         textTransform: "uppercase",
-        color: flagged ? "var(--text-3)" : "var(--text-2)",
+        color: flagged ? "var(--text-faint)" : "var(--text-muted)",
         padding: "var(--space-1) 0",
         minHeight: 24,
         whiteSpace: "nowrap",
@@ -333,36 +376,38 @@ export type FlagItem = {
   when: string;
 };
 
+export interface FlagQueueProps {
+  items?: FlagItem[];
+  onResolve?: (item: FlagItem, action: "leave" | "remove") => void;
+  emptyLabel?: string;
+  style?: React.CSSProperties;
+}
+
 export function FlagQueue({
   items = [],
   onResolve,
   emptyLabel = "Nothing flagged. The deck polices itself tonight.",
   style,
-}: {
-  items?: FlagItem[];
-  onResolve?: (item: FlagItem, action: "leave" | "remove") => void;
-  emptyLabel?: string;
-  style?: React.CSSProperties;
-}) {
+}: FlagQueueProps) {
   const [pick, setPick] = React.useState<FlagItem | null>(null);
   const th = (right = false): React.CSSProperties => ({
     textAlign: right ? "right" : "left",
     padding: "var(--space-3) var(--space-4)",
     font: `700 var(--text-2xs)/1 ${MONO}`,
     letterSpacing: "var(--tracking-label)",
-    color: "var(--text-2)",
-    borderBottom: "1px solid var(--line-strong)",
+    color: "var(--text-muted)",
+    borderBottom: "1px solid var(--border-strong)",
   });
-  const td: React.CSSProperties = { padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid var(--line-faint)" };
+  const td: React.CSSProperties = { padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid var(--border-subtle)" };
   return (
     <div style={{ fontFamily: BODY, ...style }}>
-      {!items.length ? <div style={{ padding: "var(--space-4) 0", fontSize: "var(--text-sm)", color: "var(--text-3)" }}>{emptyLabel}</div> : null}
+      {!items.length ? <div style={{ padding: "var(--space-4) 0", fontSize: "var(--text-sm)", color: "var(--text-faint)" }}>{emptyLabel}</div> : null}
       {items.length > 0 ? (
         /* The Bridge's other tables sit in .ls-table-wrap; this one did not, so
            on a phone the moderation queue pushed the page 10px wide and made it
            scroll sideways instead of scrolling the table. */
         <div className="ls-table-wrap">
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--text-sm)", color: "var(--text-body)" }}>
           <thead>
             <tr>
               <th scope="col" style={th()}>POST</th>
@@ -378,10 +423,10 @@ export function FlagQueue({
               <tr key={it.id}>
                 <td style={{ ...td, maxWidth: 320 }}>
                   <span style={{ fontWeight: 500 }}>{it.author}</span> —{" "}
-                  <span style={{ color: "var(--text-2)" }}>{it.excerpt}</span>
+                  <span style={{ color: "var(--text-muted)" }}>{it.excerpt}</span>
                 </td>
                 <td style={{ ...td, font: `400 var(--text-xs)/1 ${MONO}` }}>{it.flaggedBy}</td>
-                <td style={{ ...td, font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-3)", whiteSpace: "nowrap" }}>{it.when}</td>
+                <td style={{ ...td, font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-faint)", whiteSpace: "nowrap" }}>{it.when}</td>
                 <td style={{ ...td, textAlign: "right" }}>
                   <Button variant="outline" size="sm" onClick={() => setPick(it)}>
                     Resolve
@@ -422,7 +467,7 @@ export function FlagQueue({
         }
       >
         {pick ? (
-          <span style={{ fontSize: "var(--text-sm)", lineHeight: 1.55, color: "var(--text-2)" }}>&ldquo;{pick.excerpt}&rdquo;</span>
+          <span style={{ fontSize: "var(--text-sm)", lineHeight: 1.55, color: "var(--text-muted)" }}>&ldquo;{pick.excerpt}&rdquo;</span>
         ) : null}
       </Dialog>
     </div>

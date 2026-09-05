@@ -35,24 +35,45 @@ import React from "react";
    animationend fires at once, so the exit costs a reader nothing. */
 export function useExitPhase(
   open: boolean,
-  { safetyMs = 400 }: { safetyMs?: number } = {}
+  { safetyMs = 400, onClosed }: { safetyMs?: number; onClosed?: () => void } = {}
 ) {
   const [prevOpen, setPrevOpen] = React.useState(open);
   const [closing, setClosing] = React.useState(false);
+  /* A surface that left of its OWN accord — a toast whose clock ran out, or
+     whose × was pressed — is gone while the prop still says open, because the
+     prop is the caller's opinion and `onClosed` is what changes it. Without
+     this latch the toast reappears the instant its exit ends. `gone` also
+     keeps the eventual open→false from replaying an exit that already ran. */
+  const [gone, setGone] = React.useState(false);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    setClosing(!open);
+    setClosing(!open && !gone);
+    if (open) setGone(false);
   }
+  /* Held in a ref so a caller passing a fresh arrow each render does not
+     restart the safety countdown mid-exit. */
+  const closedRef = React.useRef(onClosed);
+  React.useEffect(() => { closedRef.current = onClosed; }, [onClosed]);
+  /* One place the phase ends, so `onClosed` fires exactly once whether the
+     animation reported itself or the safety timer had to. */
+  const finish = React.useCallback(() => {
+    setClosing(false);
+    setGone(true);
+    closedRef.current?.();
+  }, []);
   React.useEffect(() => {
     if (!closing) return;
-    const t = window.setTimeout(() => setClosing(false), safetyMs);
+    const t = window.setTimeout(finish, safetyMs);
     return () => window.clearTimeout(t);
-  }, [closing, safetyMs]);
+  }, [closing, safetyMs, finish]);
   /* Only the animating element's own end, not one bubbling from a child: the
      panels animate their contents too, and a child finishing first would end
      the phase early and cut the parent's exit off. */
   const onAnimationEnd = React.useCallback((e: React.AnimationEvent) => {
-    if (e.target === e.currentTarget) setClosing(false);
-  }, []);
-  return { present: open || closing, closing, onAnimationEnd };
+    if (e.target === e.currentTarget) finish();
+  }, [finish]);
+  /* Start the exit from inside rather than from a prop: a toast's own clock
+     reaching its deadline, or its × being pressed. */
+  const close = React.useCallback(() => setClosing(true), []);
+  return { present: (open && !gone) || closing, closing, onAnimationEnd, close };
 }

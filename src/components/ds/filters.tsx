@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cx } from "./class";
 import { Tag } from "./display";
 
 /* The two control shapes, and there are only two.
@@ -32,6 +33,15 @@ export type FilterOption = {
 type SingleProps = { multi?: false; value: string; onChange: (next: string) => void };
 type MultiProps = { multi: true; value: string[]; onChange: (next: string[]) => void };
 
+export type FilterPillsProps = {
+  label: string;
+  options: FilterOption[];
+  /** Omit to drop the All pill — an axis where every row has a value. */
+  allLabel?: string | null;
+  allCount?: number;
+  className?: string;
+} & (SingleProps | MultiProps);
+
 export function FilterPills({
   label,
   options,
@@ -39,14 +49,7 @@ export function FilterPills({
   allCount,
   className = "",
   ...mode
-}: {
-  label: string;
-  options: FilterOption[];
-  /** Omit to drop the All pill — an axis where every row has a value. */
-  allLabel?: string | null;
-  allCount?: number;
-  className?: string;
-} & (SingleProps | MultiProps)) {
+}: FilterPillsProps) {
   /* The label span is the group's accessible name. Without the pairing a
      screen reader hears a run of bare toggles with no idea which of them are
      answers to the same question. */
@@ -62,7 +65,7 @@ export function FilterPills({
   };
   const clear = () => { if (mode.multi) mode.onChange([]); else mode.onChange("all"); };
   return (
-    <div className={["ls-filters", className].filter(Boolean).join(" ")} role="group" aria-labelledby={id}>
+    <div className={cx("ls-filters", className)} role="group" aria-labelledby={id}>
       <span className="ls-filters__label" id={id}>
         {label}
       </span>

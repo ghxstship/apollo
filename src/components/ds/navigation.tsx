@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { cx } from "./class";
 
 /* — Tabs —
    The WAI-ARIA tabs pattern, the manual-activation flavour with arrows that
@@ -24,16 +25,18 @@ export interface TabItem {
   tabId?: string;
 }
 
-export function Tabs({
-  items = [], value, onChange, inverse = false, grow = false, label, className = "", style,
-}: {
+export interface TabsProps {
   items: TabItem[]; value?: string; onChange?: (id: string) => void;
   inverse?: boolean; grow?: boolean;
   /** Accessible name for the tablist — what these tabs switch between. */
   label?: string;
   className?: string; style?: React.CSSProperties;
-}) {
-  const cls = ["ls-tabs", inverse ? "ls-tabs--inverse" : "", grow ? "ls-tabs--grow" : "", className].filter(Boolean).join(" ");
+}
+
+export function Tabs({
+  items = [], value, onChange, inverse = false, grow = false, label, className = "", style,
+}: TabsProps) {
+  const cls = cx("ls-tabs", inverse && "ls-tabs--inverse", grow && "ls-tabs--grow", className);
   const selected = items.findIndex((it) => it.id === value);
   /* The indicator is one bar on the rail that slides to the selected tab, not
      a border that each tab switches on and off. It is positioned from the
@@ -93,7 +96,7 @@ export function Tabs({
       {items.map((it, i) => (
         <button key={it.id} id={it.tabId} type="button" role="tab" aria-selected={value === it.id}
           aria-controls={it.panelId} tabIndex={i === tabbable ? 0 : -1}
-          className={"ls-tab" + (value === it.id ? " ls-tab--active" : "")}
+          className={cx("ls-tab", value === it.id && "ls-tab--active")}
           onClick={() => onChange && onChange(it.id)}>{it.label}</button>
       ))}
     </div>

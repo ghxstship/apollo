@@ -1,7 +1,8 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { Icon } from "./icon";
+import { Icon, type IconName } from "./icon";
+import { buttonClass, cx } from "./class";
 import { THEME_STORAGE_KEY } from "@/lib/brand";
 
 /* — Button —
@@ -18,10 +19,7 @@ import { THEME_STORAGE_KEY } from "@/lib/brand";
    The base class carries the md size, so a bare `ls-btn` written by hand still
    renders 44px tall — the error pages shipped zero-height buttons when the size
    modifier was forgotten. */
-export function Button({
-  variant = "primary", size = "md", inverse = false, fullWidth = false,
-  disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
-}: {
+export type ButtonProps = {
   /* `danger` is for a control that destroys or cannot be undone — cancelling a
      sailing, revoking a key, redacting a signature, striking a record. It is
      deliberately an outline at rest so it never competes with the view's one
@@ -33,8 +31,13 @@ export function Button({
   pending?: boolean;
   /** Shown in place of the children while `pending`. Width is reserved for both. */
   pendingLabel?: React.ReactNode;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", disabled && !pending ? "ls-btn--disabled" : "", pending ? "ls-btn--pending" : "", className].filter(Boolean).join(" ");
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
+export function Button({
+  variant = "primary", size = "md", inverse = false, fullWidth = false,
+  disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
+}: ButtonProps) {
+  const cls = buttonClass({ base: "ls-btn", variant, size, inverse, fullWidth, disabled, pending, className });
   return (
     <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
       {pendingLabel == null ? children : (
@@ -51,14 +54,16 @@ export function Button({
    `pending` sets aria-busy and disables; `pendingLabel` replaces the accessible
    name while in flight ("Saving" for "Save"). The glyph is the caller's and is
    not swapped — an icon button is one width by construction. */
-export function IconButton({
-  label, variant = "outline", size = "md", inverse = false, disabled = false, pending = false, pendingLabel, className = "", children, ...rest
-}: {
+export type IconButtonProps = {
   label: string; variant?: "solid" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg"; inverse?: boolean;
   pending?: boolean; pendingLabel?: string;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
+export function IconButton({
+  label, variant = "outline", size = "md", inverse = false, disabled = false, pending = false, pendingLabel, className = "", children, ...rest
+}: IconButtonProps) {
   const name = pending && pendingLabel ? pendingLabel : label;
-  const cls = ["ls-iconbtn", "ls-iconbtn--" + variant, "ls-iconbtn--" + size, inverse ? "ls-iconbtn--inverse" : "", disabled && !pending ? "ls-iconbtn--disabled" : "", pending ? "ls-iconbtn--pending" : "", className].filter(Boolean).join(" ");
+  const cls = buttonClass({ base: "ls-iconbtn", variant, size, inverse, disabled, pending, className });
   return <button type="button" aria-label={name} title={name} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>{children}</button>;
 }
 
@@ -84,10 +89,7 @@ export function IconButton({
    everything that is not a pointer. */
 const EXTERNAL_HREF = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
-export function LinkButton({
-  href, variant = "primary", size = "md", inverse = false, fullWidth = false, disabled = false,
-  pending = false, pendingLabel, external, prefetch, className = "", children, rel, ...rest
-}: {
+export type LinkButtonProps = {
   href: string;
   variant?: "primary" | "gold" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
   inverse?: boolean; fullWidth?: boolean; disabled?: boolean;
@@ -100,9 +102,14 @@ export function LinkButton({
   external?: boolean;
   prefetch?: React.ComponentProps<typeof Link>["prefetch"];
   children?: React.ReactNode;
-} & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href">) {
+} & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href">;
+
+export function LinkButton({
+  href, variant = "primary", size = "md", inverse = false, fullWidth = false, disabled = false,
+  pending = false, pendingLabel, external, prefetch, className = "", children, rel, ...rest
+}: LinkButtonProps) {
   const off = disabled || pending;
-  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", disabled && !pending ? "ls-btn--disabled" : "", pending ? "ls-btn--pending" : "", className].filter(Boolean).join(" ");
+  const cls = buttonClass({ base: "ls-btn", variant, size, inverse, fullWidth, disabled, pending, className });
   const isExternal = external ?? EXTERNAL_HREF.test(href);
   const a11y = off
     ? { "aria-disabled": true as const, tabIndex: -1, "aria-busy": pending || undefined }
@@ -136,13 +143,15 @@ export function LinkButton({
      default  ink, underlined like a link — a real action in running copy
      quiet    faint until hovered — a secondary action beside a primary one
      danger   the destructive step in text form (Remove, Revoke) */
-export function TextButton({
-  tone = "default", size = "md", disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
-}: {
+export type TextButtonProps = {
   tone?: "default" | "quiet" | "danger"; size?: "sm" | "md";
   pending?: boolean; pendingLabel?: React.ReactNode;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = ["ls-bare", "ls-textbtn", "ls-textbtn--" + tone, "ls-textbtn--" + size, disabled && !pending ? "ls-textbtn--disabled" : "", pending ? "ls-textbtn--pending" : "", className].filter(Boolean).join(" ");
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
+export function TextButton({
+  tone = "default", size = "md", disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
+}: TextButtonProps) {
+  const cls = buttonClass({ base: "ls-textbtn", variant: tone, size, disabled, pending, className });
   return (
     <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
       {pending && pendingLabel != null ? pendingLabel : children}
@@ -185,10 +194,15 @@ function subscribeTheme(cb: () => void) {
   };
 }
 
+export type ThemeToggleProps = {
+  storageKey?: string; darkLabel?: string; lightLabel?: string; systemLabel?: string;
+  className?: string; style?: React.CSSProperties;
+};
+
 export function ThemeToggle({
   storageKey = THEME_STORAGE_KEY, darkLabel = "Dark theme", lightLabel = "Light theme", systemLabel = "Follow system",
   className = "", style,
-}: { storageKey?: string; darkLabel?: string; lightLabel?: string; systemLabel?: string; className?: string; style?: React.CSSProperties }) {
+}: ThemeToggleProps) {
   const mode = React.useSyncExternalStore<ThemeMode>(
     subscribeTheme,
     () => {
@@ -209,9 +223,9 @@ export function ThemeToggle({
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, [mode]);
-  const opts: Array<[ThemeMode, string, string]> = [["dark", "Moon", darkLabel], ["light", "Sun", lightLabel], ["system", "Monitor", systemLabel]];
+  const opts: Array<[ThemeMode, IconName, string]> = [["dark", "Moon", darkLabel], ["light", "Sun", lightLabel], ["system", "Monitor", systemLabel]];
   return (
-    <span className={["ls-themetog", className].filter(Boolean).join(" ")} style={style} role="group" aria-label="Theme">
+    <span className={cx("ls-themetog", className)} style={style} role="group" aria-label="Theme">
       {opts.map(([id, ic, label]) => (
         <button key={id} type="button" className={mode === id ? "on" : ""} aria-label={label} aria-pressed={mode === id} title={label} onClick={() => setMode(id)}>
           <Icon name={ic} size={14} />

@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { cx } from "./class";
 import { Icon } from "./icon";
 import { IconButton } from "./actions";
 
@@ -56,8 +57,43 @@ function Message({
    Omit for the default: the field fills its container as it always has. */
 export type FieldWidth = "narrow" | "wide" | "full";
 
-function fieldClass(error: React.ReactNode, width: FieldWidth | undefined, className: string, extra?: string) {
-  return ["ls-field", error ? "ls-field--error" : "", width ? "ls-field--" + width : "", extra ?? "", className].filter(Boolean).join(" ");
+function fieldClass(error: React.ReactNode, width: FieldWidth | undefined, className: string) {
+  return cx("ls-field", error && "ls-field--error", width && "ls-field--" + width, className);
+}
+
+/* — Field —
+   The shell every text control wears: the ruled block, its label, and the one
+   line under it that is either the hint or the error. Input, Textarea and
+   Select each rebuilt it — three copies of the same label element, the same
+   `ls-visually-hidden` swap and the same Message call — and three copies is
+   how a fourth control ends up shipping without a label association at all.
+
+   The CONTROL is the caller's, and so is everything that goes on it:
+   `aria-invalid`, `aria-describedby` and the ids they point at are computed
+   beside the element they belong to, because that is the association the H5
+   fix is about and it must not become something a wrapper does at a distance.
+   This owns the box; the control owns its own semantics. */
+function Field({
+  id, label, labelHidden = false, hint, error, width, className = "", style, children,
+}: {
+  id: string;
+  label?: React.ReactNode; labelHidden?: boolean;
+  hint?: React.ReactNode; error?: React.ReactNode;
+  width?: FieldWidth;
+  className?: string; style?: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={fieldClass(error, width, className)} style={style}>
+      {label ? (
+        <label className={labelHidden ? "ls-field__label ls-visually-hidden" : "ls-field__label"} htmlFor={id}>
+          {label}
+        </label>
+      ) : null}
+      {children}
+      <Message error={error} hint={hint} errorId={`${id}-err`} hintId={`${id}-hint`} />
+    </div>
+  );
 }
 
 /* — Input —
@@ -78,14 +114,21 @@ function fieldClass(error: React.ReactNode, width: FieldWidth | undefined, class
    `labelHidden` keeps the label in the accessibility tree and takes it off
    the screen — for a field whose purpose the surrounding design already
    states (a search box under a heading that says Search). */
+export type InputProps = {
+  label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode;
+  width?: FieldWidth; adornStart?: React.ReactNode; adornEnd?: React.ReactNode;
+  /** Shown and read, not editable — a value the reader may copy but not
+      change. It rides `...rest` onto the input, where `:read-only` gives it a
+      face of its own: distinct from `disabled`, which is a control that is
+      not there for you at all. */
+  readOnly?: boolean;
+  className?: string; style?: React.CSSProperties; ref?: React.Ref<HTMLInputElement>;
+} & React.InputHTMLAttributes<HTMLInputElement>;
+
 export function Input({
   label, labelHidden = false, hint, error, width, adornStart, adornEnd, id, className = "", style, ref,
   "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
-}: {
-  label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode;
-  width?: FieldWidth; adornStart?: React.ReactNode; adornEnd?: React.ReactNode;
-  className?: string; style?: React.CSSProperties; ref?: React.Ref<HTMLInputElement>;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+}: InputProps) {
   const auto = React.useId();
   const iid = id || auto;
   const input = (
@@ -93,14 +136,13 @@ export function Input({
       {...rest}
       ref={ref}
       id={iid}
-      className={["ls-input", adornStart ? "ls-input--adorned-start" : "", adornEnd ? "ls-input--adorned" : ""].filter(Boolean).join(" ")}
+      className={cx("ls-input", adornStart && "ls-input--adorned-start", adornEnd && "ls-input--adorned")}
       aria-invalid={error ? true : ownInvalid}
       aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, ownDescribedBy)}
     />
   );
   return (
-    <div className={fieldClass(error, width, className)} style={style}>
-      {label ? <label className={labelHidden ? "ls-field__label ls-visually-hidden" : "ls-field__label"} htmlFor={iid}>{label}</label> : null}
+    <Field id={iid} label={label} labelHidden={labelHidden} hint={hint} error={error} width={width} className={className} style={style}>
       {adornStart || adornEnd ? (
         <div className="ls-input-wrap">
           {adornStart ? <span className="ls-input__adorn ls-input__adorn--start">{adornStart}</span> : null}
@@ -108,24 +150,26 @@ export function Input({
           {adornEnd ? <span className="ls-input__adorn">{adornEnd}</span> : null}
         </div>
       ) : input}
-      <Message error={error} hint={hint} errorId={`${iid}-err`} hintId={`${iid}-hint`} />
-    </div>
+    </Field>
   );
 }
 
 /* — Textarea — */
+export type TextareaProps = {
+  label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode; width?: FieldWidth;
+  /** Shown and read, not editable. See Input. */
+  readOnly?: boolean;
+  className?: string; style?: React.CSSProperties; ref?: React.Ref<HTMLTextAreaElement>;
+} & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
+
 export function Textarea({
   label, labelHidden = false, hint, error, width, id, rows = 4, className = "", style, ref,
   "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
-}: {
-  label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode; width?: FieldWidth;
-  className?: string; style?: React.CSSProperties; ref?: React.Ref<HTMLTextAreaElement>;
-} & React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: TextareaProps) {
   const auto = React.useId();
   const iid = id || auto;
   return (
-    <div className={fieldClass(error, width, className)} style={style}>
-      {label ? <label className={labelHidden ? "ls-field__label ls-visually-hidden" : "ls-field__label"} htmlFor={iid}>{label}</label> : null}
+    <Field id={iid} label={label} labelHidden={labelHidden} hint={hint} error={error} width={width} className={className} style={style}>
       <textarea
         {...rest}
         ref={ref}
@@ -135,26 +179,26 @@ export function Textarea({
         aria-invalid={error ? true : ownInvalid}
         aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, ownDescribedBy)}
       ></textarea>
-      <Message error={error} hint={hint} errorId={`${iid}-err`} hintId={`${iid}-hint`} />
-    </div>
+    </Field>
   );
 }
 
 /* — Select — */
-export function Select({
-  label, labelHidden = false, hint, error, width, options = [], placeholder, id, className = "", style, children, ref,
-  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
-}: {
+export type SelectProps = {
   label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode; width?: FieldWidth;
   options?: Array<{ value: string; label: string }>; placeholder?: string;
   className?: string; style?: React.CSSProperties; children?: React.ReactNode;
   ref?: React.Ref<HTMLSelectElement>;
-} & React.SelectHTMLAttributes<HTMLSelectElement>) {
+} & React.SelectHTMLAttributes<HTMLSelectElement>;
+
+export function Select({
+  label, labelHidden = false, hint, error, width, options = [], placeholder, id, className = "", style, children, ref,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
+}: SelectProps) {
   const auto = React.useId();
   const iid = id || auto;
   return (
-    <div className={fieldClass(error, width, className)} style={style}>
-      {label ? <label className={labelHidden ? "ls-field__label ls-visually-hidden" : "ls-field__label"} htmlFor={iid}>{label}</label> : null}
+    <Field id={iid} label={label} labelHidden={labelHidden} hint={hint} error={error} width={width} className={className} style={style}>
       <div className="ls-select-wrap">
         <select
           {...rest}
@@ -170,8 +214,7 @@ export function Select({
           {children}
         </select>
       </div>
-      <Message error={error} hint={hint} errorId={`${iid}-err`} hintId={`${iid}-hint`} />
-    </div>
+    </Field>
   );
 }
 
@@ -187,14 +230,16 @@ export function Select({
    The label is visually hidden by default — a search box states its purpose
    by shape — but it is always there for the accessibility tree; pass
    `labelHidden={false}` to show it. */
-export function SearchField({
-  label = "Search", labelHidden = true, onClear, clearLabel = "Clear", pending = false, value, className = "", ...rest
-}: {
+export type SearchFieldProps = {
   label?: React.ReactNode; labelHidden?: boolean;
   onClear?: () => void; clearLabel?: string; pending?: boolean;
   hint?: React.ReactNode; error?: React.ReactNode; width?: FieldWidth;
   className?: string; style?: React.CSSProperties; ref?: React.Ref<HTMLInputElement>;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">) {
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type">;
+
+export function SearchField({
+  label = "Search", labelHidden = true, onClear, clearLabel = "Clear", pending = false, value, className = "", ...rest
+}: SearchFieldProps) {
   const showClear = !!onClear && (value === undefined || value === null || String(value) !== "");
   return (
     <Input
@@ -205,7 +250,7 @@ export function SearchField({
       label={label}
       labelHidden={labelHidden}
       value={value}
-      className={["ls-searchfield", pending ? "ls-searchfield--pending" : "", className].filter(Boolean).join(" ")}
+      className={cx("ls-searchfield", pending && "ls-searchfield--pending", className)}
       aria-busy={pending || undefined}
       adornStart={<span className="ls-searchfield__glyph"><Icon name="Search" size={16} /></span>}
       adornEnd={showClear ? (
@@ -229,24 +274,26 @@ export function SearchField({
    Checked and disabled faces are drawn from the input's own state (:has), so
    an uncontrolled row needs no prop to look checked. This is the "boxed"
    variant Radio and Checkbox render through when asked. */
-export function OptionRow({
-  kind = "radio", label, description, figure, error, disabled = false, id, className = "", style,
-  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
-}: {
+export type OptionRowProps = {
   kind?: "radio" | "checkbox";
   label: React.ReactNode; description?: React.ReactNode;
   /** Trailing figure — a price, a count, a date. Mono, tabular. */
   figure?: React.ReactNode;
   error?: React.ReactNode;
   className?: string; style?: React.CSSProperties;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "children">) {
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "children">;
+
+export function OptionRow({
+  kind = "radio", label, description, figure, error, disabled = false, id, className = "", style,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
+}: OptionRowProps) {
   const auto = React.useId();
   const iid = id || auto;
   const markCls = kind === "radio" ? "ls-radio__dot" : "ls-check__box";
   const base = kind === "radio" ? "ls-radio" : "ls-check";
   return (
     <label
-      className={[base, "ls-option", disabled ? "ls-option--disabled" : "", error ? "ls-option--error" : "", className].filter(Boolean).join(" ")}
+      className={cx(base, "ls-option", disabled && "ls-option--disabled", error && "ls-option--error", className)}
       style={style}
     >
       <input
@@ -280,14 +327,16 @@ export function OptionRow({
    `boxed` renders the same control as an OptionRow — a full-width bordered
    row — for a list of choices that should read as options rather than as a
    form's fine print. */
-export function Checkbox({
-  label, description, error, boxed = false, figure, disabled = false, id, className = "", style,
-  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
-}: {
+export type CheckboxProps = {
   label?: React.ReactNode; description?: React.ReactNode; error?: React.ReactNode;
   boxed?: boolean; figure?: React.ReactNode;
   className?: string; style?: React.CSSProperties;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+} & React.InputHTMLAttributes<HTMLInputElement>;
+
+export function Checkbox({
+  label, description, error, boxed = false, figure, disabled = false, id, className = "", style,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
+}: CheckboxProps) {
   const auto = React.useId();
   const iid = id || auto;
   if (boxed) {
@@ -295,7 +344,7 @@ export function Checkbox({
   }
   return (
     <label
-      className={["ls-check", disabled ? "ls-check--disabled" : "", error ? "ls-check--error" : "", className].filter(Boolean).join(" ")}
+      className={cx("ls-check", disabled && "ls-check--disabled", error && "ls-check--error", className)}
       style={style}
     >
       <input
@@ -304,7 +353,18 @@ export function Checkbox({
         type="checkbox"
         disabled={disabled}
         aria-invalid={error ? true : ownInvalid}
-        aria-describedby={describedBy(error, null, `${iid}-err`, `${iid}-desc`, ownDescribedBy)}
+        /* The description used to render with no id and no association, so
+           the one sentence explaining what the reader was agreeing to was
+           visible and nowhere in the accessibility tree. Same mechanism the
+           error already used — and the same precedence: an error REPLACES the
+           description rather than joining it, so the control is not read
+           twice. (The boxed path through OptionRow always did this.)
+
+           Both messages live inside the label block below, so a Checkbox with
+           no label has nowhere to draw them — and an id that renders nowhere
+           is a dangling reference a screen reader follows to silence. Neither
+           is associated unless there is a label to carry it. */
+        aria-describedby={describedBy(label && error, label && description, `${iid}-err`, `${iid}-desc`, ownDescribedBy)}
       />
       <span className="ls-check__box"></span>
       {label ? (
@@ -315,7 +375,7 @@ export function Checkbox({
               {error}
             </span>
           ) : description ? (
-            <span className="ls-check__desc">{description}</span>
+            <span className="ls-check__desc" id={`${iid}-desc`}>{description}</span>
           ) : null}
         </span>
       ) : null}
@@ -326,17 +386,19 @@ export function Checkbox({
 /* — Radio —
    `boxed` renders through OptionRow: the same input, drawn as a full-width
    bordered row with room for a description and a trailing figure. */
-export function Radio({
-  label, description, figure, boxed = false, disabled = false, className = "", style, ...rest
-}: {
+export type RadioProps = {
   label?: React.ReactNode; description?: React.ReactNode; figure?: React.ReactNode; boxed?: boolean;
   className?: string; style?: React.CSSProperties;
-} & React.InputHTMLAttributes<HTMLInputElement>) {
+} & React.InputHTMLAttributes<HTMLInputElement>;
+
+export function Radio({
+  label, description, figure, boxed = false, disabled = false, className = "", style, ...rest
+}: RadioProps) {
   if (boxed) {
     return <OptionRow kind="radio" label={label} description={description} figure={figure} disabled={disabled} className={className} style={style} {...rest} />;
   }
   return (
-    <label className={["ls-radio", disabled ? "ls-radio--disabled" : "", className].filter(Boolean).join(" ")} style={style}>
+    <label className={cx("ls-radio", disabled && "ls-radio--disabled", className)} style={style}>
       <input type="radio" disabled={disabled} {...rest} />
       <span className="ls-radio__dot"></span>
       {label ? <span className="ls-radio__label">{label}</span> : null}
@@ -345,11 +407,15 @@ export function Radio({
 }
 
 /* — Switch — */
+export type SwitchProps = {
+  label?: React.ReactNode; className?: string; style?: React.CSSProperties;
+} & React.InputHTMLAttributes<HTMLInputElement>;
+
 export function Switch({
   label, disabled = false, className = "", style, ...rest
-}: { label?: React.ReactNode; className?: string; style?: React.CSSProperties } & React.InputHTMLAttributes<HTMLInputElement>) {
+}: SwitchProps) {
   return (
-    <label className={["ls-switch", disabled ? "ls-switch--disabled" : "", className].filter(Boolean).join(" ")} style={style}>
+    <label className={cx("ls-switch", disabled && "ls-switch--disabled", className)} style={style}>
       <input type="checkbox" role="switch" disabled={disabled} {...rest} />
       <span className="ls-switch__track"></span>
       {label ? <span className="ls-switch__label">{label}</span> : null}
@@ -361,16 +427,18 @@ export function Switch({
    `disabled` takes the whole control out: both buttons disabled, the group
    aria-disabled and faded — for a quantity that is fixed while an order is
    being placed, or a sold-out line. */
-export function Stepper({
-  value = 0, onChange, min = 0, max = 99, size = "md", inverse = false, disabled = false,
-  decrementLabel = "Decrease", incrementLabel = "Increase", label, className = "", style,
-}: {
+export interface StepperProps {
   value?: number; onChange?: (n: number) => void; min?: number; max?: number;
   size?: "sm" | "md"; inverse?: boolean; disabled?: boolean; decrementLabel?: string; incrementLabel?: string;
   /** Names the group — what is being counted ("Guests", "Quantity"). */
   label?: string;
   className?: string; style?: React.CSSProperties;
-}) {
+}
+
+export function Stepper({
+  value = 0, onChange, min = 0, max = 99, size = "md", inverse = false, disabled = false,
+  decrementLabel = "Decrease", incrementLabel = "Increase", label, className = "", style,
+}: StepperProps) {
   const set = (v: number) => { const n = Math.min(max, Math.max(min, v)); if (n !== value && onChange) onChange(n); };
   /* The value used to be its own aria-live region, so a table of steppers
      was a table of live regions and any one changing was read against the
@@ -378,7 +446,7 @@ export function Stepper({
      the button that was pressed, and its label now says what it did. */
   return (
     <span
-      className={["ls-stepper", "ls-stepper--" + size, inverse ? "ls-stepper--inverse" : "", disabled ? "ls-stepper--disabled" : "", className].filter(Boolean).join(" ")}
+      className={cx("ls-stepper", "ls-stepper--" + size, inverse && "ls-stepper--inverse", disabled && "ls-stepper--disabled", className)}
       style={style} role="group" aria-label={label} aria-disabled={disabled || undefined}
     >
       <button type="button" aria-label={`${decrementLabel}, now ${value}`} disabled={disabled || value <= min} onClick={() => set(value - 1)}>−</button>

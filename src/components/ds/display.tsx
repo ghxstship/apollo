@@ -1,13 +1,24 @@
 import React from "react";
+import { cx } from "./class";
 import { Icon } from "./icon";
 import { ANCHOR, COMMERCE, DIVISION_ACCENT, lockup, lockupSuffix, type DivisionId, type LockupForm } from "@/lib/brand";
 
 /* — Card — */
-const SEAS: Record<string, string> = {
+const SEAS = {
   dawn: "var(--sea-dawn)",
   day: "var(--sea-day)",
   dusk: "var(--sea-dusk)",
-};
+} as const;
+
+/** The three painted grounds a card can ask for by name. */
+export type CardSea = keyof typeof SEAS;
+
+/* A sea tone, or a URL. The tones are the union — a fourth one is a design
+   decision, not a prop value, and `media="dusl"` used to draw a broken image
+   in place of the gradient it meant. A URL cannot be enumerated, so the
+   intersection keeps arbitrary strings assignable while the three names still
+   autocomplete. */
+export type CardMedia = CardSea | (string & Record<never, never>);
 
 /* A Card is a container, never a control. It used to take an `onClick` and
    dress itself as `role="button"` with a tabIndex and an Enter/Space handler —
@@ -21,25 +32,28 @@ const SEAS: Record<string, string> = {
    wrapper, and the home grid already used it — or put a LinkButton in the
    footer. No call site passed `onClick`, so nothing that was clickable stopped
    being clickable when the prop came off. */
+export interface CardProps {
+  eyebrow?: React.ReactNode; title?: React.ReactNode; meta?: React.ReactNode[];
+  media?: CardMedia; children?: React.ReactNode; footer?: React.ReactNode;
+  tone?: "shore" | "sea";
+  className?: string; style?: React.CSSProperties;
+}
+
 export function Card({
   eyebrow, title, meta, media, children, footer, tone = "shore",
   className = "", style,
-}: {
-  eyebrow?: React.ReactNode; title?: React.ReactNode; meta?: React.ReactNode[];
-  media?: string; children?: React.ReactNode; footer?: React.ReactNode;
-  tone?: "shore" | "sea";
-  className?: string; style?: React.CSSProperties;
-}) {
-  const cls = ["ls-card", "ls-card--" + tone, className].filter(Boolean).join(" ");
+}: CardProps) {
+  const cls = cx("ls-card", "ls-card--" + tone, className);
+  const sea = media ? SEAS[media as CardSea] : undefined;
   const mediaEl = media ? (
     <div className="ls-card__media">
-      {SEAS[media] ? (
-        <div style={{ background: SEAS[media] }}></div>
+      {sea ? (
+        <div style={{ background: sea }}></div>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element -- media accepts arbitrary URLs; imagery is placeholder gradients until photography exists
         <img src={media} alt="" />
       )}
-      {SEAS[media] ? <span className="ls-card__tk">IMAGERY TK</span> : null}
+      {sea ? <span className="ls-card__tk">IMAGERY TK</span> : null}
     </div>
   ) : null;
   return (
@@ -61,10 +75,15 @@ export function Card({
 }
 
 /* — Badge — */
+export type BadgeProps = {
+  tone?: "gold" | "ink" | "positive" | "caution" | "danger" | "outline";
+  inverse?: boolean; className?: string; children?: React.ReactNode;
+} & React.HTMLAttributes<HTMLSpanElement>;
+
 export function Badge({
   tone = "outline", inverse = false, className = "", children, ...rest
-}: { tone?: "gold" | "ink" | "positive" | "caution" | "danger" | "outline"; inverse?: boolean; className?: string; children?: React.ReactNode } & React.HTMLAttributes<HTMLSpanElement>) {
-  const cls = ["ls-badge", "ls-badge--" + tone, inverse ? "ls-badge--inverse" : "", className].filter(Boolean).join(" ");
+}: BadgeProps) {
+  const cls = cx("ls-badge", "ls-badge--" + tone, inverse && "ls-badge--inverse", className);
   return <span className={cls} {...rest}>{children}</span>;
 }
 
@@ -83,10 +102,16 @@ export function Badge({
    reflow when one value has nothing behind it — and disables the inner press
    button. On a Tag with nothing to press it is the span's aria-disabled that
    says so, since there is no control to carry it. */
+export type TagProps = {
+  active?: boolean; disabled?: boolean;
+  onClick?: React.MouseEventHandler; onRemove?: React.MouseEventHandler;
+  removeLabel?: string; className?: string; children?: React.ReactNode;
+} & Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick">;
+
 export function Tag({
   active = false, disabled = false, onClick, onRemove, removeLabel = "Remove", className = "", children, ...rest
-}: { active?: boolean; disabled?: boolean; onClick?: React.MouseEventHandler; onRemove?: React.MouseEventHandler; removeLabel?: string; className?: string; children?: React.ReactNode } & Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick">) {
-  const cls = ["ls-tag", active ? "ls-tag--active" : "", onClick ? "ls-tag--click" : "", disabled ? "ls-tag--disabled" : "", className].filter(Boolean).join(" ");
+}: TagProps) {
+  const cls = cx("ls-tag", active && "ls-tag--active", onClick && "ls-tag--click", disabled && "ls-tag--disabled", className);
   return (
     <span className={cls} aria-disabled={!onClick && disabled ? true : undefined} {...rest}>
       {onClick ? (
@@ -102,31 +127,42 @@ export function Tag({
 /* — Avatar — */
 const initials = (n: string) => String(n || "").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("");
 
+export type AvatarProps = {
+  name?: string; tone?: "ink" | "sea" | "gold" | "sand"; size?: "sm" | "md" | "lg";
+  ring?: boolean; className?: string; style?: React.CSSProperties;
+} & React.HTMLAttributes<HTMLSpanElement>;
+
 export function Avatar({
   name = "", tone = "ink", size = "md", ring = false, className = "", style, ...rest
-}: { name?: string; tone?: "ink" | "sea" | "gold" | "sand"; size?: "sm" | "md" | "lg"; ring?: boolean; className?: string; style?: React.CSSProperties } & React.HTMLAttributes<HTMLSpanElement>) {
+}: AvatarProps) {
   return (
     /* Initials are read as letters — "J C" — so the disc carries the name as
        an image label; a nameless avatar is decorative and hidden. */
-    <span className={["ls-avatar", "ls-avatar--" + tone, "ls-avatar--" + size, ring ? "ls-avatar--ring" : "", className].filter(Boolean).join(" ")} style={style} title={name}
+    <span className={cx("ls-avatar", "ls-avatar--" + tone, "ls-avatar--" + size, ring && "ls-avatar--ring", className)} style={style} title={name}
       role={name ? "img" : undefined} aria-label={name || undefined} aria-hidden={name ? undefined : true} {...rest}>
       <span aria-hidden="true">{initials(name)}</span>
     </span>
   );
 }
 
-export function AvatarGroup({ children, className = "", style }: { children?: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return <span className={["ls-avatar-group", className].filter(Boolean).join(" ")} style={style}>{children}</span>;
+export interface AvatarGroupProps { children?: React.ReactNode; className?: string; style?: React.CSSProperties }
+
+export function AvatarGroup({ children, className = "", style }: AvatarGroupProps) {
+  return <span className={cx("ls-avatar-group", className)} style={style}>{children}</span>;
 }
 
 /* — Stat — */
+export interface StatProps {
+  label?: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode;
+  /** md (default) sets the value at --text-3xl; sm at --text-2xl. */
+  size?: "sm" | "md"; inverse?: boolean; className?: string; style?: React.CSSProperties;
+}
+
 export function Stat({
   label, value, sub, size, inverse = false, className = "", style,
-}: { label?: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode;
-  /** md (default) sets the value at --text-3xl; sm at --text-2xl. */
-  size?: "sm" | "md"; inverse?: boolean; className?: string; style?: React.CSSProperties }) {
+}: StatProps) {
   return (
-    <div className={["ls-stat", size === "sm" ? "ls-stat--sm" : "", inverse ? "ls-stat--inverse" : "", className].filter(Boolean).join(" ")} style={style}>
+    <div className={cx("ls-stat", size === "sm" && "ls-stat--sm", inverse && "ls-stat--inverse", className)} style={style}>
       {label ? <span className="ls-stat__label">{label}</span> : null}
       <span className="ls-stat__value">{value}</span>
       {sub ? <span className="ls-stat__sub">{sub}</span> : null}
@@ -192,7 +228,7 @@ function fromInnerControl(target: EventTarget | null): boolean {
 
 function cellClass<R>(c: TableColumn<R>): string {
   const end = c.numeric || c.align === "end";
-  return [c.mono || c.numeric ? "num" : "", end ? "num--end" : ""].filter(Boolean).join(" ");
+  return cx((c.mono || c.numeric) && "num", end && "num--end");
 }
 
 /* `groups` renders one <tbody> per group with a header row spanning the table
@@ -201,10 +237,7 @@ function cellClass<R>(c: TableColumn<R>): string {
    heading — <th scope="row"> — so a screen reader announces the member's name,
    not the column label, as it moves along the row. `rowClassName` lets a
    caller stripe a row by its status without reaching past the component. */
-export function Table<R extends Record<string, unknown>>({
-  columns = [], rows = [], groups, rowKey, rowHeader, rowClassName, onRowClick, dense = false, inverse = false,
-  tall = false, minWidth, className = "", style,
-}: {
+export interface TableProps<R extends Record<string, unknown>> {
   columns: TableColumn<R>[]; rows?: R[]; groups?: TableGroup<R>[]; rowKey?: (row: R) => React.Key;
   /** Key of the column rendered as `<th scope="row">`. */
   rowHeader?: string;
@@ -213,7 +246,12 @@ export function Table<R extends Record<string, unknown>>({
   /* A long table keeps its header in view instead of scrolling it away. */
   tall?: boolean; minWidth?: number | false;
   className?: string; style?: React.CSSProperties;
-}) {
+}
+
+export function Table<R extends Record<string, unknown>>({
+  columns = [], rows = [], groups, rowKey, rowHeader, rowClassName, onRowClick, dense = false, inverse = false,
+  tall = false, minWidth, className = "", style,
+}: TableProps<R>) {
   const min = minWidth === false ? undefined : (minWidth ?? defaultMinWidth(columns.length));
   const renderRow = (r: R, i: number) => (
     /* A clickable row was mouse-only: the Bridge's crew queue and member
@@ -224,7 +262,7 @@ export function Table<R extends Record<string, unknown>>({
        reader the column headers it reads out with each cell. */
     <tr
       key={rowKey ? rowKey(r) : i}
-      className={[onRowClick ? "ls-table__row--click" : "", rowClassName ? rowClassName(r) || "" : ""].filter(Boolean).join(" ") || undefined}
+      className={cx(onRowClick && "ls-table__row--click", rowClassName && (rowClassName(r) || "")) || undefined}
       onClick={onRowClick ? (e) => { if (fromInnerControl(e.target)) return; onRowClick(r); } : undefined}
       tabIndex={onRowClick ? 0 : undefined}
       onKeyDown={
@@ -263,9 +301,9 @@ export function Table<R extends Record<string, unknown>>({
     </tbody>
   );
   return (
-    <div className={["ls-table-wrap", tall ? "ls-table-wrap--tall" : ""].filter(Boolean).join(" ")}>
+    <div className={cx("ls-table-wrap", tall && "ls-table-wrap--tall")}>
       <table
-        className={["ls-table", dense ? "ls-table--dense" : "", inverse ? "ls-table--inverse" : "", className].filter(Boolean).join(" ")}
+        className={cx("ls-table", dense && "ls-table--dense", inverse && "ls-table--inverse", className)}
         style={min ? { minWidth: min, ...style } : style}
       >
         {/* An action column is declared with an empty label so nothing shows
@@ -295,27 +333,34 @@ export function Table<R extends Record<string, unknown>>({
    `first` drops the top rule (for a list that opens flush under a heading),
    `total` draws the closing rule and sets the figure heavy, `muted` fades a
    line that is information rather than a charge. */
+export type ReviewListProps = {
+  children?: React.ReactNode; dense?: boolean; inverse?: boolean;
+  className?: string; style?: React.CSSProperties;
+} & React.HTMLAttributes<HTMLDListElement>;
+
 export function ReviewList({
   children, dense = false, inverse = false, className = "", style, ...rest
-}: { children?: React.ReactNode; dense?: boolean; inverse?: boolean; className?: string; style?: React.CSSProperties } & React.HTMLAttributes<HTMLDListElement>) {
+}: ReviewListProps) {
   return (
-    <dl className={["ls-review", dense ? "ls-review--dense" : "", inverse ? "ls-review--inverse" : "", className].filter(Boolean).join(" ")} style={style} {...rest}>
+    <dl className={cx("ls-review", dense && "ls-review--dense", inverse && "ls-review--inverse", className)} style={style} {...rest}>
       {children}
     </dl>
   );
 }
 
-export function ReviewRow({
-  label, value, children, first = false, total = false, muted = false, className = "", style,
-}: {
+export interface ReviewRowProps {
   label: React.ReactNode;
   /** The figure. `children` is an alias for a value that is markup. */
   value?: React.ReactNode; children?: React.ReactNode;
   first?: boolean; total?: boolean; muted?: boolean;
   className?: string; style?: React.CSSProperties;
-}) {
+}
+
+export function ReviewRow({
+  label, value, children, first = false, total = false, muted = false, className = "", style,
+}: ReviewRowProps) {
   return (
-    <div className={["ls-review__row", first ? "ls-review__row--first" : "", total ? "ls-review__row--total" : "", muted ? "ls-review__row--muted" : "", className].filter(Boolean).join(" ")} style={style}>
+    <div className={cx("ls-review__row", first && "ls-review__row--first", total && "ls-review__row--total", muted && "ls-review__row--muted", className)} style={style}>
       <dt className="ls-review__label">{label}</dt>
       <dd className="ls-review__value">{value ?? children}</dd>
     </div>
@@ -433,7 +478,7 @@ export function Wordmark({
     : { font: `700 ${sfxPx}px/1 var(--font-mono)`, letterSpacing: caps ? ".06em" : "-.01em", marginLeft: ".3em" };
   return (
     <span
-      className={["ls-wm", inverse ? "ls-wm--inverse" : "", className].filter(Boolean).join(" ")}
+      className={cx("ls-wm", inverse && "ls-wm--inverse", className)}
       style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", lineHeight: 1, ...style }}
     >
       <span style={{ display: "inline-flex", alignItems: "baseline", color: ink }}>
@@ -471,8 +516,11 @@ export function Wordmark({
    may touch it, so the string ships inside its own transform:none, the same
    doctrine as the tagline lockup. Use this, never bare lockup(), anywhere a
    CSS transform can reach. */
-export function LockupText({ division }: { division: DivisionId }) {
+export interface LockupTextProps { division: DivisionId }
+
+export function LockupText({ division }: LockupTextProps) {
   return <span style={{ textTransform: "none" }}>{lockup(division)}</span>;
 }
 
 export { Icon };
+export type { IconName, IconSize, IconProps } from "./icon";
