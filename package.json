@@ -22,7 +22,8 @@
     "migrations:replay": "node scripts/replay-migrations.mjs",
     "check:ds": "node scripts/audit-design-system.mjs",
     "documents:snapshot": "node scripts/snapshot-documents.mjs",
-    "check:bundle": "node scripts/audit-bundle.mjs"
+    "check:bundle": "node scripts/audit-bundle.mjs",
+    "icons:gen": "node scripts/gen-icon-set.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.114.0",

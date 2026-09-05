@@ -1004,17 +1004,28 @@ function checkIcons() {
   const hits = [], exempted = [];
   let total = 0;
   const files = CODE.filter((p) => /\/src\//.test(p) && /\.tsx?$/.test(p));
+  /* Two kinds of hit. A literal icon name (name=, icon=, icon:) must be a
+     Lucide glyph AND in the shipped set. And ANY quoted PascalCase string that
+     happens to be a Lucide name must be in the set too: the member tab bar
+     passes "IdCard", "Bell" and "User" through a tuple the three patterns
+     below could not see, and production drew three empty boxes for a day.
+     A string that only looks like a glyph (a series called "Anchor") costs one
+     extra glyph in the bundle, which is nothing beside a missing one. */
   const PATTERNS = [
     /<Icon\b[^>]*?\bname="([A-Za-z0-9]+)"/g,
     /\bicon=(?:"([A-Za-z0-9]+)"|\{"([A-Za-z0-9]+)"\})/g,
     /\bicon:\s*"([A-Za-z0-9]+)"/g,
+    /"([A-Z][A-Za-z0-9]{2,})"/g,
   ];
   for (const p of files) {
+    if (p.endsWith("icon-set.ts")) continue;
     lines(p).forEach((line, i) => {
       for (const re of PATTERNS) {
         for (const m of line.matchAll(re)) {
           const name = m[1] ?? m[2];
           if (!name) continue;
+          const bare = re === PATTERNS[3];
+          if (bare && !LUCIDE.has(name)) continue;
           total++;
           if (LUCIDE.has(name) && ICON_SET.has(name)) continue;
           const hit = {
