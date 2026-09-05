@@ -36,6 +36,8 @@ const FAST = [
   ["typecheck", "npx", ["tsc", "--noEmit"]],
   ["lint", "npx", ["eslint", "src", "scripts", "--max-warnings=0"]],
   ["design system", "node", ["scripts/audit-design-system.mjs"]],
+  ["components", "node", ["scripts/audit-components.mjs"]],
+  ["inline styles", "node", ["scripts/audit-inline-styles.mjs"]],
   ["unit tests", "npx", ["vitest", "run"]],
   ["route manifest", "node", ["scripts/audit-routes.mjs", "--manifest-only"]],
   ["letters", "node", ["scripts/audit-letters.mjs"]],

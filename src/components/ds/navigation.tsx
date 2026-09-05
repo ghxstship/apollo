@@ -20,6 +20,8 @@ export interface TabItem {
   label: React.ReactNode;
   /** id of the panel this tab controls, for aria-controls. */
   panelId?: string;
+  /** DOM id for the tab itself, so the panel can point back with aria-labelledby. */
+  tabId?: string;
 }
 
 export function Tabs({
@@ -89,7 +91,7 @@ export function Tabs({
     <div className={cls} style={style} role="tablist" aria-orientation="horizontal" aria-label={label} onKeyDown={onKey} ref={railRef}>
       <span className="ls-tabs__ind" aria-hidden="true"></span>
       {items.map((it, i) => (
-        <button key={it.id} type="button" role="tab" aria-selected={value === it.id}
+        <button key={it.id} id={it.tabId} type="button" role="tab" aria-selected={value === it.id}
           aria-controls={it.panelId} tabIndex={i === tabbable ? 0 : -1}
           className={"ls-tab" + (value === it.id ? " ls-tab--active" : "")}
           onClick={() => onChange && onChange(it.id)}>{it.label}</button>
