@@ -1,6 +1,10 @@
 /* Dev-only reviewer's view of the signing library. Leans on site.css for the
    legal-page shell and adds only what a clause manifest needs. */
 
+/* The eyebrow in the accent rather than the site's page gold: this is a reviewer's
+   view, not a public page, and the colour says so. */
+.pv-eyebrow{display:block;color:var(--brass-deep);margin-bottom:var(--space-4)}
+
 .pv-flag{
   display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
   margin-top:28px;padding:12px 14px;

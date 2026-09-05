@@ -43,6 +43,7 @@ export default function GlobalError({
         <p style={{ maxWidth: 460, marginTop: 12, lineHeight: 1.6 }}>
           Our end, not yours. Reload, and if it keeps happening write to us.
         </p>
+        {/* ds-exempt: root boundary renders with no stylesheet — Button's ls-btn classes would resolve to nothing here, so the one control carries its face inline */}
         <button
           onClick={reset}
           type="button"

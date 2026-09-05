@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { LinkButton } from "@/components/ds";
 import { MAILBOX } from "@/lib/brand";
+import "./boundary.css";
 
 export const metadata: Metadata = { title: "Off the chart" };
 
@@ -9,33 +10,30 @@ export const metadata: Metadata = { title: "Off the chart" };
    boarding stub that had already sailed.
 
    Only the global stylesheet is guaranteed here — this file renders inside the
-   root layout and nothing else, so it may use the .ls-* layer and nothing from
-   a route group's own sheet. It carried .hm-shell, .hm-eyebrow and .hm-mono,
-   which live in (staff)/bridge.css and are loaded only under the Bridge: every
-   public 404 rendered them unstyled. The public site has its own not-found
-   under (site)/ that sits inside the nav and footer. */
+   root layout and nothing else, so it may use the .ls-* layer, boundary.css
+   (which it imports itself) and nothing from a route group's own sheet. It
+   carried .hm-shell, .hm-eyebrow and .hm-mono, which live in (staff)/bridge.css
+   and are loaded only under the Bridge: every public 404 rendered them
+   unstyled. The public site has its own not-found under (site)/ that sits
+   inside the nav and footer. */
 export default function NotFound() {
   return (
-    <main id="main" className="ls-container ls-rise" style={{ paddingTop: 96, paddingBottom: 96 }}>
-      <span className="ls-eyebrow" style={{ display: "block", color: "var(--gold-deep)" }}>
-        404
-      </span>
-      <h1 style={{ marginTop: 12 }}>Off the chart.</h1>
-      <p style={{ maxWidth: 460, marginTop: 12 }}>
+    <main id="main" className="ls-container ls-rise rb-page">
+      <span className="ls-eyebrow ls-eyebrow--gold rb-page__eyebrow">404</span>
+      <h1>Off the chart.</h1>
+      <p className="rb-page__sub">
         Nothing at this heading. The link may have expired, or the page may have
         sailed under a different name.
       </p>
-      <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <Link className="ls-btn ls-btn--gold ls-btn--md" href="/">
+      <p className="rb-page__cta">
+        <LinkButton variant="gold" href="/">
           Back to the club
-        </Link>
-        <Link className="ls-btn ls-btn--ghost ls-btn--md" href="/support">
+        </LinkButton>
+        <LinkButton variant="ghost" href="/support">
           Hail Shoreside
-        </Link>
+        </LinkButton>
       </p>
-      <p className="ls-mono-data" style={{ marginTop: 24, color: "var(--text-3)" }}>
-        {MAILBOX.shore.toUpperCase()}
-      </p>
+      <p className="ls-mono-data rb-page__ref">{MAILBOX.shore.toUpperCase()}</p>
     </main>
   );
 }

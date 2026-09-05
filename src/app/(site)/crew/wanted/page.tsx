@@ -75,6 +75,7 @@ export default async function CrewPage() {
               </div>
               {r.blurb ? <p className="ws-ledger-row__body">{r.blurb}</p> : null}
             </div>
+            {/* ds-exempt: a button face inside the row, which is itself the <Link>; a nested LinkButton or Button would be interactive content inside an anchor, so the span only wears the class */}
             <span className="ls-btn ls-btn--outline ls-btn--sm crew-row__go">Read the role</span>
           </Link>
         ))}

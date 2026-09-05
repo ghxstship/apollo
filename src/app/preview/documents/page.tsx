@@ -38,11 +38,11 @@ export default async function DocumentPreviewPage() {
        "Skip to content" link targets #main. Without this the link landed
        nowhere on this page, which is the one the reviewer reads longest. */
     <main id="main" className="lg-wrap">
-      <span className="ls-eyebrow" style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}>
+      <span className="ls-eyebrow pv-eyebrow">
         Development only
       </span>
       <h1>Everything a person can be asked to sign.</h1>
-      <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "56ch" }}>
+      <p className="lg-lede">
         The published version of every active document, assembled from the clause
         library exactly as the signing pages assemble it. Reading, not signing —
         there is no form here. Wording questions go to{" "}
@@ -93,7 +93,7 @@ export default async function DocumentPreviewPage() {
             <Link href="/brand">/brand</Link> — press and partner boilerplate
           </li>
         </ul>
-        <p className="lg-mono" style={{ marginTop: 24 }}>
+        <p className="lg-mono">
           Signing lives at /agreements/[code] and /sign/[token] · both need a session
         </p>
       </section>

@@ -1,0 +1,12 @@
+/* The root boundaries — error.tsx and not-found.tsx — render under the root
+   layout alone, where only the global sheets load: no nav, no footer, and none
+   of the page-head rhythm the public site gets from .ws-phead in site.css.
+   Both files import this sheet so that rhythm is a class rather than a run of
+   inline margins. Tokens only; the one literal is the section rhythm, because
+   --rhythm-section is declared in site.css and does not resolve here. */
+.rb-page{padding-block:96px}
+.rb-page h1{margin-top:var(--space-3)}
+.rb-page__eyebrow{display:block}
+.rb-page__sub{max-width:460px;margin-top:var(--space-3)}
+.rb-page__cta{margin-top:var(--space-6);display:flex;gap:var(--space-4);flex-wrap:wrap}
+.rb-page__ref{margin-top:var(--space-6);color:var(--text-3)}

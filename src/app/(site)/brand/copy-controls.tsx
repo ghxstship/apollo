@@ -44,6 +44,7 @@ export function Swatch({
 }: { name: string; hex: string; use: string; onMedia?: boolean }) {
   const copy = useCopy();
   return (
+    // ds-exempt: a colour swatch is a tile — an 84px chip over its name and use — that copies its hex; no kit button is tile-shaped, and Button's pill face would fight .bk-sw, which carries its own reset
     <button type="button" className="bk-sw" onClick={() => copy(name, hex)} title={"Copy " + hex}>
       <span className="chip" style={{ background: hex }}>
         <span className="hex" style={{ color: onMedia ? "var(--text-on-media)" : "rgba(11,11,12,.65)" }}>{hex}</span>

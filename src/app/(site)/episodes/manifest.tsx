@@ -415,20 +415,15 @@ export function EpisodeManifest({
             ) : null}
             {/* When: picks rather than an axis, so they toggle — clicking the
                 lit one hands the whole calendar back. */}
-            <div className="ls-filters" role="group" aria-label="When">
-              <span className="ls-filters__label">When</span>
-              <Tag
-                active={values.when === "all" && !values.from && !values.to}
-                onClick={() => setMany({ when: "all", from: "", to: "" })}
-              >
-                Any time
-              </Tag>
-              {RANGES.map((r) => (
-                <Tag key={r.id} active={values.when === r.id} onClick={() => pickRange(r.id)}>
-                  {r.label}
-                </Tag>
-              ))}
-            </div>
+            {/* A hand-set from/to with no pick lights nothing — "custom" matches
+                no pill — and Any time is lit only when the whole calendar is open. */}
+            <FilterPills
+              label="When"
+              allLabel="Any time"
+              value={values.when === "all" ? (values.from || values.to ? "custom" : "all") : values.when}
+              onChange={(next) => (next === "all" ? setMany({ when: "all", from: "", to: "" }) : pickRange(next))}
+              options={RANGES}
+            />
             {cityOptions.length > 1 ? (
               <FilterPills
                 label={PLACE.market}

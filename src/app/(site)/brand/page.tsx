@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Badge, Tag, Icon } from "@/components/ds";
+import { Badge, Button, Icon, LinkButton, Tag } from "@/components/ds";
 import { SectionHeader } from "@/components/site/section-header";
 import { ANCHOR, CITY_CODES, CURRENCY, DIVISION_IDS, DIVISIONS, EXPERIENCE_CLASSES, EXPERIENCE_CLASS_IDS, HANDLE, LEAGUES, MAILBOX, PLACE, SETTING_LABEL, SUB_CLASSES, SURFACES, TAGLINE, EST_YEAR_ROMAN, lockup } from "@/lib/brand";
 import { Wordmark } from "@/components/ds";
@@ -166,11 +166,11 @@ export default function BrandKitPage() {
     <CopyProvider>
       <div className="ls-container">
         <div className="bk-head">
-          <div className="ls-eyebrow" style={{ color: "var(--gold-deep)", marginBottom: 16 }}>
+          <div className="ls-eyebrow ls-eyebrow--page">
             Press · Partners · Sponsors
           </div>
           <h1>The brand kit.</h1>
-          <p style={{ color: "var(--text-2)", marginTop: 16, maxWidth: "56ch" }}>
+          <p className="bk-head__sub">
             Everything needed to write about, partner with, or sponsor the show —
             the wordmark, the palette, the type, the voice, and the facts. Use it
             as given; the club doesn&apos;t negotiate either.
@@ -340,7 +340,7 @@ export default function BrandKitPage() {
 
         <section id="rooms" className="bk-sec">
           <SectionHeader eyebrow="05 — One stage, different spotlights" title="The umbrella and its rooms." />
-          <p className="bk-note" style={{ marginTop: 0 }}>
+          <p className="bk-note bk-note--flush">
             Divisions never get their own logos, colours beyond the accent, or
             type — they are spotlights on one stage. Rooms are spoken with the
             definite article and lowercase in prose. The only marks that exist
@@ -470,7 +470,7 @@ export default function BrandKitPage() {
           </p>
         </section>
 
-        <section id="facts" className="bk-sec" style={{ paddingBottom: 0 }}>
+        <section id="facts" className="bk-sec">
           <SectionHeader eyebrow="07 — The facts" title="For the record." />
           <div className="bk-facts">
             {FACTS.map(([k, v]) => (
@@ -486,7 +486,7 @@ export default function BrandKitPage() {
       <section className="bk-dl">
         <div className="ls-container bk-dl__in">
           <div>
-            <div className="ls-eyebrow" style={{ color: "var(--gold-bright)", marginBottom: 16 }}>
+            <div className="ls-eyebrow bk-dl__eyebrow">
               Downloads &amp; contact
             </div>
             <h2>Take it with you.</h2>
@@ -502,16 +502,17 @@ export default function BrandKitPage() {
             </div>
           </div>
           <div className="bk-dl__list">
-            <a className="ls-btn ls-btn--gold ls-btn--md ls-btn--full" href="/brand/un-tokens.css" download>
+            {/* A static file, not a route: the download attribute makes next/link hand the click to the browser, and prefetch is off so the router never asks for it as a page. */}
+              <LinkButton variant="gold" fullWidth href="/brand/un-tokens.css" download prefetch={false}>
               <Icon name="Download" size={15} />
               Color &amp; type tokens · CSS
-            </a>
+            </LinkButton>
             <CopyTextButton label="Boilerplate" text={BOILER} variant="outline" inverse fullWidth>
               Boilerplate · copy text
             </CopyTextButton>
-            <span className="ls-btn ls-btn--outline ls-btn--inverse ls-btn--md ls-btn--full" style={{ opacity: 0.4, pointerEvents: "none" }}>
+            <Button variant="outline" inverse fullWidth disabled>
               Photography · pending shoot
-            </span>
+            </Button>
           </div>
         </div>
       </section>

@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
+import { Button, LinkButton } from "@/components/ds";
 
 /* The public site's boundary. It renders inside the site layout, so the nav
    and footer stand and the page head takes the site's own head styles — the
@@ -20,15 +20,16 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           Our end, not yours. Try again, or write to Shoreside and quote the
           reference below.
         </p>
-        {/* The size class was missing: .ls-btn sets no height or padding of
-            its own, so both controls rendered as bare pills around their text. */}
+        {/* Both controls used to be hand-written ls-btn strings that had lost
+            their size class and rendered as bare pills; the kit's Button carries
+            the md size in its base class, so that cannot recur. */}
         <p className="ws-phead__cta">
-          <button className="ls-btn ls-btn--gold ls-btn--md" onClick={reset} type="button">
+          <Button variant="gold" onClick={reset}>
             Try again
-          </button>
-          <Link className="ls-btn ls-btn--ghost ls-btn--md" href="/support">
+          </Button>
+          <LinkButton variant="ghost" href="/support">
             Hail Shoreside
-          </Link>
+          </LinkButton>
         </p>
         {error.digest ? (
           <p className="ls-mono-data ws-phead__ref">

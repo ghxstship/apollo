@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
+import { Button, LinkButton } from "@/components/ds";
+import "./boundary.css";
 
 /* Any throw on the server that is not a 404 lands here. Without this file it
    was Next's stock error page — the digest and nothing else. A member does not
@@ -9,7 +10,8 @@ import { useEffect } from "react";
    quiet.
 
    Global classes only: this boundary can render under any route group, and it
-   carried .hm-* classes that only the Bridge's stylesheet defines. */
+   carried .hm-* classes that only the Bridge's stylesheet defines. The page
+   rhythm comes from boundary.css, which this file imports itself. */
 export default function Error({
   error,
   reset,
@@ -22,27 +24,23 @@ export default function Error({
   }, [error]);
 
   return (
-    <main id="main" className="ls-container ls-rise" style={{ paddingTop: 96, paddingBottom: 96 }}>
-      <span className="ls-eyebrow" style={{ display: "block", color: "var(--gold-deep)" }}>
-        Something broke
-      </span>
-      <h1 style={{ marginTop: 12 }}>That didn&rsquo;t land.</h1>
-      <p style={{ maxWidth: 460, marginTop: 12 }}>
+    <main id="main" className="ls-container ls-rise rb-page">
+      <span className="ls-eyebrow ls-eyebrow--gold rb-page__eyebrow">Something broke</span>
+      <h1>That didn&rsquo;t land.</h1>
+      <p className="rb-page__sub">
         Our end, not yours. Try again — if it keeps happening, hail Shoreside
         and quote the reference below.
       </p>
-      <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <button className="ls-btn ls-btn--gold ls-btn--md" onClick={reset} type="button">
+      <p className="rb-page__cta">
+        <Button variant="gold" onClick={reset}>
           Try again
-        </button>
-        <Link className="ls-btn ls-btn--ghost ls-btn--md" href="/support">
+        </Button>
+        <LinkButton variant="ghost" href="/support">
           Hail Shoreside
-        </Link>
+        </LinkButton>
       </p>
       {error.digest ? (
-        <p className="ls-mono-data" style={{ marginTop: 24, color: "var(--text-3)" }}>
-          REF {error.digest.toUpperCase()}
-        </p>
+        <p className="ls-mono-data rb-page__ref">REF {error.digest.toUpperCase()}</p>
       ) : null}
     </main>
   );
