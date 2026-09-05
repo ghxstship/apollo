@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { LinkButton } from "@/components/ds";
 import "./wallet.css";
 
 /* Add-to-wallet — two links, or nothing.
@@ -15,8 +16,9 @@ import "./wallet.css";
    Plain anchors, not buttons. /api/wallet/apple answers with a .pkpass the
    browser hands to Wallet, and /api/wallet/google answers with a redirect to
    the Save sheet — both are navigations, and an anchor is the element that
-   navigates. They wear the design system's button classes, as the not-found
-   page's links do.
+   navigates. They are the kit's LinkButton marked `external`, so it renders
+   a plain <a> rather than next/link: a route handler is not a page, and a
+   Link would prefetch it — minting a pass on every viewport entry.
 
    Apple Wallet lives on iPhone, iPad and Mac; on Android a .pkpass has no
    home, so that link is not offered there. Google Wallet saves from any
@@ -63,19 +65,17 @@ export function AddToWallet({ className, inverse = false }: { className?: string
   const showGoogle = status.google;
   if (!showApple && !showGoogle) return null;
 
-  const cls = ["wl__link", "ls-btn", "ls-btn--outline", "ls-btn--md", inverse ? "ls-btn--inverse" : ""].filter(Boolean).join(" ");
-
   return (
     <div className={["wl", className].filter(Boolean).join(" ")}>
       {showApple ? (
-        <a className={cls} href="/api/wallet/apple" rel="nofollow">
+        <LinkButton className="wl__link" variant="outline" size="md" inverse={inverse} external href="/api/wallet/apple" rel="nofollow">
           Add to Apple Wallet
-        </a>
+        </LinkButton>
       ) : null}
       {showGoogle ? (
-        <a className={cls} href="/api/wallet/google" rel="nofollow">
+        <LinkButton className="wl__link" variant="outline" size="md" inverse={inverse} external href="/api/wallet/google" rel="nofollow">
           Save to Google Wallet
-        </a>
+        </LinkButton>
       ) : null}
     </div>
   );

@@ -36,10 +36,9 @@
 /* Signed, already signed, called off, gone: one box, one motion, and the
    rule's tone is the only difference — positive for a signature on file,
    neutral for a night that is not happening. */
-.gsn .sgn-done{border:1px solid var(--line-faint);border-inline-start:2px solid var(--positive);background:var(--surface-card);padding:24px;animation:gsn-in var(--dur-2) var(--ease-out)}
+.gsn .sgn-done{border:1px solid var(--line-faint);border-inline-start:2px solid var(--positive);background:var(--surface-card);padding:24px;animation:ls-rise var(--dur-enter) var(--ease-enter)}
 .gsn .sgn-done p{margin:0}
 .gsn .gsn-done--gone{border-inline-start-color:var(--line-strong)}
-@keyframes gsn-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* The night card, under the paper: a guest's one page, reread on the way down.
    Each row is a hairline apart with term and detail on one baseline. */

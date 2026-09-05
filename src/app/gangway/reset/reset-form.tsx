@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useFormStatus } from "react-dom";
-import { Badge, Button } from "@/components/ds";
+import { Badge, Button, Notice } from "@/components/ds";
 import { setPassword, type PasswordState } from "../actions";
 import { PasswordInput } from "../password-input";
 import { PASSWORD_MIN } from "../ways";
@@ -30,12 +30,14 @@ export function ResetForm({ next }: { next: string }) {
       <h1 className="gw-h">Choose a password.</h1>
       <p className="gw-sub">At least {PASSWORD_MIN} characters. The magic link keeps working beside it.</p>
       {state.done ? (
-        <div className="gw-sent" role="status" ref={doneRef} tabIndex={-1}>
-          <Badge tone="positive">Saved</Badge>
-          <p>Your password is set. You are signed in.</p>
-          <div className="gw-mono gw-sent__meta">
-            <a href={next}>CARRY ON →</a>
-          </div>
+        <div className="gw-sent ls-rise" ref={doneRef} tabIndex={-1}>
+          <Notice tone="positive">
+            <Badge tone="positive">Saved</Badge>
+            <p>Your password is set. You are signed in.</p>
+            <div className="gw-mono gw-sent__meta">
+              <a href={next}>CARRY ON →</a>
+            </div>
+          </Notice>
         </div>
       ) : (
         <form action={action} className="gw-stack">

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useFormStatus } from "react-dom";
-import { Badge, Button, Input } from "@/components/ds";
+import { Badge, Button, Input, Notice, Tabs, TextButton } from "@/components/ds";
 import { sendMagicLink, sendResetLink, signInWithPassword, signInWithProvider, type GangwayState } from "./actions";
 import { PasswordInput } from "./password-input";
 import { PROVIDER_LABEL, type Provider } from "./ways";
@@ -10,9 +10,9 @@ import { PROVIDER_LABEL, type Provider } from "./ways";
 type Way = "link" | "password" | "reset";
 type Tab = "link" | "password";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "link", label: "Magic link" },
-  { id: "password", label: "Password" },
+const TABS: { id: Tab; label: string; panelId: string; tabId: string }[] = [
+  { id: "link", label: "Magic link", panelId: "gw-panel-link", tabId: "gw-tab-link" },
+  { id: "password", label: "Password", panelId: "gw-panel-password", tabId: "gw-tab-password" },
 ];
 
 function Submit({ idle, busy }: { idle: string; busy: string }) {
@@ -105,33 +105,18 @@ function GangwayForms({
     if (sent) sentRef.current?.focus({ preventScroll: true });
   }, [sent]);
 
-  /* Arrow keys walk the tablist, as a tablist is expected to. */
-  const tabRefs = React.useRef<Record<Tab, HTMLButtonElement | null>>({ link: null, password: null });
-  const onTabKey = (e: React.KeyboardEvent) => {
-    const i = TABS.findIndex((t) => t.id === tab);
-    let to: number | null = null;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") to = (i + 1) % TABS.length;
-    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = (i - 1 + TABS.length) % TABS.length;
-    else if (e.key === "Home") to = 0;
-    else if (e.key === "End") to = TABS.length - 1;
-    if (to === null) return;
-    e.preventDefault();
-    const id = TABS[to].id;
-    setWay(id);
-    tabRefs.current[id]?.focus();
-  };
-
   /* All three forms stay mounted in one grid cell, so the panel is as tall as
      the tallest of them whichever is showing and a tab switch never moves the
      "or" rule or the membership line underneath. The two that are not showing
      are invisible and inert — out of the tab order, out of the accessibility
      tree, and their fields keep what was typed. */
   const formClass = (w: Way) => "gw-stack gw-form" + (way === w ? " gw-form--on" : " gw-form--off");
+  /* Each panel points back at the tab that owns it. */
   const formProps = (w: Way, ownerTab: Tab) => ({
     className: formClass(w),
     role: "tabpanel",
     id: `gw-panel-${w}`,
-    "aria-labelledby": `gw-tab-${ownerTab}`,
+    "aria-labelledby": TABS.find((t) => t.id === ownerTab)?.tabId,
     "aria-hidden": way !== w ? true : undefined,
     inert: way !== w ? true : undefined,
   });
@@ -147,56 +132,39 @@ function GangwayForms({
             : "We send a link; you click it. No password needed — unless you want one."}
       </p>
 
-      <div className="gw-ways" role="tablist" aria-label="Ways aboard" onKeyDown={onTabKey}>
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            ref={(el) => {
-              tabRefs.current[t.id] = el;
-            }}
-            type="button"
-            role="tab"
-            id={`gw-tab-${t.id}`}
-            aria-controls={`gw-panel-${t.id}`}
-            aria-selected={tab === t.id}
-            tabIndex={tab === t.id ? 0 : -1}
-            className={"gw-way" + (tab === t.id ? " gw-way--on" : "")}
-            onClick={() => setWay(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs className="gw-ways" label="Ways aboard" items={TABS} value={tab} onChange={(id) => setWay(id as Tab)} />
 
       {expired && !sent ? (
-        <div className="gw-stale" role="alert">
+        <Notice tone="danger" compact className="gw-stale ls-rise">
           That link has gone stale. Send another.
-        </div>
+        </Notice>
       ) : null}
       {noPass ? (
-        <div className="gw-stale" role="alert">
+        <Notice tone="danger" compact className="gw-stale ls-rise">
           No pass under that address. Apply for membership, or sign in with the address on file.
-        </div>
+        </Notice>
       ) : null}
       {providerFailed ? (
-        <div className="gw-stale" role="alert">
+        <Notice tone="danger" compact className="gw-stale ls-rise">
           That sign-in did not go through. Use the link or your password.
-        </div>
+        </Notice>
       ) : null}
 
       {sent ? (
-        <div className="gw-sent" role="status" ref={sentRef} tabIndex={-1}>
-          <Badge tone="positive">Link away</Badge>
-          <p>{way === "reset" ? "If that address is on the roll, a reset link is in its inbox." : "The link is in your inbox."}</p>
-          <div className="gw-mono gw-sent__meta">
-            SENT TO {String(sentTo ?? "").toUpperCase()} · HOLDS FOR 15 MINUTES
-          </div>
-          <div className="gw-mono gw-sent__meta">
-            WRONG ADDRESS?{" "}
-            <button type="button" onClick={onAgain}>
-              SEND AGAIN
-            </button>
-          </div>
+        <div className="gw-sent ls-rise" ref={sentRef} tabIndex={-1}>
+          <Notice tone="positive">
+            <Badge tone="positive">Link away</Badge>
+            <p>{way === "reset" ? "If that address is on the roll, a reset link is in its inbox." : "The link is in your inbox."}</p>
+            <div className="gw-mono gw-sent__meta">
+              SENT TO {String(sentTo ?? "").toUpperCase()} · HOLDS FOR 15 MINUTES
+            </div>
+            <div className="gw-mono gw-sent__meta">
+              WRONG ADDRESS?{" "}
+              <TextButton size="sm" onClick={onAgain}>
+                SEND AGAIN
+              </TextButton>
+            </div>
+          </Notice>
         </div>
       ) : (
         <div className="gw-forms">
@@ -238,9 +206,9 @@ function GangwayForms({
             <Submit idle="Sign in" busy="Signing in" />
             <div className="gw-mono">
               FORGOT IT?{" "}
-              <button type="button" onClick={() => setWay("reset")}>
+              <TextButton size="sm" onClick={() => setWay("reset")}>
                 SEND A RESET LINK
-              </button>
+              </TextButton>
             </div>
           </form>
 
@@ -260,9 +228,9 @@ function GangwayForms({
             <Submit idle="Send the reset link" busy="Sending" />
             <div className="gw-mono">
               REMEMBERED IT?{" "}
-              <button type="button" onClick={() => setWay("password")}>
+              <TextButton size="sm" onClick={() => setWay("password")}>
                 BACK TO THE PASSWORD
-              </button>
+              </TextButton>
             </div>
           </form>
         </div>

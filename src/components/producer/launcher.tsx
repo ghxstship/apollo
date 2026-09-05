@@ -47,6 +47,7 @@ export function ProducerLauncher() {
 
   if (open) return <ProducerPanel onClose={() => setClosing(true)} closing={closing} onClosed={settle} />;
   return (
+    /* ds-exempt: the launcher is a fixed floating pill — a lava ring around a carbon label, positioned against the viewport and the tab bar — which no Button variant draws; dressing a Button as it would mean unpicking every ls-btn face rule from producer.css */
     <button
       ref={fabRef}
       type="button"

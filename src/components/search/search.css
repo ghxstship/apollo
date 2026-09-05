@@ -4,10 +4,19 @@
    The kit's .gs__hit--on reads var(--surface-sunk), a token no file declares,
    so the arrow-key cursor painted nothing: keyboard users had a selection they
    could not see. Until components.css says --surface-sunken, this does. */
-.gs__hit{transition:background var(--dur-1) var(--ease-out)}
+.gs__hit{transition:background var(--dur-hover) var(--ease-out)}
 .gs__hit--on{background:var(--surface-sunken);box-shadow:inset 2px 0 0 var(--focus)}
 /* A search in flight over a list already on the slate: the old answers dim
    rather than vanish, so the list does not flash empty between keystrokes. */
-.gs__body[aria-busy="true"] .gs__sec{opacity:.55;transition:opacity var(--dur-1) var(--ease-out)}
+.gs__body[aria-busy="true"] .gs__sec{opacity:.55;transition:opacity var(--dur-hover) var(--ease-out)}
 .gs__hint{margin:0}
 .gs__sec+.gs__sec{margin-top:2px}
+
+/* The field is the kit's SearchField, which brings its own glyph. On the
+   slate the row carries the rule and the focus indication (.gs__field:
+   focus-within in components.css), so the input inside it goes bare: no
+   border, no ground, no ring of its own — a ring on the input inside a ruled
+   row would double-ring the slate. */
+.gs__field .ls-input{height:auto;min-height:28px;padding-block:0;border-color:transparent;background:transparent;box-shadow:none;font-size:var(--text-md)}
+.gs__field .ls-input:focus{border-color:transparent;box-shadow:none}
+.gs__field .ls-searchfield__glyph{color:inherit}

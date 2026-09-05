@@ -3,4 +3,4 @@
    they sit in does not wrap, so this wrapper shrinks to what is left and
    wraps its own links inside that. */
 .wl{display:flex;gap:12px;flex-wrap:wrap;align-items:center;flex:1 1 auto;min-width:0}
-.wl__link{animation:ls-fade var(--dur-2) var(--ease-out)}
+.wl__link{animation:ls-fade var(--dur-enter) var(--ease-enter)}

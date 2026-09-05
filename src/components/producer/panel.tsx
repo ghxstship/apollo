@@ -4,8 +4,7 @@
    is per-stage; the confirm-first contract is Aurora's. */
 
 import React from "react";
-import Link from "next/link";
-import { Button, Icon, IconButton } from "@/components/ds";
+import { Button, Icon, IconButton, Input, LinkButton } from "@/components/ds";
 import { useModal } from "@/components/ds/use-modal";
 import { knots, MAILBOX, SURFACES } from "@/lib/brand";
 import { logDateTime, price } from "@/lib/format";
@@ -374,10 +373,10 @@ export function ProducerPanel({
       }}
     >
       <div className="pr-head">
-        <Icon name="Compass" size={18} style={{ color: "var(--neon-cyan)" }} />
-        <div style={{ flex: 1 }}>
+        <Icon name="Compass" size={18} className="pr-head__glyph" />
+        <div className="pr-head__t">
           <b>{SURFACES.agent}</b>
-          <span style={{ display: "block" }}>MEMBER · ACTIONS ASK FIRST</span>
+          <span>MEMBER · ACTIONS ASK FIRST</span>
         </div>
         <IconButton label={`Close ${SURFACES.agent}`} variant="ghost" size="sm" onClick={onClose}>
           <Icon name="X" size={15} />
@@ -394,9 +393,9 @@ export function ProducerPanel({
                 <div className="pr-card__m">{m.meta}</div>
                 <div className="pr-card__acts">
                   {m.action.type === "link" ? (
-                    <Link href={m.action.href} className="ls-btn ls-btn--gold ls-btn--sm">
+                    <LinkButton href={m.action.href} variant="gold" size="sm">
                       {m.confirm}
-                    </Link>
+                    </LinkButton>
                   ) : (
                     <Button variant="gold" size="sm" onClick={() => confirmCard(m)}>
                       {m.confirm}
@@ -435,22 +434,24 @@ export function ProducerPanel({
       </div>
       <div className="pr-quick">
         {QUICK.map(([id, label]) => (
-          <button key={id} type="button" onClick={() => handle(id, label)}>
+          <Button key={id} variant="outline" size="sm" onClick={() => handle(id, label)}>
             {label}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="pr-foot">
-        <input
+        <Input
+          label="Message the Producer"
+          labelHidden
+          width="full"
           placeholder="Ask the Producer…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") send();
           }}
-          aria-label="Message the Producer"
         />
-        <Button size="sm" onClick={send} disabled={!input.trim()} aria-busy={typing || undefined}>
+        <Button size="md" onClick={send} disabled={!input.trim()} aria-busy={typing || undefined}>
           Send
         </Button>
       </div>
