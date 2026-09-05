@@ -11,9 +11,11 @@ export const contentType = OG_CONTENT_TYPE;
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const supabase = await createClient();
+  /* Only what the card draws — the anonymous grant refuses a "*" read whole
+     (src/lib/episode-columns.ts). */
   const { data: episode } = await supabase
     .from("episodes")
-    .select("*")
+    .select("title, blurb, city_id, setting, starts_at, sub_class, time_zone")
     .eq("slug", slug)
     .maybeSingle();
 

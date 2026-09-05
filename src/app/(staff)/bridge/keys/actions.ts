@@ -5,6 +5,13 @@ import { revalidatePath } from "next/cache";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 import { HOOK_EVENTS, SCOPES } from "./scopes";
 
+/* Neither column is bounded at the database; these keep a pasted paragraph
+   out of a label and a URL that a partner's server will never accept out of a
+   hook. */
+const LABEL_MAX = 80;
+const URL_MAX = 2048;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function done(): ActionResult {
   revalidatePath("/bridge/keys");
   return {};
@@ -22,7 +29,8 @@ export async function createApiKey(
 
   const name = label.trim();
   if (!name) return { error: "Name the key so you know what it opens." };
-  const picked = scopes.filter((s) => (SCOPES as readonly string[]).includes(s));
+  if (name.length > LABEL_MAX) return { error: `A key's name runs to ${LABEL_MAX} characters.` };
+  const picked = (scopes ?? []).filter((s) => (SCOPES as readonly string[]).includes(s));
   if (!picked.length) return { error: "A key with no scope opens nothing." };
 
   /* `un_`, the club's own mark. This minted `syr_` — the retired name, on a
@@ -50,6 +58,7 @@ export async function createApiKey(
 export async function revokeApiKey(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: "No such key." };
   const { error } = await supabase.from("api_keys").update({ revoked: true }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
@@ -61,7 +70,8 @@ export async function createWebhook(url: string, events: string[]): Promise<Acti
 
   const target = url.trim();
   if (!/^https:\/\/\S+$/.test(target)) return { error: "The destination has to be an https URL." };
-  const picked = events.filter((e) => (HOOK_EVENTS as readonly string[]).includes(e));
+  if (target.length > URL_MAX) return { error: `A destination runs to ${URL_MAX.toLocaleString("en-US")} characters.` };
+  const picked = (events ?? []).filter((e) => (HOOK_EVENTS as readonly string[]).includes(e));
   if (!picked.length) return { error: "Choose at least one event to send." };
 
   const { error } = await supabase.from("webhooks").insert({
@@ -77,6 +87,7 @@ export async function createWebhook(url: string, events: string[]): Promise<Acti
 export async function setWebhookActive(id: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: "No such hook." };
   const { error } = await supabase.from("webhooks").update({ active }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();

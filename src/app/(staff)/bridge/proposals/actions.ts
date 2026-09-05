@@ -13,6 +13,15 @@ const RULINGS: readonly ProposalRuling[] = ["considering", "approved", "declined
 const CHARTER_RULINGS: readonly CharterRuling[] = ["answered", "declined"];
 const NOTE_MAX = 600;
 
+/* Ids come off the queue's own rows, so one that is not an id is a stale
+   screen. The driver's refusal of a malformed uuid came back through voice()
+   as "that link looks wrong" — aimed at a member on a link, not an operator
+   on a row — or was flattened to "didn't land". Said here as the row. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const NO_PROPOSAL = "That proposal is no longer on the queue — reload the page.";
+const NO_REQUEST = "That request is no longer on the queue — reload the page.";
+const NO_EPISODE = "That episode is not on the chart — pick it again from the list.";
+
 /* One motion for every ruling. decide_a_proposal is staff-checked inside,
    writes the status AND posts to the proposer’s Inbox in the same call — the
    member is never ruled on silently. Its refusals arrive in the club's own
@@ -30,7 +39,12 @@ export async function decideProposal(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: NO_PROPOSAL };
   if (!RULINGS.includes(ruling)) return { error: "That is not a ruling the Bridge gives." };
+  /* Checked BEFORE the ruling lands: the ruling tells the member, and a link
+     that was never going to take should stop the operator here, not after
+     the member has been told and the link has quietly failed. */
+  if (episodeId && !UUID.test(episodeId)) return { error: NO_EPISODE };
 
   const { error } = await supabase.rpc("decide_a_proposal", {
     p_id: id,
@@ -64,12 +78,19 @@ export async function decideProposal(
 export async function linkProposal(id: string, episodeId: string | null): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase
+  if (!UUID.test(id)) return { error: NO_PROPOSAL };
+  if (episodeId && !UUID.test(episodeId)) return { error: NO_EPISODE };
+  const { data, error } = await supabase
     .from("member_event_proposals")
     .update({ episode_id: episodeId })
     .eq("id", id)
-    .eq("status", "approved");
-  if (error) return { error: ERR_LAND };
+    .eq("status", "approved")
+    .select("id");
+  /* The one foreign key: an episode struck between the pick and the save. */
+  if (error) return { error: error.code === "23503" ? NO_EPISODE : ERR_LAND };
+  /* The status filter is a guard, not a lookup: a proposal that is no longer
+     approved matches nothing, and Postgres calls that success. */
+  if (!data?.length) return { error: "Only an approved proposal links to an episode — reload to see where it stands." };
   revalidatePath("/bridge/proposals");
   revalidatePath("/you");
   return {};
@@ -96,6 +117,7 @@ export async function decideCharter(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: NO_REQUEST };
   if (!CHARTER_RULINGS.includes(ruling)) return { error: "That is not an answer the Bridge gives." };
 
   const line = note.trim().slice(0, NOTE_MAX);

@@ -70,7 +70,7 @@ function conditionLine(c: RuleConditions, cityLabel: (slug: string) => string): 
 
 function actionLine(a: RuleAction, hooks: HookOption[] = []): string {
   if (a.kind === "email") return `Email — ${a.template}`;
-  if (a.kind === "sms") return `Text — ${a.template}`;
+  if (a.kind === "sms") return `Text — ${a.template}${a.title ? ` — ${a.title}` : ""}`;
   if (a.kind === "webhook") {
     const h = hooks.find((x) => x.id === a.webhookId);
     return `Call a webhook — ${h ? hookLabel(h) : "a hook no longer registered"}`;
@@ -101,8 +101,10 @@ export function AutomationsClient({
   waiting: number;
   nextRunAt: string | null;
   /* Texts are template-only at the provider; the rule picks from what is
-     registered rather than typing a code that will bounce on send. */
-  smsTemplates: string[];
+     registered rather than typing a code that will bounce on send. `needs` is
+     the payload keys the template's parameter_map reads — a text that reads
+     title or body takes them from the rule. */
+  smsTemplates: Array<{ code: string; needs: string[] }>;
   /* The letter registry (email_templates). The dispatcher refuses a letter
      the sender cannot render, so the rule picks one off the registry rather
      than typing a key that would be refused at fire time with nothing said
@@ -127,6 +129,7 @@ export function AutomationsClient({
   const [query, setQuery] = React.useState("");
 
   const cityLabel = (slug: string) => cities.find((h) => h.slug === slug)?.label ?? slug;
+  const textNeeds = smsTemplates.find((t) => t.code === template)?.needs ?? [];
 
   const q = query.trim().toLowerCase();
   const shown = q
@@ -242,7 +245,7 @@ export function AutomationsClient({
                   actionKind === "email"
                     ? { kind: "email", template: template.trim() }
                     : actionKind === "sms"
-                      ? { kind: "sms", template: template.trim() }
+                      ? { kind: "sms", template: template.trim(), title: title.trim(), body: body.trim() }
                       : actionKind === "webhook"
                         ? { kind: "webhook", webhookId: hookId }
                         : { kind: "notify", title: title.trim(), body: body.trim() };
@@ -368,14 +371,38 @@ export function AutomationsClient({
               options={webhooks.filter((h) => h.active).map((h) => ({ value: h.id, label: hookLabel(h) }))}
             />
           ) : actionKind === "sms" ? (
-            <Select
-              label="Text template"
-              hint="Only registered templates send; the provider takes no ad-hoc text."
-              placeholder="Pick a template"
-              value={template}
-              onChange={(e) => setTemplate(e.target.value)}
-              options={smsTemplates.map((c) => ({ value: c, label: c }))}
-            />
+            <>
+              <Select
+                label="Text template"
+                hint="Only registered templates send; the provider takes no ad-hoc text. The member, the episode and a link are filled in by the rule."
+                placeholder="Pick a template"
+                value={template}
+                onChange={(e) => setTemplate(e.target.value)}
+                options={smsTemplates.map((t) => ({
+                  value: t.code,
+                  label: t.needs.length ? `${t.code} — reads ${t.needs.join(", ")}` : t.code,
+                }))}
+              />
+              {textNeeds.includes("title") ? (
+                <Input
+                  label="Title"
+                  hint="Fills the text's title. {member} and {episode} are written in."
+                  placeholder="{episode}"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              ) : null}
+              {textNeeds.includes("body") ? (
+                <Textarea
+                  label="Body"
+                  hint="Fills the text's body. {member} and {episode} are written in."
+                  rows={3}
+                  placeholder="Muster is on the manifest. Bring soft shoes."
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                />
+              ) : null}
+            </>
           ) : (
             <Select
               label="Letter"

@@ -14,6 +14,42 @@ const STAGES: readonly CrewStage[] = ["applied", "interview", "sea_trial", "offe
 const ASSIGNMENT_STATUSES: readonly AssignmentStatus[] = ["offered", "confirmed", "declined", "released"];
 const NOTE_MAX = 4000;
 
+/* Every id this file takes is a row id off the screen. A malformed one reaches
+   the driver as "invalid input syntax for type uuid", which names a Postgres
+   type at an operator who never chose one; refused here instead, before the
+   round trip. */
+const UUID = /^[0-9a-f-]{36}$/;
+
+/* The stage trigger's own words, kept in step with a_stage_is_earned_in_order:
+   the pipeline is walked one step at a time, and only "passed" is reachable
+   from anywhere. Checked here so the refusal names the two stages in the
+   words the screen uses, rather than a trigger message with underscores in it. */
+const NEXT_STAGE: Partial<Record<CrewStage, CrewStage>> = {
+  applied: "interview",
+  interview: "sea_trial",
+  sea_trial: "offer",
+};
+const STAGE_WORD: Record<CrewStage, string> = {
+  applied: "applied",
+  interview: "interview",
+  sea_trial: "sea trial",
+  offer: "offer",
+  passed: "passed",
+};
+
+/* The calendar day an instant falls on in a zone, as YYYY-MM-DD — the shape
+   crew_blackouts.from_date/to_date compare against. A blackout is a day in
+   the crew member's week, not a UTC date; a night that starts at 23:00 in
+   Miami is 03:00 UTC the next day, and the wrong day would let the picker's
+   refusal and this one disagree. */
+function localDay(iso: string, timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
+
 function done(): ActionResult {
   revalidatePath("/bridge/crew");
   revalidatePath("/crew");
@@ -34,7 +70,27 @@ export async function setCandidateStage(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(candidateId)) return { error: ERR_LAND };
   if (!STAGES.includes(stage)) return { error: "That is not a stage on the pipeline." };
+
+  /* The database walks the pipeline in order and refuses a skipped step — but
+     that refusal used to come back as "That didn't land. Try again.", which is
+     the one thing an operator cannot act on. Read where they stand and say
+     which step is next. */
+  const { data: current, error: readError } = await supabase
+    .from("crew_candidates")
+    .select("stage")
+    .eq("id", candidateId)
+    .maybeSingle();
+  if (readError) return { error: ERR_LAND };
+  if (!current) return { error: "That candidate is no longer in the queue." };
+  const from = current.stage as CrewStage;
+  if (from !== stage && stage !== "passed" && NEXT_STAGE[from] !== stage) {
+    return {
+      error: `The pipeline runs applied, interview, sea trial, offer — ${STAGE_WORD[stage]} does not follow ${STAGE_WORD[from]}.`,
+    };
+  }
+
   /* Typed as the row's own Partial rather than a loose record — the generated
      Update type rejects excess properties, which is the point of it. */
   const patch: Partial<CrewCandidateRow> =
@@ -47,7 +103,13 @@ export async function setCandidateStage(
         }
       : { stage };
   const { error } = await supabase.from("crew_candidates").update(patch).eq("id", candidateId);
-  if (error) return { error: ERR_LAND };
+  if (error) {
+    /* Two operators moving the same card at once: the trigger still speaks. */
+    if (/does not follow/i.test(error.message)) {
+      return { error: "Somebody moved this candidate a moment ago — the board has been refreshed." };
+    }
+    return { error: ERR_LAND };
+  }
   return done();
 }
 
@@ -60,21 +122,30 @@ export async function addCandidateNote(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(candidateId)) return { error: ERR_LAND };
   const text = body.trim();
   if (text.length === 0) return { error: "Nothing to file." };
+  if (text.length > NOTE_MAX) return { error: `A note runs to ${NOTE_MAX.toLocaleString("en")} characters.` };
   const { error } = await supabase.from("crew_candidate_events").insert({
     candidate_id: candidateId,
     actor: staffId,
     kind: "note",
-    body: text.slice(0, NOTE_MAX),
+    body: text,
   });
-  if (error) return { error: ERR_LAND };
+  if (error) {
+    /* The candidate row is the note's parent; a card struck from the queue
+       while the note was being typed has nowhere to file it. */
+    if (error.code === "23503") return { error: "That candidate is no longer in the queue." };
+    return { error: ERR_LAND };
+  }
   return done();
 }
 
 export async function setRoleOpen(roleId: string, open: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(roleId)) return { error: ERR_LAND };
+  if (typeof open !== "boolean") return { error: "A role is open or it is not." };
   const { error } = await supabase.from("crew_roles").update({ open }).eq("id", roleId);
   if (error) return { error: ERR_LAND };
   return done();
@@ -94,25 +165,49 @@ export async function assignCrew(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   if (!crewId) return { error: "Pick someone first." };
+  if (!UUID.test(crewId) || !UUID.test(episodeId)) return { error: ERR_LAND };
   /* position_slug is a foreign key onto crew_positions. The rota only ever
      offers a slug the gaps view handed it, but the wire is not the screen: a
      slug off the catalogue is refused here by name rather than as a foreign
      key violation. */
+  const slug = positionSlug.trim();
+  if (!slug) return { error: "That position is not on the crew list." };
   const { data: position } = await supabase
     .from("crew_positions")
     .select("slug")
-    .eq("slug", positionSlug)
+    .eq("slug", slug)
     .maybeSingle();
   if (!position) return { error: "That position is not on the crew list." };
+
+  /* A blackout is a day the person said they cannot work. The picker hides a
+     blacked-out name, but the picker is a screen and this is the wire — and
+     the table has no rule of its own yet (see the SQL notes: a trigger on
+     crew_assignments should read crew_blackouts). The day is the episode's
+     own, in its own zone, the way the rota's picker reads it. */
+  const { data: night } = await supabase.from("episodes").select("starts_at, time_zone").eq("id", episodeId).maybeSingle();
+  if (!night) return { error: "That episode is not on the board." };
+  const day = localDay(night.starts_at, night.time_zone);
+  const { data: dark } = await supabase
+    .from("crew_blackouts")
+    .select("id")
+    .eq("crew_id", crewId)
+    .lte("from_date", day)
+    .gte("to_date", day)
+    .limit(1);
+  if (dark?.length) return { error: "They are marked unavailable that day — pick someone else or clear the blackout first." };
+
   const { error } = await supabase.from("crew_assignments").insert({
     episode_id: episodeId,
     crew_id: crewId,
-    position_slug: positionSlug,
+    position_slug: slug,
     status: "offered",
     assigned_by: staffId,
   });
   if (error) {
     if (error.code === "23505") return { error: "They are already on that episode." };
+    /* The episode or the crew member went off the board between the gaps view
+       loading and the offer being made. */
+    if (error.code === "23503") return { error: "That night, or that person, is no longer on the board." };
     return { error: ERR_LAND };
   }
   return done();
@@ -130,17 +225,22 @@ export async function setEpisodeNeed(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!/^[0-9a-f-]{36}$/.test(episodeId)) return { error: ERR_LAND };
+  if (!UUID.test(episodeId)) return { error: ERR_LAND };
   if (!Number.isInteger(headcount) || headcount < 0 || headcount > 50) {
     return { error: "A headcount is a whole number, 0 to 50." };
   }
-  const { data: pos } = await supabase.from("crew_positions").select("slug").eq("slug", positionSlug).maybeSingle();
+  const slug = positionSlug.trim();
+  if (!slug) return { error: "No such position on the crew list." };
+  const { data: pos } = await supabase.from("crew_positions").select("slug").eq("slug", slug).maybeSingle();
   if (!pos) return { error: "No such position on the crew list." };
 
   const { error } = await supabase
     .from("episode_crew_needs")
-    .upsert({ episode_id: episodeId, position_slug: positionSlug, headcount }, { onConflict: "episode_id,position_slug" });
-  if (error) return { error: ERR_LAND };
+    .upsert({ episode_id: episodeId, position_slug: slug, headcount }, { onConflict: "episode_id,position_slug" });
+  if (error) {
+    if (error.code === "23503") return { error: "That night is no longer on the board." };
+    return { error: ERR_LAND };
+  }
   return done();
 }
 
@@ -150,6 +250,7 @@ export async function setAssignmentStatus(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(assignmentId)) return { error: ERR_LAND };
   if (!ASSIGNMENT_STATUSES.includes(status)) return { error: "That is not an answer an offer can take." };
   const { error } = await supabase
     .from("crew_assignments")
@@ -166,8 +267,6 @@ export async function setAssignmentStatus(
      crew row has to be tied to a member profile; a name with no login has
      nothing for the door to check. — */
 
-const UUID = /^[0-9a-f-]{36}$/;
-
 /* A door grant is handed to a PROFILE; a crew row with none has nobody for
    the gangway to recognise. The link is made by handle, the one public name
    a member chooses, and refused if that member already stands on the crew
@@ -175,11 +274,16 @@ const UUID = /^[0-9a-f-]{36}$/;
 export async function linkCrewProfile(crewId: string, handle: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!/^[0-9a-f-]{36}$/.test(crewId)) return { error: ERR_LAND };
+  if (!UUID.test(crewId)) return { error: ERR_LAND };
   const h = handle.trim().replace(/^@/, "");
   if (!/^[a-z0-9._-]{2,32}$/i.test(h)) return { error: "A handle, as it reads on their page." };
 
-  const { data: person } = await supabase.from("profiles").select("id, full_name").ilike("handle", h).maybeSingle();
+  /* ilike reads % and _ as wildcards, and _ is a legal handle character — so
+     @jo_n matched @john and linked the wrong member. Escaped, the pattern is
+     the handle and nothing else; case-insensitive is still wanted, since a
+     handle is typed from memory. */
+  const pattern = h.replace(/[\\%_]/g, "\\$&");
+  const { data: person } = await supabase.from("profiles").select("id, full_name").ilike("handle", pattern).maybeSingle();
   if (!person) return { error: `No member answers to @${h}.` };
   const { data: taken } = await supabase.from("crew").select("id, display_name").eq("profile_id", person.id).neq("id", crewId).maybeSingle();
   if (taken) return { error: `${person.full_name ?? "That member"} is already on the crew list as ${taken.display_name}.` };

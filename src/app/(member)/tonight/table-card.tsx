@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Badge, Button } from "@/components/ds";
+import { Badge, Button, Checkbox } from "@/components/ds";
 import { claimSeat, confirmSeat, pickFromTable, releaseSeat } from "./actions";
 
 export type TableView = {
@@ -19,6 +19,9 @@ export type TableView = {
 export function TableCard({ table }: { table: TableView }) {
   const [pending, start] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
+  /* Whether the next pick also tells the Bridge "sit me near them again". It
+     rides on the pick row and cannot be added after, so it is decided first. */
+  const [again, setAgain] = React.useState(false);
   const t = table;
   const full = t.taken >= t.seats && !t.mine;
 
@@ -95,12 +98,22 @@ export function TableCard({ table }: { table: TableView }) {
                 size="sm"
                 variant={m.picked ? "gold" : "outline"}
                 disabled={pending || m.picked}
-                onClick={() => act(() => pickFromTable(t.id, m.id))}
+                onClick={() => act(() => pickFromTable(t.id, m.id, again))}
               >
                 {m.picked ? `${m.name} — said` : m.name}
               </Button>
             ))}
           </div>
+          {t.seatmates.some((m) => !m.picked) ? (
+            <Checkbox
+              checked={again}
+              onChange={(e) => setAgain(e.target.checked)}
+              disabled={pending}
+              label="Also tell the Bridge I'd sit near them again"
+              description="A seating hint for the next Table night. Never shown to anyone at the table."
+              style={{ marginTop: 10 }}
+            />
+          ) : null}
         </div>
       ) : null}
 

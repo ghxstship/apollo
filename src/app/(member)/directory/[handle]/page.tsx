@@ -36,11 +36,30 @@ export default async function MemberPage({
   const { handle } = await params;
   const { supabase, user, profile: viewer, zone } = await getMember();
 
-  const { data: member } = await supabase
+  let { data: member } = await supabase
     .from("member_directory")
     .select("*")
     .eq("handle", handle)
     .maybeSingle();
+
+  /* member_directory nulls the handle of anyone unlisted, so looking a member
+     up BY handle through it finds nobody who has opted out — including the
+     member themselves, and the Bridge. The branch below that lets those two
+     through was unreachable: an unlisted member's own page, and every unlisted
+     page a moderator opened, answered 404. profiles is readable for exactly
+     the two readers that branch admits (own row, or staff), so the address is
+     resolved there and the directory row is then read by id. */
+  if (!member) {
+    const { data: own } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("handle", handle)
+      .maybeSingle();
+    if (own) {
+      const byId = await supabase.from("member_directory").select("*").eq("id", own.id).maybeSingle();
+      member = byId.data;
+    }
+  }
 
   if (!member) notFound();
 

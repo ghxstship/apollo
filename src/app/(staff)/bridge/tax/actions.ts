@@ -8,6 +8,15 @@ import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staf
    and it carries the name of the person who made it and the date. A rate with
    registered = false charges nothing — the club is not entitled to collect
    tax it is not registered for — and the console says so. */
+
+const NO_CITY = "That city is no longer on the chart — reload the page.";
+
+const isDay = (v: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+};
+
 export async function setCityTax(
   cityId: string,
   patch: {
@@ -21,8 +30,13 @@ export async function setCityTax(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!/^[0-9a-f-]{36}$/.test(cityId)) return { error: ERR_LAND };
+  /* The card is one per city, so an id that is not a city is a stale screen,
+     not a thing to try again. */
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cityId)) return { error: NO_CITY };
 
+  /* 0–3000 basis points is this screen's bound, not the table's: city_tax
+     carries no check on either rate, so a figure past it would land. Thirty
+     percent is above any admissions or sales tax the club will meet. */
   for (const [label, v] of [["admissions", patch.admissions_rate_bp], ["goods", patch.goods_rate_bp]] as const) {
     if (v === null) continue;
     if (!Number.isInteger(v) || v < 0 || v > 3000) {
@@ -33,8 +47,10 @@ export async function setCityTax(
   if ((patch.admissions_rate_bp !== null || patch.goods_rate_bp !== null) && !by) {
     return { error: "A rate needs the name of whoever determined it." };
   }
-  if (patch.determined_on && !/^\d{4}-\d{2}-\d{2}$/.test(patch.determined_on)) {
-    return { error: "The date is YYYY-MM-DD." };
+  /* Shape and calendar both: "2026-02-30" is the right shape, and the driver
+     refuses it as out of range, which reaches the operator as "didn't land". */
+  if (patch.determined_on && !isDay(patch.determined_on)) {
+    return { error: "The date is YYYY-MM-DD, and a real day on the calendar." };
   }
 
   const { error } = await supabase
@@ -52,7 +68,8 @@ export async function setCityTax(
       },
       { onConflict: "city_id" }
     );
-  if (error) return { error: ERR_LAND };
+  /* The one foreign key: a city struck between the page load and the save. */
+  if (error) return { error: error.code === "23503" ? NO_CITY : ERR_LAND };
   revalidatePath("/bridge/tax");
   return {};
 }

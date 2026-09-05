@@ -90,23 +90,97 @@ export async function gangwayCheckIn(rawCode: string, episodeId: string): Promis
     rawCode.match(/\/w\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] ??
     (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawCode.trim()) ? rawCode.trim() : null);
   let walletPass: PassRow | null = null;
+  let otherEpisode: string | undefined;
   if (walletToken) {
-    const { data: verdict } = await supabase.rpc("verify_wallet_token", { p_token: walletToken });
+    const { data: verdict, error: verdictError } = await supabase.rpc("verify_wallet_token", { p_token: walletToken });
+    /* The definer refuses a caller with no live grant — the door ran out
+       between the screen loading and the scan. Said as the door's problem,
+       never as a void pass: the member's card is fine. */
+    if (verdictError) return { error: ERR_DOOR };
     const v = verdict?.[0];
-    if (!v || v.state === "void") {
+    /* A door learns about a member only when that member holds a pass on a
+       night the door is granted; 'elsewhere' is the definer saying no such
+       pass — said as the door's night, never as a void card. */
+    if (v?.state === "elsewhere") {
+      return { error: "That member holds no pass on your night." };
+    }
+    if (!v || v.state === "void" || !v.profile_id) {
       return { error: "That wallet pass is void — the member can add a fresh one from their card." };
     }
     if (v.state === "hold") {
       return { error: `${v.full_name ?? "That member"}'s membership is on hold — no boarding.` };
     }
-    const { data: own } = await supabase
+    const who = v.full_name ?? "That member";
+
+    /* A wallet pass names a MEMBER, not a night, so the pass it boards is
+       found the way a code is: the selected episode first, then the rest of
+       the board. This read only the selected episode — and the kiosk scans
+       with a placeholder episode on purpose, so every wallet pass held to the
+       kiosk was told "holds no pass on this episode" while the same member's
+       printed code boarded fine. */
+    const { data: selected } = await supabase
       .from("passes")
       .select("*")
       .eq("episode_id", episodeId)
-      .eq("profile_id", v.profile_id ?? "")
-      .eq("status", "aboard")
+      .eq("profile_id", v.profile_id)
+      .neq("status", "not_going")
       .maybeSingle();
-    if (!own) return { error: `${v.full_name ?? "That member"} holds no pass on this episode.` };
+    let own: PassRow | null = selected;
+    if (!own) {
+      const { data: upcoming } = await supabase
+        .from("episodes")
+        .select("id, title, starts_at")
+        .gte("starts_at", upcomingCutoff())
+        .in("status", UPCOMING_STATUSES)
+        .order("starts_at", { ascending: true });
+      const board = (upcoming ?? []).filter((e) => e.id !== episodeId);
+      if (board.length) {
+        const { data: elsewhere } = await supabase
+          .from("passes")
+          .select("*")
+          .in("episode_id", board.map((e) => e.id))
+          .eq("profile_id", v.profile_id)
+          .neq("status", "not_going")
+          .order("created_at", { ascending: true })
+          .limit(1);
+        const found = elsewhere?.[0] ?? null;
+        if (found) {
+          own = found;
+          otherEpisode = board.find((e) => e.id === found.episode_id)?.title;
+        }
+      }
+    }
+    if (!own) {
+      /* Nothing ahead. Before saying they hold nothing: a pass on a night that
+         has gone is a real pass, and the crew should be able to say which. A
+         door reads only its own night's passes, so for a door this finds
+         nothing and the plain answer stands. */
+      const { data: old } = await supabase
+        .from("passes")
+        .select("episode_id")
+        .eq("profile_id", v.profile_id)
+        .neq("status", "not_going")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const oldEpisode = old?.[0]?.episode_id;
+      const { data: gone } = oldEpisode
+        ? await supabase.from("episodes").select("title, starts_at, time_zone, status").eq("id", oldEpisode).maybeSingle()
+        : { data: null };
+      if (gone) {
+        return {
+          error:
+            gone.status === "cancelled"
+              ? `${who}'s pass is for ${gone.title}, which was called off.`
+              : `${who}'s pass is for ${gone.title}, which sailed on ${logDateYear(gone.starts_at, gone.time_zone)}.`,
+        };
+      }
+      return { error: `${who} holds no pass on tonight's board.` };
+    }
+    /* A waitlist pass is a place in the line, not a seat. */
+    if (own.status !== "aboard") {
+      const night = otherEpisode ? ` for ${otherEpisode}` : "";
+      return { error: `${who} is on the waitlist${night} — no seat yet.` };
+    }
     walletPass = own;
   }
 
@@ -126,7 +200,6 @@ export async function gangwayCheckIn(rawCode: string, episodeId: string): Promis
     rsvp = found;
   }
 
-  let otherEpisode: string | undefined;
   if (!rsvp) {
     const { data: upcoming } = await supabase
       .from("episodes")
@@ -194,9 +267,16 @@ export async function gangwayCheckIn(rawCode: string, episodeId: string): Promis
            member path does the same test in SQL and cannot drift this way. */
         new Date(gv.starts_at).getTime() < new Date(upcomingCutoff()).getTime();
       if (sailed) {
-        return gv
-          ? { error: `That guest pass is for ${gv.title}, which sailed on ${logDateYear(gv.starts_at, gv.time_zone)}.` }
-          : { outcome: "not_found" as const };
+        /* The member path says "called off" for a cancelled night; the guest
+           path said "sailed on" for the same night, which is not what
+           happened to it. */
+        if (!gv) return { outcome: "not_found" as const };
+        return {
+          error:
+            gv.status === "cancelled"
+              ? `That guest pass is for ${gv.title}, which was called off.`
+              : `That guest pass is for ${gv.title}, which sailed on ${logDateYear(gv.starts_at, gv.time_zone)}.`,
+        };
       }
     }
 

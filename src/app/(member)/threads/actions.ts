@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
+import { moduleTables } from "@/lib/module-tables";
 
 export type ThreadResult = { error?: string };
 
@@ -56,11 +57,38 @@ export async function sendMessage(
 
   const { data: thread } = await supabase
     .from("threads")
-    .select("closed_at")
+    .select("kind, closed_at")
     .eq("id", threadId)
     .maybeSingle();
   if (!thread) return { error: "That thread has drifted off. Try again." };
   if (thread.closed_at) return { error: "This thread closed after the debrief." };
+
+  /* A direct thread is two seats. The page hides the composer when the other
+     seat is empty, but the page is not the boundary — a tab left open from
+     before the other member left, or a call straight at this action, wrote
+     into a room nobody was in and was told it landed. And a member who has
+     declined another's messages could still write to them here: the block is
+     consulted by open_direct_thread on the way IN, and nowhere on the thread
+     itself. member_blocks RLS shows a member their own refusals only, so the
+     blocked side cannot be read from here — that half is the database's, and
+     the messages policy does not yet carry it (see the gate report). */
+  if (thread.kind === "direct") {
+    const { data: seats } = await supabase
+      .from("thread_members")
+      .select("profile_id")
+      .eq("thread_id", threadId);
+    const others = (seats ?? []).map((s) => s.profile_id).filter((id) => id !== userId);
+    if (others.length === 0) return { error: "That member has left this conversation." };
+    const { data: declined } = await moduleTables(supabase)
+      .from("member_blocks")
+      .select("blocked_id")
+      .eq("blocker_id", userId)
+      .in("blocked_id", others)
+      .limit(1);
+    if ((declined ?? []).length > 0) {
+      return { error: "You declined messages from this member. Allow them again on their page to write." };
+    }
+  }
 
   const { error } = await supabase
     .from("messages")

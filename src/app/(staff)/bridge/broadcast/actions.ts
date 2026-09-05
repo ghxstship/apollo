@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { CLUB_ZONE } from "@/lib/brand";
+import { voice } from "@/lib/errors";
 import { wallClockInZone } from "@/lib/format";
-import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
 export type Audience =
   | { kind: "all" }
@@ -12,7 +13,14 @@ export type Audience =
   | { kind: "episode"; id: string }
   | { kind: "tier"; tier: "regional" | "national" | "global" };
 
-const UUID = /^[0-9a-f-]{36}$/;
+/* The five audiences send_broadcast fans out to, and the three tiers it knows.
+   Both are checked in the function too, but its refusals — "no such audience",
+   "no such tier" — used to come back here as "That didn't land", so an operator
+   whose screen had drifted from the list learned nothing. Said in words first. */
+const AUDIENCES: readonly Audience["kind"][] = ["all", "lapsed", "city", "episode", "tier"];
+const TIERS = ["regional", "national", "global"] as const;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type Channel = "notice" | "email" | "push" | "sms";
 const CHANNELS: readonly Channel[] = ["notice", "email", "push", "sms"];
@@ -44,9 +52,13 @@ export async function sendBroadcast(
   const b = body.trim();
   if (!t || t.length > 120) return { error: "A title is one line, up to 120 characters." };
   if (!b || b.length > 2000) return { error: "The word is up to two thousand characters." };
-  if (channels.length === 0) return { error: "Pick at least one way to say it." };
-  if (channels.some((c) => !CHANNELS.includes(c))) return { error: ERR_LAND };
-  if ("id" in audience && !UUID.test(audience.id)) return { error: ERR_LAND };
+  const picked = Array.from(new Set(channels ?? []));
+  if (picked.length === 0) return { error: "Pick at least one way to say it." };
+  if (picked.some((c) => !CHANNELS.includes(c))) return { error: "That is not a way to say it — a notice, a letter, a push or a text." };
+  if (!audience || !AUDIENCES.includes(audience.kind)) return { error: "Pick who hears it." };
+  if (audience.kind === "tier" && !(TIERS as readonly string[]).includes(audience.tier)) return { error: "That is not a tier." };
+  if ("id" in audience && !UUID.test(audience.id ?? ""))
+    return { error: audience.kind === "city" ? "Pick the city first." : "Pick the episode first." };
 
   let sendAt: Date | null = null;
   if (sendAtLocal.trim()) {
@@ -60,21 +72,24 @@ export async function sendBroadcast(
     p_audience: audience,
     p_title: t,
     p_body: b,
-    p_channels: channels,
+    p_channels: picked,
     p_send_at: sendAt ? sendAt.toISOString() : null,
   });
-  if (error) return { error: ERR_LAND };
+  /* The function speaks in the club's voice when it refuses; let it. */
+  if (error) return { error: voice(error) };
   revalidatePath("/bridge/broadcast");
   return { recipients: typeof data === "number" ? data : 0, queued: !!sendAt };
 }
 
-/* A test, to the operator alone. send_broadcast has no single-member audience
-   — its kinds are all, city, tier, episode and lapsed — so the test is not a
-   broadcast: it is one notice through notify_member and, if email is ticked,
-   one letter through queue_email on the same bridge-word template the real
-   send uses. Push rides the notice as it does on the real send; a text has no
-   staff-callable single-recipient path and is not tested from here. Nothing is
-   written to `broadcasts`. */
+/* A test, to the operator alone. send_broadcast has a single-member audience
+   for exactly this — {kind:"member", id} is admitted only when the id is the
+   caller's own — so the test IS a broadcast: the same fan-out, the same
+   channel logic (a notice reaches push; push alone stays out of the Inbox; a
+   letter on bridge-word; a text to a verified number, cut at 140), recorded in
+   `broadcasts` as a one-recipient send. Until 2026-09-05 this went through
+   notify_member and queue_email instead, which never exercised push-alone or
+   the text path — an operator's test passed and the real send took a channel
+   the test had not. */
 export async function sendTestToSelf(
   title: string,
   body: string,
@@ -86,24 +101,20 @@ export async function sendTestToSelf(
   const b = body.trim();
   if (!t || t.length > 120) return { error: "A title is one line, up to 120 characters." };
   if (!b || b.length > 2000) return { error: "The word is up to two thousand characters." };
+  const picked = channels.filter((c) => CHANNELS.includes(c));
+  if (picked.length === 0) return { error: "Pick at least one way to say it." };
 
-  const sent: string[] = [];
-  if (channels.includes("notice") || channels.includes("push")) {
-    const { error } = await supabase.rpc("notify_member", { p_profile: staffId, p_kind: "word", p_title: t, p_body: b });
-    if (error) return { error: ERR_LAND };
-    sent.push("notice");
-  }
-  if (channels.includes("email")) {
-    const { data: me } = await supabase.from("profiles").select("email, full_name").eq("id", staffId).maybeSingle();
-    if (!me?.email) return { error: "No email on your own profile to test with." };
-    const { error } = await supabase.rpc("queue_email", {
-      p_to: me.email,
-      p_template: "bridge-word",
-      p_payload: { name: me.full_name, title: t, body: b },
-    });
-    if (error) return { error: ERR_LAND };
-    sent.push("email");
-  }
-  if (sent.length === 0) return { error: "A test reaches you as a notice or a letter — tick one of those." };
-  return { sent };
+  const { data, error } = await supabase.rpc("send_broadcast", {
+    p_audience: { kind: "member", id: staffId },
+    p_title: t,
+    p_body: b,
+    p_channels: picked,
+    p_send_at: null,
+  });
+  /* Its refusals speak in the club's voice — "a test goes to yourself" among
+     them — so they are passed through rather than flattened. */
+  if (error) return { error: voice(error) };
+  if (typeof data !== "number" || data < 1) return { error: "The test reached nobody — is your own profile active?" };
+  revalidatePath("/bridge/broadcast");
+  return { sent: picked };
 }

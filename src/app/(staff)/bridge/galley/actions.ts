@@ -51,6 +51,18 @@ export async function lookupMember(memberNo: string): Promise<LookupResult> {
 
 export type TicketLine = { itemId: string; qty: number; priceCents: number };
 
+/* Member and item ids off the POS. A malformed one reaches the driver as
+   "invalid input syntax for type uuid", which names a Postgres type at an
+   operator who never chose one; refused here first. */
+const UUID = /^[0-9a-f-]{36}$/;
+/* galley_order_items checks 1 to 12 a line — the same ceiling the ticket's
+   stepper keeps. The RPC in front of it accepts more, so a 13 would pass the
+   RPC's own gate and be refused by the table with a constraint name that
+   voice() flattens to "check the numbers". Refused here, with the number. */
+const LINE_QTY_MAX = 12;
+const TENDERS = ["account", "till"] as const;
+const IDEM_KEY_MAX = 80;
+
 /* Settle the ticket. 'account' leaves the charge on the member account
    (the ledger trigger writes it); 'till' records the order and offsets the
    charge with a payment — net zero, memo "Paid at the till". */
@@ -65,8 +77,16 @@ export async function settleTicket(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   if (!profileId) return { error: "Attach a member first." };
+  if (!UUID.test(profileId)) return { error: "Attach a member first." };
+  if (!(TENDERS as readonly string[]).includes(tender)) return { error: "That is not a tender." };
+  const key = typeof idemKey === "string" ? idemKey.trim() : "";
+  if (key.length > IDEM_KEY_MAX) return { error: ERR_LAND };
   const clean = lines.filter((l) => l.qty > 0 && l.itemId);
   if (!clean.length) return { error: "Ring the first item — the order is empty." };
+  if (clean.some((l) => !UUID.test(l.itemId))) return { error: "The galley shelf changed — reload and ring again." };
+  if (clean.some((l) => !Number.isInteger(l.qty) || l.qty > LINE_QTY_MAX)) {
+    return { error: `A line is a whole number, 1 to ${LINE_QTY_MAX} — split a bigger round across two.` };
+  }
 
   /* One RPC, one transaction. This used to be three separate writes with the
      CHARGE landing on the first — the ledger trigger fires on the order insert
@@ -81,7 +101,7 @@ export async function settleTicket(
     p_profile: profileId,
     p_lines: clean.map((l) => ({ itemId: l.itemId, qty: l.qty })),
     p_tender: tender,
-    p_idem_key: idemKey,
+    p_idem_key: key || undefined,
   });
   if (error) return { error: await voiceWith(supabase, error) };
 

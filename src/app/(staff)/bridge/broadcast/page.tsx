@@ -75,6 +75,8 @@ function describe(
       return cities.find((c) => c.id === a.id)?.name ?? "A city";
     case "episode":
       return episodes.find((e) => e.id === a.id)?.title ?? "An episode's manifest";
+    case "member":
+      return "Yourself — a test";
     default:
       return "—";
   }

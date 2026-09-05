@@ -9,9 +9,15 @@ function done(): ActionResult {
   return {};
 }
 
+/* Every id here is a frame's row id off the queue. A malformed one reaches the
+   driver as "invalid input syntax for type uuid", which names a Postgres type
+   at an operator who never chose one; refused here first. */
+const UUID = /^[0-9a-f-]{36}$/;
+
 export async function approveMedia(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: ERR_LAND };
   const { error } = await supabase.from("episode_media").update({ approved: true }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
@@ -20,6 +26,7 @@ export async function approveMedia(id: string): Promise<ActionResult> {
 export async function unapproveMedia(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: ERR_LAND };
   const { error } = await supabase.from("episode_media").update({ approved: false }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();
@@ -33,14 +40,20 @@ export async function unapproveMedia(id: string): Promise<ActionResult> {
 export async function removeMedia(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: ERR_LAND };
 
-  const { data: frame } = await supabase
+  const { data: frame, error: readError } = await supabase
     .from("episode_media")
     .select("storage_path")
     .eq("id", id)
     .maybeSingle();
+  /* A read that fails is not a frame with no file: treated as one, this
+     deleted nothing and reported success. And a frame the uploader has already
+     withdrawn is not ours to remove twice — say so rather than "Removed." */
+  if (readError) return { error: ERR_LAND };
+  if (!frame) return { error: "That frame is already off the record." };
 
-  if (frame?.storage_path) {
+  if (frame.storage_path) {
     const { error: fileError } = await supabase.storage
       .from("episode-media")
       .remove([frame.storage_path]);

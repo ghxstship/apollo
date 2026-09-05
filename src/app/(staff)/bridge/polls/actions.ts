@@ -15,7 +15,9 @@ import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staf
 const QUESTION_MIN = 3;
 const QUESTION_MAX = 200;
 const OPTION_MAX = 80;
-const UUID = /^[0-9a-f-]{36}$/;
+/* A real uuid, not thirty-six of the right characters — the loose test let
+   "------------------------------------" through to the driver as a 22P02. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function done(): ActionResult {
   revalidatePath("/bridge/polls");
@@ -39,8 +41,11 @@ export async function createPoll(question: string, options: string[], closesAtLo
   const q = question.trim();
   if (q.length < QUESTION_MIN || q.length > QUESTION_MAX)
     return { error: `A question runs ${QUESTION_MIN} to ${QUESTION_MAX} characters.` };
-  const opts = (options ?? []).map((o) => String(o ?? "").trim().slice(0, OPTION_MAX)).filter(Boolean);
+  const opts = (options ?? []).map((o) => String(o ?? "").trim()).filter(Boolean);
   if (opts.length < 2 || opts.length > 6) return { error: "A question takes two to six answers." };
+  /* Refused, not silently cut short — an answer the operator typed and did not
+     see truncated would reach members as a different answer. */
+  if (opts.some((o) => o.length > OPTION_MAX)) return { error: `An answer runs to ${OPTION_MAX} characters.` };
   if (new Set(opts).size !== opts.length) return { error: "Two answers say the same thing." };
   const closes = onClubClock(closesAtLocal);
   if (!closes) return { error: "Set the hour it closes." };
@@ -61,7 +66,7 @@ export async function createPoll(question: string, options: string[], closesAtLo
 export async function closePoll(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!UUID.test(id)) return { error: ERR_LAND };
+  if (!UUID.test(id)) return { error: "No such question." };
   const { error } = await supabase
     .from("polls")
     .update({ closes_at: new Date().toISOString() })
@@ -77,7 +82,7 @@ export async function closePoll(id: string): Promise<ActionResult> {
 export async function settlePoll(id: string, option: number): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!UUID.test(id)) return { error: ERR_LAND };
+  if (!UUID.test(id)) return { error: "No such question." };
   const { data: poll } = await supabase.from("polls").select("options, closes_at").eq("id", id).maybeSingle();
   if (!poll) return { error: "No such question." };
   if (new Date(poll.closes_at).getTime() > Date.now()) return { error: "Close it first — an open question has no outcome yet." };

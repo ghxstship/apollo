@@ -41,9 +41,12 @@ function clean(input: QuestionInput): { ok: true; row: { prompt: string; kind: Q
   let options: string[] | null = null;
   if (input.kind === "choice") {
     options = (input.options ?? [])
-      .map((o) => String(o ?? "").trim().slice(0, OPTION_MAX))
+      .map((o) => String(o ?? "").trim())
       .filter(Boolean);
     if (options.length < 2) return { ok: false, error: "A choice needs at least two options." };
+    /* Refused rather than cut short: an option truncated in silence is an
+       option the applicant reads differently from the one the Bridge typed. */
+    if (options.some((o) => o.length > OPTION_MAX)) return { ok: false, error: `An option runs to ${OPTION_MAX} characters.` };
     if (options.length > OPTIONS_MAX) return { ok: false, error: `A choice runs to ${OPTIONS_MAX} options.` };
     if (new Set(options).size !== options.length) return { ok: false, error: "Two options say the same thing." };
   }
@@ -84,11 +87,14 @@ export async function createQuestion(input: QuestionInput): Promise<ActionResult
 export async function updateQuestion(key: string, input: QuestionInput): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!KEY_RE.test(key)) return { error: ERR_LAND };
+  if (!KEY_RE.test(key)) return { error: "No such question." };
   const c = clean(input);
   if (!c.ok) return { error: c.error };
-  const { error } = await supabase.from("application_questions").update(c.row).eq("key", key);
+  /* Zero rows is not a change: a key that has gone since the screen loaded
+     would otherwise report "Question changed." */
+  const { data: changed, error } = await supabase.from("application_questions").update(c.row).eq("key", key).select("key");
   if (error) return { error: ERR_LAND };
+  if (!changed || changed.length === 0) return { error: "No such question." };
   return done();
 }
 
@@ -97,7 +103,7 @@ export async function updateQuestion(key: string, input: QuestionInput): Promise
 export async function setQuestionActive(key: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!KEY_RE.test(key)) return { error: ERR_LAND };
+  if (!KEY_RE.test(key)) return { error: "No such question." };
   const { error } = await supabase.from("application_questions").update({ active }).eq("key", key);
   if (error) return { error: ERR_LAND };
   return done();
@@ -109,7 +115,7 @@ export async function setQuestionActive(key: string, active: boolean): Promise<A
 export async function moveQuestion(key: string, direction: "up" | "down"): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!KEY_RE.test(key)) return { error: ERR_LAND };
+  if (!KEY_RE.test(key)) return { error: "No such question." };
 
   const { data: rows, error: readError } = await supabase
     .from("application_questions")

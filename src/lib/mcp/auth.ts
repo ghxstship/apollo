@@ -20,9 +20,18 @@ export type Scope = (typeof SCOPES)[number];
 /* The service-role client the tools run on, once the key is good. */
 export type Admin = ReturnType<typeof createAdminClient>;
 
+/* 401 is about the key; 503 is about the deployment — the records have no
+   service key here, so no key could be checked and no tool could run. Said in
+   words with a Retry-After, the way the wallet's ledgerClosed() says it,
+   rather than the bare 500 that createAdminClient() threw when the variable
+   was missing: an unconfigured deployment fails closed, not open and not
+   loud. */
 export type KeyVerdict =
   | { ok: true; key: ApiKey; admin: Admin }
-  | { ok: false; status: 401; message: string };
+  | { ok: false; status: 401 | 503; message: string };
+
+export const NO_SERVICE_KEY =
+  "Keys are not honoured on this deployment — the club's records have no service key here. Shoreside knows.";
 
 const BEARER = /^Bearer\s+(\S+)$/i;
 
@@ -45,6 +54,12 @@ export async function verifyKey(request: Request): Promise<KeyVerdict> {
   const raw = m[1];
   if (!KEY_SHAPE.test(raw)) {
     return { ok: false, status: 401, message: "That key does not open anything here." };
+  }
+
+  /* After the shape check, so noise is still a 401 and nothing about the
+     deployment is said to a caller who never held a key. */
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { ok: false, status: 503, message: NO_SERVICE_KEY };
   }
 
   const admin = createAdminClient();

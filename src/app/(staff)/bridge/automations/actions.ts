@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { moduleTables } from "@/lib/module-tables";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { AUTOMATION_TEXT_KEYS, LETTERS_A_RULE_CANNOT_FILL, textTemplateNeeds } from "./automation-letters";
 
 export type TriggerEvent =
   | "pass_confirmed"
@@ -15,7 +16,11 @@ export type RuleConditions = { tier?: string; city?: string; setting?: string };
 export type RuleAction =
   | { kind: "notify"; title: string; body: string }
   | { kind: "email"; template: string }
-  | { kind: "sms"; template: string }
+  /* A text is template-only at the carrier; the template's parameter_map says
+     which payload keys fill its variables. The dispatcher writes the member,
+     the episode and a link; a template that also reads `title` or `body` gets
+     them from the rule, with {member} and {episode} filled in. */
+  | { kind: "sms"; template: string; title?: string; body?: string }
   /* Call a registered webhook. The dispatcher posts the event and its context
      to the hook's URL through webhook_deliveries; the id comes off the
      `webhooks` table and nowhere else. */
@@ -50,6 +55,7 @@ const SETTINGS = ["sea", "shore"] as const;
 
 const NAME_MAX = 120;
 const DELAY_MAX = 43_200;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TITLE_MAX = 120;
 const BODY_MAX = 600;
 
@@ -89,15 +95,18 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
     conditions.city = city.slug;
   }
 
-  const delay = Math.round(Number(rule.delayMinutes) || 0);
-  if (!Number.isInteger(delay) || delay < 0 || delay > DELAY_MAX)
+  /* Not `|| 0`: a delay that does not read as a number is refused, not quietly
+     made immediate. */
+  const rawDelay = Number(rule.delayMinutes);
+  const delay = Math.round(rawDelay);
+  if (!Number.isFinite(rawDelay) || delay < 0 || delay > DELAY_MAX)
     return { error: "A delay is whole minutes, 0 to 43,200 — thirty days." };
 
   /* The stored shape is the dispatcher's: {kind:'webhook', webhook_id}. */
   let action: RuleAction | { kind: "webhook"; webhook_id: string };
   if (rule.action.kind === "webhook") {
-    const id = rule.action.webhookId.trim();
-    if (!/^[0-9a-f-]{36}$/.test(id)) return { error: "Pick the webhook the rule calls." };
+    const id = (rule.action.webhookId ?? "").trim();
+    if (!UUID.test(id)) return { error: "Pick the webhook the rule calls." };
     const { data: hook } = await supabase.from("webhooks").select("id").eq("id", id).eq("active", true).maybeSingle();
     if (!hook) return { error: "That webhook is not registered, or is switched off." };
     action = { kind: "webhook", webhook_id: id };
@@ -118,11 +127,20 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
     if (!code) return { error: "Pick the letter the rule sends." };
     const { data: known } = await moduleTables(supabase)
       .from("email_templates")
-      .select("code")
+      .select("code, rule_can_send")
       .eq("code", code)
       .eq("active", true)
       .maybeSingle();
     if (!known) return { error: "That letter is not in the registry." };
+    /* The registry's own flag, which the dispatcher reads at fire time; the
+       list below is the same judgement held in code, with the reason. */
+    if (!(known as { rule_can_send?: boolean }).rule_can_send)
+      return { error: `A rule cannot send ${code} — the registry marks it as needing more than a rule carries.` };
+    /* Registered is not enough: the sender refuses a letter whose required
+       keys the payload lacks, and a rule's payload is only the member and the
+       episode. Refused here, by name, rather than queued to fail. */
+    const cannot = LETTERS_A_RULE_CANNOT_FILL[code];
+    if (cannot) return { error: `A rule cannot send ${code} — that letter needs ${cannot}, which no rule carries.` };
     action = { kind: "email", template: code };
   } else if (rule.action.kind === "sms") {
     /* A text is template-only at the provider, so a rule may only name one we
@@ -131,12 +149,30 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
     if (!code) return { error: "Pick a text template." };
     const { data: known } = await supabase
       .from("sms_templates")
-      .select("code")
+      .select("code, parameter_map")
       .eq("code", code)
       .eq("active", true)
       .maybeSingle();
     if (!known) return { error: "That text template is not registered." };
-    action = { kind: "sms", template: code };
+    const title = (rule.action.title ?? "").trim();
+    const body = (rule.action.body ?? "").trim();
+    if (title.length > TITLE_MAX) return { error: `A text's title runs to ${TITLE_MAX} characters.` };
+    if (body.length > BODY_MAX) return { error: `A text's body runs to ${BODY_MAX} characters.` };
+    /* Every variable the carrier's template reads must have a payload key the
+       dispatcher will write — otherwise the member reads the placeholder
+       unfilled, which is what happened before the dispatcher carried
+       title/body at all. */
+    const supplied = new Set<string>([...AUTOMATION_TEXT_KEYS, ...(title ? ["title"] : []), ...(body ? ["body"] : [])]);
+    const unfilled = textTemplateNeeds(known.parameter_map).filter((k) => !supplied.has(k));
+    if (unfilled.length) {
+      const wantsWords = unfilled.every((k) => k === "title" || k === "body");
+      return {
+        error: wantsWords
+          ? `That text reads ${unfilled.join(" and ")} from the rule — write ${unfilled.length > 1 ? "them" : "it"} below.`
+          : `That text reads ${unfilled.join(", ")}, which no rule carries. Pick a text the rule can fill.`,
+      };
+    }
+    action = { kind: "sms", template: code, ...(title ? { title } : {}), ...(body ? { body } : {}) };
   } else {
     return { error: "Pick what the rule does." };
   }
@@ -156,6 +192,7 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
 export async function setAutomationActive(id: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: "No such rule." };
   const { error } = await supabase.from("automations").update({ active }).eq("id", id);
   if (error) return { error: ERR_LAND };
   return done();

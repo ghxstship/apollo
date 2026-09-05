@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CLUB_ZONE, CITY_CODES, PLACE } from "@/lib/brand";
 import { roman, yearIn } from "@/lib/format";
+import { moduleTables } from "@/lib/module-tables";
 import { getMember } from "../data";
 import { DirectoryList, type DirectoryMember, type CityOption } from "./roster";
 
@@ -31,7 +32,7 @@ export default async function DirectoryPage({
   const pages = Math.min(MAX_PAGES, Math.max(1, Math.floor(Number(show)) || 1));
   const limit = PAGE_SIZE * pages;
 
-  const [profilesRes, citiesRes, affinityRes] = await Promise.all([
+  const [profilesRes, citiesRes, affinityRes, blocksRes] = await Promise.all([
     supabase
       .from("member_directory")
       .select("id,full_name,handle,avatar_tone,home_city,joined_at,interests", { count: "exact" })
@@ -41,10 +42,22 @@ export default async function DirectoryPage({
       .range(0, limit - 1),
     supabase.from("cities").select("id,slug,name").order("position", { ascending: true }),
     supabase.from("member_affinity").select("other_id,shared").eq("profile_id", user.id),
+    /* The viewer's own refusals. member_blocks RLS returns a member only the
+       rows they wrote, so this is their list and nobody else's. */
+    moduleTables(supabase).from("member_blocks").select("blocked_id").eq("blocker_id", user.id),
   ]);
 
-  const profiles = profilesRes.data ?? [];
-  const total = profilesRes.count ?? profiles.length;
+  /* A member you have declined messages from does not sit on your roster. The
+     refusal held on the thread and on their page, and the roster still listed
+     them between everyone else — with a row that opened onto the page that
+     said you had declined them. Their page stays reachable by address, so the
+     refusal can be lifted; the list is where they are not shown. */
+  const declined = new Set(
+    ((blocksRes.data ?? []) as Array<{ blocked_id: string }>).map((b) => b.blocked_id)
+  );
+  const loaded = profilesRes.data ?? [];
+  const profiles = loaded.filter((p) => !declined.has(p.id));
+  const total = Math.max(0, (profilesRes.count ?? loaded.length) - (loaded.length - profiles.length));
   const ids = profiles.map((p) => p.id);
 
   /* League and engagement only for the names on the page. */

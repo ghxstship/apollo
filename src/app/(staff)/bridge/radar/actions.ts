@@ -22,6 +22,8 @@ import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
    product, not a setting, and a Bridge that could type a different lock would
    be a Bridge that could disagree with the copy every member has already read. */
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function done(): ActionResult {
   revalidatePath("/bridge/radar");
   revalidatePath("/radar");
@@ -31,6 +33,7 @@ function done(): ActionResult {
 export async function openTheRadar(episodeId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(episodeId)) return { error: "Pick the episode first." };
 
   /* Through the RPC, never by writing episode_radar directly. The four
      timestamps have to be read off the EPISODE'S zone — a clock built from the
@@ -64,6 +67,7 @@ export type CutResult = { error?: string; cut?: number };
 export async function cutAnchorsShort(episodeId: string): Promise<CutResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(episodeId)) return { error: "Pick the episode first." };
 
   const now = new Date().toISOString();
   const { data, error } = await moduleTables(supabase)

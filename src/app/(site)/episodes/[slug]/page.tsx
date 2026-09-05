@@ -6,6 +6,8 @@ import { LinkButton } from "@/components/site/link-button";
 import { SURFACES } from "@/lib/brand";
 import { SETTING_LABEL, TIER_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import type { EpisodeRow } from "@/lib/supabase/types";
+import { EPISODE_PUBLIC_COLUMNS, type EpisodePlace, type PublicEpisode } from "@/lib/episode-columns";
 import { moduleTables } from "@/lib/module-tables";
 import { durationChip, onSaleChip, vesselSpec } from "@/components/site/episode-chips";
 import { fleetFor, framesFor } from "@/components/site/episode-data";
@@ -87,12 +89,15 @@ export default async function EpisodePage({
 }) {
   const { slug } = await params;
   const supabase = await createClient();
-  const { data: episode } = await supabase
+  /* Named columns, not "*": the anonymous grant leaves out the place, and a
+     read that asks for it is refused whole (src/lib/episode-columns.ts). */
+  const { data: found } = await supabase
     .from("episodes")
-    .select("*")
+    .select(EPISODE_PUBLIC_COLUMNS)
     .eq("slug", slug)
     .maybeSingle();
-  if (!episode) notFound();
+  if (!found) notFound();
+  const episode: EpisodeRow = { ...(found as unknown as PublicEpisode), coordinates: null, muster: null };
 
   const [{ data: cap }, { data: { user } }, { data: formatRow }, plans, { data: cityRow }] = await Promise.all([
     supabase.from("episode_capacity").select("*").eq("episode_id", episode.id).maybeSingle(),
@@ -143,6 +148,19 @@ export default async function EpisodePage({
       supabase.from("profiles").select("is_staff").eq("id", user.id).maybeSingle(),
     ]);
     reveal = (ownPass ?? []).length > 0 || Boolean(me?.is_staff);
+    /* The place, asked for only now: the grant that withholds it from the
+       shore hands it to a signed-in member, and the reveal above decides
+       whether the markup renders it. */
+    if (reveal) {
+      const { data: place } = await supabase
+        .from("episodes")
+        .select("coordinates, muster")
+        .eq("id", episode.id)
+        .maybeSingle();
+      const at = (place ?? null) as EpisodePlace | null;
+      episode.coordinates = at?.coordinates ?? null;
+      episode.muster = at?.muster ?? null;
+    }
   }
   const format = (formatRow ?? null) as
     | { slug: string; label: string; access: string; category: string }
@@ -319,11 +337,15 @@ export default async function EpisodePage({
        presenting partner first. A credit, never an ad, and never the money. */
     supabase.rpc("sponsor_credits", { p_episode: episode.id }),
     episode.venue_id
-      ? supabase.from("venues").select("name, address, access_note").eq("id", episode.venue_id).maybeSingle()
+      /* Name and access note for everyone; the address rides the same
+         column-level grant as the muster and is asked for only on reveal. */
+      ? reveal
+        ? supabase.from("venues").select("name, address, access_note").eq("id", episode.venue_id).maybeSingle()
+        : supabase.from("venues").select("name, access_note").eq("id", episode.venue_id).maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
   const credits = creditsRes.data ?? [];
-  const venue = venueRes.data ?? null;
+  const venue = (venueRes.data ?? null) as { name: string; address?: string | null; access_note: string | null } | null;
   /* The access note is public on purpose: step-free, lift, quiet room is what
      an access need wants to know BEFORE booking, and it names no address. */
   const accessNote = venue?.access_note ?? null;

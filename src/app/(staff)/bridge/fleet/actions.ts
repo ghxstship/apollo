@@ -3,9 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 
-const UUID = /^[0-9a-f-]{36}$/;
+/* Shape-checked properly: the old /^[0-9a-f-]{36}$/ let 36 hyphens through
+   to the driver, whose refusal reached the operator as "didn't land". */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CITY_STATUS = new Set(["open", "waitlist", "soon", "closed"]);
+/* A row on this screen can be struck by another operator between the page
+   load and the save. "Try again" would be the wrong advice; reloading is. */
+const NO_CITY = "That city is no longer on the chart — reload the page.";
+const NO_HULL = "That hull is no longer in the fleet — reload the page.";
+/* The day rate is an integer of cents; a stray keystroke past a million
+   dollars a day is a typo before it is an overflow, and the overflow says
+   nothing an operator can act on. */
+const DAY_RATE_MAX_DOLLARS = 1_000_000;
 
 function done(): ActionResult {
   revalidatePath("/bridge/fleet");
@@ -32,7 +42,7 @@ export async function saveCity(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (id !== null && !UUID.test(id)) return { error: ERR_LAND };
+  if (id !== null && !UUID.test(id)) return { error: NO_CITY };
 
   const name = patch.name.trim().slice(0, 80);
   const slug = patch.slug.trim().toLowerCase();
@@ -61,12 +71,13 @@ export async function saveCity(
     launch_year: year,
     position,
   };
-  const { error } = id
-    ? await supabase.from("cities").update(row).eq("id", id)
-    : await supabase.from("cities").insert(row);
+  const { data, error } = id
+    ? await supabase.from("cities").update(row).eq("id", id).select("id")
+    : await supabase.from("cities").insert(row).select("id");
   if (error) {
     return { error: error.code === "23505" ? "A city already carries that slug." : ERR_LAND };
   }
+  if (id && !data?.length) return { error: NO_CITY };
   return done();
 }
 
@@ -88,13 +99,13 @@ export async function saveVessel(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (id !== null && !UUID.test(id)) return { error: ERR_LAND };
+  if (id !== null && !UUID.test(id)) return { error: NO_HULL };
 
   const name = patch.name.trim().slice(0, 80);
   if (!name) return { error: "A hull needs a name." };
   const capacity = Number(patch.capacity);
-  if (!Number.isInteger(capacity) || capacity < 0 || capacity > 2000) return { error: "Capacity is a whole number of people." };
-  if (patch.home_city && !UUID.test(patch.home_city)) return { error: ERR_LAND };
+  if (!Number.isInteger(capacity) || capacity < 0 || capacity > 2000) return { error: "Capacity is a whole number of people, 0 to 2000." };
+  if (patch.home_city && !UUID.test(patch.home_city)) return { error: "Pick the home city off the list." };
   const opt = (v: string, lo: number, hi: number, what: string): number | null | string => {
     if (v.trim() === "") return null;
     const n = Number(v);
@@ -106,6 +117,9 @@ export async function saveVessel(
   for (const v of [length, year, cabins]) if (typeof v === "string") return { error: v };
   const rate = patch.day_rate.trim() === "" ? null : Math.round(Number(patch.day_rate) * 100);
   if (rate !== null && (!Number.isFinite(rate) || rate < 0)) return { error: "The day rate is dollars, or blank until the contract says." };
+  if (rate !== null && rate > DAY_RATE_MAX_DOLLARS * 100) {
+    return { error: `The day rate is dollars, up to ${DAY_RATE_MAX_DOLLARS.toLocaleString("en-US")} — check the figure.` };
+  }
 
   const row = {
     name,
@@ -117,9 +131,13 @@ export async function saveVessel(
     cabins: cabins as number | null,
     active: patch.active,
   };
-  const { error } = id
-    ? await supabase.from("vessels").update(row).eq("id", id)
-    : await supabase.from("vessels").insert(row);
-  if (error) return { error: ERR_LAND };
+  const { data, error } = id
+    ? await supabase.from("vessels").update(row).eq("id", id).select("id")
+    : await supabase.from("vessels").insert(row).select("id");
+  if (error) {
+    /* The one foreign key on a hull: a home city struck since the page loaded. */
+    return { error: error.code === "23503" ? "That home city is no longer on the chart — pick another." : ERR_LAND };
+  }
+  if (id && !data?.length) return { error: NO_HULL };
   return done();
 }

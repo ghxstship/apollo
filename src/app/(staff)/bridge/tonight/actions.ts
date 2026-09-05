@@ -9,6 +9,8 @@ import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staf
    "staff keep tables" (20260821120000) has admitted these writes since the
    product shipped; no screen ever made them. */
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function done(): ActionResult {
   revalidatePath("/bridge/tonight");
   revalidatePath("/tonight");
@@ -22,7 +24,7 @@ export async function createTable(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!episodeId) return { error: "Pick the night first." };
+  if (!UUID.test(episodeId ?? "")) return { error: "Pick the night first." };
 
   const n = Math.round(number);
   if (!Number.isFinite(n) || n < 1 || n > 999) return { error: "A table needs a number, one to 999." };
@@ -62,6 +64,7 @@ export async function createTable(
 export async function deleteTable(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: "No such table." };
 
   const { count, error: countError } = await supabase
     .from("table_seats")

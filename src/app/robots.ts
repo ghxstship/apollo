@@ -15,14 +15,18 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       // Member surfaces stay off the charts — derived from the same
       // protected list the auth proxy enforces.
-      /* /sign carries one-time tokens and /api and /preview are not pages;
-         none of the three is in the protected list because none needs a
-         session, which is exactly why they need naming here. */
+      /* /sign and /w carry bearer tokens in the path, and /api and /preview
+         are not pages; none of the four is in the protected list because none
+         needs a session, which is exactly why they need naming here. /w was
+         missing until the public-and-guest e2e module asked: a wallet pass
+         URL is a credential, and a crawler that follows one from a shared
+         screenshot would file it. */
       disallow: [
         ...manifest.protectedPrefixes.map((p) => p + "/"),
         ...manifest.protectedPrefixes,
         "/auth/",
         "/sign/",
+        "/w/",
         "/api/",
         "/preview/",
       ],

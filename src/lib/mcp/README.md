@@ -64,8 +64,11 @@ All tools return one `text` content block holding JSON.
 ## Errors
 
 HTTP `401` with `WWW-Authenticate: Bearer` when the key is missing, unknown or
-revoked; `429` with `Retry-After` when a key is over its window; `413` for a
-body over 64 KB; `400` for a body that is not JSON. Inside a good request the
+revoked; `503` with `Retry-After` when the deployment holds no
+`SUPABASE_SERVICE_ROLE_KEY` (no key can be read and no tool could run, so a
+well-shaped key is told so in words rather than met with a 500); `429` with
+`Retry-After` when a key is over its window; `413` for a body over 64 KB;
+`400` for a body that is not JSON. Inside a good request the
 answer is JSON-RPC: `-32601` for a method this server does not offer,
 `-32602` for an unknown tool or bad arguments, `-32001` for a scope the key
 lacks. A tool that fails at the database reports it inside its own result

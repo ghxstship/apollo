@@ -78,15 +78,42 @@ function done(): ActionResult {
 const oneOf = <T extends string>(list: readonly T[], v: string): v is T =>
   (list as readonly string[]).includes(v);
 
+/* The row id the edit form carries. A malformed one reaches the driver as
+   "invalid input syntax for type uuid", which names a Postgres type at an
+   operator who never chose one. */
+const UUID = /^[0-9a-f-]{36}$/;
+
+/* No column in the catalogue is bounded by the schema, so the bounds here are
+   the form's own — wide enough for any real filing, tight enough that a paste
+   of the wrong clipboard is refused by name rather than stored. */
+const KEY_MAX = 40;
+const TEXT_MAX = 200;
+const SPEC_MAX = 4000;
+/* numeric(∞) in the schema; a figure past this is a slipped decimal point,
+   not a quantity or a price. */
+const FIGURE_MAX = 1_000_000_000;
+
 function validate(input: ElementInput): string | null {
   if (!input.elementId.trim()) return "An element needs its key — SIG-01, SWG-03, PRN-02.";
+  if (input.elementId.trim().length > KEY_MAX) return `An element's key runs to ${KEY_MAX} characters.`;
   if (!input.name.trim()) return "An element needs a name.";
+  if (input.name.trim().length > TEXT_MAX) return `An element's name runs to ${TEXT_MAX} characters.`;
   if (!input.discipline.trim()) return "Name the discipline it sits in.";
+  if (input.discipline.trim().length > TEXT_MAX) return `A discipline runs to ${TEXT_MAX} characters.`;
   if (!input.category.trim()) return "Name the category within the discipline.";
+  if (input.category.trim().length > TEXT_MAX) return `A category runs to ${TEXT_MAX} characters.`;
   if (!input.specifications.trim()) {
     return "The specification is carried verbatim onto artwork specs — dimensions, material, finish.";
   }
+  if (input.specifications.trim().length > SPEC_MAX) {
+    return `A specification runs to ${SPEC_MAX.toLocaleString("en")} characters.`;
+  }
   if (!input.uom.trim()) return "The unit of measure is a compound — item·event, set·event, lot·event.";
+  if (input.uom.trim().length > TEXT_MAX) return `A unit of measure runs to ${TEXT_MAX} characters.`;
+  if (input.sense.trim().length > TEXT_MAX) return `The sense line runs to ${TEXT_MAX} characters.`;
+  if (input.substitute.trim().length > SPEC_MAX) {
+    return `The substitute runs to ${SPEC_MAX.toLocaleString("en")} characters.`;
+  }
   if (!/^\d{4}\.\d{2}\.\d{3}$/.test(input.urid.trim())) {
     return "A URID is DDDD.CC.NNN — four digits, two, three.";
   }
@@ -99,8 +126,15 @@ function validate(input: ElementInput): string | null {
   if (!oneOf(PRICE_CONFIDENCES, input.priceConfidence)) return "That is not a price confidence.";
   if (!oneOf(FIVE_A_PHASES, input.fiveA)) return "That is not a Five-A phase.";
   if (!oneOf(WEATHER_CLASSES, input.weather)) return "That is not a weather class.";
-  if (!(input.qty >= 0)) return "Quantity cannot be negative.";
-  if (!(input.unitCostUsd >= 0)) return "A unit cost cannot be negative.";
+  /* `>= 0` alone lets Infinity through, and the driver answers a figure past
+     numeric's range with an overflow that voice() cannot name. */
+  if (!Number.isFinite(input.qty) || input.qty < 0) return "Quantity is a number, zero or more.";
+  if (input.qty > FIGURE_MAX) return "That quantity is more than the club will ever hold — check the decimal point.";
+  if (!Number.isFinite(input.unitCostUsd) || input.unitCostUsd < 0) return "A unit cost is a number, zero or more.";
+  if (input.unitCostUsd > FIGURE_MAX) return "That unit cost is more than anything costs — check the decimal point.";
+  if (typeof input.clientVisible !== "boolean" || typeof input.criticalPath !== "boolean") {
+    return "The guest sees it, or does not; it is on the critical path, or is not.";
+  }
 
   /* The runtime counterpart of the WeatherSafeElement union, run against the
      same two rules the compiler holds for data it can see. It names the element
@@ -174,6 +208,7 @@ export async function saveElement(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (elementRowId !== null && !UUID.test(elementRowId)) return { error: "That element is not in the catalogue." };
   const db = moduleTables(supabase);
 
   const fault = validate(input);
@@ -208,19 +243,21 @@ export async function saveElement(
       const { error } = await db
         .from("element_substitutes")
         .upsert({ element_id: elementRowId, context }, { onConflict: "element_id,context" });
-      if (error) return { error: voice(error) };
+      if (error) return { error: dressed(error) };
       /* Any earlier wording of the same substitute is stale. Removed only
          after the new one is in place — element_substitutes carries its own
-         deferred guard against deleting the last one. */
+         deferred guard against deleting the last one. That guard raises with
+         the check-violation code, which voice() reads as "check the numbers";
+         dressed() lets its sentence through. */
       const { error: pruneError } = await db
         .from("element_substitutes")
         .delete()
         .eq("element_id", elementRowId)
         .neq("context", context);
-      if (pruneError) return { error: voice(pruneError) };
+      if (pruneError) return { error: dressed(pruneError) };
     } else if (!needsSubstitute(input)) {
       const { error } = await db.from("element_substitutes").delete().eq("element_id", elementRowId);
-      if (error) return { error: voice(error) };
+      if (error) return { error: dressed(error) };
     }
 
     /* Already written above when the requirement was being taken off. */
@@ -250,7 +287,7 @@ export async function saveElement(
     const { error: subError } = await db
       .from("element_substitutes")
       .upsert({ element_id: newId, context }, { onConflict: "element_id,context" });
-    if (subError) return { error: voice(subError) };
+    if (subError) return { error: dressed(subError) };
   }
   if (deferActivation && newId) {
     const { error: activateError } = await db
@@ -278,7 +315,8 @@ function dressed(error: { message?: string | null; code?: string | null }): stri
 export async function removeElement(elementRowId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(elementRowId)) return { error: "That element is not in the catalogue." };
   const { error } = await moduleTables(supabase).from("elements").delete().eq("id", elementRowId);
-  if (error) return { error: voice(error) };
+  if (error) return { error: dressed(error) };
   return done();
 }

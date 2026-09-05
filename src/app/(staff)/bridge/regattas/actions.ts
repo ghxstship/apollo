@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { CLUB_ZONE } from "@/lib/brand";
+import { voice } from "@/lib/errors";
+import { endOfDay, wallClockInZone } from "@/lib/format";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 
 export type ContestShape = "regatta" | "challenge";
@@ -41,6 +44,17 @@ const BLURB_MAX = 300;
 const PRIZE_MAX = 200;
 const TARGET_MAX = 1_000_000;
 const AWARD_MAX = 1_000_000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/* A date off the composer, read as the first minute of that day on the club's
+   clock — the opening bell. */
+function startOfDay(yyyyMmDd: string): Date | null {
+  const m = DATE_RE.exec(yyyyMmDd ?? "");
+  if (!m) return null;
+  const at = new Date(wallClockInZone(Number(m[1]), Number(m[2]), Number(m[3]), 0, 0, CLUB_ZONE));
+  return Number.isNaN(at.getTime()) ? null : at;
+}
 
 function slugify(v: string): string {
   return v
@@ -68,10 +82,14 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
   const slug = slugify(input.slug || title);
   if (!slug) return { error: "That name leaves no address behind it." };
 
-  const starts = new Date(input.startsAt);
-  const ends = new Date(input.endsAt);
-  if (Number.isNaN(starts.getTime()) || Number.isNaN(ends.getTime()))
-    return { error: "Both dates are needed." };
+  /* Both fields are <input type="date">, so these used to become UTC midnight:
+     a contest that "closes Sep 30" shut at Sep 29, 20:00 EDT, and an episode on
+     the last evening of the window scored nothing — the same slip the promo
+     expiry made. A date names the whole of its day on the club's clock: it
+     opens at the start of the first and closes at the end of the last. */
+  const starts = startOfDay(input.startsAt);
+  const ends = DATE_RE.test(input.endsAt ?? "") ? new Date(endOfDay(input.endsAt, CLUB_ZONE)) : null;
+  if (!starts || !ends) return { error: "Both dates are needed." };
   if (ends <= starts) return { error: "It has to close after it opens." };
 
   /* A challenge without a target has nothing to measure against; the database
@@ -86,6 +104,8 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
      too; the message here is the readable one. */
   if (input.scope === "crew" && !input.episodeId)
     return { error: "A crew contest runs on one episode — pick it first." };
+  if (input.scope === "crew" && !UUID.test(input.episodeId ?? ""))
+    return { error: "Pick the episode from the list." };
 
   const { error } = await supabase.from("contests").insert({
     slug,
@@ -103,11 +123,9 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
     status: "draft",
   });
   if (error) {
-    return {
-      error: /duplicate|unique/i.test(error.message)
-        ? "That address is taken by another contest."
-        : ERR_LAND,
-    };
+    if (/duplicate|unique/i.test(error.message)) return { error: "That address is taken by another contest." };
+    if (error.code === "23503") return { error: "That episode is not on the board." };
+    return { error: ERR_LAND };
   }
   return done();
 }
@@ -116,12 +134,17 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
 export async function openContest(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase
+  if (!UUID.test(id)) return { error: "No such contest." };
+  /* Zero rows is not an opening: a contest already open or settled would
+     otherwise report "Open. Members can enter." */
+  const { data: opened, error } = await supabase
     .from("contests")
     .update({ status: "open" })
     .eq("id", id)
-    .eq("status", "draft");
+    .eq("status", "draft")
+    .select("id");
   if (error) return { error: ERR_LAND };
+  if (!opened || opened.length === 0) return { error: "Only a draft opens — this one is already open, or settled." };
   return done();
 }
 
@@ -131,12 +154,14 @@ export async function openContest(id: string): Promise<ActionResult> {
 export async function settleContest(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: "No such contest." };
 
   const { error } = await supabase.rpc("settle_contest", { p_contest_id: id });
   if (error) {
     if (/already settled/i.test(error.message)) return { error: "That one is already settled." };
     if (/not open/i.test(error.message)) return { error: "Open it before settling it." };
-    return { error: ERR_LAND };
+    if (/staff only/i.test(error.message)) return { error: ERR_STAFF };
+    return { error: voice(error) };
   }
   return done();
 }

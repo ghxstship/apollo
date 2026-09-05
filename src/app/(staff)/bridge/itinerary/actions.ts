@@ -61,6 +61,14 @@ const TEXT_MAX = 200;
 const NOTE_MAX = 2000;
 const isClock = (v: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 
+/* An id off a stale row reaches the driver as a malformed uuid, and voice()
+   answers that with "that link looks wrong" — true, but it points a member at
+   a link when the operator is looking at a row. Caught here and said as a row. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const NO_EPISODE = "That episode is not on the chart.";
+const NO_LEG = "That leg is no longer on the itinerary — reload the page.";
+const NO_STOP = "That stop is no longer in the port guide — reload the page.";
+
 export type LegInput = {
   day: number;
   place: string;
@@ -78,16 +86,22 @@ export async function saveLeg(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const db = moduleTables(supabase);
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
+  if (legId && !UUID.test(legId)) return { error: NO_LEG };
 
   const place = input.place.trim().slice(0, TEXT_MAX);
   if (!place) return { error: "A leg needs a place." };
   const day = Math.round(Number(input.day) || 0);
   if (day < 1 || day > DAY_MAX) return { error: `A leg's day runs 1 to ${DAY_MAX}.` };
 
+  /* Read the episode whether or not a time was typed: an episode struck since
+     the page loaded would otherwise refuse as a foreign key, which voice()
+     can only flatten to "didn't land". */
+  const zone = await episodeZone(db, episodeId);
+  if (!zone) return { error: NO_EPISODE };
+
   let startsAt: string | null = null;
   if (input.startsAt) {
-    const zone = await episodeZone(db, episodeId);
-    if (!zone) return { error: "That episode is not on the chart." };
     startsAt = instantIn(input.startsAt, zone);
     if (!startsAt) return { error: "That time doesn't parse." };
   }
@@ -95,13 +109,14 @@ export async function saveLeg(
   const patch = { place, note: input.note.trim().slice(0, NOTE_MAX) || null, starts_at: startsAt };
 
   if (legId) {
-    const { error } = await db.from("episode_legs").update({ ...patch, day }).eq("id", legId);
+    const { data, error } = await db.from("episode_legs").update({ ...patch, day }).eq("id", legId).select("id");
     if (error) {
       if (/voyage_legs_voyage_id_day_key|duplicate/i.test(error.message ?? "")) {
         return { error: `Day ${day} is already a leg on this episode.` };
       }
       return { error: voice(error) };
     }
+    if (!data?.length) return { error: NO_LEG };
     return done();
   }
 
@@ -121,8 +136,10 @@ export async function saveLeg(
 export async function removeLeg(legId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await moduleTables(supabase).from("episode_legs").delete().eq("id", legId);
+  if (!UUID.test(legId)) return { error: NO_LEG };
+  const { data, error } = await moduleTables(supabase).from("episode_legs").delete().eq("id", legId).select("id");
   if (error) return { error: voice(error) };
+  if (!data?.length) return { error: NO_LEG };
   return done();
 }
 
@@ -134,12 +151,27 @@ export async function postLegHold(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(legId)) return { error: NO_LEG };
+
+  /* The function refuses a hold missing any of the three, but says "all
+     three" without naming the one left blank. Named here, one at a time, for
+     the person who has to write it. The columns carry no ceiling; NOTE_MAX is
+     the same bound the leg note takes. */
+  const lines = [
+    [reason.trim(), "the reason"],
+    [newPlan.trim(), "the new plan"],
+    [unchanged.trim(), "what is unchanged"],
+  ] as const;
+  for (const [line, what] of lines) {
+    if (!line) return { error: `A hold states ${what} — that line is blank.` };
+    if (line.length > NOTE_MAX) return { error: `A hold's lines run to ${NOTE_MAX} characters each — ${what} is longer.` };
+  }
 
   const { error } = await moduleTables(supabase).rpc("post_a_leg_hold", {
     p_leg: legId,
-    p_reason: reason.trim(),
-    p_new_plan: newPlan.trim(),
-    p_unchanged: unchanged.trim(),
+    p_reason: lines[0][0],
+    p_new_plan: lines[1][0],
+    p_unchanged: lines[2][0],
   });
   if (error) return { error: voice(error) };
   return done();
@@ -151,6 +183,7 @@ export async function postLegHold(
 export async function liftLegHold(legId: string, revised: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(legId)) return { error: NO_LEG };
 
   const { error } = await moduleTables(supabase).rpc("lift_a_leg_hold", {
     p_leg: legId,
@@ -178,6 +211,9 @@ export async function saveStop(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const db = moduleTables(supabase);
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
+  if (stopId && !UUID.test(stopId)) return { error: NO_STOP };
+  if (input.legId && !UUID.test(input.legId)) return { error: "Pick the leg off the list." };
 
   const name = input.name.trim().slice(0, TEXT_MAX);
   if (!name) return { error: "A stop needs a name." };
@@ -192,6 +228,24 @@ export async function saveStop(
     return { error: "The last tender back has to be after the tender out." };
   }
 
+  /* The zone is not wanted here; the read is the same one, and it is the
+     difference between "that episode is not on the chart" and a foreign key
+     refusal flattened to "didn't land". */
+  if (!(await episodeZone(db, episodeId))) return { error: NO_EPISODE };
+
+  /* A stop files under a leg by a composite key on (episode, leg), so a leg
+     from another episode — or one removed since the page loaded — is refused
+     as a foreign key. Read first and say which. */
+  if (input.legId) {
+    const { data: leg } = await db
+      .from("episode_legs")
+      .select("id")
+      .eq("id", input.legId)
+      .eq("episode_id", episodeId)
+      .maybeSingle();
+    if (!leg) return { error: "That leg is not on this episode's itinerary — pick another, or leave it blank." };
+  }
+
   const patch = {
     position,
     name,
@@ -202,21 +256,24 @@ export async function saveStop(
   };
 
   const res = stopId
-    ? await db.from("episode_stops").update(patch).eq("id", stopId)
-    : await db.from("episode_stops").insert({ episode_id: episodeId, ...patch });
+    ? await db.from("episode_stops").update(patch).eq("id", stopId).select("id")
+    : await db.from("episode_stops").insert({ episode_id: episodeId, ...patch }).select("id");
   if (res.error) {
     if (/voyage_stops_voyage_id_position_key|duplicate/i.test(res.error.message ?? "")) {
       return { error: `Position ${position} is already taken in this port guide.` };
     }
     return { error: voice(res.error) };
   }
+  if (stopId && !res.data?.length) return { error: NO_STOP };
   return done();
 }
 
 export async function removeStop(stopId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await moduleTables(supabase).from("episode_stops").delete().eq("id", stopId);
+  if (!UUID.test(stopId)) return { error: NO_STOP };
+  const { data, error } = await moduleTables(supabase).from("episode_stops").delete().eq("id", stopId).select("id");
   if (error) return { error: voice(error) };
+  if (!data?.length) return { error: NO_STOP };
   return done();
 }

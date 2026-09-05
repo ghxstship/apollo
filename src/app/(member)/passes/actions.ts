@@ -283,10 +283,30 @@ export async function confirmBerth(
   if (promo || addonIds.length > 0 || split) {
     const { data: rsvp } = await supabase
       .from("passes")
-      .select("id, guests")
+      .select("id, guests, promo_code")
       .eq("episode_id", episodeId)
       .eq("profile_id", userId)
       .maybeSingle();
+
+    /* The checker said yes a moment ago; the claim is what spends the code,
+       and between the two another member can take the last use. When that
+       happens claim_promo_code does not refuse — it clears the code off the
+       pass and the trigger prices it from the catalogue. The pass is booked
+       and charged, and this action used to return a clean success for a
+       price the review never showed. The pass stands (releasing it here
+       would forfeit inside the window); the member is told what happened.
+       The add-ons and any split are not attached on top of a surprise.
+       promo_code is the signal: the claim trigger clears it off the pass
+       when the code did not bite, and keeps it when it did. */
+    if (promo && rsvp && !rsvp.promo_code) {
+      revalidatePath("/account");
+      revalidatePath("/portal");
+      done();
+      return {
+        error:
+          "That code was spent a moment before your pass landed, so it did not apply — the pass is booked at the catalogue price. The release terms on the pass still stand if that changes things.",
+      };
+    }
 
     if (rsvp && addonIds.length > 0) {
       const failed = await attachAddons(
@@ -513,8 +533,24 @@ export async function withdrawOffer(transferId: string): Promise<PassResult> {
 export async function acceptOffer(transferId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  const { error } = await supabase.rpc("accept_pass_transfer", { p_id: transferId });
-  if (error) return { error: await guardMessage(supabase, error.message, error.code) };
+  if (!UUID.test(transferId)) return { error: "That offer is no longer listed. Start again from Passes." };
+  /* Two takers answering two offers on one pass at the same moment deadlock
+     inside accept_pass_transfer: each locks its own offer row first, then
+     both reach for the pass row, and the winner's voiding of the other offer
+     waits on a lock the loser holds. Postgres breaks it by killing one, and
+     "deadlock detected" (40P01) is what the loser was shown. The second
+     attempt runs alone: the winner has committed, the loser's offer is void,
+     and the function says so in its own words. */
+  let { error } = await supabase.rpc("accept_pass_transfer", { p_id: transferId });
+  if (error && error.code === "40P01") {
+    ({ error } = await supabase.rpc("accept_pass_transfer", { p_id: transferId }));
+  }
+  if (error) {
+    if (error.code === "40P01") {
+      return { error: "Someone else is taking that pass over this very moment. Try again in a moment." };
+    }
+    return { error: await guardMessage(supabase, error.message, error.code) };
+  }
   revalidatePath("/portal");
   return done();
 }

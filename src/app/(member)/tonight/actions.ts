@@ -63,8 +63,19 @@ export async function releaseSeat(tableId: string): Promise<SeatResult> {
 }
 
 /* The pick is private — not even your seatmates see it. Mutuality is the only
-   thing that ever surfaces, by trigger. */
-export async function pickFromTable(tableId: string, picked: string): Promise<SeatResult> {
+   thing that ever surfaces, by trigger.
+
+   `again` rides on the same row: "I would sit near them again" is a hint to
+   the Bridge for the next seating — not a match, never shown to members — and
+   the Bridge's Tonight screen has counted it since it shipped. No member
+   surface ever wrote it, so the count read zero on every night. It is set at
+   the pick, by the picker, and never rewritten: table_picks carries no UPDATE
+   policy, which is the rule the harness pins. */
+export async function pickFromTable(
+  tableId: string,
+  picked: string,
+  again = false
+): Promise<SeatResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -74,7 +85,7 @@ export async function pickFromTable(tableId: string, picked: string): Promise<Se
 
   const { error } = await supabase
     .from("table_picks")
-    .insert({ table_id: tableId, picker: user.id, picked });
+    .insert({ table_id: tableId, picker: user.id, picked, again: again === true });
   if (error) {
     if (/duplicate/i.test(error.message)) return {};
     /* This returned that one sentence for EVERY error, including an RLS refusal

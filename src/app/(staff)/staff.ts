@@ -13,6 +13,7 @@ export type ActionResult = { error?: string; note?: string };
    importing this module, which reaches for the server client. Imported and
    re-exported here because every existing caller expects them from this file. */
 import { ERR_STAFF, ERR_LAND } from "@/lib/staff-errors";
+import { isRlsRefusal, voice } from "@/lib/errors";
 export { ERR_STAFF, ERR_LAND };
 
 export async function staffContext() {
@@ -37,12 +38,23 @@ export async function staffContext() {
    Manifests screen's Check in button — which is the one an operator reaches
    for most, and which happily offers itself on a row badged WAIVER MISSING —
    answered "That didn't land. Try again." and left them with nowhere to go. */
-export function boardingError(error: { message?: string | null } | null): string {
+export function boardingError(error: { message?: string | null; code?: string | null } | null): string {
   const message = error?.message ?? "";
   if (/boards unsigned/i.test(message)) {
     return `${message.replace(/^.*— /, "")} — send them the link to sign, then scan again.`;
   }
-  return ERR_LAND;
+  /* A policy refusal at the gangway means the hand on the scanner is neither
+     staff nor tonight's door. That is a fact about the operator, not the pass. */
+  if (isRlsRefusal(error)) return ERR_STAFF;
+  /* Everything else the guards raise is already in the club's voice and is a
+     real answer about the pass — "no seat has come free for this standby
+     pass", "a boarding code is issued by the club", the ratio's "10 seats, 10
+     taken". This used to flatten all of it to ERR_LAND, so a standby pass
+     scanned before a seat came free met "That didn't land. Try again." and
+     the operator tried again, and again. voice() hands the words on with a
+     capital and a full stop, and flattens only what is the schema talking to
+     itself; with no error at all it says ERR_LAND, as before. */
+  return voice(error);
 }
 
 /* Every Bridge screen read its rows as `res.data ?? []`, so a query that

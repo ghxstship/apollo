@@ -30,12 +30,35 @@ function done(): ActionResult {
   return {};
 }
 
+/* Ids come off pickers and rows, so one that is not an id is a stale screen.
+   The driver's refusal of a malformed uuid was flattened to "didn't land",
+   which invites a retry that cannot work; said here as the row, with the fix. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const NO_SPONSOR = "That sponsor is not on the book — reload the page.";
+const NO_EPISODE = "That episode is not on the chart — reload the page.";
+const NAME_MAX = 120;
+const PLACEMENT_MAX = 200;
+const NOTES_MAX = 2000;
+/* monthly_cents is an integer; a retainer past a million a month is a typo
+   before it is an overflow, and the overflow says nothing an operator can act on. */
+const RETAINER_MAX_DOLLARS = 1_000_000;
+
+/* Shape and calendar both: the dates arrive as strings off <input type="date">,
+   which any browser may leave half-typed, and "2026-02-30" is the right shape
+   with no day behind it. Either reached the driver and came back "didn't land". */
+const isDay = (v: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+};
+
 export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
   const name = input.name.trim();
   if (!name) return { error: "A sponsor needs a name — that is the whole credit." };
+  if (name.length > NAME_MAX) return { error: `A sponsor's name runs to ${NAME_MAX} characters.` };
 
   const { data: tierRow, error: tierError } = await supabase
     .from("sponsor_tiers")
@@ -48,6 +71,8 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
   const monthly = Math.round(input.monthlyCents);
   if (!Number.isFinite(monthly) || monthly < 0)
     return { error: "The retainer is a dollar figure, zero or better." };
+  if (monthly > RETAINER_MAX_DOLLARS * 100)
+    return { error: `The retainer runs to ${RETAINER_MAX_DOLLARS.toLocaleString("en-US")} dollars a month — check the figure.` };
 
   const email = input.contactEmail.trim();
   if (email && !/.+@.+\..+/.test(email))
@@ -58,6 +83,8 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
      version of a_retainer_ends_after_it_begins. */
   const startsOn = input.startsOn || null;
   const endsOn = input.endsOn || null;
+  if (startsOn && !isDay(startsOn)) return { error: "The term's first day has to be a real day on the calendar." };
+  if (endsOn && !isDay(endsOn)) return { error: "The term's last day has to be a real day on the calendar." };
   if (startsOn && endsOn && endsOn < startsOn)
     return { error: "A term has to end after it begins." };
 
@@ -68,12 +95,16 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
     contact_email: email || null,
     starts_on: startsOn,
     ends_on: endsOn,
-    notes: input.notes.trim() || null,
+    notes: input.notes.trim().slice(0, NOTES_MAX) || null,
     /* The column defaults to auth.uid(); stated so the row says who signed
        them even if a future default changes. */
     created_by: staffId,
   });
-  if (error) return { error: ERR_LAND };
+  if (error) {
+    /* The tier was read a moment ago; a card retired between the read and
+       the write is the one foreign key left to fire. */
+    return { error: error.code === "23503" ? "That tier has come off the rate card — pick another." : ERR_LAND };
+  }
   return done();
 }
 
@@ -83,8 +114,12 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
 export async function setSponsorActive(id: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase.from("sponsors").update({ active }).eq("id", id);
+  if (!UUID.test(id)) return { error: NO_SPONSOR };
+  const { data, error } = await supabase.from("sponsors").update({ active }).eq("id", id).select("id");
   if (error) return { error: ERR_LAND };
+  /* A sponsor struck by another operator is still a row on this screen until
+     it reloads; the update lands on nothing and Postgres calls that success. */
+  if (!data?.length) return { error: NO_SPONSOR };
   return done();
 }
 
@@ -98,18 +133,19 @@ export async function attachSponsor(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   if (!episodeId) return { error: "Pick the episode it rides on." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
+  if (!UUID.test(sponsorId)) return { error: NO_SPONSOR };
 
   const { error } = await supabase.from("episode_sponsors").insert({
     episode_id: episodeId,
     sponsor_id: sponsorId,
-    placement: placement.trim() || null,
+    placement: placement.trim().slice(0, PLACEMENT_MAX) || null,
   });
   if (error) {
-    return {
-      error: /duplicate|unique/i.test(error.message)
-        ? "Already placed on that episode."
-        : ERR_LAND,
-    };
+    if (/duplicate|unique/i.test(error.message)) return { error: "Already placed on that episode." };
+    /* Two foreign keys; the message names the pair rather than guessing. */
+    if (error.code === "23503") return { error: "That episode or sponsor is no longer on the books — reload the page." };
+    return { error: ERR_LAND };
   }
   return done();
 }
@@ -117,12 +153,16 @@ export async function attachSponsor(
 export async function detachSponsor(episodeId: string, sponsorId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
+  if (!UUID.test(sponsorId)) return { error: NO_SPONSOR };
+  const { data, error } = await supabase
     .from("episode_sponsors")
     .delete()
     .eq("episode_id", episodeId)
-    .eq("sponsor_id", sponsorId);
+    .eq("sponsor_id", sponsorId)
+    .select("episode_id");
   if (error) return { error: ERR_LAND };
+  if (!data?.length) return { error: "That activation was already taken down — reload the page." };
   return done();
 }
 
@@ -137,6 +177,8 @@ export async function setAssetsDelivered(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
+  if (!UUID.test(sponsorId)) return { error: NO_SPONSOR };
 
   const { data: sponsor, error: sponsorError } = await supabase
     .from("sponsors")
@@ -180,6 +222,9 @@ export async function compAPass(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   if (!profileId) return { error: "Pick the member the pass is for." };
+  if (!UUID.test(profileId)) return { error: "Pick the member off the list." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
+  if (!UUID.test(sponsorId)) return { error: NO_SPONSOR };
 
   const { error } = await supabase.rpc("comp_a_pass_for_sponsor", {
     p_episode: episodeId,

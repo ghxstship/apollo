@@ -4,6 +4,7 @@ import { moduleTables } from "@/lib/module-tables";
 import { getOperator } from "../../data";
 import { AutomationsClient, type RuleRow } from "./automations-client";
 import type { RuleAction, RuleConditions, TriggerEvent } from "./actions";
+import { LETTERS_A_RULE_CANNOT_FILL, textTemplateNeeds } from "./automation-letters";
 import { must } from "../../staff";
 
 export const metadata: Metadata = { title: "Automations" };
@@ -28,6 +29,9 @@ function readConditions(raw: unknown): RuleConditions {
 interface LetterRecord {
   code: string;
   description: string;
+  /* The registry's own word on whether a rule may send it (since 2026-09-05);
+     LETTERS_A_RULE_CANNOT_FILL is the same list held in code for the gate. */
+  rule_can_send: boolean;
 }
 
 function readAction(raw: unknown): RuleAction {
@@ -36,7 +40,12 @@ function readAction(raw: unknown): RuleAction {
     if (o.kind === "email")
       return { kind: "email", template: typeof o.template === "string" ? o.template : "" };
     if (o.kind === "sms")
-      return { kind: "sms", template: typeof o.template === "string" ? o.template : "" };
+      return {
+        kind: "sms",
+        template: typeof o.template === "string" ? o.template : "",
+        ...(typeof o.title === "string" && o.title ? { title: o.title } : {}),
+        ...(typeof o.body === "string" && o.body ? { body: o.body } : {}),
+      };
     if (o.kind === "webhook")
       return { kind: "webhook", webhookId: typeof o.webhook_id === "string" ? o.webhook_id : "" };
     return {
@@ -54,11 +63,14 @@ export default async function AutomationsPage() {
   const [rulesRes, citiesRes, smsRes, lettersRes, hooksRes, waitingRes] = await Promise.all([
     supabase.from("automations").select("*").order("created_at", { ascending: false }),
     supabase.from("cities").select("slug, name").order("position", { ascending: true }),
-    supabase.from("sms_templates").select("code").eq("active", true).order("code"),
+    /* The map says which payload keys each text reads; the picker shows them
+       and asks for a title and body when the text wants the rule's words. */
+    supabase.from("sms_templates").select("code, parameter_map").eq("active", true).order("code"),
     /* Only a letter the sender can render — the same test run_automations
        applies when the rule fires, asked here so the picker cannot offer a
-       letter that would be refused. */
-    moduleTables(supabase).from("email_templates").select("code, description").eq("active", true).order("code"),
+       letter that would be refused. Registered is not the whole test: a letter
+       whose REQUIRES the rule's payload cannot fill is dropped below. */
+    moduleTables(supabase).from("email_templates").select("code, description, rule_can_send").eq("active", true).order("code"),
     /* Every hook, live or not: a rule pointing at a hook since switched off
        should still name it rather than read as a blank. */
     supabase.from("webhooks").select("id, url, active").order("created_at", { ascending: true }),
@@ -105,11 +117,13 @@ export default async function AutomationsPage() {
         webhooks={hooks.map((h) => ({ id: h.id, url: h.url, active: h.active }))}
         waiting={waiting.length}
         nextRunAt={waiting[0]?.run_at ?? null}
-        smsTemplates={(must(smsRes)).map((t) => t.code)}
-        letters={must(lettersRes as { data: LetterRecord[] | null; error: null }).map((l) => ({
-          code: l.code,
-          description: l.description,
-        }))}
+        smsTemplates={(must(smsRes)).map((t) => ({ code: t.code, needs: textTemplateNeeds(t.parameter_map) }))}
+        letters={must(lettersRes as { data: LetterRecord[] | null; error: null })
+          .filter((l) => l.rule_can_send && !(l.code in LETTERS_A_RULE_CANNOT_FILL))
+          .map((l) => ({
+            code: l.code,
+            description: l.description,
+          }))}
       />
     </div>
   );

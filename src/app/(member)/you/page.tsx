@@ -127,7 +127,11 @@ async function YouBody() {
        the function itself: it refuses a profile that is not yours unless you
        are staff, so this cannot be asked on anyone else's behalf. */
     supabase.rpc("membership_pause_days_used", { p_profile: user.id }),
-    supabase.rpc("club_setting", { p_key: "pause_days_per_year" }),
+    /* pause_days_a_year is the dial guard_the_pause_budget reads. This page
+       asked for pause_days_per_year, a twin the 2026-09-04 migration struck as
+       "read by nothing" — so the allowance line and the day count in the pause
+       dialog vanished for every member while the guard kept enforcing 90. */
+    supabase.rpc("club_setting", { p_key: "pause_days_a_year" }),
     /* Agreements: the state is computed, not stored, so a new published
        version moves everyone to out of date the moment it lands. */
     supabase.rpc("signature_standing", { p_profile_id: user.id }),

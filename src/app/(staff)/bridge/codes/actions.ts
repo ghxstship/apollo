@@ -16,6 +16,7 @@ const CODE_MAX = 32;
 const NOTE_MAX = 200;
 const AMOUNT_MAX_CENTS = 1_000_000;
 const USES_MAX = 100_000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type NewCode = {
   code: string;
@@ -47,33 +48,45 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
   if (input.kind === "amount" && input.value < 100) return { error: "An amount off needs at least a dollar." };
   if (input.kind === "amount" && input.value > AMOUNT_MAX_CENTS)
     return { error: "That is over $10,000 off one pass — check the figure." };
-  if (!Number.isFinite(input.maxUses) || Math.round(input.maxUses) > USES_MAX)
+  /* Refused below one rather than clamped up to it: the number the operator
+     typed is the number the code should carry, or it is not cut. */
+  const uses = Math.round(Number(input.maxUses));
+  if (!Number.isFinite(uses) || uses < 1 || uses > USES_MAX)
     return { error: `Max uses runs 1 to ${USES_MAX.toLocaleString("en-US")}.` };
   if (input.expiresAt && !/^\d{4}-\d{2}-\d{2}$/.test(input.expiresAt))
     return { error: "That expiry date doesn't parse." };
+  /* The form is <input type="date">, so this used to become UTC midnight:
+     a code an operator cut as "expires Sep 1" died at Aug 31, 20:00 EDT —
+     dead for the whole of the day it names, while the badge read it back to
+     them as AUG 31, a day they never typed. Anyone redeeming on the 1st pays
+     list price instead of the comp they were promised.
+
+     An expiry date means the END of that day. Start of the next day on the
+     club's clock, which is the last instant the code is still good. */
+  const expiresAt = input.expiresAt ? endOfDay(input.expiresAt, CLUB_ZONE) : null;
+  if (expiresAt && new Date(expiresAt).getTime() <= Date.now())
+    return { error: "That expiry has already passed — a code needs a day still to come." };
+  /* The episode comes off a list; anything else is a stale screen, and the
+     foreign key would answer it with a constraint name. */
+  const episodeId = (input.episodeId ?? "").trim();
+  if (episodeId && !UUID.test(episodeId)) return { error: "Pick the episode from the list." };
   const note = input.note.trim().slice(0, NOTE_MAX);
 
   const { error } = await supabase.from("promo_codes").insert({
     code,
     kind: input.kind,
     value: input.kind === "comp" ? 0 : Math.round(input.value),
-    episode_id: input.episodeId || null,
-    max_uses: Math.max(1, Math.round(input.maxUses)),
-    /* The form is <input type="date">, so this used to become UTC midnight:
-       a code an operator cut as "expires Sep 1" died at Aug 31, 20:00 EDT —
-       dead for the whole of the day it names, while the badge read it back to
-       them as AUG 31, a day they never typed. Anyone redeeming on the 1st pays
-       list price instead of the comp they were promised.
-
-       An expiry date means the END of that day. Start of the next day on the
-       club's clock, which is the last instant the code is still good. */
-    expires_at: input.expiresAt ? endOfDay(input.expiresAt, CLUB_ZONE) : null,
+    episode_id: episodeId || null,
+    max_uses: uses,
+    expires_at: expiresAt,
     note: note || null,
     active: true,
     created_by: staffId,
   });
   if (error) {
-    return { error: /duplicate|unique/i.test(error.message) ? "That code is already cut." : ERR_LAND };
+    if (/duplicate|unique/i.test(error.message)) return { error: "That code is already cut." };
+    if (error.code === "23503") return { error: "That episode is not on the board." };
+    return { error: ERR_LAND };
   }
   return done();
 }
@@ -81,8 +94,11 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
 export async function setCodeActive(code: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const { error } = await supabase.from("promo_codes").update({ active }).eq("code", code);
+  const target = (code ?? "").trim().toUpperCase();
+  if (!target) return { error: "No such code." };
+  const { data: changed, error } = await supabase.from("promo_codes").update({ active }).eq("code", target).select("code");
   if (error) return { error: ERR_LAND };
+  if (!changed || changed.length === 0) return { error: "No such code." };
   return done();
 }
 

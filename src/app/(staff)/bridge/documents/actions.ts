@@ -33,6 +33,13 @@ const NOTE_MAX = 500;
 const SIGNER_TITLE_MAX = 120;
 const POSITION_MAX = 999;
 
+/* Row ids off the screen and the short codes that key clauses and documents.
+   A malformed id reaches the driver as "invalid input syntax for type uuid",
+   which names a Postgres type at an operator who never chose one; a code off
+   the library reaches it as a foreign key. Both are refused here first. */
+const UUID = /^[0-9a-f-]{36}$/;
+const CODE = /^[a-z0-9][a-z0-9-]{0,59}$/;
+
 function cleanCondition(raw: Record<string, string>): Record<string, string> | string {
   const keys = Object.keys(raw ?? {});
   if (keys.length === 0) return {};
@@ -95,26 +102,40 @@ export async function reviseClause(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  const code = clauseCode.trim().toLowerCase();
+  if (!CODE.test(code)) return { error: "No clause carries that code." };
   if (body.trim().length < 20) return { error: "That is too short to be a clause." };
   if (body.trim().length > BODY_MAX) return { error: "That is too long for one clause — split it." };
+  if (note.trim().length > NOTE_MAX) return { error: `A revision note runs to ${NOTE_MAX} characters.` };
 
-  const { data: latest } = await supabase
+  /* A code with no clause behind it would otherwise reach the database as a
+     foreign key and come back as "That didn't land." */
+  const { data: clause } = await supabase.from("clauses").select("code").eq("code", code).maybeSingle();
+  if (!clause) return { error: "No clause carries that code." };
+
+  const { data: latest, error: readError } = await supabase
     .from("clause_versions")
     .select("version")
-    .eq("clause_code", clauseCode)
+    .eq("clause_code", code)
     .order("version", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (readError) return { error: ERR_LAND };
 
   const next = (latest?.version ?? 0) + 1;
   const { error } = await supabase.from("clause_versions").insert({
-    clause_code: clauseCode,
+    clause_code: code,
     version: next,
     body: body.trim(),
-    note: note.trim().slice(0, NOTE_MAX) || null,
+    note: note.trim() || null,
     published_by: staffId,
   });
-  if (error) return { error: ERR_LAND };
+  if (error) {
+    /* (clause_code, version) is unique. Two operators rewording the same
+       clause at once both read the same "latest" and one of them loses. */
+    if (error.code === "23505") return { error: "Somebody just reworded this clause — reload and read theirs first." };
+    return { error: ERR_LAND };
+  }
   return done();
 }
 
@@ -124,12 +145,21 @@ export async function reviseClause(
 export async function draftNextVersion(documentCode: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  const code = documentCode.trim().toLowerCase();
+  if (!CODE.test(code)) return { error: "No document carries that code." };
 
-  const { data: existing } = await supabase
+  const { data: doc } = await supabase.from("documents").select("code").eq("code", code).maybeSingle();
+  if (!doc) return { error: "No document carries that code." };
+
+  /* A read that fails is not an empty list: treated as one, this would have
+     opened "version 1" of a document with a dozen on the books and been
+     refused as a duplicate — or worse, not been. */
+  const { data: existing, error: readError } = await supabase
     .from("document_versions")
     .select("id, version, status")
-    .eq("document_code", documentCode)
+    .eq("document_code", code)
     .order("version", { ascending: false });
+  if (readError) return { error: ERR_LAND };
 
   if ((existing ?? []).some((v) => v.status === "draft")) {
     return { error: "There is already a draft open for that document." };
@@ -140,25 +170,41 @@ export async function draftNextVersion(documentCode: string): Promise<ActionResu
 
   const { data: created, error } = await supabase
     .from("document_versions")
-    .insert({ document_code: documentCode, version: next, status: "draft" })
+    .insert({ document_code: code, version: next, status: "draft" })
     .select("id")
     .maybeSingle();
-  if (error || !created) return { error: ERR_LAND };
+  if (error) {
+    if (error.code === "23505") return { error: "Somebody just opened a draft of that document — reload." };
+    return { error: ERR_LAND };
+  }
+  if (!created) return { error: ERR_LAND };
 
   if (standing) {
-    const { data: clauses } = await supabase
+    const { data: clauses, error: clauseReadError } = await supabase
       .from("document_clauses")
       .select("clause_version_id, position, condition")
       .eq("document_version_id", standing.id);
-    if (clauses?.length) {
-      await supabase.from("document_clauses").insert(
-        clauses.map((c) => ({
-          document_version_id: created.id,
-          clause_version_id: c.clause_version_id,
-          position: c.position,
-          condition: c.condition,
-        }))
-      );
+    /* The draft exists by now. If the standing clauses did not follow it, say
+       so rather than presenting an empty composer as "opened from the
+       standing version" — the operator would publish a document that says
+       nothing, and the publish guard would be the first to tell them. */
+    const copyError = clauseReadError
+      ? clauseReadError
+      : clauses?.length
+        ? (
+            await supabase.from("document_clauses").insert(
+              clauses.map((c) => ({
+                document_version_id: created.id,
+                clause_version_id: c.clause_version_id,
+                position: c.position,
+                condition: c.condition,
+              }))
+            )
+          ).error
+        : null;
+    if (copyError) {
+      done();
+      return { error: "The draft opened, but the standing clauses did not copy across. Tick them in the composer." };
     }
   }
   return done();
@@ -173,6 +219,9 @@ export async function setDraftClause(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(versionId)) return { error: "No version under that id." };
+  if (!UUID.test(clauseVersionId)) return { error: "That clause wording is not in the library." };
+  if (typeof include !== "boolean") return { error: "A clause is in the draft or it is not." };
 
   const cleaned = cleanCondition(condition);
   if (typeof cleaned === "string") return { error: cleaned };
@@ -186,7 +235,13 @@ export async function setDraftClause(
       .delete()
       .eq("document_version_id", versionId)
       .eq("clause_version_id", clauseVersionId);
-    if (error) return { error: ERR_LAND };
+    if (error) {
+      return {
+        error: /fixed/i.test(error.message)
+          ? "That version is published. Draft the next one to change it."
+          : ERR_LAND,
+      };
+    }
     return done();
   }
 
@@ -197,11 +252,11 @@ export async function setDraftClause(
     condition: cleaned,
   });
   if (error) {
-    return {
-      error: /fixed/i.test(error.message)
-        ? "That version is published. Draft the next one to change it."
-        : ERR_LAND,
-    };
+    if (/fixed/i.test(error.message)) return { error: "That version is published. Draft the next one to change it." };
+    /* Either parent can have gone since the composer loaded: a draft struck
+       from the board, or a clause version that is not in the library. */
+    if (error.code === "23503") return { error: "That draft, or that clause wording, is no longer on the books — reload." };
+    return { error: ERR_LAND };
   }
   return done();
 }
@@ -209,9 +264,11 @@ export async function setDraftClause(
 export async function publishVersion(versionId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(versionId)) return { error: "No version under that id." };
 
   const { error } = await supabase.rpc("publish_document_version", { p_id: versionId });
   if (error) {
+    if (/staff only/i.test(error.message)) return { error: ERR_STAFF };
     if (/no clauses/i.test(error.message)) return { error: "A document with no clauses says nothing." };
     if (/out of use/i.test(error.message))
       return { error: "This draft carries a clause that is out of use. Untick it, then publish." };
@@ -240,12 +297,14 @@ export async function publishVersion(versionId: string): Promise<ActionResult> {
 export async function redactSignature(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: "No signature under that id." };
 
   const { error } = await supabase.rpc("redact_signature", { p_id: id });
   if (error) {
     /* The RPC distinguishes these; the operator should see the difference.
        Telling someone a signature that does not exist has "already" been dealt
        with invites them to retry something that can never succeed. */
+    if (/staff only/i.test(error.message)) return { error: ERR_STAFF };
     if (/already redacted/i.test(error.message)) return { error: "That one is already redacted." };
     if (/no signature under that id/i.test(error.message))
       return { error: "No signature under that id." };
@@ -260,6 +319,7 @@ export async function redactSignature(id: string): Promise<ActionResult> {
 export async function counterSign(signatureId: string, title: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(signatureId)) return { error: "No signature under that id." };
 
   const signedAs = title.trim();
   if (signedAs.length > SIGNER_TITLE_MAX)
@@ -269,6 +329,7 @@ export async function counterSign(signatureId: string, title: string): Promise<A
     p_title: signedAs || null,
   });
   if (error) {
+    if (/staff only/i.test(error.message)) return { error: ERR_STAFF };
     if (/already counter-signed/i.test(error.message)) return { error: "That one is already counter-signed." };
     if (/no such signature|no signature under that id/i.test(error.message))
       return { error: "No signature under that id." };
@@ -291,7 +352,13 @@ export async function sendSeasonCards(
   if (!from || !to) return { error: "A season needs both dates." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to))
     return { error: "Those dates don't parse." };
-  if (new Date(to) <= new Date(from)) return { error: "A season runs forwards." };
+  /* The shape test above lets "2026-13-45" through, and an Invalid Date
+     compares false both ways — so a season with one nonsense date ran
+     forwards, and the RPC was handed NaN. */
+  const fromMs = new Date(from).getTime();
+  const toMs = new Date(to).getTime();
+  if (Number.isNaN(fromMs) || Number.isNaN(toMs)) return { error: "Those dates don't parse." };
+  if (toMs <= fromMs) return { error: "A season runs forwards." };
   if (label.trim().length > TITLE_MAX) return { error: `A season's name runs to ${TITLE_MAX} characters.` };
 
   /* Both ends came from <input type="date"> and became UTC midnight, and the
@@ -304,7 +371,11 @@ export async function sendSeasonCards(
     p_to: endOfDay(to, CLUB_ZONE),
     p_season: label.trim() || null,
   });
-  if (error) return { error: ERR_LAND };
+  if (error) {
+    if (/staff only/i.test(error.message)) return { error: ERR_STAFF };
+    if (/runs forwards/i.test(error.message)) return { error: "A season runs forwards." };
+    return { error: ERR_LAND };
+  }
   revalidatePath("/bridge/documents");
   return { queued: typeof data === "number" ? data : 0 };
 }

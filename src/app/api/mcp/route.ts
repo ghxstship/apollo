@@ -71,9 +71,15 @@ function unauthorized(message: string) {
   });
 }
 
+/* The deployment, not the key: no service role here, so no key can be read
+   and no tool could run. Come back when Shoreside has set it. */
+function notOpen(message: string) {
+  return json(fail(null, INVALID_REQUEST, message), 503, { "Retry-After": "3600" });
+}
+
 export async function POST(request: Request) {
   const verdict = await verifyKey(request);
-  if (!verdict.ok) return unauthorized(verdict.message);
+  if (!verdict.ok) return verdict.status === 503 ? notOpen(verdict.message) : unauthorized(verdict.message);
   const { key, admin } = verdict;
 
   if (overLimit(`mcp:${key.id}`, LIMIT, WINDOW_MS)) {
