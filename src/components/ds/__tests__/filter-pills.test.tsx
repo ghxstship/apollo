@@ -79,12 +79,19 @@ describe("FilterPills", () => {
     expect(pill(/^Afloat/)).toHaveTextContent("12");
   });
 
-  it("keeps a value with nothing behind it in the row, but not choosable", async () => {
+  /* Not choosable, but still reachable. A Tag's press used to carry the HTML
+     `disabled` attribute, which takes the control out of the tab order as
+     well as out of use — and the vetting sheet sets `disabled` from its
+     in-flight flag, so pressing a stance disabled the control under the finger
+     and dropped focus. aria-disabled says the same thing to a reader and
+     costs the hand nothing. */
+  it("keeps a value with nothing behind it in the row, reachable but not choosable", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<Single onChange={onChange} />);
     const dead = pill(/^Nothing here/);
-    expect(dead).toBeDisabled();
+    expect(dead).toHaveAttribute("aria-disabled", "true");
+    expect(dead).not.toBeDisabled();
     await user.click(dead);
     expect(onChange).not.toHaveBeenCalled();
   });

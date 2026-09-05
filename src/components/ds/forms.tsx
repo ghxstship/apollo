@@ -241,8 +241,16 @@ export function SearchField({
   label = "Search", labelHidden = true, onClear, clearLabel = "Clear", pending = false, value, className = "", ...rest
 }: SearchFieldProps) {
   const showClear = !!onClear && (value === undefined || value === null || String(value) !== "");
+  /* `{...rest}` FIRST. It was last, and `aria-busy` is computed from `pending`
+     above it — so a caller who passed an aria-busy of their own silently won,
+     which is the same spread-ordering defect the five other field components
+     carried on aria-describedby and had removed. The five were fixed and this
+     one was not; the field with the busiest state in the kit was the one still
+     letting a caller quietly overwrite it. Everything below the spread is this
+     component's own contract and outranks the caller by design. */
   return (
     <Input
+      {...rest}
       type="search"
       inputMode="search"
       enterKeyHint="search"
@@ -258,7 +266,6 @@ export function SearchField({
           <Icon name="X" size={16} />
         </IconButton>
       ) : null}
-      {...rest}
     />
   );
 }
@@ -280,12 +287,15 @@ export type OptionRowProps = {
   /** Trailing figure — a price, a count, a date. Mono, tabular. */
   figure?: React.ReactNode;
   error?: React.ReactNode;
+  /** The choice is in flight: aria-busy, the change refused, the busy face.
+      See `refuseChange` — busy is not unavailable. */
+  pending?: boolean;
   className?: string; style?: React.CSSProperties;
 } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "children">;
 
 export function OptionRow({
-  kind = "radio", label, description, figure, error, disabled = false, id, className = "", style,
-  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
+  kind = "radio", label, description, figure, error, disabled = false, pending = false, id, className = "", style,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, onClick, onChange, ...rest
 }: OptionRowProps) {
   const auto = React.useId();
   const iid = id || auto;
@@ -293,7 +303,7 @@ export function OptionRow({
   const base = kind === "radio" ? "ls-radio" : "ls-check";
   return (
     <label
-      className={cx(base, "ls-option", disabled && "ls-option--disabled", error && "ls-option--error", className)}
+      className={cx(base, "ls-option", disabled && !pending && "ls-option--disabled", pending && "ls-option--pending", error && "ls-option--error", className)}
       style={style}
     >
       <input
@@ -301,6 +311,10 @@ export function OptionRow({
         id={iid}
         type={kind}
         disabled={disabled}
+        aria-disabled={pending || undefined}
+        aria-busy={pending || undefined}
+        onClick={pending ? refuseChange : onClick}
+        onChange={pending ? ignoreChange : onChange}
         aria-invalid={error ? true : ownInvalid}
         aria-describedby={describedBy(error, description, `${iid}-err`, `${iid}-desc`, ownDescribedBy)}
       />
@@ -330,21 +344,24 @@ export function OptionRow({
 export type CheckboxProps = {
   label?: React.ReactNode; description?: React.ReactNode; error?: React.ReactNode;
   boxed?: boolean; figure?: React.ReactNode;
+  /** The change this box fires is in flight: aria-busy, the change refused,
+      the busy face rather than the unavailable one. See `refuseChange`. */
+  pending?: boolean;
   className?: string; style?: React.CSSProperties;
 } & React.InputHTMLAttributes<HTMLInputElement>;
 
 export function Checkbox({
-  label, description, error, boxed = false, figure, disabled = false, id, className = "", style,
-  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
+  label, description, error, boxed = false, figure, disabled = false, pending = false, id, className = "", style,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, onClick, onChange, ...rest
 }: CheckboxProps) {
   const auto = React.useId();
   const iid = id || auto;
   if (boxed) {
-    return <OptionRow kind="checkbox" label={label} description={description} error={error} figure={figure} disabled={disabled} id={iid} className={className} style={style} aria-describedby={ownDescribedBy} aria-invalid={ownInvalid} {...rest} />;
+    return <OptionRow kind="checkbox" label={label} description={description} error={error} figure={figure} disabled={disabled} pending={pending} id={iid} className={className} style={style} aria-describedby={ownDescribedBy} aria-invalid={ownInvalid} onClick={onClick} onChange={onChange} {...rest} />;
   }
   return (
     <label
-      className={cx("ls-check", disabled && "ls-check--disabled", error && "ls-check--error", className)}
+      className={cx("ls-check", disabled && !pending && "ls-check--disabled", pending && "ls-check--pending", error && "ls-check--error", className)}
       style={style}
     >
       <input
@@ -352,6 +369,10 @@ export function Checkbox({
         id={iid}
         type="checkbox"
         disabled={disabled}
+        aria-disabled={pending || undefined}
+        aria-busy={pending || undefined}
+        onClick={pending ? refuseChange : onClick}
+        onChange={pending ? ignoreChange : onChange}
         aria-invalid={error ? true : ownInvalid}
         /* The description used to render with no id and no association, so
            the one sentence explaining what the reader was agreeing to was
@@ -406,17 +427,66 @@ export function Radio({
   );
 }
 
+/* — pending, on a control that is not a button —
+   The four button components got the busy face and the three toggles did not,
+   so every in-flight switch, checkbox and tag in the product still wore the
+   disabled fade: the same grey a control wears when it is unavailable, on a
+   control that had just accepted the reader's instruction and was carrying it
+   out. Push notifications, the camera consent, the manifest consent, the pass
+   extras, the crew roster and the vetting sheet all read "you cannot do this"
+   at the exact moment they were doing it.
+
+   Busy is not unavailable, and the difference is more than a colour:
+   `disabled` drops a control out of the accessibility tree in several
+   assistive technologies AND out of the tab order, under the finger that just
+   pressed it. So pending is aria-busy plus aria-disabled plus a refused
+   change, never the HTML attribute — the same contract `buttonClass` and the
+   `refusePress` helper in actions.tsx keep, stated once here for the
+   form controls.
+
+   Refusing takes BOTH halves, and the second is not obvious. preventDefault on
+   the click reverts the box before the browser commits the toggle, which is
+   what keeps a controlled input's DOM state in step with the value it is
+   controlled by — but React does not derive a checkbox's `change` from the
+   native change event, it synthesises it FROM THE CLICK, so preventDefault
+   alone leaves onChange firing exactly as if nothing had been refused. The
+   handler has to be withheld as well.
+
+   A no-op rather than `undefined`, because a controlled input with `checked`
+   and no `onChange` earns a React warning at every call site that toggles
+   anything. Space on a focused checkbox dispatches a click, so the keyboard is
+   covered by the same two lines. */
+function refuseChange(e: React.MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+function ignoreChange() {}
+
 /* — Switch — */
 export type SwitchProps = {
-  label?: React.ReactNode; className?: string; style?: React.CSSProperties;
+  label?: React.ReactNode;
+  /** The toggle is in flight: aria-busy, the change refused, the busy face
+      rather than the unavailable one. Pair it with `useOptimistic` so the
+      thumb moves under the finger and stays where it was put. */
+  pending?: boolean;
+  className?: string; style?: React.CSSProperties;
 } & React.InputHTMLAttributes<HTMLInputElement>;
 
 export function Switch({
-  label, disabled = false, className = "", style, ...rest
+  label, disabled = false, pending = false, className = "", style, onClick, onChange, ...rest
 }: SwitchProps) {
   return (
-    <label className={cx("ls-switch", disabled && "ls-switch--disabled", className)} style={style}>
-      <input type="checkbox" role="switch" disabled={disabled} {...rest} />
+    <label className={cx("ls-switch", disabled && !pending && "ls-switch--disabled", pending && "ls-switch--pending", className)} style={style}>
+      <input
+        {...rest}
+        type="checkbox"
+        role="switch"
+        disabled={disabled}
+        aria-disabled={pending || undefined}
+        aria-busy={pending || undefined}
+        onClick={pending ? refuseChange : onClick}
+        onChange={pending ? ignoreChange : onChange}
+      />
       <span className="ls-switch__track"></span>
       {label ? <span className="ls-switch__label">{label}</span> : null}
     </label>

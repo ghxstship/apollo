@@ -194,7 +194,62 @@ function Popover({
   const id = React.useId();
   /* Both panels arrived on --dur-enter and left between two frames. They are
      held for one --dur-exit now, the same way the Dialog holds its veil. */
-  const { present, closing, onAnimationEnd } = useExitPhase(open);
+  const { present, closing, onAnimationEnd } = useExitPhase(open, { ref: boxRef });
+
+  /* — what role="menu" owes the keyboard —
+     The panel declared role="menu" with menuitemradio children and had no
+     onKeyDown anywhere: focus landed on the panel box and Tab walked the
+     items one at a time. A menu is not a Tab stop per item — every reader
+     that hears "menu" reaches for the arrow keys, and Tab is how you leave.
+     Declaring the role and not serving it is worse than the listbox claim it
+     replaced, because this one names the exact keys it then ignores.
+
+     So: roving tabindex. One item in the tab order at a time (the checked one
+     when there is one, so Tab lands where the reader already is), Up/Down
+     wrapping, Home/End to the ends. Tab still leaves the menu, which is what
+     it is for.
+
+     Everything is read off the DOM rather than out of state because the shell
+     does not know what its children are — `children` is the caller's render
+     function, and FilterButton's panel is a form, not a menu. `role` is the
+     one thing that decides whether any of this runs. */
+  const menuItems = React.useCallback(
+    () => Array.from(
+      boxRef.current?.querySelectorAll<HTMLElement>(
+        '[role="menuitem"],[role="menuitemradio"],[role="menuitemcheckbox"]'
+      ) ?? []
+    ),
+    [boxRef]
+  );
+
+  /* Declared after useModal, which focuses the panel box on open; the later
+     effect wins, so focus lands on an item rather than on the box around it.
+     Focusing is a DOM call, not a setState, so nothing cascades. */
+  React.useEffect(() => {
+    if (role !== "menu" || !present) return;
+    const items = menuItems();
+    if (items.length === 0) return;
+    const checked = items.findIndex((el) => el.getAttribute("aria-checked") === "true");
+    const start = checked < 0 ? 0 : checked;
+    items.forEach((el, i) => { el.tabIndex = i === start ? 0 : -1; });
+    items[start].focus({ preventScroll: true });
+  }, [role, present, menuItems]);
+
+  const onPanelKeyDown = (e: React.KeyboardEvent) => {
+    if (role !== "menu") return;
+    const items = menuItems();
+    if (items.length === 0) return;
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    let next: number;
+    if (e.key === "ArrowDown") next = at < 0 ? 0 : (at + 1) % items.length;
+    else if (e.key === "ArrowUp") next = at < 0 ? items.length - 1 : (at - 1 + items.length) % items.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    else return;
+    e.preventDefault();
+    items.forEach((el, i) => { el.tabIndex = i === next ? 0 : -1; });
+    items[next].focus();
+  };
 
   return (
     <span className="ls-pop">
@@ -213,6 +268,7 @@ function Popover({
             aria-label={label}
             aria-hidden={closing || undefined}
             onAnimationEnd={onAnimationEnd}
+            onKeyDown={onPanelKeyDown}
             ref={boxRef}
             tabIndex={-1}
           >
@@ -291,7 +347,13 @@ function SortButton({
        what a reader is promised when it hears "listbox". It says what it is
        now. Each option is a menuitemradio, because picking one is choosing
        among mutually exclusive sorts rather than selecting an item; the panel
-       names itself so the reader knows what the choice is about. */
+       names itself so the reader knows what the choice is about.
+
+       Renaming it was only half the fix and left the worse half standing: the
+       new name promises arrow keys by name where the old one merely promised
+       them by convention, and Tab still walked the options. Popover serves
+       them now — roving tabindex, Up/Down wrapping, Home/End — for every
+       panel that says role="menu". */
     <Popover
       role="menu"
       label="Sort by"

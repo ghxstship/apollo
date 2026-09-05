@@ -42,8 +42,13 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
   /* The slate arrived on --dur-enter and then ceased to exist between two
      frames. It leaves the way the Dialog does: the closing phase holds it
      mounted for one --dur-exit with the --out class on the veil, and the
-     animationend that ends the phase unmounts it. */
-  const { present, closing, onAnimationEnd } = useExitPhase(open);
+     animationend that ends the phase unmounts it.
+
+     `ref` is what keeps the exit honest: the veil goes aria-hidden for that
+     --dur-exit, and Close (or the hit just picked) is inside it. The phase
+     blurs out of the subtree in the same commit, so useModal finds focus on
+     the body and hands it back to the affordance in the chrome. */
+  const { present, closing, onAnimationEnd } = useExitPhase(open, { ref: boxRef });
 
   /* One flat list behind the visual grouping — what the arrow keys walk, plus
      the id → position map the rows read. The rows used to answer "where am I in
@@ -202,7 +207,23 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
           </IconButton>
         </div>
 
-        <div className="gs__body" id={listId} role="listbox" aria-label="Results" aria-busy={busy || undefined}>
+        {/* The listbox holds options and nothing else.
+
+            The scroll box WAS the listbox, and it also held the two-letter
+            hint, the "Nothing by that name" line — which carried a role of
+            its own, a status region nested inside a listbox — and the
+            Skeleton. A listbox may contain options and groups of options; a
+            reader told "listbox, 3 items" and handed a paragraph gets no
+            useful answer to "what is in this list", and several readers drop
+            the stray children silently, which is how the empty-result message
+            ends up announced to nobody at all.
+
+            So the box keeps the scroll, the padding and the aria-busy dimming
+            (search.css reads them off .gs__body), and the listbox shrinks to
+            the sections. It is always in the DOM so the combobox's
+            aria-controls has something to point at, and `hidden` while there
+            is nothing to show. */}
+        <div className="gs__body" aria-busy={busy || undefined}>
           {q.trim().length < 2 ? (
             <p className="gs__hint">
               Type two letters. Everything the club knows about is in here — the
@@ -212,33 +233,36 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
             <Skeleton lines={3} height="40px" />
           ) : sections.length === 0 ? (
             <p className="gs__hint" role="status">Nothing by that name.</p>
-          ) : (
-            sections.map((s) => (
-              <section key={s.kind} className="gs__sec" role="group" aria-labelledby={`gs-sec-${s.kind}`}>
-                <span className="gs__seclabel" id={`gs-sec-${s.kind}`}>{s.label}</span>
-                {s.items.map((hit) => {
-                  const i = indexById.get(hit.id) ?? -1;
-                  return (
-                    /* ds-exempt: a listbox option (role=option) the combobox's aria-activedescendant names — a selectable row, not a command; the kit has no Listbox and a Button here would announce as one */
-                    <button
-                      key={hit.id}
-                      id={optId(hit.id)}
-                      type="button"
-                      role="option"
-                      aria-selected={i === cursor}
-                      className={"gs__hit" + (i === cursor ? " gs__hit--on" : "")}
-                      onMouseEnter={() => setCursor(i)}
-                      onFocus={() => setCursor(i)}
-                      onClick={() => go(hit.href)}
-                    >
-                      <span className="gs__hitt">{hit.title}</span>
-                      {hit.meta ? <span className="gs__hitm">{hit.meta}</span> : null}
-                    </button>
-                  );
-                })}
-              </section>
-            ))
-          )}
+          ) : null}
+          <div id={listId} role="listbox" aria-label="Results" hidden={!showList}>
+            {showList
+              ? sections.map((s) => (
+                <section key={s.kind} className="gs__sec" role="group" aria-labelledby={`gs-sec-${s.kind}`}>
+                  <span className="gs__seclabel" id={`gs-sec-${s.kind}`}>{s.label}</span>
+                  {s.items.map((hit) => {
+                    const i = indexById.get(hit.id) ?? -1;
+                    return (
+                      /* ds-exempt: a listbox option (role=option) the combobox's aria-activedescendant names — a selectable row, not a command; the kit has no Listbox and a Button here would announce as one */
+                      <button
+                        key={hit.id}
+                        id={optId(hit.id)}
+                        type="button"
+                        role="option"
+                        aria-selected={i === cursor}
+                        className={"gs__hit" + (i === cursor ? " gs__hit--on" : "")}
+                        onMouseEnter={() => setCursor(i)}
+                        onFocus={() => setCursor(i)}
+                        onClick={() => go(hit.href)}
+                      >
+                        <span className="gs__hitt">{hit.title}</span>
+                        {hit.meta ? <span className="gs__hitm">{hit.meta}</span> : null}
+                      </button>
+                    );
+                  })}
+                </section>
+              ))
+              : null}
+          </div>
         </div>
       </div>
     </div>

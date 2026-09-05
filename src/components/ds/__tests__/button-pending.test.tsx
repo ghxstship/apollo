@@ -77,7 +77,8 @@ describe("IconButton pending", () => {
     );
     const btn = screen.getByRole("button", { name: "Saving" });
     expect(btn).toHaveAttribute("aria-busy", "true");
-    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute("aria-disabled", "true");
+    expect(btn).not.toBeDisabled();
   });
 
   it("keeps its own label when no pendingLabel is given", () => {
@@ -166,5 +167,101 @@ describe("disabled is not pending", () => {
     const btn = screen.getByRole("button");
     expect(btn).toBeDisabled();
     expect(btn).not.toHaveAttribute("aria-busy");
+  });
+});
+
+/* THE REGRESSION THIS FILE EXISTS FOR, second time around.
+
+   The first remediation gave the three button components `pending` and then
+   spelled it `disabled={disabled || pending}` — which is the same defect it
+   was fixing, one level down. A control carrying the HTML `disabled` attribute
+   is dropped from the accessibility tree in several assistive technologies, so
+   the aria-busy and the swapped pendingLabel that the whole state exists to
+   announce were announced to nobody; and the attribute lands on the control
+   UNDER THE FINGER THAT PRESSED IT, which drops focus and takes the button out
+   of the tab order until the server answers.
+
+   So the contract is: while pending, a button STAYS in the tree, STAYS
+   focusable, is aria-disabled and aria-busy, and refuses the press in JS —
+   including the form submission the attribute used to refuse natively. Each
+   of the three is held to all of it, because they have drifted before. */
+describe("pending is announced, not hidden", () => {
+  const each = [
+    ["Button", (p: { pending?: boolean; onClick?: () => void }) => <Button {...p}>Save</Button>],
+    ["TextButton", (p: { pending?: boolean; onClick?: () => void }) => <TextButton {...p}>Save</TextButton>],
+    ["IconButton", (p: { pending?: boolean; onClick?: () => void }) => (
+      <IconButton label="Save" {...p}><span aria-hidden="true">◆</span></IconButton>
+    )],
+  ] as const;
+
+  for (const [name, Render] of each) {
+    it(`${name} keeps its accessible name and exposes aria-busy while in flight`, () => {
+      render(Render({ pending: true }));
+      /* getByRole with a name is the assertion: a control the tree has dropped
+         cannot be found by role at all, and one whose name went missing cannot
+         be found by name. Both halves fail loudly if `disabled` comes back. */
+      const el = screen.getByRole("button", { name: "Save" });
+      expect(el).toHaveAttribute("aria-busy", "true");
+      expect(el).toHaveAttribute("aria-disabled", "true");
+      expect(el).not.toBeDisabled();
+    });
+
+    it(`${name} stays focusable while in flight`, () => {
+      render(Render({ pending: true }));
+      const el = screen.getByRole("button", { name: "Save" });
+      el.focus();
+      expect(el).toHaveFocus();
+    });
+  }
+});
+
+/* `disabled` was refusing the FORM SUBMIT natively, and that is the half a
+   handler-only guard drops on the floor: these are submit buttons, and a
+   pending Save that stopped calling its own onClick while still posting the
+   form twice would be worse than no guard at all. */
+describe("pending refuses the submit, not just the handler", () => {
+  it("a pending submit button does not submit its form a second time", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <Button type="submit" pending pendingLabel="Saving…">Save</Button>
+      </form>
+    );
+    await user.click(screen.getByRole("button", { name: "Saving…" }));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("but submits normally at rest", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <Button type="submit">Save</Button>
+      </form>
+    );
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+});
+
+/* TextButton swapped its label outright where Button lays both copies in one
+   grid cell, so a pending TextButton was as wide as whichever word was
+   showing — and a TextButton lives in running copy, where that is the
+   sentence reflowing under the reader. */
+describe("TextButton reserves its width", () => {
+  /* The copy is the kit's own example of a TextButton and is deliberately
+     multi-word: the icons gate reads any quoted PascalCase word in this
+     directory as a glyph reference, and a one-word label like "Send" is also
+     the name of a Lucide icon. */
+  it("holds both copies in the DOM at rest, and names exactly one of them", () => {
+    const { rerender } = render(<TextButton pendingLabel="Resending…">Resend the code</TextButton>);
+    const btn = screen.getByRole("button", { name: "Resend the code" });
+    expect(btn).toHaveTextContent("Resend the code");
+    expect(btn).toHaveTextContent("Resending…");
+
+    rerender(<TextButton pending pendingLabel="Resending…">Resend the code</TextButton>);
+    expect(screen.getByRole("button", { name: "Resending…" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Resend the code" })).toBeNull();
   });
 });

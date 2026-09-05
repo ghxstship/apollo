@@ -1,3 +1,4 @@
+import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { Dialog, Toast } from "../feedback";
@@ -316,5 +317,84 @@ describe("useExitPhase", () => {
     expect(screen.getByTestId("panel")).toHaveAttribute("data-closing", "no");
     tick(SAFETY_MS * 4);
     expect(screen.getByTestId("panel")).toBeInTheDocument();
+  });
+});
+
+
+/* — the aria-hidden focus trap, the regression this option exists for —
+
+   Five overlays set `aria-hidden={closing}` on a subtree that still held the
+   control that had just been pressed: Escape from the filter panel, the site
+   menu's ×, a sort pick, the Toast's ×, the search slate's Close. Dialog alone
+   had a private layout effect that blurred first; the other four had nothing,
+   so for one --dur-exit a reader's focus sat inside a subtree it had been told
+   to ignore — and then the node unmounted and focus fell to <body>, because
+   useModal only restores the opener when focus has already fallen through to
+   nowhere.
+
+   The blur belongs to the phase, not to whichever consumer thought of it, so
+   it lives behind `ref` and every consumer gets it in the same commit that
+   sets the flag. It is a LAYOUT effect for that reason: passive would land
+   after useModal's cleanup and the restore would already have been skipped. */
+function FocusHarness({ open, wire }: { open: boolean; wire: boolean }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { present, closing, onAnimationEnd } = useExitPhase(open, wire ? { ref } : undefined);
+  if (!present) return <p>gone</p>;
+  return (
+    <div
+      ref={ref}
+      data-testid="panel"
+      aria-hidden={closing || undefined}
+      onAnimationEnd={onAnimationEnd}
+    >
+      <button type="button">Close</button>
+    </div>
+  );
+}
+
+describe("useExitPhase drops focus out of the hidden subtree", () => {
+  it("blurs the focused descendant in the same commit that sets closing", () => {
+    const { rerender } = render(<FocusHarness open wire />);
+    const btn = screen.getByRole("button", { name: "Close" });
+    act(() => btn.focus());
+    expect(btn).toHaveFocus();
+
+    rerender(<FocusHarness open={false} wire />);
+    /* Same commit: the panel is aria-hidden AND focus has already left it. */
+    expect(screen.getByTestId("panel")).toHaveAttribute("aria-hidden", "true");
+    expect(btn).not.toHaveFocus();
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("leaves focus alone while the surface is open", () => {
+    render(<FocusHarness open wire />);
+    const btn = screen.getByRole("button", { name: "Close" });
+    act(() => btn.focus());
+    expect(btn).toHaveFocus();
+  });
+
+  it("touches nothing when no ref is given — the option is opt-in", () => {
+    const { rerender } = render(<FocusHarness open wire={false} />);
+    const btn = screen.getByRole("button", { name: "Close" });
+    act(() => btn.focus());
+    rerender(<FocusHarness open={false} wire={false} />);
+    expect(btn).toHaveFocus();
+  });
+
+  it("leaves focus outside the subtree where it is", () => {
+    const Tree = ({ open }: { open: boolean }) => (
+      <>
+        <button type="button">Opener</button>
+        <FocusHarness open={open} wire />
+      </>
+    );
+    const { rerender } = render(<Tree open />);
+    const opener = screen.getByRole("button", { name: "Opener" });
+    act(() => opener.focus());
+    rerender(<Tree open={false} />);
+    /* The panel must not reach outside itself for focus it does not own — a
+       hook that blurred document.activeElement unconditionally would take the
+       caret out of the page every time any overlay anywhere closed. */
+    expect(opener).toHaveFocus();
   });
 });

@@ -19,11 +19,21 @@
    fade, which said "unavailable" about a control that was working. */
 .ls-btn__stack{display:inline-grid;align-items:center;justify-items:center}
 .ls-btn__stack>*{grid-area:1/1;display:inline-flex;align-items:center;gap:var(--space-2);white-space:nowrap}
-.ls-btn:not(.ls-btn--pending) .ls-btn__alt,.ls-btn--pending .ls-btn__label{visibility:hidden}
+/* TextButton borrows the same two cells. It used to swap the label outright,
+   so a pending TextButton was as wide as whichever word was showing and the
+   line of running copy it sits in reflowed under the reader. */
+.ls-btn:not(.ls-btn--pending) .ls-btn__alt,.ls-btn--pending .ls-btn__label,
+.ls-textbtn:not(.ls-textbtn--pending) .ls-btn__alt,.ls-textbtn--pending .ls-btn__label{visibility:hidden}
 .ls-btn--disabled{opacity:var(--opacity-disabled);pointer-events:none}
 /* Press: a give, not a drop. translateY(1px) moved the label against its
-   neighbours in a row; a scale keeps the button where it is. */
-.ls-btn:active{transform:scale(var(--press))}
+   neighbours in a row; a scale keeps the button where it is.
+   Guarded on aria-disabled as well as the attribute, which its six siblings
+   already were and this one was not: a pending Button or a LinkButton carries
+   no `disabled` (an anchor has none to carry, and a busy button must stay in
+   the tree and in the tab order), so an unguarded rule scaled the control
+   under a press it was about to refuse — the one animation in the kit that
+   says "accepted" playing on the one press that is not. */
+.ls-btn:not([disabled]):not([aria-disabled="true"]):active{transform:scale(var(--press))}
 .ls-btn[disabled]{opacity:var(--opacity-disabled);pointer-events:none}
 /* The three heights are the control scale — the md button is the input's 44px,
    so a field and the button beside it in a toolbar sit on one line. */
@@ -65,7 +75,7 @@
 
 /* — IconButton — */
 .ls-iconbtn{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);cursor:pointer;border:1px solid transparent;transition:background var(--dur-hover) var(--ease-hover),color var(--dur-hover) var(--ease-hover),border-color var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover);flex:none;position:relative}
-.ls-iconbtn:active{transform:scale(var(--press))}
+.ls-iconbtn:not([disabled]):not([aria-disabled="true"]):active{transform:scale(var(--press))}
 .ls-iconbtn[disabled],.ls-iconbtn--disabled{opacity:var(--opacity-disabled);pointer-events:none}
 .ls-iconbtn--sm{width:var(--control-sm);height:var(--control-sm)}
 .ls-iconbtn--md{width:var(--control-md);height:var(--control-md)}
@@ -253,10 +263,10 @@
    pill's own +2px ring is drawn by .ls-tag--click:focus-visible, which no
    longer fires now that the span is not focusable). */
 .ls-tag__press{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:var(--space-2);align-self:stretch;flex:1 1 auto;min-width:0;cursor:inherit;transition:transform var(--dur-hover) var(--ease-hover)}
-.ls-tag__press[disabled]{cursor:default}
+.ls-tag__press[disabled],.ls-tag__press[aria-disabled="true"]{cursor:default}
 /* The press lives on the inner control, not on the pill: the pill is the face
    and the button inside it is the thing being pushed. */
-.ls-tag__press:not([disabled]):active{transform:scale(var(--press))}
+.ls-tag__press:not([disabled]):not([aria-disabled="true"]):active{transform:scale(var(--press))}
 .ls-tag__press{position:relative}
 .ls-tag:has(>.ls-tag__press){padding-inline-start:0}
 .ls-tag:has(>.ls-tag__press):not(:has(>.ls-tag__x)){padding-inline-end:0}
@@ -791,7 +801,7 @@
    until hovered; `danger` is the destructive step in text form. */
 .ls-textbtn{display:inline-flex;align-items:center;gap:var(--space-1);min-height:24px;font-family:var(--font-sans);font-weight:500;letter-spacing:var(--tracking-body);color:var(--text-body);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;text-decoration-color:var(--border-strong);white-space:nowrap;transition:color var(--dur-hover) var(--ease-hover),text-decoration-color var(--dur-hover) var(--ease-hover),opacity var(--dur-hover) var(--ease-hover),transform var(--dur-hover) var(--ease-hover)}
 .ls-textbtn:hover{text-decoration-color:currentColor}
-.ls-textbtn:not([disabled]):active{transform:scale(var(--press))}
+.ls-textbtn:not([disabled]):not([aria-disabled="true"]):active{transform:scale(var(--press))}
 .ls-textbtn--md{font-size:var(--text-sm)}
 .ls-textbtn--sm{font-size:var(--text-xs)}
 .ls-textbtn--quiet{color:var(--text-faint)}
@@ -810,11 +820,14 @@
      unavailable when it was working — the opposite of what happened.
 
      So: full colour, a progress cursor, and a mark that moves. pointer-events
-     goes back to auto because the native `disabled` attribute is what actually
-     refuses the click (a disabled <button> ignores one by itself), and
-     pointer-events:none would take the cursor with it — the one thing the state
-     has to be able to show. LinkButton is an anchor with no such attribute and
-     refuses the click in JS instead.
+     goes back to auto because pointer-events:none would take the cursor with
+     it — the one thing the state has to be able to show. Nothing here is
+     refused by the cascade or by the UA: the four components carry
+     aria-disabled rather than the HTML attribute (a `disabled` control is
+     dropped from the accessibility tree in several assistive technologies, so
+     the aria-busy and the pendingLabel this face exists to accompany were
+     announced to nobody) and refuse the press in JS, the way LinkButton always
+     had to because an anchor has no such attribute.
 
      The mark is a 2px shuttle drawn as a background sweep on a pseudo: no DOM,
      nothing a caller's inline style can reset, and it inherits the label's
@@ -822,7 +835,8 @@
      prefers-reduced-motion it stops travelling and rests as a quiet static rule
      — base.css collapses the duration, this states what is left. — */
 .ls-btn--pending,.ls-iconbtn--pending,.ls-textbtn--pending,
-.ls-btn--pending[disabled],.ls-iconbtn--pending[disabled],.ls-textbtn--pending[disabled]{opacity:1;pointer-events:auto;cursor:progress}
+.ls-btn--pending[disabled],.ls-iconbtn--pending[disabled],.ls-textbtn--pending[disabled],
+.ls-btn--pending[aria-disabled="true"],.ls-iconbtn--pending[aria-disabled="true"],.ls-textbtn--pending[aria-disabled="true"]{opacity:1;pointer-events:auto;cursor:progress}
 .ls-btn--pending:before,.ls-iconbtn--pending:before,.ls-textbtn--pending:before{content:"";position:absolute;bottom:2px;height:2px;border-radius:var(--radius-pill);background:linear-gradient(90deg,transparent,currentColor,transparent) no-repeat;background-size:45% 100%;background-position:50% 100%;animation:ls-pending-shuttle var(--dur-cine) var(--ease-inout) infinite;pointer-events:none}
 @keyframes ls-pending-shuttle{from{background-position:-100% 100%}to{background-position:200% 100%}}
 /* Inset to the label's own width so the bar never crosses the pill's curve. */
@@ -835,6 +849,42 @@
 .ls-textbtn--pending:before{inset-inline:0;bottom:0}
 @media (prefers-reduced-motion:reduce){
   .ls-btn--pending:before,.ls-iconbtn--pending:before,.ls-textbtn--pending:before{animation:none;background-size:100% 100%;opacity:.45}
+}
+
+/* — Pending, on the controls that are not buttons —
+     Switch, Checkbox, OptionRow and Tag fire server actions as often as any
+     button does, and until now every one of them expressed the round trip as
+     `disabled`: the unavailable fade, on a control that had just accepted the
+     instruction. Push notifications, both consents, the pass extras, the crew
+     roster and the vetting sheet all told the reader "you cannot do this" at
+     the moment they were doing it.
+
+     The face is the button family's, said in the terms these controls have:
+     full colour rather than the fade, a progress cursor over the whole row
+     (the label is part of the target on a <label>-wrapped control), and the
+     same shuttle on the part that moves. The disabled fade is not applied at
+     all while pending — the components drop `--disabled` in favour of
+     `--pending`, exactly as buttonClass does, so the two faces can never
+     compose into a control that reads as both. */
+.ls-switch--pending,.ls-check--pending,.ls-option--pending,.ls-tag--pending{opacity:1;cursor:progress}
+.ls-switch--pending input,.ls-check--pending input,.ls-option--pending input,.ls-tag--pending .ls-tag__press{cursor:progress}
+/* The switch says it with its track: the thumb stays where the optimistic
+   update put it and the rail carries the movement instead. */
+.ls-switch--pending .ls-switch__track{background-image:linear-gradient(90deg,transparent,var(--wash-ink),transparent);background-repeat:no-repeat;background-size:45% 100%;animation:ls-pending-shuttle var(--dur-cine) var(--ease-inout) infinite}
+/* Tag is a pill with a border, so the shuttle rides the border colour rather
+   than crossing the label. */
+.ls-tag--pending{position:relative}
+/* Inset to the label, so the bar never crosses the pill's corner — and never
+   clipped, because the coarse-pointer touch pseudo on .ls-tag__press reaches
+   outside the pill and an overflow:hidden here would cut the target down. */
+.ls-tag--pending:after{content:"";position:absolute;inset-inline:var(--space-3);bottom:1px;height:2px;background:linear-gradient(90deg,transparent,currentColor,transparent) no-repeat;background-size:45% 100%;animation:ls-pending-shuttle var(--dur-cine) var(--ease-inout) infinite;pointer-events:none}
+/* The box and the row have no rail of their own to animate, so the mark is the
+   mark itself, breathing. */
+.ls-check--pending .ls-check__box,.ls-option--pending .ls-check__box,.ls-option--pending .ls-radio__dot{animation:ls-pulse var(--dur-cine) var(--ease-inout) infinite alternate}
+@media (prefers-reduced-motion:reduce){
+  .ls-switch--pending .ls-switch__track,.ls-tag--pending:after,
+  .ls-check--pending .ls-check__box,.ls-option--pending .ls-check__box,.ls-option--pending .ls-radio__dot{animation:none}
+  .ls-tag--pending:after{background-size:100% 100%;opacity:.45}
 }
 
 /* — Skeleton — the shape of what is coming, holding its own space.

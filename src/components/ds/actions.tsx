@@ -5,14 +5,36 @@ import { Icon, type IconName } from "./icon";
 import { buttonClass, cx } from "./class";
 import { THEME_STORAGE_KEY } from "@/lib/brand";
 
+/* — the in-flight refusal —
+   A busy control refuses the second press, and it has to do it WITHOUT the
+   HTML `disabled` attribute.
+
+   `disabled` was doing this work natively and doing two other things with it:
+   several assistive technologies drop a disabled control out of the
+   accessibility tree entirely, so the aria-busy and the swapped pendingLabel
+   that pending exists to announce were announced to nobody — and the control
+   was disabled UNDER THE FINGER THAT PRESSED IT, which drops focus and takes
+   the button out of the tab order until the server answers. A reader who
+   presses Save hears silence, then finds themselves at the top of the page.
+
+   So pending is aria-disabled plus this handler, which is what LinkButton
+   already did because an anchor left it no choice. preventDefault matters as
+   much as the early return: these are submit buttons, and refusing the React
+   handler while letting the form submit again would be worse than not
+   refusing at all. */
+function refusePress(e: React.MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
 /* — Button —
    `pending` is the in-flight state of the action the button fires: it sets
-   aria-busy, disables the control, and — when `pendingLabel` is given — swaps
-   the label for it WITHOUT the button changing width. Both labels are laid in
-   the same grid cell and the inactive one is hidden but still measured, so the
-   button is as wide as the wider of the two from the first paint and nothing
-   beside it moves when the state flips. Without `pendingLabel` the label stays
-   and only the state changes.
+   aria-busy, refuses further presses, and — when `pendingLabel` is given —
+   swaps the label for it WITHOUT the button changing width. Both labels are
+   laid in the same grid cell and the inactive one is hidden but still
+   measured, so the button is as wide as the wider of the two from the first
+   paint and nothing beside it moves when the state flips. Without
+   `pendingLabel` the label stays and only the state changes.
 
      <Button pending={busy} pendingLabel="Saving…">Save</Button>
 
@@ -27,7 +49,8 @@ export type ButtonProps = {
      neighbour in the same row is `outline` or `ghost`. */
   variant?: "primary" | "gold" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
   inverse?: boolean; fullWidth?: boolean;
-  /** The action is in flight: aria-busy, disabled, label swapped for `pendingLabel` if given. */
+  /** The action is in flight: aria-busy, the press refused, label swapped for
+      `pendingLabel` if given. Not `disabled` — see refusePress above. */
   pending?: boolean;
   /** Shown in place of the children while `pending`. Width is reserved for both. */
   pendingLabel?: React.ReactNode;
@@ -35,11 +58,19 @@ export type ButtonProps = {
 
 export function Button({
   variant = "primary", size = "md", inverse = false, fullWidth = false,
-  disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
+  disabled = false, pending = false, pendingLabel, type = "button", className = "", children, onClick, ...rest
 }: ButtonProps) {
   const cls = buttonClass({ base: "ls-btn", variant, size, inverse, fullWidth, disabled, pending, className });
   return (
-    <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
+    <button
+      type={type}
+      disabled={disabled}
+      aria-disabled={pending || undefined}
+      aria-busy={pending || undefined}
+      className={cls}
+      {...rest}
+      onClick={pending ? refusePress : onClick}
+    >
       {pendingLabel == null ? children : (
         <span className="ls-btn__stack">
           <span className="ls-btn__label" aria-hidden={pending || undefined}>{children}</span>
@@ -51,20 +82,36 @@ export function Button({
 }
 
 /* — IconButton —
-   `pending` sets aria-busy and disables; `pendingLabel` replaces the accessible
-   name while in flight ("Saving" for "Save"). The glyph is the caller's and is
-   not swapped — an icon button is one width by construction. */
+   `pending` sets aria-busy and refuses the press; `pendingLabel` replaces the
+   accessible name while in flight ("Saving" for "Save"). The glyph is the
+   caller's and is not swapped — an icon button is one width by construction. */
 export type IconButtonProps = {
   label: string; variant?: "solid" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg"; inverse?: boolean;
+  /** The action is in flight: aria-busy, the press refused, the accessible
+      name swapped for `pendingLabel` if given. Not `disabled`. */
   pending?: boolean; pendingLabel?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 export function IconButton({
-  label, variant = "outline", size = "md", inverse = false, disabled = false, pending = false, pendingLabel, className = "", children, ...rest
+  label, variant = "outline", size = "md", inverse = false, disabled = false, pending = false, pendingLabel, className = "", children, onClick, ...rest
 }: IconButtonProps) {
   const name = pending && pendingLabel ? pendingLabel : label;
   const cls = buttonClass({ base: "ls-iconbtn", variant, size, inverse, disabled, pending, className });
-  return <button type="button" aria-label={name} title={name} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>{children}</button>;
+  return (
+    <button
+      type="button"
+      aria-label={name}
+      title={name}
+      disabled={disabled}
+      aria-disabled={pending || undefined}
+      aria-busy={pending || undefined}
+      className={cls}
+      {...rest}
+      onClick={pending ? refusePress : onClick}
+    >
+      {children}
+    </button>
+  );
 }
 
 /* — LinkButton —
@@ -119,9 +166,7 @@ export function LinkButton({
      here rather than by the cascade. In either off state the caller's own
      onClick is replaced, not merely preceded: an anchor that is busy or gated
      should do nothing at all when it is clicked. */
-  const onClick = off
-    ? (e: React.MouseEvent<HTMLAnchorElement>) => { e.preventDefault(); }
-    : rest.onClick;
+  const onClick = off ? refusePress : rest.onClick;
   const body = pendingLabel == null ? children : (
     <span className="ls-btn__stack">
       <span className="ls-btn__label" aria-hidden={pending || undefined}>{children}</span>
@@ -145,16 +190,38 @@ export function LinkButton({
      danger   the destructive step in text form (Remove, Revoke) */
 export type TextButtonProps = {
   tone?: "default" | "quiet" | "danger"; size?: "sm" | "md";
+  /** The action is in flight: aria-busy, the press refused, label swapped for
+      `pendingLabel` if given. Width is reserved for both. Not `disabled`. */
   pending?: boolean; pendingLabel?: React.ReactNode;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 export function TextButton({
-  tone = "default", size = "md", disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
+  tone = "default", size = "md", disabled = false, pending = false, pendingLabel, type = "button", className = "", children, onClick, ...rest
 }: TextButtonProps) {
   const cls = buttonClass({ base: "ls-textbtn", variant: tone, size, disabled, pending, className });
   return (
-    <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
-      {pending && pendingLabel != null ? pendingLabel : children}
+    <button
+      type={type}
+      disabled={disabled}
+      aria-disabled={pending || undefined}
+      aria-busy={pending || undefined}
+      className={cls}
+      {...rest}
+      onClick={pending ? refusePress : onClick}
+    >
+      {/* The same two-cell stack Button and LinkButton use, and for the same
+          reason: swapping the label outright makes the control as wide as
+          whichever word is showing, so "Undo" becoming "Undoing…" shoves
+          everything after it along the line — in running copy, which is where
+          a TextButton lives, that is the sentence reflowing under the reader.
+          Both copies are laid in one grid cell, the inactive one hidden but
+          still measured. */}
+      {pendingLabel == null ? children : (
+        <span className="ls-btn__stack">
+          <span className="ls-btn__label" aria-hidden={pending || undefined}>{children}</span>
+          <span className="ls-btn__alt" aria-hidden={!pending || undefined}>{pendingLabel}</span>
+        </span>
+      )}
     </button>
   );
 }

@@ -35,23 +35,18 @@ export function Dialog({
      The phase itself is useExitPhase, which is this logic named. Dialog wrote
      it first and four other overlays copied it; it lives in one file now so a
      sixth cannot drift. */
-  const { present, closing, onAnimationEnd } = useExitPhase(open);
   /* The veil goes aria-hidden for the whole exit, and the × that was just
      pressed is INSIDE it — so for one --dur-exit a screen reader's focus sat
      on a control in a subtree it had been told to ignore, which is the
      aria-hidden violation with the worst failure mode: the reader is left
      pointing at nothing and most of them say nothing at all about it.
 
-     Focus is dropped here, in a LAYOUT effect, so it happens in the same
-     commit that sets the flag and before useModal's own (passive) cleanup
-     runs — which then finds focus on the body and hands it back to the opener,
-     exactly as it does when a dialog is dismissed by Escape. */
+     `ref` is what drops it. Dialog carried its own layout effect for this and
+     the other four overlays carried nothing, so four of the five still hid a
+     subtree that held focus; the blur belongs to the phase, not to whichever
+     consumer happened to think of it. See useExitPhase's `ref`. */
+  const { present, closing, onAnimationEnd } = useExitPhase(open, { ref: boxRef });
   const mounted = useMounted();
-  React.useLayoutEffect(() => {
-    if (!closing) return;
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && boxRef.current?.contains(active)) active.blur();
-  }, [closing, boxRef]);
   /* Portalled to the document root. The veil is z-index 1000 and the member
      tab bar is 300, but z-index only orders siblings within a stacking
      context — rendered in place, the dialog sat inside one the tab bar was not
@@ -266,7 +261,14 @@ export function Toast({
      the exit however the phase ended, and `close` is the trigger the clock and
      the × reach for — a toast is the one surface that decides to leave on its
      own rather than being told to by a prop. */
-  const { present, closing, onAnimationEnd, close } = useExitPhase(open, { onClosed: onClose });
+  /* The toast's own element, so the phase can take focus out of it before it
+     goes aria-hidden — the × that dismissed the toast is inside it, and a
+     reader left focused on a control in a hidden subtree hears nothing at all.
+     Toast is the one overlay with no opener to hand focus back to, so what it
+     gets is the half that matters: focus leaves the subtree rather than being
+     stranded in it. */
+  const toastRef = React.useRef<HTMLDivElement>(null);
+  const { present, closing, onAnimationEnd, close } = useExitPhase(open, { onClosed: onClose, ref: toastRef });
   /* The clock. Armed on mount and whenever `duration` changes; a toast whose
      message changes keeps its original deadline, which is what a caller who
      updates "Saving…" to "Saved" expects. */
@@ -324,6 +326,7 @@ export function Toast({
       className={cx("ls-toast", "ls-toast--" + tone, fixed && "ls-toast--fixed", closing && "ls-toast--out", className)}
       style={style} role={ownRole} aria-hidden={closing || undefined}
       onAnimationEnd={onAnimationEnd}
+      ref={toastRef}
     >
       <span className="ls-toast__rule"></span>
       <span ref={msgRef}>{message}</span>

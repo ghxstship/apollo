@@ -99,23 +99,50 @@ export function Badge({
    role, no tabIndex and no key handling.
 
    `disabled` keeps a clickable Tag in the row — so a filter axis does not
-   reflow when one value has nothing behind it — and disables the inner press
-   button. On a Tag with nothing to press it is the span's aria-disabled that
-   says so, since there is no control to carry it. */
+   reflow when one value has nothing behind it — and refuses the inner press
+   button. It is aria-disabled rather than the HTML attribute, for the same
+   reason LinkButton is: a `disabled` control is removed from the tab order,
+   and the press that disabled it was made WITH THE FINGER OR THE KEY THAT WAS
+   ON IT. The vetting sheet passes `disabled={pending}` on every stance and
+   every drink, so picking one dropped focus on the spot and took the whole
+   axis out of the tab order until the server answered — the old role="button"
+   span, for all its faults, at least stayed focusable. aria-disabled says the
+   same thing to a reader and takes nothing away from the hand.
+
+   `pending` is that same round trip named for what it is. A tag that is
+   waiting on the server is BUSY, not unavailable: full colour, a progress
+   cursor, aria-busy, and the press refused until the answer lands — the
+   contract the four button components already keep. Reach for it wherever a
+   toggle fires a server action; `disabled` is for a value that has nothing
+   behind it. */
 export type TagProps = {
   active?: boolean; disabled?: boolean;
+  /** The action this tag fires is in flight: aria-busy, the press refused,
+      and the busy face rather than the unavailable one. */
+  pending?: boolean;
   onClick?: React.MouseEventHandler; onRemove?: React.MouseEventHandler;
   removeLabel?: string; className?: string; children?: React.ReactNode;
 } & Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick">;
 
 export function Tag({
-  active = false, disabled = false, onClick, onRemove, removeLabel = "Remove", className = "", children, ...rest
+  active = false, disabled = false, pending = false, onClick, onRemove, removeLabel = "Remove", className = "", children, ...rest
 }: TagProps) {
-  const cls = cx("ls-tag", active && "ls-tag--active", onClick && "ls-tag--click", disabled && "ls-tag--disabled", className);
+  const off = disabled || pending;
+  const cls = cx("ls-tag", active && "ls-tag--active", onClick && "ls-tag--click", disabled && !pending && "ls-tag--disabled", pending && "ls-tag--pending", className);
   return (
     <span className={cls} aria-disabled={!onClick && disabled ? true : undefined} {...rest}>
       {onClick ? (
-        <button type="button" className="ls-tag__press" aria-pressed={active} disabled={disabled} onClick={onClick}>
+        <button
+          type="button"
+          className="ls-tag__press"
+          aria-pressed={active}
+          aria-disabled={off || undefined}
+          aria-busy={pending || undefined}
+          /* Refused here rather than by the UA, because there is no `disabled`
+             attribute to refuse it — that is the point. preventDefault as well
+             as the early return, so a tag inside a form is not a submitter. */
+          onClick={off ? (e) => { e.preventDefault(); e.stopPropagation(); } : onClick}
+        >
           {children}
         </button>
       ) : children}
