@@ -72,6 +72,8 @@ Apple/Google wallet passes require platform signing credentials the project does
 
 ## Gates — what "done" means
 
+`npm run check:bundle` (in `gates:full` after the build) holds every client chunk under 300 KB and the client bundle under 2.6 MB; the icon wrapper once shipped 522 KB to every page and nothing measured it. `.github/workflows/nightly-e2e.yml` runs the route audit and the persona suite twice nightly against the live database (needs the `E2E_PASSWORD` secret).
+
 Every change ships only when all of these are green, on the commit (not the working tree):
 
 | Gate | Command | Proves |
@@ -115,6 +117,9 @@ Each of these was an open question the audits kept returning to. They are decide
 - **The address comes with the pass — at the API too.** Anon holds a column-level grant on `episodes` (no `coordinates`, no `muster`) and on `venues` (no `address`, no `notes`); a signed-in member keeps every column and the page's reveal decides what renders. A public read must name its columns (`src/lib/episode-columns.ts`) — a `select("*")` from the shore is refused whole and reads as no such episode.
 - **A door stamps arrivals and nothing else, and learns of a member only on its own night.** The gangway guard covers every column of `passes` and `pass_guests` on UPDATE; a pass arrives unstamped on INSERT (no code, no hull, no check-in from a member's hand); `verify_wallet_token` answers a door `elsewhere` for a member with no pass on a night that door is granted.
 - **The dispatcher is the triggers' and the clock's.** `run_automations` has no grant to anon or authenticated; the Bridge fires one rule by hand through `run_automation_now(rule, member, episode)`. A rule may send only a letter the registry marks `rule_can_send` — one that needs no more than the member's name and the episode's title — and a notice switch silences the notice, never the receipt (the waitlist-release letter goes whatever the `berths` preference says).
+- **The inbox can be cleared.** A member deletes their own read notices ("Archive read" on `/inbox`); the Bridge may strike a word; the nightly purge takes read notices older than `club_settings.notice_retention_days` (180) once the episode they name has ended. Before 2026-09-05 the table only grew.
+- **The Bridge has one search and sees every letter first.** `bridge_search(q)` (staff) backs the command bar in the top bar (⌘K); every list reads `?q=`. `/bridge/letters` lists the registry and `send_letter_to_me(code)` queues any letter to the operator's own address with a sample payload. The outbox is a queue the Bridge can work: retry and strike on Reports, by column-level grant and policy.
+- **The clock speaks to every seat.** `carry_the_clock` sends a standby holder its own T-2h word, texts the crew their call at T-24h (`crew-call-time`), and the T-48h letter carries an odyssey's legs and a second clock when the member's home city runs on a different zone. The weather category gates the weather text as it gates the notice.
 - **Not offered, on purpose:** digital or hybrid events. The phones-in-totes ethos is the product, and every rule in the schema assumes a hull, a gangway and a clock (decided again 2026-09-02).
 
 ## Data model

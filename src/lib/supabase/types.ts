@@ -908,6 +908,20 @@ export type Database = {
       offer_this_place: { Args: { p_entry: string }; Returns: string }
       issue_wallet_token: { Args: Record<string, never>; Returns: WalletTokenRow[] }
       revoke_wallet_token: { Args: Record<string, never>; Returns: undefined }
+      /* 2026-09-05: the Bridge's by-hand path into the dispatcher, one search
+         across the console, and a letter sent to the operator's own address. */
+      run_automation_now: {
+        Args: { p_only: string; p_profile_id?: string | null; p_episode_id?: string | null }
+        Returns: number
+      }
+      bridge_search: {
+        Args: { p_q: string }
+        Returns: Array<{ kind: string; id: string; title: string; subtitle: string; href: string }>
+      }
+      send_letter_to_me: {
+        Args: { p_code: string }
+        Returns: string
+      }
       verify_wallet_token: {
         Args: { p_token: string }
         Returns: Array<{ state: string; profile_id: string | null; full_name: string | null; member_no: string | null; standing: string | null }>
@@ -1008,6 +1022,10 @@ export type Database = {
           voyage_time_zone: string
           document_title: string; body: string; already_signed: boolean
           voyage_state: string
+          /* The night card (2026-09-05): the guest's own code once signed, the
+             muster, who booked them, the venue's name, and what to wear. */
+          guest_code: string | null; muster: string; host_first: string | null
+          venue_name: string | null; dress_line: string
         }>
       }
       signature_standing: {

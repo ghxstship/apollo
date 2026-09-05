@@ -257,6 +257,35 @@ function greet(p: Record<string, unknown>): string {
 /* The detail block on a pass: label · value rows. A row whose value is empty
    is left out — a boarding pass reading "Code:" followed by nothing is worse
    than one that says less. */
+/* An exotic night runs on another clock than the member's own. When the
+   payload names a home_time_zone that differs from the episode's, the call
+   time is said twice — the episode's, then the member's. */
+function homeClock(p: Record<string, unknown>): string {
+  const home = p["home_time_zone"];
+  if (typeof home !== "string" || !home.trim() || home.trim() === zoneOf(p)) return "";
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: home.trim() });
+  } catch {
+    return "";
+  }
+  const at = when(p["starts_at"], home.trim());
+  return at ? ` <span style="color:#6B6B70;">(${esc(at)} where you are)</span>` : "";
+}
+
+/* An odyssey's legs, when the payload carries them: day, place, hour. */
+function legsTable(p: Record<string, unknown>): string {
+  const legs = Array.isArray(p["legs"]) ? (p["legs"] as Array<Record<string, unknown>>) : [];
+  if (!legs.length) return "";
+  const zone = zoneOf(p);
+  const rows = legs
+    .filter((l) => l && typeof l === "object")
+    .map((l) => [
+      `Day ${esc(l["day"] ?? "")}`,
+      `${esc(l["place"] ?? "")}${l["starts_at"] ? ` · ${esc(when(l["starts_at"], zone))}` : ""}`,
+    ] as [string, string]);
+  return `<p style="margin:20px 0 6px;font-weight:600;">The legs</p>` + details(rows);
+}
+
 function details(rows: Array<[string, string]>): string {
   const kept = rows.filter(([, value]) => value.trim() !== "");
   if (!kept.length) return "";
@@ -330,7 +359,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
         details([
           ["Code", esc(p["code"])],
           ["Muster", esc(p["muster"])],
-          ["Call time", esc(stamp(p))],
+          ["Call time", esc(stamp(p)) + homeClock(p)],
         ]) +
         `<p style="margin:20px 0 0;">Gangway details land 48 hours before call time.</p>`,
     ),
@@ -345,9 +374,10 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
         `<p style="margin:0 0 20px;">Two days to ${esc(p["voyage"])}. Here is everything the gangway asks for.</p>` +
         details([
           ["Muster", esc(p["muster"])],
-          ["Call time", esc(stamp(p))],
+          ["Call time", esc(stamp(p)) + homeClock(p)],
           ["Code", esc(p["code"])],
         ]) +
+        legsTable(p) +
         `<p style="margin:20px 0 0;">Riviera Chic, sun up, phones down. Your member card boards you — brightness up at the gangway, and the crew knows the rest.</p>`,
     ),
   }),
