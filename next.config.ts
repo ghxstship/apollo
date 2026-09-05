@@ -31,6 +31,15 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  /* The React Compiler. Every one of its lint rules has run at error in this
+     repo since the kit was written — no setState in an effect, no impurity in
+     render, no manual memoisation to preserve — so the source was already
+     written to its contract while the compiler itself was never switched on.
+     Next only defaults it on behind __NEXT_ENABLE_REACT_COMPILER, which is not
+     set here, so every inline object and handler was being rebuilt each pass
+     for nothing. Turning it on is what makes the discipline pay. */
+  reactCompiler: true,
+
   /* The version of the framework is not the visitor's business. */
   poweredByHeader: false,
 
