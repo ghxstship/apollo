@@ -67,6 +67,14 @@ export async function run(p, ctx) {
       const one = await anon.get(`episodes?select=${col}&limit=1`);
       note("anon", `episodes.${col} is not the shore's to read`, one.status >= 400, `got ${one.status}`);
     }
+    /* The listing must show what the board holds. The routes audit demands
+       200 and a <main>; a manifest that rendered "0 episodes" to the shore
+       passed it. Counted here against the API's own answer. */
+    const upcoming = await anon.get(`episodes?select=slug&status=in.(scheduled,live,weather_hold)&starts_at=gte.${new Date().toISOString()}&order=starts_at&limit=3`);
+    const listingHtml = await (await fetch(`${BASE}/episodes`, { redirect: "manual" })).text();
+    const linked = (upcoming.data ?? []).filter((r) => listingHtml.includes(`/episodes/${r.slug}`)).length;
+    note("anon", "the public manifest lists the board's upcoming episodes", (upcoming.data ?? []).length === 0 || linked > 0,
+      `${linked} of ${(upcoming.data ?? []).length} upcoming slugs linked from /episodes`);
     const slugRow = await anon.get("episodes?select=slug&status=eq.scheduled&limit=1");
     const slug = slugRow.data?.[0]?.slug;
     if (slug) {

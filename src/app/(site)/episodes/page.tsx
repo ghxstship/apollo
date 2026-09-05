@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { CITY_CODES } from "@/lib/brand";
 import { SETTING_LABEL, logDate, logTime, price } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import type { EpisodeRow } from "@/lib/supabase/types";
+import { EPISODE_PUBLIC_COLUMNS } from "@/lib/episode-columns";
 import { moduleTables } from "@/lib/module-tables";
 import {
   depositChip,
@@ -46,7 +48,11 @@ export default async function EpisodesPage({
          both tables are public reading by policy. The edition embed is hinted
          through edition_id: editions holds a second path back to episodes
          (template_episode_id), and PostgREST refuses to guess between them. */
-      .select("*, seasons(title), editions!edition_id(title)")
+      /* Named columns, never "*": the anonymous grant withholds the place
+         (coordinates, muster), and PostgREST refuses a wildcard read whole —
+         the whole manifest read as "0 episodes" to the shore on 2026-09-05
+         while the home page, which names its columns, listed three. */
+      .select(`${EPISODE_PUBLIC_COLUMNS}, seasons(title), editions!edition_id(title)`)
       .in("status", ["scheduled", "live", "weather_hold"])
       /* An episode that has cast off is not on offer, whatever its status
          still says — the detail page and this listing already knew this. */
@@ -76,7 +82,11 @@ export default async function EpisodesPage({
   );
   const accessOf = (slug: string | null) => (slug ? seriesBySlug.get(slug)?.access ?? null : null);
   const templateIds = new Set((editionRows ?? []).map((e) => e.template_episode_id));
-  const listed = (episodes ?? []).filter((v) => {
+  type Listed = Omit<EpisodeRow, "coordinates" | "muster"> & {
+    seasons: { title: string } | null;
+    editions: { title: string } | null;
+  };
+  const listed = ((episodes ?? []) as unknown as Listed[]).filter((v) => {
     if (templateIds.has(v.id)) return false;
     const access = accessOf(v.series);
     return access !== "invite" && access !== "on_request";

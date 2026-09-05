@@ -375,7 +375,10 @@ async function EpisodeBody({
   const boards = new Date(
     new Date(episode.starts_at).getTime() + boardsOffsetMin * 60 * 1000
   ).toISOString();
-  const paragraphs = (episode.description ?? episode.blurb ?? "")
+  /* The blurb leads the body on its own; the description follows only when
+     there is one and it says more. Falling back to the blurb printed the same
+     sentence twice on every episode without a long description. */
+  const paragraphs = (episode.description && episode.description.trim() !== (episode.blurb ?? "").trim() ? episode.description : "")
     .split(/\n\n+/)
     .filter(Boolean);
   const faq: Array<[string, string]> = [
