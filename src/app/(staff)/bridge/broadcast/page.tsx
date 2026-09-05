@@ -4,6 +4,7 @@ import { logDateTime } from "@/lib/format";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
 import { BroadcastClient, type SentRow } from "./broadcast-client";
+import { describeAudience, type Lookups } from "./audience";
 
 export const metadata: Metadata = { title: "Broadcast" };
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = { title: "Broadcast" };
 export default async function BroadcastPage() {
   const { supabase } = await getOperator();
   const nowIso = new Date().toISOString();
-  const [citiesRes, episodesRes, sentRes] = await Promise.all([
+  const [citiesRes, episodesRes, sentRes, plansRes, leaguesRes] = await Promise.all([
     supabase.from("cities").select("id, name").order("position"),
     supabase
       .from("episodes")
@@ -23,12 +24,20 @@ export default async function BroadcastPage() {
       .order("starts_at")
       .limit(60),
     supabase.from("broadcasts").select("*").order("created_at", { ascending: false }).limit(30),
+    supabase.from("membership_plans").select("id, label").eq("active", true).order("price_cents"),
+    supabase.from("leagues").select("league, name").order("league"),
   ]);
+  const lookups: Lookups = {
+    cities: must(citiesRes).map((c) => ({ value: c.id, label: c.name })),
+    episodes: must(episodesRes).map((e) => ({ value: e.id, label: `${e.title} — ${logDateTime(e.starts_at, CLUB_ZONE)}` })),
+    plans: must(plansRes).map((p) => ({ value: p.id, label: p.label })),
+    leagues: must(leaguesRes).map((l) => ({ value: String(l.league), label: l.name })),
+  };
 
   const sent: SentRow[] = must(sentRes).map((b) => ({
     id: b.id,
     title: b.title,
-    audience: describe(b.audience as Record<string, string>, must(citiesRes), must(episodesRes)),
+    audience: describeAudience(b.audience as Record<string, unknown>, lookups),
     channels: b.channels.map((c) => (c === "sms" ? "text" : c)).join(" + "),
     recipients: b.recipients,
     when: logDateTime(b.created_at, CLUB_ZONE),
@@ -47,37 +56,7 @@ export default async function BroadcastPage() {
         app and, if you choose, by email, push or text. Every send is kept below
         with who it reached, so nobody wonders whether the venue change went out.
       </p>
-      <BroadcastClient
-        cities={must(citiesRes).map((c) => ({ value: c.id, label: c.name }))}
-        episodes={must(episodesRes).map((e) => ({
-          value: e.id,
-          label: `${e.title} — ${logDateTime(e.starts_at, CLUB_ZONE)}`,
-        }))}
-        sent={sent}
-      />
+      <BroadcastClient lookups={lookups} sent={sent} />
     </div>
   );
-}
-
-function describe(
-  a: Record<string, string>,
-  cities: Array<{ id: string; name: string }>,
-  episodes: Array<{ id: string; title: string }>
-): string {
-  switch (a.kind) {
-    case "all":
-      return "Every active member";
-    case "lapsed":
-      return "Members held for dues";
-    case "tier":
-      return `${a.tier} tier`;
-    case "city":
-      return cities.find((c) => c.id === a.id)?.name ?? "A city";
-    case "episode":
-      return episodes.find((e) => e.id === a.id)?.title ?? "An episode's manifest";
-    case "member":
-      return "Yourself — a test";
-    default:
-      return "—";
-  }
 }

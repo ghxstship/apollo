@@ -171,6 +171,10 @@ async function sweep(p) {
   await stf.del("api_keys?label=like.E2E*");
   await stf.del("webhooks?url=like.*example.com/e2e*");
   await stf.del("open_deck_flags?reason=eq.E2E");
+  /* A flag raised by a fixture persona on a post since removed sat on the
+     moderation queue for days; the flagger is the tell, not the reason. */
+  for (const who of Object.values(p)) await stf.del(`open_deck_flags?flagger_id=eq.${uid(who)}`);
+  await stf.del("invites?code=like.UN-E2E*");
   await stf.del("open_deck_posts?body=like.E2E*");
   /* Program fixtures. editions holds a RESTRICT on its template voyage,
      so the series row goes before the episodes pattern below can take the

@@ -502,3 +502,19 @@
 /* — Tonight: the seated, with the sit-near-again count beside each — */
 .hm-hint{display:flex;flex-direction:column;gap:2px}
 .hm-hint__row{white-space:nowrap}
+
+/* The audience builder on Broadcast: rules in rows, the count on the right. */
+.hm-audience{display:flex;flex-direction:column;gap:12px;padding:14px 16px;border:1px solid var(--line-faint);background:var(--surface-page)}
+.hm-audience__head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hm-audience__match{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hm-rules{display:flex;flex-direction:column;gap:10px}
+.hm-rule{display:grid;grid-template-columns:180px 130px 1fr auto;gap:10px;align-items:start}
+.hm-rule__value{min-width:0}
+.hm-rule__pair{display:grid;grid-template-columns:140px 1fr auto;gap:8px;align-items:center}
+.hm-rule__set{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hm-rule__set .ls-field{min-width:220px;flex:1}
+.hm-audience__foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-top:6px;border-top:1px solid var(--line-faint)}
+.hm-audience__foot .hm-acts .ls-field{min-width:200px}
+.hm-reach{font-size:var(--text-sm);color:var(--text-1)}
+.hm-reach__names{color:var(--text-2)}
+@media (max-width:960px){.hm-rule{grid-template-columns:1fr 1fr}.hm-rule__value{grid-column:1 / -1}}

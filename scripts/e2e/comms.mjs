@@ -421,6 +421,33 @@ export async function run(p, ctx) {
       note("staff", "the record says sent, with the count", wordRow?.status === "sent" && wordRow?.recipients === 1, JSON.stringify(wordRow));
       if (wordRow?.id) made.broadcasts.push(wordRow.id);
 
+      /* ── H2. an audience built from rules, not picked from a list ───────
+         Since 2026-09-05 the audience is a rule set: the preview counts what
+         the resolver counts, "any" widens, "not" turns a rule around, a rule
+         the club cannot read is refused by name, and a word to nobody is
+         refused before it is recorded. */
+      const aboardRule = { kind: "filter", match: "all", rules: [{ field: "aboard", op: "in", value: [line.id] }] };
+      const preview = await stf.rpc("broadcast_audience_preview", { p_audience: aboardRule });
+      note("staff", "a filter audience previews the aboard manifest with names", preview.status < 300 && Number(preview.data?.count) === 1 && Array.isArray(preview.data?.sample) && preview.data.sample.length === 1, `got ${preview.status} ${JSON.stringify(preview.data).slice(0, 100)}`);
+      const anyRule = { kind: "filter", match: "any", rules: [{ field: "aboard", op: "in", value: [line.id] }, { field: "waitlisted", op: "in", value: [line.id] }] };
+      const wider = await stf.rpc("broadcast_audience_preview", { p_audience: anyRule });
+      note("staff", "match any widens the audience to the line as well", Number(wider.data?.count) === 2, `got ${JSON.stringify(wider.data).slice(0, 80)}`);
+      const notRule = { kind: "filter", match: "all", rules: [{ field: "aboard", op: "in", value: [line.id] }, { field: "tier", op: "in", value: ["global"], not: true }] };
+      const turned = await stf.rpc("broadcast_audience_preview", { p_audience: notRule });
+      note("staff", "'is not' turns a rule around (aboard and not global = nobody)", Number(turned.data?.count) === 0, `got ${JSON.stringify(turned.data).slice(0, 80)}`);
+      const bogus = await stf.rpc("broadcast_audience_preview", { p_audience: { kind: "filter", match: "all", rules: [{ field: "shoe_size", op: "gte", value: 9 }] } });
+      note("staff", "a rule the club cannot read is refused by name", bogus.status >= 400 && /no such rule/.test(said(bogus)), `got ${bogus.status} ${said(bogus).slice(0, 60)}`);
+      const nobody = await stf.rpc("send_broadcast", { p_audience: notRule, p_title: `E2E comms nobody ${stamp}`, p_body: "E2E — to nobody.", p_channels: ["notice"] });
+      note("staff", "a word to nobody is refused before it is recorded", nobody.status >= 400 && /nobody matches/.test(said(nobody)), `got ${nobody.status} ${said(nobody).slice(0, 60)}`);
+      const memberPreview = await reg.rpc("broadcast_audience_preview", { p_audience: aboardRule });
+      note("regional", "a member cannot preview an audience", memberPreview.status >= 400, `got ${memberPreview.status}`);
+      const t9 = since();
+      const ruled = await stf.rpc("send_broadcast", { p_audience: aboardRule, p_title: `E2E comms ruled ${stamp}`, p_body: "E2E — by rule.", p_channels: ["notice"] });
+      note("staff", "a filter broadcast reaches exactly the preview's count", ruled.status < 400 && Number(ruled.data) === 1, `got ${ruled.status} ${JSON.stringify(ruled.data)}`);
+      note("global", "hears the ruled word, pointing at the passes (one aboard rule names the episode)", (await notices("global", t9, `&title=eq.${enc(`E2E comms ruled ${stamp}`)}`))[0]?.href === "/passes", "");
+      const ruledRow = (await stf.get(`broadcasts?title=eq.${enc(`E2E comms ruled ${stamp}`)}&select=id`)).data?.[0];
+      if (ruledRow?.id) made.broadcasts.push(ruledRow.id);
+
       await release("national", rejoinId);
       await release("global", thirdId);
     }

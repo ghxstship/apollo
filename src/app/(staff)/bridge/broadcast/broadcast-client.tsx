@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
-import { Badge, Button, Checkbox, Dialog, Input, Select, Table, Textarea, Toast } from "@/components/ds";
+import { Badge, Button, Checkbox, Dialog, Input, Table, Textarea, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { sendBroadcast, sendTestToSelf, type Audience, type Channel } from "./actions";
+import { sendBroadcast, sendTestToSelf, type Channel } from "./actions";
+import { AudienceBuilder } from "./audience-builder";
+import { EVERY_ACTIVE, audienceReady, describeAudience, type Audience, type Lookups } from "./audience";
 
 export type SentRow = {
   id: string;
@@ -17,21 +19,6 @@ export type SentRow = {
   [key: string]: unknown;
 };
 
-type Opt = { value: string; label: string };
-
-const KINDS: Opt[] = [
-  { value: "all", label: "Every active member" },
-  { value: "city", label: "A city" },
-  { value: "episode", label: "An episode's manifest" },
-  { value: "tier", label: "A tier" },
-  { value: "lapsed", label: "Members held for dues" },
-];
-const TIERS: Opt[] = [
-  { value: "regional", label: "Regional" },
-  { value: "national", label: "National" },
-  { value: "global", label: "Global" },
-];
-
 const CHANNEL_LABEL: Record<Channel, string> = {
   notice: "In the app, as a notice",
   email: "By email, as a letter from the Bridge",
@@ -39,12 +26,11 @@ const CHANNEL_LABEL: Record<Channel, string> = {
   sms: "Text",
 };
 
-export function BroadcastClient({ cities, episodes, sent }: { cities: Opt[]; episodes: Opt[]; sent: SentRow[] }) {
+export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: SentRow[] }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
-  const [kind, setKind] = React.useState("all");
-  const [id, setId] = React.useState("");
-  const [tier, setTier] = React.useState("regional");
+  type Filter = Extract<Audience, { kind: "filter" }>;
+  const [who, setWho] = React.useState<Filter>(EVERY_ACTIVE as Filter);
   const [title, setTitle] = React.useState("");
   const [body, setBody] = React.useState("");
   const [channels, setChannels] = React.useState<Record<Channel, boolean>>({ notice: true, email: false, push: false, sms: false });
@@ -54,20 +40,8 @@ export function BroadcastClient({ cities, episodes, sent }: { cities: Opt[]; epi
   const picked = (Object.keys(channels) as Channel[]).filter((c) => channels[c]);
   const setChannel = (c: Channel, on: boolean) => setChannels((s) => ({ ...s, [c]: on }));
 
-  const audience = (): Audience | null => {
-    if (kind === "all" || kind === "lapsed") return { kind };
-    if (kind === "tier") return { kind, tier: tier as "regional" | "national" | "global" };
-    if ((kind === "city" || kind === "episode") && id) return { kind, id };
-    return null;
-  };
-  const audienceLabel =
-    kind === "city"
-      ? cities.find((c) => c.value === id)?.label
-      : kind === "episode"
-        ? episodes.find((e) => e.value === id)?.label
-        : kind === "tier"
-          ? `${TIERS.find((t) => t.value === tier)?.label} tier`
-          : KINDS.find((k) => k.value === kind)?.label;
+  const audience = (): Audience | null => (audienceReady(who) ? who : null);
+  const audienceLabel = describeAudience(who, lookups);
   const ready = !!audience() && title.trim().length > 0 && body.trim().length > 0 && picked.length > 0;
 
   const send = () => {
@@ -102,18 +76,7 @@ export function BroadcastClient({ cities, episodes, sent }: { cities: Opt[]; epi
     <>
       <div className="hm-panel">
         <div className="hm-form">
-          <div className="hm-form__row">
-            <Select label="Who" options={KINDS} value={kind} onChange={(e) => { setKind(e.target.value); setId(""); }} />
-            {kind === "city" ? (
-              <Select label="City" placeholder="Pick a city" options={cities} value={id} onChange={(e) => setId(e.target.value)} />
-            ) : null}
-            {kind === "episode" ? (
-              <Select label="Episode" placeholder="Pick an episode" options={episodes} value={id} onChange={(e) => setId(e.target.value)} />
-            ) : null}
-            {kind === "tier" ? (
-              <Select label="Tier" options={TIERS} value={tier} onChange={(e) => setTier(e.target.value)} />
-            ) : null}
-          </div>
+          <AudienceBuilder value={who} onChange={setWho} lookups={lookups} />
           <Input label="Title" placeholder="The venue for Saturday has moved." maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} />
           <Textarea
             label="The word"

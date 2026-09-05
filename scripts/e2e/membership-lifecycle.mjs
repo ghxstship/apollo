@@ -175,10 +175,9 @@ export async function run(p, ctx) {
       note("staff", "a live invite code exists to apply with", false, "no invite with uses < max_uses");
     }
 
-    /* A spent code. Codes cannot be edited or struck (no policy), so one
-       fixture code is minted ONCE by the Bridge persona with a single use,
-       spent by welcoming a fixture applicant aboard, and reused as the spent
-       code by every run after. */
+    /* A spent code: minted by the Bridge persona with a single use and spent
+       by welcoming a fixture applicant aboard. The suite's sweep strikes it
+       at the start of the next run, so it is minted fresh each time. */
     const SPENT = "UN-E2EE-0001";
     let spent = (await stf.get(`invites?code=eq.${SPENT}&select=code,uses,max_uses`)).data?.[0] ?? null;
     if (!spent) {
@@ -192,7 +191,11 @@ export async function run(p, ctx) {
     }
     if (spent && spent.uses < spent.max_uses) {
       const addrS = `e2e-anon-lc-spend-${stamp}@fixtures.invalid`;
-      const applied = await anon.rpc("apply_with_invite", { p_full_name: "E2E Spender", p_email: addrS, p_city: "Miami", p_note: "", p_code: SPENT });
+      /* The sweep strikes UN-E2E* codes at the start of every run since
+         2026-09-05 (they read on the Referrals screen), so this path runs every
+         run rather than once — and an application carries the committee's
+         required answer or the table refuses it. */
+      const applied = await anon.rpc("apply_with_invite", { p_full_name: "E2E Spender", p_email: addrS, p_city: "Miami", p_note: "", p_code: SPENT, p_answers: requiredKey ? { [requiredKey]: "A spent code." } : {} });
       const appId = typeof applied.data === "string" ? applied.data : null;
       const welcomed = appId ? await stf.rpc("accept_application", { p_id: appId }) : { status: 0 };
       const after = await stf.get(`invites?code=eq.${SPENT}&select=uses,max_uses`);

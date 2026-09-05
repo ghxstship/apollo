@@ -6,19 +6,31 @@ import { voice } from "@/lib/errors";
 import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
-export type Audience =
-  | { kind: "all" }
-  | { kind: "lapsed" }
-  | { kind: "city"; id: string }
-  | { kind: "episode"; id: string }
-  | { kind: "tier"; tier: "regional" | "national" | "global" };
+import { FIELDS, MAX_RULES, audienceReady, type Audience } from "./audience";
+export type { Audience } from "./audience";
 
-/* The five audiences send_broadcast fans out to, and the three tiers it knows.
-   Both are checked in the function too, but its refusals — "no such audience",
-   "no such tier" — used to come back here as "That didn't land", so an operator
-   whose screen had drifted from the list learned nothing. Said in words first. */
-const AUDIENCES: readonly Audience["kind"][] = ["all", "lapsed", "city", "episode", "tier"];
+/* The audiences send_broadcast fans out to. Both are checked in the function
+   too, but its refusals — "no such audience", "no such rule" — used to come
+   back here as "That didn't land", so an operator whose screen had drifted
+   from the list learned nothing. Said in words first. */
+const AUDIENCES: readonly Audience["kind"][] = ["all", "lapsed", "city", "episode", "tier", "filter"];
 const TIERS = ["regional", "national", "global"] as const;
+
+/* The shape check the builder cannot be trusted to have done: a real field, a
+   real op, a bounded rule count. The database resolves and refuses after. */
+function audienceProblem(a: Audience | null): string | null {
+  if (!a || !AUDIENCES.includes(a.kind)) return "Pick who hears it.";
+  if (a.kind === "tier" && !(TIERS as readonly string[]).includes(a.tier)) return "That is not a tier.";
+  if ("id" in a && !UUID.test(a.id ?? "")) return a.kind === "city" ? "Pick the city first." : "Pick the episode first.";
+  if (a.kind === "filter") {
+    if (!Array.isArray(a.rules) || a.rules.length < 1) return "Add at least one rule.";
+    if (a.rules.length > MAX_RULES) return `An audience is up to ${MAX_RULES} rules.`;
+    if (a.match !== "all" && a.match !== "any") return "Rules match all, or any.";
+    for (const r of a.rules) if (!(r.field in FIELDS)) return "That is not a rule the club can read.";
+    if (!audienceReady(a)) return "Finish every rule before sending.";
+  }
+  return null;
+}
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -55,10 +67,8 @@ export async function sendBroadcast(
   const picked = Array.from(new Set(channels ?? []));
   if (picked.length === 0) return { error: "Pick at least one way to say it." };
   if (picked.some((c) => !CHANNELS.includes(c))) return { error: "That is not a way to say it — a notice, a letter, a push or a text." };
-  if (!audience || !AUDIENCES.includes(audience.kind)) return { error: "Pick who hears it." };
-  if (audience.kind === "tier" && !(TIERS as readonly string[]).includes(audience.tier)) return { error: "That is not a tier." };
-  if ("id" in audience && !UUID.test(audience.id ?? ""))
-    return { error: audience.kind === "city" ? "Pick the city first." : "Pick the episode first." };
+  const problem = audienceProblem(audience);
+  if (problem) return { error: problem };
 
   let sendAt: Date | null = null;
   if (sendAtLocal.trim()) {
@@ -79,6 +89,19 @@ export async function sendBroadcast(
   if (error) return { error: voice(error) };
   revalidatePath("/bridge/broadcast");
   return { recipients: typeof data === "number" ? data : 0, queued: !!sendAt };
+}
+
+/* How many the rules reach, and a few names, as the operator builds them.
+   Staff only at the database; a refusal is a count of nothing. */
+export async function previewAudience(audience: Audience): Promise<ActionResult & { count?: number; sample?: string[] }> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  const problem = audienceProblem(audience);
+  if (problem) return { error: problem };
+  const { data, error } = await supabase.rpc("broadcast_audience_preview", { p_audience: audience });
+  if (error) return { error: voice(error) };
+  const d = (data ?? {}) as { count?: number; sample?: string[] };
+  return { count: Number(d.count ?? 0), sample: Array.isArray(d.sample) ? d.sample.map(String) : [] };
 }
 
 /* A test, to the operator alone. send_broadcast has a single-member audience

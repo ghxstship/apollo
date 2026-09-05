@@ -864,6 +864,8 @@ export type Database = {
       /* This month's unspent plan credit, in cents. Granted to authenticated
          since 2026-09-02 and unreachable from here until it was typed. */
       pass_credit_left: { Args: { p_profile_id?: string | null }; Returns: number }
+      /* How many an audience reaches, and a few names (staff). */
+      broadcast_audience_preview: { Args: { p_audience: Json }; Returns: Json }
       /* One word to a chosen audience; returns how many it reached. */
       send_broadcast: {
         Args: { p_audience: Json; p_title: string; p_body: string; p_channels: string[]; p_send_at?: string | null }
