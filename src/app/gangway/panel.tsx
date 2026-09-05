@@ -18,8 +18,8 @@ const TABS: { id: Tab; label: string; panelId: string; tabId: string }[] = [
 function Submit({ idle, busy }: { idle: string; busy: string }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" fullWidth disabled={pending} aria-busy={pending || undefined}>
-      {pending ? busy : idle}
+    <Button type="submit" size="lg" fullWidth pending={pending} pendingLabel={busy}>
+      {idle}
     </Button>
   );
 }
@@ -29,7 +29,7 @@ function Submit({ idle, busy }: { idle: string; busy: string }) {
 function ProviderSubmit({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" variant="outline" fullWidth disabled={pending} aria-busy={pending || undefined}>
+    <Button type="submit" variant="outline" fullWidth pending={pending}>
       {children}
     </Button>
   );

@@ -349,7 +349,14 @@ export function ProducerPanel({
 
   const standDown = () => push({ kind: "sys", text: "Nothing executed." });
 
+  /* One send at a time. Five taps on Send — or on the quick asks, which are
+     disabled below for the same reason — fired five concurrent server actions
+     and appended five replies over each other. `typing` is the in-flight flag
+     the panel already keeps, so it is also the gate: the Enter path comes
+     through here too, which is where it used to walk past the empty-input
+     check and nothing else. */
   const send = () => {
+    if (typing) return;
     const t = input.trim();
     if (!t) return;
     setInput("");
@@ -434,7 +441,7 @@ export function ProducerPanel({
       </div>
       <div className="pr-quick">
         {QUICK.map(([id, label]) => (
-          <Button key={id} variant="outline" size="sm" onClick={() => handle(id, label)}>
+          <Button key={id} variant="outline" size="sm" disabled={typing} onClick={() => handle(id, label)}>
             {label}
           </Button>
         ))}
@@ -451,7 +458,10 @@ export function ProducerPanel({
             if (e.key === "Enter") send();
           }}
         />
-        <Button size="md" onClick={send} disabled={!input.trim()} aria-busy={typing || undefined}>
+        {/* `pending` carries aria-busy and the disable; the label swap is laid
+            in the same grid cell as Send, so the button does not change width
+            when the Producer starts working. */}
+        <Button size="md" onClick={send} disabled={!input.trim()} pending={typing} pendingLabel="Sending…">
           Send
         </Button>
       </div>

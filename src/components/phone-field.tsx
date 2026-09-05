@@ -36,8 +36,8 @@ export function PhoneField({
         />
         {/* md, the same height as the input it saves — it was sm beside a
             44px field. */}
-        <Button type="submit" variant="outline" size="md" className="phone__save" disabled={pending} aria-busy={pending || undefined}>
-          {pending ? "Saving" : "Save"}
+        <Button type="submit" variant="outline" size="md" className="phone__save" pending={pending} pendingLabel="Saving">
+          Save
         </Button>
       </div>
       {/* An uppercase mono label, so it takes the label pair (--type-label,

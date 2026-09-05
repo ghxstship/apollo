@@ -92,8 +92,8 @@ export function CrewApplyForm({ roleId, roleTitle }: { roleId: string; roleTitle
         </p>
       ) : null}
 
-      <Button type="submit" variant="gold" fullWidth disabled={pending}>
-        {pending ? "Sending…" : "Send it"}
+      <Button type="submit" variant="gold" fullWidth pending={pending} pendingLabel="Sending…">
+        Send it
       </Button>
       <p className="crew-form__fine">
         We keep what you send here to consider you for this role, and we reply

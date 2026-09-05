@@ -12,16 +12,14 @@ const NoticeContext = React.createContext<(n: Notice) => void>(() => {});
 
 export function CopyProvider({ children }: { children: React.ReactNode }) {
   const [notice, setNotice] = React.useState<Notice | null>(null);
-  React.useEffect(() => {
-    if (!notice) return;
-    const t = setTimeout(() => setNotice(null), 4000);
-    return () => clearTimeout(t);
-  }, [notice]);
+  /* The 4000ms and the dismissal are Toast's own — `duration` runs the clock
+     and `onClose` unmounts once the exit has played. The effect that used to
+     keep this timer unmounted the toast outright, so the exit never ran. */
   return (
     <NoticeContext.Provider value={setNotice}>
       {children}
       {notice ? (
-        <Toast fixed message={notice.msg} meta={notice.meta} onDismiss={() => setNotice(null)} />
+        <Toast fixed message={notice.msg} meta={notice.meta} duration={4000} onClose={() => setNotice(null)} />
       ) : null}
     </NoticeContext.Provider>
   );

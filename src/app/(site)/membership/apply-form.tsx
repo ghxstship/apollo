@@ -159,8 +159,8 @@ export function ApplyForm({ questions = [] }: { questions?: ApplyQuestion[] }) {
         </p>
       ) : null}
       <div>
-        <Button type="submit" size="lg" disabled={pending}>
-          {pending ? "Sending…" : "Send it"}
+        <Button type="submit" size="lg" pending={pending} pendingLabel="Sending…">
+          Send it
         </Button>
       </div>
     </form>

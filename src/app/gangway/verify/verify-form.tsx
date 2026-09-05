@@ -8,8 +8,8 @@ import { verifyTwoStep, type VerifyState } from "../actions";
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" fullWidth disabled={pending} aria-busy={pending || undefined}>
-      {pending ? "Checking" : "Continue"}
+    <Button type="submit" size="lg" fullWidth pending={pending} pendingLabel="Checking">
+      Continue
     </Button>
   );
 }

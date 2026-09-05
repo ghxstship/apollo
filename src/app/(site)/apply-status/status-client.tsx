@@ -51,8 +51,8 @@ export function StatusLookup() {
         {/* Pinned to the field's top, so an error opening under the field
             does not drag the button down with it. */}
         <div className="as-lookup__go">
-          <Button type="submit" variant="outline" disabled={pending}>
-            {pending ? "Looking…" : "Look it up"}
+          <Button type="submit" variant="outline" pending={pending} pendingLabel="Looking…">
+            Look it up
           </Button>
         </div>
       </form>

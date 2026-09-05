@@ -16,12 +16,6 @@ export function CopyLink({
 }) {
   const [copied, setCopied] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 4000);
-    return () => clearTimeout(t);
-  }, [copied]);
-
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
@@ -36,7 +30,12 @@ export function CopyLink({
       <Button variant="ghost" size="sm" onClick={copy}>
         {copied ? "Copied" : label}
       </Button>
-      {copied ? <Toast fixed message={toast} onDismiss={() => setCopied(false)} /> : null}
+      {/* Toast owns its own clock and its own exit: `duration` starts the
+          4000ms it used to be given by a hand-rolled setTimeout here, and
+          `onClose` fires once the exit animation has actually run — which the
+          old shape never let it do, because the state that unmounted the toast
+          was the same state that would have played it out. */}
+      {copied ? <Toast fixed message={toast} duration={4000} onClose={() => setCopied(false)} /> : null}
     </>
   );
 }

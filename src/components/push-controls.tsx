@@ -40,7 +40,15 @@ export function PushControls() {
   const supported = usePushSupport();
   const [asked, setAsked] = React.useState<NotificationPermission | null>(null);
   const [subscribed, setSubscribed] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
+  const [busy, start] = React.useTransition();
+  /* The thumb moves as the finger lifts. Enabling is a permission prompt, then
+     a subscribe, then a server action — three awaits during which a switch
+     controlled on the settled value sat exactly where it was, so the member's
+     press appeared to do nothing at all. The optimistic value carries the flip
+     for the length of the transition and lapses on its own if the write never
+     lands; the same shape you/manifest-consent.tsx and you/camera-consent.tsx
+     use, and a refusal still says so in the line underneath. */
+  const [listening, setListening] = React.useOptimistic(subscribed);
   const [error, setError] = React.useState<string | null>(null);
 
   /* Notification.permission is only readable once the browser half is known. */
@@ -63,8 +71,6 @@ export function PushControls() {
   }, [supported]);
 
   const enable = async () => {
-    setBusy(true);
-    setError(null);
     try {
       const granted = await Notification.requestPermission();
       setAsked(granted);
@@ -100,14 +106,10 @@ export function PushControls() {
       setSubscribed(true);
     } catch {
       setError("That didn't land. Try again.");
-    } finally {
-      setBusy(false);
     }
   };
 
   const disable = async () => {
-    setBusy(true);
-    setError(null);
     try {
       const registration = await navigator.serviceWorker.ready;
       const sub = await registration.pushManager.getSubscription();
@@ -123,8 +125,6 @@ export function PushControls() {
       setSubscribed(false);
     } catch {
       setError("That didn't land. Try again.");
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -160,16 +160,21 @@ export function PushControls() {
       <Switch
         name="push"
         label="Send word to this device"
-        checked={subscribed}
+        checked={listening}
         disabled={busy}
         onChange={(e) => {
           if (busy) return;
-          if (e.currentTarget.checked) void enable();
-          else void disable();
+          const want = e.currentTarget.checked;
+          setError(null);
+          start(async () => {
+            setListening(want);
+            if (want) await enable();
+            else await disable();
+          });
         }}
       />
       <span className="push__mono" role="status">
-        {busy ? "WORKING" : subscribed ? "THIS DEVICE IS LISTENING" : "THIS DEVICE IS QUIET"}
+        {busy ? "WORKING" : listening ? "THIS DEVICE IS LISTENING" : "THIS DEVICE IS QUIET"}
       </span>
       {error ? (
         <p className="push__err" role="alert">

@@ -49,12 +49,12 @@ export function StandingControl({
         <span className="ws-standing__on">Opens this way</span>
       ) : null}
       {!matches ? (
-        <Button variant="ghost" size="sm" disabled={pending} onClick={() => write(current)}>
+        <Button variant="ghost" size="sm" pending={pending} onClick={() => write(current)}>
           {current ? "Open this way from now on" : "Open on everything from now on"}
         </Button>
       ) : null}
       {saved !== null && matches ? (
-        <Button variant="ghost" size="sm" disabled={pending} onClick={() => write("")}>
+        <Button variant="ghost" size="sm" pending={pending} onClick={() => write("")}>
           Forget this
         </Button>
       ) : null}

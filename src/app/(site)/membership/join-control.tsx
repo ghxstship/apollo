@@ -47,8 +47,8 @@ export function JoinControl({
 
   return (
     <span className="ws-plans__join">
-      <Button variant="outline" size="sm" disabled={pending} onClick={start}>
-        {pending ? "Casting off…" : action === "switch" ? "Switch" : "Join"}
+      <Button variant="outline" size="sm" pending={pending} pendingLabel="Casting off…" onClick={start}>
+        {action === "switch" ? "Switch" : "Join"}
       </Button>
       {error ? (
         <span role="alert" className="ws-plans__err">

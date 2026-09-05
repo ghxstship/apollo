@@ -8,9 +8,17 @@
    (300) already, so it does not need to outrank it.
 
    44px tall: 2px of lava around a 40px pill. It was 38. */
-.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:400;display:inline-flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);transition:bottom var(--dur-move) var(--ease-move);animation:ls-rise var(--dur-enter) var(--ease-enter)}
-.pr-fab span{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:0 20px;letter-spacing:var(--tracking-label);text-transform:uppercase}
+.pr-fab{position:fixed;bottom:24px;inset-inline-end:24px;z-index:400;display:inline-flex;align-items:center;gap:10px;min-height:44px;box-sizing:border-box;border:none;cursor:pointer;border-radius:var(--radius-pill);padding:2px;background:var(--lava);transition:bottom var(--dur-move) var(--ease-move),transform var(--dur-hover) var(--ease-out);animation:ls-rise var(--dur-enter) var(--ease-enter)}
+.pr-fab span{font:var(--type-label);display:inline-flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;background:var(--carbon);color:var(--paper);border-radius:var(--radius-pill);padding:0 20px;letter-spacing:var(--tracking-label);text-transform:uppercase;transition:background var(--dur-hover) var(--ease-out)}
 .pr-fab:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* The one persistent floating action in the product, and it answered neither
+   the pointer nor the finger: no hover, no press. The carbon face lifts a rung
+   under the pointer — the lava ring is the pill's identity and stays put — and
+   the whole pill takes the kit's press scale, the same give .ls-btn and
+   .ls-iconbtn have. transform rides the transition beside `bottom` so the
+   press eases rather than snapping. */
+.pr-fab:hover span{background:var(--graphite)}
+.pr-fab:active{transform:scale(var(--press))}
 
 /* A fixed toast lands at bottom:24px (96px on a phone), centred, up to the
    full width — the same corner the pill lives in. While one is up the pill

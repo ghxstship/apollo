@@ -10,8 +10,8 @@ import { PASSWORD_MIN } from "../ways";
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" fullWidth disabled={pending} aria-busy={pending || undefined}>
-      {pending ? "Saving" : "Save the password"}
+    <Button type="submit" size="lg" fullWidth pending={pending} pendingLabel="Saving">
+      Save the password
     </Button>
   );
 }
