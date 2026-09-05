@@ -654,3 +654,269 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
 /* A stacked form inside a You dialog. */
 .you-stack{display:flex;flex-direction:column;gap:14px}
+
+/* ── Finish pass 2026-09-05 · rhythm, the tab bar, review rows, receipts ────
+   APPEND-ONLY BLOCK, same contract as the parity block above it: nothing here
+   restates a rule written earlier in this file, and new rules for this pass
+   go at the END of this block. Every class here replaces an inline style that
+   was being written by hand on two or more surfaces — the gate can now read
+   the sizes and weights, and one page cannot drift from the next. */
+
+/* — page head: eyebrow → h1 → lede, one rhythm, stated once —
+   Fourteen pages set marginTop:6 on the h1 by hand, and each wrote its own
+   lede rule (14px, --text-2, 48–58ch). The sibling rule needs no class on the
+   h1, so a page that forgets it still lands on the rhythm. */
+.mbr-eyebrow+.mbr-h1{margin-top:6px}
+.mbr-h1{text-wrap:balance}
+.mbr-lede{margin-top:10px;font-size:var(--text-sm);color:var(--text-2);max-width:56ch}
+.mbr-eyebrow--quiet{color:var(--text-3)}
+.mbr-eyebrow--block{display:block}
+
+/* — figures read in columns. The mono readouts carry dates, prices and counts
+   that sit above one another in lists and rows; proportional digits let a 1
+   and an 8 pull the column ragged. — */
+.mbr-mono,.mbr-top__no,.mbr-worddot,.plog-figs dd,.crd-code,.crd-meta,.stb-wait b,.agr-row span.agr-when,.you-matrix__always{font-variant-numeric:tabular-nums}
+.mbr-mono--lg{font-size:12px}
+.mbr-mono--block{display:block}
+.mbr-mono--flex{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* — the tab bar: a 44px target, a rule that moves, a press that answers —
+   The tab was 4px of padding around a 20px glyph and a 9px label — about 38px
+   tall, under the touch minimum. The active state was colour alone (cyan
+   against ivory-3), so the rule at the top of the bar carries it in shape too,
+   and it slides between tabs rather than appearing. The badge fades in over
+   --dur-1 so a count arriving mid-scroll does not pop. */
+.mbr-tab{position:relative;min-height:44px;justify-content:center;-webkit-tap-highlight-color:transparent}
+.mbr-tab__ic{transition:transform var(--dur-1) var(--ease-swell)}
+.mbr-tab:active .mbr-tab__ic{transform:scale(.9)}
+.mbr-tab:before{content:"";position:absolute;top:-10px;inset-inline-start:50%;width:24px;height:2px;margin-inline-start:-12px;background:var(--neon-cyan);transform:scaleX(0);transition:transform var(--dur-2) var(--ease-out)}
+.mbr-tab[aria-current="page"]:before{transform:scaleX(1)}
+.mbr-worddot{animation:ls-fade var(--dur-1) var(--ease-swell) backwards}
+
+/* — a line in a review: what it is on the left, the figure on the right.
+   The checkout, the daybed, the improve and the release dialogs each carried
+   this as a spread object; the total row and the first row were variations
+   spelled out inline every time. — */
+.mbr-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;border-top:1px solid var(--line-faint)}
+.mbr-row--first{border-top:0}
+.mbr-row--center{align-items:center}
+.mbr-row--total{border-top-color:var(--line-strong)}
+.mbr-row__val{font-family:var(--font-mono);font-size:12px;letter-spacing:var(--track-data);color:var(--text-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.mbr-row--total .mbr-row__val{font-size:var(--text-sm);color:var(--text-1)}
+.mbr-row__val--up{color:var(--laurel)}
+.mbr-row__sub{display:block;font-size:12px;color:var(--text-3)}
+.mbr-row__dim{color:var(--text-2)}
+.mbr-row__pair{display:flex;gap:6px;flex-wrap:wrap}
+/* The body of a review dialog: --text-sm throughout, a lede above the rows
+   and a policy note under them. */
+.mbr-dlg{font-size:var(--text-sm)}
+.mbr-dlg__lede{margin:0 0 10px;color:var(--text-2)}
+.mbr-dlg__note{margin:14px 0 0;font-size:12px;color:var(--text-3)}
+
+/* — a refusal beside the control that caused it; a receipt in its place; a
+   note under one. role=alert or role=status is the caller's, and every one
+   of these was the same three declarations written in --siren or --danger by
+   whichever hand wrote the file. The status hue is --danger throughout, as
+   the kit's own .ls-field__error sets it. — */
+.mbr-alert{margin:8px 0 0;font-size:var(--text-xs);color:var(--danger);line-height:1.5}
+.mbr-alert--inline{margin:0;font-size:12px}
+.mbr-status{margin:8px 0 0;font-size:12px;color:var(--text-2)}
+.mbr-status--inline{margin:0}
+.mbr-note{margin:6px 0 0;font-size:12px;color:var(--text-3);max-width:46ch}
+.mbr-note--lg{font-size:var(--text-sm);color:var(--text-2);max-width:52ch}
+/* .you-row p is (0,1,1) and paints --text-3 at --text-2xs; a refusal inside a
+   row has to outrank it or it reads as a caption. */
+.you-row p.mbr-alert{margin-top:6px;font-size:var(--text-xs);color:var(--danger)}
+
+/* — the small boxes every surface draws — */
+.mbr-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mbr-acts--end{justify-content:flex-end}
+.mbr-acts--top{margin-top:16px}
+.mbr-stack{display:flex;flex-direction:column;gap:10px}
+.mbr-stack--wide{gap:14px}
+.mbr-panel{border:1px solid var(--line-faint);background:var(--surface-card);padding:18px 20px}
+.mbr-panel--strong{border-color:var(--line-strong)}
+.mbr-panel--wide{padding:24px}
+.mbr-block{width:100%;margin-top:4px}
+.mbr-line{display:block;margin-top:6px}
+.mbr-line--gap{margin-top:10px}
+.mbr-sub{margin-top:14px}
+.mbr-sub--sm{margin-top:10px}
+.mbr-sub--lg{margin-top:24px}
+.mbr-list{list-style:none;margin:0;padding:0}
+.mbr-title{font-family:var(--font-sans);font-weight:700;font-size:var(--text-lg)}
+.mbr-title--sm{font-size:var(--text-sm)}
+.mbr-spread{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.mbr-spread--top{align-items:flex-start;gap:16px}
+.mbr-col{max-width:720px;margin-inline:auto}
+.mbr-col--wide{max-width:820px}
+.mbr-page{max-width:760px}
+.mbr-page--narrow{max-width:680px}
+
+/* — the member's error boundary. It rendered with six inline declarations and
+   a display:block on a .ls-eyebrow to make it the gold eyebrow it already had
+   a class for. — */
+.mbr-err{padding-block:96px}
+.mbr-err h1{margin-top:12px}
+.mbr-err__lede{margin-top:12px;max-width:460px}
+.mbr-err__acts{margin-top:24px;display:flex;gap:16px;flex-wrap:wrap}
+.mbr-err__ref{margin-top:24px;color:var(--text-3)}
+
+/* — home — */
+.hbr-city{margin-top:8px}
+.hbr-live__tag{color:var(--neon-cyan)}
+.hbr-live__go{color:var(--text-3)}
+.hbr-link__ic{color:var(--text-2)}
+.hbr-links--col{grid-template-columns:1fr}
+.hbr-knots{border:1px solid var(--line-faint);background:var(--surface-card);padding:24px}
+.hbr-knots__link{display:inline-block;margin-top:12px}
+.hbr-log{margin-top:20px}
+.hbr-log__line{margin-top:10px}
+
+/* — inbox: the head, and the list while a sweep is in flight — */
+.wrd-head--first{margin-top:8px}
+.wrd-head__count{font-size:var(--text-sm);color:var(--text-2)}
+.wrd-head__acts{display:flex;gap:8px;flex-wrap:wrap}
+.wrd-sweep[aria-busy="true"] .wrd-list{opacity:.55;transition:opacity var(--dur-2) var(--ease-swell)}
+
+/* — tonight: a table for six — */
+.tbl-list{display:grid;gap:14px;margin-top:24px}
+.tbl-card{border:1px solid var(--line-faint);background:var(--surface-card);padding:18px 20px;display:grid;gap:10px}
+.tbl-card__head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tbl-card__state{margin-inline-start:auto}
+.tbl-card__acts{display:flex;gap:10px;flex-wrap:wrap}
+.tbl-card__picks{display:flex;gap:8px;flex-wrap:wrap}
+.tbl-card__note{margin-top:28px}
+/* The badge changes state as the seat is taken, confirmed, let go — the
+   optimistic reading and the server's answer both land here. */
+.tbl-card__state .ls-badge{animation:ls-fade var(--dur-2) var(--ease-swell) backwards}
+
+/* — passes — */
+.voy-cabin{margin-top:14px;width:100%}
+.voy-daybed{margin-top:14px}
+.voy-alert{flex-basis:100%;margin:0}
+.voy-full{width:100%;margin-top:4px}
+.crew-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px solid var(--line-faint);font-size:12px}
+.crew-row__who{color:var(--text-2)}
+.crew-row__note{color:var(--text-3)}
+.promo{display:flex;align-items:flex-end;gap:8px;padding-top:10px}
+.promo .ls-field{flex:1}
+.promo__applied{padding-top:10px}
+.xfr-offer{margin-bottom:10px}
+.xfr-offer__line{font-size:var(--text-sm);margin-top:6px}
+
+/* — the member card page — */
+.crd-qr{display:block;margin-inline:auto}
+.crd-code__no{margin-top:10px;color:var(--text-inverse-2);letter-spacing:var(--tracking-label)}
+.crd-due{margin-top:14px;color:var(--text-inverse-2);letter-spacing:var(--tracking-dense)}
+.crd-scan{margin-top:14px;display:flex;justify-content:center}
+.crd-feed{margin-top:34px;width:min(480px,100%);background:var(--surface-card);border:1px solid var(--line-faint);padding:18px 20px}
+.crd-feed__addr{margin-top:14px;display:flex;align-items:center;gap:10px;border:1px solid var(--line-faint);padding:8px 8px 8px 12px}
+.crd-feed__url{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:none}
+.crd-feed__links{margin-top:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.crd-feed__links a{text-transform:none}
+.crd-feed__warn{margin-top:12px}
+.crd-feed__rotate{margin-top:10px}
+.crd-log{width:min(680px,100%)}
+
+/* — you — */
+.you-sec--flush{margin-top:0}
+.you-sec--pad{padding:18px}
+.you-sec--hold{margin-top:0;border-color:var(--brass-deep)}
+.you-sec--closed{margin-top:0;border-color:var(--line-strong)}
+.you-sec>.mbr-lede{margin-top:0}
+.you-who{display:flex;align-items:center;gap:14px;min-width:0}
+.you-handle{font-size:var(--text-xs);color:var(--text-2);margin-top:2px}
+.you-row--flush{padding-inline:0}
+.you-row--top{align-items:flex-start;padding-inline:0}
+.you-due{color:var(--siren)}
+.you-pair{display:flex;gap:8px;align-items:center}
+.you-quiet{opacity:.75}
+.you-attn{margin-top:12px;font:var(--type-heading);color:var(--caution)}
+.you-qr{background:var(--paper);padding:8px;align-self:center}
+.you-key{margin:0;word-break:break-all}
+.you-held{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line-faint)}
+
+/* — account — */
+.acc-plan{font-weight:700;font-size:var(--text-lg)}
+.acc-gold{color:var(--gold-deep)}
+.acc-panel--table{padding:8px 20px 12px}
+.acc-panel--stm{padding:20px 20px 16px}
+.acc-draw{padding-top:16px;margin-top:16px;border-top:1px solid var(--line-faint)}
+.acc-draw--first{padding-top:0;margin-top:0;border-top:0}
+.acc-opt{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 0;border-top:1px solid var(--line-faint)}
+.acc-opt__line{display:block;font-size:12px;color:var(--text-2);margin-top:2px}
+.acc-receipt{font-size:var(--text-xs);color:var(--text-link)}
+.stm-table{min-width:640px}
+.stm-col{width:90px}
+.stm-memo{display:block;font-size:var(--text-xs);color:var(--text-3)}
+.stm-neg{color:var(--siren)}
+.stm-pos{color:var(--laurel)}
+/* — the eyebrow under a back link, and the two page widths the pass found — */
+.mbr-eyebrow--after{display:block;margin-top:18px}
+.mbr-page--mid{max-width:720px}
+.mbr-line--sm{margin-top:3px}
+
+/* — a card that is a person: avatar, a name in Archivo 700, a mono line, a
+   button. Matches and Shared Anchors drew it twice each, inline. — */
+.mbr-person{border:1px solid var(--line-faint);background:var(--surface-card);padding:16px 18px;display:flex;align-items:center;gap:14px}
+.mbr-person__bio{font-size:var(--text-xs);color:var(--text-2);margin-top:4px}
+.mbr-grid{display:grid;gap:12px;margin-top:24px}
+.mbr-grid--tight{margin-top:18px}
+.mbr-fill{flex:1;min-width:0}
+.mbr-min0{min-width:0}
+.mbr-flush{margin:0}
+.mbr-note--mid{color:var(--text-2)}
+.mbr-stack--end{align-items:flex-end;gap:8px}
+
+/* — live: the flag legend, the hero's tag and line, the timeline's holds and
+   stops, the countdown. The flag swatch keeps its own mark inline — the mark
+   is a drawing keyed to the flag, not a style. — */
+.now-flag{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-faint)}
+.now-flag__swatch{position:relative;flex:none;width:34px;height:24px;overflow:hidden;border:1px solid var(--border-strong);background:var(--surface-raised)}
+.now-flag__swatch--caution{background:var(--caution)}
+.now-flag__swatch--inverse{background:var(--noir-900)}
+.now-flag__name{font:700 10px var(--font-mono);letter-spacing:var(--track-data)}
+.now-flag__says{font-size:var(--text-xs);color:var(--text-3)}
+.now-hero__tag{font:700 9px var(--font-sans);letter-spacing:var(--tracking-strap);text-transform:uppercase;color:var(--neon-cyan)}
+.now-hero__line{font-size:var(--text-sm);color:var(--text-on-media);margin-top:8px}
+.now-tl .hold{color:var(--caution)}
+.now-tl .stop{font-family:var(--font-mono);font-size:10px;letter-spacing:var(--track-data)}
+.now-next{display:flex;flex-direction:column;gap:12px;align-items:center}
+.now-count{font-size:22px}
+.now-galley__cat{margin-top:14px}
+.frm-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line-faint);font-size:var(--text-sm)}
+.frm-row__cap{flex:1;min-width:0;color:var(--text-2)}
+
+/* — open deck: the composer and the post's word-row. The three bare buttons
+   layer on the kit's .ls-bare (all:unset + its own focus ring); these only
+   dress the type. .14em became --tracking-dense: the one step the type system
+   ships between .12 and .16. — */
+.wd-col{max-width:720px;margin-inline:auto;display:flex;flex-direction:column;gap:var(--space-5)}
+.wd-closed{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);padding:16px 18px;font-size:var(--text-sm);color:var(--text-2)}
+.wd-compose{background:var(--surface-card);border:1px solid var(--line-faint);border-radius:var(--radius-md);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.wd-compose__field{resize:vertical;background:transparent;border:none;font-family:var(--font-sans);font-weight:400;line-height:1.55;color:var(--text-1);min-height:56px}
+.wd-compose__pick{min-width:200px}
+.wd-attach{font:700 9px/1 var(--font-mono);letter-spacing:var(--tracking-dense);color:var(--text-3);min-height:24px;white-space:nowrap}
+.wd-reply{font:700 10px/1 var(--font-mono);letter-spacing:var(--tracking-dense);text-transform:uppercase;color:var(--text-2);min-height:24px;white-space:nowrap}
+.wd-strike{font:700 9px/1 var(--font-mono);letter-spacing:var(--tracking-dense);color:var(--text-3);min-height:24px}
+.wd-end{margin-inline-start:auto}
+.wd-cmt__form .ls-field{flex:1}
+
+/* — the boarding stub: the same ink card as /card, cut to rows — */
+.stb-card{text-align:start}
+.stb-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.stb-kind{color:var(--text-inverse-2);letter-spacing:var(--tracking-label)}
+.stb-title{font-family:var(--font-display);font-size:var(--text-xl);color:var(--bone);margin-top:14px;text-transform:uppercase}
+.stb-row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:9px 0;border-top:1px solid var(--line-inverse-faint)}
+.stb-row--cond{margin-top:18px;border-top:1px dashed var(--line-inverse)}
+.stb-row__k{color:var(--text-inverse-3);letter-spacing:var(--tracking-dense)}
+.stb-row__v{color:var(--text-inverse-1);font-size:var(--text-xs);text-align:end}
+.stb-guestqr{display:flex;justify-content:center;margin-top:20px}
+
+/* — account: the standing head and the plan options — */
+.acc-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.acc-opt__name{font-size:var(--text-sm);font-weight:700}
+/* — agreements: the line under a title, and the one that says in force — */
+.agr-line{display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:2px}
+.agr-line--force{color:var(--laurel)}

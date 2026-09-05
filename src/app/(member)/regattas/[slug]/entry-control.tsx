@@ -31,7 +31,7 @@ export function ContestEntry({
         {entered ? "Withdraw" : "Enter"}
       </Button>
       {state.error ? (
-        <p role="alert" style={{ marginTop: 8, fontSize: "var(--text-sm)", color: "var(--siren)" }}>
+        <p role="alert" className="mbr-alert">
           {state.error}
         </p>
       ) : null}

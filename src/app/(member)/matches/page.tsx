@@ -95,7 +95,7 @@ export default async function MatchesPage() {
     <div className="ls-fade">
       <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
       <h1 className="mbr-h1">Matches.</h1>
-      <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "56ch" }}>
+      <p className="mbr-lede">
         Everyone here shared a table with you and said your name back. That is
         the only way in.
       </p>
@@ -108,39 +108,27 @@ export default async function MatchesPage() {
           /* TODO(owner): Thursday is asserted here and on Tonight; the night
              itself comes off episodes.starts_at. Confirm the standing day. */
           detail="Matches come from tables, not swiping — take a seat on Thursday."
-          style={{ marginTop: 24 }}
+          className="mbr-sub--lg"
         />
       ) : (
-        <div style={{ marginTop: 24, display: "grid", gap: 12 }}>
+        <div className="mbr-grid">
           {(matches ?? []).map((m) => {
             const otherId = m.profile_a === user.id ? m.profile_b : m.profile_a;
             const p = personOf.get(otherId);
             const t = tableOf.get(m.table_id);
             const first = (p?.full_name ?? "A guest").split(" ")[0];
             return (
-              <div
-                key={m.id}
-                style={{
-                  border: "1px solid var(--line-faint)",
-                  background: "var(--surface-card)",
-                  padding: "16px 18px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 14,
-                }}
-              >
+              <div key={m.id} className="mbr-person">
                 <Avatar name={first} tone={(p?.avatar_tone ?? "ink") as "ink" | "sea" | "gold" | "sand"} />
-                <div style={{ flex: 1 }}>
+                <div className="mbr-fill">
                   {/* Below the 22px Anton floor a name is set in Archivo 700,
                       sentence case — the display face is not a caption face. */}
-                  <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
-                    {first}
-                  </b>
-                  <p className="mbr-mono" style={{ marginTop: 3 }}>
+                  <b className="mbr-title">{first}</b>
+                  <p className="mbr-mono mbr-line--sm">
                     {t ? `MATCHED AT TABLE ${t.number}` : "MATCHED"} · {logDate(m.created_at, zone)} · YOU BOTH SAID THURSDAY
                   </p>
                   {p?.bio ? (
-                    <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 4 }}>{p.bio}</p>
+                    <p className="mbr-person__bio">{p.bio}</p>
                   ) : null}
                 </div>
                 <SendAWord otherId={otherId} label="Say something" />
@@ -151,37 +139,25 @@ export default async function MatchesPage() {
       )}
 
       {anchors.length > 0 ? (
-        <section style={{ marginTop: 40 }}>
+        <section className="mbr-sub--lg">
           <span className="mbr-eyebrow">From the water — Shared Anchors</span>
-          <p style={{ marginTop: 10, fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "56ch" }}>
+          <p className="mbr-lede">
             Anchors come from an episode&rsquo;s radar, mutual only. Each one
             holds for twenty-four hours from the reveal, then the contact goes
             on both sides — no extension and no reminder.
           </p>
-          <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+          <div className="mbr-grid mbr-grid--tight">
             {anchors.map((a) => {
               const mine = passIdSet.has(a.rsvp_a) ? a.rsvp_a : a.rsvp_b;
               const theirs = a.rsvp_a === mine ? a.rsvp_b : a.rsvp_a;
               const name = anchorNameOf.get(theirs) ?? "A guest";
               const left = anchorCountdown(a.expires_at);
               return (
-                <div
-                  key={a.id}
-                  style={{
-                    border: "1px solid var(--line-faint)",
-                    background: "var(--surface-card)",
-                    padding: "16px 18px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                  }}
-                >
+                <div key={a.id} className="mbr-person">
                   <Avatar name={name} tone="sea" />
-                  <div style={{ flex: 1 }}>
-                    <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
-                      {name}
-                    </b>
-                    <p className="mbr-mono" style={{ marginTop: 3 }}>
+                  <div className="mbr-fill">
+                    <b className="mbr-title">{name}</b>
+                    <p className="mbr-mono mbr-line--sm">
                       ANCHORED · {anchorEpisodeOf.get(a.episode_id) ?? "An episode"}
                       {left ? ` · ${left}` : ""}
                     </p>

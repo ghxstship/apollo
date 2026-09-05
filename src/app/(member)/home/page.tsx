@@ -38,7 +38,7 @@ async function CityLine() {
     ? await supabase.from("cities").select("name,coordinates").eq("id", profile.home_city).maybeSingle()
     : { data: null };
   return (
-    <div className="mbr-mono" style={{ marginTop: 8 }}>
+    <div className="mbr-mono hbr-city">
       {/* The club's own city is not the member's. Every fixture with a
           null home_city was being told theirs was Marina del Rey. The
           column keeps its name; the label reads the lexicon. */}
@@ -253,11 +253,9 @@ async function HomeBody() {
             {live.map((v) => (
               <Link key={v.id} href="/live" className="mbr-plain">
                 <div className="hbr-live__row">
-                  <span className="ls-live mbr-mono" style={{ color: "var(--neon-cyan)" }}>
-                    LIVE
-                  </span>
+                  <span className="ls-live mbr-mono hbr-live__tag">LIVE</span>
                   <b>{v.title}</b>
-                  <Icon name="ArrowUpRight" size={16} style={{ color: "var(--text-3)" }} />
+                  <Icon name="ArrowUpRight" size={16} className="hbr-live__go" />
                 </div>
               </Link>
             ))}
@@ -267,16 +265,16 @@ async function HomeBody() {
 
       <section className="mbr-sec ls-rise-2">
         <div className="ls-grid-2">
-          <div style={{ border: "1px solid var(--line-faint)", background: "var(--surface-card)", padding: 24 }}>
+          <div className="hbr-knots">
             <Stat label={CURRENCY.name} value={knots(balance)} sub="MORE KNOTS, FARTHER WATER" />
-            <Link href="/you#you-knots" className="mbr-mono" style={{ display: "inline-block", marginTop: 12 }}>
+            <Link href="/you#you-knots" className="mbr-mono hbr-knots__link">
               THE LEDGER AND WHAT KNOTS BUY →
             </Link>
           </div>
-          <div className="hbr-links" style={{ gridTemplateColumns: "1fr" }}>
+          <div className="hbr-links hbr-links--col">
             {ALSO_ABOARD.slice(0, 3).map(([href, icon, label, line]) => (
               <Link key={href} href={href} className="hbr-link">
-                <Icon name={icon} size={18} style={{ color: "var(--text-2)" }} />
+                <Icon name={icon} size={18} className="hbr-link__ic" />
                 <div>
                   <b>{label}</b>
                   <span>{line}</span>
@@ -292,7 +290,7 @@ async function HomeBody() {
         <div className="hbr-links">
           {ALSO_ABOARD.slice(3).map(([href, icon, label, line]) => (
             <Link key={href} href={href} className="hbr-link">
-              <Icon name={icon} size={18} style={{ color: "var(--text-2)" }} />
+              <Icon name={icon} size={18} className="hbr-link__ic" />
               <div>
                 <b>{label}</b>
                 <span>{line}</span>
@@ -331,8 +329,8 @@ async function HomeBody() {
             ))}
           </div>
         )}
-        <div className="ls-double-rule" style={{ marginTop: 20 }}></div>
-        <div className="mbr-mono" style={{ marginTop: 10 }}>
+        <div className="ls-double-rule hbr-log"></div>
+        <div className="mbr-mono hbr-log__line">
           SHIP&apos;S LOG · {logDate(nowIso, zone)} · ALL WELL
         </div>
       </section>
@@ -351,10 +349,10 @@ export default async function HomePortPage() {
             and the welcome moved up into the eyebrow, where it still lands
             first and still says the member’s name. */}
         <span className="mbr-eyebrow">Fair winds, {firstName(profile)}</span>
-        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          {SURFACES.homePort}.
-        </h1>
-        <Suspense fallback={<div className="mbr-mono" style={{ marginTop: 8 }}>—</div>}>
+        <h1 className="mbr-h1">{SURFACES.homePort}.</h1>
+        {/* The fallback is the line's own box, so the head does not shift
+            when the city arrives. */}
+        <Suspense fallback={<div className="mbr-mono hbr-city" aria-busy="true">—</div>}>
           <CityLine />
         </Suspense>
       </div>

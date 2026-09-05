@@ -49,7 +49,7 @@ export default async function RegattasPage() {
           it and the standing line moves up. */}
       <span className="mbr-eyebrow">Bounded, and then over</span>
       <h1 className="mbr-h1">{LOGBOOK.regattas}.</h1>
-      <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "58ch" }}>
+      <p className="mbr-lede">
         A regatta ranks the boats that entered it. A challenge asks for a number
         and you either reach it or you don&rsquo;t. Both close on a date — the
         result is published once and joins the log.

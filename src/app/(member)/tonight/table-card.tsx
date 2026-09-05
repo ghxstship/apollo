@@ -16,6 +16,14 @@ export type TableView = {
   seatmates: Array<{ id: string; name: string; picked: boolean }>;
 };
 
+type Seat = TableView["mine"];
+
+/* What the card shows of the seat before the server has answered. The chair
+   is taken as the finger lifts; the RPC's answer — the hold, the capacity
+   race, a refusal in the club's voice — settles it a round trip later, and a
+   refusal puts the card back exactly as it was, with the reason under it. */
+type Shown = { mine: Seat; taken: number };
+
 export function TableCard({ table }: { table: TableView }) {
   const [pending, start] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -23,80 +31,83 @@ export function TableCard({ table }: { table: TableView }) {
      rides on the pick row and cannot be added after, so it is decided first. */
   const [again, setAgain] = React.useState(false);
   const t = table;
-  const full = t.taken >= t.seats && !t.mine;
+  /* Same pattern as the ballot and the pass release: the server's row is the
+     truth, and this is only what the card reads until it arrives. */
+  const [shown, setShown] = React.useOptimistic<Shown, Shown>(
+    { mine: t.mine, taken: t.taken },
+    (_, next) => next
+  );
+  const full = shown.taken >= t.seats && !shown.mine;
 
-  const act = (fn: () => Promise<{ error?: string }>) => {
+  const act = (fn: () => Promise<{ error?: string }>, next?: Shown) => {
     setError(null);
     start(async () => {
+      if (next) setShown(next);
       const res = await fn();
       if (res.error) setError(res.error);
     });
   };
 
+  const take = () =>
+    act(() => claimSeat(t.id), { mine: { state: "held", heldUntil: "" }, taken: shown.taken + 1 });
+  const confirm = () =>
+    act(() => confirmSeat(t.id), { mine: { state: "confirmed", heldUntil: "" }, taken: shown.taken });
+  const letGo = () =>
+    act(() => releaseSeat(t.id), { mine: null, taken: Math.max(0, shown.taken - 1) });
+
   return (
-    <div
-      style={{
-        border: "1px solid var(--line-faint)",
-        background: "var(--surface-card)",
-        padding: "18px 20px",
-        display: "grid",
-        gap: 10,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+    <div className="tbl-card" aria-busy={pending || undefined}>
+      <div className="tbl-card__head">
         {/* Below the 22px Anton floor a title is Archivo 700, sentence case. */}
-        <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
-          Table {t.number}
-        </b>
+        <b className="mbr-title">Table {t.number}</b>
         <span className="mbr-mono">{t.nightWhen}</span>
-        <span style={{ marginLeft: "auto" }}>
-          {t.mine?.state === "confirmed" ? (
-            <Badge tone="positive">Seated</Badge>
-          ) : t.mine?.state === "held" ? (
-            <Badge tone="caution">Held</Badge>
+        <span className="tbl-card__state">
+          {shown.mine?.state === "confirmed" ? (
+            <Badge tone="positive" key="seated">Seated</Badge>
+          ) : shown.mine?.state === "held" ? (
+            <Badge tone="caution" key="held">Held</Badge>
           ) : full ? (
-            <Badge tone="outline">Full</Badge>
+            <Badge tone="outline" key="full">Full</Badge>
           ) : (
-            <span className="mbr-mono">{t.seats - t.taken} OF {t.seats} OPEN</span>
+            <span className="mbr-mono">{t.seats - shown.taken} OF {t.seats} OPEN</span>
           )}
         </span>
       </div>
-      <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
-        Blind table for six · {t.nightTitle}
-      </p>
+      <p className="mbr-note mbr-note--lg">Blind table for six · {t.nightTitle}</p>
 
       {!t.started ? (
-        <div style={{ display: "flex", gap: 10 }}>
-          {!t.mine ? (
-            <Button size="sm" variant="gold" disabled={pending || full} onClick={() => act(() => claimSeat(t.id))}>
+        <div className="tbl-card__acts">
+          {!shown.mine ? (
+            <Button size="sm" variant="gold" disabled={pending || full} onClick={take}>
               Take a seat
             </Button>
-          ) : t.mine.state === "held" ? (
+          ) : shown.mine.state === "held" ? (
             <>
-              <Button size="sm" variant="gold" disabled={pending} onClick={() => act(() => confirmSeat(t.id))}>
+              <Button size="sm" variant="gold" disabled={pending} onClick={confirm}>
                 Confirm
               </Button>
-              <Button size="sm" variant="ghost" disabled={pending} onClick={() => act(() => releaseSeat(t.id))}>
+              <Button size="sm" variant="ghost" disabled={pending} onClick={letGo}>
                 Let it go
               </Button>
             </>
           ) : (
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => act(() => releaseSeat(t.id))}>
+            <Button size="sm" variant="ghost" disabled={pending} onClick={letGo}>
               Give up the seat
             </Button>
           )}
         </div>
       ) : t.mine?.state === "confirmed" && t.seatmates.length > 0 ? (
         <div>
-          <span className="mbr-mono" style={{ display: "block", marginBottom: 8 }}>
+          <span className="mbr-mono mbr-mono--block mbr-line">
             WHO WOULD YOU MEET AGAIN — PRIVATE UNTIL MUTUAL
           </span>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div className="tbl-card__picks mbr-sub--sm">
             {t.seatmates.map((m) => (
               <Button
                 key={m.id}
                 size="sm"
                 variant={m.picked ? "gold" : "outline"}
+                aria-pressed={m.picked}
                 disabled={pending || m.picked}
                 onClick={() => act(() => pickFromTable(t.id, m.id, again))}
               >
@@ -111,14 +122,16 @@ export function TableCard({ table }: { table: TableView }) {
               disabled={pending}
               label="Also tell the Bridge I'd sit near them again"
               description="A seating hint for the next Table night. Never shown to anyone at the table."
-              style={{ marginTop: 10 }}
+              className="mbr-sub--sm"
             />
           ) : null}
         </div>
       ) : null}
 
       {error ? (
-        <p role="alert" style={{ fontSize: "var(--text-xs)", color: "var(--danger)" }}>{error}</p>
+        <p role="alert" className="mbr-alert">
+          {error}
+        </p>
       ) : null}
     </div>
   );

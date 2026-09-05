@@ -69,15 +69,6 @@ function policyLine(hours: number): string {
    folded into You on 2026-09-04; a plan is changed on the account page. */
 const MANAGE_MEMBERSHIP = { href: "/account", label: "Manage membership" };
 
-const rowStyle: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "baseline",
-  gap: 12,
-  padding: "8px 0",
-  borderTop: "1px solid var(--line-faint)",
-};
-
 function money(cents: number): string {
   return `$${(cents / 100).toFixed(cents % 100 ? 2 : 0)}`;
 }
@@ -119,7 +110,7 @@ function GuestNameInputs({
           required
           value={name}
           onChange={(e) => onChange(i, e.target.value)}
-          style={{ marginTop: 10 }}
+          className="mbr-sub--sm"
         />
       ))}
     </>
@@ -274,6 +265,11 @@ export function PassControls({
      re-render confirms it, and a refusal restores the pass with the reason. */
   const [shownStatus, setShownStatus] = React.useOptimistic(myStatusProp);
   const myStatus = shownStatus;
+  /* The party reads the new count as the stepper is pressed; the write lands
+     a round trip later, and a refusal returns the stepper to the record with
+     the reason beside it. Pricing below keeps reading `guests` — the server's
+     figure — because the money is the server's to say. */
+  const [shownGuests, setShownGuests] = React.useOptimistic(guests);
   const [offerWaitlist, setOfferWaitlist] = React.useState(false);
   const [checkout, setCheckout] = React.useState(false);
   const [releasing, setReleasing] = React.useState(false);
@@ -412,7 +408,10 @@ export function PassControls({
   const onGuestStep = (n: number) => {
     if (n <= guests) {
       /* Shrinking the party — truncate the names to match. */
-      run(() => setGuests(episodeId, n, guestNames.slice(0, n)));
+      run(() => {
+        setShownGuests(n);
+        return setGuests(episodeId, n, guestNames.slice(0, n));
+      });
     } else {
       /* Growing it — ask for the new names before writing. */
       setError(null);
@@ -422,7 +421,7 @@ export function PassControls({
 
   const errorBlock = (onWaitlist?: () => void) =>
     error ? (
-      <p className="voy-hold" role="alert" style={{ marginTop: 10 }}>
+      <p className="mbr-alert" role="alert">
         {error}
         {offerWaitlist ? fullDoors(onWaitlist) : null}
       </p>
@@ -453,7 +452,7 @@ export function PassControls({
   return (
     <div className="voy-foot">
       {locked ? (
-        <span className="voy-lock" style={{ flexBasis: "100%" }}>
+        <span className="voy-lock voy-alert">
           {/* One line for a paused member, in place of the lock's own: it
               names what still works and the clock that is running. */}
           {paused ? pausedLine : lockedNote}
@@ -462,7 +461,7 @@ export function PassControls({
       {weatherHold ? (
         <>
           <Badge tone="caution">Weather hold</Badge>
-          <span className="voy-hold" style={holdsAPass ? { flexBasis: "100%" } : undefined}>
+          <span className={holdsAPass ? "voy-hold voy-alert" : "voy-hold"}>
             Held for weather. The call comes by 18:00 the night before: it runs, or it is called off and your pass is credited in full. Nothing more is charged while it holds.
           </span>
         </>
@@ -474,7 +473,7 @@ export function PassControls({
               same either way. */}
           {standby ? <Badge tone="caution">Standby</Badge> : <Badge tone="positive">Aboard</Badge>}
           {standby ? (
-            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+            <span className="voy-hold voy-alert">
               You board if a seat comes free by muster. If none does, the pass releases and credits in full.
             </span>
           ) : null}
@@ -485,9 +484,10 @@ export function PassControls({
                   no disabled prop, and a range of one is the same thing. */}
               <Stepper
                 size="sm"
+                label="Guests"
                 min={paused ? guests : 0}
                 max={paused ? guests : guestAllowance}
-                value={guests}
+                value={shownGuests}
                 onChange={onGuestStep}
               />
             </>
@@ -543,7 +543,7 @@ export function PassControls({
               label="Your cabin"
               defaultValue={cabinId ?? ""}
               disabled={paused || pending}
-              style={{ marginTop: 14, width: "100%" }}
+              className="voy-cabin"
               onChange={(e) => {
                 const v = e.target.value || null;
                 /* Refusals land in the card's own error line, not a browser
@@ -565,17 +565,15 @@ export function PassControls({
               RPC holds both lines and answers refusals in its own voice. The
               figures are the product's own; the block is absent off Sea. */}
           {passId && daybed ? (
-            <div style={{ marginTop: 14 }}>
-              <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
-                BOW DAYBED
-              </span>
+            <div className="voy-daybed">
+              <span className="mbr-mono mbr-mono--block">BOW DAYBED</span>
               {daybedHeld ? (
-                <span style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
+                <span className="mbr-note mbr-note--lg">
                   Bow daybed held — the steward knows your name
                 </span>
               ) : (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <span className="mbr-mono" style={{ fontSize: 12 }}>
+                <span className="mbr-acts mbr-sub--sm">
+                  <span className="mbr-mono mbr-mono--lg">
                     {price(daybed.priceCents)} · group of {countWord(daybed.party)} ·{" "}
                     {countWord(daybed.cap)} per episode
                   </span>
@@ -639,9 +637,9 @@ export function PassControls({
           {paused ? (
             /* The switch is an passes UPDATE, refused while paused — shown as
                it stands, and not offered. */
-            <div style={{ width: "100%", marginTop: 4 }}>
+            <div className="voy-full">
               {waitlistPosition != null ? (
-                <span className="mbr-mono" style={{ display: "block", marginTop: 6 }}>
+                <span className="mbr-mono mbr-line">
                   {waitlistPosition} IN ORDER
                 </span>
               ) : null}
@@ -650,7 +648,7 @@ export function PassControls({
                 checked={autoClaim}
                 readOnly
                 disabled
-                style={{ marginTop: 10 }}
+                className="mbr-sub--sm"
               />
             </div>
           ) : (
@@ -693,7 +691,7 @@ export function PassControls({
         request && offerLive ? (
           <>
             <Badge tone="gold">A place is yours</Badge>
-            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+            <span className="voy-hold voy-alert">
               The Bridge offered you a place. It stands{" "}
               {claimHours != null ? `for ${claimHours} hours from the offer` : "for the claim window"}, then
               passes to the next in line.
@@ -726,7 +724,7 @@ export function PassControls({
         ) : request ? (
           <>
             <Badge tone="outline">Requested</Badge>
-            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+            <span className="voy-hold voy-alert">
               Asked for. The Bridge decides the night before and writes once; an offer
               stands {claimHours != null ? `for ${claimHours} hours` : "for the claim window"}.
             </span>
@@ -743,7 +741,7 @@ export function PassControls({
         ) : (
           <>
             <span className="mbr-mono">BY REQUEST</span>
-            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+            <span className="voy-hold voy-alert">
               Ask for a place and the Bridge writes back the night before. No queue number — a
               yes or a no.
             </span>
@@ -771,7 +769,7 @@ export function PassControls({
         <>
           <Badge tone="outline">Full</Badge>
           {standbyOpen ? (
-            <span className="voy-hold" style={{ flexBasis: "100%" }}>
+            <span className="voy-hold voy-alert">
               Take a standby pass — you board if a seat comes free by muster. It stands outside
               the count, and it releases and credits in full if no seat does.
             </span>
@@ -820,7 +818,7 @@ export function PassControls({
       )}
 
       {error && !dialogOpen ? (
-        <span className="voy-hold" role="alert" style={{ width: "100%" }}>
+        <span className="mbr-alert voy-alert" role="alert">
           {error}
           {offerWaitlist ? fullDoors() : null}
         </span>
@@ -867,39 +865,36 @@ export function PassControls({
           </>
         }
       >
-        <div style={{ fontSize: "var(--text-sm)" }}>
+        <div className="mbr-dlg">
           {coStandby ? (
-            <p style={{ marginBottom: 10, color: "var(--text-2)" }}>
+            <p className="mbr-dlg__lede">
               A standby pass stands outside the count. You board if a seat comes free by
               muster; if none does, the pass releases and every charge credits back in full.
             </p>
           ) : null}
-          <div style={{ ...rowStyle, borderTop: "none" }}>
+          <div className="mbr-row mbr-row--first">
             <span>{coStandby ? "Standby pass" : "Pass"}</span>
-            <span className="mbr-mono" style={{ fontSize: 12 }}>
-              {price(passDue)}
-            </span>
+            <span className="mbr-row__val">{price(passDue)}</span>
           </div>
           {depositDue ? (
-            <div style={rowStyle}>
+            <div className="mbr-row">
               <span>
                 <Badge tone="gold">Deposit</Badge>{" "}
-                <span style={{ color: "var(--text-3)", fontSize: 12 }}>
+                <span className="mbr-row__sub">
                   credited to the galley aboard, forfeited on no-show
                 </span>
               </span>
-              <span className="mbr-mono" style={{ fontSize: 12 }}>
-                {money(depositCents)}
-              </span>
+              <span className="mbr-row__val">{money(depositCents)}</span>
             </div>
           ) : null}
           {guestsAllowed ? (
-            <div style={rowStyle}>
+            <div className="mbr-row mbr-row--center">
               <span className="mbr-mono">
                 GUESTS · UP TO {guestAllowance} ON YOUR PLAN
               </span>
               <Stepper
                 size="sm"
+                label="Guests"
                 min={0}
                 max={guestAllowance}
                 value={coGuests}
@@ -919,7 +914,7 @@ export function PassControls({
             />
           ) : null}
           {addons.map((a) => (
-            <div key={a.id} style={rowStyle}>
+            <div key={a.id} className="mbr-row mbr-row--center">
               <Checkbox
                 /* The price sat in a sibling span outside the <label>, so the
                    accessible name of this box was the add-on's name and
@@ -936,7 +931,7 @@ export function PassControls({
                 checked={chosen.has(a.id)}
                 onChange={() => toggleAddon(a.id)}
               />
-              <span className="mbr-mono" style={{ fontSize: 12 }} aria-hidden="true">
+              <span className="mbr-row__val" aria-hidden="true">
                 {money(a.price_cents * qty)}
               </span>
             </div>
@@ -948,14 +943,12 @@ export function PassControls({
             onCleared={() => setPromo(null)}
           />
           {splitEligible ? (
-            <div style={{ ...rowStyle, alignItems: "center" }}>
+            <div className="mbr-row mbr-row--center">
               <span>
-                <b style={{ fontWeight: 700 }}>Split it</b>
-                <span style={{ display: "block", color: "var(--text-3)", fontSize: 12 }}>
-                  No interest. The rest is drawn monthly.
-                </span>
+                <b>Split it</b>
+                <span className="mbr-row__sub">No interest. The rest is drawn monthly.</span>
               </span>
-              <span style={{ display: "flex", gap: 6 }}>
+              <span className="mbr-row__pair" role="group" aria-label="Draws">
                 {[2, 3, 4].map((n) => (
                   <Tag
                     key={n}
@@ -969,40 +962,34 @@ export function PassControls({
             </div>
           ) : null}
           {creditApplied > 0 ? (
-            <div style={rowStyle}>
+            <div className="mbr-row">
               <span>Plan credit</span>
-              <span className="mbr-mono" style={{ fontSize: 12 }}>
-                −{price(creditApplied)}
-              </span>
+              <span className="mbr-row__val">−{price(creditApplied)}</span>
             </div>
           ) : null}
-          <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
+          <div className="mbr-row mbr-row--total">
             <span className="mbr-mono">
               {splitDraws ? "DUE TODAY" : "DUE TO MEMBER ACCOUNT"}
             </span>
-            <span className="mbr-mono" style={{ fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
+            <span className="mbr-row__val">
               {splitDraws || dueToday - creditApplied > 0 ? price(splitDraws ? dueToday : dueToday - creditApplied) : "$0"}
             </span>
           </div>
           {splitDraws ? (
-            <div style={rowStyle}>
-              <span style={{ color: "var(--text-2)" }}>Then</span>
-              <span className="mbr-mono" style={{ fontSize: 12 }}>
+            <div className="mbr-row">
+              <span className="mbr-row__dim">Then</span>
+              <span className="mbr-row__val">
                 {splitDraws - 1} × {money(perDraw)}
               </span>
             </div>
           ) : null}
           {knotsOnCompletion != null ? (
-            <div style={rowStyle}>
-              <span style={{ color: "var(--text-2)" }}>On completion</span>
-              <span className="mbr-mono" style={{ fontSize: 12, color: "var(--laurel)" }}>
-                +{knotsOnCompletion} KN
-              </span>
+            <div className="mbr-row">
+              <span className="mbr-row__dim">On completion</span>
+              <span className="mbr-row__val mbr-row__val--up">+{knotsOnCompletion} KN</span>
             </div>
           ) : null}
-          <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>
-            {policyLine(creditHours)}
-          </p>
+          <p className="mbr-dlg__note">{policyLine(creditHours)}</p>
           {errorBlock(() => setCheckout(false))}
         </div>
       </Dialog>
@@ -1040,31 +1027,25 @@ export function PassControls({
             </>
           }
         >
-          <div style={{ fontSize: "var(--text-sm)" }}>
-            <div style={{ ...rowStyle, borderTop: "none" }}>
+          <div className="mbr-dlg">
+            <div className="mbr-row mbr-row--first">
               <span>
                 Bow daybed
-                <span style={{ display: "block", color: "var(--text-3)", fontSize: 12 }}>
-                  {voyageTitle}
-                </span>
+                <span className="mbr-row__sub">{voyageTitle}</span>
               </span>
-              <span className="mbr-mono" style={{ fontSize: 12 }}>
-                {price(daybed.priceCents)}
-              </span>
+              <span className="mbr-row__val">{price(daybed.priceCents)}</span>
             </div>
-            <div style={rowStyle}>
-              <span style={{ color: "var(--text-2)" }}>
+            <div className="mbr-row">
+              <span className="mbr-row__dim">
                 Room for {countWord(daybed.party)}. {countWord(daybed.cap).replace(/^./, (c) => c.toUpperCase())}{" "}
                 per episode, one per pass.
               </span>
             </div>
-            <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
+            <div className="mbr-row mbr-row--total">
               <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
-              <span className="mbr-mono" style={{ fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
-                {price(daybed.priceCents)}
-              </span>
+              <span className="mbr-row__val">{price(daybed.priceCents)}</span>
             </div>
-            <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>
+            <p className="mbr-dlg__note">
               It rides on your pass. Release the pass and the daybed goes with it —
               credited in full more than {creditHours} hours out, forfeit inside.
             </p>
@@ -1092,7 +1073,10 @@ export function PassControls({
               onClick={() =>
                 guestEdit &&
                 run(
-                  () => setGuests(episodeId, guestEdit.count, guestEdit.names),
+                  () => {
+                    setShownGuests(guestEdit.count);
+                    return setGuests(episodeId, guestEdit.count, guestEdit.names);
+                  },
                   () => setGuestEdit(null)
                 )
               }
@@ -1102,7 +1086,7 @@ export function PassControls({
           </>
         }
       >
-        <div style={{ fontSize: "var(--text-sm)" }}>
+        <div className="mbr-dlg">
           {guestEdit ? (
             <GuestNameInputs
               names={guestEdit.names}
@@ -1145,9 +1129,9 @@ export function PassControls({
           </>
         }
       >
-        <div style={{ fontSize: "var(--text-sm)" }}>
+        <div className="mbr-dlg">
           {unattached.map((a, i) => (
-            <div key={a.id} style={i === 0 ? { ...rowStyle, borderTop: "none" } : rowStyle}>
+            <div key={a.id} className={i === 0 ? "mbr-row mbr-row--center mbr-row--first" : "mbr-row mbr-row--center"}>
               <Checkbox
                 label={
                   <>
@@ -1159,18 +1143,16 @@ export function PassControls({
                 checked={improveChosen.has(a.id)}
                 onChange={() => toggleImprove(a.id)}
               />
-              <span className="mbr-mono" style={{ fontSize: 12 }} aria-hidden="true">
+              <span className="mbr-row__val" aria-hidden="true">
                 {money(a.price_cents * aboardQty)}
               </span>
             </div>
           ))}
-          <div style={{ ...rowStyle, borderTop: "1px solid var(--line-strong)" }}>
+          <div className="mbr-row mbr-row--total">
             <span className="mbr-mono">DUE TO MEMBER ACCOUNT</span>
-            <span className="mbr-mono" style={{ fontSize: "var(--text-sm)", color: "var(--text-1)" }}>
-              {money(improveTotal)}
-            </span>
+            <span className="mbr-row__val">{money(improveTotal)}</span>
           </div>
-          <p style={{ marginTop: 14, fontSize: 12, color: "var(--text-3)" }}>
+          <p className="mbr-dlg__note">
             Add-ons stay open until 18:00 the night before departure.
           </p>
           {errorBlock()}
@@ -1208,7 +1190,7 @@ export function PassControls({
           </>
         }
       >
-        <div style={{ fontSize: "var(--text-sm)" }}>
+        <div className="mbr-dlg">
           {fullCredit
             ? `More than ${creditHours} hours out — every charge credits back in full, and the pass goes to the waitlist in order.`
             : /* Inside the window, what goes is named: the pass, the deposit,

@@ -45,11 +45,9 @@ export default async function PollsPage() {
   );
 
   return (
-    <div className="ls-fade" style={{ maxWidth: 720 }}>
+    <div className="ls-fade mbr-page mbr-page--mid">
       <span className="mbr-eyebrow">Questions on the table</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Polls.
-      </h1>
+      <h1 className="mbr-h1">Polls.</h1>
       <p className="pol-lede">
         The next Special&rsquo;s city, a regatta&rsquo;s route, what the galley stocks.
         One vote each, changeable until the question closes; the Bridge settles it

@@ -121,7 +121,7 @@ export default async function ThreadPage({
   const otherHandle = thread.kind === "direct" ? others[0]?.handle ?? null : null;
 
   return (
-    <div style={{ maxWidth: 720, marginInline: "auto" }}>
+    <div className="mbr-col">
       <ThreadLive threadId={thread.id} />
 
       <Link href="/threads" className="dir-back mbr-mono">
@@ -130,9 +130,7 @@ export default async function ThreadPage({
 
       <header className="thr-head">
         <span className="mbr-eyebrow">{eyebrow}</span>
-        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          {title}
-        </h1>
+        <h1 className="mbr-h1">{title}</h1>
         {thread.kind === "crew" && names.length ? (
           <p className="thr-head__roster">Aboard: {aboard}</p>
         ) : null}

@@ -24,8 +24,6 @@ export type StandingOffer = { id: string; name: string };
 export type CrewSeeker = { id: string; name: string; handle: string | null; note: string | null };
 export type AppliedPromo = { code: string; kind: PromoKind; value: number; passCents: number };
 
-const monoLine: React.CSSProperties = { display: "block", marginTop: 6 };
-
 /* The page's own origin, for a link a member copies. Read through
    useSyncExternalStore so the server renders nothing and the browser fills it
    in, rather than a `typeof window` branch in render. */
@@ -33,18 +31,13 @@ const subscribeNever = () => () => {};
 function useOrigin(): string {
   return React.useSyncExternalStore(subscribeNever, () => window.location.origin, () => "");
 }
-const noteStyle: React.CSSProperties = {
-  fontSize: 12,
-  color: "var(--text-3)",
-  marginTop: 6,
-  maxWidth: "46ch",
-};
-const blockStyle: React.CSSProperties = { width: "100%", marginTop: 4 };
-
+/* The refusal, beside the control that asked. --danger, as the kit's own
+   field error paints it — it used to wear .voy-hold, which is --text-2 and
+   reads as a footnote. */
 function Problem({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p className="voy-hold" role="alert" style={{ marginTop: 8 }}>
+    <p className="mbr-alert" role="alert">
       {message}
     </p>
   );
@@ -66,30 +59,31 @@ export function WaitlistClaim({
   creditHours: number;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const [on, setOn] = React.useState(autoClaim);
   const [error, setError] = React.useState<string | null>(null);
+  /* The switch moves as the finger lifts; the write is the truth a round trip
+     later (setAutoClaim revalidates /passes), and a refusal puts it back with
+     the reason under it — the same shape the ballot and the seat use, rather
+     than a hand-rolled setOn/setOn(!next) pair. */
+  const [on, setOn] = React.useOptimistic(autoClaim);
 
   const flip = (next: boolean) => {
-    setOn(next);
     setError(null);
     startTransition(async () => {
+      setOn(next);
       const res = await setAutoClaim(episodeId, next);
-      if (res.error) {
-        setOn(!next);
-        setError(res.error);
-      }
+      if (res.error) setError(res.error);
     });
   };
 
   return (
-    <div style={blockStyle}>
+    <div className="mbr-block">
       {position != null ? (
-        <span className="mbr-mono" style={monoLine}>
+        <span className="mbr-mono mbr-line">
           {position} IN ORDER
         </span>
       ) : null}
       {position === 1 ? (
-        <span className="mbr-mono" style={monoLine}>
+        <span className="mbr-mono mbr-line">
           NEXT IN ORDER
         </span>
       ) : null}
@@ -98,14 +92,14 @@ export function WaitlistClaim({
         checked={on}
         disabled={pending}
         onChange={(e) => flip(e.target.checked)}
-        style={{ marginTop: 10 }}
+        className="mbr-sub--sm"
       />
       {/* Two systems, two truths. This is the numbered list on an ordinary
           episode: a freed pass goes to the next in order, and with the switch
           on it is taken for you the moment it frees — there is no offer and no
           clock to beat. The clock that does exist here is the release window,
           and it is the club's figure, not a typed 48. */}
-      <p style={noteStyle}>
+      <p className="mbr-note">
         {on
           ? `We take the pass for you the moment one frees, in order. Once it is yours, release it more than ${creditHours} hours out for full credit.`
           : `When one frees you are told, in order, and the Confirm button appears here — first come, first aboard. Release a claimed pass more than ${creditHours} hours out for full credit.`}
@@ -136,7 +130,7 @@ export function HandOff({
   if (offer) {
     return (
       <>
-        <span className="mbr-mono" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <span className="mbr-mono mbr-mono--flex">
           OFFERED TO {offer.name.toUpperCase()} —
           <Button
             variant="ghost"
@@ -154,7 +148,7 @@ export function HandOff({
           </Button>
         </span>
         {error ? (
-          <span className="voy-hold" role="alert" style={{ width: "100%" }}>
+          <span className="mbr-alert voy-alert" role="alert">
             {error}
           </span>
         ) : null}
@@ -201,7 +195,7 @@ export function HandOff({
           </>
         }
       >
-        <div style={{ fontSize: "var(--text-sm)" }}>
+        <div className="mbr-dlg">
           <Select
             label="Who takes it"
             placeholder="Choose a member"
@@ -209,7 +203,7 @@ export function HandOff({
             onChange={(e) => setChoice(e.target.value)}
             options={members.map((m) => ({ value: m.id, label: m.label }))}
           />
-          <p style={{ ...noteStyle, marginTop: 12 }}>
+          <p className="mbr-dlg__note">
             Passes move between members, never for cash — the code of conduct is
             the code of conduct. They accept from their own Passes; your account
             squares the moment they do.
@@ -233,36 +227,30 @@ export function GuestStubs({ guests, partner = null }: { guests: GuestStub[]; pa
   if (cut.length === 0 && !head) return null;
   const unsigned = [...(head ? [head] : []), ...cut].filter((g) => !g.signed);
   return (
-    <div style={blockStyle}>
+    <div className="mbr-block">
       {head ? (
-        <span style={monoLine}>
-          <Link
-            href={`/stub/${head.code}`}
-            className="mbr-mono"
-            style={{ color: "var(--text-link)", textDecoration: "none" }}
-          >
+        <span className="mbr-line mbr-mono--flex">
+          {/* A link is underlined, by base.css — the rule that keeps a link
+              visible now that the accent has no hue. This one keeps it. */}
+          <Link href={`/stub/${head.code}`} className="mbr-mono">
             SECOND HEAD — {head.name.toUpperCase()} · CODE {head.code}
           </Link>
-          <span className="mbr-mono" style={{ marginInlineStart: 10 }}>
+          <span className="mbr-mono">
             {head.signed ? "WAIVER SIGNED" : "WAIVER OUTSTANDING"}
           </span>
         </span>
       ) : null}
       {cut.length > 0 ? (
-        <span className="mbr-mono" style={head ? { ...monoLine, marginTop: 10 } : monoLine}>
+        <span className={head ? "mbr-mono mbr-line mbr-line--gap" : "mbr-mono mbr-line"}>
           GUEST STUBS
         </span>
       ) : null}
       {cut.map((g) => (
-        <span key={g.code} style={monoLine}>
-          <Link
-            href={`/stub/${g.code}`}
-            className="mbr-mono"
-            style={{ color: "var(--text-link)", textDecoration: "none" }}
-          >
+        <span key={g.code} className="mbr-line mbr-mono--flex">
+          <Link href={`/stub/${g.code}`} className="mbr-mono">
             {g.name.toUpperCase()} — {g.code}
           </Link>
-          <span className="mbr-mono" style={{ marginInlineStart: 10 }}>
+          <span className="mbr-mono">
             {g.signed ? "WAIVER SIGNED" : "WAIVER OUTSTANDING"}
           </span>
         </span>
@@ -270,10 +258,8 @@ export function GuestStubs({ guests, partner = null }: { guests: GuestStub[]; pa
       {/* A guest cannot board unsigned, and only the member who invited them can
           pass on the link — so it lives here, next to their stub. */}
       {unsigned.length > 0 ? (
-        <span style={{ ...monoLine, marginTop: 10 }}>
-          <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
-            SEND THEM THIS TO SIGN
-          </span>
+        <span className="mbr-line mbr-line--gap">
+          <span className="mbr-mono mbr-mono--block">SEND THEM THIS TO SIGN</span>
           {unsigned.map((g) => (
             <CopyLink
               key={g.signToken}
@@ -307,8 +293,8 @@ export function PromoField({
 
   if (applied) {
     return (
-      <div style={{ paddingTop: 10 }}>
-        <span className="mbr-mono" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+      <div className="promo__applied">
+        <span className="mbr-mono mbr-mono--flex">
           CODE {applied.code} APPLIED
           <Button
             variant="ghost"
@@ -340,7 +326,7 @@ export function PromoField({
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, paddingTop: 10 }}>
+    <div className="promo">
       <Input
         label="Have a code?"
         value={raw}
@@ -354,7 +340,6 @@ export function PromoField({
           }
         }}
         error={error ?? undefined}
-        style={{ flex: 1 }}
       />
       <Button
         variant="outline"
@@ -399,41 +384,26 @@ export function CrewCall({
   };
 
   return (
-    <div style={blockStyle}>
+    <div className="mbr-block">
       {seekers.length > 0 ? (
         <>
-          <span className="mbr-mono" style={monoLine}>
+          <span className="mbr-mono mbr-line">
             {seekers.length} LOOKING FOR CREW
           </span>
           {seekers.map((s) => (
-            <div
-              key={s.id}
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                gap: 12,
-                padding: "7px 0",
-                borderTop: "1px solid var(--line-faint)",
-                fontSize: 12,
-              }}
-            >
-              <span style={{ color: "var(--text-2)" }}>
+            <div key={s.id} className="crew-row">
+              <span className="crew-row__who">
                 {s.name}
-                {s.note ? <span style={{ color: "var(--text-3)" }}> — {s.note}</span> : null}
+                {s.note ? <span className="crew-row__note"> — {s.note}</span> : null}
               </span>
-              {s.handle ? (
-                <Link href={`/directory/${s.handle}`} style={{ color: "var(--text-link)" }}>
-                  Send a word
-                </Link>
-              ) : null}
+              {s.handle ? <Link href={`/directory/${s.handle}`}>Send a word</Link> : null}
             </div>
           ))}
         </>
       ) : null}
 
       {mine ? (
-        <span className="mbr-mono" style={{ ...monoLine, display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <span className="mbr-mono mbr-line mbr-mono--flex">
           LOOKING FOR CREW
           <Button variant="ghost" size="sm" disabled={pending} onClick={withdraw}>
             Withdraw
@@ -478,8 +448,8 @@ export function CrewCall({
           </>
         }
       >
-        <div style={{ fontSize: "var(--text-sm)" }}>
-          <p style={{ color: "var(--text-2)" }}>
+        <div className="mbr-dlg">
+          <p className="mbr-dlg__lede">
             Members aboard this episode will see your name and can send you a
             word. Withdraw it any time.
           </p>
@@ -489,7 +459,7 @@ export function CrewCall({
             value={note}
             maxLength={140}
             onChange={(e) => setNote(e.target.value)}
-            style={{ marginTop: 12 }}
+            className="mbr-sub--sm"
           />
           <Problem message={error} />
         </div>

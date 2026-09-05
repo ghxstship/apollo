@@ -31,12 +31,12 @@ export function SettleCardButton({ amountLabel }: { amountLabel: string }) {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <div className="mbr-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={settle}>
         {pending ? "Casting off…" : `Settle ${amountLabel} with card`}
       </Button>
       {error ? (
-        <span role="alert" style={{ fontSize: 12, color: "var(--siren)" }}>
+        <span role="alert" className="mbr-alert mbr-alert--inline">
           {error}
         </span>
       ) : null}

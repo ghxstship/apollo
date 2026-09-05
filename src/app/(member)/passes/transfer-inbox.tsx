@@ -32,24 +32,16 @@ export function TransferInbox({ offers }: { offers: IncomingOffer[] }) {
   return (
     <div className="mbr-sec">
       {offers.map((o) => (
-        <div
-          key={o.id}
-          style={{
-            border: "1px solid var(--line-strong)",
-            background: "var(--surface-card)",
-            padding: "16px 18px",
-            marginBottom: 10,
-          }}
-        >
+        <div key={o.id} className="mbr-panel mbr-panel--strong xfr-offer" aria-busy={pending || undefined}>
           <span className="mbr-mono">{o.meta}</span>
-          <div style={{ fontSize: 14, marginTop: 6 }}>
+          <div className="xfr-offer__line">
             {o.fromName} offers you a pass — {o.voyageTitle}
           </div>
-          <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 6, maxWidth: "48ch" }}>
+          <p className="mbr-note">
             Take it and the pass is yours: a new code is cut, and what they paid
             moves to your account.
           </p>
-          <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+          <div className="mbr-acts mbr-sub--sm">
             <Button
               variant="gold"
               size="sm"
@@ -68,7 +60,7 @@ export function TransferInbox({ offers }: { offers: IncomingOffer[] }) {
             </Button>
           </div>
           {error ? (
-            <p className="voy-hold" role="alert" style={{ marginTop: 10 }}>
+            <p className="mbr-alert" role="alert">
               {error}
             </p>
           ) : null}

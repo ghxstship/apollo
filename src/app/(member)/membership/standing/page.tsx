@@ -17,11 +17,11 @@ export default function StandingPage() {
     <div className="ls-fade">
       <span className="mbr-eyebrow">Membership · the card and the record</span>
       <h1 className="mbr-h1">Standing.</h1>
-      <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "52ch" }}>
+      <p className="mbr-lede">
         Your standing lives on your page now — the rotating code, the lifecycle
         and your pause days, in one place with the rest of your papers.
       </p>
-      <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div className="mbr-acts mbr-sub--lg">
         <Link href="/you#you-standing" className="ls-btn ls-btn--gold ls-btn--sm">
           Standing, on You
         </Link>

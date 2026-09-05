@@ -250,9 +250,9 @@ async function YouBody() {
 
   return (
     <>
-      <div className="you-sec" style={{ marginTop: 0 }}>
+      <div className="you-sec you-sec--flush">
         <div className="you-row">
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div className="you-who">
             <Avatar
               name={profile?.full_name ?? "A member"}
               tone={(profile?.avatar_tone ?? "ink") as "ink" | "sea" | "gold" | "sand"}
@@ -262,15 +262,9 @@ async function YouBody() {
             <div>
               {/* A member's own name, so sentence case — which puts it below
                   Anton's 22px floor, where the type system says Archivo 700. */}
-              <b style={{ fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: "var(--text-lg)" }}>
-                {profile?.full_name ?? "A member"}
-              </b>
-              {profile?.handle ? (
-                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 2 }}>
-                  @{profile.handle}
-                </p>
-              ) : null}
-              <p className="mbr-mono" style={{ marginTop: 4 }}>
+              <b className="mbr-title">{profile?.full_name ?? "A member"}</b>
+              {profile?.handle ? <p className="you-handle">@{profile.handle}</p> : null}
+              <p className="mbr-mono mbr-line">
                 {memberMark(profile?.member_no) || "UNISSUED"} · MEMBER SINCE {roman(joinedYear)}
               </p>
             </div>
@@ -284,7 +278,7 @@ async function YouBody() {
 
       <section id="you-manifest">
         <div className="you-h">How you read</div>
-        <div className="you-sec" style={{ padding: 18 }}>
+        <div className="you-sec you-sec--pad">
           <ProfileForm
             fullName={profile?.full_name ?? ""}
             handle={profile?.handle ?? ""}
@@ -340,13 +334,13 @@ async function YouBody() {
 
       <section id="you-standing">
         <div className="you-h">Standing</div>
-        <div className="you-sec" style={{ padding: 18 }}>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "52ch" }}>
+        <div className="you-sec you-sec--pad">
+          <p className="mbr-lede">
             One card, two media. The printed one is static and gate-checked; this
             one rotates. Both carry the same number, and the number stays yours
             through a pause.
           </p>
-          <div className="crd-card crd-card--wide std-card" style={{ marginTop: 16 }}>
+          <div className="crd-card crd-card--wide std-card mbr-acts--top">
             <div className="std-card__id">
               <Wordmark size="sm" suffix="Hinged" inverse />
               <span className="std-card__no">Member {memberMark(profile?.member_no)}</span>
@@ -373,14 +367,14 @@ async function YouBody() {
 
       <section id="you-agreements">
         <div className="you-h">Agreements</div>
-        <div className="you-sec" style={{ padding: 18 }}>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "58ch" }}>
+        <div className="you-sec you-sec--pad">
+          <p className="mbr-lede">
             Each one is kept with the exact wording you agreed to and the date you
             agreed to it. When the wording changes, you&rsquo;ll be asked again — the
             old copy stays as it was.
           </p>
           {outstanding > 0 ? (
-            <p role="status" style={{ marginTop: 12, font: "var(--type-heading)", color: "var(--caution)" }}>
+            <p role="status" className="you-attn">
               {outstanding === 1 ? "One agreement needs your signature." : `${outstanding} agreements need your signature.`}
             </p>
           ) : null}
@@ -393,7 +387,7 @@ async function YouBody() {
               detail="Agreements land here when an episode calls for one. Nothing is waiting on you."
             />
           ) : (
-            <div style={{ marginTop: 12 }}>
+            <div className="mbr-sub--sm">
               <AgreementLists rows={agreementRows} standingOf={standingOf} zone={zone} />
             </div>
           )}
@@ -402,17 +396,17 @@ async function YouBody() {
 
       <section id="you-knots">
         <div className="you-h">Knots</div>
-        <div className="you-sec" style={{ padding: 18 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <div className="you-sec you-sec--pad">
+          <div className="mbr-spread mbr-spread--top">
             <Stat label={CURRENCY.name} value={knots(knotsBalance)} sub="MORE KNOTS, FARTHER WATER" />
             <div>
-              <div style={{ fontWeight: 700, fontSize: "var(--text-sm)" }}>{leagueName}</div>
-              <p className="mbr-mono" style={{ marginTop: 4 }}>
+              <div className="mbr-title mbr-title--sm">{leagueName}</div>
+              <p className="mbr-mono mbr-line">
                 MEMBER SINCE {roman(joinedYear)} — LEAGUES ONLY DEEPEN
               </p>
             </div>
           </div>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 12, maxWidth: "46ch" }}>
+          <p className="mbr-note mbr-note--lg mbr-sub--sm">
             Knots are earned under sail, ashore, and by bringing good people. {CURRENCY.line}
           </p>
           {entries.length === 0 && (rewards ?? []).length === 0 ? (
@@ -424,7 +418,7 @@ async function YouBody() {
               detail="Your first entry lands when you step aboard. The rewards shelf is being restocked."
             />
           ) : (
-            <div style={{ marginTop: 16 }}>
+            <div className="mbr-acts--top">
               <KnotsPanel
                 onHold={onHold}
                 balance={knotsBalance}
@@ -443,26 +437,30 @@ async function YouBody() {
 
       <section id="you-invite">
         <div className="you-h">Bring a good one</div>
-        <div className="you-sec" style={{ padding: 18 }}>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginBottom: 14 }}>
+        <div className="you-sec you-sec--pad">
+          <p className="mbr-lede">
             Good for one night ashore as your guest. The rest is on them.
           </p>
           {invite ? (
             <>
-              <CopyCode code={invite.code} />
-              <p className="mbr-mono" style={{ marginTop: 10 }}>
+              <div className="mbr-sub">
+                <CopyCode code={invite.code} />
+              </div>
+              <p className="mbr-mono mbr-sub--sm">
                 {invite.uses} OF {invite.max_uses} SIGNATURES OUT
               </p>
             </>
           ) : (
-            <MintInvite />
+            <div className="mbr-sub">
+              <MintInvite />
+            </div>
           )}
         </div>
       </section>
 
       <section id="you-gathering">
         <div className="you-h">Raise a gathering</div>
-        <div className="you-sec" style={{ padding: 18 }}>
+        <div className="you-sec you-sec--pad">
           <RaiseAGathering
             formats={((formats ?? []) as Array<{ slug: string; label: string }>).map((f) => ({
               value: f.slug,
@@ -479,14 +477,14 @@ async function YouBody() {
           <div className="you-row">
             <div>
               <b>{planLabel ?? "No plan on file"}</b>
-              <p className="mbr-mono" style={{ marginTop: 4 }}>
+              <p className="mbr-mono mbr-line">
                 {status === "paused"
                   ? profile?.hold_reason === "dues"
                     ? "HELD — DUES LAPSED · "
                     : "PAUSED · "
                   : ""}
                 {balanceCents < 0 ? (
-                  <span style={{ color: "var(--siren)" }}>
+                  <span className="you-due">
                     ACCOUNT — ${(Math.abs(balanceCents) / 100).toFixed(2)} DUE
                   </span>
                 ) : (
@@ -495,7 +493,7 @@ async function YouBody() {
                 {compedUntil ? ` · COMPLIMENTARY UNTIL ${logDateYear(compedUntil, zone)}` : ""}
               </p>
               {plan ? (
-                <p className="mbr-mono" style={{ marginTop: 4 }}>
+                <p className="mbr-mono mbr-line">
                   {plan.guest_allowance > 0
                     ? `${plan.guest_allowance} GUEST${plan.guest_allowance === 1 ? "" : "S"} PER PASS`
                     : "NO GUEST PASSES ON THIS PLAN"}
@@ -539,7 +537,7 @@ async function YouBody() {
                   : "A code from your phone beside your link or password. Off until you turn it on."}
               </p>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <div className="you-pair">
               {twoStep ? <Badge tone="positive">On</Badge> : null}
               <TwoStepControl enrolled={twoStep} />
             </div>
@@ -588,9 +586,7 @@ export default async function YouPage() {
         {/* Name in the h1, editorial line in the eyebrow — see the note on
             Account. The nav says You and so must the heading. */}
         <span className="mbr-eyebrow">The ship&apos;s papers</span>
-        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          You.
-        </h1>
+        <h1 className="mbr-h1">You.</h1>
       </div>
 
       {/* Three different states, three different exits. A departed member used
@@ -614,7 +610,7 @@ export default async function YouPage() {
 
       <Suspense
         fallback={
-          <div className="you-sec" style={{ marginTop: 0 }}>
+          <div className="you-sec you-sec--flush">
             <StateBlock status="loading" bare />
           </div>
         }

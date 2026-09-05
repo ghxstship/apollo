@@ -98,14 +98,14 @@ function withBalances(rows: StatementRow[], balanceCents: number): Line[] {
 function StatementTable({ lines, zone }: { lines: Line[]; zone: Zone }) {
   return (
     <div className="ls-table-wrap">
-      <table className="ls-table" style={{ minWidth: 640 }}>
+      <table className="ls-table stm-table">
         <thead>
           <tr>
-            <th scope="col" style={{ width: 90 }}>
+            <th scope="col" className="stm-col">
               Date
             </th>
             <th scope="col">Entry</th>
-            <th scope="col" style={{ width: 90 }}>
+            <th scope="col" className="stm-col">
               Kind
             </th>
             <th scope="col" className="num--end">
@@ -134,14 +134,14 @@ function StatementTable({ lines, zone }: { lines: Line[]; zone: Zone }) {
                       Charged only where a city has recorded a rate and the club
                       is registered to collect — see /bridge/tax. */}
                   {typeof row.tax_cents === "number" && row.tax_cents > 0 ? (
-                    <span className="mbr-mono" style={{ display: "block", fontSize: "var(--text-xs)", color: "var(--text-3)" }}>
+                    <span className="mbr-mono stm-memo">
                       INCL. ${(row.tax_cents / 100).toFixed(2)} TAX
                     </span>
                   ) : null}
                 </td>
                 <td className="num">{(LEDGER_KIND[row.kind] ?? row.kind).toUpperCase()}</td>
                 <td className="num num--end">
-                  <span style={{ color: row.delta_cents < 0 ? "var(--siren)" : "var(--laurel)" }}>
+                  <span className={row.delta_cents < 0 ? "stm-neg" : "stm-pos"}>
                     {signed(row.delta_cents)}
                   </span>
                 </td>
@@ -171,12 +171,12 @@ export function AccountStatement({
   const rest = lines.slice(STATEMENT_SHOWN);
 
   return (
-    <div className="ptl-panel" style={{ padding: "20px 20px 16px" }}>
+    <div className="ptl-panel acc-panel--stm">
       {/* The balance led the page instead of trailing it in 10px mono: it is
           the largest figure on the screen because it is the one the member came
           for. */}
       <Stat label="Balance" value={money(balanceCents)} sub={balanceState(balanceCents)} />
-      <div style={{ marginTop: 18 }}>
+      <div className="mbr-sub--lg">
         <StatementTable lines={shown} zone={zone} />
       </div>
       {rest.length > 0 ? (
@@ -186,11 +186,11 @@ export function AccountStatement({
         </details>
       ) : null}
       {balanceCents < 0 && processorLive ? (
-        <div style={{ marginTop: 12 }}>
+        <div className="mbr-sub--sm">
           <SettleCardButton amountLabel={money(balanceCents)} />
         </div>
       ) : balanceCents < 0 ? (
-        <p style={{ fontSize: "var(--text-xs)", color: "var(--text-3)", marginTop: 12 }}>
+        <p className="mbr-note mbr-sub--sm">
           Settled at the gangway or by invoice — Shoreside posts payments.
         </p>
       ) : null}

@@ -52,12 +52,12 @@ export default async function DebriefPage({
     Date.parse(episode.starts_at) > nowMs;
 
   return (
-    <div className="ls-fade" style={{ maxWidth: 680 }}>
+    <div className="ls-fade mbr-page mbr-page--narrow">
       <Link href="/inbox" className="mbr-mono mbr-plain">
         <Icon name="ArrowUpRight" size={12} /> INBOX
       </Link>
 
-      <span className="mbr-eyebrow" style={{ display: "block", marginTop: 18 }}>
+      <span className="mbr-eyebrow mbr-eyebrow--after">
         {episode.title} · {logDate(episode.starts_at, episode.time_zone)}
       </span>
       <h1 className="mbr-h1">Debrief.</h1>
@@ -86,7 +86,7 @@ export default async function DebriefPage({
               {answered.again === true ? "Yes." : answered.again === false ? "No." : "Left unanswered."}
             </p>
           </div>
-          <p className="dbf-note" style={{ marginTop: 12 }}>
+          <p className="dbf-note mbr-sub--sm">
             One answer a night, and this was it. Anything more goes to Shoreside directly.
           </p>
         </section>

@@ -141,35 +141,20 @@ function DeckStateStrip({ state }: { state: DeckState }) {
             }
           : { position: "absolute", left: -10, top: -3, width: 56, height: 12, transform: "rotate(-32deg)", background: ink };
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "12px 0",
-        borderBottom: "1px solid var(--line-faint)",
-      }}
-    >
+    <div className="now-flag">
       <span
         aria-hidden="true"
-        style={{
-          position: "relative",
-          flex: "none",
-          width: 34,
-          height: 24,
-          overflow: "hidden",
-          border: "1px solid var(--border-strong)",
-          background: flag.caution
-            ? "var(--caution)"
-            : flag.inverse
-              ? "var(--noir-900)"
-              : "var(--surface-raised)",
-        }}
+        className={
+          "now-flag__swatch" +
+          (flag.caution ? " now-flag__swatch--caution" : flag.inverse ? " now-flag__swatch--inverse" : "")
+        }
       >
+        {/* The mark is a drawing keyed to the flag — a triangle or a diagonal
+            in the flag's own ink — so it stays inline. */}
         <span style={mark} />
       </span>
-      <b style={{ font: "700 10px var(--font-mono)", letterSpacing: "var(--track-data)" }}>{flag.label}</b>
-      <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)" }}>{flag.says}</span>
+      <b className="now-flag__name">{flag.label}</b>
+      <span className="now-flag__says">{flag.says}</span>
     </div>
   );
 }
@@ -237,13 +222,11 @@ export default async function LivePage() {
     return (
       <div className="ls-fade">
         <span className="mbr-eyebrow">Underway</span>
-        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          Live.
-        </h1>
+        <h1 className="mbr-h1">Live.</h1>
         {lastNight ? (
           <div className="mbr-sec">
             <span className="mbr-eyebrow">{lastNight.title} · wrapped</span>
-            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "48ch" }}>
+            <p className="mbr-lede">
               The night is on the record. Anything you shot still lands in the
               queue for the Bridge&rsquo;s eye — nobody sees it until it is cleared.
             </p>
@@ -262,7 +245,7 @@ export default async function LivePage() {
             }
             action={
               next ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+                <div className="now-next">
                   <Countdown target={next.starts_at} />
                   <Link href="/passes" className="ls-btn ls-btn--outline ls-btn--sm">
                     Passes
@@ -423,15 +406,7 @@ export default async function LivePage() {
   return (
     <div className="ls-fade">
       <div className="now-hero mbr-bleed">
-        <span
-          className="ls-live"
-          style={{
-            font: "700 9px var(--font-sans)",
-            letterSpacing: ".2em",
-            textTransform: "uppercase",
-            color: "var(--neon-cyan)",
-          }}
-        >
+        <span className="ls-live now-hero__tag">
           Underway · {live.title}
         </span>
         {/* The hero h1 was the log line, so the underway state of this page
@@ -439,15 +414,7 @@ export default async function LivePage() {
             the h1 in both states now; the log line reads under it, which is
             where a status belongs. */}
         <h1>Live.</h1>
-        <p
-          style={{
-            fontSize: "var(--text-sm)",
-            color: "var(--text-on-media)",
-            marginTop: 8,
-          }}
-        >
-          Rail down, all well.
-        </p>
+        <p className="now-hero__line">Rail down, all well.</p>
         <div className="now-cond">
           <span>WIND {wind ?? "—"}</span>
           <span>SWELL {swell ?? "—"}</span>
@@ -468,16 +435,9 @@ export default async function LivePage() {
             <div>
               <b className={i === currentIdx ? "ls-live" : undefined}>{leg.title}</b>
               {leg.detail ? <p>{leg.detail}</p> : null}
-              {leg.hold ? <p style={{ color: "var(--caution)" }}>{leg.hold}</p> : null}
+              {leg.hold ? <p className="hold">{leg.hold}</p> : null}
               {leg.stops.map((s) => (
-                <p
-                  key={s}
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 10,
-                    letterSpacing: "var(--track-data)",
-                  }}
-                >
+                <p key={s} className="stop">
                   {s.toUpperCase()}
                 </p>
               ))}
@@ -489,7 +449,7 @@ export default async function LivePage() {
       {aboard ? (
         <div className="now-panel ls-rise-1">
           <h3>On deck</h3>
-          <p className="mbr-mono" style={{ marginBottom: 10 }}>
+          <p className="mbr-mono mbr-mono--block mbr-line">
             {onDeck.length} ABOARD AND SEEN · STAMPED AT THE GANGWAY
           </p>
           <OnDeck episodeId={live.id} members={onDeck} ownStatus={ownStatus} />
@@ -501,7 +461,7 @@ export default async function LivePage() {
           <h3>The galley</h3>
           <GalleyOrderForm episodeId={live.id} items={galleyItems} />
           {myOrders.length > 0 ? (
-            <div style={{ marginTop: 18 }}>
+            <div className="mbr-sub--lg">
               <span className="mbr-mono">MY ORDERS</span>
               <div className="now-orders">
                 {myOrders.map((o) => {
@@ -525,7 +485,7 @@ export default async function LivePage() {
       {aboard ? (
         <div className="now-panel ls-rise-1">
           <h3>A frame for the log</h3>
-          <p className="mbr-mono" style={{ marginBottom: 10 }}>
+          <p className="mbr-mono mbr-mono--block mbr-line">
             FROM THE WATER · CLEARED BY THE BRIDGE BEFORE THE GALLERY
           </p>
           <FrameUpload episodeId={live.id} />

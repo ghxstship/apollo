@@ -5,21 +5,23 @@ import { useEffect } from "react";
 
 /* The member shell's boundary — a failing manifest query lands here, not on Next's stock page. */
 /* Global classes only, as src/app/error.tsx: this boundary renders where
-   bridge.css does not load, and .hm-eyebrow and .hm-mono drew nothing here. */
+   bridge.css does not load, and .hm-eyebrow and .hm-mono drew nothing here.
+   member.css DOES load — the boundary renders inside (member)/layout — so the
+   page-head rhythm and the .mbr-err block are the ones it wears. */
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
     console.error(error);
   }, [error]);
   return (
-    <main id="main" className="ls-container" style={{ paddingTop: 96, paddingBottom: 96 }}>
-      <span className="ls-eyebrow" style={{ display: "block", color: "var(--gold-deep)" }}>Something broke</span>
-      <h1 style={{ marginTop: 12 }}>That didn&rsquo;t land.</h1>
-      <p style={{ maxWidth: 460, marginTop: 12 }}>Our end, not yours. Try again — if it holds, hail Shoreside and quote the reference.</p>
-      <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
+    <main id="main" className="ls-container mbr-err">
+      <span className="mbr-eyebrow mbr-eyebrow--block">Something broke</span>
+      <h1>That didn&rsquo;t land.</h1>
+      <p className="mbr-err__lede">Our end, not yours. Try again — if it holds, hail Shoreside and quote the reference.</p>
+      <p className="mbr-err__acts">
         <button className="ls-btn ls-btn--gold" onClick={reset} type="button">Try again</button>
         <Link className="ls-btn ls-btn--ghost" href="/support">Hail Shoreside</Link>
       </p>
-      {error.digest ? <p className="ls-mono-data" style={{ marginTop: 24, color: "var(--text-3)" }}>REF {error.digest.toUpperCase()}</p> : null}
+      {error.digest ? <p className="ls-mono-data mbr-err__ref">REF {error.digest.toUpperCase()}</p> : null}
     </main>
   );
 }

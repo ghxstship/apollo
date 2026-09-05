@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Badge, StateBlock } from "@/components/ds";
 import { logDate, logTime } from "@/lib/format";
@@ -20,30 +20,11 @@ const CODE_WINDOW_MS = 2 * 60 * 60 * 1000;
    takes on a phone at the gangway. */
 export const metadata: Metadata = { title: "Boarding pass" };
 
-const rowStyle: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "baseline",
-  gap: 16,
-  padding: "9px 0",
-  borderTop: "1px solid var(--line-inverse-faint)",
-};
-
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div style={rowStyle}>
-      <span
-        className="mbr-mono"
-        style={{ color: "var(--text-inverse-3)", letterSpacing: ".14em" }}
-      >
-        {label}
-      </span>
-      <span
-        className="mbr-mono"
-        style={{ color: "var(--text-inverse-1)", fontSize: "var(--text-xs)", textAlign: "right" }}
-      >
-        {value}
-      </span>
+    <div className="stb-row">
+      <span className="mbr-mono stb-row__k">{label}</span>
+      <span className="mbr-mono stb-row__v">{value}</span>
     </div>
   );
 }
@@ -230,21 +211,11 @@ export default async function StubPage({
       {/* The page is the credential and prints as one, so its name is for
           the reader who cannot see it and the title bar that can. */}
       <h1 className="ls-visually-hidden">Boarding pass</h1>
-      <div className="crd-card" style={{ textAlign: "left" }}>
+      <div className="crd-card stb-card">
         <div className="crd-seam"></div>
         <div className="crd-in">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-            }}
-          >
-            <span
-              className="mbr-mono"
-              style={{ color: "var(--text-inverse-2)", letterSpacing: ".18em" }}
-            >
+          <div className="stb-head">
+            <span className="mbr-mono stb-kind">
               {guest ? "GUEST STUB" : "BOARDING STUB"}
             </span>
             <Badge tone="gold" inverse>
@@ -252,18 +223,9 @@ export default async function StubPage({
             </Badge>
           </div>
 
-          <div
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--text-xl)",
-              color: "var(--bone)",
-              marginTop: 14,
-            }}
-          >
-            {episode.title}
-          </div>
+          <div className="stb-title">{episode.title}</div>
 
-          <div style={{ marginTop: 16 }}>
+          <div className="mbr-sub">
             <Row label="DEPARTS" value={`${logDate(episode.starts_at, episode.time_zone)} · ${logTime(episode.starts_at, episode.time_zone)}`} />
             {/* TODO(owner): the fallback used to read GANGWAY B-12, a dock
                 nobody had confirmed. Until the episode carries a muster point
@@ -290,7 +252,7 @@ export default async function StubPage({
           </div>
 
           {guest && guestQr ? (
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
+            <div className="stb-guestqr">
               {/* eslint-disable-next-line @next/next/no-img-element -- data URI QR, no next/image benefit */}
               <img src={guestQr} alt="Boarding code" width={168} height={168} />
             </div>
@@ -307,25 +269,9 @@ export default async function StubPage({
             </div>
           )}
 
-          <div
-            style={{
-              ...rowStyle,
-              marginTop: 18,
-              borderTop: "1px dashed var(--line-inverse)",
-            }}
-          >
-            <span
-              className="mbr-mono"
-              style={{ color: "var(--text-inverse-3)", letterSpacing: ".14em" }}
-            >
-              CONDITIONS
-            </span>
-            <span
-              className="mbr-mono"
-              style={{ color: "var(--text-inverse-1)", fontSize: "var(--text-xs)" }}
-            >
-              CHECK 18:00 NIGHT BEFORE
-            </span>
+          <div className="stb-row stb-row--cond">
+            <span className="mbr-mono stb-row__k">CONDITIONS</span>
+            <span className="mbr-mono stb-row__v">CHECK 18:00 NIGHT BEFORE</span>
           </div>
         </div>
       </div>

@@ -76,24 +76,16 @@ export default async function MemberCardPage() {
               alt="Boarding code"
               width={164}
               height={164}
-              style={{ display: "block", marginInline: "auto" }}
+              className="crd-qr"
             />
-            <div
-              className="mbr-mono"
-              style={{ color: "var(--text-inverse-2)", letterSpacing: ".18em", marginTop: 10 }}
-            >
-              {shownNo}
-            </div>
+            <div className="mbr-mono crd-code__no">{shownNo}</div>
           </div>
           {balanceCents < 0 ? (
-            <div
-              className="mbr-mono"
-              style={{ marginTop: 14, color: "var(--text-inverse-2)", letterSpacing: ".14em" }}
-            >
+            <div className="mbr-mono crd-due">
               ACCOUNT — ${(Math.abs(balanceCents) / 100).toFixed(2)} DUE
             </div>
           ) : null}
-          <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
+          <div className="crd-scan">
             <Badge tone="outline" inverse>
               Scan at the gangway
             </Badge>
@@ -109,67 +101,38 @@ export default async function MemberCardPage() {
       </div>
 
       {feedUrl && webcalUrl ? (
-        <section
-          className="crd-feed"
-          style={{
-            marginTop: 34,
-            width: "min(480px, 100%)",
-            background: "var(--surface-card)",
-            border: "1px solid var(--line-faint)",
-            padding: "18px 20px",
-          }}
-        >
-          <span className="mbr-eyebrow" style={{ display: "block", color: "var(--text-3)" }}>
+        <section className="crd-feed">
+          <span className="mbr-eyebrow mbr-eyebrow--block mbr-eyebrow--quiet">
             Subscribe to your season
           </span>
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 8, maxWidth: "44ch" }}>
+          <p className="mbr-lede">
             Every episode you are confirmed on, in your own calendar, kept current as the
             season moves. Subscribe once — new boarding passes arrive on their own.
           </p>
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              border: "1px solid var(--line-faint)",
-              padding: "8px 8px 8px 12px",
-            }}
-          >
-            <span
-              className="mbr-mono"
-              style={{
-                flex: 1,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                textTransform: "none",
-              }}
-            >
-              {webcalUrl}
-            </span>
+          <div className="crd-feed__addr">
+            <span className="mbr-mono crd-feed__url">{webcalUrl}</span>
             <CopyLink value={webcalUrl} label="Copy" toast="Season feed address copied." />
           </div>
-          <div style={{ marginTop: 12, display: "flex", gap: 16, alignItems: "center" }}>
-            <a href={webcalUrl} className="mbr-mono" style={{ textTransform: "none" }}>
+          <div className="crd-feed__links">
+            <a href={webcalUrl} className="mbr-mono">
               Add to calendar
             </a>
-            <a href={feedUrl} className="mbr-mono" style={{ textTransform: "none" }}>
+            <a href={feedUrl} className="mbr-mono">
               Download the file
             </a>
           </div>
-          <p className="mbr-mono" style={{ marginTop: 12 }}>
+          <p className="mbr-mono crd-feed__warn">
             THIS ADDRESS IS YOURS ALONE — ANYONE HOLDING IT READS YOUR SEASON
           </p>
           {/* The way back from an address that got out. The action and the
               dialog existed; nothing on this page mounted them, so the warning
               above was all a member had. */}
-          <div style={{ marginTop: 10 }}>
+          <div className="crd-feed__rotate">
             <RotateFeed />
           </div>
         </section>
       ) : null}
-      <div style={{ width: "min(680px, 100%)" }}>
+      <div className="crd-log">
         <PassageLog zone={zone} log={log} marks={marks} own />
       </div>
 

@@ -173,21 +173,11 @@ export default async function OpenDeckPage() {
        the first post's top border and the input this page exists for read as
        post zero. One column, one rhythm, and the header keeps its own tighter
        pairing inside its own box. */
-    <div
-      style={{
-        maxWidth: 720,
-        marginInline: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-5)",
-      }}
-    >
+    <div className="wd-col">
       <OpenDeckRealtime postIds={postIds} />
       <div>
         <span className="mbr-eyebrow">Members only · mind the code</span>
-        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          Open Deck.
-        </h1>
+        <h1 className="mbr-h1">Open Deck.</h1>
       </div>
       <Composer
         authorName={profile?.full_name ?? "You"}
@@ -197,7 +187,7 @@ export default async function OpenDeckPage() {
       />
       <FeedList posts={feed} />
       {posts.length === PAGE_SIZE ? (
-        <p className="mbr-mono" style={{ color: "var(--text-3)" }}>
+        <p className="mbr-mono">
           THE {PAGE_SIZE} MOST RECENT · OLDER WORDS STAY IN THE LOG
         </p>
       ) : null}

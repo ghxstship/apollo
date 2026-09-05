@@ -118,18 +118,18 @@ export default async function ContestPage({
         <Icon name="ArrowUpRight" size={12} /> ALL {LOGBOOK.regattas.toUpperCase()}
       </Link>
 
-      <span className="mbr-eyebrow" style={{ display: "block", marginTop: 18 }}>
+      <span className="mbr-eyebrow mbr-eyebrow--after">
         {isRegatta ? "Regatta" : "Challenge"} ·{" "}
         {contest.status === "settled" ? "Settled" : closed ? "Closed, awaiting result" : "Running"}
       </span>
       <h1 className="mbr-h1">{contest.title}</h1>
       {contest.blurb ? (
-        <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "58ch" }}>
+        <p className="mbr-lede">
           {contest.blurb}
         </p>
       ) : null}
 
-      <div className="rgt-meta" style={{ marginTop: 16 }}>
+      <div className="rgt-meta mbr-sub">
         <Badge tone="outline">
           {isRegatta
             ? `Ranked by ${CONTEST_METRIC[contest.metric] ?? contest.metric}`
@@ -148,16 +148,16 @@ export default async function ContestPage({
       </div>
 
       {contest.prize ? (
-        <p style={{ marginTop: 14, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>{contest.prize}</p>
+        <p className="mbr-lede">{contest.prize}</p>
       ) : null}
 
       {open && !closed && onHold ? (
-        <p style={{ marginTop: 22, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
+        <p className="mbr-lede">
           Entries wait while your membership is paused. Resume it on the You
           page and this contest opens back up.
         </p>
       ) : open && !closed && !mayEnter && !entered ? (
-        <p style={{ marginTop: 22, fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
+        <p className="mbr-lede">
           This one is the crew&rsquo;s — it counts{" "}
           {sailing ? (
             <Link href={`/episodes/${sailing.slug}`} className="mbr-plain">
@@ -169,10 +169,10 @@ export default async function ContestPage({
           , and entry opens with a pass on it.
         </p>
       ) : open && !closed ? (
-        <div style={{ marginTop: 22 }}>
+        <div className="mbr-sub--lg">
           <ContestEntry contestId={contest.id} slug={contest.slug} entered={entered} />
           {!entered ? (
-            <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-3)" }}>
+            <p className="mbr-note mbr-line">
               Entering counts only the episodes inside the window. Nothing before it.
             </p>
           ) : null}
@@ -184,20 +184,21 @@ export default async function ContestPage({
           {contest.status === "settled" ? "The result" : "Standing so far"}
         </span>
         {standing.length === 0 ? (
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
+          <p className="mbr-note mbr-note--lg">
             No one has entered yet.
           </p>
         ) : (
-          <StandingsTable
-            shape={isRegatta ? "regatta" : "challenge"}
-            frozen={contest.status === "settled"}
-            youName={youName}
-            rows={rows}
-            style={{ marginTop: 12 }}
-          />
+          <div className="mbr-sub--sm">
+            <StandingsTable
+              shape={isRegatta ? "regatta" : "challenge"}
+              frozen={contest.status === "settled"}
+              youName={youName}
+              rows={rows}
+            />
+          </div>
         )}
         {contest.status !== "settled" ? (
-          <p style={{ marginTop: 12, fontSize: 12, color: "var(--text-3)" }}>
+          <p className="mbr-note mbr-sub--sm">
             Live from completed episodes inside the window. Final once the Bridge settles it.
           </p>
         ) : null}

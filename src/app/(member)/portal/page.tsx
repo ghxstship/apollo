@@ -20,14 +20,12 @@ export default async function PortalPage({
   return (
     <div className="ls-fade">
       <span className="mbr-eyebrow">Knots · Leagues · Rewards</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Portal.
-      </h1>
-      <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
+      <h1 className="mbr-h1">Portal.</h1>
+      <p className="mbr-lede">
         The knots ledger, the league you ride at and the rewards they buy are on
         your page now. What stands on your account is on Account.
       </p>
-      <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+      <div className="mbr-acts mbr-sub--lg">
         <Link href="/you#you-knots" className="ls-btn ls-btn--gold ls-btn--sm">
           Knots and rewards, on You
         </Link>

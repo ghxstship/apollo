@@ -118,21 +118,19 @@ export default async function ThreadsPage() {
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
 
   return (
-    <div style={{ maxWidth: 720, marginInline: "auto" }}>
+    <div className="mbr-col">
       <ThreadsRealtime />
       {/* Name in the h1, editorial line in the eyebrow — see the note on
           Account. The nav says Threads and so must the heading. */}
       <span className="mbr-eyebrow">A word between us</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Threads.
-      </h1>
+      <h1 className="mbr-h1">Threads.</h1>
       <p className="dir-lede">
         Crew threads open when you go aboard and close after the debrief. Direct
         words stay open as long as you both want them.
       </p>
       {/* The shore desk, from the member's side: threads.kind 'shoreside' has
           always had a queue on the Bridge, and this is the door into it. */}
-      <div style={{ marginTop: 14 }}>
+      <div className="mbr-sub">
         <WriteToShoreside />
       </div>
 

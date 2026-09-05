@@ -63,27 +63,9 @@ export function AgreementRow({
     <li className="agr-row">
       <span>
         <b>{r.title}</b>
-        <span
-          style={{
-            display: "block",
-            fontSize: "var(--text-xs)",
-            color: "var(--text-3)",
-            marginTop: 2,
-          }}
-        >
-          {copy.line}
-        </span>
+        <span className="agr-line">{copy.line}</span>
         {counterLine ? (
-          <span
-            style={{
-              display: "block",
-              fontSize: "var(--text-xs)",
-              color: standing?.in_force ? "var(--laurel)" : "var(--text-3)",
-              marginTop: 2,
-            }}
-          >
-            {counterLine}
-          </span>
+          <span className={standing?.in_force ? "agr-line agr-line--force" : "agr-line"}>{counterLine}</span>
         ) : null}
       </span>
       <Badge tone={copy.tone}>{copy.label}</Badge>
@@ -118,7 +100,7 @@ export function AgreementLists({
     <>
       {outstanding.length > 0 ? (
         <div>
-          <span className="mbr-eyebrow" style={{ display: "block", marginBottom: 4 }}>
+          <span className="mbr-eyebrow mbr-eyebrow--block">
             Needs your signature
           </span>
           <ul className="agr-list">
@@ -129,8 +111,8 @@ export function AgreementLists({
         </div>
       ) : null}
       {onFile.length > 0 ? (
-        <div style={{ marginTop: outstanding.length > 0 ? 18 : 0 }}>
-          <span className="mbr-eyebrow" style={{ display: "block", marginBottom: 4, color: "var(--text-3)" }}>
+        <div className={outstanding.length > 0 ? "mbr-sub--lg" : undefined}>
+          <span className="mbr-eyebrow mbr-eyebrow--block mbr-eyebrow--quiet">
             On file
           </span>
           <ul className="agr-list">

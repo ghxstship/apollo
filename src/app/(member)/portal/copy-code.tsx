@@ -23,7 +23,7 @@ export function CopyCode({ code }: { code: string }) {
   return (
     <>
       <div className="ptl-code">
-        <span style={{ flex: 1 }}>{code}</span>
+        <span className="mbr-fill">{code}</span>
         <Button variant="ghost" size="sm" onClick={copy}>
           Copy
         </Button>

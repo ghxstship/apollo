@@ -37,16 +37,16 @@ export function ExportDataButton({ memberNo }: { memberNo: string | null }) {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <div className="mbr-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={download}>
         {pending ? "Gathering it…" : "Export my data"}
       </Button>
       {error ? (
-        <span role="alert" style={{ fontSize: 12, color: "var(--siren)" }}>
+        <span role="alert" className="mbr-alert mbr-alert--inline">
           {error}
         </span>
       ) : done ? (
-        <span role="status" style={{ fontSize: 12, color: "var(--text-2)" }}>
+        <span role="status" className="mbr-status mbr-status--inline">
           Saved as JSON.
         </span>
       ) : null}

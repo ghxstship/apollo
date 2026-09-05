@@ -16,7 +16,11 @@ import { setManifestVisibility } from "./actions";
    does not. */
 export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
   const [pending, start] = React.useTransition();
-  const [on, setOn] = React.useState(onManifest);
+  /* The switch moves as the finger lifts and the sentence under it changes
+     with it; the write is the truth a round trip later (setManifestVisibility
+     revalidates /you), and a refusal puts both back with the reason. The same
+     shape the ballot uses, in place of a hand-rolled setOn/setOn(!v) pair. */
+  const [on, setOn] = React.useOptimistic(onManifest);
   const [failed, setFailed] = React.useState(false);
 
   return (
@@ -32,7 +36,9 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
             : "You sail unlisted. The crew still hold your boarding pass; the other members see only that a seat is taken."}
         </p>
         {failed ? (
-          <p style={{ color: "var(--siren)" }}>That didn&rsquo;t save. Try again, or hail Shoreside.</p>
+          <p className="mbr-alert" role="alert">
+            That didn&rsquo;t save. Try again, or hail Shoreside.
+          </p>
         ) : null}
       </div>
       <Switch
@@ -41,16 +47,15 @@ export function ManifestConsent({ onManifest }: { onManifest: boolean }) {
         aria-label="Show my name on the episode manifest"
         onChange={(e) => {
           const v = e.target.checked;
-          setOn(v);
           setFailed(false);
           start(async () => {
+            setOn(v);
             const res = await setManifestVisibility(v);
-            if (res.error) {
-              /* Put the switch back where it was. A privacy control that looks
-                 like it saved and did not is worse than one that refuses. */
-              setOn(!v);
-              setFailed(true);
-            }
+            /* The switch goes back where it was on its own — the optimistic
+               value lapses when the transition ends and the record has not
+               moved. A privacy control that looks like it saved and did not
+               is worse than one that refuses, so the refusal is said too. */
+            if (res.error) setFailed(true);
           });
         }}
       />

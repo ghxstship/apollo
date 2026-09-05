@@ -22,12 +22,12 @@ export function PasswordControl() {
       </Button>
       <Dialog open={open && !(state.done && !dismissed)} onClose={() => setOpen(false)} width={440} eyebrow="Password" title="Set or change your password.">
         <form action={action} className="you-stack">
-          <p style={{ color: "var(--text-2)", fontSize: "var(--text-sm)", margin: 0 }}>
+          <p className="mbr-dlg__lede mbr-status--inline">
             At least {PASSWORD_MIN} characters. Sign in with it at the gangway, or keep using the link — both work.
           </p>
           <Input label="New password" name="password" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required />
           <Input label="Once more" name="again" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required error={state.error} />
-          <Button type="submit" variant="gold" disabled={pending}>
+          <Button type="submit" variant="gold" disabled={pending} aria-busy={pending || undefined}>
             {pending ? "Saving" : "Save"}
           </Button>
         </form>
@@ -97,18 +97,18 @@ export function TwoStepControl({ enrolled }: { enrolled: boolean }) {
             <input type="hidden" name="factorId" value={live.factorId ?? ""} />
             <input type="hidden" name="qr" value={live.qr ?? ""} />
             <input type="hidden" name="secret" value={live.secret ?? ""} />
-            <p style={{ color: "var(--text-2)", fontSize: "var(--text-sm)", margin: 0 }}>
+            <p className="mbr-dlg__lede mbr-status--inline">
               Open a code app (1Password, Authy, Google Authenticator) and scan this. Then type the six digits it shows.
             </p>
             {/* The QR arrives from the auth server as an SVG data URI — an
                 image, not a fetch, so the CSP has nothing to say about it. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={live.qr} alt="Two-step QR code" width={180} height={180} style={{ background: "var(--paper)", padding: 8, alignSelf: "center" }} />
-            <p className="mbr-mono" style={{ margin: 0, wordBreak: "break-all" }}>
+            <img src={live.qr} alt="Two-step QR code" width={180} height={180} className="you-qr" />
+            <p className="mbr-mono you-key">
               OR TYPE THE KEY: {live.secret}
             </p>
             <Input label="Code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" placeholder="000 000" required error={state.error} />
-            <Button type="submit" variant="gold" disabled={pending}>
+            <Button type="submit" variant="gold" disabled={pending} aria-busy={pending || undefined}>
               {pending ? "Checking" : "Turn on two-step"}
             </Button>
           </form>

@@ -466,7 +466,7 @@ async function PassesBody() {
 
   return (
     <>
-      <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
+      <p className="mbr-lede">
         Every episode ahead, and the pass on each one. Passes are few by design.
         Claim one
         {guestAllowance > 0
@@ -475,7 +475,7 @@ async function PassesBody() {
         or hold the waitlist — releases go out in order.
       </p>
       {passMeter ? (
-        <div className="mbr-mono" style={{ marginTop: 10 }}>
+        <div className="mbr-mono mbr-sub--sm">
           {passMeter}
         </div>
       ) : null}
@@ -671,9 +671,7 @@ export default function PassesPage() {
           heading. Season is not available: it means the calendar frame and the
           membership cycle, and Season I would have collided with it. */}
       <span className="mbr-eyebrow">Every episode ahead</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Passes.
-      </h1>
+      <h1 className="mbr-h1">Passes.</h1>
       <Suspense
         fallback={
           <div className="mbr-sec">

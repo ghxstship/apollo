@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Button, Icon, StateBlock } from "@/components/ds";
+import { Icon, StateBlock } from "@/components/ds";
 import { CLUB_ZONE } from "@/lib/brand";
 import { startOfDay } from "@/lib/format";
 import { getMember, type Notification } from "../data";
 import { KIND_ICON, noticeHref, relTime } from "../relative";
-import { archiveRead, markAllRead } from "./actions";
+import { InboxHead } from "./inbox-head";
 import { NoticeLink } from "./notice-link";
 
 /* Plain utility, plainly named — the owner’s call. Route, nav label, title
@@ -87,30 +87,7 @@ async function InboxBody() {
   ];
 
   return (
-    <>
-      <div className="wrd-head" style={{ marginTop: 8 }}>
-        <p style={{ fontSize: 14, color: "var(--text-2)" }}>
-          {unread ? `${unread} new.` : "All read."}
-        </p>
-        <div style={{ display: "flex", gap: 8 }}>
-          {unread > 0 ? (
-            <form action={markAllRead}>
-              <Button type="submit" variant="outline" size="sm">
-                Mark all read
-              </Button>
-            </form>
-          ) : null}
-          {readShown > 0 ? (
-            /* What has been read can go; the unread stay where they are. */
-            <form action={archiveRead}>
-              <Button type="submit" variant="ghost" size="sm">
-                Archive read
-              </Button>
-            </form>
-          ) : null}
-        </div>
-      </div>
-
+    <InboxHead unread={unread} readShown={readShown}>
       {items.length === 0 ? (
         <div className="mbr-sec">
           <StateBlock
@@ -125,9 +102,7 @@ async function InboxBody() {
           {groups.map(([label, rows]) =>
             rows.length > 0 ? (
               <section className="mbr-sec" key={label}>
-                <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
-                  {label}
-                </span>
+                <span className="mbr-eyebrow">{label}</span>
                 <div className="wrd-list">
                   {rows.map((n, i) => (
                     <Row key={n.id} n={n} index={i} />
@@ -138,7 +113,7 @@ async function InboxBody() {
           )}
         </>
       )}
-    </>
+    </InboxHead>
   );
 }
 
@@ -150,9 +125,7 @@ export default function InboxPage() {
             name is the h1 now and the count is the standfirst under it —
             still the first thing read, and still the number that matters. */}
         <span className="mbr-eyebrow">Notices</span>
-        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          Inbox.
-        </h1>
+        <h1 className="mbr-h1">Inbox.</h1>
       </div>
       <Suspense
         fallback={

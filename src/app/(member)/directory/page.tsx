@@ -118,20 +118,18 @@ export default async function DirectoryPage({
   const more = total > members.length && pages < MAX_PAGES;
 
   return (
-    <div style={{ maxWidth: 820, marginInline: "auto" }}>
+    <div className="mbr-col mbr-col--wide">
       {/* The roster was the h1 and Directory only the eyebrow, so the page and
           the nav disagreed. Name on top; the roster opens the standfirst. */}
       <span className="mbr-eyebrow">By {PLACE.market.toLowerCase()} and league</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Directory.
-      </h1>
+      <h1 className="mbr-h1">Directory.</h1>
       <p className="dir-lede">
         The roster — everyone who chose to be listed. Search a name, a handle, or
         what they turn up for.
       </p>
       <DirectoryList members={members} cities={cityOptions} total={total} />
       {more ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 20, flexWrap: "wrap" }}>
+        <div className="mbr-acts mbr-sub--lg">
           <Link
             href={`/directory?show=${pages + 1}`}
             scroll={false}
@@ -139,7 +137,7 @@ export default async function DirectoryPage({
           >
             Show more
           </Link>
-          <span className="mbr-mono" style={{ color: "var(--text-3)" }}>
+          <span className="mbr-mono">
             {members.length} OF {total} LOADED · A–Z
           </span>
         </div>

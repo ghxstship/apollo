@@ -54,24 +54,14 @@ export function YourFrames({ frames }: { frames: OwnFrame[] }) {
   }
 
   return (
-    <div style={{ marginTop: 20 }}>
-      <span className="mbr-mono" style={{ display: "block", marginBottom: 8 }}>
+    <div className="mbr-sub--lg">
+      <span className="mbr-mono mbr-mono--block">
         WHAT YOU SENT
       </span>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+      <ul className="mbr-list">
         {rows.map((f) => (
-          <li
-            key={f.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "10px 0",
-              borderTop: "1px solid var(--line-faint)",
-              fontSize: "var(--text-sm)",
-            }}
-          >
-            <span style={{ flex: 1, color: "var(--text-2)" }}>
+          <li key={f.id} className="frm-row">
+            <span className="frm-row__cap">
               {f.caption?.trim() || "No line with it"}
             </span>
             <Badge tone={f.approved ? "positive" : "outline"}>
@@ -100,11 +90,11 @@ export function YourFrames({ frames }: { frames: OwnFrame[] }) {
         ))}
       </ul>
       {error ? (
-        <p role="alert" style={{ marginTop: 8 }}>
+        <p role="alert" className="mbr-alert">
           {error}
         </p>
       ) : null}
-      <p style={{ marginTop: 10, fontSize: "var(--text-xs)", color: "var(--text-3)" }}>
+      <p className="mbr-note mbr-sub--sm">
         Withdrawing takes the file down with the record, not just the listing. It does not
         come back.
       </p>

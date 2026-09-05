@@ -149,7 +149,7 @@ export default async function MemberPage({
   const interests = member.interests ?? [];
 
   return (
-    <div style={{ maxWidth: 720, marginInline: "auto" }}>
+    <div className="mbr-col">
       <Link href="/directory" className="dir-back mbr-mono">
         <Icon name="ArrowLeft" size={12} /> The roster
       </Link>

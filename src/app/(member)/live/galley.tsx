@@ -170,7 +170,7 @@ export function GalleyOrderForm({
   return (
     <div>
       {categories.map((cat) => (
-        <div key={cat} style={{ marginTop: 14 }}>
+        <div key={cat} className="now-galley__cat">
           <span className="mbr-mono">{CATEGORY_LABEL[cat].toUpperCase()}</span>
           <div className="now-galley">
             {items
@@ -208,13 +208,13 @@ export function GalleyOrderForm({
         </Button>
       </div>
       {error ? (
-        <span className="voy-hold" role="alert" style={{ display: "block", marginTop: 8 }}>
+        <p className="mbr-alert" role="alert">
           {error}
-        </span>
+        </p>
       ) : null}
 
       {queued ? (
-        <div style={{ marginTop: 14 }}>
+        <div className="mbr-sub">
           <StateBlock
             status="offline"
             bare

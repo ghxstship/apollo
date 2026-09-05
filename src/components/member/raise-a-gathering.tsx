@@ -102,7 +102,7 @@ export function RaiseAGathering({
             hint="Optional. The Bridge sets the episode date."
           />
         </div>
-        <div style={{ marginTop: 16 }}>
+        <div className="mbr-sub">
           <Textarea
             label="The case for it"
             name="note"
@@ -116,49 +116,42 @@ export function RaiseAGathering({
         {/* Anything not about one control — a paused membership, a refusal
             from the table — is the form's to say, not the title's. */}
         {state.error && !state.field ? (
-          <p role="alert" style={{ color: "var(--siren)", fontSize: "var(--text-xs)", marginTop: 12 }}>
+          <p role="alert" className="mbr-alert">
             {state.error}
           </p>
         ) : null}
-        <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
-          <Button type="submit" variant="outline" size="sm" disabled={pending}>
-            Raise it
+        <div className="mbr-acts mbr-acts--end mbr-acts--top">
+          <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
+            {pending ? "Raising" : "Raise it"}
           </Button>
         </div>
       </form>
 
       {proposals.length > 0 ? (
-        <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="mbr-stack mbr-sub--lg">
           {proposals.map((p) => (
-            <div
-              key={p.id}
-              className="you-row"
-              style={{ alignItems: "flex-start", paddingInline: 0 }}
-            >
-              <div style={{ minWidth: 0 }}>
+            <div key={p.id} className="you-row you-row--top">
+              <div className="mbr-min0">
                 <b>{p.title}</b>
-                <p className="mbr-mono" style={{ marginTop: 4 }}>
+                <p className="mbr-mono mbr-line">
                   {[p.seriesLabel?.toUpperCase(), p.proposedFor ? plainDate(p.proposedFor) : null]
                     .filter(Boolean)
                     .join(" · ") || "SHAPE OPEN"}
                 </p>
-                <p style={{ marginTop: 4 }}>
+                <p className="mbr-line">
                   {p.status === "declined" && p.decisionNote
                     ? p.decisionNote
                     : STATUS_LINE[p.status]}
                 </p>
                 {p.sailing ? (
-                  <p className="mbr-mono" style={{ marginTop: 4 }}>
-                    <Link
-                      href={`/episodes/${p.sailing.slug}`}
-                      style={{ color: "var(--text-link)", textDecoration: "none" }}
-                    >
+                  <p className="mbr-mono mbr-line">
+                    <Link href={`/episodes/${p.sailing.slug}`}>
                       {p.sailing.title.toUpperCase()} · {p.sailing.when}
                     </Link>
                   </p>
                 ) : null}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+              <div className="mbr-stack mbr-stack--end">
                 <Badge tone={statusTone(p.status)}>
                   {p.status === "submitted"
                     ? "Raised"
@@ -188,7 +181,7 @@ export function RaiseAGathering({
             </div>
           ))}
           {withdrawError ? (
-            <p role="alert" style={{ color: "var(--siren)", fontSize: "var(--text-xs)" }}>
+            <p role="alert" className="mbr-alert">
               {withdrawError}
             </p>
           ) : null}

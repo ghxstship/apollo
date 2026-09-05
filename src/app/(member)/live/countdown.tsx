@@ -31,7 +31,7 @@ export function Countdown({ target }: { target: string }) {
   const secs = s % 60;
 
   return (
-    <span className="ls-mono-data" style={{ fontSize: 22, letterSpacing: ".08em" }}>
+    <span className="ls-mono-data now-count">
       {days > 0 ? `${days}D · ` : ""}
       {pad(hours)}:{pad(mins)}:{pad(secs)}
     </span>

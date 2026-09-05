@@ -58,13 +58,13 @@ export default async function AgreementPage({
         <Icon name="ArrowUpRight" size={12} /> ALL AGREEMENTS
       </Link>
 
-      <span className="mbr-eyebrow" style={{ display: "block", marginTop: 18 }}>
+      <span className="mbr-eyebrow mbr-eyebrow--after">
         {doc.kind === "waiver" ? "Waiver" : doc.kind === "contract" ? "Agreement" : "Policy"}
         {doc.validity_months ? ` · renews every ${doc.validity_months} months` : ""}
       </span>
       <h1 className="mbr-h1">{doc.title}</h1>
 
-      <div style={{ marginTop: 22 }}>
+      <div className="mbr-sub--lg">
         <SignPanel documentCode={code} documentTitle={doc.title} body={body} />
       </div>
     </div>

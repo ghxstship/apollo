@@ -22,12 +22,12 @@ export function MintInvite() {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+    <div className="mbr-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={mint}>
         Mint invite code
       </Button>
       {error ? (
-        <span role="alert" style={{ fontSize: 12, color: "var(--siren)" }}>
+        <span role="alert" className="mbr-alert mbr-alert--inline">
           {error}
         </span>
       ) : null}
@@ -104,14 +104,14 @@ export function KnotsPanel({
           ) : null
         }
       >
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}>
+        <p className="mbr-lede">
           Your balance is {balance} knots
           {confirming?.costValue != null ? `; ${balance - confirming.costValue} stay with you after this` : ""}.
           Spent knots do not come back — Shoreside makes the reward so.
         </p>
       </Dialog>
       {error ? (
-        <span role="alert" style={{ display: "block", marginTop: 10, fontSize: 12, color: "var(--siren)" }}>
+        <span role="alert" className="mbr-alert mbr-mono--block">
           {error}
         </span>
       ) : null}

@@ -32,21 +32,11 @@ async function handOff(url: string, body?: unknown): Promise<string> {
 function ErrorLine({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <span role="alert" style={{ fontSize: 12, color: "var(--siren)" }}>
+    <span role="alert" className="mbr-alert mbr-alert--inline">
       {message}
     </span>
   );
 }
-
-const optionStyle: React.CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 14,
-  flexWrap: "wrap",
-  padding: "14px 0",
-  borderTop: "1px solid var(--line-faint)",
-};
 
 /* — Monthly against annual for the standing already held. Annual is ten
      months of dues: two months on the house. — */
@@ -83,10 +73,10 @@ export function StandingControls({
 
   return (
     <div>
-      <div style={optionStyle}>
+      <div className="acc-opt">
         <span>
-          <b style={{ fontSize: "var(--text-sm)", fontWeight: 700 }}>Monthly</b>
-          <span style={{ display: "block", fontSize: 12, color: "var(--text-2)", marginTop: 2 }}>
+          <b className="acc-opt__name">Monthly</b>
+          <span className="acc-opt__line">
             {price(monthlyCents)} every month.
           </span>
         </span>
@@ -100,10 +90,10 @@ export function StandingControls({
         </Button>
       </div>
       {annualCents ? (
-        <div style={optionStyle}>
+        <div className="acc-opt">
           <span>
-            <b style={{ fontSize: "var(--text-sm)", fontWeight: 700 }}>Annual</b>
-            <span style={{ display: "block", fontSize: 12, color: "var(--text-2)", marginTop: 2 }}>
+            <b className="acc-opt__name">Annual</b>
+            <span className="acc-opt__line">
               {price(annualCents)} a year — two months on the house.
             </span>
           </span>
@@ -118,7 +108,7 @@ export function StandingControls({
         </div>
       ) : null}
       {error ? (
-        <div style={{ marginTop: 10 }}>
+        <div className="mbr-sub--sm">
           <ErrorLine message={error} />
         </div>
       ) : null}
@@ -143,7 +133,7 @@ export function ManageBillingButton() {
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <div className="mbr-acts">
       <Button variant="outline" size="sm" disabled={pending} onClick={open}>
         {pending ? "Casting off…" : "Manage in Stripe"}
       </Button>

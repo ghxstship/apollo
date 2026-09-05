@@ -139,35 +139,25 @@ export default async function AccountPage({
           member who followed a nav item called Account landed on a page whose
           only heading said Dues and receipts. */}
       <span className="mbr-eyebrow">Dues · receipts · the card</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        Account.
-      </h1>
-      <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
+      <h1 className="mbr-h1">Account.</h1>
+      <p className="mbr-lede">
         What the club draws, when it draws it, and the card it draws on. Change
         anything here and it takes at the next turn of the period.
       </p>
       {!processorLive ? (
-        <p className="mbr-mono" style={{ marginTop: 10 }}>
+        <p className="mbr-mono mbr-sub--sm">
           Dues are settled with Shoreside until the processor is live.
         </p>
       ) : null}
 
       <section className="mbr-sec">
-        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+        <span className="mbr-eyebrow mbr-eyebrow--quiet">
           Your standing
         </span>
         {subscription && plan ? (
           <div className="ptl-panel">
-            <div
-              style={{
-                display: "flex",
-                alignItems: "baseline",
-                justifyContent: "space-between",
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: "var(--text-lg)" }}>{plan.label}</div>
+            <div className="acc-head">
+              <div className="acc-plan">{plan.label}</div>
               {status ? (
                 <Badge tone={STATUS_TONE[status] ?? "outline"}>
                   {STATUS_LABEL[status] ?? status}
@@ -176,7 +166,7 @@ export default async function AccountPage({
             </div>
             {/* The plan's label is the heading above; the geography tier said
                 nothing about what the club draws, so it is off this line. */}
-            <p className="mbr-mono" style={{ marginTop: 10 }}>
+            <p className="mbr-mono mbr-sub--sm">
               {subscription.interval === "year" ? "ANNUAL" : "MONTHLY"} ·{" "}
               {price(
                 subscription.interval === "year"
@@ -185,23 +175,23 @@ export default async function AccountPage({
               ).toUpperCase()}
             </p>
             {periodEnd ? (
-              <p className="mbr-mono" style={{ marginTop: 6 }}>
+              <p className="mbr-mono mbr-line">
                 {ending ? "ENDS" : "RENEWS"} {logDateYear(periodEnd, zone)}
               </p>
             ) : null}
             {compedUntil ? (
-              <p className="mbr-mono" style={{ marginTop: 6, color: "var(--gold-deep)" }}>
+              <p className="mbr-mono mbr-line acc-gold">
                 COMPLIMENTARY UNTIL {logDateYear(compedUntil, zone)}
               </p>
             ) : null}
             {plan.monthly_credit_cents > 0 ? (
-              <p className="mbr-mono" style={{ marginTop: 6 }}>
+              <p className="mbr-mono mbr-line">
                 {creditLeft > 0 ? price(creditLeft) : "$0"} OF {price(plan.monthly_credit_cents)} CREDIT LEFT ·{" "}
                 {creditMonth}
               </p>
             ) : null}
             {status === "past_due" ? (
-              <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 12, maxWidth: "48ch" }}>
+              <p className="mbr-note mbr-note--mid mbr-sub--sm">
                 The card was declined. Put a good one on file and the standing
                 holds — nothing else changes.
               </p>
@@ -209,11 +199,11 @@ export default async function AccountPage({
           </div>
         ) : compedUntil ? (
           <div className="ptl-panel">
-            <div style={{ fontWeight: 700, fontSize: "var(--text-lg)" }}>{plan?.label ?? "Membership"}</div>
-            <p className="mbr-mono" style={{ marginTop: 10, color: "var(--gold-deep)" }}>
+            <div className="acc-plan">{plan?.label ?? "Membership"}</div>
+            <p className="mbr-mono mbr-sub--sm acc-gold">
               COMPLIMENTARY UNTIL {logDateYear(compedUntil, zone)}
             </p>
-            <p style={{ fontSize: "var(--text-xs)", color: "var(--text-2)", marginTop: 12, maxWidth: "48ch" }}>
+            <p className="mbr-note mbr-note--mid mbr-sub--sm">
               The Bridge has waived your dues until then. Nothing is drawn; the plan stands as it is.
             </p>
           </div>
@@ -235,11 +225,11 @@ export default async function AccountPage({
 
       {plan && plan.price_cents > 0 && processorLive ? (
         <section className="mbr-sec">
-          <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+          <span className="mbr-eyebrow mbr-eyebrow--quiet">
             Change the standing
           </span>
           <div className="ptl-panel">
-            <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "48ch" }}>
+            <p className="mbr-lede">
               Pay by the month, or pay by the year and the club keeps two months
               off the bill.
             </p>
@@ -254,12 +244,12 @@ export default async function AccountPage({
       ) : null}
 
       <section className="mbr-sec">
-        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+        <span className="mbr-eyebrow mbr-eyebrow--quiet">
           Card on file
         </span>
         <div className="ptl-panel">
           {card ? (
-            <p className="mbr-mono" style={{ fontSize: 12 }}>
+            <p className="mbr-mono mbr-mono--lg">
               {(card.brand ?? "CARD").toUpperCase()} ···· {card.last4 ?? "····"}
               {card.exp_month && card.exp_year
                 ? ` · EXPIRES ${String(card.exp_month).padStart(2, "0")}/${String(
@@ -271,11 +261,11 @@ export default async function AccountPage({
             <p className="mbr-mono">No card on file.</p>
           )}
           {processorLive ? (
-            <div style={{ marginTop: 14 }}>
+            <div className="mbr-sub">
               <ManageBillingButton />
             </div>
           ) : (
-            <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 8 }}>
+            <p className="mbr-note mbr-line">
               Cards are taken at the gangway or by invoice — Shoreside posts them.
             </p>
           )}
@@ -283,7 +273,7 @@ export default async function AccountPage({
       </section>
 
       <section className="mbr-sec">
-        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+        <span className="mbr-eyebrow mbr-eyebrow--quiet">
           Receipts
         </span>
         {invoices.length === 0 ? (
@@ -295,7 +285,7 @@ export default async function AccountPage({
             detail="Every draw lands here the moment it clears, with the invoice behind it."
           />
         ) : (
-          <div className="ptl-panel" style={{ padding: "8px 20px 12px" }}>
+          <div className="ptl-panel acc-panel--table">
             <Table<InvoiceRow>
               columns={[
                 {
@@ -329,7 +319,7 @@ export default async function AccountPage({
                         href={r.hosted_url}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ fontSize: "var(--text-xs)", color: "var(--text-link)" }}
+                        className="acc-receipt"
                       >
                         Receipt
                       </a>
@@ -347,32 +337,25 @@ export default async function AccountPage({
 
       {installments.length > 0 ? (
         <section className="mbr-sec">
-          <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+          <span className="mbr-eyebrow mbr-eyebrow--quiet">
             Split draws
           </span>
           <div className="ptl-panel">
             {installments.map((p, i) => (
-              <div
-                key={p.id}
-                style={{
-                  paddingTop: i === 0 ? 0 : 16,
-                  marginTop: i === 0 ? 0 : 16,
-                  borderTop: i === 0 ? undefined : "1px solid var(--line-faint)",
-                }}
-              >
+              <div key={p.id} className={i === 0 ? "acc-draw acc-draw--first" : "acc-draw"}>
                 <Progress
                   label={`${p.paid_count} of ${p.installments} drawn`}
                   detail={money(p.total_cents)}
                   value={(p.paid_count / p.installments) * 100}
                 />
-                <p className="mbr-mono" style={{ marginTop: 8 }}>
+                <p className="mbr-mono mbr-line">
                   {p.status === "active" && p.next_charge_at
                     ? `NEXT DRAW ${logDateYear(p.next_charge_at, zone)}`
                     : p.status.toUpperCase()}
                 </p>
               </div>
             ))}
-            <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 14 }}>
+            <p className="mbr-note mbr-sub">
               Draws post to the account statement below. No interest, ever.
             </p>
           </div>
@@ -380,7 +363,7 @@ export default async function AccountPage({
       ) : null}
 
       <section className="mbr-sec">
-        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+        <span className="mbr-eyebrow mbr-eyebrow--quiet">
           Account statement
         </span>
         {account.length === 0 ? (
@@ -402,19 +385,19 @@ export default async function AccountPage({
       </section>
 
       <section className="mbr-sec">
-        <span className="mbr-eyebrow" style={{ color: "var(--text-3)" }}>
+        <span className="mbr-eyebrow mbr-eyebrow--quiet">
           Your record
         </span>
         <div className="ptl-panel">
-          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", maxWidth: "48ch" }}>
+          <p className="mbr-lede">
             Everything the club holds in your name — the papers, the passes, both
             ledgers, the word — as one JSON file. Boarding codes and the
             processor&rsquo;s references stay with the club.
           </p>
-          <div style={{ marginTop: 14 }}>
+          <div className="mbr-sub">
             <ExportDataButton memberNo={profile?.member_no ?? null} />
           </div>
-          <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 12 }}>
+          <p className="mbr-note mbr-sub--sm">
             Erasure runs {erasureDays} days after departure. The ledger keeps its
             figures; your name comes off them.
           </p>

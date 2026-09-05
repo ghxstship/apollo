@@ -55,10 +55,8 @@ export default async function ShopPage() {
   return (
     <div>
       <span className="mbr-eyebrow">Ship&rsquo;s stores</span>
-      <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-        The Shop.
-      </h1>
-      <p style={{ fontSize: 14, color: "var(--text-2)", marginTop: 8, maxWidth: "52ch" }}>
+      <h1 className="mbr-h1">The Shop.</h1>
+      <p className="mbr-lede">
         Kit worth its salt. Charged to your member account; collect at the
         venue or the next shore night.
       </p>

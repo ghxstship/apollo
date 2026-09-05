@@ -53,11 +53,9 @@ export default async function SeasonPage() {
 
   if (!season) {
     return (
-      <div className="ls-fade" style={{ maxWidth: 760 }}>
+      <div className="ls-fade mbr-page">
         <span className="mbr-eyebrow">The season, on the record</span>
-        <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-          Season.
-        </h1>
+        <h1 className="mbr-h1">Season.</h1>
         <div className="mbr-sec">
           <StateBlock
             status="empty"
@@ -195,13 +193,11 @@ export default async function SeasonPage() {
   const window = `${logDateYear(from, seasonZone)} — ${logDateYear(startOfDay(season.ends_on, seasonZone), seasonZone)}`;
 
   return (
-    <div className="ls-fade" style={{ maxWidth: 760 }}>
+    <div className="ls-fade mbr-page">
       <div className="ssn-head">
         <div>
           <span className="mbr-eyebrow">The season, on the record</span>
-          <h1 className="mbr-h1" style={{ marginTop: 6 }}>
-            Season.
-          </h1>
+          <h1 className="mbr-h1">Season.</h1>
           <p className="ssn-lede">
             {seasonLabel} · {window}. Your numbers and your names — miles, not likes.
           </p>

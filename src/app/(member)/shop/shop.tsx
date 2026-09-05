@@ -251,7 +251,7 @@ export function Shop({
         ))}
       </div>
       {shown.length === 0 ? (
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)", marginTop: 16 }}>
+        <p className="mbr-note mbr-note--lg mbr-sub">
           Nothing on this shelf yet.
         </p>
       ) : null}
@@ -275,7 +275,7 @@ export function Shop({
         }
       >
         {open ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="mbr-stack mbr-stack--wide">
             <span className="mbr-mono">{price(open.price_cents)}</span>
             {open.sizes.length > 0 ? (
               <Select
@@ -287,7 +287,7 @@ export function Shop({
                 error={error}
               />
             ) : null}
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="mbr-acts">
               <span className="mbr-mono">QTY</span>
               <Stepper size="sm" min={1} max={12} value={qty} onChange={setQty} />
             </div>
@@ -307,7 +307,7 @@ export function Shop({
             </div>
             <div className="chd-drawer__body">
               {cart.length === 0 ? (
-                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>Empty. The shelves are right there.</p>
+                <p className="mbr-note mbr-note--lg">Empty. The shelves are right there.</p>
               ) : (
                 cart.map((l, i) => (
                   <div key={l.productId + (l.size ?? "")} className="chd-line">

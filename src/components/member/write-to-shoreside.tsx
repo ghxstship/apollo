@@ -17,7 +17,7 @@ export function WriteToShoreside({ className }: { className?: string }) {
       </button>
       {state.error ? (
         /* alert, not status — a refusal interrupts; see enquire.tsx. */
-        <p className="ls-note" role="alert" style={{ marginTop: 8 }}>
+        <p className="mbr-alert" role="alert">
           {state.error}
         </p>
       ) : null}

@@ -11,7 +11,11 @@ import { setOnCamera } from "./actions";
    the component cannot read the document it is meant to echo. */
 export function CameraConsent({ onCamera }: { onCamera: boolean }) {
   const [pending, start] = React.useTransition();
-  const [on, setOn] = React.useState(onCamera);
+  /* The switch moves as the finger lifts and the sentence under it changes
+     with it; the write is the truth a round trip later (setOnCamera
+     revalidates /you), and a refusal puts both back with the reason. The same
+     shape the ballot uses, in place of a hand-rolled setOn/setOn(!v) pair. */
+  const [on, setOn] = React.useOptimistic(onCamera);
   const [failed, setFailed] = React.useState<string | null>(null);
 
   return (
@@ -25,7 +29,11 @@ export function CameraConsent({ onCamera }: { onCamera: boolean }) {
         </p>
         {/* The switch used to spring back in silence when the write was
             refused — a consent control that looks like it took and did not. */}
-        {failed ? <p style={{ color: "var(--siren)" }}>{failed}</p> : null}
+        {failed ? (
+          <p className="mbr-alert" role="alert">
+            {failed}
+          </p>
+        ) : null}
       </div>
       <Switch
         checked={on}
@@ -33,14 +41,11 @@ export function CameraConsent({ onCamera }: { onCamera: boolean }) {
         aria-label="Appear in the show"
         onChange={(e) => {
           const v = e.target.checked;
-          setOn(v);
           setFailed(null);
           start(async () => {
+            setOn(v);
             const res = await setOnCamera(v);
-            if (res.error) {
-              setOn(!v);
-              setFailed(res.error);
-            }
+            if (res.error) setFailed(res.error);
           });
         }}
       />

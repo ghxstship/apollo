@@ -83,7 +83,7 @@ export default async function TablesPage() {
     <div className="ls-fade">
       <span className="mbr-eyebrow"><LockupText division="scripted" /></span>
       <h1 className="mbr-h1">Tonight.</h1>
-      <p style={{ marginTop: 10, fontSize: 14, color: "var(--text-2)", maxWidth: "56ch" }}>
+      <p className="mbr-lede">
         Blind tables for six. Matches come from tables, not swiping — take a
         seat, and after the night say who you&rsquo;d meet again. Only a mutual
         pick surfaces anything.
@@ -96,10 +96,10 @@ export default async function TablesPage() {
           title="No Table night on the sheet."
           /* TODO(owner): confirm Thursday is the standing Table night. */
           detail="Thursday comes around."
-          style={{ marginTop: 24 }}
+          className="mbr-sub--lg"
         />
       ) : (
-        <div style={{ marginTop: 24, display: "grid", gap: 14 }}>
+        <div className="tbl-list">
           {views.map((t) => (
             <TableCard key={t.id} table={t} />
           ))}
@@ -109,7 +109,7 @@ export default async function TablesPage() {
       {/* A sentence in a fixed-height nowrap pill: 359.8px of badge at x=20 ran
           past a 375px viewport and made the page scroll sideways. This is a
           note, not a label. */}
-      <p className="mbr-mono" style={{ marginTop: 28 }}>
+      <p className="mbr-mono tbl-card__note">
         Seat held for 15 minutes. Confirm at the door.
       </p>
     </div>

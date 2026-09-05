@@ -31,7 +31,7 @@ export function FrameUpload({ episodeId }: { episodeId: string }) {
   return (
     <form onSubmit={submit}>
       <input type="hidden" name="episode_id" value={episodeId} />
-      <div style={{ display: "grid", gap: 10 }}>
+      <div className="mbr-stack">
         {/* Visible labels, not aria-label alone: the sighted member was
             guessing at an unlabelled file control and a bare text box. */}
         <Input
@@ -56,12 +56,12 @@ export function FrameUpload({ episodeId }: { episodeId: string }) {
         </Button>
       </div>
       {error ? (
-        <p role="alert" style={{ marginTop: 8 }}>
+        <p role="alert" className="mbr-alert">
           {error}
         </p>
       ) : null}
       {sent ? (
-        <p role="status" style={{ marginTop: 8 }}>
+        <p role="status" className="mbr-status">
           In the queue for the Bridge&apos;s eye — it reaches the gallery once cleared.
         </p>
       ) : null}

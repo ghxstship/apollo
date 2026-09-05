@@ -79,7 +79,7 @@ export function ProfileForm({
           ]}
         />
       </div>
-      <div style={{ marginTop: 16 }}>
+      <div className="mbr-acts--top">
         <Textarea
           label="A few words"
           name="bio"
@@ -104,7 +104,7 @@ export function ProfileForm({
           ))}
         </div>
       </fieldset>
-      <div className="you-row" style={{ paddingInline: 0 }}>
+      <div className="you-row you-row--flush">
         <div>
           <b>List me in the directory</b>
           <p>Off, and only you and the crew ashore can see your page.</p>
@@ -116,9 +116,9 @@ export function ProfileForm({
           aria-label="List me in the directory"
         />
       </div>
-      <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
-        <Button type="submit" variant="outline" size="sm" disabled={pending}>
-          Log the changes
+      <div className="mbr-acts mbr-acts--end mbr-acts--top">
+        <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
+          {pending ? "Logging" : "Log the changes"}
         </Button>
       </div>
       {showToast ? (
@@ -267,10 +267,14 @@ export function NotificationMatrix({
       ) : null}
       <div className="you-row">
         <div>
-          <p>{state.error ? <span style={{ color: "var(--siren)" }}>{state.error}</span> : null}</p>
+          {state.error ? (
+            <p className="mbr-alert" role="alert">
+              {state.error}
+            </p>
+          ) : null}
         </div>
-        <Button type="submit" variant="outline" size="sm" disabled={pending}>
-          Log the word
+        <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
+          {pending ? "Logging" : "Log the word"}
         </Button>
       </div>
       {showToast ? (
@@ -305,7 +309,7 @@ function Mark({ on, what }: { on: boolean; what: string }) {
    Resume button was there for them to press and be refused. */
 export function ClosedPlaceNotice() {
   return (
-    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--line-strong)" }} role="status">
+    <div className="you-sec you-sec--closed" role="status">
       <div className="you-row">
         <div>
           <b>Your place is closed</b>
@@ -331,7 +335,7 @@ export function ClosedPlaceNotice() {
    its name. Dropped: a fallback that is wrong is worse than none. */
 export function ClubHoldNotice() {
   return (
-    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep)" }} role="status">
+    <div className="you-sec you-sec--hold" role="status">
       <div className="you-row">
         <div>
           <b>Your membership is paused</b>
@@ -354,7 +358,7 @@ export function ClubHoldNotice() {
    card payment ends on its own would send them to the wrong door. */
 export function DuesHoldNotice() {
   return (
-    <div className="you-sec" style={{ marginTop: 0, borderColor: "var(--brass-deep)" }} role="status">
+    <div className="you-sec you-sec--hold" role="status">
       <div className="you-row">
         <div>
           <b>Held — dues lapsed.</b>
@@ -376,11 +380,7 @@ export function ResumeBanner() {
   const [error, setError] = React.useState<string | null>(null);
 
   return (
-    <div
-      className="you-sec"
-      style={{ marginTop: 0, borderColor: "var(--brass-deep)" }}
-      role="status"
-    >
+    <div className="you-sec you-sec--hold" role="status">
       <div className="you-row">
         <div>
           <b>Your membership is paused</b>
@@ -399,10 +399,14 @@ export function ResumeBanner() {
               "the manifest" was the wrong noun for it: what waits is the set of
               passes the member holds, across episodes, not one boarding list. */}
           <p>Knots and tier keep. Your passes wait for you.</p>
-          <p style={{ opacity: 0.75 }}>
+          <p className="you-quiet">
             Your dues are on your <a href="/account">account page</a>.
           </p>
-          {error ? <p style={{ color: "var(--siren)" }}>{error}</p> : null}
+          {error ? (
+            <p className="mbr-alert" role="alert">
+              {error}
+            </p>
+          ) : null}
         </div>
         <Button
           variant="gold"
@@ -499,7 +503,7 @@ export function Offboarding({
       {/* Wrapping. Nowrap put "Depart the club" 9.7px past a 375px viewport,
           which is enough to make the page scroll sideways and the phone zoom
           out — the same defect the Open Deck bylines had. */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
+      <div className="you-pair mbr-acts">
         {status !== "paused" ? (
           <Button variant="ghost" size="sm" onClick={() => setMode("pause")}>
             Pause membership
@@ -547,12 +551,12 @@ export function Offboarding({
         {/* A pause keeps the passes — set_own_standing('paused') touches none
             of them. Departing is the flow that releases, so the two dialogs
             must not read alike on this point. */}
-        <p style={{ marginTop: 10 }}>
+        <p className="mbr-sub--sm">
           Passes you hold stay held — release them from Passes if the tide has
           turned.
         </p>
         {error && mode === "pause" ? (
-          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: "var(--text-xs)" }}>
+          <p role="alert" className="mbr-alert">
             {error}
           </p>
         ) : null}
@@ -596,36 +600,25 @@ export function Offboarding({
             the passes is a surprise, and the credit is the part they would
             otherwise write in to ask about. */}
         {heldPasses.length > 0 ? (
-          <div style={{ marginTop: 12 }}>
-            <span className="mbr-mono" style={{ display: "block", marginBottom: 6 }}>
-              PASSES YOU HOLD
-            </span>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          <div className="mbr-sub--sm">
+            <span className="mbr-mono mbr-mono--block mbr-line">PASSES YOU HOLD</span>
+            <ul className="mbr-list mbr-line">
               {heldPasses.map((p) => (
-                <li
-                  key={p.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 12,
-                    padding: "6px 0",
-                    borderTop: "1px solid var(--line-faint)",
-                  }}
-                >
+                <li key={p.id} className="you-held">
                   <span>{p.title}</span>
                   <span className="mbr-mono">{p.when}</span>
                 </li>
               ))}
             </ul>
-            <p style={{ marginTop: 8 }}>
+            <p className="mbr-line">
               These are released and credited in full the moment you go.
             </p>
           </div>
         ) : (
-          <p style={{ marginTop: 10 }}>No passes to square.</p>
+          <p className="mbr-sub--sm">No passes to square.</p>
         )}
         {error && mode === "depart" ? (
-          <p role="alert" style={{ marginTop: 10, color: "var(--siren)", fontSize: "var(--text-xs)" }}>
+          <p role="alert" className="mbr-alert">
             {error}
           </p>
         ) : null}

@@ -65,16 +65,7 @@ export function Composer({
 
   if (onHold) {
     return (
-      <div
-        style={{
-          background: "var(--surface-card)",
-          border: "1px solid var(--line-faint)",
-          borderRadius: "var(--radius-md)",
-          padding: "16px 18px",
-          fontSize: "var(--text-sm)",
-          color: "var(--text-2)",
-        }}
-      >
+      <div className="wd-closed">
         The deck is closed while your membership is paused. Resume it on the
         You page and the composer opens back up.
       </div>
@@ -82,74 +73,39 @@ export function Composer({
   }
 
   return (
-    <form
-      ref={formRef}
-      action={formAction}
-      style={{
-        background: "var(--surface-card)",
-        border: "1px solid var(--line-faint)",
-        borderRadius: "var(--radius-md)",
-        padding: "14px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
+    <form ref={formRef} action={formAction} className="wd-compose" aria-busy={pending || undefined}>
       <textarea
         name="body"
         rows={3}
         maxLength={2000}
         placeholder="The deck is open. Say it like you mean it."
         aria-label="Post to the deck"
-        className="ls-writein"
-        style={{
-          resize: "vertical",
-          background: "transparent",
-          border: "none",
-          fontFamily: "var(--font-sans)",
-          fontWeight: 400,
-          lineHeight: 1.55,
-          color: "var(--text-1)",
-          minHeight: 56,
-        }}
+        className="ls-writein wd-compose__field"
       />
       {state.error ? (
-        <p role="alert" style={{ fontSize: "var(--text-xs)", color: "var(--danger)", margin: 0 }}>
+        <p role="alert" className="mbr-alert">
           {state.error}
         </p>
       ) : null}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div className="mbr-acts">
         {attaching && episodes.length > 0 ? (
           <Select
             name="episode_id"
             aria-label="Attach an episode"
             placeholder="Pick the episode"
             options={episodes.map((v) => ({ value: v.id, label: v.title }))}
-            style={{ minWidth: 200 }}
+            className="wd-compose__pick"
           />
         ) : episodes.length > 0 ? (
-          <button
-      className="ls-bare"
-            type="button"
-            onClick={() => setAttaching(true)}
-            style={{
-              all: "unset",
-              cursor: "pointer",
-              font: "700 9px/1 var(--font-mono)",
-              letterSpacing: ".12em",
-              color: "var(--text-3)",
-              minHeight: 24,
-              whiteSpace: "nowrap",
-            }}
-          >
+          <button className="ls-bare wd-attach" type="button" onClick={() => setAttaching(true)}>
             + ATTACH AN EPISODE
           </button>
         ) : (
           <span />
         )}
-        <span style={{ marginLeft: "auto" }}>
+        <span className="wd-end">
           <Button type="submit" variant="gold" size="sm" disabled={pending}>
-            Post to the deck
+            {pending ? "Posting" : "Post to the deck"}
           </Button>
         </span>
       </div>
@@ -326,38 +282,16 @@ function FeedEntry({ post }: { post: FeedPost }) {
         <>
           <Hail count={hailShown.count} hailed={hailShown.hailed} onToggle={pending ? undefined : hail} />
           <button
-      className="ls-bare"
+            className="ls-bare wd-reply"
             type="button"
             onClick={() => setShowComments((s) => !s)}
             aria-expanded={showComments}
-            style={{
-              all: "unset",
-              cursor: "pointer",
-              font: "700 10px/1 var(--font-mono)",
-              letterSpacing: ".14em",
-              textTransform: "uppercase",
-              color: "var(--text-2)",
-              minHeight: 24,
-              whiteSpace: "nowrap",
-            }}
           >
             {post.comments.length > 0 ? `WORDS · ${post.comments.length}` : "REPLY"}
           </button>
-          <span style={{ marginLeft: "auto" }}>
+          <span className="wd-end">
             {post.mine ? (
-              <button
-      className="ls-bare"
-                type="button"
-                onClick={() => setConfirming(true)}
-                style={{
-                  all: "unset",
-                  cursor: "pointer",
-                  font: "700 9px/1 var(--font-mono)",
-                  letterSpacing: ".14em",
-                  color: "var(--text-3)",
-                  minHeight: 24,
-                }}
-              >
+              <button className="ls-bare wd-strike" type="button" onClick={() => setConfirming(true)}>
                 STRIKE
               </button>
             ) : (
@@ -365,10 +299,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
             )}
           </span>
           {actionError ? (
-            <span
-              role="alert"
-              style={{ display: "block", marginTop: 8, fontSize: "var(--text-xs)", color: "var(--siren)" }}
-            >
+            <span role="alert" className="mbr-alert mbr-mono--block">
               {actionError}
             </span>
           ) : null}
@@ -387,7 +318,6 @@ function FeedEntry({ post }: { post: FeedPost }) {
               placeholder="Add a word…"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              style={{ flex: 1 }}
             />
             <Button variant="outline" size="sm" disabled={pending || !draft.trim()} onClick={comment}>
               Reply
@@ -431,7 +361,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
           </>
         }
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div className="mbr-stack">
           <Select
             label="Reason"
             placeholder="Pick a reason"
