@@ -11,13 +11,27 @@
      --line-strong aliases came out of compat.css's vocabulary on 2026-09-05.
      Restated here rather than inherited because .hm-shell is ink in BOTH
      themes — the same reason it is in palette.css's always-ink list.
-     The text values are the console's own, unchanged. The hairlines are now
-     tokens.css's published INK pair: --border-subtle was already exactly the
-     ink theme's .12, and the two heavier weights (.22 and .55, five rules and
-     three) collapsed onto the ink theme's .26 when --line and --line-strong
-     were found to be one value everywhere else and merged. */
-  --text-body:var(--ivory-100);--text-muted:rgba(241,241,237,.66);--text-faint:rgba(241,241,237,.45);
-  --border-subtle:rgba(241,241,237,.12);--border-strong:rgba(241,241,237,.26);
+     The text values are the console's own. --text-faint was .45, which is
+     4.13:1 on the shell ground and 4.07:1 on a card — under 1.4.3's 4.5:1 for
+     the body copy it dresses (.hm-note, .hm-fine, .hm-body--muted, every mono
+     caption). .50 takes it to 4.85:1 and 4.70:1 and still stands a clear step
+     off --text-muted (.66, 7.73:1): composited on the shell ground the two are
+     greys 127 and 163, so the ramp keeps three legible rungs, not two.
+     The hairlines are tokens.css's published INK pair: --border-subtle was
+     already exactly the ink theme's .12, and the two heavier weights (.22 and
+     .55, five rules and three) collapsed onto the ink theme's .26 when --line
+     and --line-strong were found to be one value everywhere else and merged.
+     That merge was sound for a DECORATIVE hairline and wrong for a hairline
+     that is the only thing saying which state a card is in: the console's old
+     --line-strong was .55 (5.65:1 on the shell ground) and .26 is 2.13:1, under
+     1.4.11's 3:1 for a UI component, and only 1.61x the --border-subtle it has
+     to be told apart from. So a third rung, used by edges that CARRY STATE and
+     by nothing else: --border-state at .45 is 4.13:1 on the shell ground,
+     4.07:1 on a card, and 3.12x --border-subtle. Decorative hairlines stay on
+     --border-strong; the difference is whether the reader loses information
+     when the edge goes unseen. */
+  --text-body:var(--ivory-100);--text-muted:rgba(241,241,237,.66);--text-faint:rgba(241,241,237,.5);
+  --border-subtle:rgba(241,241,237,.12);--border-strong:rgba(241,241,237,.26);--border-state:rgba(241,241,237,.45);
   --action-primary:var(--ivory-100);--action-primary-hover:var(--ivory-50);--action-on-primary:var(--noir-950);
   --wash-ink:rgba(241,241,237,.07);--wash-ink-2:rgba(241,241,237,.12);
   --text-link:var(--neon-cyan);--focus:var(--neon-cyan);
@@ -147,10 +161,16 @@
 /* An action row is the kit's .ls-acts (+ --end); this only places one under
    a card's fields. */
 .hm-acts--below{margin-top:12px}
-/* A pending action says so on the button itself: dimmed, the cursor a clock,
-   and inert until the answer lands. Distinct from disabled, which is .4 and
-   means "not now"; this means "working". */
-.hm-shell .ls-btn[aria-busy="true"]{opacity:.7;cursor:progress;pointer-events:none}
+/* The pending face is the KIT's, and the console does not restate it. This
+   carried `.hm-shell .ls-btn[aria-busy="true"]{opacity:.7;cursor:progress;
+   pointer-events:none}` — written when pending had no face of its own, and
+   wrong on all three counts once components.css grew one. At (0,3,0) it beat
+   the kit's `.ls-btn--pending[disabled]` at (0,2,0), so on the console — the
+   densest pending surface in the product — a working button was dimmed back to
+   something like the disabled fade, and `pointer-events:none` took the progress
+   cursor with it: the one thing the state exists to show. Its own arithmetic
+   was stale too (disabled is --opacity-disabled, .45, not .4). Deleted; the
+   kit's full-opacity face, progress cursor and shuttle now reach the Bridge. */
 
 /* — voyage ops rows — */
 .hm-voy{background:var(--surface-card);border:1px solid var(--border-subtle);padding:16px 18px;margin-top:10px}
@@ -243,14 +263,17 @@
    an ink border on an ink-washed card and read as no state at all. */
 .hm-gang__result--not_found{border-color:var(--danger);background:color-mix(in srgb,var(--danger) 10%,var(--surface-card))}
 .hm-gang__result--not_found b{color:var(--danger)}
-.hm-gang__result--already{border-color:var(--border-strong)}
+/* The three edges below are --border-state, not --border-strong: each is the
+   only thing telling the operator which answer the scan gave, so it is a UI
+   component under 1.4.11 and owes 3:1. See the ramp at the top of the file. */
+.hm-gang__result--already{border-color:var(--border-state)}
 /* Uncertainty must not borrow the colour of a refusal. Amber says "stop and
    look", which is what it is; red said "this pass is fake", which it never
    was. --refused shares it: a real pass that may not board yet is also a
    held-back, not a rejection. */
 .hm-gang__result--unsure,.hm-gang__result--refused{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface-card))}
 .hm-gang__result--unsure b,.hm-gang__result--refused b{color:var(--ivory-100)}
-.hm-gang__result--waiting{border-color:var(--border-strong);opacity:.75}
+.hm-gang__result--waiting{border-color:var(--border-state);opacity:.75}
 .hm-gang__result--waiting b{color:var(--text-muted)}
 .hm-gang__offline{font-family:var(--font-mono);font-size:9px;letter-spacing:var(--track-data);text-transform:uppercase;color:var(--text-faint)}
 .hm-gang__result--already b{color:var(--text-body)}
@@ -301,7 +324,9 @@
    members teaches an operator to read past both. This band carries nothing
    that is nought, so its presence is itself the signal. */
 .hm-attn{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;margin-top:20px}
-.hm-attn__item{display:flex;flex-direction:column;gap:4px;padding:10px 16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-inline-start:3px solid var(--border-strong)}
+/* The leading rule is the item's severity when no modifier raises it, so it is
+   --border-state (3:1) rather than the decorative --border-strong. */
+.hm-attn__item{display:flex;flex-direction:column;gap:4px;padding:10px 16px;background:var(--surface-card);border:1px solid var(--border-subtle);border-inline-start:3px solid var(--border-state)}
 .hm-attn__item--danger{border-inline-start-color:var(--danger)}
 .hm-attn__item--caution{border-inline-start-color:var(--caution)}
 .hm-attn__n{font-family:var(--font-mono);font-weight:700;font-size:var(--text-lg);line-height:var(--leading-flat);letter-spacing:var(--track-data);font-variant-numeric:tabular-nums;color:var(--text-body)}
