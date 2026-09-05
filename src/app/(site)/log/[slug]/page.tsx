@@ -43,10 +43,10 @@ export default async function LoreArticlePage({
   return (
     <div className="ls-container">
       <article className="dp-art">
-        <Link href="/log" className="ls-eyebrow" style={{ color: "var(--text-2)" }}>
+        <Link href="/log" className="ls-eyebrow dp-art__back">
           ← The Log
         </Link>
-        <div className="dp-kick" style={{ marginTop: 28 }}>
+        <div className="dp-kick">
           {post.tag ? (
             <>
               <span className="tag">{post.tag}</span>

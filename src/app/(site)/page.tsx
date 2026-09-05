@@ -205,8 +205,7 @@ export default async function HomePage() {
                 <Link
                   key={v.id}
                   href={`/episodes/${v.slug}`}
-                  style={{ color: "inherit", textDecoration: "none" }}
-                  className={"ls-rise-" + Math.min(i + 1, 3)}
+                  className={"ws-card-link ls-rise-" + Math.min(i + 1, 3)}
                 >
                   <Card
                     media={v.media}
@@ -299,7 +298,7 @@ export default async function HomePage() {
             }
           />
           {(cuts ?? []).length > 0 ? (
-            <div className="ls-grid-3" style={{ marginBottom: 28 }}>
+            <div className="ls-grid-3 ws-cuts">
               {(cuts ?? []).map((ep, i) => (
                 <Card
                   key={ep.id}
@@ -315,11 +314,7 @@ export default async function HomePage() {
           ) : null}
           <div>
             {(posts ?? []).map((p) => (
-              <Link
-                key={p.id}
-                href={`/log/${p.slug}`}
-                style={{ color: "inherit", textDecoration: "none", display: "block" }}
-              >
+              <Link key={p.id} href={`/log/${p.slug}`} className="dp-link">
                 <div className="ws-dp-row">
                   <span className="ws-dp-row__d">
                     {logMeta(p.published_at, null, CLUB_ZONE)[0]} · {roman(new Date(p.published_at).getFullYear())}
@@ -350,8 +345,11 @@ export default async function HomePage() {
             Casting is by application or invitation. Apply once, board a season —
             the rest takes care of itself.
           </p>
-          <div style={{ marginTop: 32 }}>
-            <LinkButton href="/membership#apply" variant="outline" size="lg" inverse>
+          {/* The same control as the hero's: Apply now is gold and large
+              wherever it repeats, so the two ends of the page ask the same
+              question in the same voice. */}
+          <div className="ws-band__cta">
+            <LinkButton href="/membership#apply" variant="gold" size="lg">
               Apply now
             </LinkButton>
           </div>

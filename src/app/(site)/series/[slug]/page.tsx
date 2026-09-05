@@ -66,7 +66,7 @@ export default async function SeriesDetailPage({
         </span>
         <h1>{series.label}.</h1>
         <p className="ws-phead__sub">{series.blurb}</p>
-        <div className="ws-ledger-row__m" style={{ marginTop: 16 }}>
+        <div className="ws-ledger-row__m ws-phead__facts">
           <span>{seriesSetting(series.category)}</span>
           {klass ? <span>· {klass.label}</span> : null}
           {series.requires_vetting ? <span>· Vetted</span> : null}
@@ -98,11 +98,7 @@ export default async function SeriesDetailPage({
             wrapped ? "Wrapped" : null,
           ].filter(Boolean) as string[];
           return (
-            <Link
-              key={e.slug}
-              href={`/episodes/${e.slug}`}
-              style={{ color: "inherit", textDecoration: "none", display: "block" }}
-            >
+            <Link key={e.slug} href={`/episodes/${e.slug}`} className="ws-vrow__link">
               <div className="ws-vrow">
                 <div className="ws-vrow__date">
                   <b>{logDate(e.starts_at, zone)}</b>
@@ -142,7 +138,7 @@ export default async function SeriesDetailPage({
         </div>
       )}
 
-      <p className="ws-city-note">
+      <p className="ws-city-note ws-page-foot">
         Every episode above is filed under {series.label}.{" "}
         <Link href="/series">The other four strands</Link> run alongside it, and{" "}
         <Link href="/episodes">the manifest</Link> puts all five in date order.

@@ -84,12 +84,14 @@ export default async function SupportPage() {
     <div className="lg-wrap">
       {/* Route = nav = title = h1: the footer, the 404 and every "hail
           Shoreside" link name this page Shoreside, so the h1 does too. */}
-      <span className="ls-eyebrow ls-eyebrow--page">The shore desk · Hail us</span>
-      <h1>Shoreside.</h1>
-      <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "54ch" }}>
-        Shoreside answers first, files second, a human always. Most of what the
-        water asks is already answered below.
-      </p>
+      <header className="lg-head">
+        <span className="ls-eyebrow ls-eyebrow--page">The shore desk · Hail us</span>
+        <h1>Shoreside.</h1>
+        <p className="lg-lede">
+          Shoreside answers first, files second, a human always. Most of what the
+          water asks is already answered below.
+        </p>
+      </header>
 
       <div className="sp-faq">
         {faqs.map(([group, items]) => (
@@ -113,7 +115,7 @@ export default async function SupportPage() {
               <a href={`mailto:${MAILBOX.shore}`}>{MAILBOX.shore}</a> — Shoreside
               answers, usually within the hour. Plain words beat long ones.
             </p>
-            <p style={{ marginTop: 10 }}>
+            <p>
               Press and partnerships:{" "}
               <a href={`mailto:${MAILBOX.signal}`}>{MAILBOX.signal}</a>
             </p>

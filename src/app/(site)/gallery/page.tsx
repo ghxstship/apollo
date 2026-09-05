@@ -10,12 +10,6 @@ export const metadata: Metadata = {
   description: "The season in frames — by members, credited by name, never staged.",
 };
 
-const SEAS: Record<string, string> = {
-  day: "var(--sea-day)",
-  dusk: "var(--sea-dusk)",
-  dawn: "var(--sea-dawn)",
-};
-
 /* Placeholder seas — the sanctioned stand-in until film comes back. They hold
    the page only while no approved frame exists; a single real frame retires
    the whole grid. */
@@ -119,7 +113,7 @@ export default async function GalleryPage() {
                 "gl-tile" + (t.tall ? " gl-tile--tall" : "") + (t.wide ? " gl-tile--wide" : "")
               }
             >
-              <span className="gl-tile__bg" style={{ background: SEAS[t.media] }}></span>
+              <span className="gl-tile__bg" data-sea={t.media}></span>
               <span className="gl-tile__cap">
                 <b>{t.cap}</b>
                 <span>{t.meta} · Imagery TK</span>

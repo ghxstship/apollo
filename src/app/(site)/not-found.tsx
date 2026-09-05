@@ -23,13 +23,13 @@ export default function SiteNotFound() {
           have expired, or the page may have sailed under a different name.
         </p>
       </div>
-      <div className="ws-zero" style={{ marginTop: 40 }}>
+      <div className="ws-zero">
         <span className="ws-zero__label">Where to next</span>
         <p>
           Every episode of the season is on the <Link href="/episodes">manifest</Link>,
           and what already happened is in <Link href="/log">The Log</Link>.
         </p>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div className="ws-zero__acts">
           <LinkButton href="/episodes" variant="gold" size="sm">
             See the episodes
           </LinkButton>
@@ -37,7 +37,7 @@ export default function SiteNotFound() {
             Hail Shoreside
           </LinkButton>
         </div>
-        <span className="ls-mono-data ws-upper" style={{ color: "var(--text-3)" }}>
+        <span className="ls-mono-data ws-upper ws-zero__fine">
           {MAILBOX.shore}
         </span>
       </div>

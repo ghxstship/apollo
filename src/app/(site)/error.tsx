@@ -13,23 +13,25 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   }, [error]);
   return (
     <div className="ls-container">
-      <div className="ws-phead" style={{ paddingBottom: 96 }}>
+      <div className="ws-phead ws-phead--solo">
         <span className="ls-eyebrow">Something broke</span>
         <h1>That didn&rsquo;t land.</h1>
         <p className="ws-phead__sub">
           Our end, not yours. Try again, or write to Shoreside and quote the
           reference below.
         </p>
-        <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-          <button className="ls-btn ls-btn--gold" onClick={reset} type="button">
+        {/* The size class was missing: .ls-btn sets no height or padding of
+            its own, so both controls rendered as bare pills around their text. */}
+        <p className="ws-phead__cta">
+          <button className="ls-btn ls-btn--gold ls-btn--md" onClick={reset} type="button">
             Try again
           </button>
-          <Link className="ls-btn ls-btn--ghost" href="/support">
+          <Link className="ls-btn ls-btn--ghost ls-btn--md" href="/support">
             Hail Shoreside
           </Link>
         </p>
         {error.digest ? (
-          <p className="ls-mono-data" style={{ marginTop: 24, color: "var(--text-3)" }}>
+          <p className="ls-mono-data ws-phead__ref">
             REF {error.digest.toUpperCase()}
           </p>
         ) : null}

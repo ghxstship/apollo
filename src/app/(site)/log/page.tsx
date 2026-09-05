@@ -36,7 +36,7 @@ export default async function LorePage() {
   return (
     <div className="ls-container">
       <div className="dp-head">
-        <span className="ls-eyebrow" style={{ color: "var(--brass-deep)", display: "block", marginBottom: 16 }}>
+        <span className="ls-eyebrow ls-eyebrow--page">
           The Log · Sundays
         </span>
         <h1 className="dp-mast">The Log</h1>

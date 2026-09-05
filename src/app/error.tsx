@@ -22,7 +22,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <main id="main" className="ls-container" style={{ paddingTop: 96, paddingBottom: 96 }}>
+    <main id="main" className="ls-container ls-rise" style={{ paddingTop: 96, paddingBottom: 96 }}>
       <span className="ls-eyebrow" style={{ display: "block", color: "var(--gold-deep)" }}>
         Something broke
       </span>
@@ -32,10 +32,10 @@ export default function Error({
         and quote the reference below.
       </p>
       <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <button className="ls-btn ls-btn--gold" onClick={reset} type="button">
+        <button className="ls-btn ls-btn--gold ls-btn--md" onClick={reset} type="button">
           Try again
         </button>
-        <Link className="ls-btn ls-btn--ghost" href="/support">
+        <Link className="ls-btn ls-btn--ghost ls-btn--md" href="/support">
           Hail Shoreside
         </Link>
       </p>

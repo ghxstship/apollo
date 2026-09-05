@@ -228,7 +228,7 @@ export default async function MembershipPage() {
 
       <div className="ws-apply" id="apply">
         <SectionHeader eyebrow="Crew wanted, member first" title="Request invitation." />
-        <p style={{ color: "var(--text-2)", maxWidth: "52ch", marginTop: -24 }}>
+        <p className="ws-apply__lede">
           A person reads every application. Two member signatures shorten the wait;
           one night ashore as a guest usually settles it.
         </p>
@@ -236,7 +236,7 @@ export default async function MembershipPage() {
             required question is asked at the table as well as on the form.
             Said before the form, so nobody starts it on a train. */}
         {(questions ?? []).length > 0 ? (
-          <p style={{ color: "var(--text-2)", maxWidth: "52ch", fontSize: "var(--text-sm)", marginTop: -8 }}>
+          <p className="ws-apply__lede">
             {(() => {
               const total = (questions ?? []).length;
               const required = (questions ?? []).filter((q) => q.required).length;
@@ -245,7 +245,7 @@ export default async function MembershipPage() {
           </p>
         ) : null}
         <ApplyForm questions={questions ?? []} />
-        <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 20 }}>
+        <p className="ws-apply__after">
           Applied already? <Link href="/apply-status">Read where you stand</Link> — four
           stages, no silence.
         </p>

@@ -16,7 +16,7 @@ export const metadata: Metadata = { title: "Off the chart" };
    under (site)/ that sits inside the nav and footer. */
 export default function NotFound() {
   return (
-    <main id="main" className="ls-container" style={{ paddingTop: 96, paddingBottom: 96 }}>
+    <main id="main" className="ls-container ls-rise" style={{ paddingTop: 96, paddingBottom: 96 }}>
       <span className="ls-eyebrow" style={{ display: "block", color: "var(--gold-deep)" }}>
         404
       </span>
@@ -26,10 +26,10 @@ export default function NotFound() {
         sailed under a different name.
       </p>
       <p style={{ marginTop: 24, display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <Link className="ls-btn ls-btn--gold" href="/">
+        <Link className="ls-btn ls-btn--gold ls-btn--md" href="/">
           Back to the club
         </Link>
-        <Link className="ls-btn ls-btn--ghost" href="/support">
+        <Link className="ls-btn ls-btn--ghost ls-btn--md" href="/support">
           Hail Shoreside
         </Link>
       </p>

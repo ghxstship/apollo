@@ -20,12 +20,14 @@ export default async function LegalPage() {
     <div className="lg-wrap">
       {/* Route = nav = title = h1: the footer column and the tab call this
           page The fine print, so the h1 does too. */}
-      <span className="ls-eyebrow ls-eyebrow--page">Short, honest, binding</span>
-      <h1>The fine print.</h1>
-      <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "56ch" }}>
-        Written to be read. If anything here surprises you, that&rsquo;s a bug —
-        write to <a href={`mailto:${MAILBOX.shore}`}>{MAILBOX.shore}</a>.
-      </p>
+      <header className="lg-head">
+        <span className="ls-eyebrow ls-eyebrow--page">Short, honest, binding</span>
+        <h1>The fine print.</h1>
+        <p className="lg-lede">
+          Written to be read. If anything here surprises you, that&rsquo;s a bug —
+          write to <a href={`mailto:${MAILBOX.shore}`}>{MAILBOX.shore}</a>.
+        </p>
+      </header>
       <nav className="lg-anchors" aria-label="Sections">
         <a href="#conduct">Code of conduct</a>
         <a href="#terms">Terms of passage</a>
@@ -48,7 +50,7 @@ export default async function LegalPage() {
           <li>One warning for conduct; none for harassment. Departed members keep their credits either way.</li>
           <li>Leave every port better than you found it.</li>
         </ul>
-        <p className="lg-mono" style={{ marginTop: 24 }}>
+        <p className="lg-mono">
           Enforced by people · logged in the ship&rsquo;s record · appealable to Shoreside
         </p>
       </section>
@@ -100,7 +102,7 @@ export default async function LegalPage() {
           within a week. Correct anything. Delete the account from the member app —
           no calls required.
         </p>
-        <p className="lg-mono" style={{ marginTop: 24 }}>
+        <p className="lg-mono">
           GDPR and CCPA honored for everyone, not just where required · questions: {MAILBOX.shore}
         </p>
       </section>
@@ -128,7 +130,7 @@ export default async function LegalPage() {
           before you book and we ask the venue for you. Nothing about an access
           need goes on the manifest, ever.
         </p>
-        <p className="lg-mono" style={{ marginTop: 24 }}>
+        <p className="lg-mono">
           Access needs, questions and things we got wrong: {MAILBOX.shore}
         </p>
       </section>

@@ -18,7 +18,7 @@ export function JoinControl({
 
   if (action === "current") {
     return (
-      <span className="ws-plans__note" style={{ color: "var(--laurel)" }}>
+      <span className="ws-plans__note ws-plans__note--held">
         YOUR STANDING
       </span>
     );
@@ -46,15 +46,12 @@ export function JoinControl({
   };
 
   return (
-    <span style={{ display: "block", marginTop: 10 }}>
+    <span className="ws-plans__join">
       <Button variant="outline" size="sm" disabled={pending} onClick={start}>
         {pending ? "Casting off…" : action === "switch" ? "Switch" : "Join"}
       </Button>
       {error ? (
-        <span
-          role="alert"
-          style={{ display: "block", fontSize: "var(--text-xs)", color: "var(--siren)", marginTop: 6 }}
-        >
+        <span role="alert" className="ws-plans__err">
           {error}
         </span>
       ) : null}

@@ -46,13 +46,15 @@ export const metadata: Metadata = {
 export default function TheShowPage() {
   return (
     <div className="lg-wrap">
-      <span className="ls-eyebrow ls-eyebrow--page">The premise</span>
-      <h1>The show.</h1>
-      <p style={{ color: "var(--text-2)", marginTop: 14, maxWidth: "56ch" }}>
-        The club is an unscripted series and every night is an episode. That is
-        the premise, not the fine print, so it belongs in front of the form. No
-        scripts. No second takes.
-      </p>
+      <header className="lg-head">
+        <span className="ls-eyebrow ls-eyebrow--page">The premise</span>
+        <h1>The show.</h1>
+        <p className="lg-lede">
+          The club is an unscripted series and every night is an episode. That is
+          the premise, not the fine print, so it belongs in front of the form. No
+          scripts. No second takes.
+        </p>
+      </header>
       <nav className="lg-anchors" aria-label="Sections">
         <a href="#record">What goes on the record</a>
         <a href="#published">What gets published</a>
@@ -142,7 +144,7 @@ export default function TheShowPage() {
           <a href={`mailto:${MAILBOX.shore}`}>{MAILBOX.shore}</a> — the file goes
           with the record, not just the listing.
         </p>
-        <p className="lg-mono" style={{ marginTop: 24 }}>
+        <p className="lg-mono">
           In by default for members · out by default for guests · withdrawal is
           dated and honoured at the next stop
         </p>

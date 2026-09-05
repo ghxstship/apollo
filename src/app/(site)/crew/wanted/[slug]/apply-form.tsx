@@ -37,7 +37,7 @@ export function CrewApplyForm({ roleId, roleTitle }: { roleId: string; roleTitle
   }
 
   return (
-    <form action={formAction} className="crew-form">
+    <form action={formAction} className="crew-form" aria-busy={pending || undefined}>
       <input type="hidden" name="role_id" value={roleId} />
       <span className="ls-eyebrow crew-form__eyebrow">Apply — {roleTitle}</span>
 
@@ -87,7 +87,7 @@ export function CrewApplyForm({ roleId, roleTitle }: { roleId: string; roleTitle
       />
 
       {state.errors.form ? (
-        <p role="alert" className="crew-form__err">
+        <p role="alert" className="ws-form__err">
           {state.errors.form}
         </p>
       ) : null}

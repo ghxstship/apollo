@@ -33,6 +33,9 @@ export default function GlobalError({
           padding: "96px 24px",
         }}
       >
+        {/* No stylesheet loads here, so the one rule a keyboard needs — a
+            visible focus ring on the only control — is carried inline. */}
+        <style>{`button:focus-visible{outline:2px solid ${IVORY};outline-offset:3px}`}</style>
         {/* ANCHOR, not a typed [un]: brand.ts exists so no string literal of
             the mark can drift. */}
         <p style={{ letterSpacing: "0.18em", fontSize: 12, opacity: 0.7 }}>{ANCHOR}</p>
@@ -45,6 +48,7 @@ export default function GlobalError({
           type="button"
           style={{
             marginTop: 24,
+            minHeight: 44,
             padding: "12px 20px",
             background: IVORY,
             color: INK,

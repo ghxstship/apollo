@@ -19,11 +19,9 @@ import { readPublicPlans } from "@/components/site/plans-data";
 import { readLegs, readStops } from "@/app/(member)/itinerary/data";
 import { Enquire } from "@/components/member/enquire";
 
-const SEAS: Record<string, string> = {
-  day: "var(--sea-day)",
-  dusk: "var(--sea-dusk)",
-  dawn: "var(--sea-dawn)",
-};
+/* The placeholder sea a page paints when there is no frame yet. site.css holds
+   the three rules under [data-sea]; an unknown key falls back to dusk. */
+const sea = (media: string) => (media === "day" || media === "dawn" ? media : "dusk");
 
 /* Per-class FAQ — what to bring, weather holds. The guest answer is not here:
    it reads the plans' guest_allowance at render, because the figure is a
@@ -191,7 +189,7 @@ export default async function EpisodePage({
   return (
     <>
       <header className="ev-hero">
-        <div className="ev-hero__bg" style={{ background: SEAS[episode.media] ?? SEAS.dusk }}></div>
+        <div className="ev-hero__bg" data-sea={sea(episode.media)}></div>
         <div className="ls-container ev-hero__in">
           <span className="ls-eyebrow">{heroBadge}</span>
           <h1>{episode.title}</h1>
@@ -479,7 +477,7 @@ async function EpisodeBody({
       <div className="ls-container ev-body">
         <div>
           {episode.blurb ? (
-            <p style={{ fontSize: "var(--text-body-l)", maxWidth: "56ch" }}>{episode.blurb}</p>
+            <p className="ev-lede">{episode.blurb}</p>
           ) : null}
           <div className="ev-desc">
             {paragraphs.map((p, i) => (
@@ -542,7 +540,7 @@ async function EpisodeBody({
                   ))}
                 </>
               ) : null}
-              <p className="ev-plan__note" style={{ marginTop: 14 }}>
+              <p className="ev-plan__note ev-plan__foot">
                 Weather may revise any leg. Crew post changes by 08:00 daily.
               </p>
             </div>
@@ -586,10 +584,7 @@ async function EpisodeBody({
                 ))}
               </div>
             ) : (
-              <div
-                className="ev-frames__tk"
-                style={{ background: SEAS[episode.media] ?? SEAS.dusk }}
-              >
+              <div className="ev-frames__tk" data-sea={sea(episode.media)}>
                 <span>Imagery TK — frames post after the episode, credited by name.</span>
               </div>
             )}
@@ -615,7 +610,7 @@ async function EpisodeBody({
         <aside className="ev-side">
           <div className="ev-panel">
             <div className="ev-panel__label">Passage</div>
-            <div style={{ marginBottom: 16 }}>
+            <div className="ev-panel__state">
               {cancelled ? (
                 <Badge tone="caution">Cancelled</Badge>
               ) : sailed ? (
@@ -637,16 +632,16 @@ async function EpisodeBody({
               ) : (
                 <Badge tone="outline">Passes open</Badge>
               )}
+              {/* The class decides the door's guest rule; the chip alone left a
+                  member to infer it. Said outright, once, before the door. */}
+              {!closed ? (
+                <p className="ev-note ev-note--fine">
+                  {episode.experience_class === "open"
+                    ? "An Open night — a guest of yours may come whether or not they have been vetted."
+                    : "Vetted guests only — the Open nights are where a first-timer comes along."}
+                </p>
+              ) : null}
             </div>
-            {/* The class decides the door's guest rule; the chip alone left a
-                member to infer it. Said outright, once, before the door. */}
-            {!closed ? (
-              <p className="ev-note ev-note--fine" style={{ marginTop: -8, marginBottom: 12 }}>
-                {episode.experience_class === "open"
-                  ? "An Open night — a guest of yours may come whether or not they have been vetted."
-                  : "Vetted guests only — the Open nights are where a first-timer comes along."}
-              </p>
-            ) : null}
             {cancelled ? (
               <p className="ev-note">
                 The club called this one off. Anything reserved against it was
@@ -866,28 +861,13 @@ async function EpisodeBody({
             <div>
               <span>Calendar</span>
               <span>
-                <a
-                  href={`/api/calendar/episode/${episode.slug}`}
-                  style={{ color: "inherit", textDecoration: "underline" }}
-                >
-                  .ics
-                </a>
+                <a href={`/api/calendar/episode/${episode.slug}`}>.ics</a>
                 {" · "}
-                <a
-                  href={googleCalendarUrl(calendarWindow)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  style={{ color: "inherit", textDecoration: "underline" }}
-                >
+                <a href={googleCalendarUrl(calendarWindow)} rel="noopener noreferrer" target="_blank">
                   Google
                 </a>
                 {" · "}
-                <a
-                  href={outlookCalendarUrl(calendarWindow)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  style={{ color: "inherit", textDecoration: "underline" }}
-                >
+                <a href={outlookCalendarUrl(calendarWindow)} rel="noopener noreferrer" target="_blank">
                   Outlook
                 </a>
               </span>
@@ -897,19 +877,9 @@ async function EpisodeBody({
             <div>
               <span>Share card</span>
               <span>
-                <a
-                  href={`/episodes/${episode.slug}/share`}
-                  style={{ color: "inherit", textDecoration: "underline" }}
-                >
-                  Story
-                </a>
+                <a href={`/episodes/${episode.slug}/share`}>Story</a>
                 {" · "}
-                <a
-                  href={`/episodes/${episode.slug}/share?ratio=4x5`}
-                  style={{ color: "inherit", textDecoration: "underline" }}
-                >
-                  Post
-                </a>
+                <a href={`/episodes/${episode.slug}/share?ratio=4x5`}>Post</a>
               </span>
             </div>
             {/* One quiet line, absent when no one is on it. */}
@@ -949,13 +919,13 @@ async function EpisodeBody({
             <div className="ev-panel__label">Who&rsquo;s aboard</div>
             {user && crew.length > 0 ? (
               <>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="ev-aboard">
                   <AvatarGroup>
                     {crew.slice(0, 4).map((c) => (
                       <Avatar key={c.name} name={c.name} size="sm" tone={c.tone} />
                     ))}
                   </AvatarGroup>
-                  <span className="ls-mono-data ws-upper" style={{ color: "var(--text-2)" }}>
+                  <span className="ls-mono-data ws-upper ev-aboard__n">
                     {aboard} aboard
                   </span>
                 </div>

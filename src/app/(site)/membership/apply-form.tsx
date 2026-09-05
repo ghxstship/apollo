@@ -24,7 +24,7 @@ export function ApplyForm({ questions = [] }: { questions?: ApplyQuestion[] }) {
           title="Application received."
           detail="A person reads it — not a filter. If the water suits you, an invitation ashore follows within the week."
         />
-        <p className="ws-apply__meta" style={{ textAlign: "center", marginTop: 16 }}>
+        <p className="ws-apply__meta ws-apply__meta--center">
           {state.meta}
         </p>
       </div>
@@ -33,7 +33,7 @@ export function ApplyForm({ questions = [] }: { questions?: ApplyQuestion[] }) {
 
   return (
     // Keyed on returned values so a failed submit re-seeds the inputs.
-    <form action={action} key={JSON.stringify(state.values)}>
+    <form action={action} key={JSON.stringify(state.values)} aria-busy={pending || undefined}>
       <Input
         label="Full name"
         name="full_name"
@@ -89,10 +89,9 @@ export function ApplyForm({ questions = [] }: { questions?: ApplyQuestion[] }) {
         autoComplete="off"
         autoCapitalize="characters"
         spellCheck={false}
-        // .ls-input draws its face from var(--font-sans); re-pointing the
-        // variable on the field wrapper is the only inline route to a mono
-        // code box, since Input keeps `style` on the wrapper, not the input.
-        style={{ "--font-sans": "var(--font-mono)" } as React.CSSProperties}
+        // Input hands className to the wrapper; the class reaches the input
+        // from there and sets the mono face a code box wants.
+        className="ws-field--code"
       />
       {/* Was "Why the water?", which asks an applicant to explain an interest
           in boats — and thirty-four of the season's fifty-two episodes never
@@ -155,13 +154,13 @@ export function ApplyForm({ questions = [] }: { questions?: ApplyQuestion[] }) {
         description="Follow the skipper, mind the boom, leave every port better."
       />
       {state.errors.form ? (
-        <p role="alert" style={{ fontSize: "var(--text-sm)", color: "var(--siren)" }}>
+        <p role="alert" className="ws-form__err">
           {state.errors.form}
         </p>
       ) : null}
       <div>
         <Button type="submit" size="lg" disabled={pending}>
-          {pending ? "Sending" : "Send it"}
+          {pending ? "Sending…" : "Send it"}
         </Button>
       </div>
     </form>
