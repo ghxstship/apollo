@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import { CLUB_ZONE } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Table, Toast } from "@/components/ds";
 import { logDate } from "@/lib/format";
@@ -56,7 +57,8 @@ export function CodesClient({
   const [maxUses, setMaxUses] = React.useState("1");
   const [expires, setExpires] = React.useState("");
   const [note, setNote] = React.useState("");
-  const [query, setQuery] = React.useState("");
+  const fromUrl = useSearchParams().get("q") ?? "";
+  const [query, setQuery] = React.useState(fromUrl);
 
   const q = query.trim().toUpperCase();
   const shown = q ? rows.filter((r) => r.code.includes(q) || r.note.toUpperCase().includes(q)) : rows;

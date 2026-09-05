@@ -189,6 +189,26 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
   return done();
 }
 
+/* The rule, fired once at the operator's own profile through the staff-only
+   wrapper (run_automation_now; the dispatcher itself has no grant since
+   2026-09-05). A held rule fires nothing, which is the honest answer — the
+   toast says so rather than pretending. */
+export async function fireAutomationAtMe(id: string): Promise<ActionResult> {
+  const { supabase, staffId } = await staffContext();
+  if (!staffId) return { error: ERR_STAFF };
+  if (!UUID.test(id)) return { error: "No such rule." };
+  const { data, error } = await supabase.rpc("run_automation_now", { p_only: id, p_profile_id: staffId, p_episode_id: null });
+  if (error) {
+    if (/staff only|nobody else does/i.test(error.message)) return { error: ERR_STAFF };
+    if (/no such rule/i.test(error.message)) return { error: "No such rule." };
+    return { error: ERR_LAND };
+  }
+  const fired = Number(data ?? 0);
+  return fired > 0
+    ? { note: "Fired at you. Check your inbox, mail or phone." }
+    : { note: "Nothing fired — the rule is held, or its conditions do not match you." };
+}
+
 export async function setAutomationActive(id: string, active: boolean): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };

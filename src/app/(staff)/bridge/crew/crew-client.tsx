@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import { Avatar, Badge, Button, Dialog, Input, ListToolbar, Stat, StateBlock, Switch, Table, Tabs, Textarea, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
 import { addCandidateNote, setCandidateStage, setRoleOpen, type CrewStage } from "./actions";
@@ -88,7 +89,8 @@ export function CrewClient({
   const [passing, setPassing] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const [note, setNote] = React.useState("");
-  const [query, setQuery] = React.useState("");
+  const fromUrl = useSearchParams().get("q") ?? "";
+  const [query, setQuery] = React.useState(fromUrl);
 
   const role = roles.find((r) => r.id === roleId) ?? null;
   const pool = candidates.filter((c) => c.roleId === roleId);

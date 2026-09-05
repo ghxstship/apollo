@@ -3,7 +3,7 @@
 import React from "react";
 import { Badge, Button, Toast } from "@/components/ds";
 import { useToast } from "../../ui";
-import { requeueOutbox, type OutboxTable } from "./actions";
+import { requeueOutbox, strikeOutbox, type OutboxTable } from "./actions";
 
 /* One row across the three outboxes, already shaped by the server: what the
    letter was, who it was for, why it stopped, how many times it tried. */
@@ -99,6 +99,22 @@ export function OutboxTable({ rows }: { rows: StrandedRow[] }) {
                       }
                     >
                       Requeue
+                    </Button>
+                  ) : null}
+                  {row.status !== "sending" ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={pending}
+                      onClick={() =>
+                        startTransition(async () => {
+                          const res = await strikeOutbox(row.table, row.id);
+                          if (res.error) show({ msg: res.error, tone: "danger" });
+                          else show({ msg: "Struck. It will not be sent.", meta: `${row.channel.toUpperCase()} · ${row.letter.toUpperCase()}` });
+                        })
+                      }
+                    >
+                      Strike
                     </Button>
                   ) : null}
                 </td>

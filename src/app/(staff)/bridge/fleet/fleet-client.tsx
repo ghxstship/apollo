@@ -14,6 +14,8 @@ export type CityCard = {
   coordinates: string;
   launchYear: string;
   position: string;
+  /* The audit log's last word on this row, or null when it was never changed here. */
+  changed: string | null;
 };
 
 export type VesselCard = {
@@ -26,6 +28,7 @@ export type VesselCard = {
   year: string;
   cabins: string;
   active: boolean;
+  changed: string | null;
 };
 
 const STATUS_OPTIONS = [
@@ -43,10 +46,10 @@ const STATUS_TONE: Record<string, "positive" | "outline" | "caution"> = {
 };
 
 const NEW_CITY: Omit<CityCard, "id"> = {
-  name: "", slug: "", status: "soon", timeZone: "America/New_York", coordinates: "", launchYear: "", position: "",
+  name: "", slug: "", status: "soon", timeZone: "America/New_York", coordinates: "", launchYear: "", position: "", changed: null,
 };
 const NEW_VESSEL: Omit<VesselCard, "id"> = {
-  name: "", capacity: "", homeCity: "", dayRate: "", lengthFt: "", year: "", cabins: "", active: true,
+  name: "", capacity: "", homeCity: "", dayRate: "", lengthFt: "", year: "", cabins: "", active: true, changed: null,
 };
 
 const same = <T extends object>(a: T, b: T) => JSON.stringify(a) === JSON.stringify(b);
@@ -163,6 +166,7 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                   <span className="hm-mono">{c.timeZone.toUpperCase()}</span>
                   <Badge tone={STATUS_TONE[c.status] ?? "outline"}>{c.status}</Badge>
                 </div>
+                {c.changed ? <div className="hm-item__meta">{c.changed.toUpperCase()}</div> : null}
                 {cityFields(d, (p) => setCityDraft((s) => ({ ...s, [id]: { ...s[id], ...p } })))}
                 <div className="hm-acts" style={{ marginTop: 12 }}>
                   <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={pending || !dirty} onClick={() => runCity(id, d)}>
@@ -211,6 +215,7 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
                   </span>
                   {!v.active ? <Badge tone="outline">Laid up</Badge> : null}
                 </div>
+                {v.changed ? <div className="hm-item__meta">{v.changed.toUpperCase()}</div> : null}
                 {vesselFields(d, (p) => setVesselDraft((s) => ({ ...s, [id]: { ...s[id], ...p } })))}
                 <div className="hm-acts" style={{ marginTop: 12 }}>
                   <Button variant={dirty ? "gold" : "outline"} size="sm" disabled={pending || !dirty} onClick={() => runVessel(id, d)}>

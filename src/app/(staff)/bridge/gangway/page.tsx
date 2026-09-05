@@ -218,7 +218,8 @@ export default async function GangwayPage({
           line and the console, and nothing else to follow. */}
       {grant ? (
         <p className="hm-note ls-mono-data">
-          THE DOOR · {episode.title.replace(/\.+$/, "").toUpperCase()} · GRANT RUNS OUT{" "}
+          THE DOOR · {episode.title.replace(/\.+$/, "").toUpperCase()}
+          {muster ? ` · MUSTER ${muster.toUpperCase()}` : ""} · GRANT RUNS OUT{" "}
           {logDateTime(grant.expires_at, episode.time_zone).toUpperCase()}
         </p>
       ) : null}

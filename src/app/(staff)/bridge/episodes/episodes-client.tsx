@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Badge,
   Button,
@@ -378,7 +379,9 @@ export function EpisodesClient({
   const [flotillaId, setFlotillaId] = React.useState<string | null>(null);
   const flotilla = flotillaId ? (rows.find((r) => r.id === flotillaId) ?? null) : null;
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all");
-  const [query, setQuery] = React.useState("");
+  /* ?q= from the Bridge search lands the list already filtered. */
+  const fromUrl = useSearchParams().get("q") ?? "";
+  const [query, setQuery] = React.useState(fromUrl);
 
   /* The tally is the whole board, never the filtered slice — a summary that
      moved with the filter would be answering a different question each time. */

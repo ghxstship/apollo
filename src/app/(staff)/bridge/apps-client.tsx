@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge, Button, Dialog, FilterPills, Input, ListToolbar, StateBlock, Table, Tag, Toast } from "@/components/ds";
 import { useToast } from "../ui";
 import {
@@ -54,7 +55,8 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
   /* The drawer: one application, read in full. Opens on the row. */
   const [reading, setReading] = React.useState<AppRow | null>(null);
   const { toast, show, clear } = useToast();
-  const [query, setQuery] = React.useState("");
+  const fromUrl = useSearchParams().get("q") ?? "";
+  const [query, setQuery] = React.useState(fromUrl);
   const [status, setStatus] = React.useState<"all" | AppRow["status"]>("all");
 
   const q = query.trim().toLowerCase();

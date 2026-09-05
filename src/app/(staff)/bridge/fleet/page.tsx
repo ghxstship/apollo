@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
+import { lastChanges } from "../audit-line";
 import { FleetClient, type CityCard, type VesselCard } from "./fleet-client";
 
 export const metadata: Metadata = { title: "Fleet" };
@@ -12,9 +13,10 @@ export const metadata: Metadata = { title: "Fleet" };
    them. */
 export default async function FleetPage() {
   const { supabase } = await getOperator();
-  const [citiesRes, vesselsRes] = await Promise.all([
+  const [citiesRes, vesselsRes, changed] = await Promise.all([
     supabase.from("cities").select("*").order("position"),
     supabase.from("vessels").select("*").order("active", { ascending: false }).order("name"),
+    lastChanges(supabase, ["cities", "vessels"]),
   ]);
   const cities: CityCard[] = must(citiesRes).map((c) => ({
     id: c.id,
@@ -25,6 +27,7 @@ export default async function FleetPage() {
     coordinates: c.coordinates ?? "",
     launchYear: c.launch_year === null ? "" : String(c.launch_year),
     position: String(c.position),
+    changed: changed.get(`cities:${c.id}`) ?? null,
   }));
   const vessels: VesselCard[] = must(vesselsRes).map((v) => ({
     id: v.id,
@@ -36,6 +39,7 @@ export default async function FleetPage() {
     year: v.year === null ? "" : String(v.year),
     cabins: v.cabins === null ? "" : String(v.cabins),
     active: v.active,
+    changed: changed.get(`vessels:${v.id}`) ?? null,
   }));
 
   return (

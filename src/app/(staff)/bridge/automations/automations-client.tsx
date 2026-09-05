@@ -5,13 +5,7 @@ import { CLUB_ZONE, PLACE, SETTING_LABEL } from "@/lib/brand";
 import { Badge, Button, Dialog, Input, ListToolbar, Select, StateBlock, Switch, Textarea, Toast } from "@/components/ds";
 import { logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
-import {
-  createAutomation,
-  setAutomationActive,
-  type RuleAction,
-  type RuleConditions,
-  type TriggerEvent,
-} from "./actions";
+import { createAutomation, fireAutomationAtMe, setAutomationActive, type RuleAction, type RuleConditions, type TriggerEvent } from "./actions";
 
 export type RuleRow = {
   id: string;
@@ -175,6 +169,20 @@ export function AutomationsClient({
               <b>{r.name}</b>
               {r.active ? <Badge tone="positive">Live</Badge> : <Badge tone="outline">Held</Badge>}
               <div className="hm-item__acts">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      const res = await fireAutomationAtMe(r.id);
+                      if (res.error) show({ msg: res.error, tone: "danger" });
+                      else show({ msg: res.note ?? "Fired.", meta: r.name.toUpperCase() });
+                    })
+                  }
+                >
+                  Fire at me
+                </Button>
                 <Switch
                   label={r.active ? "Live" : "Held"}
                   checked={r.active}

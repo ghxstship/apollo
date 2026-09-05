@@ -49,6 +49,7 @@ const GROUPS = [
     ["/bridge/tax", "Tax"],
     ["/bridge/fleet", "Fleet"],
     ["/bridge/broadcast", "Broadcast"],
+    ["/bridge/letters", "Letters"],
     ["/bridge/reports", "Reports"],
     ["/bridge/referrals", "Referrals"],
     ["/bridge/sponsors", "Sponsors"],

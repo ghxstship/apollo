@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Badge, Button, Checkbox, Dialog, FilterPills, Input, ListToolbar, Select, StateBlock, Table, Textarea, Toast, type ToolbarChip } from "@/components/ds";
 import { CLUB_ZONE, LEAGUES, PLACE, knots } from "@/lib/brand";
@@ -135,7 +136,9 @@ export function MembersClient({
 }) {
   const [pending, startTransition] = React.useTransition();
   const { toast, show, clear } = useToast();
-  const [f, setF] = React.useState<SegmentFilters>(EMPTY);
+  /* ?q= from the Bridge search lands the roll already filtered. */
+  const fromUrl = useSearchParams().get("q") ?? "";
+  const [f, setF] = React.useState<SegmentFilters>(fromUrl ? { ...EMPTY, q: fromUrl } : EMPTY);
 
   /* What is in force, as the toolbar's chips — one per axis, each removable.
      Reads the filter object rather than a second list, so a filter added later

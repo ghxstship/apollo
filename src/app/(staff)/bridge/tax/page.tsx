@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getOperator } from "../../data";
 import { must } from "../../staff";
+import { lastChanges } from "../audit-line";
 import { TaxClient, type CityTaxCard } from "./tax-client";
 
 export const metadata: Metadata = { title: "Tax" };
@@ -11,9 +12,10 @@ export const metadata: Metadata = { title: "Tax" };
    nobody makes. */
 export default async function TaxPage() {
   const { supabase } = await getOperator();
-  const [citiesRes, taxRes] = await Promise.all([
+  const [citiesRes, taxRes, changed] = await Promise.all([
     supabase.from("cities").select("id, name, status").order("position"),
     supabase.from("city_tax").select("*"),
+    lastChanges(supabase, ["city_tax"]),
   ]);
   const byCity = new Map(must(taxRes).map((t) => [t.city_id, t]));
   const cards: CityTaxCard[] = must(citiesRes).map((c) => {
@@ -28,6 +30,7 @@ export default async function TaxPage() {
       determinedBy: t?.determined_by ?? "",
       determinedOn: t?.determined_on ?? "",
       note: t?.note ?? "",
+      changed: changed.get(`city_tax:${c.id}`) ?? null,
     };
   });
 

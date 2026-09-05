@@ -5,6 +5,7 @@ import { SURFACES } from "@/lib/brand";
 import { memberMark } from "@/lib/membership";
 import { getOperator } from "./data";
 import { HmClock, HmRail, HmTabs } from "./nav";
+import { CommandBar } from "./command-bar";
 import "./bridge.css";
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default async function StaffLayout({
             <Wordmark size="sm" suffix={null} />
             <span className="hm-top__sub">{SURFACES.bridge} — {city}</span>
           </div>
+          <CommandBar />
           <HmClock />
           <div className="hm-top__op">
             <span className="hm-mono">

@@ -15,6 +15,8 @@ export type CityTaxCard = {
   determinedBy: string;
   determinedOn: string;
   note: string;
+  /* The audit log's last word on this determination, or null. */
+  changed: string | null;
 };
 
 type Draft = { adm: string; goods: string; registered: boolean; by: string; on: string; note: string };
@@ -84,6 +86,7 @@ export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
                 {unregistered ? <Badge tone="danger">Rate set, not registered — nothing charged</Badge> : null}
                 {!undetermined && c.registered ? <Badge tone="positive">Collecting</Badge> : null}
               </div>
+              {c.changed ? <div className="hm-item__meta">{c.changed.toUpperCase()}</div> : null}
               <div className="hm-plan__ids">
                 <Input
                   label="Admissions (bp)"
