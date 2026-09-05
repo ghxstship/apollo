@@ -37,9 +37,7 @@ export function Enquire({
   React.useEffect(() => {
     if (!showToast) return;
     formRef.current?.reset();
-    const t = setTimeout(() => setDismissedState(state), 4000);
-    return () => clearTimeout(t);
-  }, [showToast, state]);
+  }, [showToast]);
 
   return (
     <>
@@ -83,8 +81,8 @@ export function Enquire({
             {state.error}
           </Notice>
         ) : null}
-        <Button type="submit" variant="gold" size="sm" fullWidth disabled={pending}>
-          {pending ? "Sending…" : "Enquire"}
+        <Button type="submit" variant="gold" size="sm" fullWidth pending={pending} pendingLabel="Sending…">
+          Enquire
         </Button>
       </form>
       {showToast ? (
@@ -92,7 +90,8 @@ export function Enquire({
           fixed
           tone="positive"
           message="Enquiry raised. The Bridge answers by word."
-          onDismiss={() => setDismissedState(state)}
+          duration={4000}
+          onClose={() => setDismissedState(state)}
         />
       ) : null}
     </>

@@ -38,8 +38,8 @@ export function ExportDataButton({ memberNo }: { memberNo: string | null }) {
 
   return (
     <div className="ls-acts">
-      <Button variant="outline" size="sm" disabled={pending} onClick={download}>
-        {pending ? "Gathering it…" : "Export my data"}
+      <Button variant="outline" size="sm" pending={pending} pendingLabel="Gathering it…" onClick={download}>
+        Export my data
       </Button>
       {error ? (
         <Notice tone="danger" compact>

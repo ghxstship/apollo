@@ -24,7 +24,7 @@ export function SendAWord({
   return (
     <form action={formAction} className={className}>
       <input type="hidden" name="other" value={otherId} />
-      <Button type="submit" variant="gold" size="sm" disabled={pending}>
+      <Button type="submit" variant="gold" size="sm" pending={pending} pendingLabel="Sending…">
         {label}
       </Button>
       {state.error ? (

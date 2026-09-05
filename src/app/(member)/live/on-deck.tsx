@@ -32,6 +32,9 @@ export function OnDeck({
     setDeckStatus,
     {}
   );
+  /* Which of the two submits is in flight. They share one `pending`, so
+     without this both would wear the busy face for whichever was pressed. */
+  const [intent, setIntent] = React.useState<"set" | "clear">("set");
 
   /* The list is server-rendered, so a saved line shows up in it only after a
      re-read. */
@@ -76,11 +79,31 @@ export function OnDeck({
           placeholder="At the bow. Come say hello."
           hint="One line, eighty characters. It clears when the night ends."
         />
-        <Button type="submit" name="intent" value="set" variant="gold" size="sm" disabled={pending}>
+        <Button
+          type="submit"
+          name="intent"
+          value="set"
+          variant="gold"
+          size="sm"
+          pending={pending && intent === "set"}
+          pendingLabel="Setting…"
+          disabled={pending && intent !== "set"}
+          onClick={() => setIntent("set")}
+        >
           Set
         </Button>
         {current ? (
-          <Button type="submit" name="intent" value="clear" variant="ghost" size="sm" disabled={pending}>
+          <Button
+            type="submit"
+            name="intent"
+            value="clear"
+            variant="ghost"
+            size="sm"
+            pending={pending && intent === "clear"}
+            pendingLabel="Clearing…"
+            disabled={pending && intent !== "clear"}
+            onClick={() => setIntent("clear")}
+          >
             Clear
           </Button>
         ) : null}

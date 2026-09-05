@@ -51,8 +51,8 @@ export function FrameUpload({ episodeId }: { episodeId: string }) {
           name="caption"
           maxLength={200}
         />
-        <Button type="submit" disabled={pending}>
-          {pending ? "Sending…" : "Send the frame"}
+        <Button type="submit" pending={pending} pendingLabel="Sending…">
+          Send the frame
         </Button>
       </div>
       {error ? (

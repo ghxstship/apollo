@@ -298,15 +298,17 @@ export function PassControls({
   const [segment, setSegment] = React.useState<Segment | null>(null);
   /* One line of receipt, said once and gone. */
   const [toast, setToast] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
-  const run = (fn: () => Promise<{ error?: string; full?: boolean }>, after?: () => void) => {
+  /* Which control is working. Every door on this card shares one transition,
+     so `pending` alone cannot say which one was pressed: without this, one tap
+     would put every visible button into the busy face at once. The others stay
+     unavailable, which is a different thing and reads as one. */
+  const [running, setRunning] = React.useState<string | null>(null);
+
+  const run = (key: string, fn: () => Promise<{ error?: string; full?: boolean }>, after?: () => void) => {
     setError(null);
     setOfferWaitlist(false);
+    setRunning(key);
     startTransition(async () => {
       const res = await fn();
       if (res.error) {
@@ -315,6 +317,7 @@ export function PassControls({
       } else if (after) {
         after();
       }
+      setRunning(null);
     });
   };
 
@@ -383,7 +386,7 @@ export function PassControls({
 
   /* Take a standby pass: reviewed like any priced pass, straight in when free. */
   const takeStandbyPass = () =>
-    needsReview ? openCheckout(true) : run(() => takeStandby(episodeId));
+    needsReview ? openCheckout(true) : run("standby", () => takeStandby(episodeId));
 
   /* The door on a full manifest, offered wherever the guard has just said
      "full": the waitlist, and a standby pass when the episode sells one. */
@@ -394,14 +397,23 @@ export function PassControls({
         variant="outline"
         size="sm"
         disabled={pending}
-        onClick={() => run(() => setPassStatus(episodeId, "waitlist"), onWaitlist)}
+        pending={running === "waitlist"}
+        pendingLabel="Joining…"
+        onClick={() => run("waitlist", () => setPassStatus(episodeId, "waitlist"), onWaitlist)}
       >
         Join the waitlist
       </Button>
       {standbyOpen ? (
         <>
           {" "}
-          <Button variant="ghost" size="sm" disabled={pending} onClick={takeStandbyPass}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={pending}
+            pending={running === "standby"}
+            pendingLabel="Taking…"
+            onClick={takeStandbyPass}
+          >
             Take a standby pass
           </Button>
         </>
@@ -412,7 +424,7 @@ export function PassControls({
   const onGuestStep = (n: number) => {
     if (n <= guests) {
       /* Shrinking the party — truncate the names to match. */
-      run(() => {
+      run("guests", () => {
         setShownGuests(n);
         return setGuests(episodeId, n, guestNames.slice(0, n));
       });
@@ -552,7 +564,7 @@ export function PassControls({
                 const v = e.target.value || null;
                 /* Refusals land in the card's own error line, not a browser
                    alert the page cannot style or a reader cannot find again. */
-                run(() => chooseCabin(episodeId, v));
+                run("cabin", () => chooseCabin(episodeId, v));
               }}
             >
               <option value="">Assigned at the dock</option>
@@ -618,8 +630,10 @@ export function PassControls({
               variant="gold"
               size="sm"
               disabled={pending || paused}
+              pending={running === "confirm"}
+              pendingLabel="Confirming…"
               onClick={() =>
-                needsReview ? openCheckout() : run(() => setPassStatus(episodeId, "aboard"))
+                needsReview ? openCheckout() : run("confirm", () => setPassStatus(episodeId, "aboard"))
               }
             >
               Confirm your pass
@@ -629,8 +643,10 @@ export function PassControls({
             variant="ghost"
             size="sm"
             disabled={pending}
+            pending={running === "release"}
+            pendingLabel="Leaving…"
             onClick={() =>
-              run(() => {
+              run("release", () => {
                 setShownStatus("not_going");
                 return releasePass(episodeId);
               })
@@ -712,7 +728,9 @@ export function PassControls({
               variant="ghost"
               size="sm"
               disabled={pending}
-              onClick={() => run(() => leaveTheLine(request.entryId))}
+              pending={running === "line"}
+              pendingLabel="Standing down…"
+              onClick={() => run("line", () => leaveTheLine(request.entryId))}
             >
               Let it pass
             </Button>
@@ -720,7 +738,9 @@ export function PassControls({
               variant="gold"
               size="sm"
               disabled={pending || paused}
-              onClick={() => run(() => claimYourPlace(request.entryId))}
+              pending={running === "claim"}
+              pendingLabel="Claiming…"
+              onClick={() => run("claim", () => claimYourPlace(request.entryId))}
             >
               Claim your place
             </Button>
@@ -737,7 +757,9 @@ export function PassControls({
               variant="ghost"
               size="sm"
               disabled={pending}
-              onClick={() => run(() => leaveTheLine(request.entryId))}
+              pending={running === "line"}
+              pendingLabel="Withdrawing…"
+              onClick={() => run("line", () => leaveTheLine(request.entryId))}
             >
               Withdraw the request
             </Button>
@@ -761,7 +783,9 @@ export function PassControls({
               variant={recommended ? "gold" : "outline"}
               size="sm"
               disabled={pending || paused || !segment}
-              onClick={() => segment && run(() => requestAPlace(episodeId, segment))}
+              pending={running === "request"}
+              pendingLabel="Requesting…"
+              onClick={() => segment && run("request", () => requestAPlace(episodeId, segment))}
             >
               Request a place
             </Button>
@@ -783,12 +807,21 @@ export function PassControls({
             variant="outline"
             size="sm"
             disabled={pending}
-            onClick={() => run(() => setPassStatus(episodeId, "waitlist"))}
+            pending={running === "waitlist"}
+            pendingLabel="Joining…"
+            onClick={() => run("waitlist", () => setPassStatus(episodeId, "waitlist"))}
           >
             Join the waitlist
           </Button>
           {standbyOpen ? (
-            <Button variant="ghost" size="sm" disabled={pending || paused} onClick={takeStandbyPass}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={pending || paused}
+              pending={running === "standby"}
+              pendingLabel="Taking…"
+              onClick={takeStandbyPass}
+            >
               Take a standby pass
             </Button>
           ) : null}
@@ -802,7 +835,9 @@ export function PassControls({
               variant="ghost"
               size="sm"
               disabled={pending}
-              onClick={() => run(() => setPassStatus(episodeId, "not_going"))}
+              pending={running === "decline"}
+              pendingLabel="Passing…"
+              onClick={() => run("decline", () => setPassStatus(episodeId, "not_going"))}
             >
               Not this one
             </Button>
@@ -811,8 +846,10 @@ export function PassControls({
             variant={recommended ? "gold" : "outline"}
             size="sm"
             disabled={pending}
+            pending={running === "confirm"}
+            pendingLabel="Confirming…"
             onClick={() =>
-              needsReview ? openCheckout() : run(() => setPassStatus(episodeId, "aboard"))
+              needsReview ? openCheckout() : run("confirm", () => setPassStatus(episodeId, "aboard"))
             }
           >
             Confirm your pass
@@ -829,7 +866,7 @@ export function PassControls({
       ) : null}
 
       {toast ? (
-        <Toast fixed tone="positive" message={toast} onDismiss={() => setToast(null)} />
+        <Toast fixed tone="positive" message={toast} duration={4000} onClose={() => setToast(null)} />
       ) : null}
 
       {/* — Review & confirm: priced episodes — */}
@@ -848,8 +885,11 @@ export function PassControls({
               variant="gold"
               size="sm"
               disabled={pending || namesMissing}
+              pending={running === "checkout"}
+              pendingLabel={coStandby ? "Taking…" : "Confirming…"}
               onClick={() =>
                 run(
+                  "checkout",
                   () =>
                     confirmBerth(
                       episodeId,
@@ -998,9 +1038,12 @@ export function PassControls({
                 variant="gold"
                 size="sm"
                 disabled={pending || !passId}
+                pending={running === "daybed"}
+                pendingLabel="Claiming…"
                 onClick={() =>
                   passId &&
                   run(
+                    "daybed",
                     () => claimDaybed(passId),
                     () => {
                       setClaimingDaybed(false);
@@ -1061,9 +1104,12 @@ export function PassControls({
               variant="gold"
               size="sm"
               disabled={pending || !guestEdit || guestEdit.names.some((n) => !n.trim())}
+              pending={running === "guests"}
+              pendingLabel="Saving…"
               onClick={() =>
                 guestEdit &&
                 run(
+                  "guests",
                   () => {
                     setShownGuests(guestEdit.count);
                     return setGuests(episodeId, guestEdit.count, guestEdit.names);
@@ -1108,8 +1154,11 @@ export function PassControls({
               variant="gold"
               size="sm"
               disabled={pending || improveChosen.size === 0}
+              pending={running === "improve"}
+              pendingLabel="Adding…"
               onClick={() =>
                 run(
+                  "improve",
                   () => improvePass(episodeId, Array.from(improveChosen)),
                   () => setImproving(false)
                 )
@@ -1160,8 +1209,11 @@ export function PassControls({
               variant="outline"
               size="sm"
               disabled={pending}
+              pending={running === "release"}
+              pendingLabel="Releasing…"
               onClick={() =>
                 run(
+                  "release",
                   () => {
                     setShownStatus("not_going");
                     return releasePass(episodeId);

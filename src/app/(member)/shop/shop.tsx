@@ -87,12 +87,6 @@ export function Shop({
      four things it owed the keyboard. */
   const drawerRef = useModal(drawer, () => setDrawer(false));
 
-  React.useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 5000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   const shown = React.useMemo(() => {
     const rows = filter === "all" ? products : products.filter((p) => p.category === filter);
     /* "As arranged" is the order the Bridge put the shelf in, so it sorts by
@@ -344,7 +338,14 @@ export function Shop({
                     {error}
                   </span>
                 ) : null}
-                <Button variant="gold" fullWidth disabled={pending} onClick={checkout}>
+                <Button
+                  variant="gold"
+                  fullWidth
+                  disabled={pending}
+                  pending={pending}
+                  pendingLabel="Charging…"
+                  onClick={checkout}
+                >
                   Charge to member account
                 </Button>
               </div>
@@ -382,7 +383,7 @@ export function Shop({
         </section>
       ) : null}
 
-      {toast ? <Toast fixed message={toast} onDismiss={() => setToast(null)} /> : null}
+      {toast ? <Toast fixed message={toast} duration={5000} onClose={() => setToast(null)} /> : null}
     </div>
   );
 }

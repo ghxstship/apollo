@@ -78,12 +78,18 @@ export function GatePanel({
      an episode whose berth count did not come through. */
   const capacity = hull > 0 ? hull : hullHeads(rows);
 
-  const run = (fn: () => Promise<{ error?: string }>) =>
-    start(async () => {
+  /* Claim and Leave stand side by side on one transition; naming the pressed
+     one keeps the other unavailable rather than falsely busy. */
+  const [running, setRunning] = React.useState<string | null>(null);
+  const run = (key: string, fn: () => Promise<{ error?: string }>) => {
+    setRunning(key);
+    return start(async () => {
       setError(null);
       const res = await fn();
       if (res.error) setError(res.error);
+      setRunning(null);
     });
+  };
 
   return (
     <div className="vet-panel">
@@ -149,11 +155,24 @@ export function GatePanel({
           ) : null}
           <div className="vet-acts">
             {myLine.offered_at && !myLine.claimed_at && !myLine.released_at ? (
-              <Button size="sm" onClick={() => run(() => claimYourPlace(myLine.id))} disabled={pending}>
+              <Button
+                size="sm"
+                onClick={() => run("claim", () => claimYourPlace(myLine.id))}
+                disabled={pending}
+                pending={running === "claim"}
+                pendingLabel="Claiming…"
+              >
                 Claim the seat
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" onClick={() => run(() => leaveTheLine(myLine.id))} disabled={pending}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => run("leave", () => leaveTheLine(myLine.id))}
+              disabled={pending}
+              pending={running === "leave"}
+              pendingLabel="Leaving…"
+            >
               Leave the line
             </Button>
           </div>
@@ -179,7 +198,13 @@ export function GatePanel({
                 {chosen.cap} seats, {chosen.units} taken. The waitlist runs in order.
               </p>
               <div className="vet-acts">
-                <Button size="sm" onClick={() => run(() => joinTheLine(episodeId, chosen.segment))} disabled={pending}>
+                <Button
+                  size="sm"
+                  onClick={() => run("join", () => joinTheLine(episodeId, chosen.segment))}
+                  disabled={pending}
+                  pending={running === "join"}
+                  pendingLabel="Joining…"
+                >
                   Join the line
                 </Button>
               </div>
@@ -205,8 +230,10 @@ export function GatePanel({
               <div className="vet-acts">
                 <Button
                   size="sm"
-                  onClick={() => choice && run(() => takeASeat(episodeId, choice, partner))}
+                  onClick={() => choice && run("seat", () => takeASeat(episodeId, choice, partner))}
                   disabled={pending || !choice || !partnerReady}
+                  pending={running === "seat"}
+                  pendingLabel="Taking…"
                 >
                   Take the seat
                 </Button>

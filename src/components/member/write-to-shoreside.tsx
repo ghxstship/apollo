@@ -13,7 +13,7 @@ export function WriteToShoreside({ className }: { className?: string }) {
   );
   return (
     <form action={formAction} className={className}>
-      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+      <Button type="submit" variant="outline" size="sm" pending={pending} pendingLabel="Writing…">
         Write to Shoreside
       </Button>
       {state.error ? (

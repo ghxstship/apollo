@@ -93,25 +93,34 @@ export function PodQueue({
 }) {
   const [error, setError] = React.useState<string | null>(null);
   const [pending, start] = React.useTransition();
+  /* Which row and which move. Every button in the queue shares one transition,
+     so without a name the whole column would read as working. */
+  const [running, setRunning] = React.useState<string | null>(null);
   const [pick, setPick] = React.useState("");
 
-  const move = (id: string, state: string, blur?: true) =>
-    start(async () => {
+  const move = (id: string, state: string, blur?: true) => {
+    setRunning(`${blur ? "blur" : state}:${id}`);
+    return start(async () => {
       setError(null);
       const res = await advancePod(id, state, blur ? { blur } : {});
       if (res.error) setError(res.error);
+      setRunning(null);
     });
+  };
 
   /* The queue's front door. The state, the blur, and the VIP flag are all the
      database's business — the crew choose only who, and the row lands at the
      back of the line as 'waiting'. */
-  const add = () =>
-    start(async () => {
+  const add = () => {
+    setRunning("add");
+    return start(async () => {
       setError(null);
       const res = await enqueuePod(episodeId, pick);
       if (res.error) setError(res.error);
       else setPick("");
+      setRunning(null);
     });
+  };
 
   const enqueue = candidates.length ? (
     <div className="shw-acts shw-acts--field">
@@ -124,7 +133,14 @@ export function PodQueue({
           ...candidates.map((c) => ({ value: c.id, label: c.name })),
         ]}
       />
-      <Button variant="outline" size="sm" disabled={pending || !pick} onClick={add}>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={pending || !pick}
+        pending={running === "add"}
+        pendingLabel="Adding…"
+        onClick={add}
+      >
         Add to the queue
       </Button>
     </div>
@@ -172,17 +188,38 @@ export function PodQueue({
             </span>
             <span className="shw-acts">
               {s.state === "waiting" ? (
-                <Button variant="ghost" size="sm" disabled={pending} onClick={() => move(s.id, "ready")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  pending={running === `ready:${s.id}`}
+                  pendingLabel="Setting…"
+                  onClick={() => move(s.id, "ready")}
+                >
                   Ready
                 </Button>
               ) : null}
               {s.state === "ready" ? (
-                <Button variant="ghost" size="sm" disabled={pending} onClick={() => move(s.id, "recording")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  pending={running === `recording:${s.id}`}
+                  pendingLabel="Setting…"
+                  onClick={() => move(s.id, "recording")}
+                >
                   Record
                 </Button>
               ) : null}
               {s.state === "recording" ? (
-                <Button variant="ghost" size="sm" disabled={pending} onClick={() => move(s.id, "done")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  pending={running === `done:${s.id}`}
+                  pendingLabel="Setting…"
+                  onClick={() => move(s.id, "done")}
+                >
                   Done
                 </Button>
               ) : null}
@@ -190,7 +227,14 @@ export function PodQueue({
                   the trigger would refuse to lower one anyway — a guest who asks
                   the crew on the day gets it set, and nothing takes it off. */}
               {!s.blur_required && s.state !== "done" ? (
-                <Button variant="ghost" size="sm" disabled={pending} onClick={() => move(s.id, s.state, true)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending}
+                  pending={running === `blur:${s.id}`}
+                  pendingLabel="Setting…"
+                  onClick={() => move(s.id, s.state, true)}
+                >
                   Blur
                 </Button>
               ) : null}
@@ -218,8 +262,10 @@ export function BoardControls({ episodeId, empty }: { episodeId: string; empty: 
   const [said, setSaid] = React.useState<string | null>(null);
   const [pending, start] = React.useTransition();
 
-  const run = (fn: () => Promise<{ error?: string; minted?: number }>) =>
-    start(async () => {
+  const [running, setRunning] = React.useState<string | null>(null);
+  const run = (key: string, fn: () => Promise<{ error?: string; minted?: number }>) => {
+    setRunning(key);
+    return start(async () => {
       setError(null);
       setSaid(null);
       const res = await fn();
@@ -233,16 +279,31 @@ export function BoardControls({ episodeId, empty }: { episodeId: string; empty: 
             : `${res.minted} envelope${res.minted === 1 ? "" : "s"} minted.`
         );
       }
+      setRunning(null);
     });
+  };
 
   return (
     <div className="shw-acts">
       {empty ? (
-        <Button size="sm" disabled={pending} onClick={() => run(() => seedTheBoard(episodeId))}>
+        <Button
+          size="sm"
+          disabled={pending}
+          pending={running === "seed"}
+          pendingLabel="Laying it out…"
+          onClick={() => run("seed", () => seedTheBoard(episodeId))}
+        >
           Lay out the run of show
         </Button>
       ) : null}
-      <Button variant="outline" size="sm" disabled={pending} onClick={() => run(() => issueTheEnvelopes(episodeId))}>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        pending={running === "envelopes"}
+        pendingLabel="Issuing…"
+        onClick={() => run("envelopes", () => issueTheEnvelopes(episodeId))}
+      >
         Issue the envelopes
       </Button>
       {error ? (

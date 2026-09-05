@@ -105,8 +105,8 @@ export function Composer({
           <span />
         )}
         <span className="wd-end">
-          <Button type="submit" variant="gold" size="sm" disabled={pending}>
-            {pending ? "Posting" : "Post to the deck"}
+          <Button type="submit" variant="gold" size="sm" pending={pending} pendingLabel="Posting">
+            Post to the deck
           </Button>
         </span>
       </div>
@@ -200,6 +200,9 @@ const FLAG_REASONS = [
 /* — One post: the kit card, with hail, thread, flag, and (for your own) strike. — */
 function FeedEntry({ post }: { post: FeedPost }) {
   const [pending, startTransition] = React.useTransition();
+  /* Four actions share one transition, so `pending` alone cannot say which one
+     is working. This names it, and only that control wears the busy face. */
+  const [running, setRunning] = React.useState<"hail" | "remove" | "comment" | "report" | null>(null);
   const [showComments, setShowComments] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
   const [draft, setDraft] = React.useState("");
@@ -226,6 +229,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
   const hail = () =>
     startTransition(async () => {
       setActionError(null);
+      setRunning("hail");
       setHailShown({ hailed: !post.myHail, count: post.hails + (post.myHail ? -1 : 1) });
       const res = await toggleHail(post.id, post.myHail);
       if (res?.error) setActionError(res.error);
@@ -233,6 +237,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
   const remove = () =>
     startTransition(async () => {
       setActionError(null);
+      setRunning("remove");
       const res = await deletePost(post.id);
       setConfirming(false);
       if (res?.error) setActionError(res.error);
@@ -240,6 +245,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
   const comment = () =>
     startTransition(async () => {
       setActionError(null);
+      setRunning("comment");
       const res = await addComment(post.id, draft);
       if (res.error) setActionError(res.error);
       else setDraft("");
@@ -247,6 +253,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
   const report = () =>
     startTransition(async () => {
       setFlagError(null);
+      setRunning("report");
       const res = await flagPost(post.id, reason, note);
       if (res.error) {
         setFlagError(res.error);
@@ -320,7 +327,14 @@ function FeedEntry({ post }: { post: FeedPost }) {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
             />
-            <Button variant="outline" size="sm" disabled={pending || !draft.trim()} onClick={comment}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!draft.trim() || (pending && running !== "comment")}
+              pending={pending && running === "comment"}
+              pendingLabel="Replying…"
+              onClick={comment}
+            >
               Reply
             </Button>
           </div>
@@ -337,7 +351,14 @@ function FeedEntry({ post }: { post: FeedPost }) {
             <Button variant="ghost" size="sm" onClick={() => setConfirming(false)}>
               Keep it
             </Button>
-            <Button variant="danger" size="sm" disabled={pending} onClick={remove}>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={pending}
+              pending={pending && running === "remove"}
+              pendingLabel="Striking…"
+              onClick={remove}
+            >
               Strike it
             </Button>
           </>
@@ -356,7 +377,14 @@ function FeedEntry({ post }: { post: FeedPost }) {
             <Button variant="ghost" size="sm" onClick={() => setReporting(false)}>
               Stand down
             </Button>
-            <Button variant="outline" size="sm" disabled={pending || !reason} onClick={report}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!reason || (pending && running !== "report")}
+              pending={pending && running === "report"}
+              pendingLabel="Sending…"
+              onClick={report}
+            >
               Send the flag
             </Button>
           </>
@@ -382,7 +410,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
         </div>
       </Dialog>
       {toasting ? (
-        <Toast fixed message="Flagged for the Bridge. Never silently." onDismiss={() => setToasting(false)} />
+        <Toast fixed message="Flagged for the Bridge. Never silently." duration={4000} onClose={() => setToasting(false)} />
       ) : null}
     </DeckPost>
   );

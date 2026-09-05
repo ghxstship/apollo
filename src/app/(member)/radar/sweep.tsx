@@ -74,12 +74,19 @@ export function Sweep({
   const used = plotted.length;
   const total = clock?.slots ?? 3;
 
-  const run = (fn: () => Promise<{ error?: string }>) =>
-    start(async () => {
+  /* Which control is working. The pins, the slot buttons and the envelope
+     share one transition; without a name for the one that was pressed, every
+     visible control would wear the busy face at once. */
+  const [running, setRunning] = React.useState<string | null>(null);
+  const run = (key: string, fn: () => Promise<{ error?: string }>) => {
+    setRunning(key);
+    return start(async () => {
       setError(null);
       const res = await fn();
       if (res.error) setError(res.error);
+      setRunning(null);
     });
+  };
 
   return (
     <>
@@ -125,7 +132,7 @@ export function Sweep({
               disabled={pending || phase !== "open"}
               aria-pressed={pin.plotted}
               onClick={() =>
-                run(() =>
+                run(`pin:${pin.passId}`, () =>
                   pin.plotted
                     ? unplotCourse(episodeId, myPass, pin.passId)
                     : plotCourse(episodeId, myPass, pin.passId)
@@ -183,7 +190,9 @@ export function Sweep({
                   variant="ghost"
                   size="sm"
                   disabled={pending}
-                  onClick={() => run(() => unplotCourse(episodeId, myPass, slot.pin!.passId))}
+                  pending={running === `slot:${slot.pin.passId}`}
+                  pendingLabel="Changing…"
+                  onClick={() => run(`slot:${slot.pin!.passId}`, () => unplotCourse(episodeId, myPass, slot.pin!.passId))}
                 >
                   Change
                 </Button>
@@ -213,7 +222,13 @@ export function Sweep({
               spellCheck={false}
               style={{ minWidth: 280 }}
             />
-            <Button size="sm" disabled={pending || !token} onClick={() => run(() => openTheLog(token))}>
+            <Button
+              size="sm"
+              disabled={pending || !token}
+              pending={running === "envelope"}
+              pendingLabel="Opening…"
+              onClick={() => run("envelope", () => openTheLog(token))}
+            >
               Open the log
             </Button>
           </div>

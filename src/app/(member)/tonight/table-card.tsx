@@ -39,21 +39,28 @@ export function TableCard({ table }: { table: TableView }) {
   );
   const full = shown.taken >= t.seats && !shown.mine;
 
-  const act = (fn: () => Promise<{ error?: string }>, next?: Shown) => {
+  /* Which control is working. Confirm and Let it go stand side by side and the
+     seatmate picks are a row of them, all on one transition — without a name
+     for the pressed one they would all read as busy. */
+  const [running, setRunning] = React.useState<string | null>(null);
+
+  const act = (key: string, fn: () => Promise<{ error?: string }>, next?: Shown) => {
     setError(null);
+    setRunning(key);
     start(async () => {
       if (next) setShown(next);
       const res = await fn();
       if (res.error) setError(res.error);
+      setRunning(null);
     });
   };
 
   const take = () =>
-    act(() => claimSeat(t.id), { mine: { state: "held", heldUntil: "" }, taken: shown.taken + 1 });
+    act("take", () => claimSeat(t.id), { mine: { state: "held", heldUntil: "" }, taken: shown.taken + 1 });
   const confirm = () =>
-    act(() => confirmSeat(t.id), { mine: { state: "confirmed", heldUntil: "" }, taken: shown.taken });
+    act("confirm", () => confirmSeat(t.id), { mine: { state: "confirmed", heldUntil: "" }, taken: shown.taken });
   const letGo = () =>
-    act(() => releaseSeat(t.id), { mine: null, taken: Math.max(0, shown.taken - 1) });
+    act("release", () => releaseSeat(t.id), { mine: null, taken: Math.max(0, shown.taken - 1) });
 
   return (
     <div className="tbl-card" aria-busy={pending || undefined}>
@@ -78,20 +85,48 @@ export function TableCard({ table }: { table: TableView }) {
       {!t.started ? (
         <div className="tbl-card__acts">
           {!shown.mine ? (
-            <Button size="sm" variant="gold" disabled={pending || full} onClick={take}>
+            <Button
+              size="sm"
+              variant="gold"
+              disabled={pending || full}
+              pending={running === "take"}
+              pendingLabel="Taking…"
+              onClick={take}
+            >
               Take a seat
             </Button>
           ) : shown.mine.state === "held" ? (
             <>
-              <Button size="sm" variant="gold" disabled={pending} onClick={confirm}>
+              <Button
+                size="sm"
+                variant="gold"
+                disabled={pending}
+                pending={running === "confirm"}
+                pendingLabel="Confirming…"
+                onClick={confirm}
+              >
                 Confirm
               </Button>
-              <Button size="sm" variant="ghost" disabled={pending} onClick={letGo}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={pending}
+                pending={running === "release"}
+                pendingLabel="Letting go…"
+                onClick={letGo}
+              >
                 Let it go
               </Button>
             </>
           ) : (
-            <Button size="sm" variant="ghost" disabled={pending} onClick={letGo}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={pending}
+              pending={running === "release"}
+              pendingLabel="Giving it up…"
+              onClick={letGo}
+            >
               Give up the seat
             </Button>
           )}
@@ -109,7 +144,9 @@ export function TableCard({ table }: { table: TableView }) {
                 variant={m.picked ? "gold" : "outline"}
                 aria-pressed={m.picked}
                 disabled={pending || m.picked}
-                onClick={() => act(() => pickFromTable(t.id, m.id, again))}
+                /* No pendingLabel: the label is the seatmate's name. */
+                pending={running === `pick:${m.id}`}
+                onClick={() => act(`pick:${m.id}`, () => pickFromTable(t.id, m.id, again))}
               >
                 {m.picked ? `${m.name} — said` : m.name}
               </Button>

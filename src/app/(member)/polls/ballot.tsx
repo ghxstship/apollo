@@ -47,6 +47,10 @@ export function Ballot({
             variant={shown === i ? "gold" : "outline"}
             aria-pressed={shown === i}
             disabled={pending}
+            /* No pendingLabel: the label is the option itself, and swapping a
+               member's own words for a verb would lose the thing they picked.
+               The busy face carries the state. */
+            pending={pending && shown === i}
             onClick={() => vote(i)}
           >
             {label}

@@ -30,7 +30,7 @@ export function DeclineWord({
       <input type="hidden" name="other" value={otherId} />
       {handle ? <input type="hidden" name="handle" value={handle} /> : null}
       <input type="hidden" name="intent" value={blocked ? "unblock" : "block"} />
-      <Button type="submit" variant="outline" size="sm" disabled={pending}>
+      <Button type="submit" variant="outline" size="sm" pending={pending} pendingLabel={blocked ? "Allowing…" : "Declining…"}>
         {blocked ? "Allow messages again" : `Decline messages from ${firstName}`}
       </Button>
       {blocked ? (

@@ -41,14 +41,22 @@ export function SheetPanel({
   const [saved, setSaved] = React.useState<string | null>(null);
   const [pending, start] = React.useTransition();
 
-  const run = (label: string, fn: () => Promise<{ error?: string }>) =>
-    start(async () => {
+  /* Which of the three writes is in flight. The drinks and boundary tags share
+     this transition with the flags Save, so the button needs to know whether
+     the work in progress is its own. */
+  const [running, setRunning] = React.useState<string | null>(null);
+
+  const run = (label: string, fn: () => Promise<{ error?: string }>) => {
+    setRunning(label);
+    return start(async () => {
       setError(null);
       setSaved(null);
       const res = await fn();
       if (res.error) setError(res.error);
       else setSaved(label);
+      setRunning(null);
     });
+  };
 
   const toggleDrink = (d: string) => {
     const next = drinks.includes(d) ? drinks.filter((x) => x !== d) : [...drinks, d];
@@ -136,7 +144,13 @@ export function SheetPanel({
           hint={`${red.length} of 200`}
         />
         <div className="vet-acts">
-          <Button size="sm" onClick={() => run("Flags", () => saveFlags(green, red))} disabled={pending}>
+          <Button
+            size="sm"
+            onClick={() => run("Flags", () => saveFlags(green, red))}
+            disabled={pending}
+            pending={running === "Flags"}
+            pendingLabel="Saving…"
+          >
             Save
           </Button>
         </div>

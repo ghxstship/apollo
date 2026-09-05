@@ -49,7 +49,7 @@ export function DebriefForm({ episodeId, slug }: { episodeId: string; slug: stri
         </div>
       </fieldset>
       <div className="dbf-acts">
-        <Button type="submit" variant="gold" disabled={pending}>
+        <Button type="submit" variant="gold" pending={pending} pendingLabel="Sending…">
           Send
         </Button>
         <span className="dbf-note">One answer a night. It cannot be edited after.</span>

@@ -69,8 +69,13 @@ export function QueuePanel({
   const lapsedIn = (s: Segment) =>
     rows.filter((r) => r.segment === s && live(r) && !!r.offered_at && !running(r)).length;
 
-  const offer = (s: Segment) =>
-    start(async () => {
+  /* Which segment is being offered. One transition serves every row, so
+     without this the whole column would wear the busy face for one press. */
+  const [offering, setOffering] = React.useState<Segment | null>(null);
+
+  const offer = (s: Segment) => {
+    setOffering(s);
+    return start(async () => {
       setError(null);
       setSaid(null);
       const res = await offerTheNextPlace(episodeId, s);
@@ -81,7 +86,9 @@ export function QueuePanel({
             claimHours != null ? `${claimHours} hours` : "the claim window"
           }.`
         );
+      setOffering(null);
     });
+  };
 
   return (
     <div className="vet-panel">
@@ -105,7 +112,14 @@ export function QueuePanel({
               </span>
               <span className="vet-row__token">
                 {waiting > 0 && room > 0 ? (
-                  <Button variant="ghost" size="sm" disabled={pending} onClick={() => offer(s)}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={pending}
+                    pending={offering === s}
+                    pendingLabel="Offering…"
+                    onClick={() => offer(s)}
+                  >
                     Offer the next
                   </Button>
                 ) : null}

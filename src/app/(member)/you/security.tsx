@@ -27,12 +27,12 @@ export function PasswordControl() {
           </p>
           <Input label="New password" name="password" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required />
           <Input label="Once more" name="again" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required error={state.error} />
-          <Button type="submit" variant="gold" disabled={pending} aria-busy={pending || undefined}>
-            {pending ? "Saving" : "Save"}
+          <Button type="submit" variant="gold" pending={pending} pendingLabel="Saving">
+            Save
           </Button>
         </form>
       </Dialog>
-      {toast ? <Toast fixed message={toast} onDismiss={() => setDismissed(true)} /> : null}
+      {toast ? <Toast fixed message={toast} duration={4000} onClose={() => setDismissed(true)} /> : null}
     </>
   );
 }
@@ -83,12 +83,12 @@ export function TwoStepControl({ enrolled }: { enrolled: boolean }) {
   return (
     <>
       {enrolled ? (
-        <Button variant="outline" size="sm" disabled={busy} onClick={stop}>
+        <Button variant="outline" size="sm" pending={busy} pendingLabel="Turning off…" onClick={stop}>
           Turn off
         </Button>
       ) : (
-        <Button variant="outline" size="sm" disabled={busy} onClick={start}>
-          {busy ? "Starting" : "Turn on"}
+        <Button variant="outline" size="sm" pending={busy} pendingLabel="Starting" onClick={start}>
+          Turn on
         </Button>
       )}
       <Dialog open={open} onClose={() => setOpen(false)} width={440} eyebrow="Two-step" title="Scan, then type the code.">
@@ -108,13 +108,13 @@ export function TwoStepControl({ enrolled }: { enrolled: boolean }) {
               OR TYPE THE KEY: {live.secret}
             </p>
             <Input label="Code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" placeholder="000 000" required error={state.error} />
-            <Button type="submit" variant="gold" disabled={pending} aria-busy={pending || undefined}>
-              {pending ? "Checking" : "Turn on two-step"}
+            <Button type="submit" variant="gold" pending={pending} pendingLabel="Checking">
+              Turn on two-step
             </Button>
           </form>
         ) : null}
       </Dialog>
-      {toast ? <Toast fixed message={toast.msg} tone={toast.tone} onDismiss={() => setToast(null)} /> : null}
+      {toast ? <Toast fixed message={toast.msg} tone={toast.tone} duration={4000} onClose={() => setToast(null)} /> : null}
     </>
   );
 }

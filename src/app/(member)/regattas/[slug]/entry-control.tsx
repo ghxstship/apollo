@@ -27,7 +27,12 @@ export function ContestEntry({
     <form action={formAction}>
       <input type="hidden" name="contest" value={contestId} />
       <input type="hidden" name="slug" value={slug} />
-      <Button type="submit" variant={entered ? "ghost" : "gold"} disabled={pending}>
+      <Button
+        type="submit"
+        variant={entered ? "ghost" : "gold"}
+        pending={pending}
+        pendingLabel={entered ? "Withdrawing…" : "Entering…"}
+      >
         {entered ? "Withdraw" : "Enter"}
       </Button>
       {state.error ? (

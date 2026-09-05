@@ -29,13 +29,18 @@ export function CabinPlan({
   option: { id: string; cabinId: string; expiresLabel: string } | null;
 }) {
   const [pending, start] = React.useTransition();
+  /* Which row is in flight. A shared `pending` would put every cabin's button
+     into the busy face at once; the others are unavailable, not working. */
+  const [running, setRunning] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
-  const act = (fn: () => Promise<{ error?: string }>) => {
+  const act = (id: string, fn: () => Promise<{ error?: string }>) => {
     setError(null);
+    setRunning(id);
     start(async () => {
       const res = await fn();
       if (res.error) setError(res.error);
+      setRunning(null);
     });
   };
 
@@ -57,8 +62,10 @@ export function CabinPlan({
                   <Button
                     size="sm"
                     variant="ghost"
-                    disabled={pending}
-                    onClick={() => act(() => releaseCabinOption(option.id))}
+                    pending={running === c.id}
+                    pendingLabel="Letting go…"
+                    disabled={pending && running !== c.id}
+                    onClick={() => act(c.id, () => releaseCabinOption(option.id))}
                   >
                     Let it go
                   </Button>
@@ -69,8 +76,10 @@ export function CabinPlan({
                 <Button
                   size="sm"
                   variant="ghost"
-                  disabled={pending || !!option}
-                  onClick={() => act(() => holdCabinOnOption(episodeId, c.id))}
+                  pending={running === c.id}
+                  pendingLabel="Holding…"
+                  disabled={!!option || (pending && running !== c.id)}
+                  onClick={() => act(c.id, () => holdCabinOnOption(episodeId, c.id))}
                 >
                   Hold 72 hours
                 </Button>

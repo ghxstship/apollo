@@ -73,7 +73,14 @@ export function Composer({ threadId, closed }: { threadId: string; closed: boole
         ) : (
           <span></span>
         )}
-        <Button type="submit" variant="outline" size="sm" disabled={pending || closed}>
+        <Button
+          type="submit"
+          variant="outline"
+          size="sm"
+          disabled={closed}
+          pending={pending}
+          pendingLabel="Sending…"
+        >
           Send
         </Button>
       </div>

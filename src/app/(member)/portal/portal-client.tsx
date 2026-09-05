@@ -23,7 +23,7 @@ export function MintInvite() {
 
   return (
     <div className="ls-acts">
-      <Button variant="outline" size="sm" disabled={pending} onClick={mint}>
+      <Button variant="outline" size="sm" pending={pending} pendingLabel="Minting…" onClick={mint}>
         Mint invite code
       </Button>
       {error ? (
@@ -97,7 +97,14 @@ export function KnotsPanel({
               <Button variant="outline" size="sm" disabled={pending} onClick={() => setConfirming(null)}>
                 Keep them
               </Button>
-              <Button variant="gold" size="sm" disabled={pending} onClick={() => spend(confirming)}>
+              <Button
+                variant="gold"
+                size="sm"
+                disabled={pending}
+                pending={pending}
+                pendingLabel="Spending…"
+                onClick={() => spend(confirming)}
+              >
                 Spend the knots
               </Button>
             </>
@@ -121,7 +128,8 @@ export function KnotsPanel({
           tone="positive"
           message="Redeemed. Shoreside will make it so."
           meta={redeemed}
-          onDismiss={() => setRedeemed(null)}
+          duration={4000}
+          onClose={() => setRedeemed(null)}
         />
       ) : null}
     </>

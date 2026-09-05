@@ -135,7 +135,8 @@ export function HandOff({
           <Button
             variant="ghost"
             size="sm"
-            disabled={pending}
+            pending={pending}
+            pendingLabel="Withdrawing…"
             onClick={() => {
               setError(null);
               startTransition(async () => {
@@ -178,6 +179,8 @@ export function HandOff({
               variant="gold"
               size="sm"
               disabled={pending || !choice}
+              pending={pending}
+              pendingLabel="Offering…"
               onClick={() => {
                 setError(null);
                 startTransition(async () => {
@@ -345,6 +348,8 @@ export function PromoField({
         variant="outline"
         size="sm"
         disabled={pending || !raw.trim()}
+        pending={pending}
+        pendingLabel="Checking…"
         onClick={submit}
         style={{ marginBottom: error ? 22 : 2 }}
       >
@@ -405,7 +410,13 @@ export function CrewCall({
       {mine ? (
         <span className="mbr-mono mbr-line mbr-mono--flex">
           LOOKING FOR CREW
-          <Button variant="ghost" size="sm" disabled={pending} onClick={withdraw}>
+          <Button
+            variant="ghost"
+            size="sm"
+            pending={pending}
+            pendingLabel="Withdrawing…"
+            onClick={withdraw}
+          >
             Withdraw
           </Button>
         </span>
@@ -431,6 +442,8 @@ export function CrewCall({
               variant="gold"
               size="sm"
               disabled={pending}
+              pending={pending}
+              pendingLabel="Putting it up…"
               onClick={() => {
                 setError(null);
                 startTransition(async () => {

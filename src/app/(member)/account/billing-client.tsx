@@ -66,7 +66,6 @@ export function StandingControls({
   };
 
   const label = (interval: "month" | "year") => {
-    if (pending === interval) return "Casting off…";
     if (currentInterval === interval) return "Your standing";
     return currentInterval ? "Move to this" : "Take this standing";
   };
@@ -83,7 +82,9 @@ export function StandingControls({
         <Button
           variant="outline"
           size="sm"
-          disabled={pending !== null || currentInterval === "month"}
+          disabled={currentInterval === "month" || (pending !== null && pending !== "month")}
+          pending={pending === "month"}
+          pendingLabel="Casting off…"
           onClick={() => go("month")}
         >
           {label("month")}
@@ -100,7 +101,9 @@ export function StandingControls({
           <Button
             variant={currentInterval === "year" ? "outline" : "gold"}
             size="sm"
-            disabled={pending !== null || currentInterval === "year"}
+            disabled={currentInterval === "year" || (pending !== null && pending !== "year")}
+            pending={pending === "year"}
+            pendingLabel="Casting off…"
             onClick={() => go("year")}
           >
             {label("year")}
@@ -134,8 +137,8 @@ export function ManageBillingButton() {
 
   return (
     <div className="ls-acts">
-      <Button variant="outline" size="sm" disabled={pending} onClick={open}>
-        {pending ? "Casting off…" : "Manage in Stripe"}
+      <Button variant="outline" size="sm" pending={pending} pendingLabel="Casting off…" onClick={open}>
+        Manage in Stripe
       </Button>
       <ErrorLine message={error} />
     </div>
@@ -151,7 +154,8 @@ export function JoinedNotice() {
       fixed
       tone="positive"
       message="Aboard. Dues are running."
-      onDismiss={() => setOpen(false)}
+      duration={4000}
+      onClose={() => setOpen(false)}
     />
   );
 }

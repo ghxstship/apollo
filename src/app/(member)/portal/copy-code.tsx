@@ -5,11 +5,6 @@ import { Button, Toast } from "@/components/ds";
 
 export function CopyCode({ code }: { code: string }) {
   const [copied, setCopied] = React.useState(false);
-  React.useEffect(() => {
-    if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 4000);
-    return () => clearTimeout(t);
-  }, [copied]);
 
   const copy = async () => {
     try {
@@ -29,7 +24,7 @@ export function CopyCode({ code }: { code: string }) {
         </Button>
       </div>
       {copied ? (
-        <Toast fixed message="Invite code copied." meta={code} onDismiss={() => setCopied(false)} />
+        <Toast fixed message="Invite code copied." meta={code} duration={4000} onClose={() => setCopied(false)} />
       ) : null}
     </>
   );

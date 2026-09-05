@@ -48,7 +48,7 @@ export function RotateFeed() {
             <Button variant="ghost" size="sm" onClick={() => setAsking(false)}>
               Keep this one
             </Button>
-            <Button variant="gold" size="sm" disabled={pending} onClick={rotate}>
+            <Button variant="gold" size="sm" pending={pending} pendingLabel="Issuing…" onClick={rotate}>
               Issue a new address
             </Button>
           </>
@@ -68,7 +68,7 @@ export function RotateFeed() {
         </div>
       </Dialog>
 
-      {toast ? <Toast fixed message={toast} onDismiss={() => setToast(null)} /> : null}
+      {toast ? <Toast fixed message={toast} duration={4000} onClose={() => setToast(null)} /> : null}
     </>
   );
 }

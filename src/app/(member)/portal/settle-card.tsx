@@ -32,8 +32,15 @@ export function SettleCardButton({ amountLabel }: { amountLabel: string }) {
 
   return (
     <div className="ls-acts">
-      <Button variant="outline" size="sm" disabled={pending} onClick={settle}>
-        {pending ? "Casting off…" : `Settle ${amountLabel} with card`}
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        pending={pending}
+        pendingLabel="Casting off…"
+        onClick={settle}
+      >
+        {`Settle ${amountLabel} with card`}
       </Button>
       {error ? (
         <Notice tone="danger" compact>
@@ -53,7 +60,8 @@ export function SettledNotice() {
       fixed
       tone="positive"
       message="Payment received — the ledger updates when the card clears."
-      onDismiss={() => setOpen(false)}
+      duration={4000}
+      onClose={() => setOpen(false)}
     />
   );
 }

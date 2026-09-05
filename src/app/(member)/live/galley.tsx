@@ -77,12 +77,6 @@ export function GalleyOrderForm({
   const [queued, setQueued] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   /* Flush any queued orders on mount and whenever signal returns. */
   const flushing = React.useRef(false);
   const flush = React.useCallback(async () => {
@@ -202,6 +196,8 @@ export function GalleyOrderForm({
           variant="gold"
           size="sm"
           disabled={pending || lines.length === 0}
+          pending={pending}
+          pendingLabel="Charging…"
           onClick={submit}
         >
           Charge my account
@@ -224,7 +220,7 @@ export function GalleyOrderForm({
         </div>
       ) : null}
 
-      {toast ? <Toast fixed message={toast} onDismiss={() => setToast(null)} /> : null}
+      {toast ? <Toast fixed message={toast} duration={4000} onClose={() => setToast(null)} /> : null}
     </div>
   );
 }

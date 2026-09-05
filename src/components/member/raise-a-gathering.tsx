@@ -71,9 +71,7 @@ export function RaiseAGathering({
     if (!showToast) return;
     /* A fresh raise clears the form — the list below now carries the record. */
     formRef.current?.reset();
-    const t = setTimeout(() => setDismissedState(state), 4000);
-    return () => clearTimeout(t);
-  }, [showToast, state]);
+  }, [showToast]);
 
   const [withdrawPending, startWithdraw] = React.useTransition();
   const [withdrawError, setWithdrawError] = React.useState<string | null>(null);
@@ -121,8 +119,8 @@ export function RaiseAGathering({
           </Notice>
         ) : null}
         <div className="ls-acts ls-acts--end mbr-acts--top">
-          <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
-            {pending ? "Raising" : "Raise it"}
+          <Button type="submit" variant="outline" size="sm" pending={pending} pendingLabel="Raising">
+            Raise it
           </Button>
         </div>
       </form>
@@ -165,7 +163,8 @@ export function RaiseAGathering({
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={withdrawPending}
+                    pending={withdrawPending}
+                    pendingLabel="Withdrawing"
                     onClick={() => {
                       setWithdrawError(null);
                       startWithdraw(async () => {
@@ -193,7 +192,8 @@ export function RaiseAGathering({
           fixed
           message="Raised. The Bridge reads every one."
           tone="positive"
-          onDismiss={() => setDismissedState(state)}
+          duration={4000}
+          onClose={() => setDismissedState(state)}
         />
       ) : null}
     </>

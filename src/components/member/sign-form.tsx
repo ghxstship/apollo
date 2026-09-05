@@ -272,8 +272,8 @@ export function SignForm({
         {error}
       </div>
 
-      <Button variant="gold" disabled={pending} onClick={submit}>
-        {pending ? "Signing…" : "Sign"}
+      <Button variant="gold" pending={pending} pendingLabel="Signing…" onClick={submit}>
+        Sign
       </Button>
     </div>
   );

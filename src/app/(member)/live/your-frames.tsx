@@ -72,10 +72,11 @@ export function YourFrames({ frames }: { frames: OwnFrame[] }) {
                 <Button
                   variant="danger"
                   size="sm"
-                  disabled={pending === f.id}
+                  pending={pending === f.id}
+                  pendingLabel="Taking it back…"
                   onClick={() => withdraw(f.id)}
                 >
-                  {pending === f.id ? "Taking it back…" : "Yes, take it back"}
+                  Yes, take it back
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setAsking(null)}>
                   Keep it

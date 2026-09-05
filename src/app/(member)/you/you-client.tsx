@@ -41,11 +41,6 @@ export function ProfileForm({
   /* Track which save the member has dismissed — a fresh save shows a fresh toast. */
   const [dismissedState, setDismissedState] = React.useState<ProfileFormState | null>(null);
   const showToast = !!state.saved && dismissedState !== state;
-  React.useEffect(() => {
-    if (!showToast) return;
-    const t = setTimeout(() => setDismissedState(state), 4000);
-    return () => clearTimeout(t);
-  }, [showToast, state]);
 
   return (
     <form action={formAction}>
@@ -116,8 +111,8 @@ export function ProfileForm({
         />
       </div>
       <div className="ls-acts ls-acts--end mbr-acts--top">
-        <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
-          {pending ? "Logging" : "Log the changes"}
+        <Button type="submit" variant="outline" size="sm" pending={pending} pendingLabel="Logging">
+          Log the changes
         </Button>
       </div>
       {showToast ? (
@@ -125,7 +120,8 @@ export function ProfileForm({
           fixed
           message="Logged. It reads your way now."
           tone="positive"
-          onDismiss={() => setDismissedState(state)}
+          duration={4000}
+          onClose={() => setDismissedState(state)}
         />
       ) : null}
     </form>
@@ -180,11 +176,6 @@ export function NotificationMatrix({
   );
   const [dismissedState, setDismissedState] = React.useState<ProfileFormState | null>(null);
   const showToast = !!state.saved && dismissedState !== state;
-  React.useEffect(() => {
-    if (!showToast) return;
-    const t = setTimeout(() => setDismissedState(state), 4000);
-    return () => clearTimeout(t);
-  }, [showToast, state]);
 
   /* Controlled, so the cells can read the two switches they sit under. */
   const [cats, setCats] = React.useState(prefs.categories);
@@ -275,8 +266,8 @@ export function NotificationMatrix({
             </Notice>
           ) : null}
         </div>
-        <Button type="submit" variant="outline" size="sm" disabled={pending} aria-busy={pending || undefined}>
-          {pending ? "Logging" : "Log the word"}
+        <Button type="submit" variant="outline" size="sm" pending={pending} pendingLabel="Logging">
+          Log the word
         </Button>
       </div>
       {showToast ? (
@@ -284,7 +275,8 @@ export function NotificationMatrix({
           fixed
           message="Logged. The word reaches you your way."
           tone="positive"
-          onDismiss={() => setDismissedState(state)}
+          duration={4000}
+          onClose={() => setDismissedState(state)}
         />
       ) : null}
     </form>
@@ -413,7 +405,8 @@ export function ResumeBanner() {
         <Button
           variant="gold"
           size="sm"
-          disabled={pending}
+          pending={pending}
+          pendingLabel="Resuming…"
           onClick={() => {
             setError(null);
             startTransition(async () => {
@@ -458,11 +451,6 @@ export function Offboarding({
      took the only true sentence off the screen and left the page asserting the
      opposite. Good news still clears itself. */
   const [sticky, setSticky] = React.useState(false);
-  React.useEffect(() => {
-    if (!toast || sticky) return;
-    const t = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(t);
-  }, [toast, sticky]);
 
   const confirm = () => {
     setError(null);
@@ -526,7 +514,14 @@ export function Offboarding({
             <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
               Stay aboard
             </Button>
-            <Button variant="outline" size="sm" disabled={pending} onClick={confirm}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              pending={pending}
+              pendingLabel="Pausing…"
+              onClick={confirm}
+            >
               Pause my membership
             </Button>
           </>
@@ -574,7 +569,14 @@ export function Offboarding({
             <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
               Stay aboard
             </Button>
-            <Button variant="danger" size="sm" disabled={pending} onClick={confirm}>
+            <Button
+              variant="danger"
+              size="sm"
+              disabled={pending}
+              pending={pending}
+              pendingLabel="Departing…"
+              onClick={confirm}
+            >
               Depart
             </Button>
           </>
@@ -630,7 +632,11 @@ export function Offboarding({
           fixed
           message={toast}
           tone={sticky ? "caution" : undefined}
-          onDismiss={() => setToast(null)}
+          /* A sticky toast holds: it carries the one true sentence about the
+             dues, and clearing it would leave the page asserting the opposite.
+             Good news still leaves on its own. */
+          duration={sticky ? undefined : 4000}
+          onClose={() => setToast(null)}
         />
       ) : null}
     </>
