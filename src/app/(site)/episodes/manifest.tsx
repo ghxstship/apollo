@@ -107,7 +107,9 @@ const MONTHS = [
 function monthLabel(key: string, showYear: boolean): string {
   const [year, month] = key.split("-");
   const name = MONTHS[Number(month) - 1] ?? key;
-  return showYear ? `${name} ${year.slice(2)}` : name;
+  /* The full year, not two digits: "SEP 26" under a list of dates read as
+     the 26th of September, not September 2026. */
+  return showYear ? `${name} ${year}` : name;
 }
 
 const iso = (d: Date) =>
