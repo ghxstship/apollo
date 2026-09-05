@@ -97,32 +97,30 @@ export function ProducerPanel({
   /* Non-modal in useModal's terms — the page behind stays scrollable, no
      aria-modal — but Tab is still kept inside: the panel is the thing a member
      just opened, Escape and the X are always one key away, and walking out
-     the back into the page is never what the next Tab means here. */
-  const panelRef = useModal(true, onClose, { modal: false });
-  const trapTab = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "Tab") return;
-    const box = e.currentTarget;
-    const items = Array.from(
-      box.querySelectorAll<HTMLElement>(
-        'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
-      )
-    ).filter((el) => el.offsetParent !== null);
-    if (items.length === 0) {
-      e.preventDefault();
-      box.focus();
-      return;
-    }
-    const first = items[0];
-    const last = items[items.length - 1];
-    const active = document.activeElement;
-    if (e.shiftKey && (active === first || active === box)) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && active === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  };
+     the back into the page is never what the next Tab means here.
+
+     That trap used to be twenty-four lines copied out of use-modal.ts into
+     this file, which is precisely the drift the hook's own docblock says it
+     exists to prevent. It is an option on the hook now. */
+  const panelRef = useModal(true, onClose, { modal: false, trapTab: true });
+
+  /* Every reply this panel appends arrives after an await or a timer, and the
+     member can close the panel — which unmounts it — at any point in between.
+     One ref answers "is there still anything to tell?" for all three paths,
+     and the dead-reckoning timer is held so it can be cleared rather than
+     left to fire into nothing. */
+  const alive = React.useRef(true);
+  const missTimer = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      if (missTimer.current !== null) {
+        window.clearTimeout(missTimer.current);
+        missTimer.current = null;
+      }
+    };
+  }, []);
 
   const [msgs, setMsgs] = React.useState<Msg[]>([
     { kind: "sys", text: "READS YOUR MANIFEST · NEVER POSTS OR PAYS WITHOUT ASKING" },
@@ -145,11 +143,13 @@ export function ProducerPanel({
     setTyping(true);
     try {
       const out = await fn();
+      if (!alive.current) return;
       push(...out);
     } catch {
+      if (!alive.current) return;
       push({ kind: "bot", text: "That didn't land — no signal, or the office is dark. Try again." });
     } finally {
-      setTyping(false);
+      if (alive.current) setTyping(false);
     }
   };
 
@@ -193,8 +193,10 @@ export function ProducerPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: transcript }),
       });
+      if (!alive.current) return;
       if (!res.ok) throw new Error("producer api");
       const data = (await res.json()) as ProducerApiResponse;
+      if (!alive.current) return;
       if (data.fallback || typeof data.reply !== "string") {
         setTyping(false);
         enterFallback();
@@ -210,6 +212,7 @@ export function ProducerPanel({
       push(...out);
       setTyping(false);
     } catch {
+      if (!alive.current) return;
       setTyping(false);
       enterFallback();
       answer(intentOf(text), text);
@@ -300,8 +303,15 @@ export function ProducerPanel({
         ];
       });
     } else {
+      /* The beat before the Producer admits it is out of charts. It is only a
+         beat, so it used to be an unheld setTimeout — which fired into an
+         unmounted panel whenever a member asked something off the map and
+         then closed the corner inside six-tenths of a second. */
       setTyping(true);
-      setTimeout(() => {
+      if (missTimer.current !== null) window.clearTimeout(missTimer.current);
+      missTimer.current = window.setTimeout(() => {
+        missTimer.current = null;
+        if (!alive.current) return;
         setTyping(false);
         push(
           { kind: "bot", text: "Past my charts — hail Shoreside.", mailto: true },
@@ -374,7 +384,6 @@ export function ProducerPanel({
       aria-label={SURFACES.agent}
       ref={panelRef}
       tabIndex={-1}
-      onKeyDown={trapTab}
       onAnimationEnd={(e) => {
         if (closing && e.target === e.currentTarget) onClosed?.();
       }}

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createPortal } from "react-dom";
-import { Icon, IconButton, SearchField } from "@/components/ds";
+import { Icon, IconButton, SearchField, Skeleton } from "@/components/ds";
 import { useExitPhase } from "@/components/ds/use-exit-phase";
 import { useModal } from "@/components/ds/use-modal";
 import "./search.css";
@@ -45,8 +45,18 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
      animationend that ends the phase unmounts it. */
   const { present, closing, onAnimationEnd } = useExitPhase(open);
 
-  /* One flat list behind the visual grouping — what the arrow keys walk. */
-  const flat = React.useMemo(() => sections.flatMap((s) => s.items), [sections]);
+  /* One flat list behind the visual grouping — what the arrow keys walk, plus
+     the id → position map the rows read. The rows used to answer "where am I in
+     the flat list?" with a findIndex, which is a linear scan per hit per render
+     and so quadratic in the result count on every keystroke. Flattening already
+     knows every position; this records them once and each row does a lookup.
+     First occurrence wins, exactly as findIndex did. No useMemo: the React
+     compiler caches both of these for us. */
+  const flat = sections.flatMap((s) => s.items);
+  const indexById = new Map<string, number>();
+  for (let i = 0; i < flat.length; i += 1) {
+    if (!indexById.has(flat[i].id)) indexById.set(flat[i].id, i);
+  }
 
   /* ⌘K from anywhere. It carries a modifier, so it is not a single-character
      shortcut and WCAG 2.1.4 has nothing to say about it.
@@ -113,15 +123,12 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  const go = React.useCallback(
-    (href: string) => {
-      setOpen(false);
-      setQ("");
-      setSections([]);
-      router.push(href);
-    },
-    [router]
-  );
+  const go = (href: string) => {
+    setOpen(false);
+    setQ("");
+    setSections([]);
+    router.push(href);
+  };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
@@ -185,6 +192,8 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
             aria-activedescendant={showList && active ? optId(active.id) : undefined}
             spellCheck={false}
             value={q}
+            pending={busy}
+            onClear={() => { setQ(""); inputRef.current?.focus(); }}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
           />
@@ -200,7 +209,7 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
               season, the roster, the Log, the Shop, and whatever is yours.
             </p>
           ) : busy && sections.length === 0 ? (
-            <p className="gs__hint" role="status">Looking…</p>
+            <Skeleton lines={3} height="40px" />
           ) : sections.length === 0 ? (
             <p className="gs__hint" role="status">Nothing by that name.</p>
           ) : (
@@ -208,7 +217,7 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
               <section key={s.kind} className="gs__sec" role="group" aria-labelledby={`gs-sec-${s.kind}`}>
                 <span className="gs__seclabel" id={`gs-sec-${s.kind}`}>{s.label}</span>
                 {s.items.map((hit) => {
-                  const i = flat.findIndex((f) => f.id === hit.id);
+                  const i = indexById.get(hit.id) ?? -1;
                   return (
                     /* ds-exempt: a listbox option (role=option) the combobox's aria-activedescendant names — a selectable row, not a command; the kit has no Listbox and a Button here would announce as one */
                     <button

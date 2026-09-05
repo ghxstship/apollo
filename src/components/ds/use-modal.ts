@@ -32,10 +32,19 @@ export function useModal(
   open: boolean,
   onClose?: () => void,
   /* A corner popover that leaves the page usable behind it is NOT modal: it
-     must not claim aria-modal, must not lock the page's scroll, and must not
-     trap Tab — trapping without modality strands a reader inside a thing they
-     were never shut into. Escape, focus-in and focus-restore it still owes. */
-  { modal = true }: { modal?: boolean } = {}
+     must not claim aria-modal and must not lock the page's scroll. Escape,
+     focus-in and focus-restore it still owes.
+
+     `trapTab` follows `modal` by default, because trapping Tab without
+     modality usually strands a reader inside a thing they were never shut
+     into — a filter panel or a sort menu. It is separable for the one surface
+     where the trap is wanted without the modality: the Producer is a panel a
+     member deliberately opened over a page that must keep scrolling, Escape
+     and its X are always one key away, and walking out the back into the page
+     is never what the next Tab means there. That panel used to carry its own
+     verbatim copy of the Tab logic below; this option is what replaced it, so
+     the copy count stays at one. */
+  { modal = true, trapTab = modal }: { modal?: boolean; trapTab?: boolean } = {}
 ) {
   const boxRef = React.useRef<HTMLDivElement>(null);
   const closeRef = React.useRef(onClose);
@@ -60,7 +69,7 @@ export function useModal(
         closeRef.current?.();
         return;
       }
-      if (e.key !== "Tab" || !modal) return;
+      if (e.key !== "Tab" || !trapTab) return;
       const items = focusable();
       if (items.length === 0) {
         e.preventDefault();
@@ -102,7 +111,7 @@ export function useModal(
         opener.focus?.();
       }
     };
-  }, [open, modal]);
+  }, [open, modal, trapTab]);
 
   return boxRef;
 }

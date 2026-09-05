@@ -5,7 +5,8 @@
 "use client";
 
 import React from "react";
-import { Avatar, Badge, Button } from "@/components/ds";
+import { Avatar, Badge } from "./display";
+import { Button } from "./actions";
 import { Dialog } from "./feedback";
 
 const MONO = "var(--font-mono)";

@@ -178,6 +178,18 @@ function defaultMinWidth(count: number): number | undefined {
   return undefined;
 }
 
+/* A row that is itself clickable still contains controls of its own — the
+   roster's Remove button, a Switch in an action column, a link to a record.
+   The keyboard path always checked that the key came from the row and not
+   from something inside it; the pointer path did not, so a tap on an inner
+   button ran the button AND opened the row's dialog behind it. Same test,
+   applied to the pointer: if the click started inside a control, that control
+   owns it. */
+const INNER_CONTROL = "button,a,input,select,textarea";
+function fromInnerControl(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(INNER_CONTROL) !== null;
+}
+
 function cellClass<R>(c: TableColumn<R>): string {
   const end = c.numeric || c.align === "end";
   return [c.mono || c.numeric ? "num" : "", end ? "num--end" : ""].filter(Boolean).join(" ");
@@ -213,7 +225,7 @@ export function Table<R extends Record<string, unknown>>({
     <tr
       key={rowKey ? rowKey(r) : i}
       className={[onRowClick ? "ls-table__row--click" : "", rowClassName ? rowClassName(r) || "" : ""].filter(Boolean).join(" ") || undefined}
-      onClick={onRowClick ? () => onRowClick(r) : undefined}
+      onClick={onRowClick ? (e) => { if (fromInnerControl(e.target)) return; onRowClick(r); } : undefined}
       tabIndex={onRowClick ? 0 : undefined}
       onKeyDown={
         onRowClick
