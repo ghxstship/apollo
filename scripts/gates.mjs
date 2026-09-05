@@ -44,6 +44,7 @@ const FAST = [
 
 const SLOW = [
   ["build", "npm", ["run", "build"]],
+  ["bundle budget", "node", ["scripts/audit-bundle.mjs"]],
   ["migration replay", "node", ["scripts/replay-migrations.mjs"]],
 ];
 

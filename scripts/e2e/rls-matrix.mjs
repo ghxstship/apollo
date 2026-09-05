@@ -684,8 +684,18 @@ export async function run(p, ctx) {
       note("member", "notifications · member · UPDATE own profile_id → other", reassign.status >= 400 || rows(reassign).length === 0, `expected WITH CHECK refusal; ${brief(reassign, 50)}`);
       const otherMark = await glo.patch(`notifications?id=eq.${noticeId}`, { read: false });
       note("other", "notifications · other · UPDATE", rows(otherMark).length === 0, `expected silent 0 rows; ${brief(otherMark, 50)}`);
+      /* Since 2026-09-05 a member archives what they have READ; an unread
+         notice is not theirs to strike. The row above was marked read, so
+         this one goes; the unread probe below stays. */
+      /* The member's own hand, not the Bridge's: the UPDATE policy is own
+         rows only, so a staff patch here returns 200 with no row and the
+         notice stays read. */
+      const unreadAgain = await reg.patch(`notifications?id=eq.${noticeId}`, { read: false });
+      const delUnread = rows(unreadAgain).length === 1 ? await reg.del(`notifications?id=eq.${noticeId}`) : { status: 0, data: [] };
+      note("member", "notifications · member · DELETE own unread", rows(unreadAgain).length === 1 && rows(delUnread).length === 0, `expected silent 0 rows (the policy admits read notices only); ${brief(delUnread, 50)}`);
+      await reg.patch(`notifications?id=eq.${noticeId}`, { read: true });
       const delNotice = await reg.del(`notifications?id=eq.${noticeId}`);
-      note("member", "notifications · member · DELETE own", delNotice.status >= 400 || rows(delNotice).length === 0, `expected refused (no DELETE policy); ${brief(delNotice, 50)}`);
+      note("member", "notifications · member · DELETE own read", delNotice.status === 200 && rows(delNotice).length === 1, `expected the read notice archived; ${brief(delNotice, 50)}`);
       await reg.patch(`notifications?id=eq.${noticeId}`, { read: wasRead });
     } else {
       note("member", "notifications · member · UPDATE own read (open)", true, "no own notification to exercise (pass insert did not raise one)");

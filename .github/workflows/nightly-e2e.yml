@@ -1,0 +1,68 @@
+name: Nightly e2e
+
+# The suite (4,300 checks) ran when someone ran it. Two footprint drifts and a
+# lexicon leak were found only because the modules happened to run back to
+# back. Nightly, against the live database with the fixture personas, twice in
+# a row — the second run proves the first left the fixtures as it found them.
+#
+# Secrets required: E2E_PASSWORD (the fixture personas' password). The
+# publishable Supabase values are safe in the open and default below.
+# Optional: SUPABASE_SERVICE_ROLE_KEY lets the run post its failures to
+# app_errors, where /bridge/reports reads them.
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   # 05:00 Miami
+  workflow_dispatch:
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://mpyvwpunwrioakmtmcdo.supabase.co' }}
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_bWxRdbnkFbEOmrHB2Ec8CQ_u4_xr9WT' }}
+  NEXT_PUBLIC_SITE_URL: http://localhost:3100
+  E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: The personas' password is present
+        run: |
+          if [ -z "$E2E_PASSWORD" ]; then
+            echo "::error::E2E_PASSWORD is not set — a green run without the personas proves nothing."
+            exit 1
+          fi
+      - name: Build
+        run: npm run build
+      - name: Bundle budget
+        run: npm run check:bundle
+      - name: Start the production server
+        run: |
+          nohup npx next start -p 3100 > server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3100/ > /dev/null && break; sleep 2; done
+      - name: Route audit
+        run: BASE_URL=http://localhost:3100 node scripts/audit-routes.mjs
+      - name: e2e — first pass
+        id: first
+        run: BASE_URL=http://localhost:3100 node scripts/e2e-suite.mjs 2>&1 | tee e2e-1.log | grep -v "^  ✓" | tail -80
+      - name: e2e — second pass
+        run: BASE_URL=http://localhost:3100 node scripts/e2e-suite.mjs 2>&1 | tee e2e-2.log | grep -v "^  ✓" | tail -80
+      - name: Post failures to the Bridge
+        if: failure() && env.SERVICE_ROLE != ''
+        env:
+          SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          FAILS=$(grep -h "^  ✕" e2e-1.log e2e-2.log 2>/dev/null | head -40 | sed 's/"/\\"/g' | tr '\n' ' ' | cut -c1-3000)
+          curl -s -X POST "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/app_errors" \
+            -H "apikey: $SERVICE_ROLE" -H "Authorization: Bearer $SERVICE_ROLE" -H "Content-Type: application/json" \
+            -d "{\"name\":\"nightly-e2e\",\"message\":\"$FAILS\",\"kind\":\"nightly-e2e\",\"path\":\"github-actions\",\"route\":\"nightly\",\"method\":\"CRON\"}"
+      - name: Server log on failure
+        if: failure()
+        run: tail -80 server.log || true
