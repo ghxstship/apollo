@@ -8,7 +8,7 @@ body{margin:0;background:var(--surface-page);color:var(--text-1);font-family:var
    blocked until the owner ruled (2026-08-31) that the hero renders the tagline
    as the §Tagline lockup rather than bare Anton — the tagline being the one
    string the display face must never capitalise. */
-h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0;text-transform:uppercase}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:400;line-height:var(--leading-display);letter-spacing:var(--track-display);margin:0;text-transform:uppercase;text-wrap:balance}
 p{margin:0;text-wrap:pretty}
 /* A link is underlined, and that is not a style preference any more.
 
@@ -24,7 +24,7 @@ p{margin:0;text-wrap:pretty}
    rather than adding, because there is nothing left to add. */
 a{color:var(--text-link);text-decoration:underline;text-underline-offset:3px;
   text-decoration-thickness:1px;text-decoration-color:var(--border-strong);
-  transition:text-decoration-color var(--dur-1) var(--ease-swell)}
+  transition:text-decoration-color var(--dur-hover) var(--ease-out)}
 a:hover{text-decoration-color:currentColor;text-decoration-thickness:2px}
 /* Anything that is a link only in markup — a card, a nav item, a button —
    opts out. These already set their own affordance. */
@@ -42,6 +42,10 @@ img{max-width:100%;height:auto}
    achromatic accent that was ink text on an ink highlight in the paper theme,
    so a selected word vanished. The primary pair flips with the theme. */
 ::selection{background:var(--action-primary);color:var(--action-on-primary)}
+/* Placeholder is the faint step at full opacity — Firefox otherwise fades it to
+   .54 on top, so the same token read two greys in two browsers. */
+::placeholder{color:var(--text-3);opacity:1}
+
 /* The accent seam used to scroll its own background on a 6s `linear infinite`
    loop. tokens/motion.css ships no linear curve and tops out at --dur-cine
    560ms, and §Motion asks for "fades and small translates; no bounces, no
@@ -50,7 +54,7 @@ img{max-width:100%;height:auto}
    ("hero rules and small fills"); they simply hold still. */
 @keyframes ls-shuttle{from{transform:translateX(-10%)}to{transform:translateX(210%)}}
 /* — microinteraction utilities — */
-@keyframes ls-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes ls-rise{from{opacity:0;transform:translateY(var(--rise))}to{opacity:1;transform:none}}
 @keyframes ls-fade{from{opacity:0}to{opacity:1}}
 @keyframes ls-pulse{0%,100%{opacity:1}50%{opacity:.45}}
 /* `backwards`, not `both`. An element with an animation applied creates a
@@ -66,19 +70,19 @@ img{max-width:100%;height:auto}
    none), so dropping the forwards fill changes nothing that is visible: the
    animation still runs, it simply stops asserting its final frame once it is
    over, and the stacking context goes with it. */
-.ls-rise{animation:ls-rise var(--dur-2) var(--ease-out) backwards}
-.ls-rise-1{animation:ls-rise var(--dur-2) var(--ease-out) .06s backwards}
-.ls-rise-2{animation:ls-rise var(--dur-2) var(--ease-out) .12s backwards}
-.ls-rise-3{animation:ls-rise var(--dur-2) var(--ease-out) .18s backwards}
-.ls-fade{animation:ls-fade var(--dur-2) var(--ease-swell) backwards}
-.ls-live{display:inline-flex;align-items:center;gap:7px}
+.ls-rise{animation:ls-rise var(--dur-enter) var(--ease-enter) backwards}
+.ls-rise-1{animation:ls-rise var(--dur-enter) var(--ease-enter) .06s backwards}
+.ls-rise-2{animation:ls-rise var(--dur-enter) var(--ease-enter) .12s backwards}
+.ls-rise-3{animation:ls-rise var(--dur-enter) var(--ease-enter) .18s backwards}
+.ls-fade{animation:ls-fade var(--dur-enter) var(--ease-enter) backwards}
+.ls-live{display:inline-flex;align-items:center;gap:var(--space-2)}
 .ls-eyebrow{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase}
-.ls-mono-data{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data)}
+.ls-mono-data{font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);font-variant-numeric:tabular-nums}
 .ls-live:before{content:"";width:7px;height:7px;border-radius:999px;background:var(--neon-cyan);box-shadow:var(--glow-cyan);animation:ls-pulse 1.6s var(--ease-swell) infinite}/* ds-exempt: live indicator — §Shadows names the live indicator alongside the primary CTA as the one place --shadow-glow-accent belongs, so the system contemplates this element; the loop is an opacity fade and collapses under prefers-reduced-motion. */
 :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 code,pre,kbd{font-family:var(--font-mono)}
 
 /* Off-screen until focused, then pinned top-left above everything. */
 .ls-visually-hidden{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
-.ls-skip{position:fixed;top:8px;inset-inline-start:8px;z-index:1200;padding:10px 16px;background:var(--surface-card);color:var(--text-1);border:1px solid var(--line-strong);border-radius:var(--radius-sharp);font:500 var(--text-xs) var(--font-sans);text-decoration:none;transform:translateY(-200%)}
+.ls-skip{position:fixed;top:var(--space-2);inset-inline-start:var(--space-2);z-index:1200;padding:var(--space-2) var(--space-4);background:var(--surface-card);color:var(--text-1);border:1px solid var(--line-strong);border-radius:var(--radius-sharp);font:500 var(--text-xs) var(--font-sans);text-decoration:none;transform:translateY(-200%)}
 .ls-skip:focus{transform:none;outline:2px solid var(--focus);outline-offset:2px}

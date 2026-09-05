@@ -49,10 +49,10 @@ export function PostCard({
         border: "1px solid var(--line-faint)",
         borderRadius: "var(--radius-md)",
         boxShadow: "var(--shadow-card)",
-        padding: "16px 18px",
+        padding: "var(--space-4) var(--space-5)",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: "var(--space-3)",
         fontFamily: BODY,
         ...style,
       }}
@@ -61,7 +61,7 @@ export function PostCard({
           the byline past the right edge — five of nine on the Open Deck ran to
           521px in a 375px viewport, and the page would not scroll to them, so
           the league and the age were simply unreachable. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap", minWidth: 0 }}>
         <Avatar name={author} tone={tone} size="sm" />
         <span style={{ fontSize: "var(--text-sm)", fontWeight: 500, color: "var(--text-1)" }}>{author}</span>
         {/* A hand-rolled pill until now: 9px off the label step, in
@@ -86,7 +86,7 @@ export function PostCard({
       ) : null}
       {children}
       {footer ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 14, borderTop: "1px solid var(--line-faint)", paddingTop: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)", borderTop: "1px solid var(--line-faint)", paddingTop: "var(--space-3)" }}>
           {footer}
         </div>
       ) : null}
@@ -115,12 +115,12 @@ export function Hail({
         cursor: onToggle ? "pointer" : "default",
         display: "inline-flex",
         alignItems: "center",
-        gap: 7,
+        gap: "var(--space-2)",
         font: `700 var(--text-2xs)/1 ${MONO}`,
         letterSpacing: "var(--tracking-label)",
         textTransform: "uppercase",
         color: hailed ? "var(--text-gold)" : "var(--text-2)",
-        padding: "6px 0",
+        padding: "var(--space-1) 0",
         minHeight: 24,
         whiteSpace: "nowrap",
         ...style,
@@ -147,17 +147,17 @@ export function CommentThread({
 }) {
   if (!comments.length)
     return (
-      <div style={{ padding: "14px 0", fontSize: "var(--text-sm)", color: "var(--text-3)", fontFamily: BODY, ...style }}>
+      <div style={{ padding: "var(--space-4) 0", fontSize: "var(--text-sm)", color: "var(--text-3)", fontFamily: BODY, ...style }}>
         {emptyLabel}
       </div>
     );
   return (
     <div style={{ display: "flex", flexDirection: "column", fontFamily: BODY, ...style }}>
       {comments.map((c, i) => (
-        <div key={i} style={{ display: "flex", gap: 10, padding: "10px 0", borderTop: i ? "1px solid var(--line-faint)" : "none" }}>
+        <div key={i} style={{ display: "flex", gap: "var(--space-3)", padding: "var(--space-3) 0", borderTop: i ? "1px solid var(--line-faint)" : "none" }}>
           <Avatar name={c.author} tone={c.tone ?? "ink"} size="sm" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-2)" }}>
               {/* A comment is subordinate to the post it hangs off, and the
                   app's own comment bubble (.wd-cmt__b) is already --text-xs;
                   13 was doing the job of 12 here. */}
@@ -172,42 +172,67 @@ export function CommentThread({
   );
 }
 
+/* Two ways to post. With `onPost` the composer is a controlled widget: it
+   holds the text, calls back with it and clears. With `action` it is a form —
+   the textarea carries `name`, the button submits, and the parent's server
+   action (or route) receives the FormData; React resets the form when the
+   action settles and the button disables itself again. `pending` marks the
+   submit in flight either way. */
 export function Composer({
   placeholder = "The booth is open. Say it like the cameras are on.",
+  label = "Post to the deck",
+  submitLabel = "Post to the deck",
+  pendingLabel = "Posting…",
+  name = "body",
+  action,
+  defaultValue,
   sailing,
   onAttachSailing,
   onPost,
   disabled,
+  pending = false,
   style,
 }: {
   placeholder?: string;
+  /** Accessible name of the textarea. */
+  label?: string;
+  submitLabel?: React.ReactNode;
+  pendingLabel?: React.ReactNode;
+  /** Field name the form submits under. */
+  name?: string;
+  /** Renders as a <form action> instead of a widget; `onPost` is ignored. */
+  action?: React.FormHTMLAttributes<HTMLFormElement>["action"];
+  defaultValue?: string;
   sailing?: string | null;
   onAttachSailing?: () => void;
   onPost?: (text: string) => void;
   disabled?: boolean;
+  pending?: boolean;
   style?: React.CSSProperties;
 }) {
-  const [text, setText] = React.useState("");
-  return (
-    <div
-      style={{
-        background: "var(--surface-card)",
-        border: "1px solid var(--line-faint)",
-        borderRadius: "var(--radius-md)",
-        padding: "14px 16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-        fontFamily: BODY,
-        ...style,
-      }}
-    >
+  const [text, setText] = React.useState(defaultValue ?? "");
+  const canPost = !disabled && !pending && !!text.trim();
+  const boxStyle: React.CSSProperties = {
+    background: "var(--surface-card)",
+    border: "1px solid var(--line-faint)",
+    borderRadius: "var(--radius-md)",
+    padding: "var(--space-4)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "var(--space-3)",
+    fontFamily: BODY,
+    ...style,
+  };
+  const inner = (
+    <>
       <textarea
+        name={name}
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder={placeholder}
-        aria-label="Post to the deck"
+        aria-label={label}
         rows={3}
+        disabled={disabled}
         className="ls-writein"
         style={{
           resize: "vertical",
@@ -220,7 +245,7 @@ export function Composer({
           minHeight: 56,
         }}
       />
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
         {sailing ? (
           <Badge tone="outline">{sailing}</Badge>
         ) : onAttachSailing ? (
@@ -244,18 +269,27 @@ export function Composer({
           <Button
             variant="gold"
             size="sm"
-            disabled={disabled || !text.trim()}
-            onClick={() => {
+            type={action ? "submit" : "button"}
+            disabled={!canPost}
+            pending={pending}
+            pendingLabel={pendingLabel}
+            onClick={action ? undefined : () => {
               onPost?.(text);
               setText("");
             }}
           >
-            Post to the deck
+            {submitLabel}
           </Button>
         </span>
       </div>
-    </div>
+    </>
   );
+  if (action) {
+    /* React resets the form after the action settles; the reset event is
+       what clears the controlled text, so the button disables again. */
+    return <form action={action} style={boxStyle} onReset={() => setText("")}>{inner}</form>;
+  }
+  return <div style={boxStyle}>{inner}</div>;
 }
 
 export function FlagButton({
@@ -279,7 +313,7 @@ export function FlagButton({
         letterSpacing: "var(--tracking-dense)",
         textTransform: "uppercase",
         color: flagged ? "var(--text-3)" : "var(--text-2)",
-        padding: "6px 0",
+        padding: "var(--space-1) 0",
         minHeight: 24,
         whiteSpace: "nowrap",
         ...style,
@@ -312,16 +346,16 @@ export function FlagQueue({
   const [pick, setPick] = React.useState<FlagItem | null>(null);
   const th = (right = false): React.CSSProperties => ({
     textAlign: right ? "right" : "left",
-    padding: "10px 12px",
+    padding: "var(--space-3) var(--space-4)",
     font: `700 var(--text-2xs)/1 ${MONO}`,
     letterSpacing: "var(--tracking-label)",
     color: "var(--text-2)",
     borderBottom: "1px solid var(--line-strong)",
   });
-  const td: React.CSSProperties = { padding: "11px 12px", borderBottom: "1px solid var(--line-faint)" };
+  const td: React.CSSProperties = { padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid var(--line-faint)" };
   return (
     <div style={{ fontFamily: BODY, ...style }}>
-      {!items.length ? <div style={{ padding: "14px 0", fontSize: "var(--text-sm)", color: "var(--text-3)" }}>{emptyLabel}</div> : null}
+      {!items.length ? <div style={{ padding: "var(--space-4) 0", fontSize: "var(--text-sm)", color: "var(--text-3)" }}>{emptyLabel}</div> : null}
       {items.length > 0 ? (
         /* The Bridge's other tables sit in .ls-table-wrap; this one did not, so
            on a phone the moderation queue pushed the page 10px wide and made it

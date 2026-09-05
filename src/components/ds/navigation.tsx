@@ -33,6 +33,40 @@ export function Tabs({
 }) {
   const cls = ["ls-tabs", inverse ? "ls-tabs--inverse" : "", grow ? "ls-tabs--grow" : "", className].filter(Boolean).join(" ");
   const selected = items.findIndex((it) => it.id === value);
+  /* The indicator is one bar on the rail that slides to the selected tab, not
+     a border that each tab switches on and off. It is positioned from the
+     selected tab's measured box, written straight onto the rail as two custom
+     properties (.ls-tabs__ind reads them) rather than through state — a
+     measurement is not a render input, and going through setState here would
+     be a second render for a value only the compositor needs. Layout effect,
+     so the first client paint already has it in place; until then (the server
+     render) the selected tab's own border stands in, and data-ind is what hands
+     over — set here, outside React's props, so a re-render cannot drop it. The
+     rail and the active tab are both observed: the rail for its own size, the
+     tab for the webfont landing and changing its width. */
+  const railRef = React.useRef<HTMLDivElement>(null);
+  React.useLayoutEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const measure = () => {
+      const el = rail.querySelector<HTMLElement>(".ls-tab--active");
+      if (!el) {
+        rail.style.setProperty("--ind-w", "0px");
+        delete rail.dataset.ind;
+        return;
+      }
+      rail.style.setProperty("--ind-x", el.offsetLeft + "px");
+      rail.style.setProperty("--ind-w", el.offsetWidth + "px");
+      rail.dataset.ind = "";
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(rail);
+    const active = rail.querySelector<HTMLElement>(".ls-tab--active");
+    if (active) ro.observe(active);
+    return () => ro.disconnect();
+  }, [value, items.length]);
   /* With nothing selected the first tab is the one in the Tab order, so the
      rail is never unreachable. */
   const tabbable = selected >= 0 ? selected : 0;
@@ -52,7 +86,8 @@ export function Tabs({
     if (onChange) onChange(items[next].id);
   };
   return (
-    <div className={cls} style={style} role="tablist" aria-orientation="horizontal" aria-label={label} onKeyDown={onKey}>
+    <div className={cls} style={style} role="tablist" aria-orientation="horizontal" aria-label={label} onKeyDown={onKey} ref={railRef}>
+      <span className="ls-tabs__ind" aria-hidden="true"></span>
       {items.map((it, i) => (
         <button key={it.id} type="button" role="tab" aria-selected={value === it.id}
           aria-controls={it.panelId} tabIndex={i === tabbable ? 0 : -1}

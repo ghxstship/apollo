@@ -108,6 +108,11 @@
    to ink. A glow around an ink control is a shadow, not a glow. */
 --border-accent:rgba(20,20,20,.42);
 --shadow-glow-accent:0 0 0 3px rgba(20,20,20,.16);
+/* The package's box-shadow focus ring still carried acid-600/-400 — four page
+   sheets paint it (vetting chips and stances, the radar pin, the flying flag),
+   so every one of those rang green around an ink control while the outline
+   ring everywhere else was ink. Same ring, on the accent it flips with. */
+--focus-ring:0 0 0 2px var(--surface-page),0 0 0 4px var(--accent);
 
 /* The accent seam is not a gradient. Its two stops were 1.5 degrees apart, so
    five surfaces paid gradient cost to render a flat fill. It is a flat fill. */

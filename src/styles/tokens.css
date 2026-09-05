@@ -165,3 +165,38 @@
 --dur-slow:320ms;/* @kind other */
 --dur-cine:560ms;/* @kind other */
 }
+
+/* ── 7 · app motion & control tokens — NOT in the handoff package ─────────
+   Everything above this line is the package, verbatim. This block is the
+   app's own vocabulary for what the package leaves implicit, and it stays
+   fenced here so a diff against the package is one contiguous addition
+   rather than edits scattered through it.
+
+   What it names: which PUBLISHED step a hover, an enter, an exit and a move
+   each take (every component read --dur-1/--dur-2 and had to know that meant
+   "hover" and "enter"; an exit had no name at all, so nothing exited); how far
+   an arriving surface rises (§Motion: "fades and small translates"); how far a
+   pressed button gives; how faded "disabled" is (it was .4, .45 and .3 across
+   three components); and the three control heights, so a button and the input
+   beside it stop disagreeing by 2px (42 vs 44).
+
+   Every duration and easing is an alias onto a package token — nothing here
+   invents a curve or a length of time. Candidates for upstreaming into
+   tokens/motion.css and tokens/spacing.css. */
+:root{
+--dur-hover:var(--dur-fast);/* colour, border, opacity under the pointer */
+--dur-enter:var(--dur-base);/* a surface arriving: dialog, toast, panel */
+--dur-exit:var(--dur-fast);/* the same surface leaving — always shorter than it arrived */
+--dur-move:var(--dur-base);/* a thing travelling: switch thumb, tab indicator, tick */
+--ease-enter:var(--ease-out);
+--ease-exit:var(--ease-inout);
+--ease-move:var(--ease-out);
+--rise:8px;/* the enter translate; exits fall the same distance */
+--press:.98;/* scale of a button under the finger — §Hover/Press */
+--opacity-disabled:.45;
+--control-sm:32px;--control-md:44px;--control-lg:52px;/* sm · md (the touch minimum, and the input height) · lg */
+--toast-bottom:var(--space-6);/* where a fixed toast (and any sheet that must clear it) sits above the viewport's foot */
+}
+/* Under the member tab bar's breakpoint the foot is the bar (96px) plus the
+   home indicator; the toast and anything offset against it rise together. */
+@media (max-width:959px){:root{--toast-bottom:calc(96px + env(safe-area-inset-bottom))}}

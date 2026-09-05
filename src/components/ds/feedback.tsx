@@ -16,6 +16,27 @@ export function Dialog({
 }) {
   const boxRef = useModal(open, onClose);
   const titleId = React.useId();
+  /* The exit. A dialog that unmounts the frame `open` goes false cannot leave —
+     it is simply gone — so it holds itself mounted for one --dur-exit with the
+     --out class on the veil and unmounts on animationend. The prop change is
+     caught during render (React's "adjust state from props" form) rather than
+     in an effect, so the closing frame is the very next one and never a
+     frame late. A safety timer covers an animationend that never fires (the
+     tab was hidden mid-exit, say); under prefers-reduced-motion the animation
+     is .01ms and animationend fires at once. useModal already saw `open` go
+     false, so focus is back on the opener and the page scrolls again while the
+     veil is still fading. */
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  const [closing, setClosing] = React.useState(false);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    setClosing(!open);
+  }
+  React.useEffect(() => {
+    if (!closing) return;
+    const t = window.setTimeout(() => setClosing(false), 400);
+    return () => window.clearTimeout(t);
+  }, [closing]);
   /* useSyncExternalStore rather than a setState in an effect: the server
      snapshot is false and the client's is true, which is exactly the
      "am I mounted?" question a portal needs, without a render-then-set. */
@@ -32,10 +53,15 @@ export function Dialog({
      there was no way to scroll it clear: nobody on a phone could book a pass.
 
      Mounted state, because a portal has no document to aim at on the server. */
-  if (!open || !mounted) return null;
+  if ((!open && !closing) || !mounted) return null;
   return createPortal(
-    <div className="ls-dialog-veil" onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
-      <div className="ls-dialog" ref={boxRef} tabIndex={-1} style={{ maxWidth: "min(" + width + "px, calc(100vw - 32px))" }} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : label}>
+    <div
+      className={"ls-dialog-veil" + (closing ? " ls-dialog-veil--out" : "")}
+      aria-hidden={closing || undefined}
+      onClick={(e) => { if (!closing && e.target === e.currentTarget && onClose) onClose(); }}
+      onAnimationEnd={(e) => { if (closing && e.target === e.currentTarget) setClosing(false); }}
+    >
+      <div className="ls-dialog" ref={boxRef} tabIndex={-1} style={{ maxWidth: "min(" + width + "px, calc(100vw - var(--space-8)))" }} role="dialog" aria-modal="true" aria-labelledby={title ? titleId : undefined} aria-label={title ? undefined : label}>
         <div className="ls-dialog__head">
           <div>
             {eyebrow ? <div className="ls-dialog__eyebrow">{eyebrow}</div> : null}
@@ -91,15 +117,23 @@ const STATE_DEFAULTS: Record<string, { icon?: string; title: string; detail: str
      what Shoreside needs to find it. */
   error: { icon: "CloudLightning", title: "That didn't land.", detail: "Our end, not yours. Try again — if it holds, hail Shoreside and quote the reference." },
   offline: { icon: "WifiOff", title: "No signal past the breakwater.", detail: "You're offline. What you've loaded keeps working; changes sync when you're back." },
+  /* The receipt: a form went through, an export is ready, a transfer landed.
+     Positive tone. The pair to the error default above — that one didn't
+     land, this one did. */
+  done: { icon: "CircleCheck", title: "That landed.", detail: "" },
 };
 
+/* `status="done"` is the success state — the positive counterpart of `error`,
+   announced as a status rather than an alert. Its default detail is empty on
+   purpose: what was done is the caller's sentence. */
 export function StateBlock({
   status = "empty", title, detail, action, icon, bare = false, className = "", style,
 }: {
-  status?: "empty" | "loading" | "error" | "offline"; title?: React.ReactNode; detail?: React.ReactNode;
+  status?: "empty" | "loading" | "error" | "offline" | "done"; title?: React.ReactNode; detail?: React.ReactNode;
   action?: React.ReactNode; icon?: string; bare?: boolean; className?: string; style?: React.CSSProperties;
 }) {
   const d = STATE_DEFAULTS[status] || STATE_DEFAULTS.empty;
+  const body = detail || d.detail;
   return (
     <div className={["ls-state", "ls-state--" + status, bare ? "ls-state--bare" : "", className].filter(Boolean).join(" ")} style={style}
       role={status === "error" ? "alert" : "status"} aria-busy={status === "loading"}>
@@ -107,18 +141,74 @@ export function StateBlock({
         ? <div className="ls-state__bar"><div></div></div>
         : (icon || d.icon) ? <span className="ls-state__icon"><Icon name={icon || d.icon!} size={26} /></span> : null}
       <div className="ls-state__title">{title || d.title}</div>
-      <div className="ls-state__detail">{detail || d.detail}</div>
+      {body ? <div className="ls-state__detail">{body}</div> : null}
       {action ? <div className="ls-state__act">{action}</div> : null}
     </div>
   );
 }
 
-/* — Toast — */
+/* — Notice —
+   The inline alert: a ruled block that sits in the flow of a page or under a
+   form and says what just happened or what to know before acting — a refusal
+   under a submit, a receipt after one, a hold on an account, a note on a
+   closed thread. Not a Toast (which floats and leaves) and not a StateBlock
+   (which stands in for content that is not there).
+
+     <Notice tone="danger">That card was declined. Nothing was charged.</Notice>
+     <Notice tone="positive" title="Sent">The code is on its way.</Notice>
+
+   Role is derived from tone unless given: danger and warn are announced at
+   once (alert), everything else waits its turn (status). Pass `role={undefined}`
+   explicitly to render without one — for a notice that is present on load
+   and would otherwise be read out as news. `compact` tightens it to one line
+   of --text-xs for a note under a field. */
+export function Notice({
+  tone = "neutral", title, compact = false, className = "", style, children, ...rest
+}: {
+  tone?: "info" | "positive" | "warn" | "danger" | "neutral";
+  title?: React.ReactNode; compact?: boolean;
+  className?: string; style?: React.CSSProperties; children?: React.ReactNode;
+} & React.HTMLAttributes<HTMLDivElement>) {
+  const role = "role" in rest ? rest.role : tone === "danger" || tone === "warn" ? "alert" : "status";
+  return (
+    <div
+      {...rest}
+      role={role}
+      className={["ls-notice", "ls-notice--" + tone, compact ? "ls-notice--compact" : "", className].filter(Boolean).join(" ")}
+      style={style}
+    >
+      {title ? <div className="ls-notice__title">{title}</div> : null}
+      {children != null ? <div className="ls-notice__body">{children}</div> : null}
+    </div>
+  );
+}
+
+/* — Toast —
+   `duration` auto-dismisses: after that many milliseconds the toast plays its
+   exit and then calls `onClose`. The × button calls `onDismiss` at once (the
+   contract every existing caller has) and, when `onClose` is given, also
+   plays the exit and calls it after. `open` lets the parent drive the exit
+   the way Dialog's does — set it false and the toast leaves rather than
+   vanishing; the parent unmounts it from `onClose`.
+
+   The exit is Dialog's: the prop change (or the timer, or the ×) puts the
+   toast in a `closing` phase, the --out class runs the exit keyframes, and
+   animationend ends the phase. A safety timer covers an animationend that
+   never fires. Nothing here reads a clock in render. */
 export function Toast({
-  message, meta, tone = "ink", fixed = false, onDismiss, dismissLabel = "Dismiss", className = "", style,
+  message, meta, tone = "ink", fixed = false, open = true, duration, onDismiss, onClose, dismissLabel = "Dismiss", className = "", style,
 }: {
   message: React.ReactNode; meta?: React.ReactNode; tone?: "ink" | "positive" | "caution" | "danger";
-  fixed?: boolean; onDismiss?: () => void; dismissLabel?: string; className?: string; style?: React.CSSProperties;
+  fixed?: boolean;
+  /** Set false to play the exit; unmount from `onClose`. */
+  open?: boolean;
+  /** Milliseconds before the toast leaves on its own. Omit to hold. */
+  duration?: number;
+  /** The × was pressed. Called immediately. */
+  onDismiss?: () => void;
+  /** The toast has finished leaving — by timer, by ×, or by `open` going false. */
+  onClose?: () => void;
+  dismissLabel?: string; className?: string; style?: React.CSSProperties;
 }) {
   /* A fixed toast is z-index 1100 and the member tab bar is 300, and the bar
      still won: pages wrapped in `.ls-fade` (an animation, so a stacking
@@ -131,6 +221,38 @@ export function Toast({
     () => true,
     () => false
   );
+
+  /* Exit phases. `closing` runs the --out animation; `gone` is the frame after
+     it, when the toast renders nothing until `open` comes back true. The prop
+     change is caught during render (the "adjust state from props" form). */
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  const [closing, setClosing] = React.useState(false);
+  const [gone, setGone] = React.useState(!open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) { setGone(false); setClosing(false); }
+    else if (!gone) setClosing(true);
+  }
+  const onCloseRef = React.useRef(onClose);
+  React.useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  const finish = React.useCallback(() => {
+    setClosing(false);
+    setGone(true);
+    onCloseRef.current?.();
+  }, []);
+  React.useEffect(() => {
+    if (!closing) return;
+    const t = window.setTimeout(finish, 400);
+    return () => window.clearTimeout(t);
+  }, [closing, finish]);
+  /* The clock. Armed on mount and whenever `duration` changes; a toast whose
+     message changes keeps its original deadline, which is what a caller who
+     updates "Saving…" to "Saved" expects. */
+  React.useEffect(() => {
+    if (!duration || !open) return;
+    const t = window.setTimeout(() => setClosing(true), duration);
+    return () => window.clearTimeout(t);
+  }, [duration, open]);
 
   /* The visible toast is not the live region — it is created with its text
      already inside it, which announces unreliably. It writes into the standing
@@ -168,12 +290,23 @@ export function Toast({
     []
   );
 
+  if (gone) return null;
+
+  const dismiss = () => {
+    onDismiss?.();
+    if (onClose) setClosing(true);
+  };
+
   const node = (
-    <div className={["ls-toast", "ls-toast--" + tone, fixed ? "ls-toast--fixed" : "", className].filter(Boolean).join(" ")} style={style} role={ownRole}>
+    <div
+      className={["ls-toast", "ls-toast--" + tone, fixed ? "ls-toast--fixed" : "", closing ? "ls-toast--out" : "", className].filter(Boolean).join(" ")}
+      style={style} role={ownRole} aria-hidden={closing || undefined}
+      onAnimationEnd={(e) => { if (closing && e.target === e.currentTarget) finish(); }}
+    >
       <span className="ls-toast__rule"></span>
       <span ref={msgRef}>{message}</span>
       {meta ? <span className="ls-toast__meta">{meta}</span> : null}
-      {onDismiss ? <button type="button" className="ls-toast__x" aria-label={dismissLabel} onClick={onDismiss}>✕</button> : null}
+      {onDismiss || onClose ? <button type="button" className="ls-toast__x" aria-label={dismissLabel} onClick={dismiss}>✕</button> : null}
     </div>
   );
 

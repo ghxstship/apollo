@@ -27,7 +27,7 @@ export function PassageLog({
 }) {
   if (!figures.length)
     return (
-      <div style={{ padding: "22px 0", font: `400 var(--text-sm)/1.5 ${BODY}`, color: "var(--text-3)", ...style }}>
+      <div style={{ padding: "var(--space-6) 0", font: `400 var(--text-sm)/1.5 ${BODY}`, color: "var(--text-3)", ...style }}>
         {emptyLabel}
       </div>
     );
@@ -56,8 +56,8 @@ export function PassageLog({
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 6,
-              padding: "16px 18px",
+              gap: "var(--space-2)",
+              padding: "var(--space-4) var(--space-5)",
               background: "var(--surface-card)",
             }}
           >
@@ -79,7 +79,7 @@ export function PassageLog({
       {since ? (
         <div
           style={{
-            paddingTop: 10,
+            paddingTop: "var(--space-3)",
             font: `700 var(--text-2xs)/1 ${MONO}`,
             letterSpacing: "var(--tracking-label)",
             textTransform: "uppercase",
@@ -120,8 +120,8 @@ export function MarksList({
             style={{
               display: "flex",
               alignItems: "baseline",
-              gap: 14,
-              padding: "12px 0",
+              gap: "var(--space-4)",
+              padding: "var(--space-3) 0",
               borderTop: "1px solid var(--line-faint)",
               opacity: m.held ? 1 : 0.55,
             }}
@@ -139,7 +139,7 @@ export function MarksList({
             >
               {m.kind}
             </span>
-            <span style={{ display: "flex", flexDirection: "column", gap: 3, flex: 1 }}>
+            <span style={{ display: "flex", flexDirection: "column", gap: "var(--space-1)", flex: 1 }}>
               {/* Anton at 16px sat six below its 22px floor, hidden from the inline gate
                   because the family arrived through a constant rather than a literal.
                   §Type: below 22px a heading is Archivo 700, sentence case. */}
@@ -195,15 +195,15 @@ export function ContestCard({
         border: "1px solid " + (entered && !settled ? "var(--border-gold)" : "var(--line-faint)"),
         borderRadius: "var(--radius-md)",
         boxShadow: "var(--shadow-card)",
-        padding: "20px 22px",
+        padding: "var(--space-5) var(--space-6)",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: "var(--space-3)",
         fontFamily: BODY,
         ...style,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
         <span
           style={{
             font: `700 var(--text-3xs)/1 ${MONO}`,
@@ -226,7 +226,7 @@ export function ContestCard({
         ) : null}
       </div>
       <div style={{ font: `400 var(--text-xl)/1.2 ${DISPLAY}`, textTransform: "uppercase", color: "var(--text-1)" }}>{name}</div>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap", alignItems: "center" }}>
         {/* Two more hand-rolled badges, now the component. The split falls out
             of the family's own rule: a metric is what this contest MEASURES —
             a fact about the record, so the square neutral face; an award is a
@@ -250,7 +250,7 @@ export function ContestCard({
             alignSelf: "flex-start",
             font: `500 var(--text-sm)/1 ${BODY}`,
             color: "var(--text-gold)",
-            padding: "8px 0",
+            padding: "var(--space-2) 0",
           }}
         >
           Enter →
@@ -291,7 +291,7 @@ export function StandingsTable({
      you read FINAL before you read the places, not after. */
   const th: React.CSSProperties = {
     textAlign: "left",
-    padding: "10px 14px",
+    padding: "var(--space-3) var(--space-4)",
     font: `700 var(--text-2xs)/1 ${MONO}`,
     letterSpacing: "var(--tracking-label)",
     textTransform: "uppercase",
@@ -310,7 +310,7 @@ export function StandingsTable({
   const useRoman = !isCh && rows.length <= ROMAN.length;
   return (
     <div style={{ fontFamily: BODY, ...style }}>
-      {frozen ? <div style={{ ...caption, paddingBottom: 10 }}>FINAL · PUBLISHED ONCE</div> : null}
+      {frozen ? <div style={{ ...caption, paddingBottom: "var(--space-3)" }}>FINAL · PUBLISHED ONCE</div> : null}
       {/* Two fixed columns and a name that may be long: without a scroll
           container the table pushed the page sideways at 390px. */}
       <div className="ls-table-wrap">
@@ -330,7 +330,7 @@ export function StandingsTable({
                 <tr key={r.name + i} style={{ background: you ? "var(--wash-gold)" : "transparent" }}>
                   <td
                     style={{
-                      padding: "11px 14px",
+                      padding: "var(--space-3) var(--space-4)",
                       borderBottom: "1px solid var(--line-faint)",
                       font: `700 var(--text-xs)/1 ${MONO}`,
                       color: i === 0 && !isCh ? "var(--text-gold)" : "var(--text-2)",
@@ -339,17 +339,17 @@ export function StandingsTable({
                     {isCh ? (r.reached ? "✓" : "—") : useRoman ? ROMAN[place - 1] ?? place : place}
                     {!isCh && r.tie ? " =" : ""}
                   </td>
-                  <td style={{ padding: "11px 14px", borderBottom: "1px solid var(--line-faint)" }}>
+                  <td style={{ padding: "var(--space-3) var(--space-4)", borderBottom: "1px solid var(--line-faint)" }}>
                     {r.name}
                     {you ? (
-                      <span style={{ marginLeft: 8, font: `700 var(--text-3xs)/1 ${MONO}`, letterSpacing: "var(--tracking-dense)", color: "var(--text-gold)" }}>
+                      <span style={{ marginLeft: "var(--space-2)", font: `700 var(--text-3xs)/1 ${MONO}`, letterSpacing: "var(--tracking-dense)", color: "var(--text-gold)" }}>
                         YOU
                       </span>
                     ) : null}
                   </td>
                   <td
                     style={{
-                      padding: "11px 14px",
+                      padding: "var(--space-3) var(--space-4)",
                       borderBottom: "1px solid var(--line-faint)",
                       textAlign: "right",
                       font: `700 var(--text-xs)/1 ${MONO}`,
@@ -364,7 +364,7 @@ export function StandingsTable({
           </tbody>
         </table>
       </div>
-      {frozen ? null : <div style={{ ...caption, paddingTop: 8 }}>LIVE · SETTLES AT WINDOW CLOSE</div>}
+      {frozen ? null : <div style={{ ...caption, paddingTop: "var(--space-2)" }}>LIVE · SETTLES AT WINDOW CLOSE</div>}
     </div>
   );
 }
@@ -392,9 +392,9 @@ export function KnotsLedger({
     color: "var(--text-2)",
   };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, fontFamily: BODY, ...style }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-5)", fontFamily: BODY, ...style }}>
       {balance != null ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
           <span style={label}>Knots</span>
           <span style={{ font: `400 var(--text-3xl)/1.05 ${DISPLAY}`, fontVariantNumeric: "tabular-nums", color: "var(--text-gold)" }}>{balance}</span>
         </div>
@@ -422,7 +422,7 @@ export function KnotsLedger({
                       letterSpacing: "var(--tracking-dense)",
                       textTransform: "uppercase",
                       color: "var(--text-3)",
-                      padding: i === 0 ? "0 0 8px" : "18px 0 8px",
+                      padding: i === 0 ? "0 0 var(--space-2)" : "var(--space-5) 0 var(--space-2)",
                     }}
                   >
                     {month}
@@ -433,8 +433,8 @@ export function KnotsLedger({
                     display: "grid",
                     gridTemplateColumns: "1fr 88px 78px",
                     alignItems: "baseline",
-                    gap: 12,
-                    padding: "10px 0",
+                    gap: "var(--space-3)",
+                    padding: "var(--space-3) 0",
                     borderTop: "1px solid var(--line-faint)",
                   }}
                 >
@@ -458,7 +458,7 @@ export function KnotsLedger({
         </div>
       ) : null}
       {rewards.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
           <span style={label}>The Shop</span>
           {rewards.map((r) => (
             <div
@@ -466,8 +466,8 @@ export function KnotsLedger({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
-                padding: "12px 14px",
+                gap: "var(--space-3)",
+                padding: "var(--space-3) var(--space-4)",
                 background: "var(--surface-card)",
                 border: "1px solid var(--line-faint)",
                 borderRadius: "var(--radius-md)",
@@ -487,9 +487,9 @@ export function KnotsLedger({
                     color: "var(--text-gold)",
                     border: "1px solid var(--border-gold)",
                     borderRadius: "var(--radius-pill)",
-                    padding: "7px 14px",
+                    padding: "var(--space-2) var(--space-4)",
                     minHeight: 24,
-                    opacity: balance != null && r.costValue != null && r.costValue > balance ? 0.45 : 1,
+                    opacity: balance != null && r.costValue != null && r.costValue > balance ? "var(--opacity-disabled)" : 1,
                   }}
                 >
                   Redeem

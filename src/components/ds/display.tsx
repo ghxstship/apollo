@@ -74,15 +74,19 @@ export function Badge({
 }
 
 /* — Tag — */
+/* `disabled` keeps a clickable Tag in the row — so a filter axis does not
+   reflow when one value has nothing behind it — but takes it out of the tab
+   order and off the pointer, and says so with aria-disabled. */
 export function Tag({
-  active = false, onClick, onRemove, removeLabel = "Remove", className = "", children, ...rest
-}: { active?: boolean; onClick?: React.MouseEventHandler; onRemove?: React.MouseEventHandler; removeLabel?: string; className?: string; children?: React.ReactNode } & Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick">) {
-  const cls = ["ls-tag", active ? "ls-tag--active" : "", onClick ? "ls-tag--click" : "", className].filter(Boolean).join(" ");
+  active = false, disabled = false, onClick, onRemove, removeLabel = "Remove", className = "", children, ...rest
+}: { active?: boolean; disabled?: boolean; onClick?: React.MouseEventHandler; onRemove?: React.MouseEventHandler; removeLabel?: string; className?: string; children?: React.ReactNode } & Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick">) {
+  const press = onClick && !disabled ? onClick : undefined;
+  const cls = ["ls-tag", active ? "ls-tag--active" : "", onClick ? "ls-tag--click" : "", disabled ? "ls-tag--disabled" : "", className].filter(Boolean).join(" ");
   return (
     <span
-      className={cls} onClick={onClick} role={onClick ? "button" : undefined} tabIndex={onClick ? 0 : undefined}
-      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } } : undefined}
-      aria-pressed={onClick ? active : undefined} {...rest}
+      className={cls} onClick={press} role={onClick ? "button" : undefined} tabIndex={onClick && !disabled ? 0 : undefined}
+      onKeyDown={press ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } } : undefined}
+      aria-pressed={onClick ? active : undefined} aria-disabled={disabled || undefined} {...rest}
     >
       {children}
       {onRemove ? <button type="button" className="ls-tag__x" aria-label={removeLabel} onClick={(e) => { e.stopPropagation(); onRemove(e); }}><Icon name="X" size={12} /></button> : null}
@@ -131,7 +135,29 @@ export interface TableColumn<R> {
   /* Money and counts read down the last digit. Set align:"end" on those; leave
      a boarding code, a slug or a date at the start even though it is mono. */
   align?: "start" | "end";
+  /** A column of figures: mono, tabular, aligned to the end. Shorthand for
+      `mono` + `align:"end"`. */
+  numeric?: boolean;
   render?: (row: R) => React.ReactNode;
+}
+
+/** One `<tbody>` of a grouped table — a statement's month, a roster's
+    watch. `summary` is an optional closing row of display-ready cells keyed
+    by column (a subtotal), drawn in the total face. */
+export interface TableGroup<R> {
+  key?: React.Key;
+  label: React.ReactNode;
+  rows: R[];
+  summary?: Partial<Record<string, React.ReactNode>>;
+}
+
+/* A column array written as a bare `const cols = [...]` widens `align: "end"`
+   to `string` and then fails against TableColumn. Declare through this and the
+   literals stay literal without `as const` on every entry:
+
+     const cols = tableColumns<Row>([{ key: "amount", label: "Amount", numeric: true }, …]); */
+export function tableColumns<R>(columns: TableColumn<R>[]): TableColumn<R>[] {
+  return columns;
 }
 
 /* The table is pinned to width:100% inside a wrapper that scrolls, which meant
@@ -147,17 +173,78 @@ function defaultMinWidth(count: number): number | undefined {
   return undefined;
 }
 
+function cellClass<R>(c: TableColumn<R>): string {
+  const end = c.numeric || c.align === "end";
+  return [c.mono || c.numeric ? "num" : "", end ? "num--end" : ""].filter(Boolean).join(" ");
+}
+
+/* `groups` renders one <tbody> per group with a header row spanning the table
+   (scope="rowgroup") and an optional summary row; `rows` renders the single
+   body it always did. `rowHeader` names the column whose cell is the row's
+   heading — <th scope="row"> — so a screen reader announces the member's name,
+   not the column label, as it moves along the row. `rowClassName` lets a
+   caller stripe a row by its status without reaching past the component. */
 export function Table<R extends Record<string, unknown>>({
-  columns = [], rows = [], rowKey, onRowClick, dense = false, inverse = false,
+  columns = [], rows = [], groups, rowKey, rowHeader, rowClassName, onRowClick, dense = false, inverse = false,
   tall = false, minWidth, className = "", style,
 }: {
-  columns: TableColumn<R>[]; rows: R[]; rowKey?: (row: R) => React.Key;
+  columns: TableColumn<R>[]; rows?: R[]; groups?: TableGroup<R>[]; rowKey?: (row: R) => React.Key;
+  /** Key of the column rendered as `<th scope="row">`. */
+  rowHeader?: string;
+  rowClassName?: (row: R) => string | undefined | null | false;
   onRowClick?: (row: R) => void; dense?: boolean; inverse?: boolean;
   /* A long table keeps its header in view instead of scrolling it away. */
   tall?: boolean; minWidth?: number | false;
   className?: string; style?: React.CSSProperties;
 }) {
   const min = minWidth === false ? undefined : (minWidth ?? defaultMinWidth(columns.length));
+  const renderRow = (r: R, i: number) => (
+    /* A clickable row was mouse-only: the Bridge's crew queue and member
+       roster both open their detail dialog from a bare <tr onClick>, so
+       a keyboard could reach every filter and no record. Focusable and
+       Enter/Space-activated now — the row keeps its table semantics
+       rather than being relabelled a button, which would cost a screen
+       reader the column headers it reads out with each cell. */
+    <tr
+      key={rowKey ? rowKey(r) : i}
+      className={[onRowClick ? "ls-table__row--click" : "", rowClassName ? rowClassName(r) || "" : ""].filter(Boolean).join(" ") || undefined}
+      onClick={onRowClick ? () => onRowClick(r) : undefined}
+      tabIndex={onRowClick ? 0 : undefined}
+      onKeyDown={
+        onRowClick
+          ? (e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              if (e.target !== e.currentTarget) return;
+              e.preventDefault();
+              onRowClick(r);
+            }
+          : undefined
+      }
+    >
+      {columns.map((c) => {
+        const content = c.render ? c.render(r) : (r[c.key] as React.ReactNode);
+        const cls = cellClass(c) || undefined;
+        return rowHeader === c.key
+          ? <th key={c.key} scope="row" className={cls}>{content}</th>
+          : <td key={c.key} className={cls}>{content}</td>;
+      })}
+    </tr>
+  );
+  const renderBody = (list: R[], key?: React.Key, group?: TableGroup<R>) => (
+    <tbody key={key}>
+      {group ? (
+        <tr className="ls-table__group">
+          <th scope="rowgroup" colSpan={columns.length}>{group.label}</th>
+        </tr>
+      ) : null}
+      {list.map(renderRow)}
+      {group?.summary ? (
+        <tr className="ls-table__row--total">
+          {columns.map((c) => <td key={c.key} className={cellClass(c) || undefined}>{group.summary![c.key]}</td>)}
+        </tr>
+      ) : null}
+    </tbody>
+  );
   return (
     <div className={["ls-table-wrap", tall ? "ls-table-wrap--tall" : ""].filter(Boolean).join(" ")}>
       <table
@@ -168,36 +255,52 @@ export function Table<R extends Record<string, unknown>>({
             above its switch or button — but an empty <th> is a header a
             screen reader reads out as nothing for every cell beneath it. The
             header is there and hidden, not absent. */}
-        <thead><tr>{columns.map((c) => <th key={c.key} scope="col" className={c.align === "end" ? "num--end" : ""} style={c.width ? { width: c.width } : undefined}>{c.label == null || c.label === "" ? <span className="ls-visually-hidden">Actions</span> : c.label}</th>)}</tr></thead>
-        <tbody>
-          {rows.map((r, i) => (
-            /* A clickable row was mouse-only: the Bridge's crew queue and member
-               roster both open their detail dialog from a bare <tr onClick>, so
-               a keyboard could reach every filter and no record. Focusable and
-               Enter/Space-activated now — the row keeps its table semantics
-               rather than being relabelled a button, which would cost a screen
-               reader the column headers it reads out with each cell. */
-            <tr
-              key={rowKey ? rowKey(r) : i}
-              className={onRowClick ? "ls-table__row--click" : ""}
-              onClick={onRowClick ? () => onRowClick(r) : undefined}
-              tabIndex={onRowClick ? 0 : undefined}
-              onKeyDown={
-                onRowClick
-                  ? (e) => {
-                      if (e.key !== "Enter" && e.key !== " ") return;
-                      if (e.target !== e.currentTarget) return;
-                      e.preventDefault();
-                      onRowClick(r);
-                    }
-                  : undefined
-              }
-            >
-              {columns.map((c) => <td key={c.key} className={[c.mono ? "num" : "", c.align === "end" ? "num--end" : ""].filter(Boolean).join(" ")}>{c.render ? c.render(r) : (r[c.key] as React.ReactNode)}</td>)}
-            </tr>
-          ))}
-        </tbody>
+        <thead><tr>{columns.map((c) => <th key={c.key} scope="col" className={c.numeric || c.align === "end" ? "num--end" : ""} style={c.width ? { width: c.width } : undefined}>{c.label == null || c.label === "" ? <span className="ls-visually-hidden">Actions</span> : c.label}</th>)}</tr></thead>
+        {groups
+          ? groups.map((g, gi) => renderBody(g.rows, g.key ?? gi, g))
+          : renderBody(rows)}
       </table>
+    </div>
+  );
+}
+
+/* — ReviewList / ReviewRow —
+   The label-left, figure-right list every checkout, receipt and confirmation
+   was drawing for itself: a <dl>, one row per line, the figure in mono with
+   tabular digits so a column of amounts reads down the last digit.
+
+     <ReviewList>
+       <ReviewRow label="2 passes" value="$120.00" />
+       <ReviewRow label="Dues credit" value="−$20.00" muted />
+       <ReviewRow label="Total" value="$100.00" total />
+     </ReviewList>
+
+   `first` drops the top rule (for a list that opens flush under a heading),
+   `total` draws the closing rule and sets the figure heavy, `muted` fades a
+   line that is information rather than a charge. */
+export function ReviewList({
+  children, dense = false, inverse = false, className = "", style, ...rest
+}: { children?: React.ReactNode; dense?: boolean; inverse?: boolean; className?: string; style?: React.CSSProperties } & React.HTMLAttributes<HTMLDListElement>) {
+  return (
+    <dl className={["ls-review", dense ? "ls-review--dense" : "", inverse ? "ls-review--inverse" : "", className].filter(Boolean).join(" ")} style={style} {...rest}>
+      {children}
+    </dl>
+  );
+}
+
+export function ReviewRow({
+  label, value, children, first = false, total = false, muted = false, className = "", style,
+}: {
+  label: React.ReactNode;
+  /** The figure. `children` is an alias for a value that is markup. */
+  value?: React.ReactNode; children?: React.ReactNode;
+  first?: boolean; total?: boolean; muted?: boolean;
+  className?: string; style?: React.CSSProperties;
+}) {
+  return (
+    <div className={["ls-review__row", first ? "ls-review__row--first" : "", total ? "ls-review__row--total" : "", muted ? "ls-review__row--muted" : "", className].filter(Boolean).join(" ")} style={style}>
+      <dt className="ls-review__label">{label}</dt>
+      <dd className="ls-review__value">{value ?? children}</dd>
     </div>
   );
 }

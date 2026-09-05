@@ -20,45 +20,60 @@ export type FilterOption = {
   label: string;
   /** Rows this value would leave. Omitted where counting is not meaningful. */
   count?: number;
+  /** Shown but not choosable — a value with nothing behind it right now. */
+  disabled?: boolean;
 };
 
-/* — pills — */
+/* — pills —
+   One value at a time by default: `value` is the chosen id (or "all") and
+   `onChange` gets the next one. With `multi`, `value` is the set of chosen
+   ids and each pill toggles its own membership; the All pill clears the set
+   and is active while the set is empty. */
+type SingleProps = { multi?: false; value: string; onChange: (next: string) => void };
+type MultiProps = { multi: true; value: string[]; onChange: (next: string[]) => void };
 
 export function FilterPills({
   label,
   options,
-  value,
-  onChange,
   allLabel = "All",
   allCount,
   className = "",
+  ...mode
 }: {
   label: string;
   options: FilterOption[];
-  value: string;
-  onChange: (next: string) => void;
   /** Omit to drop the All pill — an axis where every row has a value. */
   allLabel?: string | null;
   allCount?: number;
   className?: string;
-}) {
+} & (SingleProps | MultiProps)) {
   /* The label span is the group's accessible name. Without the pairing a
      screen reader hears a run of bare toggles with no idea which of them are
      answers to the same question. */
   const id = React.useId();
+  const isOn = (oid: string) => (mode.multi ? mode.value.includes(oid) : mode.value === oid);
+  const allOn = mode.multi ? mode.value.length === 0 : mode.value === "all";
+  const pick = (oid: string) => {
+    if (mode.multi) {
+      mode.onChange(mode.value.includes(oid) ? mode.value.filter((v) => v !== oid) : [...mode.value, oid]);
+    } else {
+      mode.onChange(oid);
+    }
+  };
+  const clear = () => { if (mode.multi) mode.onChange([]); else mode.onChange("all"); };
   return (
     <div className={["ls-filters", className].filter(Boolean).join(" ")} role="group" aria-labelledby={id}>
       <span className="ls-filters__label" id={id}>
         {label}
       </span>
       {allLabel === null ? null : (
-        <Tag active={value === "all"} onClick={() => onChange("all")}>
+        <Tag active={allOn} onClick={clear}>
           {allLabel}
           {allCount == null ? null : <span className="ls-tag__n">{allCount}</span>}
         </Tag>
       )}
       {options.map((o) => (
-        <Tag key={o.id} active={value === o.id} onClick={() => onChange(o.id)}>
+        <Tag key={o.id} active={isOn(o.id)} disabled={o.disabled} onClick={() => pick(o.id)}>
           {o.label}
           {o.count == null ? null : <span className="ls-tag__n">{o.count}</span>}
         </Tag>

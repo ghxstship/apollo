@@ -190,10 +190,13 @@
 --sea-dusk:var(--scene-crimson); /* @kind color */
 --sea-dawn:var(--scene-golden); /* @kind color */
 
-/* — motion — */
+/* — motion — the kit's own sheets read the semantic names in tokens.css
+   (--dur-hover/-enter/-exit/-move, --ease-enter/-exit/-move) since 2026-09-05;
+   these three remain for the page sheets that still say --dur-1. --dur-3 came
+   out the day nothing read it — the kit's card zoom and progress fill say
+   --dur-cine now, which is what it always meant. — */
 --dur-1:var(--dur-fast);
 --dur-2:var(--dur-base);
---dur-3:var(--dur-cine);
 --ease-swell:var(--ease-out); /* @kind other */
 }
 

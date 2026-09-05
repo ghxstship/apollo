@@ -1,12 +1,26 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import { Icon } from "./icon";
 import { THEME_STORAGE_KEY } from "@/lib/brand";
 
-/* — Button — */
+/* — Button —
+   `pending` is the in-flight state of the action the button fires: it sets
+   aria-busy, disables the control, and — when `pendingLabel` is given — swaps
+   the label for it WITHOUT the button changing width. Both labels are laid in
+   the same grid cell and the inactive one is hidden but still measured, so the
+   button is as wide as the wider of the two from the first paint and nothing
+   beside it moves when the state flips. Without `pendingLabel` the label stays
+   and only the state changes.
+
+     <Button pending={busy} pendingLabel="Saving…">Save</Button>
+
+   The base class carries the md size, so a bare `ls-btn` written by hand still
+   renders 44px tall — the error pages shipped zero-height buttons when the size
+   modifier was forgotten. */
 export function Button({
   variant = "primary", size = "md", inverse = false, fullWidth = false,
-  disabled = false, type = "button", className = "", children, ...rest
+  disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
 }: {
   /* `danger` is for a control that destroys or cannot be undone — cancelling a
      sailing, revoking a key, redacting a signature, striking a record. It is
@@ -15,19 +29,94 @@ export function Button({
      neighbour in the same row is `outline` or `ghost`. */
   variant?: "primary" | "gold" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
   inverse?: boolean; fullWidth?: boolean;
+  /** The action is in flight: aria-busy, disabled, label swapped for `pendingLabel` if given. */
+  pending?: boolean;
+  /** Shown in place of the children while `pending`. Width is reserved for both. */
+  pendingLabel?: React.ReactNode;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", className].filter(Boolean).join(" ");
-  return <button type={type} disabled={disabled} className={cls} {...rest}>{children}</button>;
+  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", pending ? "ls-btn--pending" : "", className].filter(Boolean).join(" ");
+  return (
+    <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
+      {pendingLabel == null ? children : (
+        <span className="ls-btn__stack">
+          <span className="ls-btn__label" aria-hidden={pending || undefined}>{children}</span>
+          <span className="ls-btn__alt" aria-hidden={!pending || undefined}>{pendingLabel}</span>
+        </span>
+      )}
+    </button>
+  );
 }
 
-/* — IconButton — */
+/* — IconButton —
+   `pending` sets aria-busy and disables; `pendingLabel` replaces the accessible
+   name while in flight ("Saving" for "Save"). The glyph is the caller's and is
+   not swapped — an icon button is one width by construction. */
 export function IconButton({
-  label, variant = "outline", size = "md", inverse = false, disabled = false, className = "", children, ...rest
+  label, variant = "outline", size = "md", inverse = false, disabled = false, pending = false, pendingLabel, className = "", children, ...rest
 }: {
-  label: string; variant?: "solid" | "outline" | "ghost"; size?: "sm" | "md" | "lg"; inverse?: boolean;
+  label: string; variant?: "solid" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg"; inverse?: boolean;
+  pending?: boolean; pendingLabel?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = ["ls-iconbtn", "ls-iconbtn--" + variant, "ls-iconbtn--" + size, inverse ? "ls-iconbtn--inverse" : "", className].filter(Boolean).join(" ");
-  return <button type="button" aria-label={label} title={label} disabled={disabled} className={cls} {...rest}>{children}</button>;
+  const name = pending && pendingLabel ? pendingLabel : label;
+  const cls = ["ls-iconbtn", "ls-iconbtn--" + variant, "ls-iconbtn--" + size, inverse ? "ls-iconbtn--inverse" : "", pending ? "ls-iconbtn--pending" : "", className].filter(Boolean).join(" ");
+  return <button type="button" aria-label={name} title={name} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>{children}</button>;
+}
+
+/* — LinkButton —
+   The anchor-shaped Button: same variants, same sizes, same class contract, for
+   a CTA that navigates rather than acts. An in-app href renders next/link; an
+   external one (a scheme or a protocol-relative host) renders a plain <a> with
+   rel="noopener noreferrer" — set `target` yourself if it should open a new
+   tab. Everything else in `...rest` lands on the anchor: aria-label, target,
+   download, onClick, id, data-*.
+
+   `disabled` on an anchor is aria-disabled plus the button's faded face and no
+   pointer; the href stays so the destination is still discoverable. Use it for
+   a placeholder CTA whose gate has not opened, not to hide a route. */
+const EXTERNAL_HREF = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+
+export function LinkButton({
+  href, variant = "primary", size = "md", inverse = false, fullWidth = false, disabled = false,
+  external, prefetch, className = "", children, rel, ...rest
+}: {
+  href: string;
+  variant?: "primary" | "gold" | "outline" | "ghost" | "danger"; size?: "sm" | "md" | "lg";
+  inverse?: boolean; fullWidth?: boolean; disabled?: boolean;
+  /** Force a plain <a>. Inferred from the href when omitted. */
+  external?: boolean;
+  prefetch?: React.ComponentProps<typeof Link>["prefetch"];
+  children?: React.ReactNode;
+} & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href">) {
+  const cls = ["ls-btn", "ls-btn--" + variant, "ls-btn--" + size, inverse ? "ls-btn--inverse" : "", fullWidth ? "ls-btn--full" : "", disabled ? "ls-btn--disabled" : "", className].filter(Boolean).join(" ");
+  const isExternal = external ?? EXTERNAL_HREF.test(href);
+  const a11y = disabled ? { "aria-disabled": true as const, tabIndex: -1 } : {};
+  if (isExternal) {
+    return <a href={href} className={cls} rel={rel ?? "noopener noreferrer"} {...a11y} {...rest}>{children}</a>;
+  }
+  return <Link href={href} className={cls} prefetch={prefetch} rel={rel} {...a11y} {...rest}>{children}</Link>;
+}
+
+/* — TextButton —
+   A button that reads as text: Show / Hide, Clear, Undo, Resend the code, Sign
+   out of everywhere. It is the `ls-bare` reset with a face, so it keeps the
+   reset's focus ring and its 44px touch pseudo, and it is the component every
+   hand-rolled `<button className="ls-bare">` should become.
+
+     default  ink, underlined like a link — a real action in running copy
+     quiet    faint until hovered — a secondary action beside a primary one
+     danger   the destructive step in text form (Remove, Revoke) */
+export function TextButton({
+  tone = "default", size = "md", disabled = false, pending = false, pendingLabel, type = "button", className = "", children, ...rest
+}: {
+  tone?: "default" | "quiet" | "danger"; size?: "sm" | "md";
+  pending?: boolean; pendingLabel?: React.ReactNode;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  const cls = ["ls-bare", "ls-textbtn", "ls-textbtn--" + tone, "ls-textbtn--" + size, pending ? "ls-textbtn--pending" : "", className].filter(Boolean).join(" ");
+  return (
+    <button type={type} disabled={disabled || pending} aria-busy={pending || undefined} className={cls} {...rest}>
+      {pending && pendingLabel != null ? pendingLabel : children}
+    </button>
+  );
 }
 
 /* — ThemeToggle — */
