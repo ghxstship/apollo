@@ -242,7 +242,7 @@ function SortButton({
         size="sm"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         onClick={() => setOpen((o) => !o)}
       >
         <Icon name="ArrowUpDown" size={14} />
@@ -251,10 +251,19 @@ function SortButton({
       {open ? (
         <>
           <span className="ls-pop__catch" onClick={() => setOpen(false)} />
+          {/* It claimed to be a listbox and behaved like a toolbar: no
+              accessible name, no aria-activedescendant, no arrow keys, and Tab
+              walking the options — which is exactly what a menu of buttons is,
+              and nothing like what a reader is promised when it hears
+              "listbox". It says what it is now. Each option is a
+              menuitemradio, because picking one is choosing among mutually
+              exclusive sorts rather than selecting an item; the panel names
+              itself so the reader knows what the choice is about. */}
           <div
             id={menuId}
             className="ls-pop__panel ls-sortmenu"
-            role="listbox"
+            role="menu"
+            aria-label="Sort by"
             ref={boxRef}
             tabIndex={-1}
           >
@@ -262,8 +271,8 @@ function SortButton({
               <button
                 key={o.id}
                 type="button"
-                role="option"
-                aria-selected={o.id === value}
+                role="menuitemradio"
+                aria-checked={o.id === value}
                 className={"ls-sortmenu__opt" + (o.id === value ? " ls-sortmenu__opt--on" : "")}
                 onClick={() => {
                   onPick(o.id);

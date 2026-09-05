@@ -319,12 +319,26 @@ export function Toast({
    for a keyboard reader to reach it — wrap a Button or an IconButton, not a
    bare span. The bubble is wired to the child with aria-describedby when the
    child is a single element, and Escape hides it until the pointer or focus
-   leaves (WCAG 1.4.13: dismissible). */
+   leaves (WCAG 1.4.13: dismissible).
+
+   Escape was bound with onKeyDown on this wrapper, which means it only ever
+   fired when focus was already inside — the keyboard case, which is the one
+   that needed it least. The pointer case is the one 1.4.13 is written for: a
+   bubble hovered into existence over the thing you were reading, with focus
+   somewhere else entirely and nowhere for a keystroke to land. The bubble is
+   pointer-events:none as well, so it could not even be hovered away. The
+   listener sits on the document for the life of the component instead, so
+   Escape dismisses it from wherever the reader happens to be. */
 export function Tooltip({
   label, side = "top", className = "", style, children,
 }: { label: React.ReactNode; side?: "top" | "bottom"; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) {
   const id = React.useId();
   const [hidden, setHidden] = React.useState(false);
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setHidden(true); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
   const child = React.isValidElement<{ "aria-describedby"?: string }>(children)
     ? React.cloneElement(children, { "aria-describedby": [children.props["aria-describedby"], id].filter(Boolean).join(" ") })
     : children;
@@ -332,7 +346,7 @@ export function Tooltip({
     <span
       className={["ls-tip", side === "bottom" ? "ls-tip--bottom" : "", hidden ? "ls-tip--hidden" : "", className].filter(Boolean).join(" ")}
       style={style}
-      onKeyDown={(e) => { if (e.key === "Escape") setHidden(true); }}
+      onMouseEnter={() => setHidden(false)}
       onMouseLeave={() => setHidden(false)}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHidden(false); }}
     >

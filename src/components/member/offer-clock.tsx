@@ -49,8 +49,14 @@ export function OfferClock({
       : mins >= 120
         ? ` · ${Math.floor(mins / 60)}H ${mins % 60}M LEFT`
         : ` · ${mins} MIN LEFT`;
+  /* No role here. The text changes every minute, and a live region that
+     changes every minute is a screen reader interrupting whatever is being
+     read, sixty times an hour, to say the same sentence with one number
+     different. The lapse is the event worth announcing — that is where the
+     role sits, above — and the running total is there to be read, not
+     broadcast. */
   return (
-    <span className={className} role="status">
+    <span className={className}>
       YOURS UNTIL {untilLabel}
       {running}
     </span>

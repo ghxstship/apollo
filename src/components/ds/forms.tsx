@@ -8,7 +8,15 @@ import { IconButton } from "./actions";
    never associated with it, and nothing was announced on submit — so someone
    filling in the membership application by ear was told nothing when it
    failed. Every field here now wires aria-invalid + aria-describedby and
-   announces the message when it appears. WCAG 3.3.1 / 1.3.1. */
+   announces the message when it appears. WCAG 3.3.1 / 1.3.1.
+
+   The merge below was being thrown away. Every field computed it and then
+   spread `{...rest}` AFTER the attribute, so a caller who described a field
+   themselves — the gangway's code field, the search slate's combobox — silently
+   replaced the error and hint association with their own id and the message
+   went back to being invisible. `rest` is now spread FIRST and the two computed
+   attributes are set last, over the top of it, with the caller's own
+   aria-describedby destructured out and merged in rather than overwritten. */
 function describedBy(
   error: React.ReactNode,
   hint: React.ReactNode,
@@ -71,7 +79,8 @@ function fieldClass(error: React.ReactNode, width: FieldWidth | undefined, class
    the screen — for a field whose purpose the surrounding design already
    states (a search box under a heading that says Search). */
 export function Input({
-  label, labelHidden = false, hint, error, width, adornStart, adornEnd, id, className = "", style, ref, ...rest
+  label, labelHidden = false, hint, error, width, adornStart, adornEnd, id, className = "", style, ref,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
 }: {
   label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode;
   width?: FieldWidth; adornStart?: React.ReactNode; adornEnd?: React.ReactNode;
@@ -81,12 +90,12 @@ export function Input({
   const iid = id || auto;
   const input = (
     <input
+      {...rest}
       ref={ref}
       id={iid}
       className={["ls-input", adornStart ? "ls-input--adorned-start" : "", adornEnd ? "ls-input--adorned" : ""].filter(Boolean).join(" ")}
-      aria-invalid={error ? true : undefined}
-      aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, rest["aria-describedby"])}
-      {...rest}
+      aria-invalid={error ? true : ownInvalid}
+      aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, ownDescribedBy)}
     />
   );
   return (
@@ -106,7 +115,8 @@ export function Input({
 
 /* — Textarea — */
 export function Textarea({
-  label, labelHidden = false, hint, error, width, id, rows = 4, className = "", style, ref, ...rest
+  label, labelHidden = false, hint, error, width, id, rows = 4, className = "", style, ref,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
 }: {
   label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode; width?: FieldWidth;
   className?: string; style?: React.CSSProperties; ref?: React.Ref<HTMLTextAreaElement>;
@@ -117,13 +127,13 @@ export function Textarea({
     <div className={fieldClass(error, width, className)} style={style}>
       {label ? <label className={labelHidden ? "ls-field__label ls-visually-hidden" : "ls-field__label"} htmlFor={iid}>{label}</label> : null}
       <textarea
+        {...rest}
         ref={ref}
         id={iid}
         rows={rows}
         className="ls-textarea"
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, rest["aria-describedby"])}
-        {...rest}
+        aria-invalid={error ? true : ownInvalid}
+        aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, ownDescribedBy)}
       ></textarea>
       <Message error={error} hint={hint} errorId={`${iid}-err`} hintId={`${iid}-hint`} />
     </div>
@@ -132,7 +142,8 @@ export function Textarea({
 
 /* — Select — */
 export function Select({
-  label, labelHidden = false, hint, error, width, options = [], placeholder, id, className = "", style, children, ref, ...rest
+  label, labelHidden = false, hint, error, width, options = [], placeholder, id, className = "", style, children, ref,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
 }: {
   label?: React.ReactNode; labelHidden?: boolean; hint?: React.ReactNode; error?: React.ReactNode; width?: FieldWidth;
   options?: Array<{ value: string; label: string }>; placeholder?: string;
@@ -146,13 +157,13 @@ export function Select({
       {label ? <label className={labelHidden ? "ls-field__label ls-visually-hidden" : "ls-field__label"} htmlFor={iid}>{label}</label> : null}
       <div className="ls-select-wrap">
         <select
+          {...rest}
           ref={ref}
           id={iid}
           className="ls-select"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, rest["aria-describedby"])}
-          defaultValue={rest.value === undefined && placeholder ? "" : undefined}
-          {...rest}
+          defaultValue={rest.value === undefined && placeholder ? "" : rest.defaultValue}
+          aria-invalid={error ? true : ownInvalid}
+          aria-describedby={describedBy(error, hint, `${iid}-err`, `${iid}-hint`, ownDescribedBy)}
         >
           {placeholder ? <option value="" disabled>{placeholder}</option> : null}
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -219,7 +230,8 @@ export function SearchField({
    an uncontrolled row needs no prop to look checked. This is the "boxed"
    variant Radio and Checkbox render through when asked. */
 export function OptionRow({
-  kind = "radio", label, description, figure, error, disabled = false, id, className = "", style, ...rest
+  kind = "radio", label, description, figure, error, disabled = false, id, className = "", style,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
 }: {
   kind?: "radio" | "checkbox";
   label: React.ReactNode; description?: React.ReactNode;
@@ -238,12 +250,12 @@ export function OptionRow({
       style={style}
     >
       <input
+        {...rest}
         id={iid}
         type={kind}
         disabled={disabled}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${iid}-err` : description ? `${iid}-desc` : undefined}
-        {...rest}
+        aria-invalid={error ? true : ownInvalid}
+        aria-describedby={describedBy(error, description, `${iid}-err`, `${iid}-desc`, ownDescribedBy)}
       />
       <span className={markCls}></span>
       <span className="ls-option__text">
@@ -269,7 +281,8 @@ export function OptionRow({
    row — for a list of choices that should read as options rather than as a
    form's fine print. */
 export function Checkbox({
-  label, description, error, boxed = false, figure, disabled = false, id, className = "", style, ...rest
+  label, description, error, boxed = false, figure, disabled = false, id, className = "", style,
+  "aria-describedby": ownDescribedBy, "aria-invalid": ownInvalid, ...rest
 }: {
   label?: React.ReactNode; description?: React.ReactNode; error?: React.ReactNode;
   boxed?: boolean; figure?: React.ReactNode;
@@ -278,7 +291,7 @@ export function Checkbox({
   const auto = React.useId();
   const iid = id || auto;
   if (boxed) {
-    return <OptionRow kind="checkbox" label={label} description={description} error={error} figure={figure} disabled={disabled} id={iid} className={className} style={style} {...rest} />;
+    return <OptionRow kind="checkbox" label={label} description={description} error={error} figure={figure} disabled={disabled} id={iid} className={className} style={style} aria-describedby={ownDescribedBy} aria-invalid={ownInvalid} {...rest} />;
   }
   return (
     <label
@@ -286,12 +299,12 @@ export function Checkbox({
       style={style}
     >
       <input
+        {...rest}
         id={iid}
         type="checkbox"
         disabled={disabled}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${iid}-err` : undefined}
-        {...rest}
+        aria-invalid={error ? true : ownInvalid}
+        aria-describedby={describedBy(error, null, `${iid}-err`, `${iid}-desc`, ownDescribedBy)}
       />
       <span className="ls-check__box"></span>
       {label ? (

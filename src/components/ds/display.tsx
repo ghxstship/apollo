@@ -9,16 +9,28 @@ const SEAS: Record<string, string> = {
   dusk: "var(--sea-dusk)",
 };
 
+/* A Card is a container, never a control. It used to take an `onClick` and
+   dress itself as `role="button"` with a tabIndex and an Enter/Space handler —
+   around a `footer` that every call site fills with Buttons and LinkButtons.
+   A button containing buttons has no accessibility mapping: several screen
+   readers flatten the subtree, so the inner controls became unreachable, and
+   the outer name swallowed the whole card body into one announcement.
+
+   The affordance belongs to the thing being navigated to, not to the box.
+   Wrap the card in a link — `.ws-card-link` in site.css is exactly that
+   wrapper, and the home grid already used it — or put a LinkButton in the
+   footer. No call site passed `onClick`, so nothing that was clickable stopped
+   being clickable when the prop came off. */
 export function Card({
   eyebrow, title, meta, media, children, footer, tone = "shore",
-  onClick, className = "", style,
+  className = "", style,
 }: {
   eyebrow?: React.ReactNode; title?: React.ReactNode; meta?: React.ReactNode[];
   media?: string; children?: React.ReactNode; footer?: React.ReactNode;
-  tone?: "shore" | "sea"; onClick?: React.MouseEventHandler;
+  tone?: "shore" | "sea";
   className?: string; style?: React.CSSProperties;
 }) {
-  const cls = ["ls-card", "ls-card--" + tone, onClick ? "ls-card--click" : "", className].filter(Boolean).join(" ");
+  const cls = ["ls-card", "ls-card--" + tone, className].filter(Boolean).join(" ");
   const mediaEl = media ? (
     <div className="ls-card__media">
       {SEAS[media] ? (
@@ -31,24 +43,7 @@ export function Card({
     </div>
   ) : null;
   return (
-    <div
-      className={cls}
-      style={style}
-      onClick={onClick}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={
-        onClick
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                /* A real click, so the handler gets the event it was typed for. */
-                e.currentTarget.click();
-              }
-            }
-          : undefined
-      }
-    >
+    <div className={cls} style={style}>
       {mediaEl}
       <div className="ls-card__body">
         {eyebrow ? <div className="ls-card__eyebrow">{eyebrow}</div> : null}
@@ -73,22 +68,32 @@ export function Badge({
   return <span className={cls} {...rest}>{children}</span>;
 }
 
-/* — Tag — */
-/* `disabled` keeps a clickable Tag in the row — so a filter axis does not
-   reflow when one value has nothing behind it — but takes it out of the tab
-   order and off the pointer, and says so with aria-disabled. */
+/* — Tag —
+   A clickable Tag used to be `role="button"` painted onto the span itself,
+   with a real `<button className="ls-tag__x">` nested inside it whenever the
+   tag was removable: a control inside a control, which maps to nothing. The
+   press is now a real inner button — `.ls-tag__press`, which fills the tag and
+   inherits its face — and the remove button is its SIBLING rather than its
+   child, so both are reachable and each announces itself.
+
+   The span keeps the border, the padding and the row's flex gap; it carries no
+   role, no tabIndex and no key handling.
+
+   `disabled` keeps a clickable Tag in the row — so a filter axis does not
+   reflow when one value has nothing behind it — and disables the inner press
+   button. On a Tag with nothing to press it is the span's aria-disabled that
+   says so, since there is no control to carry it. */
 export function Tag({
   active = false, disabled = false, onClick, onRemove, removeLabel = "Remove", className = "", children, ...rest
 }: { active?: boolean; disabled?: boolean; onClick?: React.MouseEventHandler; onRemove?: React.MouseEventHandler; removeLabel?: string; className?: string; children?: React.ReactNode } & Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick">) {
-  const press = onClick && !disabled ? onClick : undefined;
   const cls = ["ls-tag", active ? "ls-tag--active" : "", onClick ? "ls-tag--click" : "", disabled ? "ls-tag--disabled" : "", className].filter(Boolean).join(" ");
   return (
-    <span
-      className={cls} onClick={press} role={onClick ? "button" : undefined} tabIndex={onClick && !disabled ? 0 : undefined}
-      onKeyDown={press ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.click(); } } : undefined}
-      aria-pressed={onClick ? active : undefined} aria-disabled={disabled || undefined} {...rest}
-    >
-      {children}
+    <span className={cls} aria-disabled={!onClick && disabled ? true : undefined} {...rest}>
+      {onClick ? (
+        <button type="button" className="ls-tag__press" aria-pressed={active} disabled={disabled} onClick={onClick}>
+          {children}
+        </button>
+      ) : children}
       {onRemove ? <button type="button" className="ls-tag__x" aria-label={removeLabel} onClick={(e) => { e.stopPropagation(); onRemove(e); }}><Icon name="X" size={12} /></button> : null}
     </span>
   );

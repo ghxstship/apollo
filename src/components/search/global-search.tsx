@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import React from "react";
 import { createPortal } from "react-dom";
-import { Icon, IconButton } from "@/components/ds";
+import { Icon, IconButton, SearchField } from "@/components/ds";
 import { useModal } from "@/components/ds/use-modal";
 import "./search.css";
 
@@ -16,8 +16,8 @@ const optId = (id: string) => `gs-opt-${id}`;
 /* The one field, and it finds everything.
 
    A slate rather than a search engine: ink ground, mono section rules, arrow
-   keys, and a full sheet on a phone. It opens on ⌘K, on / from anywhere that is
-   not already a text field, and on the affordance in the chrome.
+   keys, and a full sheet on a phone. It opens on ⌘K from anywhere, and on the
+   affordance in the chrome — which also takes a bare / while it holds focus.
 
    Results arrive GROUPED and the groups keep a fixed order, Yours first. That
    is the whole privacy answer: the boundary between a member's own things and
@@ -42,23 +42,24 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
   /* One flat list behind the visual grouping — what the arrow keys walk. */
   const flat = React.useMemo(() => sections.flatMap((s) => s.items), [sections]);
 
-  /* ⌘K from anywhere, and a bare / the way every reading surface has meant it
-     since before the web — but never while the caret is already in a field, or
-     the shortcut eats the letter someone is typing. */
+  /* ⌘K from anywhere. It carries a modifier, so it is not a single-character
+     shortcut and WCAG 2.1.4 has nothing to say about it.
+
+     A bare / used to open the slate from anywhere on the page, guarded only
+     against INPUT/TEXTAREA/contenteditable. That guard covers a caret and
+     nothing else. In a screen reader's browse mode / is a quick-nav key —
+     the reader owns the keystroke and the page had been eating it — and to
+     speech input every dictated word is a stream of characters, so the slate
+     opened mid-sentence with no way to turn it off. 2.1.4 wants such a
+     shortcut disableable, remappable, or live only while its own control has
+     focus. It is the third of those now: / is bound to the search button, not
+     to the document, so it works where a hand would expect it and is silent
+     everywhere else. */
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const el = document.activeElement;
-      const typing =
-        el instanceof HTMLElement &&
-        (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
       if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((o) => !o);
-        return;
-      }
-      if (e.key === "/" && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        setOpen(true);
       }
     };
     document.addEventListener("keydown", onKey);
@@ -161,19 +162,16 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
         tabIndex={-1}
       >
         <div className="gs__field">
-          <Icon name="Search" size={17} />
-          <input
+          <SearchField
             ref={inputRef}
-            type="text"
-            className="gs__input"
+            width="full"
             placeholder="Episodes, members, the Log, the Shop…"
-            aria-label="Search"
+            label="Search"
             role="combobox"
             aria-expanded={showList}
             aria-controls={listId}
             aria-autocomplete="list"
             aria-activedescendant={showList && active ? optId(active.id) : undefined}
-            autoComplete="off"
             spellCheck={false}
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -201,6 +199,7 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
                 {s.items.map((hit) => {
                   const i = flat.findIndex((f) => f.id === hit.id);
                   return (
+                    /* ds-exempt: a listbox option (role=option) the combobox's aria-activedescendant names — a selectable row, not a command; the kit has no Listbox and a Button here would announce as one */
                     <button
                       key={hit.id}
                       id={optId(hit.id)}
@@ -233,6 +232,12 @@ export function GlobalSearch({ inverse = false }: { inverse?: boolean }) {
         size="sm"
         inverse={inverse}
         onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
       >
         <Icon name="Search" size={18} />
       </IconButton>
