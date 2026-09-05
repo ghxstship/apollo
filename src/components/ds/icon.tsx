@@ -1,5 +1,5 @@
 import React from "react";
-import { icons } from "lucide-react";
+import { ICONS } from "./icon-set";
 
 /* Lucide glyph wrapper — the brand has no proprietary icon font; hand-drawn
    SVGs are banned. Names are Lucide PascalCase ("Anchor", "CalendarDays").
@@ -24,7 +24,7 @@ export function Icon({
   label?: string;
   style?: React.CSSProperties; className?: string;
 }) {
-  const Cmp = icons[name as keyof typeof icons];
+  const Cmp = ICONS[name as keyof typeof ICONS];
   if (!Cmp) {
     if (process.env.NODE_ENV !== "production" && !warned.has(name)) {
       warned.add(name);
