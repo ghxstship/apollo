@@ -3,7 +3,7 @@
 import React from "react";
 import { Button, Input } from "@/components/ds";
 import { lookupApplication } from "./actions";
-import { REACHED, STAGES, STAGE_LINE, STATUS_INITIAL } from "./shared";
+import { NEXT_STEP, REACHED, STAGES, STAGE_LINE, STATUS_INITIAL } from "./shared";
 
 const MONO: React.CSSProperties = {
   fontFamily: "var(--font-mono)",
@@ -85,6 +85,9 @@ export function StatusLookup() {
         <div style={{ marginTop: 24 }}>
           <p style={{ fontSize: 14, color: "var(--text-2)", maxWidth: "48ch" }}>
             {STAGE_LINE[state.status]}
+          </p>
+          <p style={{ fontSize: 14, color: "var(--text-1)", maxWidth: "48ch", marginTop: 8 }}>
+            <b>Next:</b> {NEXT_STEP[state.status]}
           </p>
           <Ladder reached={REACHED[state.status]} />
         </div>

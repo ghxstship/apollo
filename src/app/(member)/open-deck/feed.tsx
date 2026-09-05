@@ -262,9 +262,14 @@ function FeedEntry({ post }: { post: FeedPost }) {
      The app knew. It just did not say. */
   const [actionError, setActionError] = React.useState<string | null>(null);
 
+  /* The flag flips and the count moves as the thumb lifts; the server's row
+     replaces it on the next render, and a refusal (a member on hold) puts it
+     back with the words. */
+  const [hailShown, setHailShown] = React.useOptimistic({ hailed: post.myHail, count: post.hails });
   const hail = () =>
     startTransition(async () => {
       setActionError(null);
+      setHailShown({ hailed: !post.myHail, count: post.hails + (post.myHail ? -1 : 1) });
       const res = await toggleHail(post.id, post.myHail);
       if (res?.error) setActionError(res.error);
     });
@@ -319,7 +324,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
       }
       footer={
         <>
-          <Hail count={post.hails} hailed={post.myHail} onToggle={pending ? undefined : hail} />
+          <Hail count={hailShown.count} hailed={hailShown.hailed} onToggle={pending ? undefined : hail} />
           <button
       className="ls-bare"
             type="button"

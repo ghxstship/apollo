@@ -19,10 +19,14 @@ export function Ballot({
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
+  /* The filled button moves as the finger lifts; the server's answer settles
+     it a round trip later, and a refusal puts it back with the reason. */
+  const [shown, setShown] = React.useOptimistic(mine);
 
   const vote = (option: number) => {
     setError(null);
     startTransition(async () => {
+      setShown(option);
       const res = await castVote(pollId, option);
       if (res.error) {
         setError(res.error);
@@ -40,8 +44,8 @@ export function Ballot({
             key={i}
             type="button"
             size="sm"
-            variant={mine === i ? "gold" : "outline"}
-            aria-pressed={mine === i}
+            variant={shown === i ? "gold" : "outline"}
+            aria-pressed={shown === i}
             disabled={pending}
             onClick={() => vote(i)}
           >
@@ -50,9 +54,9 @@ export function Ballot({
         ))}
       </div>
       <p className="pol-mine">
-        {mine === null
+        {shown === null
           ? "No vote from you yet."
-          : `Your vote: ${options[mine] ?? "—"}. Change it any time before it closes.`}
+          : `Your vote: ${options[shown] ?? "—"}. Change it any time before it closes.`}
       </p>
       {error ? (
         <p className="pol-err" role="alert">

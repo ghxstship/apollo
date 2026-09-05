@@ -129,7 +129,7 @@ function GuestNameInputs({
 export function PassControls({
   episodeId,
   voyageTitle,
-  myStatus,
+  myStatus: myStatusProp,
   guests,
   guestNames,
   passesLeft,
@@ -270,6 +270,10 @@ export function PassControls({
 }) {
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
+  /* A release reads as released the moment it is pressed; the page's own
+     re-render confirms it, and a refusal restores the pass with the reason. */
+  const [shownStatus, setShownStatus] = React.useOptimistic(myStatusProp);
+  const myStatus = shownStatus;
   const [offerWaitlist, setOfferWaitlist] = React.useState(false);
   const [checkout, setCheckout] = React.useState(false);
   const [releasing, setReleasing] = React.useState(false);
@@ -459,7 +463,7 @@ export function PassControls({
         <>
           <Badge tone="caution">Weather hold</Badge>
           <span className="voy-hold" style={holdsAPass ? { flexBasis: "100%" } : undefined}>
-            Held for weather. We call it by 18:00 the night before.
+            Held for weather. The call comes by 18:00 the night before: it runs, or it is called off and your pass is credited in full. Nothing more is charged while it holds.
           </span>
         </>
       ) : null}
@@ -623,7 +627,12 @@ export function PassControls({
             variant="ghost"
             size="sm"
             disabled={pending}
-            onClick={() => run(() => releasePass(episodeId))}
+            onClick={() =>
+              run(() => {
+                setShownStatus("not_going");
+                return releasePass(episodeId);
+              })
+            }
           >
             Leave the waitlist
           </Button>
@@ -1186,7 +1195,10 @@ export function PassControls({
               disabled={pending}
               onClick={() =>
                 run(
-                  () => releasePass(episodeId),
+                  () => {
+                    setShownStatus("not_going");
+                    return releasePass(episodeId);
+                  },
                   () => setReleasing(false)
                 )
               }

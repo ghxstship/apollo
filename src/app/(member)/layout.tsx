@@ -41,10 +41,15 @@ export default async function MemberLayout({
             <p>
               {departed
                 ? "Your log and your ledger stay as they were. Coming back is a conversation — Shoreside opens it again."
-                : "Your log, your ledger and what you owe stay open. Booking, posting and contests wait until it resumes."}
+                : profile?.hold_reason === "dues"
+                  ? "Held for dues. Your log and your ledger stay open; clear the balance on Account and the hold lifts on its own. Booking, posting and contests wait until then."
+                  : profile?.status_set_by && profile.status_set_by !== user.id
+                    ? "Held by the club. Your log, your ledger and what you owe stay open; Shoreside can say why and when."
+                    : "Your log, your ledger and what you owe stay open. Booking, posting and contests wait until it resumes — resume it on You."}
             </p>
-            <a href="/you" className="mbr-hold__link">
-              You
+            {/* The one action that lifts it, named for the reason. */}
+            <a href={departed ? "/support" : profile?.hold_reason === "dues" ? "/account" : profile?.status_set_by && profile.status_set_by !== user.id ? "/support" : "/you"} className="mbr-hold__link">
+              {departed ? "Shoreside" : profile?.hold_reason === "dues" ? "Account" : profile?.status_set_by && profile.status_set_by !== user.id ? "Shoreside" : "You"}
             </a>
           </div>
         </div>

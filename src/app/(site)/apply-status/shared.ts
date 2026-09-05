@@ -35,6 +35,16 @@ export const REACHED: Record<ApplicationStage, number> = {
   declined: 0,
 };
 
+/* The next step, by stage — "received" was a dead end for weeks with nothing
+   to do and no idea whether doing nothing was right. */
+export const NEXT_STEP: Record<ApplicationStage, string> = {
+  received: "Nothing to do. If a fortnight passes with no word, hail Shoreside and a person will look.",
+  review: "Nothing to do. The word arrives at the address you applied with.",
+  invited: "Your invitation letter names the shore nights open to you — pick one within the month and come as our guest.",
+  aboard: "Sign in at the gangway with the address you applied with; your member card is on the other side.",
+  declined: "Apply again next season. A member's code on your file carries weight when you do.",
+};
+
 export const STAGE_LINE: Record<ApplicationStage, string> = {
   received: "Received. A person reads it — not a filter.",
   review: "In front of a person now. A word follows within the week.",

@@ -232,6 +232,18 @@ export default async function MembershipPage() {
           A person reads every application. Two member signatures shorten the wait;
           one night ashore as a guest usually settles it.
         </p>
+        {/* An application is a short written piece, and since 2026-09-05 every
+            required question is asked at the table as well as on the form.
+            Said before the form, so nobody starts it on a train. */}
+        {(questions ?? []).length > 0 ? (
+          <p style={{ color: "var(--text-2)", maxWidth: "52ch", fontSize: "var(--text-sm)", marginTop: -8 }}>
+            {(() => {
+              const total = (questions ?? []).length;
+              const required = (questions ?? []).filter((q) => q.required).length;
+              return `${total === 1 ? "One question" : `${total} questions`} from the committee${required ? ` — ${required === total ? (total === 1 ? "it is" : "all") : required} required` : ""}. An answer runs to a thousand characters; a paragraph is plenty.`;
+            })()}
+          </p>
+        ) : null}
         <ApplyForm questions={questions ?? []} />
         <p style={{ fontSize: "var(--text-sm)", color: "var(--text-2)", marginTop: 20 }}>
           Applied already? <Link href="/apply-status">Read where you stand</Link> — four

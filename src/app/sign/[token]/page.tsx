@@ -80,6 +80,31 @@ export default async function GuestSignPage({
           guestName={row.guest_name}
         />
       )}
+
+      {/* The night card. A guest has no app and no manifest: once signed, this
+          link is the one page they can reread — the hour, the muster, who is
+          bringing them, what to wear, and (once signed) the code the gangway
+          reads. The same token, nothing new to keep. */}
+      {row.voyage_state === "ahead" ? (
+        <section className="gsn-card" aria-labelledby="gsn-card-h">
+          <h2 id="gsn-card-h">Your night.</h2>
+          <dl>
+            <div><dt>When</dt><dd>{logDateYear(row.voyage_starts, row.voyage_time_zone)} · {logTime(row.voyage_starts, row.voyage_time_zone)}</dd></div>
+            <div><dt>Muster</dt><dd>{row.muster}</dd></div>
+            {row.venue_name ? <div><dt>Where</dt><dd>{row.venue_name}</dd></div> : null}
+            {row.host_first ? <div><dt>With</dt><dd>{row.host_first}, who booked you</dd></div> : null}
+            <div><dt>Wear</dt><dd>{row.dress_line}</dd></div>
+            {row.already_signed && row.guest_code ? (
+              <div><dt>Code</dt><dd className="gsn-code">{row.guest_code}</dd></div>
+            ) : (
+              <div><dt>Code</dt><dd>Appears here once you have signed.</dd></div>
+            )}
+          </dl>
+          <p className="gsn-card__foot">
+            Reread this page any time — the link in your text is the way back.
+          </p>
+        </section>
+      ) : null}
     </main>
   );
 }

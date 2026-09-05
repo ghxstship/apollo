@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import type { User } from "@supabase/supabase-js";
 import { notFound } from "next/navigation";
 import { Avatar, AvatarGroup, Badge, Tag } from "@/components/ds";
 import { LinkButton } from "@/components/site/link-button";
@@ -170,6 +172,118 @@ export default async function EpisodePage({
   /* An episode is announced on its city's clock, which it carries itself. */
   const zone = episode.time_zone;
 
+  /* The badge: the series' own name and the hours it runs — "SANDBAR SOCIAL ·
+     7 HRS". Where the episode has no series the badge names the setting
+     instead. Special was tried here and on the three listings, and it marked
+     every episode in the catalogue, because a null series means unfiled today
+     rather than deliberately standalone — the two are different facts and the
+     page cannot tell them apart. The word stays in the Bridge, where blanking
+     the series is a choice an operator makes on purpose. An episode with no
+     stated end drops the hours rather than inventing them. */
+  const heroSetting = SETTING_LABEL[episode.setting] ?? "Afloat";
+  const heroBadge = [format?.label ?? heroSetting, durationChip(episode.starts_at, episode.ends_at)].filter(Boolean).join(" · ");
+
+  /* The hero is sent first — title, hour, city and the door line are what a
+     shared link is opened for. Everything under it (manifest, crew, plan,
+     sponsors, the venue) waits on eight more reads and streams in behind a
+     boundary. No loading.tsx above the slug: it would answer 200 for an
+     episode that does not exist. */
+  return (
+    <>
+      <header className="ev-hero">
+        <div className="ev-hero__bg" style={{ background: SEAS[episode.media] ?? SEAS.dusk }}></div>
+        <div className="ls-container ev-hero__in">
+          <span className="ls-eyebrow">{heroBadge}</span>
+          <h1>{episode.title}</h1>
+          <div className="ev-hero__meta">
+            <span>{heroSetting.toUpperCase()}</span>
+            <span>·</span>
+            <span>{logDate(episode.starts_at, zone)}</span>
+            <span>·</span>
+            <span>{logTime(episode.starts_at, zone)}</span>
+            {cityName ? (
+              <>
+                <span>·</span>
+                <span>{cityName}</span>
+              </>
+            ) : null}
+            {reveal && episode.coordinates ? (
+              <>
+                <span>·</span>
+                <span>{episode.coordinates}</span>
+              </>
+            ) : null}
+            {episode.distance_nm != null ? (
+              <>
+                <span>·</span>
+                <span>{episode.distance_nm} NM</span>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      <Suspense fallback={<EpisodeBodyFallback />}>
+        <EpisodeBody
+          episode={episode}
+          user={user}
+          reveal={reveal}
+          format={format}
+          cap={cap}
+          cityName={cityName}
+          guests={guests}
+          openToLine={openToLine}
+          openToData={openToData}
+          onRequest={onRequest}
+          byInvitation={byInvitation}
+        />
+      </Suspense>
+    </>
+  );
+}
+
+function EpisodeBodyFallback() {
+  return (
+    <div className="ls-container ev-body" aria-busy="true">
+      <div>
+        <p className="ev-note">Reading the manifest…</p>
+      </div>
+      <aside className="ev-side">
+        <div className="ev-panel">
+          <div className="ev-panel__label">Passage</div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+async function EpisodeBody({
+  episode,
+  user,
+  reveal,
+  format,
+  cap,
+  cityName,
+  guests,
+  openToLine,
+  openToData,
+  onRequest,
+  byInvitation,
+}: {
+  episode: EpisodeRow;
+  user: User | null;
+  reveal: boolean;
+  format: { slug: string; label: string; access: string; category: string } | null;
+  cap: { aboard: number | null; passes_left: number | null; passes_total: number | null } | null;
+  cityName: string | null;
+  guests: string;
+  openToLine: string;
+  openToData: string;
+  onRequest: boolean;
+  byInvitation: boolean;
+}) {
+  const supabase = await createClient();
+  const zone = episode.time_zone;
   /* Real names ride with consent, and only for signed-in members —
      profiles aren't readable from the shore. */
   let crew: Array<{ name: string; tone: "gold" | "sea" | "ink" | "sand" }> = [];
@@ -274,17 +388,7 @@ export default async function EpisodePage({
   const seatsWord = "passes";
   const full = left === 0;
 
-  /* The badge: the series' own name and the hours it runs — "SANDBAR SOCIAL ·
-     7 HRS". Where the episode has no series the badge names the setting
-     instead. Special was tried here and on the three listings, and it marked
-     every episode in the catalogue, because a null series means unfiled today
-     rather than deliberately standalone — the two are different facts and the
-     page cannot tell them apart. The word stays in the Bridge, where blanking
-     the series is a choice an operator makes on purpose. An episode with no
-     stated end drops the hours rather than inventing them. */
   const settingLabel = SETTING_LABEL[episode.setting] ?? "Afloat";
-  const hours = durationChip(episode.starts_at, episode.ends_at);
-  const badge = [format?.label ?? settingLabel, hours].filter(Boolean).join(" · ");
 
   /* An episode in the past, or one the club called off, is a log entry — not a
      pass on sale. The panel below branched only on weather_hold/live/full, so
@@ -369,40 +473,6 @@ export default async function EpisodePage({
      site.css for the full argument. The division is spoken by the eyebrow and
      the lockup, so the wrapper had nothing left to do and is a fragment. */
   return (
-    <>
-      <header className="ev-hero">
-        <div className="ev-hero__bg" style={{ background: SEAS[episode.media] ?? SEAS.dusk }}></div>
-        <div className="ls-container ev-hero__in">
-          <span className="ls-eyebrow">{badge}</span>
-          <h1>{episode.title}</h1>
-          <div className="ev-hero__meta">
-            <span>{settingLabel.toUpperCase()}</span>
-            <span>·</span>
-            <span>{logDate(episode.starts_at, zone)}</span>
-            <span>·</span>
-            <span>{logTime(episode.starts_at, zone)}</span>
-            {cityName ? (
-              <>
-                <span>·</span>
-                <span>{cityName}</span>
-              </>
-            ) : null}
-            {reveal && episode.coordinates ? (
-              <>
-                <span>·</span>
-                <span>{episode.coordinates}</span>
-              </>
-            ) : null}
-            {episode.distance_nm != null ? (
-              <>
-                <span>·</span>
-                <span>{episode.distance_nm} NM</span>
-              </>
-            ) : null}
-          </div>
-        </div>
-      </header>
-
       <div className="ls-container ev-body">
         <div>
           {episode.blurb ? (
@@ -565,6 +635,15 @@ export default async function EpisodePage({
                 <Badge tone="outline">Passes open</Badge>
               )}
             </div>
+            {/* The class decides the door's guest rule; the chip alone left a
+                member to infer it. Said outright, once, before the door. */}
+            {!closed ? (
+              <p className="ev-note ev-note--fine" style={{ marginTop: -8, marginBottom: 12 }}>
+                {episode.experience_class === "open"
+                  ? "An Open night — a guest of yours may come whether or not they have been vetted."
+                  : "Vetted guests only — the Open nights are where a first-timer comes along."}
+              </p>
+            ) : null}
             {cancelled ? (
               <p className="ev-note">
                 The club called this one off. Anything reserved against it was
@@ -576,8 +655,10 @@ export default async function EpisodePage({
               </p>
             ) : episode.status === "weather_hold" ? (
               <p className="ev-note">
-                A hold is a postponement, not a cancellation. The new date arrives in
-                The Log, and every reserved pass carries forward in full.
+                Held for weather. The call is made by 18:00 the night before, on the
+                city&rsquo;s clock: either it runs as planned, or the club calls it
+                off and every pass is credited in full. Nothing more is charged while
+                it is held, and your pass carries forward either way.
               </p>
             ) : episode.status === "live" ? (
               <p className="ev-note">
@@ -900,6 +981,5 @@ export default async function EpisodePage({
           </div>
         </aside>
       </div>
-    </>
   );
 }

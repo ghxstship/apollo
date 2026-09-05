@@ -5,7 +5,7 @@ import { CLUB_ZONE } from "@/lib/brand";
 import { startOfDay } from "@/lib/format";
 import { getMember, type Notification } from "../data";
 import { KIND_ICON, noticeHref, relTime } from "../relative";
-import { markAllRead } from "./actions";
+import { archiveRead, markAllRead } from "./actions";
 import { NoticeLink } from "./notice-link";
 
 /* Plain utility, plainly named — the owner’s call. Route, nav label, title
@@ -67,6 +67,7 @@ async function InboxBody() {
 
   const items: Notification[] = data ?? [];
   const unread = count ?? items.filter((n) => !n.read).length;
+  const readShown = items.filter((n) => n.read).length;
 
   /* Midnight on the member's own clock. setHours(0) read the render host's,
      so on a UTC host "Today" turned over at 20:00 in Miami. */
@@ -91,13 +92,23 @@ async function InboxBody() {
         <p style={{ fontSize: 14, color: "var(--text-2)" }}>
           {unread ? `${unread} new.` : "All read."}
         </p>
-        {unread > 0 ? (
-          <form action={markAllRead}>
-            <Button type="submit" variant="outline" size="sm">
-              Mark all read
-            </Button>
-          </form>
-        ) : null}
+        <div style={{ display: "flex", gap: 8 }}>
+          {unread > 0 ? (
+            <form action={markAllRead}>
+              <Button type="submit" variant="outline" size="sm">
+                Mark all read
+              </Button>
+            </form>
+          ) : null}
+          {readShown > 0 ? (
+            /* What has been read can go; the unread stay where they are. */
+            <form action={archiveRead}>
+              <Button type="submit" variant="ghost" size="sm">
+                Archive read
+              </Button>
+            </form>
+          ) : null}
+        </div>
       </div>
 
       {items.length === 0 ? (

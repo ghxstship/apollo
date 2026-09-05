@@ -18,6 +18,21 @@ export async function markAllRead(): Promise<void> {
   revalidatePath("/home");
 }
 
+/* Archive: every notice this member has read goes, and the unread stay. The
+   inbox had no way to shrink — 7,700 rows on the fixture personas alone — so
+   a member two seasons in scrolled a lifetime. The policy admits only own,
+   read rows; the nightly purge takes the same rows once they are old. */
+export async function archiveRead(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("notifications").delete().eq("profile_id", user.id).eq("read", true);
+  revalidatePath("/inbox");
+  revalidatePath("/home");
+}
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /* One notice, read, as the member taps through to where it points. The

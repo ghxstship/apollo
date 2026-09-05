@@ -6,3 +6,13 @@
    heading — so it pins the weight an h1 would otherwise bring with it. */
 .gsn-lede{margin:18px 0 0;font:400 var(--text-sm)/1.7 var(--font-sans);color:var(--text-2);max-width:56ch}
 .gsn-lede b{font-weight:700;color:var(--text-1)}
+/* The night card, under the paper: a guest's one page, reread on the way down. */
+.gsn-card{margin-top:32px;padding:20px 22px;border:1px solid var(--line-faint);background:var(--surface-card)}
+.gsn-card h2{margin:0 0 12px;font:700 var(--text-lg)/1.2 var(--font-sans);color:var(--text-1)}
+.gsn-card dl{margin:0;display:grid;gap:8px}
+.gsn-card dl > div{display:grid;grid-template-columns:88px 1fr;gap:12px;align-items:baseline}
+.gsn-card dt{margin:0;font:700 var(--text-2xs)/1.4 var(--font-mono);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
+.gsn-card dd{margin:0;font:400 var(--text-sm)/1.5 var(--font-sans);color:var(--text-1)}
+.gsn-card .gsn-code{font-family:var(--font-mono);letter-spacing:var(--tracking-label);font-weight:700}
+.gsn-card__foot{margin:14px 0 0;font:400 var(--text-xs)/1.5 var(--font-sans)}
+.gsn-card__foot a{color:var(--text-2)}
