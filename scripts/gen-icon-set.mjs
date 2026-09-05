@@ -33,5 +33,12 @@ ${list.map((n) => `  ${n},`).join("\n")}
 export const ICONS = {
 ${list.map((n) => `  ${n},`).join("\n")}
 } as const;
+
+/** Every glyph the set carries. \`Icon\` takes this rather than a bare string,
+    so a name the set does not ship is a compile error at the call site instead
+    of an empty box on the page and a warning in a console nobody is reading.
+    The \`icons\` gate in check:ds stays in place — it also catches a name inside
+    a Record or a data table that this type never reaches. */
+export type IconName = keyof typeof ICONS;
 `);
 console.log(`icon-set: ${list.length} glyphs`);
