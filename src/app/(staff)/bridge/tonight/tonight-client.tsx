@@ -33,7 +33,7 @@ export function TablesClient({
 }) {
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [laying, setLaying] = React.useState(false);
   const [striking, setStriking] = React.useState<TableRow | null>(null);
 
@@ -177,7 +177,8 @@ export function TablesClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Laying…"
               onClick={() =>
                 startTransition(async () => {
                   const res = await createTable(episodeId, Number(number), Number(seats));
@@ -230,7 +231,8 @@ export function TablesClient({
               </Button>
               <Button
                 variant="danger"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Striking…"
                 onClick={() => {
                   const t = striking;
                   setStriking(null);
@@ -255,7 +257,7 @@ export function TablesClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

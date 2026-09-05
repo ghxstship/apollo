@@ -54,7 +54,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
   const [confirm, setConfirm] = React.useState<Confirm>(null);
   /* The drawer: one application, read in full. Opens on the row. */
   const [reading, setReading] = React.useState<AppRow | null>(null);
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const fromUrl = useSearchParams().get("q") ?? "";
   const [query, setQuery] = React.useState(fromUrl);
   const [status, setStatus] = React.useState<"all" | AppRow["status"]>("all");
@@ -66,9 +66,16 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       (!q || a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || a.inviteCode.toLowerCase().includes(q))
   );
 
-  const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
+  /* Which control is actually working, so the pending face lands on the one
+     that was pressed and every other row reads as merely unavailable. The
+     transition's own `pending` cannot tell them apart — it is one flag for the
+     whole table. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string }>, ok: () => void, key?: string) => {
+    setActing(key ?? null);
     startTransition(async () => {
       const res = await fn();
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
@@ -119,11 +126,14 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={pending}
+              disabled={pending && acting !== "review:" + a.id}
+              pending={acting === "review:" + a.id}
+              pendingLabel="Moving…"
               onClick={() =>
                 run(
                   () => moveToReview(a.id),
-                  () => show({ msg: "Moved to review.", meta: a.email.toUpperCase() })
+                  () => show({ msg: "Moved to review.", meta: a.email.toUpperCase() }),
+                  "review:" + a.id
                 )
               }
             >
@@ -134,11 +144,14 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={pending}
+              disabled={pending && acting !== "invite:" + a.id}
+              pending={acting === "invite:" + a.id}
+              pendingLabel="Inviting…"
               onClick={() =>
                 run(
                   () => salonInvite(a.id),
-                  () => show({ msg: "Invited ashore.", meta: a.email.toUpperCase() })
+                  () => show({ msg: "Invited ashore.", meta: a.email.toUpperCase() }),
+                  "invite:" + a.id
                 )
               }
             >
@@ -284,7 +297,8 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Accepting…"
               onClick={() => {
                 const a = confirm!.app;
                 setConfirm(null);
@@ -322,7 +336,8 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
             </Button>
             <Button
               variant="danger"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Declining…"
               onClick={() => {
                 const a = confirm!.app;
                 setConfirm(null);
@@ -341,7 +356,7 @@ export function AppsClient({ apps }: { apps: AppRow[] }) {
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

@@ -31,7 +31,7 @@ const TIER_LABEL: Record<string, string> = {
 
 export function PosClient({ items }: { items: PosItem[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [cat, setCat] = React.useState("bar");
   const [lines, setLines] = React.useState<Line[]>([]);
   const [lookup, setLookup] = React.useState("");
@@ -153,7 +153,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
                     if (e.key === "Enter") attach();
                   }}
                 />
-                <Button variant="outline" disabled={pending} onClick={attach}>
+                <Button variant="outline" pending={pending} pendingLabel="Attaching…" onClick={attach}>
                   Attach
                 </Button>
               </div>
@@ -222,7 +222,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
             <Button variant="ghost" onClick={() => setTender(null)}>
               Back
             </Button>
-            <Button variant="gold" disabled={pending} onClick={() => settle(tender!)}>
+            <Button variant="gold" pending={pending} pendingLabel="Settling…" onClick={() => settle(tender!)}>
               Settle
             </Button>
           </>
@@ -234,7 +234,7 @@ export function PosClient({ items }: { items: PosItem[] }) {
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

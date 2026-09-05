@@ -97,7 +97,7 @@ function stateTone(s: ElementState): "positive" | "caution" | "outline" {
 
 export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [form, setForm] = React.useState<{ id: string | null; f: ElementInput } | null>(null);
   const [confirmRemove, setConfirmRemove] = React.useState<ElementListRow | null>(null);
   const [filter, setFilter] = React.useState("");
@@ -363,7 +363,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
             <Button variant="ghost" onClick={() => setForm(null)}>
               Cancel
             </Button>
-            <Button variant="gold" disabled={pending} onClick={commit}>
+            <Button variant="gold" pending={pending} pendingLabel={form?.id ? "Saving…" : "Filing…"} onClick={commit}>
               {form?.id ? "Save the element" : "File it"}
             </Button>
           </>
@@ -552,7 +552,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
             <Button variant="ghost" onClick={() => setConfirmRemove(null)}>
               Keep it
             </Button>
-            <Button variant="danger" disabled={pending} onClick={() => confirmRemove && drop(confirmRemove)}>
+            <Button variant="danger" pending={pending} pendingLabel="Removing…" onClick={() => confirmRemove && drop(confirmRemove)}>
               Remove it
             </Button>
           </>
@@ -566,7 +566,7 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
         </p>
       </Dialog>
 
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

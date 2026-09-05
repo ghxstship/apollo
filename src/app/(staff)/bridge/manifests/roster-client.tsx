@@ -59,7 +59,7 @@ export function FleetStrip({
   unassigned: number;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
 
   if (vessels.length === 0) return null;
 
@@ -78,7 +78,9 @@ export function FleetStrip({
         <Button
           variant="outline"
           size="sm"
-          disabled={pending || unassigned === 0}
+          disabled={unassigned === 0}
+          pending={pending}
+          pendingLabel="Assigning…"
           onClick={distribute}
         >
           Assign evenly
@@ -104,7 +106,7 @@ export function FleetStrip({
         </div>
       </div>
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </section>
   );
@@ -122,7 +124,7 @@ export function AddToManifest({
 }) {
   const [open, setOpen] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [profileId, setProfileId] = React.useState("");
   const [comp, setComp] = React.useState(false);
   const [guests, setGuests] = React.useState(0);
@@ -172,7 +174,7 @@ export function AddToManifest({
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Not yet
             </Button>
-            <Button variant="gold" disabled={pending || !profileId} onClick={submit}>
+            <Button variant="gold" disabled={!profileId} pending={pending} pendingLabel="Boarding…" onClick={submit}>
               Put them aboard
             </Button>
           </>
@@ -210,7 +212,7 @@ export function AddToManifest({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </section>
   );
@@ -245,7 +247,10 @@ export function RosterTable({
   vessels: FleetVessel[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  /* Which pass is being checked in. One transition flag covers the whole
+     roster, so without this every row's Check in would read as working. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const { toast, toastOpen, show, clear } = useToast();
   const [query, setQuery] = React.useState("");
   const [standing, setStanding] = React.useState<"all" | "aboard" | "waitlist" | "checked_in" | "waiver_missing">("all");
 
@@ -270,8 +275,10 @@ export function RosterTable({
   };
 
   const checkIn = (r: RosterRow) => {
+    setActing(r.passId);
     startTransition(async () => {
       const res = await checkInPass(r.passId);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -395,7 +402,14 @@ export function RosterTable({
       label: "",
       render: (r: RosterRow) =>
         !r.checkedInAt && r.status === "aboard" ? (
-          <Button variant="outline" size="sm" disabled={pending} onClick={() => checkIn(r)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={pending && acting !== r.passId}
+            pending={acting === r.passId}
+            pendingLabel="Checking in…"
+            onClick={() => checkIn(r)}
+          >
             Check in
           </Button>
         ) : null,
@@ -454,7 +468,7 @@ export function RosterTable({
         </div>
       )}
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

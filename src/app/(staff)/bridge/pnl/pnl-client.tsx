@@ -49,7 +49,7 @@ export function PnlClient({
   kinds: KindOption[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [open, setOpen] = React.useState<PnlRow | null>(null);
   const [kind, setKind] = React.useState(kinds[0]?.slug ?? "other");
   const [amount, setAmount] = React.useState("");
@@ -67,17 +67,23 @@ export function PnlClient({
      reintroduce the same lie at the top of the page. */
   const totalMargin = costed.reduce((t, r) => t + r.marginCents, 0);
 
-  const run = (fn: () => Promise<{ error?: string }>, ok: string) =>
+  /* Which line is working. One transition flag covers every cost line in the
+     drawer, so without this all of them would read as working at once. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string }>, ok: string, key?: string) => {
+    setActing(key ?? null);
     startTransition(async () => {
       const res = await fn();
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: ok, meta: "P&L" });
     });
+  };
 
   const save = () => {
     if (!open) return;
     const cents = Math.round(Number(amount.replace(/[^0-9.]/g, "")) * 100);
-    run(() => addExpense(open.episodeId, kind, cents, note, settled), "Cost recorded.");
+    run(() => addExpense(open.episodeId, kind, cents, note, settled), "Cost recorded.", "record");
     setAmount("");
     setNote("");
   };
@@ -168,7 +174,7 @@ export function PnlClient({
             <Button variant="ghost" size="sm" onClick={() => setOpen(null)}>
               Done
             </Button>
-            <Button variant="gold" size="sm" disabled={pending || !amount} onClick={save}>
+            <Button variant="gold" size="sm" disabled={!amount || (pending && acting !== "record")} pending={acting === "record"} pendingLabel="Recording…" onClick={save}>
               Record it
             </Button>
           </>
@@ -186,9 +192,11 @@ export function PnlClient({
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={pending}
+                      disabled={pending && acting !== "settle:" + e.id}
+                      pending={acting === "settle:" + e.id}
+                      pendingLabel="Marking…"
                       onClick={() =>
-                        run(() => settleExpense(e.id, !e.settled), e.settled ? "Marked an estimate." : "Marked settled.")
+                        run(() => settleExpense(e.id, !e.settled), e.settled ? "Marked an estimate." : "Marked settled.", "settle:" + e.id)
                       }
                     >
                       {e.settled ? "Settled" : "Estimate"}
@@ -201,10 +209,12 @@ export function PnlClient({
                         <Button
                           variant="danger"
                           size="sm"
-                          disabled={pending}
+                          disabled={pending && acting !== "remove:" + e.id}
+                          pending={acting === "remove:" + e.id}
+                          pendingLabel="Removing…"
                           onClick={() => {
                             setArming(null);
-                            run(() => removeExpense(e.id), "Line removed.");
+                            run(() => removeExpense(e.id), "Line removed.", "remove:" + e.id);
                           }}
                         >
                           Remove the line
@@ -252,7 +262,7 @@ export function PnlClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

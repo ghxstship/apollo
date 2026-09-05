@@ -63,7 +63,7 @@ export function OrdersClient({
   /* A hand-typed entry that matches one posted minutes ago. Neither an error
      nor a success — a question for a person. */
   const [repeat, setRepeat] = React.useState<{ kind: "payment" | "refund"; cents: number; why: string } | null>(null);
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [filter, setFilter] = React.useState<Filter>("all");
   const [posting, setPosting] = React.useState<PostKind | null>(null);
   const [form, setForm] = React.useState({ profileId: "", amount: "", memo: "" });
@@ -241,7 +241,9 @@ export function OrdersClient({
             </Button>
             <Button
               variant="outline"
-              disabled={pending || !form.profileId || !(Number(form.amount) > 0)}
+              disabled={!form.profileId || !(Number(form.amount) > 0)}
+              pending={pending}
+              pendingLabel="Posting…"
               onClick={() => submitPost()}
             >
               Post it
@@ -291,7 +293,8 @@ export function OrdersClient({
             </Button>
             <Button
               variant="outline"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Posting…"
               onClick={() => {
                 const again = repeat;
                 setRepeat(null);
@@ -327,7 +330,8 @@ export function OrdersClient({
               </Button>
               <Button
                 variant="gold"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Refunding…"
                 onClick={() => {
                   const o = refund;
                   setRefund(null);
@@ -370,7 +374,9 @@ export function OrdersClient({
               </Button>
               <Button
                 variant="danger"
-                disabled={pending || !(Number(cardForm.amount) > 0) || !cardForm.reason.trim()}
+                disabled={!(Number(cardForm.amount) > 0) || !cardForm.reason.trim()}
+                pending={pending}
+                pendingLabel="Refunding…"
                 onClick={() => {
                   const row = toCard;
                   const cents = Math.round(Number(cardForm.amount) * 100);
@@ -417,7 +423,7 @@ export function OrdersClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

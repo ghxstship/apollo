@@ -56,7 +56,7 @@ const same = <T extends object>(a: T, b: T) => JSON.stringify(a) === JSON.string
 
 export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: VesselCard[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [cityDraft, setCityDraft] = React.useState<Record<string, Omit<CityCard, "id">>>(() =>
     Object.fromEntries(cities.map(({ id, ...rest }) => [id, rest]))
   );
@@ -233,7 +233,7 @@ export function FleetClient({ cities, vessels }: { cities: CityCard[]; vessels: 
       </section>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

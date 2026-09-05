@@ -281,6 +281,10 @@ type StatusMove = {
   title: string;
   body: string;
   confirm: string;
+  /* What the confirm button reads while the move is in flight. It rides in the
+     map beside `confirm` for the same reason `destructive` does: the button is
+     rendered from the map and cannot know which move it is committing. */
+  working: string;
   tone: "positive" | "caution" | "ink";
   /* Cancel refunds every account and cannot be walked back, and it rendered
      from the same map as Mark completed and Call weather hold — three
@@ -297,6 +301,7 @@ function movesFor(status: EpisodeStatus): StatusMove[] {
     title: "Call the weather hold?",
     body: "Every pass gets the word by email and in their inbox. We call it by 18:00 the night before.",
     confirm: "Call the hold",
+    working: "Calling…",
     tone: "caution",
   };
   const lift: StatusMove = {
@@ -305,6 +310,7 @@ function movesFor(status: EpisodeStatus): StatusMove[] {
     title: "Lift the hold?",
     body: "Status returns to scheduled and the manifest reopens. Passes keep their order.",
     confirm: "Lift the hold",
+    working: "Lifting…",
     tone: "ink",
   };
   const complete: StatusMove = {
@@ -313,6 +319,7 @@ function movesFor(status: EpisodeStatus): StatusMove[] {
     title: "Mark completed?",
     body: "Completion banks knots — 10 per NM afloat, 40 for a day ashore. The ledger writes once.",
     confirm: "Mark completed",
+    working: "Marking…",
     tone: "positive",
   };
   const cancel: StatusMove = {
@@ -321,6 +328,7 @@ function movesFor(status: EpisodeStatus): StatusMove[] {
     title: "Cancel the episode?",
     body: "Cancelling credits every account in full and sends the word — the trigger does it, no forms.",
     confirm: "Cancel the episode",
+    working: "Cancelling…",
     tone: "caution",
     destructive: true,
   };
@@ -356,7 +364,7 @@ export function EpisodesClient({
   fleet: FleetVessel[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [move, setMove] = React.useState<{ row: EpisodeOpsRow; m: StatusMove } | null>(null);
   const [ops, setOps] = React.useState<EpisodeOpsRow | null>(null);
   const [opsForm, setOpsForm] = React.useState({ wind: "", swell: "", heading: "", speed: "", muster: "" });
@@ -637,7 +645,8 @@ export function EpisodesClient({
               </Button>
               <Button
                 variant={move.m.destructive ? "danger" : "outline"}
-                disabled={pending}
+                pending={pending}
+                pendingLabel={move.m.working}
                 onClick={() => {
                   const { row, m } = move;
                   setMove(null);
@@ -675,7 +684,8 @@ export function EpisodesClient({
               </Button>
               <Button
                 variant="outline"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Saving…"
                 onClick={() => {
                   const row = ops;
                   setOps(null);
@@ -754,7 +764,8 @@ export function EpisodesClient({
               </Button>
               <Button
                 variant="outline"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Saving…"
                 onClick={() => {
                   const row = door;
                   setDoor(null);
@@ -820,7 +831,9 @@ export function EpisodesClient({
               </Button>
               <Button
                 variant="outline"
-                disabled={pending || programRefusals.length > 0}
+                disabled={programRefusals.length > 0}
+                pending={pending}
+                pendingLabel="Saving…"
                 onClick={() => {
                   const row = program;
                   setProgram(null);
@@ -967,7 +980,7 @@ export function EpisodesClient({
       />
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );
@@ -1040,7 +1053,7 @@ function FlotillaBody({
                     <Button size="sm" variant="ghost" disabled={pending} onClick={() => setArming(null)}>
                       Keep it
                     </Button>
-                    <Button size="sm" variant="danger" disabled={pending} onClick={() => remove(h)}>
+                    <Button size="sm" variant="danger" pending={pending} pendingLabel="Taking it off…" onClick={() => remove(h)}>
                       Take it off
                     </Button>
                   </>
@@ -1081,7 +1094,7 @@ function FlotillaBody({
             <span className="hm-mono">POSITION</span>
             <Stepper size="sm" min={1} max={96} value={pos} onChange={setPos} />
           </span>
-          <Button variant="outline" size="sm" disabled={pending || !pick} onClick={assign}>
+          <Button variant="outline" size="sm" disabled={!pick} pending={pending} pendingLabel="Assigning…" onClick={assign}>
             Assign
           </Button>
         </div>
@@ -1272,7 +1285,7 @@ function NewEpisodeDialog({
           <Button variant="ghost" onClick={onClose}>
             Not yet
           </Button>
-          <Button variant="gold" disabled={pending || !f.title || !f.startsAt || !f.endsAt || refused} onClick={submit}>
+          <Button variant="gold" disabled={!f.title || !f.startsAt || !f.endsAt || refused} pending={pending} pendingLabel="Setting…" onClick={submit}>
             Set the episode
           </Button>
         </>

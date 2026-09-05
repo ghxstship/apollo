@@ -28,7 +28,7 @@ export type PlanRow = {
    it has one, because that is not a warning, it is the tier being unsellable. */
 export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLive: boolean }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const dollars = (cents: number | null) => (cents == null ? "" : (cents / 100).toFixed(2));
   const [draft, setDraft] = React.useState<
     Record<string, { m: string; y: string; price: string; annual: string; guests: string }>
@@ -40,6 +40,10 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
       ])
     )
   );
+
+  /* Which row is working, so the pending face lands on the button that was
+     pressed rather than on all five tiers at once. */
+  const [acting, setActing] = React.useState<string | null>(null);
 
   const save = (p: PlanRow) => {
     const d = draft[p.id];
@@ -58,6 +62,7 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
     ) {
       return;
     }
+    setActing("save:" + p.id);
     startTransition(async () => {
       const res = await setPlanPricing(p.id, {
         stripe_price_id: d.m,
@@ -65,14 +70,17 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
         ...(priceMoved ? { price_cents: priceCents, annual_price_cents: annualCents } : {}),
         ...(guestsMoved ? { guest_allowance: guests } : {}),
       });
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: `${p.label} priced.`, meta: "DUES" });
     });
   };
 
   const setPublished = (p: PlanRow, published: boolean) => {
+    setActing("publish:" + p.id);
     startTransition(async () => {
       const res = await setPlanPricing(p.id, { published });
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: published ? `${p.label} is on the membership page.` : `${p.label} is off the membership page.`, meta: "DUES" });
     });
@@ -130,7 +138,14 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
                 </span>
                 {blocked ? <Badge tone="danger">Cannot be paid for</Badge> : null}
                 {!p.published ? <Badge tone="outline">Unpublished</Badge> : null}
-                <Button variant="ghost" size="sm" disabled={pending} onClick={() => setPublished(p, !p.published)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pending && acting !== "publish:" + p.id}
+                  pending={acting === "publish:" + p.id}
+                  pendingLabel={p.published ? "Taking it off…" : "Putting it on…"}
+                  onClick={() => setPublished(p, !p.published)}
+                >
                   {p.published ? "Take off the page" : "Put on the page"}
                 </Button>
                 <span className="hm-plan__holders hm-mono">
@@ -191,7 +206,9 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
                   <Button
                     variant={dirty ? "gold" : "outline"}
                     size="sm"
-                    disabled={pending || !dirty}
+                    disabled={!dirty || (pending && acting !== "save:" + p.id)}
+                    pending={acting === "save:" + p.id}
+                    pendingLabel="Saving…"
                     onClick={() => save(p)}
                   >
                     {dirty ? "Save" : "Saved"}
@@ -217,7 +234,9 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
                   <Button
                     variant={dirty ? "gold" : "outline"}
                     size="sm"
-                    disabled={pending || !dirty}
+                    disabled={!dirty || (pending && acting !== "save:" + p.id)}
+                    pending={acting === "save:" + p.id}
+                    pendingLabel="Saving…"
                     onClick={() => save(p)}
                   >
                     {dirty ? "Save" : "Saved"}
@@ -230,7 +249,7 @@ export function PlansClient({ plans, stripeLive }: { plans: PlanRow[]; stripeLiv
       </div>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

@@ -17,7 +17,7 @@ export type PollView = {
 
 export function PollsClient({ rows }: { rows: PollView[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [asking, setAsking] = React.useState(false);
   const [question, setQuestion] = React.useState("");
   const [options, setOptions] = React.useState<string[]>(["", ""]);
@@ -118,7 +118,8 @@ export function PollsClient({ rows }: { rows: PollView[] }) {
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Asking…"
               onClick={() =>
                 run(
                   () => createPoll(question, options, closesAt),
@@ -184,7 +185,8 @@ export function PollsClient({ rows }: { rows: PollView[] }) {
               </Button>
               <Button
                 variant="outline"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Closing…"
                 onClick={() => {
                   const p = closing;
                   setClosing(null);
@@ -214,7 +216,8 @@ export function PollsClient({ rows }: { rows: PollView[] }) {
               </Button>
               <Button
                 variant="gold"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Settling…"
                 onClick={() => {
                   const p = settling;
                   setSettling(null);
@@ -240,7 +243,7 @@ export function PollsClient({ rows }: { rows: PollView[] }) {
         ) : null}
       </Dialog>
 
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

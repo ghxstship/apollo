@@ -87,7 +87,7 @@ export function ProposalsClient({
   episodes: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [declining, setDeclining] = React.useState<ProposalRow | null>(null);
   const [declineNote, setDeclineNote] = React.useState("");
   const [approving, setApproving] = React.useState<ProposalRow | null>(null);
@@ -98,9 +98,14 @@ export function ProposalsClient({
   const [ruling, setRuling] = React.useState<{ row: CharterRow; kind: CharterRuling } | null>(null);
   const [charterNote, setCharterNote] = React.useState("");
 
-  const run = (fn: () => Promise<{ error?: string; note?: string }>, ok: () => void) => {
+  /* Which row is working. One transition flag covers both tables, so without
+     this the pending face would land on every row at once. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string; note?: string }>, ok: () => void, key?: string) => {
+    setActing(key ?? null);
     startTransition(async () => {
       const res = await fn();
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else if (res.note) show({ msg: res.note, tone: "caution" });
       else ok();
@@ -167,7 +172,9 @@ export function ProposalsClient({
               <Button
                 size="sm"
                 variant="ghost"
-                disabled={pending}
+                disabled={pending && acting !== "considering:" + r.id}
+                pending={acting === "considering:" + r.id}
+                pendingLabel="Weighing…"
                 onClick={() =>
                   run(
                     () => decideProposal(r.id, "considering"),
@@ -175,7 +182,8 @@ export function ProposalsClient({
                       show({
                         msg: "Weighing it. The proposer holds the word.",
                         meta: `${r.title.toUpperCase()} · CONSIDERING`,
-                      })
+                      }),
+                    "considering:" + r.id
                   )
                 }
               >
@@ -219,11 +227,14 @@ export function ProposalsClient({
             <Button
               size="sm"
               variant="ghost"
-              disabled={pending || !links[r.id]}
+              disabled={!links[r.id] || (pending && acting !== "link:" + r.id)}
+              pending={acting === "link:" + r.id}
+              pendingLabel="Linking…"
               onClick={() =>
                 run(
                   () => linkProposal(r.id, links[r.id] ?? null),
-                  () => show({ msg: "Linked. The row names the episode now.", meta: r.title.toUpperCase() })
+                  () => show({ msg: "Linked. The row names the episode now.", meta: r.title.toUpperCase() }),
+                  "link:" + r.id
                 )
               }
             >
@@ -398,7 +409,8 @@ export function ProposalsClient({
               </Button>
               <Button
                 variant="gold"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Approving…"
                 onClick={() => {
                   const r = approving;
                   const v = approveEpisode || null;
@@ -454,7 +466,8 @@ export function ProposalsClient({
               </Button>
               <Button
                 variant="danger"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Declining…"
                 onClick={() => {
                   const r = declining;
                   const line = declineNote;
@@ -506,7 +519,9 @@ export function ProposalsClient({
                   whichever it is about to send. */}
               <Button
                 variant={ruling.kind === "declined" ? "danger" : "gold"}
-                disabled={pending || (ruling.kind === "answered" && !charterNote.trim())}
+                disabled={ruling.kind === "answered" && !charterNote.trim()}
+                pending={pending}
+                pendingLabel={ruling.kind === "answered" ? "Answering…" : "Declining…"}
                 onClick={() => {
                   const { row, kind } = ruling;
                   const line = charterNote;
@@ -551,7 +566,7 @@ export function ProposalsClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

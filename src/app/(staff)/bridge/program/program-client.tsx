@@ -87,7 +87,10 @@ export function ProgramClient({
   templates: Option[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  /* Which series is being extended. The transition flag is one for the whole
+     page, so without this every row's Extend would read as working. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const { toast, toastOpen, show, clear } = useToast();
 
   const [openingSeason, setOpeningSeason] = React.useState(false);
   const [addingVenue, setAddingVenue] = React.useState(false);
@@ -293,10 +296,14 @@ export function ProgramClient({
             <Button
               size="sm"
               variant="ghost"
-              disabled={pending}
-              onClick={() =>
+              disabled={pending && acting !== "extend:" + r.id}
+              pending={acting === "extend:" + r.id}
+              pendingLabel="Extending…"
+              onClick={() => {
+                setActing("extend:" + r.id);
                 startTransition(async () => {
                   const res = await extendSeries(r.id, countFor(r.id));
+                  setActing(null);
                   if (res.error) {
                     show({ msg: res.error, tone: "danger" });
                     return;
@@ -309,8 +316,8 @@ export function ProgramClient({
                       msg: `${raised} episode${raised === 1 ? "" : "s"} raised.`,
                       meta: `${r.title.toUpperCase()} · EVERY ${r.cadenceDays} DAYS`,
                     });
-                })
-              }
+                });
+              }}
             >
               Extend
             </Button>
@@ -452,7 +459,8 @@ export function ProgramClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Opening…"
               onClick={() =>
                 startTransition(async () => {
                   const res = await createSeason({
@@ -512,7 +520,8 @@ export function ProgramClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Adding…"
               onClick={() =>
                 startTransition(async () => {
                   const res = await createVenue({
@@ -595,7 +604,8 @@ export function ProgramClient({
               </Button>
               <Button
                 variant="gold"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Saving…"
                 onClick={() => {
                   const v = accessFor;
                   const note = accessDraft;
@@ -637,7 +647,8 @@ export function ProgramClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Laying…"
               onClick={() =>
                 startTransition(async () => {
                   const res = await createSeries({
@@ -698,7 +709,7 @@ export function ProgramClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

@@ -27,7 +27,7 @@ export type ThreadCard = {
 
 export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [activeId, setActiveId] = React.useState(threads[0]?.id ?? "");
   const [draft, setDraft] = React.useState("");
   const [query, setQuery] = React.useState("");
@@ -146,7 +146,9 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
                 <Button
                   variant="gold"
                   size="sm"
-                  disabled={pending || active.closed || !draft.trim()}
+                  disabled={active.closed || !draft.trim()}
+                  pending={pending}
+                  pendingLabel="Sending…"
                   onClick={send}
                 >
                   Send reply
@@ -161,7 +163,7 @@ export function ShoresideClient({ threads }: { threads: ThreadCard[] }) {
       </div>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

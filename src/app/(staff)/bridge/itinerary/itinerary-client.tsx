@@ -77,7 +77,7 @@ export function ItineraryClient({
   stops: StopRow[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
 
   const [legForm, setLegForm] = React.useState<{ id: string | null; f: typeof BLANK_LEG } | null>(null);
   const [stopForm, setStopForm] = React.useState<{ id: string | null; f: typeof BLANK_STOP } | null>(null);
@@ -94,15 +94,22 @@ export function ItineraryClient({
     ...legs.map((l) => ({ value: l.id, label: `Day ${l.day} — ${l.place}` })),
   ];
 
-  const run = (fn: () => Promise<{ error?: string }>, said: string, after?: () => void) =>
+  /* Which control is working. One transition flag covers every leg and every
+     stop on the page, so without this the pending face would land on all of
+     them rather than on the one that was pressed. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string }>, said: string, after?: () => void, key?: string) => {
+    setActing(key ?? null);
     startTransition(async () => {
       const res = await fn();
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         show({ msg: said });
         after?.();
       }
     });
+  };
 
   const nextDay = legs.length ? Math.max(...legs.map((l) => l.day)) + 1 : 1;
   const nextPosition = stops.length ? Math.max(...stops.map((s) => s.position)) + 1 : 1;
@@ -162,16 +169,20 @@ export function ItineraryClient({
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={pending}
-                        onClick={() => run(() => liftLegHold(leg.id, true), "Hold lifted. The leg reads revised.")}
+                        disabled={pending && acting !== "revised:" + leg.id}
+                        pending={acting === "revised:" + leg.id}
+                        pendingLabel="Lifting…"
+                        onClick={() => run(() => liftLegHold(leg.id, true), "Hold lifted. The leg reads revised.", undefined, "revised:" + leg.id)}
                       >
                         Lift as revised
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={pending}
-                        onClick={() => run(() => liftLegHold(leg.id, false), "Hold lifted. The leg is back to plan.")}
+                        disabled={pending && acting !== "plan:" + leg.id}
+                        pending={acting === "plan:" + leg.id}
+                        pendingLabel="Lifting…"
+                        onClick={() => run(() => liftLegHold(leg.id, false), "Hold lifted. The leg is back to plan.", undefined, "plan:" + leg.id)}
                       >
                         Back to plan
                       </Button>
@@ -325,7 +336,8 @@ export function ItineraryClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel={legForm?.id ? "Saving…" : "Posting…"}
               onClick={() =>
                 legForm &&
                 run(
@@ -394,7 +406,8 @@ export function ItineraryClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel={stopForm?.id ? "Saving…" : "Posting…"}
               onClick={() =>
                 stopForm &&
                 run(
@@ -477,7 +490,9 @@ export function ItineraryClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending || !hold.reason.trim() || !hold.newPlan.trim() || !hold.unchanged.trim()}
+              disabled={!hold.reason.trim() || !hold.newPlan.trim() || !hold.unchanged.trim()}
+              pending={pending}
+              pendingLabel="Posting…"
               onClick={() =>
                 holdFor &&
                 run(
@@ -532,7 +547,8 @@ export function ItineraryClient({
             </Button>
             <Button
               variant="danger"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Removing…"
               onClick={() =>
                 confirmLeg &&
                 run(() => removeLeg(confirmLeg.id), "Leg removed.", () => setConfirmLeg(null))
@@ -565,7 +581,8 @@ export function ItineraryClient({
             </Button>
             <Button
               variant="danger"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Removing…"
               onClick={() =>
                 confirmStop &&
                 run(() => removeStop(confirmStop.id), "Stop removed from the guide.", () =>
@@ -583,7 +600,7 @@ export function ItineraryClient({
         </p>
       </Dialog>
 
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

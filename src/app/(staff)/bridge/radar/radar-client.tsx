@@ -46,7 +46,7 @@ function phaseTone(p: RadarOpsRow["phase"]): "gold" | "positive" | "caution" | "
 
 export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   /* Re-reading a clock that is already set moves a lock members have been told
      about, so it asks first. The first open does not — there is nothing yet to
      disagree with. */
@@ -80,13 +80,20 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
       );
     });
 
-  const run = (row: RadarOpsRow, said: string) =>
+  /* Which episode's radar is being set. One transition flag covers the whole
+     table, so without this every row's button would read as working. */
+  const [acting, setActing] = React.useState<string | null>(null);
+
+  const run = (row: RadarOpsRow, said: string) => {
+    setActing("open:" + row.id);
     startTransition(async () => {
       const res = await openTheRadar(row.id);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: said, meta: row.title.replace(/\.+$/, "").toUpperCase() });
       setConfirmReopen(null);
     });
+  };
 
   const columns = [
     {
@@ -181,7 +188,9 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
           <Button
             size="sm"
             variant="gold"
-            disabled={pending}
+            disabled={pending && acting !== "open:" + r.id}
+            pending={acting === "open:" + r.id}
+            pendingLabel="Opening…"
             onClick={() => run(r, "Radar is set. It opens at 17:15 on the episode's own clock.")}
           >
             Open the radar
@@ -222,7 +231,8 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Re-reading…"
               onClick={() =>
                 confirmReopen && run(confirmReopen, "Clock re-read off the episode's departure.")
               }
@@ -253,7 +263,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
             <Button variant="ghost" onClick={() => setConfirmCut(null)}>
               Leave them
             </Button>
-            <Button variant="danger" disabled={pending} onClick={() => confirmCut && cut(confirmCut)}>
+            <Button variant="danger" pending={pending} pendingLabel="Cutting…" onClick={() => confirmCut && cut(confirmCut)}>
               Cut them short
             </Button>
           </>
@@ -271,7 +281,7 @@ export function RadarClient({ rows }: { rows: RadarOpsRow[] }) {
         </p>
       </Dialog>
 
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

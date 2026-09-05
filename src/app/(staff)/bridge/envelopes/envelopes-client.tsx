@@ -73,7 +73,7 @@ export function EnvelopesClient({
   rows: EnvelopeRow[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const mounted = React.useSyncExternalStore(
     () => () => {},
     () => true,
@@ -154,7 +154,7 @@ export function EnvelopesClient({
         <div className="hm-head">
           <h2>The sheet.</h2>
           <span className="ls-acts">
-            <Button variant="gold" size="sm" disabled={pending || aboard === 0} onClick={issue}>
+            <Button variant="gold" size="sm" disabled={aboard === 0} pending={pending} pendingLabel="Issuing…" onClick={issue}>
               {rows.length === 0 ? "Issue the envelopes" : "Issue any missing"}
             </Button>
             <Button
@@ -215,7 +215,7 @@ export function EnvelopesClient({
           )
         : null}
 
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

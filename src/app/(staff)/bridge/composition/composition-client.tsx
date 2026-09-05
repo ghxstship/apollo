@@ -99,7 +99,7 @@ export function CompositionPanel({
   lines: QueueLine[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [confirmLift, setConfirmLift] = React.useState(false);
 
   /* The ceiling field holds a string so that blank can mean "club default"
@@ -163,9 +163,16 @@ export function CompositionPanel({
     return row ? draft[s] < row.units : false;
   });
 
-  const save = () =>
+  /* Which control is working. The transition flag is one for the whole panel
+     — the ceiling, the composition, the lift and every place offered from the
+     line all raise it — so the pending face needs to know which was pressed. */
+  const [acting, setActing] = React.useState<string | null>(null);
+
+  const save = () => {
+    setActing("composition");
     startTransition(async () => {
       const res = await setTheComposition(episodeId, draft);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -173,13 +180,16 @@ export function CompositionPanel({
           meta: `${draftHeads} HEADS OF ${hull || draftHeads}`,
         });
     });
+  };
 
-  const saveCeiling = () =>
+  const saveCeiling = () => {
+    setActing("ceiling");
     startTransition(async () => {
       const raw = ceilingDraft.trim();
       const heads = raw === "" ? null : Number(raw);
       const named = certificateDraft.trim();
       const res = await setHullCeiling(episodeId, heads, named === "" ? null : named);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
@@ -190,10 +200,13 @@ export function CompositionPanel({
           meta: `THE HULL HOLDS ${heads ?? clubCeiling}${named ? " · CERTIFICATE NAMED" : ""}`,
         });
     });
+  };
 
-  const lift = () =>
+  const lift = () => {
+    setActing("lift");
     startTransition(async () => {
       const res = await liftTheComposition(episodeId);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         /* res.note names anyone released from the line. Lifting the ceilings
@@ -207,25 +220,32 @@ export function CompositionPanel({
         });
       setConfirmLift(false);
     });
+  };
 
   /* One named request rather than the front of the line — the Bridge choosing
      who comes, which is what a by-request night is for. */
-  const offerOne = (id: string, who: string) =>
+  const offerOne = (id: string, who: string) => {
+    setActing("offer-one:" + id);
     startTransition(async () => {
       const res = await offerThisPlace(id);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: `Offered to ${who}. One notice, the claim window runs.`, meta: "BY REQUEST", tone: "positive" });
     });
+  };
 
-  const offer = (s: Segment) =>
+  const offer = (s: Segment) => {
+    setActing("offer:" + s);
     startTransition(async () => {
       const res = await offerTheNextPlace(episodeId, s);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else
         show({
           msg: `Offered to first in line, ${SEGMENT_LABEL[s].toLowerCase()}. One notice, the claim window runs.`,
         });
     });
+  };
 
   const lineOf = (s: Segment) =>
     lines.find((l) => l.segment === s) ?? { segment: s, waiting: 0, offered: 0, lapsed: 0, claimed: 0 };
@@ -261,7 +281,7 @@ export function CompositionPanel({
         <div className="hm-head">
           <h2>The hull.</h2>
           <span className="ls-acts">
-            <Button variant="outline" size="sm" disabled={pending || !ceilingDirty} onClick={saveCeiling}>
+            <Button variant="outline" size="sm" disabled={!ceilingDirty || (pending && acting !== "ceiling")} pending={acting === "ceiling"} pendingLabel="Saving…" onClick={saveCeiling}>
               Save the ceiling
             </Button>
           </span>
@@ -336,7 +356,14 @@ export function CompositionPanel({
                 Lift the composition
               </Button>
             ) : null}
-            <Button variant="gold" size="sm" disabled={pending || !dirty} onClick={save}>
+            <Button
+              variant="gold"
+              size="sm"
+              disabled={!dirty || (pending && acting !== "composition")}
+              pending={acting === "composition"}
+              pendingLabel={gated ? "Saving…" : "Gating…"}
+              onClick={save}
+            >
               {gated ? "Save the composition" : "Gate this episode"}
             </Button>
           </span>
@@ -392,7 +419,7 @@ export function CompositionPanel({
                     {line.lapsed ? ` · ${line.lapsed} LAPSED` : ""}
                   </span>
                   {line.waiting > 0 && remaining > 0 ? (
-                    <Button variant="ghost" size="sm" disabled={pending} onClick={() => offer(s)}>
+                    <Button variant="ghost" size="sm" disabled={pending && acting !== "offer:" + s} pending={acting === "offer:" + s} pendingLabel="Offering…" onClick={() => offer(s)}>
                       Offer the next place
                     </Button>
                   ) : null}
@@ -453,7 +480,9 @@ export function CompositionPanel({
                         <Button
                           variant="outline"
                           size="sm"
-                          disabled={pending || !room}
+                          disabled={!room || (pending && acting !== "offer:" + r.segment)}
+                          pending={acting === "offer:" + r.segment}
+                          pendingLabel="Offering…"
                           title={room ? undefined : `${SEGMENT_LABEL[r.segment]} is at its ceiling — raise it first.`}
                           onClick={() => offer(r.segment)}
                         >
@@ -463,7 +492,9 @@ export function CompositionPanel({
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled={pending || !room}
+                          disabled={!room || (pending && acting !== "offer-one:" + r.id)}
+                          pending={acting === "offer-one:" + r.id}
+                          pendingLabel="Offering…"
                           title={room ? "Offer this request its place, ahead of the line" : `${SEGMENT_LABEL[r.segment]} is at its ceiling — raise it first.`}
                           onClick={() => offerOne(r.id, r.name)}
                         >
@@ -489,7 +520,7 @@ export function CompositionPanel({
             <Button variant="ghost" onClick={() => setConfirmLift(false)}>
               Leave it on
             </Button>
-            <Button variant="gold" disabled={pending} onClick={lift}>
+            <Button variant="gold" pending={acting === "lift"} pendingLabel="Lifting…" disabled={pending && acting !== "lift"} onClick={lift}>
               Lift it
             </Button>
           </>
@@ -506,7 +537,7 @@ export function CompositionPanel({
         </p>
       </Dialog>
 
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

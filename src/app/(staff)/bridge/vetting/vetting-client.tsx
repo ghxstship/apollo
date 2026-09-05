@@ -44,7 +44,7 @@ export function VettingClient({
   unfiled: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [open, setOpen] = React.useState<FileRow | null>(null);
   const [opening, setOpening] = React.useState(false);
   const [newProfile, setNewProfile] = React.useState("");
@@ -249,7 +249,7 @@ export function VettingClient({
             <Button variant="ghost" onClick={() => setConfirmSweep(false)}>
               Not yet
             </Button>
-            <Button variant="danger" disabled={pending} onClick={sweep}>
+            <Button variant="danger" pending={pending} pendingLabel="Sweeping…" onClick={sweep}>
               Sweep them
             </Button>
           </>
@@ -274,7 +274,7 @@ export function VettingClient({
             <Button variant="ghost" onClick={() => setOpening(false)}>
               Cancel
             </Button>
-            <Button variant="gold" disabled={pending || !newProfile} onClick={create}>
+            <Button variant="gold" disabled={!newProfile} pending={pending} pendingLabel="Opening…" onClick={create}>
               Open it
             </Button>
           </>
@@ -308,7 +308,9 @@ export function VettingClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending || (draft.state === "declined" && !confirmDecline)}
+              disabled={draft.state === "declined" && !confirmDecline}
+              pending={pending}
+              pendingLabel="Saving…"
               onClick={() => open && commit(open)}
             >
               Save the file
@@ -397,7 +399,7 @@ export function VettingClient({
         ) : null}
       </Dialog>
 
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

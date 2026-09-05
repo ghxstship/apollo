@@ -77,7 +77,7 @@ export function SponsorsClient({
   members: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [signing, setSigning] = React.useState(false);
   /* Take it off fired straight off the click — the only control on this screen
      that undoes a placement, and the only one that never asked. The credit line
@@ -87,13 +87,20 @@ export function SponsorsClient({
     null
   );
 
-  const detach = (sponsor: SponsorItem, act: Activation) =>
+  /* Which control is working. One transition flag covers every sponsor card on
+     the page, so the pending face has to be told which button raised it. */
+  const [acting, setActing] = React.useState<string | null>(null);
+
+  const detach = (sponsor: SponsorItem, act: Activation) => {
+    setActing("detach");
     startTransition(async () => {
       const res = await detachSponsor(act.episodeId, sponsor.id);
       setDetaching(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: "Taken off the episode.", meta: sponsor.name.toUpperCase(), tone: "caution" });
+      setActing(null);
     });
+  };
 
   const firstTier = tiers[0];
   const cardFor = (slug: string) => tiers.find((t) => t.slug === slug);
@@ -129,8 +136,10 @@ export function SponsorsClient({
     const key = compKey(a.episodeId, s.id);
     const profileId = compPicks[key] ?? "";
     const who = members.find((m) => m.value === profileId)?.label ?? "";
+    setActing("comp:" + key);
     startTransition(async () => {
       const res = await compAPass(a.episodeId, s.id, profileId);
+      setActing(null);
       if (res.error) {
         show({ msg: res.error, tone: "danger" });
         return;
@@ -376,7 +385,9 @@ export function SponsorsClient({
                               <Button
                                 variant="outline"
                                 size="sm"
-                                disabled={pending || !pickedMember}
+                                disabled={!pickedMember || (pending && acting !== "comp:" + key)}
+                                pending={acting === "comp:" + key}
+                                pendingLabel="Comping…"
                                 onClick={() => comp(s, a)}
                               >
                                 Comp a pass
@@ -415,18 +426,22 @@ export function SponsorsClient({
                     />
                     <Button
                       variant="outline"
-                      disabled={pending || !pick.episode}
-                      onClick={() =>
+                      disabled={!pick.episode || (pending && acting !== "place:" + s.id)}
+                      pending={acting === "place:" + s.id}
+                      pendingLabel="Placing…"
+                      onClick={() => {
+                        setActing("place:" + s.id);
                         startTransition(async () => {
                           const res = await attachSponsor(pick.episode, s.id, pick.placement);
+                          setActing(null);
                           if (res.error) {
                             show({ msg: res.error, tone: "danger" });
                             return;
                           }
                           setPick(s.id, { episode: "", placement: "" });
                           show({ msg: "Placed. The credit rides with the episode.", meta: s.name.toUpperCase() });
-                        })
-                      }
+                        });
+                      }}
                     >
                       Place it
                     </Button>
@@ -452,7 +467,9 @@ export function SponsorsClient({
               </Button>
               <Button
                 variant="danger"
-                disabled={pending}
+                disabled={pending && acting !== "detach"}
+                pending={acting === "detach"}
+                pendingLabel="Taking it off…"
                 onClick={() => detach(detaching.sponsor, detaching.act)}
               >
                 Take it off
@@ -483,8 +500,11 @@ export function SponsorsClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
-              onClick={() =>
+              disabled={pending && acting !== "sign"}
+              pending={acting === "sign"}
+              pendingLabel="Signing…"
+              onClick={() => {
+                setActing("sign");
                 startTransition(async () => {
                   const res = await createSponsor({
                     name,
@@ -495,6 +515,7 @@ export function SponsorsClient({
                     endsOn,
                     notes,
                   });
+                  setActing(null);
                   if (res.error) {
                     show({ msg: res.error, tone: "danger" });
                     return;
@@ -508,8 +529,8 @@ export function SponsorsClient({
                   setEndsOn("");
                   setNotes("");
                   show({ msg: "Signed.", meta: "ON THE BOOK · PLACE IT ON AN EPISODE" });
-                })
-              }
+                });
+              }}
             >
               Sign them
             </Button>
@@ -578,7 +599,7 @@ export function SponsorsClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

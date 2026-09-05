@@ -54,14 +54,19 @@ function keyFrom(prompt: string): string {
 
 export function QuestionsClient({ rows }: { rows: QuestionRow[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   /* null = closed; "" = a new question; otherwise the key being edited. */
   const [editing, setEditing] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState<Draft>(BLANK);
 
-  const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
+  /* Which control is working. One transition flag covers every question on the
+     page, so without this Up and Down on all of them would read as working. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string }>, ok: () => void, key?: string) => {
+    setActing(key ?? null);
     startTransition(async () => {
       const res = await fn();
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
@@ -112,10 +117,26 @@ export function QuestionsClient({ rows }: { rows: QuestionRow[] }) {
               {q.required ? <Badge tone="ink">Required</Badge> : null}
               {!q.active ? <Badge tone="caution">Off</Badge> : null}
               <div className="hm-item__acts">
-                <Button variant="ghost" size="sm" disabled={pending || i === 0} aria-label={`Move “${q.prompt}” up`} onClick={() => run(() => moveQuestion(q.key, "up"), () => undefined)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={i === 0 || (pending && acting !== "up:" + q.key)}
+                  pending={acting === "up:" + q.key}
+                  pendingLabel="Moving…"
+                  aria-label={`Move “${q.prompt}” up`}
+                  onClick={() => run(() => moveQuestion(q.key, "up"), () => undefined, "up:" + q.key)}
+                >
                   Up
                 </Button>
-                <Button variant="ghost" size="sm" disabled={pending || i === rows.length - 1} aria-label={`Move “${q.prompt}” down`} onClick={() => run(() => moveQuestion(q.key, "down"), () => undefined)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={i === rows.length - 1 || (pending && acting !== "down:" + q.key)}
+                  pending={acting === "down:" + q.key}
+                  pendingLabel="Moving…"
+                  aria-label={`Move “${q.prompt}” down`}
+                  onClick={() => run(() => moveQuestion(q.key, "down"), () => undefined, "down:" + q.key)}
+                >
                   Down
                 </Button>
                 <Button variant="outline" size="sm" disabled={pending} onClick={() => openEdit(q)}>
@@ -167,7 +188,7 @@ export function QuestionsClient({ rows }: { rows: QuestionRow[] }) {
             <Button variant="ghost" onClick={() => setEditing(null)}>
               Not yet
             </Button>
-            <Button variant="gold" disabled={pending} onClick={save}>
+            <Button variant="gold" pending={pending} pendingLabel={editing ? "Saving…" : "Asking…"} onClick={save}>
               {editing ? "Save" : "Ask it"}
             </Button>
           </>
@@ -219,7 +240,7 @@ export function QuestionsClient({ rows }: { rows: QuestionRow[] }) {
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

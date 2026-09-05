@@ -28,7 +28,7 @@ export function MediaClient({
   episodes: Array<{ id: string; title: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [episodeId, setEpisodeId] = React.useState("");
   const [state, setState] = React.useState("pending");
   const [removing, setRemoving] = React.useState<MediaCard | null>(null);
@@ -40,9 +40,14 @@ export function MediaClient({
     return true;
   });
 
-  const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
+  /* Which frame is working. One transition flag covers the whole gallery, so
+     without this every card's button would read as working at once. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string }>, ok: () => void, key?: string) => {
+    setActing(key ?? null);
     startTransition(async () => {
       const res = await fn();
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
@@ -133,11 +138,14 @@ export function MediaClient({
                   <Button
                     variant="ghost"
                     size="sm"
-                    disabled={pending}
+                    disabled={pending && acting !== "pull:" + c.id}
+                    pending={acting === "pull:" + c.id}
+                    pendingLabel="Pulling back…"
                     onClick={() =>
                       run(
                         () => unapproveMedia(c.id),
-                        () => show({ msg: "Pulled back for another look.", meta: "NOT SHOWING" })
+                        () => show({ msg: "Pulled back for another look.", meta: "NOT SHOWING" }),
+                        "pull:" + c.id
                       )
                     }
                   >
@@ -147,11 +155,14 @@ export function MediaClient({
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={pending}
+                    disabled={pending && acting !== "approve:" + c.id}
+                    pending={acting === "approve:" + c.id}
+                    pendingLabel="Approving…"
                     onClick={() =>
                       run(
                         () => approveMedia(c.id),
-                        () => show({ msg: "Cleared to show.", meta: "APPROVED", tone: "positive" })
+                        () => show({ msg: "Cleared to show.", meta: "APPROVED", tone: "positive" }),
+                        "approve:" + c.id
                       )
                     }
                   >
@@ -196,7 +207,8 @@ export function MediaClient({
               </Button>
               <Button
                 variant="danger"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Removing…"
                 onClick={() => {
                   const target = removing;
                   setRemoving(null);
@@ -224,7 +236,7 @@ export function MediaClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

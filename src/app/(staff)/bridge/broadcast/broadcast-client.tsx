@@ -28,7 +28,7 @@ const CHANNEL_LABEL: Record<Channel, string> = {
 
 export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: SentRow[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   type Filter = Extract<Audience, { kind: "filter" }>;
   const [who, setWho] = React.useState<Filter>(EVERY_ACTIVE as Filter);
   const [title, setTitle] = React.useState("");
@@ -44,12 +44,18 @@ export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: Sen
   const audienceLabel = describeAudience(who, lookups);
   const ready = !!audience() && title.trim().length > 0 && body.trim().length > 0 && picked.length > 0;
 
+  /* Which of the two sends is working — the broadcast or the test to self.
+     They share one transition flag and sit in different places on the page. */
+  const [acting, setActing] = React.useState<"say" | "test" | null>(null);
+
   const send = () => {
     const a = audience();
     if (!a) return;
     setConfirm(false);
+    setActing("say");
     startTransition(async () => {
       const res = await sendBroadcast(a, title, body, picked, sendAt);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else {
         show({
@@ -65,8 +71,10 @@ export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: Sen
   };
 
   const test = () => {
+    setActing("test");
     startTransition(async () => {
       const res = await sendTestToSelf(title, body, picked);
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else show({ msg: "Sent to you alone.", meta: (res.sent ?? []).join(" + ").toUpperCase() });
     });
@@ -104,7 +112,14 @@ export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: Sen
               onChange={(e) => setSendAt(e.target.value)}
             />
             <span className="ls-acts ls-acts--end hm-acts--baseline">
-              <Button variant="outline" size="sm" disabled={pending || !title.trim() || !body.trim() || picked.length === 0} onClick={test}>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!title.trim() || !body.trim() || picked.length === 0 || (pending && acting !== "test")}
+                pending={acting === "test"}
+                pendingLabel="Sending…"
+                onClick={test}
+              >
                 Send me a test
               </Button>
               <Button variant="gold" size="sm" disabled={pending || !ready} onClick={() => setConfirm(true)}>
@@ -155,7 +170,7 @@ export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: Sen
         footer={
           <>
             <Button variant="ghost" onClick={() => setConfirm(false)}>Not yet</Button>
-            <Button variant="gold" disabled={pending} onClick={send}>{sendAt ? "Queue it" : "Say it"}</Button>
+            <Button variant="gold" pending={acting === "say"} disabled={pending && acting !== "say"} pendingLabel={sendAt ? "Queuing…" : "Saying…"} onClick={send}>{sendAt ? "Queue it" : "Say it"}</Button>
           </>
         }
       >
@@ -167,7 +182,7 @@ export function BroadcastClient({ lookups, sent }: { lookups: Lookups; sent: Sen
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

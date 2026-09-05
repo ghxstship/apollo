@@ -23,7 +23,7 @@ export type FlagCard = {
 
 export function ModerationClient({ flags }: { flags: FlagCard[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [removing, setRemoving] = React.useState<FlagCard | null>(null);
   const [reason, setReason] = React.useState("");
 
@@ -79,7 +79,8 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
               </Button>
               <Button
                 variant="danger"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Removing…"
                 onClick={() => {
                   const f = removing;
                   const line = reason;
@@ -116,7 +117,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

@@ -45,7 +45,10 @@ export function CodesClient({
   episodes: Array<{ id: string; title: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  /* Which row is being reinstated. One transition flag covers the whole table,
+     so without this every Reinstate on screen would read as working. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const { toast, toastOpen, show, clear } = useToast();
   const [cutting, setCutting] = React.useState(false);
   const [confirmOff, setConfirmOff] = React.useState<CodeRow | null>(null);
   const [reconciling, setReconciling] = React.useState(false);
@@ -132,14 +135,18 @@ export function CodesClient({
           <Button
             variant="ghost"
             size="sm"
-            disabled={pending}
-            onClick={() =>
+            disabled={pending && acting !== r.code}
+            pending={acting === r.code}
+            pendingLabel="Reinstating…"
+            onClick={() => {
+              setActing(r.code);
               startTransition(async () => {
                 const res = await setCodeActive(r.code, true);
+                setActing(null);
                 if (res.error) show({ msg: res.error, tone: "danger" });
                 else show({ msg: "Back in circulation.", meta: `${r.code} · LIVE` });
-              })
-            }
+              });
+            }}
           >
             Reinstate
           </Button>
@@ -216,7 +223,8 @@ export function CodesClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Cutting…"
               onClick={() => {
                 const payload = {
                   code,
@@ -323,7 +331,8 @@ export function CodesClient({
               </Button>
               <Button
                 variant="danger"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Deactivating…"
                 onClick={() => {
                   const target = confirmOff;
                   setConfirmOff(null);
@@ -364,7 +373,8 @@ export function CodesClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Reconciling…"
               onClick={() => {
                 setReconciling(false);
                 startTransition(async () => {
@@ -398,7 +408,7 @@ export function CodesClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

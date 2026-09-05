@@ -79,7 +79,7 @@ export function CrewClient({
   events: EventRow[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [roleId, setRoleId] = React.useState(roles[0]?.id ?? "");
   const [stage, setStage] = React.useState<"all" | CrewStage>("all");
   const [openId, setOpenId] = React.useState<string | null>(null);
@@ -315,14 +315,15 @@ export function CrewClient({
               {current.stage !== "passed" ? (
                 <Button
                   variant="ghost"
-                  disabled={pending}
+                  pending={pending}
+                  pendingLabel="Passing…"
                   onClick={() => (passing ? pass(current) : setPassing(true))}
                 >
                   {passing ? "Pass, with that reason" : "Pass"}
                 </Button>
               ) : null}
               {ADVANCE[current.stage] ? (
-                <Button variant="gold" disabled={pending} onClick={() => advance(current)}>
+                <Button variant="gold" pending={pending} pendingLabel="Advancing…" onClick={() => advance(current)}>
                   Advance → {STAGE_LABEL[ADVANCE[current.stage]!]}
                 </Button>
               ) : null}
@@ -396,7 +397,9 @@ export function CrewClient({
             <Button
               variant="outline"
               size="sm"
-              disabled={pending || note.trim().length === 0}
+              disabled={note.trim().length === 0}
+              pending={pending}
+              pendingLabel="Filing…"
               onClick={() => fileNote(current)}
             >
               File it
@@ -406,7 +409,7 @@ export function CrewClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

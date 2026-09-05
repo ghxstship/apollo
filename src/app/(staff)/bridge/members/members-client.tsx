@@ -134,7 +134,7 @@ export function MembersClient({
   recentCutoff: string;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   /* ?q= from the Bridge search lands the roll already filtered. */
   const fromUrl = useSearchParams().get("q") ?? "";
   const [f, setF] = React.useState<SegmentFilters>(fromUrl ? { ...EMPTY, q: fromUrl } : EMPTY);
@@ -447,7 +447,8 @@ export function MembersClient({
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Dropping…"
                 onClick={() => {
                   const id = segmentId;
                   startTransition(async () => {
@@ -531,7 +532,8 @@ export function MembersClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Saving…"
               onClick={() => {
                 const name = segmentName;
                 const filters = f;
@@ -722,7 +724,14 @@ export function MembersClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel={
+                detail?.status === "paused"
+                  ? detail.holdReason === "dues"
+                    ? "Lifting…"
+                    : "Resuming…"
+                  : "Pausing…"
+              }
               onClick={() => {
                 const row = openRow;
                 /* A departed member used to leave the operator only one
@@ -793,7 +802,8 @@ export function MembersClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Posting…"
               onClick={() => {
                 const row = openRow;
                 if (!row) return;
@@ -846,7 +856,8 @@ export function MembersClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Marking…"
               onClick={() => {
                 const row = openRow;
                 if (!row) return;
@@ -895,7 +906,8 @@ export function MembersClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel={compUntil.trim() ? "Comping…" : "Clearing…"}
               onClick={() => {
                 const row = openRow;
                 if (!row) return;
@@ -966,7 +978,8 @@ export function MembersClient({
             </Button>
             <Button
               variant={bulk === "hold" ? "danger" : "gold"}
-              disabled={pending}
+              pending={pending}
+              pendingLabel={bulk === "hold" ? "Pausing…" : "Lifting…"}
               onClick={() => runBulk((ids) => bulkSetStatus(ids, bulk === "hold" ? "paused" : "active"), bulk === "hold" ? "Paused" : "Running again")}
             >
               {bulk === "hold" ? "Pause them" : "Lift it"}
@@ -994,7 +1007,8 @@ export function MembersClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Posting…"
               onClick={() => runBulk((ids) => bulkAdjustKnots(ids, Number(bulkDelta), bulkReason), "Posted to the ledger")}
             >
               Post it to {chosen.length}
@@ -1019,7 +1033,7 @@ export function MembersClient({
             <Button variant="ghost" onClick={() => setBulk(null)}>
               Not yet
             </Button>
-            <Button variant="gold" disabled={pending} onClick={() => runBulk((ids) => bulkWord(ids, bulkTitle, bulkBody), "Said")}>
+            <Button variant="gold" pending={pending} pendingLabel="Saying…" onClick={() => runBulk((ids) => bulkWord(ids, bulkTitle, bulkBody), "Said")}>
               Say it to {chosen.length}
             </Button>
           </>
@@ -1036,7 +1050,7 @@ export function MembersClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

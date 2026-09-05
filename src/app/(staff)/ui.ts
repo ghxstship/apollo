@@ -17,15 +17,23 @@ export type ToastMsg = {
 const TOAST_MS = 4000;
 const DANGER_TOAST_MS = 6000;
 
+/* The clock lives here rather than in Toast's own `duration` because this one
+   is pausable and knows a refusal from a receipt, and `duration` is a plain
+   deadline that is neither. What the primitive does own is the exit: when the
+   clock (or the ✕) runs out, `toastOpen` goes false, the toast plays its --out
+   keyframes, and `clear` — passed as Toast's `onClose` — unmounts it once the
+   animation has ended. Rendering the toast conditionally and dropping the node
+   the moment the clock fires is what made the exit dead code. */
 export function useToast() {
   const [toast, setToast] = React.useState<ToastMsg | null>(null);
+  const [leaving, setLeaving] = React.useState(false);
   React.useEffect(() => {
     if (!toast) return;
     const ms = toast.tone === "danger" ? DANGER_TOAST_MS : TOAST_MS;
     let h: ReturnType<typeof setTimeout> | null = null;
     const arm = () => {
       if (h) clearTimeout(h);
-      h = setTimeout(() => setToast(null), ms);
+      h = setTimeout(() => setLeaving(true), ms);
     };
     const hold = () => {
       if (h) clearTimeout(h);
@@ -54,8 +62,15 @@ export function useToast() {
       }
     };
   }, [toast]);
-  const clear = React.useCallback(() => setToast(null), []);
-  return { toast, show: setToast, clear };
+  const show = React.useCallback((next: ToastMsg) => {
+    setLeaving(false);
+    setToast(next);
+  }, []);
+  const clear = React.useCallback(() => {
+    setLeaving(false);
+    setToast(null);
+  }, []);
+  return { toast, toastOpen: !leaving, show, clear };
 }
 
 /* Mono-caps relative age for queue rows — "12 MIN AGO", "2D AGO". */

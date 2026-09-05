@@ -25,7 +25,7 @@ const pct = (bp: number | null) => (bp === null ? "—" : `${(bp / 100).toFixed(
 
 export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   /* The city whose determination is being recorded, so its button says so. */
   const [saving, setSaving] = React.useState<string | null>(null);
   const [draft, setDraft] = React.useState<Record<string, Draft>>(() =>
@@ -154,7 +154,7 @@ export function TaxClient({ cards }: { cards: CityTaxCard[] }) {
         })}
       </div>
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

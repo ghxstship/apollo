@@ -45,7 +45,10 @@ export function RegattasClient({
   episodes: Array<{ value: string; label: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  /* Which contest is being opened. One transition flag covers the whole table,
+     so without this every row's Open it would read as working. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const { toast, toastOpen, show, clear } = useToast();
   const [calling, setCalling] = React.useState(false);
   const [confirmSettle, setConfirmSettle] = React.useState<ContestRow | null>(null);
 
@@ -124,14 +127,18 @@ export function RegattasClient({
           <Button
             size="sm"
             variant="ghost"
-            disabled={pending}
-            onClick={() =>
+            disabled={pending && acting !== r.id}
+            pending={acting === r.id}
+            pendingLabel="Opening…"
+            onClick={() => {
+              setActing(r.id);
               startTransition(async () => {
                 const res = await openContest(r.id);
+                setActing(null);
                 if (res.error) show({ msg: res.error, tone: "danger" });
                 else show({ msg: "Open. Members can enter.", meta: `${r.title.toUpperCase()} · LIVE` });
-              })
-            }
+              });
+            }}
           >
             Open it
           </Button>
@@ -177,7 +184,8 @@ export function RegattasClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Calling…"
               onClick={() =>
                 startTransition(async () => {
                   const res = await createContest({
@@ -326,7 +334,8 @@ export function RegattasClient({
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Settling…"
               onClick={() => {
                 const target = confirmSettle;
                 if (!target) return;
@@ -350,7 +359,7 @@ export function RegattasClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

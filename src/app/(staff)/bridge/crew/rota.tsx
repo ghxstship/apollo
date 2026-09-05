@@ -82,7 +82,7 @@ export function Rota({
   doors: DoorRow[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [filling, setFilling] = React.useState<GapRow | null>(null);
   const [pick, setPick] = React.useState("");
   /* A night's own headcount for a position, typed but not yet set. */
@@ -96,9 +96,15 @@ export function Rota({
      one that looks filled on the board and is not. */
   const unanswered = gaps.filter((g) => g.offered > 0 && g.short > 0 && g.daysOut <= 2);
 
-  const run = (fn: () => Promise<{ error?: string }>, ok: () => void) => {
+  /* Which control is working. One transition flag covers every gap, every
+     billing and every door on the page, so without this the pending face
+     would land on all of them at once instead of the one that was pressed. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const run = (fn: () => Promise<{ error?: string }>, ok: () => void, key?: string) => {
+    setActing(key ?? null);
     startTransition(async () => {
       const res = await fn();
+      setActing(null);
       if (res.error) show({ msg: res.error, tone: "danger" });
       else ok();
     });
@@ -119,7 +125,8 @@ export function Rota({
   const setStatus = (b: BillingRow, status: BillingRow["status"]) => {
     run(
       () => setAssignmentStatus(b.id, status),
-      () => show({ msg: `${b.crewName} — ${status}.`, meta: "ROTA" })
+      () => show({ msg: `${b.crewName} — ${status}.`, meta: "ROTA" }),
+      `${status}:${b.id}`
     );
   };
 
@@ -202,7 +209,9 @@ export function Rota({
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled={pending}
+                          disabled={pending && acting !== `confirmed:${b.id}`}
+                          pending={acting === `confirmed:${b.id}`}
+                          pendingLabel="Confirming…"
                           onClick={() => setStatus(b, "confirmed")}
                         >
                           Confirm {b.crewName.split(" ")[0]}
@@ -210,7 +219,9 @@ export function Rota({
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled={pending}
+                          disabled={pending && acting !== `released:${b.id}`}
+                          pending={acting === `released:${b.id}`}
+                          pendingLabel="Releasing…"
                           onClick={() => setStatus(b, "released")}
                         >
                           Release
@@ -245,11 +256,14 @@ export function Rota({
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled={pending || !changed}
+                          disabled={!changed || (pending && acting !== `need:${key}`)}
+                          pending={acting === `need:${key}`}
+                          pendingLabel="Setting…"
                           onClick={() =>
                             run(
                               () => setEpisodeNeed(g.episodeId, g.positionSlug, Number(typed)),
-                              () => show({ msg: `${g.title} — ${g.positionLabel} needs ${typed}.`, meta: "ROTA" })
+                              () => show({ msg: `${g.title} — ${g.positionLabel} needs ${typed}.`, meta: "ROTA" }),
+                              `need:${key}`
                             )
                           }
                         >
@@ -309,11 +323,14 @@ export function Rota({
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={pending || !(handle[d.assignmentId] ?? "").trim()}
+                      disabled={!(handle[d.assignmentId] ?? "").trim() || (pending && acting !== `link:${d.assignmentId}`)}
+                      pending={acting === `link:${d.assignmentId}`}
+                      pendingLabel="Linking…"
                       onClick={() =>
                         run(
                           () => linkCrewProfile(d.crewId, handle[d.assignmentId] ?? ""),
-                          () => show({ msg: `${d.crewName} is linked — the door can be handed over.`, meta: "CREW" })
+                          () => show({ msg: `${d.crewName} is linked — the door can be handed over.`, meta: "CREW" }),
+                          `link:${d.assignmentId}`
                         )
                       }
                     >
@@ -326,10 +343,12 @@ export function Rota({
                     <Button
                       variant="ghost"
                       size="sm"
-                      disabled={pending}
+                      disabled={pending && acting !== `revoke:${d.assignmentId}`}
+                      pending={acting === `revoke:${d.assignmentId}`}
+                      pendingLabel="Revoking…"
                       onClick={() => {
                         const id = d.grantId!;
-                        run(() => revokeTheDoor(id), () => show({ msg: `${d.crewName} no longer holds the door.`, meta: d.episodeTitle.toUpperCase(), tone: "caution" }));
+                        run(() => revokeTheDoor(id), () => show({ msg: `${d.crewName} no longer holds the door.`, meta: d.episodeTitle.toUpperCase(), tone: "caution" }), `revoke:${d.assignmentId}`);
                       }}
                     >
                       Revoke
@@ -338,9 +357,11 @@ export function Rota({
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={pending || !d.linked}
+                      disabled={!d.linked || (pending && acting !== `grant:${d.assignmentId}`)}
+                      pending={acting === `grant:${d.assignmentId}`}
+                      pendingLabel="Granting…"
                       title={d.linked ? undefined : "Link this crew member to a member profile first."}
-                      onClick={() => run(() => grantTheDoor(d.assignmentId), () => show({ msg: `${d.crewName} holds the door for ${d.episodeTitle}.`, meta: "GANGWAY · EXPIRES SIX HOURS AFTER", tone: "positive" }))}
+                      onClick={() => run(() => grantTheDoor(d.assignmentId), () => show({ msg: `${d.crewName} holds the door for ${d.episodeTitle}.`, meta: "GANGWAY · EXPIRES SIX HOURS AFTER", tone: "positive" }), `grant:${d.assignmentId}`)}
                     >
                       Grant the door
                     </Button>
@@ -363,7 +384,7 @@ export function Rota({
             <Button variant="ghost" size="sm" onClick={() => setFilling(null)}>
               Not now
             </Button>
-            <Button variant="gold" size="sm" disabled={pending || !pick} onClick={offer}>
+            <Button variant="gold" size="sm" disabled={!pick} pending={pending} pendingLabel="Offering…" onClick={offer}>
               Offer it
             </Button>
           </>
@@ -391,7 +412,7 @@ export function Rota({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

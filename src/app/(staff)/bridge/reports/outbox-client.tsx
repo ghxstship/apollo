@@ -55,7 +55,7 @@ function reducedMotion(): boolean {
 }
 
 export function OutboxTable({ rows }: { rows: StrandedRow[] }) {
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   /* Which row's button is working, and what it is doing — so the one button
      says so and its neighbours stay usable. */
   const [busy, setBusy] = React.useState<{ key: string; what: "requeue" | "strike" } | null>(null);
@@ -151,7 +151,7 @@ export function OutboxTable({ rows }: { rows: StrandedRow[] }) {
         />
       </div>
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

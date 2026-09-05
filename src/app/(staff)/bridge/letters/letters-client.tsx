@@ -22,7 +22,7 @@ export function LettersClient({ rows }: { rows: LetterRow[] }) {
   /* The code of the letter being sent, so that one button says "Sending…"
      and the others stay themselves — one transition flag dimmed all forty. */
   const [sending, setSending] = React.useState<string | null>(null);
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   return (
     <>
       {rows.map((r) => (
@@ -63,7 +63,7 @@ export function LettersClient({ rows }: { rows: LetterRow[] }) {
           <div className="hm-item__body">{r.description}</div>
         </div>
       ))}
-      {toast ? <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} /> : null}
+      {toast ? <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} /> : null}
     </>
   );
 }

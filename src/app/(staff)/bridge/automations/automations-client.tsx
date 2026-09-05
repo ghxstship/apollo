@@ -106,7 +106,7 @@ export function AutomationsClient({
   letters: Array<{ code: string; description: string }>;
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
   const [writing, setWriting] = React.useState(false);
   /* The switch moves the moment it is pressed and the badge follows; the
      server's answer either confirms it (the row arrives with the new state and
@@ -453,7 +453,7 @@ export function AutomationsClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

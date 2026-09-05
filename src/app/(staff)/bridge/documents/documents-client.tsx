@@ -87,7 +87,10 @@ export function DocumentsClient({
   register: SignatureRow[];
 }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  /* Which row is working. One transition flag covers the whole register, so
+     without this every Publish and Draft next would read as working at once. */
+  const [acting, setActing] = React.useState<string | null>(null);
+  const { toast, toastOpen, show, clear } = useToast();
   const [tab, setTab] = React.useState("library");
   const [clauseQuery, setClauseQuery] = React.useState("");
   const [registerQuery, setRegisterQuery] = React.useState("");
@@ -225,14 +228,18 @@ export function DocumentsClient({
             <Button
               size="sm"
               variant="ghost"
-              disabled={pending}
-              onClick={() =>
+              disabled={pending && acting !== "publish:" + d.code}
+              pending={acting === "publish:" + d.code}
+              pendingLabel="Publishing…"
+              onClick={() => {
+                setActing("publish:" + d.code);
                 startTransition(async () => {
                   const res = await publishVersion(d.draftVersionId!);
+                  setActing(null);
                   if (res.error) show({ msg: res.error, tone: "danger" });
                   else show({ msg: "Published.", meta: `${d.code.toUpperCase()} · V${d.draftVersion}` });
-                })
-              }
+                });
+              }}
             >
               Publish
             </Button>
@@ -241,14 +248,18 @@ export function DocumentsClient({
           <Button
             size="sm"
             variant="ghost"
-            disabled={pending}
-            onClick={() =>
+            disabled={pending && acting !== "draft:" + d.code}
+            pending={acting === "draft:" + d.code}
+            pendingLabel="Drafting…"
+            onClick={() => {
+              setActing("draft:" + d.code);
               startTransition(async () => {
                 const res = await draftNextVersion(d.code);
+                setActing(null);
                 if (res.error) show({ msg: res.error, tone: "danger" });
                 else show({ msg: "Draft opened from the standing version." });
-              })
-            }
+              });
+            }}
           >
             Draft next
           </Button>
@@ -465,7 +476,8 @@ export function DocumentsClient({
             <Button variant="ghost" onClick={() => setWriting(false)}>Cancel</Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Writing…"
               onClick={() =>
                 startTransition(async () => {
                   const res = await createClause({ code, title, category, body });
@@ -503,7 +515,8 @@ export function DocumentsClient({
             <Button variant="ghost" onClick={() => setRevising(null)}>Cancel</Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Publishing…"
               onClick={() => {
                 const target = revising;
                 if (!target) return;
@@ -642,7 +655,8 @@ export function DocumentsClient({
             <Button variant="ghost" onClick={() => setConfirmRedact(null)}>Keep it</Button>
             <Button
               variant="danger"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Redacting…"
               onClick={() => {
                 const target = confirmRedact;
                 if (!target) return;
@@ -676,7 +690,8 @@ export function DocumentsClient({
             <Button variant="ghost" onClick={() => setCountering(null)}>Not yet</Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Signing…"
               onClick={() => {
                 const target = countering;
                 if (!target) return;
@@ -715,7 +730,8 @@ export function DocumentsClient({
             <Button variant="ghost" onClick={() => setCardsOpen(false)}>Cancel</Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Queuing…"
               onClick={() =>
                 startTransition(async () => {
                   const res = await sendSeasonCards(seasonFrom, seasonTo, seasonLabel);
@@ -750,7 +766,7 @@ export function DocumentsClient({
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );

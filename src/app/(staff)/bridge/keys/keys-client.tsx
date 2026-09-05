@@ -36,7 +36,7 @@ export type HookRow = {
 
 export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }) {
   const [pending, startTransition] = React.useTransition();
-  const { toast, show, clear } = useToast();
+  const { toast, toastOpen, show, clear } = useToast();
 
   const [cuttingKey, setCuttingKey] = React.useState(false);
   const [label, setLabel] = React.useState("");
@@ -256,7 +256,8 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Cutting…"
               onClick={() => {
                 const name = label;
                 const picked = scopes;
@@ -339,7 +340,8 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               </Button>
               <Button
                 variant="danger"
-                disabled={pending}
+                pending={pending}
+                pendingLabel="Revoking…"
                 onClick={() => {
                   const target = revoking;
                   setRevoking(null);
@@ -379,7 +381,8 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
             </Button>
             <Button
               variant="gold"
-              disabled={pending}
+              pending={pending}
+              pendingLabel="Setting…"
               onClick={() => {
                 const target = url;
                 const picked = events;
@@ -425,7 +428,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       </Dialog>
 
       {toast ? (
-        <Toast fixed message={toast.msg} meta={toast.meta} tone={toast.tone} onDismiss={clear} />
+        <Toast fixed open={toastOpen} message={toast.msg} meta={toast.meta} tone={toast.tone} onClose={clear} />
       ) : null}
     </>
   );
