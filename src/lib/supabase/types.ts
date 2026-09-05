@@ -180,6 +180,8 @@ export type PassRow = {
   cabin_id: string | null
   /* Stands outside the count; becomes a seat at the gangway if one is free. */
   standby: boolean
+  /* When the code on the pass actually bit; null when it was spent before the claim. */
+  promo_claimed_at: string | null
   /* A comp given on a sponsor's account. */
   sponsor_id: string | null
 }
