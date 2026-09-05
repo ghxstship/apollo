@@ -1,0 +1,14 @@
+/* The camera scanner — a component's own stylesheet, imported by the component.
+   It renders on two routes in two route groups: the Bridge's gangway console
+   and the dockside kiosk. Its rules used to be .hm-cam in a Bridge stylesheet
+   (one that was never imported, and even when it had been, bridge.css does not
+   load under /kiosk) — so the frame, reticle and hint drew bare on the dock.
+   Not an .hm- class: that prefix is the Bridge's and this is not only the
+   Bridge's. Every value here is a global token, so it reads the same on both
+   grounds. */
+.cam-scan{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.cam-scan__frame{position:relative;max-width:420px;border:1px solid var(--line-faint);border-radius:var(--radius-sharp);overflow:hidden;background:var(--void-black)}
+.cam-scan__video{display:block;width:100%;height:auto}
+.cam-scan__reticle{position:absolute;inset:18%;border:1px solid var(--neon-cyan);opacity:.6;pointer-events:none}
+.cam-scan__hint{position:absolute;left:12px;bottom:10px;font-family:var(--font-mono);font-size:var(--text-data-s);letter-spacing:var(--track-data);color:var(--text-on-media)}
+.cam-scan__err{font-size:12px;color:var(--warn)}

@@ -524,18 +524,20 @@ export function ElementsClient({ rows }: { rows: ElementListRow[] }) {
               hint="Sensory channels, slash-separated — Sight / Touch."
             />
 
-            <Checkbox
-              label="The guest sees it"
-              description="Client-visible elements must satisfy the imagery and type canon; internal ones need only the spec."
-              checked={f.clientVisible}
-              onChange={(e) => set("clientVisible", e.target.checked)}
-            />
-            <Checkbox
-              label="Critical path"
-              description="The episode cannot run without it. The run-of-show board filters on this."
-              checked={f.criticalPath}
-              onChange={(e) => set("criticalPath", e.target.checked)}
-            />
+            <div className="ls-choices ls-choices--col">
+              <Checkbox
+                label="The guest sees it"
+                description="Client-visible elements must satisfy the imagery and type canon; internal ones need only the spec."
+                checked={f.clientVisible}
+                onChange={(e) => set("clientVisible", e.target.checked)}
+              />
+              <Checkbox
+                label="Critical path"
+                description="The episode cannot run without it. The run-of-show board filters on this."
+                checked={f.criticalPath}
+                onChange={(e) => set("criticalPath", e.target.checked)}
+              />
+            </div>
           </div>
         ) : null}
       </Dialog>

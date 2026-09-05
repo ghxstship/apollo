@@ -123,7 +123,7 @@ export function BroadcastClient({ cities, episodes, sent }: { cities: Opt[]; epi
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
-          <div className="hm-channels">
+          <div className="ls-choices" role="group" aria-label="Channels">
             {(Object.keys(CHANNEL_LABEL) as Channel[]).map((c) => (
               <Checkbox key={c} label={CHANNEL_LABEL[c]} checked={channels[c]} onChange={(e) => setChannel(c, e.target.checked)} />
             ))}

@@ -321,6 +321,22 @@
 .ls-check__label{font-size:var(--text-sm);color:var(--text-1);line-height:1.4}
 .ls-check__desc{display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:2px}
 
+/* — Choices — two or more Checkbox, Radio or Switch controls as siblings —
+   The one class for an inline group of choice controls, so no screen writes
+   its own. Row by default and it wraps; --space-3 between a label and the next
+   box is the floor (the Broadcast channels lost theirs when a per-screen rule
+   never loaded and read "as a notice[ ] By email"), and the same row-gap keeps
+   a second line clear of the first. --col stacks them at the same gap, which
+   is also .hm-form's, so a stacked group sits in a form without a seam.
+   Spacing only: the group owns no margin — the layout around it does. */
+.ls-choices{display:flex;flex-wrap:wrap;gap:var(--space-3) var(--space-5);align-items:flex-start}
+.ls-choices--col{flex-direction:column;flex-wrap:nowrap}
+
+/* — Note — a small muted line of running copy under a control: a refusal, a
+   status, a caveat. The global twin of the Bridge's .hm-note, which three
+   member components asked for on routes where bridge.css never loads. */
+.ls-note{font-size:var(--text-xs);color:var(--text-3)}
+
 /* — Field / Input — */
 .ls-field{display:flex;flex-direction:column;gap:8px;font-family:var(--font-sans)}
 .ls-field__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2)}
@@ -564,6 +580,7 @@
 .sgn-draw__label{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-3)}
 .sgn-canvas{width:100%;max-width:520px;height:140px;border:1px solid var(--line-strong);background:#fff;border-radius:2px;touch-action:none;cursor:crosshair} /* ds-exempt: signature canvas — the pad must be white because the strokes are painted through the canvas API, which cannot read a custom property. */
 .sgn-draw__acts{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sgn-draw__alt{color:var(--text-3)}
 .sgn-link{background:none;border:0;padding:4px 2px;min-height:24px;color:var(--gold-deep);font:inherit;text-decoration:underline;cursor:pointer}
 .sgn-consent{border-top:1px solid var(--line-faint);padding-top:18px}
 .sgn-error{color:var(--caution);font-size:var(--text-xs);min-height:1.2em}

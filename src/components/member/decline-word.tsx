@@ -37,7 +37,7 @@ export function DeclineWord({
         {blocked ? "Allow messages again" : `Decline messages from ${firstName}`}
       </button>
       {blocked ? (
-        <p className="hm-note" role="status" style={{ marginTop: 8 }}>
+        <p className="ls-note" role="status" style={{ marginTop: 8 }}>
           {firstName} can&rsquo;t open a conversation with you. Allowing again
           undoes it — nothing else changes.
         </p>
@@ -45,7 +45,7 @@ export function DeclineWord({
       {state.error ? (
         /* alert, not status — a refusal interrupts; see enquire.tsx. The note
            above it stays a status: it reports a state, not a failure. */
-        <p className="hm-note" role="alert" style={{ marginTop: 8 }}>
+        <p className="ls-note" role="alert" style={{ marginTop: 8 }}>
           {state.error}
         </p>
       ) : null}

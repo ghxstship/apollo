@@ -20,7 +20,7 @@
    in the report, and nothing is ever skipped silently. */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative, extname } from "node:path";
+import { join, relative, extname, dirname } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
 const HANDOFF = join(ROOT, "docs/brand/_handoff");
@@ -917,17 +917,37 @@ function checkFoundingYear() {
 /* ── report ───────────────────────────────────────────────────────────────── */
 
 /* ── check: orphan classes ────────────────────────────────────────────────── */
-/* A className that no stylesheet defines. It is the failure mode with no
-   symptom: nothing throws, nothing logs, the element simply renders with
-   whatever the cascade happens to give it and the page looks like a spacing
-   bug rather than a missing rule.
+/* A className whose rule does not LOAD where it is used. It is the failure
+   mode with no symptom: nothing throws, nothing logs, the element simply
+   renders with whatever the cascade happens to give it and the page looks like
+   a spacing bug rather than a missing rule.
 
-   It found the real thing. The harbor→city rename updated the markup and left
-   site.css behind, so .ws-city-row matched nothing — the home page's city rows
-   had no grid, no gap and no alignment, and the status badge sat on top of the
-   coordinates. And the seven error and 404 pages asked for hm-btn, a class
-   that has never existed in this repository, so every one of them rendered its
-   only button as unstyled text.
+   It found the real thing, twice. The harbor→city rename updated the markup
+   and left site.css behind, so .ws-city-row matched nothing — the home page's
+   city rows had no grid, no gap and no alignment, and the status badge sat on
+   top of the coordinates. The seven error and 404 pages asked for hm-btn, a
+   class that has never existed in this repository, so every one of them
+   rendered its only button as unstyled text.
+
+   Then it missed one. src/app/(staff)/bridge/bridge.css defined .hm-channels,
+   .hm-funnel, .hm-cam and thirty more, every one of them used by a Bridge
+   screen — and nothing imported the file. The layout's `import "./bridge.css"`
+   resolved to its sibling, src/app/(staff)/bridge.css. The check asked "does a
+   rule exist in SOME stylesheet" and was satisfied; the Broadcast channels ran
+   into each other for three weeks. So the question is now the right one: does
+   a rule exist in a stylesheet that LOADS on every route that renders this
+   file?
+
+   Loading is read statically, the way Next resolves it. A route file
+   (page/layout/template/error/not-found/loading/default) loads every stylesheet
+   it imports, transitively through its components, plus every stylesheet its
+   ancestor layouts import the same way — and a CSS @import chain (globals.css
+   pulls in tokens, palette, fonts, compat, base, components) counts as one
+   stylesheet. global-error renders in place of the root layout and so loads
+   only its own imports. A file no route reaches (a script, a public/ asset)
+   falls back to "any stylesheet" — the route model has nothing to say about
+   it. And a stylesheet under src/ that nothing imports is a violation in its
+   own right, because every rule in it is a dead rule.
 
    Only static, whole className strings are read. A composed name — "ls-tag--"
    plus a tone — is not knowable here and is not guessed at; the tone lists are
@@ -939,42 +959,179 @@ function checkFoundingYear() {
    parse — listed rather than pattern-matched so adding one is a decision. */
 const CLASS_EXEMPT = new Set(["sr-only", "group", "dark", "light"]);
 
-function checkOrphanClasses() {
-  const defined = new Set();
-  for (const p of CSS) {
-    for (const m of readFileSync(p, "utf8").matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) {
-      defined.add(m[1]);
+const ROUTE_FILE = /\/src\/app\/(?:.*\/)?(page|layout|template|error|not-found|loading|default|global-error)\.tsx?$/;
+const SRC_CODE = CODE.filter((p) => p.startsWith(join(ROOT, "src") + "/"));
+const SRC_CSS = CSS.filter((p) => p.startsWith(join(ROOT, "src") + "/"));
+const EXISTS = new Set(ALL);
+
+/* `./x`, `../x` and `@/x` (tsconfig paths: "@/*" → "./src/*"). A bare
+   specifier is a package and is not ours to follow. Extensionless specifiers
+   try the four source extensions and an index file, as the bundler does. */
+function resolveImport(from, spec) {
+  let base;
+  if (spec.startsWith("./") || spec.startsWith("../")) base = join(dirname(from), spec);
+  else if (spec.startsWith("@/")) base = join(ROOT, "src", spec.slice(2));
+  else return null;
+  if (EXISTS.has(base)) return base;
+  for (const ext of [".ts", ".tsx", ".js", ".mjs"]) {
+    if (EXISTS.has(base + ext)) return base + ext;
+    if (EXISTS.has(join(base, "index" + ext))) return join(base, "index" + ext);
+  }
+  return null;
+}
+
+/* Static, re-exported and dynamic imports; the css `@import` on its own. */
+const IMPORT_SPEC = /(?:^|\n)\s*(?:import\s+(?:[^'";]*?\s+from\s+)?|export\s+(?:\*|\{[^}]*\})\s+from\s+)["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
+const CSS_IMPORT = /@import\s+(?:url\()?["']([^"']+)["']/g;
+
+function buildImportGraph() {
+  const codeImports = new Map(); /* code file → [code files] */
+  const cssImports = new Map();  /* code file → [css files] */
+  const cssChain = new Map();    /* css file → [css files] */
+  for (const p of SRC_CODE) {
+    const text = readFileSync(p, "utf8");
+    const code = [], css = [];
+    for (const m of text.matchAll(IMPORT_SPEC)) {
+      const target = resolveImport(p, m[1] ?? m[2]);
+      if (!target) continue;
+      (extname(target) === ".css" ? css : code).push(target);
+    }
+    codeImports.set(p, code);
+    cssImports.set(p, css);
+  }
+  for (const p of SRC_CSS) {
+    cssChain.set(p, [...readFileSync(p, "utf8").matchAll(CSS_IMPORT)]
+      .map((m) => resolveImport(p, m[1])).filter(Boolean));
+  }
+  return { codeImports, cssImports, cssChain };
+}
+
+/* Everything reachable from `start` over `edges`, `start` included. */
+function closure(start, edges) {
+  const seen = new Set([start]);
+  const stack = [start];
+  while (stack.length) {
+    for (const next of edges.get(stack.pop()) ?? []) {
+      if (!seen.has(next)) { seen.add(next); stack.push(next); }
     }
   }
+  return seen;
+}
+
+function checkOrphanClasses() {
+  const { codeImports, cssImports, cssChain } = buildImportGraph();
+
+  /* stylesheet → the classes it (and its @import chain) defines */
+  const definesIn = new Map();
+  const definedAnywhere = new Set();
+  for (const p of CSS) {
+    const set = new Set();
+    for (const m of readFileSync(p, "utf8").matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) set.add(m[1]);
+    definesIn.set(p, set);
+    for (const c of set) definedAnywhere.add(c);
+  }
+  const cssReach = new Map(); /* code file → css files it loads, transitively */
+  const loadsFrom = (p) => {
+    if (!cssReach.has(p)) {
+      const out = new Set();
+      for (const f of closure(p, codeImports)) {
+        for (const s of cssImports.get(f) ?? []) for (const c of closure(s, cssChain)) out.add(c);
+      }
+      cssReach.set(p, out);
+    }
+    return cssReach.get(p);
+  };
+
+  /* Each route file, and the stylesheets a render of it has on the page. */
+  const APP = join(ROOT, "src/app");
+  const entries = SRC_CODE.filter((p) => ROUTE_FILE.test(p));
+  const cssOnRoute = new Map();
+  for (const e of entries) {
+    const loaded = new Set(loadsFrom(e));
+    if (!/\/global-error\.tsx?$/.test(e)) {
+      for (let dir = dirname(e); dir.length >= APP.length; dir = dirname(dir)) {
+        for (const ext of [".tsx", ".ts"]) {
+          const layout = join(dir, "layout" + ext);
+          if (EXISTS.has(layout)) for (const c of loadsFrom(layout)) loaded.add(c);
+        }
+        if (dir === APP) break;
+      }
+    }
+    cssOnRoute.set(e, loaded);
+  }
+  /* code file → the route files whose render reaches it */
+  const routesOf = new Map();
+  for (const e of entries) {
+    for (const f of closure(e, codeImports)) {
+      if (!routesOf.has(f)) routesOf.set(f, []);
+      routesOf.get(f).push(e);
+    }
+  }
+  const loadsOn = (route, cls) => {
+    for (const s of cssOnRoute.get(route)) if (definesIn.get(s)?.has(cls)) return true;
+    return false;
+  };
+
   const hits = [];
   let total = 0;
   const seen = new Set();
   for (const p of CODE) {
+    const routes = routesOf.get(p) ?? [];
     lines(p).forEach((line, i) => {
       /* The literal has to be the entire value. `className={"ls-rise-" + n}`
-             is a composed name and the half before the plus is not a class —
-             reading it as one reported .ls-rise- as missing. */
-        for (const m of line.matchAll(/className=(?:"([^"{}]*)"|\{"([^"{}]*)"\})/g)) {
-          const value = m[1] ?? m[2];
+         is a composed name and the half before the plus is not a class —
+         reading it as one reported .ls-rise- as missing. */
+      for (const m of line.matchAll(/className=(?:"([^"{}]*)"|\{"([^"{}]*)"\})/g)) {
+        const value = m[1] ?? m[2];
         for (const cls of value.trim().split(/\s+/)) {
           if (!cls || CLASS_EXEMPT.has(cls)) continue;
           total++;
-          if (defined.has(cls)) continue;
-          /* One report per class. Seven files asking for the same missing
-             class is one missing class, and listing it seven times buries
-             the other six orphans under it. */
-          if (seen.has(cls)) continue;
-          seen.add(cls);
-          const hit = { file: rel(p), line: i + 1, why: `.${cls} — no CSS rule defines it` };
-          const why = exempt(line);
-          hits.push(why ? { ...hit, exempt: why } : hit);
+          let why;
+          if (!definedAnywhere.has(cls)) {
+            /* One report per class. Seven files asking for the same missing
+               class is one missing class, and listing it seven times buries
+               the other six orphans under it. */
+            if (seen.has(cls)) continue;
+            seen.add(cls);
+            why = `.${cls} — no CSS rule defines it`;
+          } else {
+            const bare = routes.filter((r) => !loadsOn(r, cls));
+            if (!bare.length) continue;
+            /* One report per class per file: it is this file, on these
+               routes, that renders bare — the same class may be fine elsewhere. */
+            if (seen.has(cls + "|" + p)) continue;
+            seen.add(cls + "|" + p);
+            const where = [...definesIn].filter(([, set]) => set.has(cls)).map(([s]) => rel(s));
+            why = `.${cls} — defined in ${where.join(", ")}, which does not load on ${
+              bare.length === 1 ? rel(bare[0]) : `${rel(bare[0])} (+${bare.length - 1} more route${bare.length > 2 ? "s" : ""})`}`;
+          }
+          const hit = { file: rel(p), line: i + 1, why };
+          const reason = exempt(line);
+          hits.push(reason ? { ...hit, exempt: reason } : hit);
         }
       }
     });
   }
-  return { name: "orphan-classes", rule: "every static className has a rule in some stylesheet",
+
+  /* A stylesheet nothing imports. Its every rule is dead, and the class check
+     above would still have counted them as "defined" — this is the file-level
+     half of the same question. */
+  const imported = new Set();
+  for (const list of cssImports.values()) for (const s of list) imported.add(s);
+  for (const list of cssChain.values()) for (const s of list) imported.add(s);
+  for (const p of SRC_CSS) {
+    total++;
+    if (imported.has(p)) continue;
+    const hit = { file: rel(p), line: 1, why: "no layout, page or component imports this stylesheet — none of its rules ever load" };
+    const reason = exempt(lines(p)[0]);
+    hits.push(reason ? { ...hit, exempt: reason } : hit);
+  }
+
+  return { name: "orphan-classes",
+    rule: "every static className has a rule in a stylesheet that loads on every route rendering it, and every stylesheet under src/ is imported",
     total, hits: hits.filter((h) => !h.exempt), exempted: hits.filter((h) => h.exempt) };
 }
+
 
 /* ── check: icon names ────────────────────────────────────────────────────── */
 /* §Iconography: "The system uses Lucide". Icon takes its name as a string and

@@ -229,7 +229,7 @@ export function SignForm({
             <Button type="button" variant="ghost" size="sm" onClick={clearDrawing}>
               Clear
             </Button>
-            <span className="mbr-mono">
+            <span className="ls-mono-data sgn-draw__alt">
               Prefer the keyboard? <button type="button" className="sgn-link" onClick={() => setKind("typed")}>Type your name instead</button>
             </span>
           </div>

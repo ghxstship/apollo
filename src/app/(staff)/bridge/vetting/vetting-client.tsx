@@ -318,18 +318,20 @@ export function VettingClient({
       >
         {open ? (
           <div className="hm-form">
-            <Checkbox
-              label="Identity verified"
-              description="The record is cleared thirty days after their last episode, by the sweep."
-              checked={draft.idVerified}
-              onChange={(e) => setDraft((d) => ({ ...d, idVerified: e.target.checked }))}
-            />
-            <Checkbox
-              label="Age 25 to 45 confirmed"
-              description="No exceptions — the gate refuses at checkout and names the range."
-              checked={draft.ageOk}
-              onChange={(e) => setDraft((d) => ({ ...d, ageOk: e.target.checked }))}
-            />
+            <div className="ls-choices ls-choices--col">
+              <Checkbox
+                label="Identity verified"
+                description="The record is cleared thirty days after their last episode, by the sweep."
+                checked={draft.idVerified}
+                onChange={(e) => setDraft((d) => ({ ...d, idVerified: e.target.checked }))}
+              />
+              <Checkbox
+                label="Age 25 to 45 confirmed"
+                description="No exceptions — the gate refuses at checkout and names the range."
+                checked={draft.ageOk}
+                onChange={(e) => setDraft((d) => ({ ...d, ageOk: e.target.checked }))}
+              />
+            </div>
 
             <Select
               label="Background state"

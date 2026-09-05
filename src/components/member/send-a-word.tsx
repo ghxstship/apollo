@@ -31,7 +31,7 @@ export function SendAWord({
            interrupt what a screen reader is saying, the way enquire.tsx already
            does. A polite region waits its turn, and a member who has moved on
            never hears it. */
-        <p className="hm-note" role="alert" style={{ marginTop: 8 }}>
+        <p className="ls-note" role="alert" style={{ marginTop: 8 }}>
           {state.error}
         </p>
       ) : null}

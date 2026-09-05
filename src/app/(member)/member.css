@@ -370,7 +370,7 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 /* — you: directory fields — */
 .you-fs{border:0;padding:0;margin:18px 0 0;min-width:0}
 .you-fs>legend{padding:0}
-.you-checks{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:10px}
+.you-checks{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-top:10px}
 @media (max-width:640px){.you-checks{grid-template-columns:1fr}}
 
 /* — the Passage Log — figures in mono, marks as hairline rows. No colour, no
@@ -550,7 +550,7 @@ a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
 .dbf-form{display:flex;flex-direction:column;gap:20px;max-width:560px}
 .dbf-fieldset{border:0;margin:0;padding:0;min-width:0}
 .dbf-q{font:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-2);padding:0}
-.dbf-again{display:flex;gap:24px;flex-wrap:wrap;margin-top:10px}
+.dbf-again{margin-top:10px}
 .dbf-acts{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .dbf-note{font-size:var(--text-xs);color:var(--text-3);max-width:48ch}
 .dbf-err{margin:0;font-size:var(--text-sm);color:var(--siren)}

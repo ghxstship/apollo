@@ -43,7 +43,7 @@ export function DebriefForm({ episodeId, slug }: { episodeId: string; slug: stri
       />
       <fieldset className="dbf-fieldset">
         <legend className="dbf-q">Would you sail with this crew again?</legend>
-        <div className="dbf-again">
+        <div className="ls-choices dbf-again">
           <Radio name="again" value="yes" label="Yes" />
           <Radio name="again" value="no" label="No" />
         </div>

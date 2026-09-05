@@ -426,3 +426,79 @@
   .hm-rail__group a[aria-current="page"]{color:var(--text-1);border-inline-start-color:var(--neon-cyan);background:var(--wash-ink)}
   .hm-main{max-width:none;margin-inline:0}
 }
+
+/* ── screen-local rules ──────────────────────────────────────────────────────
+   These lived in src/app/(staff)/bridge/bridge.css, a file nothing imported:
+   the layout's `import "./bridge.css"` resolved to THIS file, its sibling, and
+   the other one sat unloaded for three weeks while thirty-odd classes on the
+   Bridge — the camera scanner, the funnel, the rota, the door list, the polls —
+   rendered bare. One stylesheet per route group, and the orphan-classes gate
+   now reads the import graph rather than trusting that a rule exists. */
+
+/* A mono caption over a group of choices — SCOPE, EVENTS, ASSETS DELIVERED.
+   The caption is a span; the group beneath it keeps 8px clear. */
+.hm-mono+.ls-choices{margin-top:8px}
+
+/* — gangway console. The camera scanner's rules are its own stylesheet,
+   camera-scanner.css, because the kiosk renders it too. — */
+.hm-gang__meta{margin-top:14px;color:var(--text-3)}
+
+/* — Questions: the running number down the left of each prompt — */
+.hm-q__n{flex:none;min-width:22px}
+
+/* — Polls: one bar per answer — */
+.hm-poll{display:flex;flex-direction:column;gap:10px;margin-top:12px;max-width:560px}
+
+/* — Members: the tick column and the bulk bar —
+   The bar exists only while something is ticked; every button on it names the
+   count before it asks. */
+.hm-pick{display:inline-flex;align-items:center;padding:4px}
+.hm-pick input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+.hm-bulk{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;padding:10px 16px;background:var(--surface-card);border:1px solid var(--line-faint);border-inline-start:3px solid var(--gold)}
+.hm-bulk .hm-acts{margin-inline-start:auto}
+
+/* — Applications: an answer under its prompt — */
+.hm-answer{margin-top:4px;white-space:pre-wrap;color:var(--text-1)}
+
+/* — Plans: the free tier's one field and its note share the grid — */
+.hm-plan__free{grid-column:2 / -2;margin-top:0;align-self:center}
+@media (max-width:860px){.hm-plan__free{grid-column:auto}}
+
+/* — Broadcast: the buttons sit on the input's baseline. The four channels are
+   an .ls-choices row now, not a rule of their own. — */
+.hm-acts--end{align-self:end;justify-content:flex-end;padding-bottom:10px}
+
+/* — Program: the access note in the venue row — */
+.hm-access{font-size:var(--text-xs);color:var(--text-2);max-width:32ch}
+.hm-access--none{color:var(--text-3)}
+
+/* — Composition: the requested line, one person a row — */
+.hm-req{display:flex;flex-direction:column;margin-top:14px;max-width:720px}
+.hm-req__row{display:grid;grid-template-columns:28px 1fr auto auto;gap:14px;align-items:center;padding:10px 0;border-top:1px solid var(--line-faint)}
+.hm-req__row:last-child{border-bottom:1px solid var(--line-faint)}
+.hm-req__who{min-width:0;display:flex;flex-direction:column;gap:3px}
+.hm-req__who b{font-size:var(--text-sm)}
+.hm-req__act{display:flex;justify-content:flex-end;min-width:72px}
+
+/* — Crew: the door, one confirmed name a row — */
+.hm-door{display:flex;flex-direction:column;margin-top:14px}
+.hm-door__row{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:10px 0;border-top:1px solid var(--line-faint)}
+.hm-door__row:last-child{border-bottom:1px solid var(--line-faint)}
+.hm-door__who{min-width:0;display:flex;flex-direction:column;gap:3px}
+.hm-door__who b{font-size:var(--text-sm)}
+.hm-door__act{display:flex;justify-content:flex-end}
+@media (max-width:640px){.hm-door__row,.hm-req__row{grid-template-columns:1fr;gap:8px}.hm-door__act,.hm-req__act{justify-content:flex-start}}
+
+/* — Reports: the funnel, a bar per stage —
+   The fill takes the house accent: a stage is not a status, so no state hue. */
+.hm-funnel{display:flex;flex-direction:column;gap:8px;margin-top:14px;max-width:720px}
+.hm-funnel__row{display:grid;grid-template-columns:130px 1fr auto;gap:14px;align-items:center}
+.hm-funnel__stage{font-size:var(--text-sm)}
+.hm-funnel__bar{display:block;height:6px;background:var(--wash-ink);overflow:hidden}
+.hm-funnel__fill{display:block;height:100%;background:var(--gold)}
+.hm-funnel__n{white-space:nowrap}
+@media (max-width:640px){.hm-funnel__row{grid-template-columns:1fr;gap:4px}}
+
+/* — Tonight: the seated, with the sit-near-again count beside each — */
+.hm-hint{display:flex;flex-direction:column;gap:2px}
+.hm-hint__row{white-space:nowrap}

@@ -316,7 +316,7 @@ export function SponsorsClient({
                           {owed.length > 0 ? (
                             <div style={{ marginTop: 8 }}>
                               <span className="hm-mono">ASSETS DELIVERED</span>
-                              <div style={{ display: "flex", gap: "6px 18px", flexWrap: "wrap", marginTop: 4 }}>
+                              <div className="ls-choices">
                                 {owed.map((asset) => (
                                   <Checkbox
                                     key={asset}

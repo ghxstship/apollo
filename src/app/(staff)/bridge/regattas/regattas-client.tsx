@@ -223,7 +223,7 @@ export function RegattasClient({
             onChange={(e) => setSlug(e.target.value)}
           />
           <Input label="Blurb" value={blurb} onChange={(e) => setBlurb(e.target.value)} />
-          <div role="radiogroup" aria-label="Shape" style={{ display: "flex", gap: 18 }}>
+          <div role="radiogroup" aria-label="Shape" className="ls-choices">
             <Radio
               name="contest-shape"
               label="Regatta — ranked"
@@ -241,7 +241,7 @@ export function RegattasClient({
               20260819145000 — the constraint requires the episode and the entry
               policy admits only its aboard crew; the composer just could never
               say anything but member. */}
-          <div role="radiogroup" aria-label="Scope" style={{ display: "flex", gap: 18 }}>
+          <div role="radiogroup" aria-label="Scope" className="ls-choices">
             <Radio
               name="contest-scope"
               label="Members — open to the club"

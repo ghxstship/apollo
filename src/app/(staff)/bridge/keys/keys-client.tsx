@@ -289,7 +289,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           />
           <div>
             <span className="hm-mono">SCOPE</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            <div className="ls-choices ls-choices--col">
               {SCOPES.map((s) => (
                 <Checkbox
                   key={s}
@@ -413,7 +413,7 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
           />
           <div>
             <span className="hm-mono">EVENTS</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+            <div className="ls-choices ls-choices--col">
               {HOOK_EVENTS.map((ev) => (
                 <Checkbox
                   key={ev}

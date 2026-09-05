@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button } from "@/components/ds";
+import "./camera-scanner.css";
 
 /* Camera QR scanning for the gangway — native BarcodeDetector where the
    platform has it (Chrome/Android, the likely dock device), jsQR frame
@@ -104,7 +105,7 @@ export function CameraScanner({ onScan }: { onScan: (code: string) => void }) {
   }, [open]);
 
   return (
-    <div className="hm-cam">
+    <div className="cam-scan">
       <Button
         variant={open ? "ghost" : "outline"}
         size="sm"
@@ -116,15 +117,15 @@ export function CameraScanner({ onScan }: { onScan: (code: string) => void }) {
         {open ? "Stop the camera" : "Scan with camera"}
       </Button>
       {open ? (
-        <div className="hm-cam__frame">
+        <div className="cam-scan__frame">
           {/* Mirrorless: the dock crew points the back camera at the member card. */}
-          <video ref={videoRef} muted playsInline className="hm-cam__video" />
-          <div className="hm-cam__reticle" aria-hidden="true"></div>
-          <span className="hm-cam__hint">Hold the code steady in the frame</span>
+          <video ref={videoRef} muted playsInline className="cam-scan__video" />
+          <div className="cam-scan__reticle" aria-hidden="true"></div>
+          <span className="cam-scan__hint">Hold the code steady in the frame</span>
         </div>
       ) : null}
       {error ? (
-        <span className="hm-cam__err" role="alert">
+        <span className="cam-scan__err" role="alert">
           {error}
         </span>
       ) : null}
