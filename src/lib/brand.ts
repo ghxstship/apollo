@@ -294,6 +294,9 @@ export const LEDGER_KIND: Record<string, string> = {
      statement as PLAN_CREDIT and DISPUTE. */
   plan_credit: "Plan credit",
   dispute: "Dispute",
+  /* A slice of a pass already bought and already taxed. Its own kind so the
+     tax trigger leaves it alone — see 20260906170000. */
+  installment: "Installment",
 };
 
 /* Mail and web domain, in one place. These name the club's own addresses as a

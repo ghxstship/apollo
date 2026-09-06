@@ -3,7 +3,8 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Button, Dialog, Input, Toast } from "@/components/ds";
-import { beginTwoStep, confirmTwoStep, endTwoStep, setPassword, type PasswordState, type TwoStepState } from "@/app/gangway/actions";
+import { beginTwoStep, confirmTwoStep, endTwoStep, newRecoveryCodes, setPassword, type PasswordState, type TwoStepState } from "@/app/gangway/actions";
+import { Notice } from "@/components/ds";
 import { PASSWORD_MIN } from "@/app/gangway/ways";
 
 /* A password beside the link, and two-step beside both. Nothing here changes
@@ -25,6 +26,13 @@ export function PasswordControl() {
           <p className="mbr-dlg__lede mbr-status--inline">
             At least {PASSWORD_MIN} characters. Sign in with it at the gangway, or keep using the link — both work.
           </p>
+          {/* The one they have now. Without it, a session left open on a
+              borrowed laptop is a password change — and the club's own
+              security letter would be the first the member heard of it.
+              Absent on the reset page, which is reached by a link sent to
+              the address on file: asking there for a password somebody has
+              by definition forgotten would make the reset useless. */}
+          <Input label="Your password now" name="current" type="password" autoComplete="current-password" required />
           <Input label="New password" name="password" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required />
           <Input label="Once more" name="again" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required error={state.error} />
           <Button type="submit" variant="gold" pending={pending} pendingLabel="Saving">
@@ -45,16 +53,43 @@ export function TwoStepControl({ enrolled }: { enrolled: boolean }) {
   const [toast, setToast] = React.useState<{ msg: string; tone?: "danger" } | null>(null);
   /* The action wrapper, not an effect, closes the dialog and refreshes the
      page once the code is proven. */
+  /* The sheet, shown once. The club keeps only hashes and cannot show these
+     again — which is what makes them worth having, and why the dialog will not
+     close until the member says they have written them down. */
+  const [sheet, setSheet] = React.useState<string[] | null>(null);
+  const [sheetFailed, setSheetFailed] = React.useState(false);
+
   const [state, action, pending] = React.useActionState<TwoStepState, FormData>(async (prev, fd) => {
     const res = await confirmTwoStep(prev, fd);
     if (res.verified) {
-      setOpen(false);
       setBegun(null);
-      setToast({ msg: "Two-step is on. The gangway asks for a code once per sign-in." });
-      router.refresh();
+      if (res.codes?.length) {
+        setSheet(res.codes);
+      } else {
+        setOpen(false);
+        setSheetFailed(!!res.codesFailed);
+        setToast({
+          msg: res.codesFailed
+            ? "Two-step is on, but the recovery codes could not be made. Make a set now — without one, losing your phone locks you out."
+            : "Two-step is on. The gangway asks for a code once per sign-in.",
+          tone: res.codesFailed ? "danger" : undefined,
+        });
+        router.refresh();
+      }
     }
     return res;
   }, {});
+
+  const freshSheet = () =>
+    startTransition(async () => {
+      const res = await newRecoveryCodes();
+      if (res.error) setToast({ msg: res.error, tone: "danger" });
+      else if (res.codes?.length) {
+        setSheet(res.codes);
+        setSheetFailed(false);
+        setOpen(true);
+      }
+    });
 
   const start = () =>
     startTransition(async () => {
@@ -83,16 +118,54 @@ export function TwoStepControl({ enrolled }: { enrolled: boolean }) {
   return (
     <>
       {enrolled ? (
-        <Button variant="outline" size="sm" pending={busy} pendingLabel="Turning off…" onClick={stop}>
-          Turn off
-        </Button>
+        <>
+          <Button variant="outline" size="sm" pending={busy} pendingLabel="Making…" onClick={freshSheet}>
+            New recovery codes
+          </Button>
+          <Button variant="outline" size="sm" pending={busy} pendingLabel="Turning off…" onClick={stop}>
+            Turn off
+          </Button>
+        </>
       ) : (
         <Button variant="outline" size="sm" pending={busy} pendingLabel="Starting" onClick={start}>
           Turn on
         </Button>
       )}
-      <Dialog open={open} onClose={() => setOpen(false)} width={440} eyebrow="Two-step" title="Scan, then type the code.">
-        {live?.qr ? (
+      <Dialog
+        open={open}
+        /* A sheet on screen cannot be dismissed by clicking away: these are
+           shown once and the club cannot show them again, so an accidental
+           click outside the dialog would cost somebody their way back in. */
+        onClose={() => (sheet ? undefined : setOpen(false))}
+        width={440}
+        eyebrow={sheet ? "Recovery codes" : "Two-step"}
+        title={sheet ? "Write these down before you close this." : "Scan, then type the code."}
+      >
+        {sheet ? (
+          <div className="you-stack">
+            <p className="mbr-dlg__lede mbr-status--inline">
+              Ten codes, each good once. If you lose your phone, one of these is
+              how you get back in. The club keeps no copy and cannot show them
+              again — print this, or put it somewhere that is not the phone.
+            </p>
+            <ul className="you-codes">
+              {sheet.map((c) => (
+                <li key={c} className="mbr-mono">{c}</li>
+              ))}
+            </ul>
+            <Button
+              variant="gold"
+              onClick={() => {
+                setSheet(null);
+                setOpen(false);
+                setToast({ msg: "Two-step is on, and your recovery codes are yours to keep." });
+                router.refresh();
+              }}
+            >
+              I have written them down
+            </Button>
+          </div>
+        ) : live?.qr ? (
           <form action={action} className="you-stack">
             <input type="hidden" name="factorId" value={live.factorId ?? ""} />
             <input type="hidden" name="qr" value={live.qr ?? ""} />
@@ -114,6 +187,12 @@ export function TwoStepControl({ enrolled }: { enrolled: boolean }) {
           </form>
         ) : null}
       </Dialog>
+      {sheetFailed ? (
+        <Notice tone="danger" compact>
+          Two-step is on but you have no recovery codes. Make a set now — without
+          one, losing your phone locks you out of your own account.
+        </Notice>
+      ) : null}
       {toast ? <Toast fixed message={toast.msg} tone={toast.tone} duration={4000} onClose={() => setToast(null)} /> : null}
     </>
   );

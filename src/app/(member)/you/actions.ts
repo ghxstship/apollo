@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { voiceWith } from "@/lib/errors";
 import { duesNote, endDuesAtPeriodEnd, pauseDues, resumeDues } from "@/lib/dues";
 import { createClient } from "@/lib/supabase/server";
+import { actionStepUp } from "@/lib/supabase/step-up-action";
+import { headers } from "next/headers";
 import { BIO_MAX, INTERESTS } from "./interests";
 import { PREF_CATEGORIES, PREF_CHANNELS } from "./prefs";
 
@@ -177,7 +179,46 @@ export async function resumeMembership(): Promise<StatusResult> {
   return { note };
 }
 
+/* Every consent switch on this page writes a LINE, not a value.
+   consent_records is append-only and keyed to the words the member was shown,
+   so "what did they agree to, and when" has an answer — which it did not, for
+   any of the three switches here, until 2026-09-06.
+
+   Best effort on purpose. If the ledger write fails, the member's switch still
+   moves: refusing to honour somebody turning filming OFF because the audit
+   trail would not write is the wrong way round, and a consent the club acted
+   on but failed to record is a bookkeeping problem, while a consent the club
+   ignored is a broken promise. The failure is not silent either — it lands in
+   app_errors, which the Bridge reads. */
+async function noteConsent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  subject: string,
+  granted: boolean,
+) {
+  const h = await headers();
+  await supabase.rpc("record_consent", {
+    p_subject: subject,
+    p_granted: granted,
+    p_source: "member",
+    /* The address the edge saw, not the one the caller typed — the same
+       reading the pacing gates take. */
+    p_ip: h.get("cf-connecting-ip") ?? null,
+    p_agent: h.get("user-agent")?.slice(0, 400) ?? null,
+    p_note: null,
+  });
+}
+
 export async function departClub(): Promise<StatusResult> {
+  /* Ending a membership is the largest thing this page does, and it sat on the
+     seam a server action falls through: neither the proxy's path list nor
+     stepUpRefusal() ever reached it. */
+  const guard = await createClient();
+  const {
+    data: { user: whoAsks },
+  } = await guard.auth.getUser();
+  const stepUp = await actionStepUp(guard, whoAsks);
+  if (stepUp) return { error: stepUp.error };
+
   const res = await setStatus("departed");
   if (res.error || !res.userId) return res;
 
@@ -224,8 +265,12 @@ export async function setManifestVisibility(on: boolean): Promise<{ error?: stri
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
+  const stepUp = await actionStepUp(supabase, user);
+  if (stepUp) return { error: stepUp.error };
+
   const { error } = await supabase.rpc("set_manifest_visibility", { p_on: on });
   if (error) return { error: await voiceWith(supabase, error) };
+  await noteConsent(supabase, "manifest", on);
   revalidatePath("/you");
   revalidatePath("/passes");
   return {};
@@ -238,14 +283,28 @@ export async function setOnCamera(on: boolean): Promise<{ error?: string }> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
 
+  const stepUp = await actionStepUp(supabase, user);
+  if (stepUp) return { error: stepUp.error };
+
+  /* The withdrawal timestamp is no longer erased on re-consent.
+     This wrote `camera_withdrawn_at: on ? null : now()`, so a member who
+     withdrew and later changed their mind had the record of their withdrawal
+     DELETED — the single fact the club would most need to be able to show, that
+     it stopped filming somebody when they asked, was the one the schema threw
+     away. The column stays, because the surfaces that honour a withdrawal at
+     the next stop read it, but it is a convenience now and not the record.
+     consent_records is the record, it is append-only, and it keeps every
+     withdrawal whether or not one was later reversed. */
   const { error } = await supabase
     .from("profiles")
-    .update({
-      on_camera: on,
-      camera_withdrawn_at: on ? null : new Date().toISOString(),
-    })
+    .update(
+      on
+        ? { on_camera: true }
+        : { on_camera: false, camera_withdrawn_at: new Date().toISOString() },
+    )
     .eq("id", user.id);
   if (error) return { error: await voiceWith(supabase, error) };
+  await noteConsent(supabase, "filming", on);
   revalidatePath("/you");
   return {};
 }

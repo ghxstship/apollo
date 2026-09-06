@@ -1219,3 +1219,22 @@
   .ls-pop__panel--out{animation-name:ls-sheet-down}
   @keyframes ls-sheet-down{from{transform:none;opacity:1}to{transform:translateY(calc(var(--rise) * 2));opacity:0}}
 }
+
+/* The recovery sheet, shown once when two-step is turned on. Mono, generously
+   spaced and large enough to read off a screen while typing onto paper —
+   somebody is copying these by hand, which is the whole point of them. */
+.you-codes {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11ch, 1fr));
+  gap: var(--space-2) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunk);
+}
+.you-codes li {
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-dense);
+}

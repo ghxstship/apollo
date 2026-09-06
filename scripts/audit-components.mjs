@@ -164,6 +164,68 @@ const REPLACES = {
   progress: "Progress",
 };
 
+/* A "use server" module may export ONLY async functions.
+   Anything else — a const, a type-only value, an object — type-checks, lints,
+   builds, and then arrives at the importer as something that is not what it
+   says. The failure is a TypeError at render on a page every gate passed:
+   `X.map is not a function`, thrown from a component whose import looks fine.
+
+   This has now caught the codebase twice. prefs.ts carries a comment saying
+   exactly why its vocabulary is not in actions.ts, and the second time somebody
+   put a REQUEST_KINDS array in a "use server" file anyway, because the comment
+   was in a different directory. A comment is not a gate.
+
+   Scanned across .ts as well as .tsx, since actions files are usually .ts —
+   which is also why this check builds its own file list rather than using
+   SOURCES. */
+function checkServerExports() {
+  const hits = [], exempted = [];
+  let total = 0;
+  const files = [...walk(join(ROOT, "src/app")), ...walk(join(ROOT, "src/components"))]
+    .filter((p) => (p.endsWith(".ts") || p.endsWith(".tsx")) && !p.startsWith(DS_DIR))
+    .sort();
+
+  for (const p of files) {
+    const raw = readFileSync(p, "utf8");
+    /* The directive has to be the first statement in the module for React to
+       honour it, so anything further down is prose about it. */
+    if (!/^\s*(?:\/\*[\s\S]*?\*\/\s*|\/\/[^\n]*\n\s*)*["']use server["']/.test(raw)) continue;
+    const clean = stripComments(raw);
+    const lines = clean.split("\n");
+    lines.forEach((line, i) => {
+      const m = /^\s*export\s+(.*)$/.exec(line);
+      if (!m) return;
+      const rest = m[1];
+      /* `export type` and `export interface` vanish at compile time and never
+         reach the runtime boundary, so they are free. `export default` of a
+         function is fine; anything else here is the trap. */
+      if (/^(type|interface)\b/.test(rest)) return;
+      total++;
+      const isAsyncFn = /^(default\s+)?async\s+function\b/.test(rest);
+      if (isAsyncFn) return;
+      /* `export { x }` re-exporting async functions declared above is legal and
+         common; the declaration itself was already counted. */
+      if (/^\{/.test(rest)) {
+        exempted.push({ file: rel(p), line: i + 1, area: areaOf(p), what: "export { … }",
+          hint: "re-export — the declaration itself is what this rule checks",
+          exempt: "a re-export list carries whatever the declarations are" });
+        return;
+      }
+      const what = rest.slice(0, 60).replace(/\s+/g, " ");
+      hits.push({
+        file: rel(p), line: i + 1, area: areaOf(p),
+        what: `export ${what}`,
+        hint: 'move it to a plain module beside this one — a "use server" file may export only async functions',
+      });
+    });
+  }
+  return {
+    name: "server-exports",
+    rule: 'a "use server" module exports only async functions — a const or object exported from one is not itself at the far end, and fails as a TypeError at render',
+    hits, exempted, total,
+  };
+}
+
 function checkRawElements() {
   const hits = [], exempted = [];
   let total = 0;
@@ -268,7 +330,7 @@ function checkDsClasses() {
 /* ── report ───────────────────────────────────────────────────────────────── */
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7).split(",");
-const checks = [checkRawElements(), checkDsClasses()].filter((c) => !only || only.includes(c.name));
+const checks = [checkRawElements(), checkDsClasses(), checkServerExports()].filter((c) => !only || only.includes(c.name));
 
 if (process.argv.includes("--json")) {
   console.log(JSON.stringify({ files: FILES.length, checks }, null, 2));

@@ -1,0 +1,127 @@
+/* Your data — tables that have to stay readable on a phone, and a form of six
+   long options. Both are wide by nature, so both scroll inside themselves
+   rather than pushing the page sideways.
+
+   The page's own head. /you itself has no h1 — it opens on the member's own
+   card — so these four are this route's and are declared here rather than
+   borrowed from a stylesheet that happens to be loaded. */
+
+.you-sec--head {
+  padding-bottom: var(--space-2);
+}
+.you-h1 {
+  font: var(--type-h2);
+  letter-spacing: var(--tracking-display);
+  margin: 0 0 var(--space-2);
+}
+.you-lede {
+  color: var(--ink-quiet);
+  margin: 0;
+  max-width: 62ch;
+}
+.you-note {
+  color: var(--ink-quiet);
+  font-size: var(--text-sm);
+  margin: var(--space-2) 0;
+  max-width: 72ch;
+}
+.dsr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  margin-block: var(--space-3);
+  display: block;
+  overflow-x: auto;
+}
+.dsr-table th,
+.dsr-table td {
+  text-align: start;
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.dsr-table thead th {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--ink-quiet);
+  white-space: nowrap;
+}
+.dsr-table tbody th {
+  font-weight: 500;
+  color: var(--ink);
+}
+.dsr-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dsr-outcome {
+  margin: var(--space-1) 0 0;
+  color: var(--ink-quiet);
+  font-size: var(--text-xs);
+}
+
+.dsr-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+.dsr-kinds {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.dsr-legend {
+  font: var(--type-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--ink-quiet);
+  padding: 0;
+}
+.dsr-kind {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: start;
+  cursor: pointer;
+  /* The whole row is the target, not just the dot — 24×24 minimum, and a row
+     of text a thumb can actually hit. */
+  min-height: 44px;
+  padding: var(--space-1) 0;
+}
+.dsr-kind input {
+  margin-top: 4px;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.dsr-kind__line {
+  display: block;
+  color: var(--ink-quiet);
+  font-size: var(--text-xs);
+  margin-top: 2px;
+}
+.dsr-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.dsr-detail textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  resize: vertical;
+}
+.dsr-acts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

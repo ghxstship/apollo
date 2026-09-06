@@ -63,7 +63,9 @@ export default async function LegalPage() {
             the billing page states as two months on the house. */}
         <p>
           Dues bill monthly or annually, your choice from your Account; a year is
-          priced at ten months. Cancel anytime — unused months credit forward.
+          priced at ten months. Cancel anytime — nothing further is taken, and what
+          you have already paid for runs to the end of its term. No refund is
+          issued, because none is owed: the standing does not stop early.
           Passes release up to 48 hours out for full credit; no-shows forfeit the
           deposit to the galley fund.
         </p>
@@ -93,14 +95,15 @@ export default async function LegalPage() {
         <h3>What we never do.</h3>
         <ul>
           <li>Sell your data, or your attention. No ad pixels aboard.</li>
-          <li>Show you on a manifest preview without consent — visibility is per-episode, off by default for guests.</li>
-          <li>Keep what you delete. Departure erases your profile within 30 days; the ledger keeps only what accounting law requires.</li>
+          <li>Show you on a manifest without your say — one switch in your settings takes your name off every one of them.</li>
+          <li>Keep your name after you go. Departing anonymises your profile 30 days later; the ledger keeps the figures accounting law requires, without you attached to them.</li>
         </ul>
         <h3>Your levers.</h3>
         <p>
-          Export everything — one email to Shoreside, machine-readable,
-          within a week. Correct anything. Delete the account from the member app —
-          no calls required.
+          Export everything from your Account, machine-readable, straight away —
+          no email, no waiting. Ask us to correct, restrict, or stop something,
+          and the clock on that request is one you can see. Depart from the member
+          app, no calls required; your name comes off the roll 30 days later.
         </p>
         <p className="lg-mono">
           GDPR and CCPA honored for everyone, not just where required · questions: {MAILBOX.shore}

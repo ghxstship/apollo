@@ -750,3 +750,27 @@
 .hm-block--tabs{margin-top:22px}
 .hm-block--under{margin-top:18px}
 .hm-below--lead{margin-bottom:14px}
+
+/* The two-step warning strap. Shown to an operator who has not enrolled, every
+   day until the club's deadline, and then they are sent to enrol instead. Warm
+   rather than alarming: this is a deadline, not a failure, and an operator who
+   sees a red bar every morning stops seeing it by Thursday. */
+.hm-warn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  background: color-mix(in oklab, var(--caution) 14%, var(--surface));
+  color: var(--ink);
+  border-bottom: 1px solid color-mix(in oklab, var(--caution) 45%, transparent);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-dense);
+}
+.hm-warn a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 700;
+}

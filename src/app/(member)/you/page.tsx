@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { CameraConsent } from "./camera-consent";
 import { ManifestConsent } from "./manifest-consent";
 import Link from "next/link";
-import { Avatar, Badge, Button, LinkButton, Stat, StateBlock, ThemeToggle, Wordmark, type LedgerEntry } from "@/components/ds";
+import { Avatar, Badge, Button, LinkButton, Notice, Stat, StateBlock, ThemeToggle, Wordmark, type LedgerEntry } from "@/components/ds";
 import { CURRENCY, knots, LEAGUES } from "@/lib/brand";
 import { logDate, logDateTime, logDateYear, roman, yearIn } from "@/lib/format";
 import { PushControls } from "@/components/push-controls";
@@ -86,7 +86,7 @@ type LedgerRow = { id: string; created_at: string; reason: string; delta: number
    and the heading, the hold banners and the rail can paint without them. No
    loading.tsx under (member): the group is redirect-gated and a loading file
    answers 200 before the gate has said its 3xx. */
-async function YouBody() {
+async function YouBody({ enrol }: { enrol?: string }) {
   const { supabase, user, profile, onHold, zone } = await getMember();
   /* Two-step is a fact of the auth user, not the profile: a verified factor
      on the session's user object. */
@@ -569,6 +569,12 @@ async function YouBody() {
             </div>
             <PasswordControl />
           </div>
+          {enrol === "bridge" && !twoStep ? (
+            <Notice tone="danger">
+              The Bridge needs two-step. Turn it on here and you can go back —
+              until you do, the Bridge will keep sending you to this screen.
+            </Notice>
+          ) : null}
           <div className="you-row">
             <div>
               <b>Two-step</b>
@@ -587,6 +593,26 @@ async function YouBody() {
       </section>
 
       <section id="you-gangway">
+        <div className="you-h">Your data</div>
+        <div className="you-sec">
+          <div className="you-row">
+            <div>
+              <b>What the club holds about you</b>
+              <p>
+                Take a copy, read how long each thing is kept, see who else touches
+                it, and ask the club to correct, restrict or delete something. The
+                privacy notice is there too — it used to be reachable only from the
+                marketing footer, which is to say not from here.
+              </p>
+            </div>
+            <LinkButton href="/you/data" variant="outline" size="sm">
+              Your data
+            </LinkButton>
+          </div>
+        </div>
+      </section>
+
+      <section className="you-sec">
         <div className="you-h">The gangway out</div>
         <div className="you-sec">
           <div className="you-row">
@@ -613,7 +639,16 @@ async function YouBody() {
   );
 }
 
-export default async function YouPage() {
+export default async function YouPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ enrol?: string }>;
+}) {
+  /* The Bridge sends an operator here when two-step stops being optional and
+     they have not enrolled. Without a word on arrival they land on their own
+     settings with no idea why they were moved, which is the shape of every
+     redirect that teaches somebody to distrust the software. */
+  const { enrol } = await searchParams;
   const { profile } = await getMember();
   const status = profile?.status ?? "active";
   /* set_own_standing refuses a member who tries to lift a hold they did not
@@ -656,7 +691,7 @@ export default async function YouPage() {
           </div>
         }
       >
-        <YouBody />
+        <YouBody enrol={enrol} />
       </Suspense>
       </div>
 

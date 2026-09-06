@@ -1,3 +1,18 @@
+export type ConsentTextRow = {
+  subject: string; version: number; body: string; effective_from: string
+}
+export type ConsentRecordRow = {
+  id: number; profile_id: string; subject: string; granted: boolean
+  text_version: number; text_body: string; source: string; at: string
+  ip: string | null; user_agent: string | null; note: string | null
+}
+export type DataRequestRow = {
+  id: number; profile_id: string; kind: string; detail: string | null
+  state: string; asked_at: string; due_at: string
+  answered_at: string | null; answered_by: string | null
+  outcome: string | null; jurisdiction: string | null
+}
+
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 /* Hand-maintained to mirror supabase/migrations — compact style.
@@ -725,6 +740,11 @@ export type Database = {
       document_requirements: Table<DocumentRequirementRow, Ins<DocumentRequirementRow, "document_code" | "gate">>
       signatures: Table<SignatureRow, Ins<SignatureRow, "document_version_id" | "rendered_hash" | "consent_esign" | "signature_kind">>
       counter_signatures: Table<CounterSignatureRow, Ins<CounterSignatureRow, "signature_id" | "signed_by" | "signer_name">>
+      /* Append-only, written through record_consent() — no client INSERT. */
+      consent_records: Table<ConsentRecordRow, never>
+      consent_texts: Table<ConsentTextRow, never>
+      /* Opened through ask_about_my_data(); the Bridge updates to answer. */
+      data_requests: Table<DataRequestRow, never>
     }
     Views: {
       membership_cohorts: {
@@ -856,6 +876,29 @@ export type Database = {
         }
         Relationships: []
       }
+      /* The newest consent row per member per subject. security_invoker, so a
+         member sees theirs and staff see everybody's. */
+      current_consent: {
+        Row: {
+          profile_id: string | null; subject: string | null; granted: boolean | null
+          at: string | null; text_version: number | null; source: string | null
+        }
+        Relationships: []
+      }
+      /* Sealed to the caller's own lines — the view carries the filter, so no
+         query that reads it needs one. */
+      my_account_history: {
+        Row: {
+          at: string | null; what: string | null; action: string | null
+          by_the_club: boolean | null; fields: string[] | null; after: Json | null
+        }
+        Relationships: []
+      }
+      /* The retention periods, named by the dial that enforces them. */
+      retention_schedule: {
+        Row: { what: string | null; dial: string | null; why: string | null }
+        Relationships: []
+      }
     }
     Functions: {
       is_staff: { Args: Record<string, never>; Returns: boolean }
@@ -865,6 +908,30 @@ export type Database = {
       take_a_producer_turn: { Args: Record<string, never>; Returns: number }
       email_may_board: { Args: { p_email: string; p_fingerprint?: string | null }; Returns: boolean }
       set_manifest_visibility: { Args: { p_on: boolean }; Returns: undefined }
+      /* Consent, data rights and recovery — 2026-09-06. */
+      record_consent: {
+        Args: {
+          p_subject: string
+          p_granted: boolean
+          p_source?: string
+          p_ip?: string | null
+          p_agent?: string | null
+          p_note?: string | null
+        }
+        Returns: number
+      }
+      ask_about_my_data: { Args: { p_kind: string; p_detail?: string | null }; Returns: number }
+      mint_recovery_codes: { Args: { p_hashes: string[] }; Returns: number }
+      recovery_codes_left: { Args: Record<string, never>; Returns: number }
+      /* Service role only — the caller cannot finish signing in, so there is no
+         auth.uid() to read and the member is named. */
+      spend_recovery_code: { Args: { p_profile: string; p_hash: string }; Returns: boolean }
+      club_setting_text: { Args: { p_key: string }; Returns: string | null }
+      marketing_needs_opt_in: { Args: { p_jurisdiction: string | null }; Returns: boolean }
+      episode_serves_alcohol: { Args: { p_episode: string }; Returns: boolean }
+      /* Service role only — an unauthenticated POST has no session to read. */
+      spend_unsubscribe_token: { Args: { p_token: string; p_agent?: string | null }; Returns: boolean }
+      unsubscribe_token_for: { Args: { p_email: string }; Returns: string }
       settle_galley_ticket: {
         Args: {
           p_profile: string

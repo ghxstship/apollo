@@ -148,7 +148,7 @@ export default async function MembershipPage() {
                         or {price(p.annual_price_cents)} a year
                       </span>
                     ) : null}
-                    <span className="ws-plans__note">CANCEL ANYTIME · UNUSED MONTHS CREDIT FORWARD</span>
+                    <span className="ws-plans__note">CANCEL ANYTIME · WHAT YOU PAID FOR RUNS ITS TERM</span>
                     {duesOpen ? (
                       <JoinControl
                         planId={p.id}

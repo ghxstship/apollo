@@ -6,7 +6,10 @@ import { safeNext } from "@/lib/safe-next";
 import { siteOrigin } from "@/lib/site-origin";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { createHash, randomInt } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
+import { createVerifierClient } from "@/lib/supabase/admin";
+import { actionStepUp } from "@/lib/supabase/step-up-action";
 import { PASSWORD_MIN, PROVIDERS, type Provider } from "./ways";
 
 export type GangwayState = {
@@ -91,10 +94,15 @@ export async function signInWithProvider(formData: FormData): Promise<void> {
 
 /* Set or change the password on a signed-in session — from You, or from the
    reset page a recovery link lands on. */
-export type PasswordState = { done?: boolean; error?: string };
+export type PasswordState = { done?: boolean; error?: string; next?: string };
 export async function setPassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
   const password = String(formData.get("password") ?? "");
   const again = String(formData.get("again") ?? "");
+  /* The one they have now. Absent on the reset page, which is reached by a link
+     sent to the address on file — proving the mailbox is the check there, and
+     asking for a password somebody has by definition forgotten would make the
+     reset useless. Present everywhere else. */
+  const current = String(formData.get("current") ?? "");
   if (password.length < PASSWORD_MIN) return { error: `A password runs to at least ${PASSWORD_MIN} characters.` };
   if (password.length > 128) return { error: "That is longer than a password needs to be — 128 characters is the ceiling." };
   if (password !== again) return { error: "The two do not match." };
@@ -103,6 +111,32 @@ export async function setPassword(_prev: PasswordState, formData: FormData): Pro
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+
+  /* A server action is neither a page nor a route handler, so neither the
+     proxy's path list nor stepUpRefusal() ever covered this. Changing a
+     password on a session that never proved the second factor is the whole of
+     what two-step was meant to stop. */
+  const stepUp = await actionStepUp(supabase, user);
+  if (stepUp) return stepUp;
+
+  /* Reauthentication before a credential changes. Without it, a session left
+     open on a borrowed laptop is a password change, and the club's own
+     security letter would then be the first the member hears of it.
+
+     Verified on a client that holds no session and writes no cookie: calling
+     this on the request's own client would mint a fresh session and rewrite
+     the cookies in the middle of an action, which is a great deal of moving
+     machinery for an answer we discard. It goes through the front door rather
+     than the service role so the provider counts the failure and throttles it. */
+  if (formData.has("current")) {
+    if (!current) return { error: "Type the password you have now first." };
+    const { error: wrong } = await createVerifierClient().auth.signInWithPassword({
+      email: user.email ?? "",
+      password: current,
+    });
+    if (wrong) return { error: "That is not the password you have now." };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
     if (/weak|pwned|leaked|compromised/i.test(error.message)) return { error: "That password has turned up in a breach. Pick another." };
@@ -119,8 +153,33 @@ export type TwoStepState = {
   qr?: string;
   secret?: string;
   verified?: boolean;
+  /** Shown once, at enrolment. The club cannot show them again. */
+  codes?: string[];
+  /** Two-step is on but the sheet could not be minted — say so rather than
+      leave somebody believing they have a way back in. */
+  codesFailed?: boolean;
   error?: string;
 };
+
+/* How many, and what one looks like.
+
+   Ten is the number most of the industry settled on: enough that losing a few
+   to a bad photocopy does not matter, few enough to fit on something somebody
+   will actually keep.
+
+   Crockford's alphabet, in groups of four. No I, L, O or U — the first three
+   because they are the digits 1 and 0 in most typefaces and this is a code
+   somebody reads off paper under stress, and U because removing it is what
+   stops the generator spelling things nobody wants to read out to Shoreside.
+   randomInt over the alphabet rather than a modulo of random bytes, which
+   would quietly favour the first eight characters. */
+const RECOVERY_CODES = 10;
+const RECOVERY_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+function recoveryCode(): string {
+  const pick = () =>
+    Array.from({ length: 4 }, () => RECOVERY_ALPHABET[randomInt(RECOVERY_ALPHABET.length)]).join("");
+  return `${pick()}-${pick()}-${pick()}`;
+}
 export async function beginTwoStep(): Promise<TwoStepState> {
   const supabase = await createClient();
   const {
@@ -149,7 +208,55 @@ export async function confirmTwoStep(_prev: TwoStepState, formData: FormData): P
   if (cErr || !challenge) return { factorId, qr, secret, error: "Two-step could not be checked. Try once more." };
   const { error } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
   if (error) return { factorId, qr, secret, error: "That code did not match. Codes change every thirty seconds — try the current one." };
-  return { verified: true };
+
+  /* Recovery codes, minted the moment two-step is proven and never again
+     without asking. Until 2026-09-06 there were none, and the consequence was
+     not an inconvenience: a member who lost the phone was locked out for good.
+     The reset link and the magic link both land a session at the first
+     assurance level, the proxy then sends every protected page to the verify
+     screen, and switching two-step off requires the level they cannot reach.
+     They were also locked out of /account, where their money and their data
+     export live — so an authentication failure became a failure to give
+     somebody their own data on request.
+
+     Generated here, hashed here, and only the hashes leave. The plain codes go
+     back to the browser once, in this return value, and the club has no way to
+     show them again — which is the property that makes them worth having. */
+  const codes = Array.from({ length: RECOVERY_CODES }, () => recoveryCode());
+  const { error: mintError } = await supabase.rpc("mint_recovery_codes", {
+    p_hashes: codes.map((c) => createHash("sha256").update(c).digest("hex")),
+  });
+  /* Two-step IS on either way — the factor is verified and the club will ask
+     for it. Failing the whole enrolment over the codes would leave a member
+     with neither, which is worse than a member with two-step and no sheet;
+     they are told, and can mint a set from their settings. */
+  if (mintError) {
+    return { verified: true, codesFailed: true };
+  }
+  return { verified: true, codes };
+}
+
+/* A fresh sheet, for a member who has spent theirs or never printed them.
+   Replaces the old set entirely — half a sheet is worse than none, because
+   somebody holding last year's paper cannot tell which lines still work. */
+export async function newRecoveryCodes(): Promise<{ codes?: string[]; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  /* Minting a new sheet invalidates the old one, which is a credential change
+     and belongs behind the second step like the rest of them. */
+  const stepUp = await actionStepUp(supabase, user);
+  if (stepUp) return { error: stepUp.error };
+
+  const codes = Array.from({ length: RECOVERY_CODES }, () => recoveryCode());
+  const { error } = await supabase.rpc("mint_recovery_codes", {
+    p_hashes: codes.map((c) => createHash("sha256").update(c).digest("hex")),
+  });
+  if (error) return { error: "That didn't land. Try once more." };
+  return { codes };
 }
 export async function endTwoStep(): Promise<{ error?: string }> {
   const supabase = await createClient();

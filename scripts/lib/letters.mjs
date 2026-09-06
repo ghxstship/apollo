@@ -376,6 +376,32 @@ export function letterInvariants({ root, note, banned }) {
   const renderable = new Set([...rendered, ...aliases]);
   note(at, "the sender renders at least one letter", renderable.size > 0, renderable.size ? `${renderable.size} codes` : "no template keys were found — the extractor is broken");
 
+  /* CAN-SPAM §7704(a)(5)(A)(iii): every commercial message carries a valid
+     physical postal address. The footer used to render the literal string
+     "[un] anything goes here" in exactly that place, and 206 letters went out
+     with it before anybody looked.
+
+     The gate guards the CODE, not the data — it cannot know whether the owner
+     has set the dial, and a gate that failed until they did would hold the
+     whole build hostage to one string. So it asserts two things a future edit
+     could otherwise undo quietly: that the footer reads the setting, and that
+     a marketing letter is refused when the setting is empty. Whether an address
+     is actually set is the sender's business at run time, and it holds the
+     letter rather than sending it. */
+  note(at, "the footer reads the club's postal address from a setting",
+    /club_setting_text/.test(code) && /postal_address/.test(code),
+    "the footer must render club_setting_text('postal_address'), not a literal");
+  /* Against `code`, not `sender`: the comment at the top of the sender quotes
+     the old placeholder so the next reader knows what this replaced, and a gate
+     that forbade describing its own history would be a gate that deletes the
+     reason it exists. */
+  note(at, "no placeholder stands where the postal address belongs",
+    !/anything goes here/i.test(code),
+    "the CAN-SPAM address slot still holds a placeholder string");
+  note(at, "a commercial letter is held when no postal address is set",
+    /marketing[\s\S]{0,120}!postalNow/.test(code) || /!postalNow[\s\S]{0,120}marketing/.test(code),
+    "sendViaResend/deliver must refuse a marketing letter while the address is unset");
+
   /* 1. registry <-> sender */
   const registry = readRegistry(root);
   const registered = new Set([...registry].filter(([, r]) => r.active).map(([c]) => c));

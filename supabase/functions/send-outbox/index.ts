@@ -71,6 +71,76 @@ function sameSecret(given: string | null, expected: string): boolean {
   return diff === 0;
 }
 
+/* The club's registered postal address, as it must appear in commercial mail.
+   CAN-SPAM §7704(a)(5)(A)(iii) requires one in EVERY commercial message, with
+   no de-minimis exception and a penalty per message. Until 2026-09-06 the
+   footer rendered the literal string "[un] anything goes here" in the place it
+   belongs, and 206 letters went out carrying it.
+
+   Read from club_settings rather than an environment variable, so the owner can
+   set it without a deploy, and cached for the life of the invocation because a
+   drain sends many letters and the address does not move between them.
+
+   Null when unset, and unset is a REFUSAL rather than an empty line — see
+   sendViaResend. A marketing letter without an address is the violation; a
+   marketing letter that did not go is a marketing letter that did not go. */
+/* The one-click unsubscribe token for an address. RFC 8058 requires a URL that
+   acts on an unauthenticated POST, which the club now has; this is the half
+   that puts a working one in the header.
+
+   Null on any failure, and null means the letter carries the old header alone.
+   A letter that goes out without one-click is a deliverability problem; a
+   letter held back because a token could not be minted is a member who did not
+   hear about the night they had asked to hear about. The first is the lesser. */
+async function unsubscribeToken(email: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/unsubscribe_token_for`, {
+      method: "POST",
+      signal: AbortSignal.timeout(5_000),
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_email: email }),
+    });
+    if (!res.ok) return null;
+    const raw = await res.json();
+    return typeof raw === "string" && raw ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+let postalCache: { at: number; value: string | null } | null = null;
+async function postalAddress(): Promise<string | null> {
+  if (postalCache && Date.now() - postalCache.at < 60_000) return postalCache.value;
+  let value: string | null = null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/club_setting_text`, {
+      method: "POST",
+      signal: AbortSignal.timeout(5_000),
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_key: "postal_address" }),
+    });
+    if (res.ok) {
+      const raw = await res.json();
+      value = typeof raw === "string" && raw.trim() ? raw.trim() : null;
+    }
+  } catch {
+    /* Unreachable reads as unset, which stops marketing and lets receipts
+       through. The safe direction: a receipt with no address is not a
+       commercial message, and a promotion with no address is an offence. */
+    value = null;
+  }
+  postalCache = { at: Date.now(), value };
+  return value;
+}
+
 async function vaultSecret(name: string): Promise<string> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_app_secret`, {
     method: "POST",
@@ -222,8 +292,18 @@ type Kind = "transactional" | "marketing";
 
 type ShellOptions = { inverse?: boolean; audience?: Audience; kind?: Kind };
 
+/* The address the footer is currently rendering with. Module scope rather than
+   a parameter because shell() is called from thirty template functions and is
+   synchronous, while reading a setting is not — threading an await through all
+   thirty to deliver one string that is the same for every letter in a drain
+   would be a lot of edit for no more correctness. Set once per row, just before
+   the letter is rendered, by the same code that decides whether the row may be
+   sent at all. */
+let postalNow: string | null = null;
+
 function shell(bodyHtml: string, opts: ShellOptions = {}): string {
   const { inverse = false, audience = "member", kind = "transactional" } = opts;
+  const postal = postalNow;
   /* Kit email system: ivory canvas, warm noir ink, an acid rule, mono strap
      footer. Email-safe stack — Georgia serif, Courier mono. */
   const ink = inverse ? "#F1F1ED" : "#141414";
@@ -244,7 +324,7 @@ function shell(bodyHtml: string, opts: ShellOptions = {}): string {
 <tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>
 <tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:${muted};">${why}</td></tr>
-<tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;color:${muted};">[un] anything goes here</td></tr>
+<tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;color:${muted};">[un]${postal ? ` &middot; ${esc(postal)}` : ""}</td></tr>
 </table>
 </td></tr></table>`;
 }
@@ -740,6 +820,53 @@ async function fetchPending(): Promise<OutboxRow[]> {
    is skipped before Resend is asked, and the row says why. The table arrives
    by migration — until it exists this returns an empty set and says so once,
    so a missing table is a note in the log and not a stalled queue. */
+/* Addresses the club may not send MARKETING to, because prior consent is the
+   rule where they are and no consent is recorded. Read in bulk beside the
+   suppression list, at the one moment every letter passes through regardless of
+   how it was queued.
+
+   Deliberately separate from suppressed(). A suppression is "this address
+   bounced, complained or unsubscribed" and stops everything; this is "we have
+   not been given permission for the optional letters" and stops only those. A
+   member in Dublin who has not opted in must still get a weather hold.
+
+   An unreachable read returns EMPTY, which lets marketing through. That is the
+   opposite of the postal-address decision two functions up, and the difference
+   is worth stating: an unset postal address is a fact about the club that will
+   not change during a drain, while a failed HTTP call is a transient that would
+   otherwise silently mute every optional letter to every European member for as
+   long as it lasted, with nothing in the outbox to show for it. Failing open on
+   a transient and closed on a fact is the correct pairing. */
+async function marketingWithheld(addresses: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!addresses.length) return out;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/marketing_withheld_from`, {
+      method: "POST",
+      signal: AbortSignal.timeout(5_000),
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_emails: addresses }),
+    });
+    if (!res.ok) {
+      console.error(`marketing consent read failed: ${res.status}`);
+      return out;
+    }
+    const rows = await res.json();
+    if (Array.isArray(rows)) {
+      for (const r of rows) {
+        if (typeof r?.email === "string") out.set(r.email.toLowerCase(), String(r.why ?? "no recorded consent"));
+      }
+    }
+  } catch {
+    console.error("marketing consent read unreachable");
+  }
+  return out;
+}
+
 async function suppressed(addresses: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (!addresses.length) return out;
@@ -839,7 +966,24 @@ async function sendViaResend(row: OutboxRow, letter: Rendered): Promise<{ ok: bo
      capability we do not have would be worse than naming none — the client
      would report success for something that never happened. */
   if (kind === "marketing") {
-    headers["List-Unsubscribe"] = `<${APP_URL}/you>, <mailto:${shoresideAddress()}?subject=unsubscribe>`;
+    /* One-click first. RFC 8058 says the POST target must be a URL in
+       List-Unsubscribe and that List-Unsubscribe-Post carries the literal
+       One-Click; a client that sees both draws its own unsubscribe control and
+       honours it without opening anything. The mailto stays as the last
+       fallback for clients that read neither.
+
+       The header only claims one-click when there is actually a token behind
+       it. Advertising the capability and then failing the POST is worse than
+       never advertising it — which is what the previous comment here said, and
+       it was right; what changed is that the endpoint now exists. */
+    const token = await unsubscribeToken(row.to_email);
+    if (token) {
+      const url = `${APP_URL}/api/unsubscribe?t=${token}`;
+      headers["List-Unsubscribe"] = `<${url}>, <mailto:${shoresideAddress()}?subject=unsubscribe>`;
+      headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+    } else {
+      headers["List-Unsubscribe"] = `<${APP_URL}/you>, <mailto:${shoresideAddress()}?subject=unsubscribe>`;
+    }
   }
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -885,12 +1029,44 @@ async function sendViaResend(row: OutboxRow, letter: Rendered): Promise<{ ok: bo
    render that throws, a network error, a timeout — each used to escape the
    loop, leave the row in 'sending' for the stall rescue to find a quarter of
    an hour later, and abandon every row behind it. */
-async function deliver(row: OutboxRow, blocked: Map<string, string>): Promise<"sent" | "skipped" | "retry" | "failed" | "taken"> {
+async function deliver(
+  row: OutboxRow,
+  blocked: Map<string, string>,
+  needsConsent: Map<string, string>,
+): Promise<"sent" | "skipped" | "retry" | "failed" | "taken"> {
   const stop = blocked.get(row.to_email.toLowerCase());
   if (stop) {
     await mark(row, "skipped", `address suppressed — ${stop}`);
     return "skipped";
   }
+  /* Prior consent is the rule where this member is, and there is none on file.
+     Skipped rather than requeued: unlike the postal address, this will not be
+     resolved by waiting — it needs the member to be asked and to answer, and a
+     letter that sat in the outbox for a month would go out stale if they ever
+     did. The club asks again the next time it has something to say. */
+  const withheld = (LETTER_KIND[row.template] ?? "transactional") === "marketing"
+    ? needsConsent.get(row.to_email.toLowerCase())
+    : undefined;
+  if (withheld) {
+    await mark(row, "skipped", `marketing withheld — ${withheld}`);
+    return "skipped";
+  }
+  /* The address goes in the footer, and whether there IS one decides whether a
+     commercial letter may go at all. Resolved before the render, because the
+     footer is built inside it.
+
+     A marketing letter with no postal address is a CAN-SPAM violation per
+     message. So it is not sent: the row is requeued rather than failed, because
+     nothing is wrong with the letter — the club has simply not told us where it
+     lives yet, and the moment somebody sets the dial every held letter goes on
+     the next drain. A transactional letter is not a commercial message and is
+     unaffected: a weather hold still reaches everybody it concerns. */
+  postalNow = await postalAddress();
+  if ((LETTER_KIND[row.template] ?? "transactional") === "marketing" && !postalNow) {
+    await requeue(row, "held — the club has no postal address set, and commercial mail must carry one");
+    return "retry";
+  }
+
   const letter = render(row);
   if ("refused" in letter) {
     await mark(row, "failed", letter.refused);
@@ -945,12 +1121,23 @@ Deno.serve(async (req: Request) => {
       return Response.json({ fetched: rows.length, sent: 0, skipped: 0, retried: 0, failed: 0, reason: "no api key" }, { status: 503 });
     }
 
-    const blocked = await suppressed(rows.map((r) => r.to_email));
+    const addresses = rows.map((r) => r.to_email);
+    /* Both reads in one round trip each, for the whole drain, before any letter
+       is rendered — the shape suppressed() already had, and the reason is the
+       same: one query for a batch rather than one per row. */
+    const [blocked, needsConsent] = await Promise.all([
+      suppressed(addresses),
+      /* Only worth asking when the batch actually contains marketing. Most
+         drains are receipts. */
+      rows.some((r) => (LETTER_KIND[r.template] ?? "transactional") === "marketing")
+        ? marketingWithheld(addresses)
+        : Promise.resolve(new Map<string, string>()),
+    ]);
 
     for (const row of rows) {
       let outcome: Awaited<ReturnType<typeof deliver>>;
       try {
-        outcome = await deliver(row, blocked);
+        outcome = await deliver(row, blocked, needsConsent);
       } catch (err) {
         /* Even the bookkeeping can fail — PostgREST down mid-batch. The row
            is left where it is; the stall rescue and the next run pick it up. */

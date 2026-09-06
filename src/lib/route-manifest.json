@@ -107,6 +107,16 @@
       "access": "public"
     },
     {
+      "path": "/api/recover",
+      "file": "src/app/api/recover/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
       "path": "/api/search",
       "file": "src/app/api/search/route.ts",
       "type": "handler",
@@ -152,6 +162,17 @@
       "type": "handler",
       "methods": [
         "POST"
+      ],
+      "dynamic": false,
+      "access": "public"
+    },
+    {
+      "path": "/api/unsubscribe",
+      "file": "src/app/api/unsubscribe/route.ts",
+      "type": "handler",
+      "methods": [
+        "POST",
+        "GET"
       ],
       "dynamic": false,
       "access": "public"
@@ -899,6 +920,13 @@
     {
       "path": "/you",
       "file": "src/app/(member)/you/page.tsx",
+      "type": "page",
+      "dynamic": false,
+      "access": "member"
+    },
+    {
+      "path": "/you/data",
+      "file": "src/app/(member)/you/data/page.tsx",
       "type": "page",
       "dynamic": false,
       "access": "member"

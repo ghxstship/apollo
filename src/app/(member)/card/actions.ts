@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
+import { actionStepUp } from "@/lib/supabase/step-up-action";
 
 export type CardResult = { error?: string };
 
@@ -22,6 +23,12 @@ export async function rotateSeasonFeed(): Promise<CardResult> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+
+  /* Minting a credential on a session that never proved the second factor is
+     the shape two-step exists to stop, and a server action is neither a page
+     nor a route handler — so nothing covered this until now. */
+  const stepUp = await actionStepUp(supabase, user);
+  if (stepUp) return { error: stepUp.error };
 
   const { error } = await supabase.rpc("rotate_calendar_token");
   if (error) return { error: await voiceWith(supabase, error) };
