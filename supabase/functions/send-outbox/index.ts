@@ -842,8 +842,20 @@ async function sendViaResend(row: OutboxRow, letter: Rendered): Promise<{ ok: bo
       Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
       /* The same row sent twice — a retry after a timeout that actually
-         landed — is one letter at Resend, not two. */
-      "Idempotency-Key": `outbox/${row.id}/${row.attempts ?? 0}`,
+         landed — is one letter at Resend, not two.
+
+         The key is the ROW, not the row and its attempt. Including `attempts`
+         defeated the whole mechanism on precisely the path it was written for:
+         a send that reached Resend and then lost its response (the 10s abort
+         above, a redeploy, an OOM) leaves the row in `sending`, and
+         requeue_stalled_sends flips it back to pending with attempts + 1. A
+         key carrying that number is a DIFFERENT key, so Resend saw a new
+         request and the member got the letter twice. Resend honours a key for
+         24h and the whole retry ladder — 5, 15, 45, 135, 360 minutes, five
+         attempts — fits inside that, so one key per row covers every retry it
+         can make. A row that genuinely failed before Resend created anything
+         is unaffected: an unbound key still sends. */
+      "Idempotency-Key": `outbox/${row.id}`,
     },
     body: JSON.stringify({
       from: FROM,
