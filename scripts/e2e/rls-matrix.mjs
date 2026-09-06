@@ -580,9 +580,17 @@ export async function run(p, ctx) {
     }
     const pausedExport = await pau.rpc("export_my_data", {});
     note("paused", "export_my_data() · paused (open)", pausedExport.status === 200, brief(pausedExport, 40));
+    /* Answered on 2026-09-06, and this used to be the place the ambiguity was
+       written down: any signed-in member could read any manifest, and the note
+       here said the safer reading would ask for a pass. The decision went the
+       other way on the directory and this way on the manifest — a hold closes
+       what a member can DO, and who is aboard a future episode is
+       booking-adjacent, so it closes with booking. The directory stays open to
+       a held member, which the checks above still prove. */
     const pausedManifest = await pau.rpc("episode_manifest", { p_episode: epB });
-    note("paused", "episode_manifest() · paused · reads names of a night they hold no pass on (ambiguous — recorded)", pausedManifest.status === 200,
-      `got ${pausedManifest.status} ${rows(pausedManifest).length} names — any signed-in member may read any manifest; the safer reading would ask for a pass`);
+    note("paused", "episode_manifest() · paused · the manifest closes with the booking right",
+      pausedManifest.status >= 400 && /dues/.test(said(pausedManifest)),
+      `expected a refusal naming the dues; got ${pausedManifest.status} ${brief(pausedManifest, 70)}`);
 
     /* ══ 8. owned tables: writes on own vs other's ═════════════════════════ */
     /* profiles: the guard names every privileged column — except comped_until. */

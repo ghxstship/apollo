@@ -2,11 +2,18 @@
 
 import React from "react";
 import { CLUB_ZONE } from "@/lib/brand";
-import { Badge, Button, Checkbox, Dialog, Input, ListToolbar, Stat, StateBlock, Switch, Table, Toast } from "@/components/ds";
-import { logDateTime } from "@/lib/format";
+import { Badge, Button, Checkbox, Dialog, Input, ListToolbar, Notice, Radio, Stat, StateBlock, Switch, Table, TextButton, Toast } from "@/components/ds";
+import { logDate, logDateTime } from "@/lib/format";
 import { useToast } from "../../ui";
-import { createApiKey, createWebhook, revokeApiKey, setWebhookActive } from "./actions";
-import { HOOK_EVENTS, SCOPES } from "./scopes";
+import { createApiKey, createWebhook, revokeApiKey, setApiKeyEnd, setWebhookActive } from "./actions";
+import { HOOK_EVENTS, KEY_DAYS, KEY_DAYS_FALLBACK, NO_END_REASON_MAX, SCOPES } from "./scopes";
+
+/* When the console starts counting down in the table. It is the first rung of
+   the warning ladder the club sends (club_settings.api_key_warn_days, 14), and
+   it is written here rather than read from the setting on purpose: this is a
+   colour on a badge, not the decision about when to tell somebody. The
+   decision is warn_of_expiring_keys(), which reads the dial. */
+const WARN_DAYS = 14;
 
 export type KeyRow = {
   id: string;
@@ -16,6 +23,14 @@ export type KeyRow = {
   revoked: boolean;
   lastUsedAt: string | null;
   createdAt: string;
+  /** When the key stops opening anything. Null is a key with no end. */
+  expiresAt: string | null;
+  /** Why it has no end, on the keys cut since the rule. Null on the older ones. */
+  noEndReason: string | null;
+  /** Counted on the server at the request, so the two clocks cannot disagree. */
+  ageDays: number;
+  /** Days until it stops; negative once it has. Null when it never does. */
+  endsInDays: number | null;
   [key: string]: unknown;
 };
 
@@ -34,15 +49,40 @@ export type HookRow = {
   }>;
 };
 
-export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }) {
+export function KeysClient({
+  keys,
+  hooks,
+  defaultDays,
+  staleDays,
+}: {
+  keys: KeyRow[];
+  hooks: HookRow[];
+  /** club_settings.api_key_days — the length the dialog opens on. */
+  defaultDays: number;
+  /** club_settings.api_key_stale_days — how old a key with no end may be
+      before the console says so. Nothing is revoked by it; the flag is the
+      whole control, because the keys that predate the date column are held by
+      integrations nobody has inventoried and an overnight cut-off would be a
+      self-inflicted incident. */
+  staleDays: number;
+}) {
   const [pending, startTransition] = React.useTransition();
   const { toast, toastOpen, show, clear } = useToast();
+
+  /* The dial, snapped to a length the console actually offers — a setting
+     turned to 45 by hand must not open a dialog with nothing selected. */
+  const preset = (KEY_DAYS as readonly number[]).includes(defaultDays) ? defaultDays : KEY_DAYS_FALLBACK;
 
   const [cuttingKey, setCuttingKey] = React.useState(false);
   const [label, setLabel] = React.useState("");
   const [scopes, setScopes] = React.useState<string[]>(["read:episodes"]);
+  const [days, setDays] = React.useState<number | null>(preset);
+  const [why, setWhy] = React.useState("");
   const [minted, setMinted] = React.useState<string | null>(null);
   const [revoking, setRevoking] = React.useState<KeyRow | null>(null);
+  const [ending, setEnding] = React.useState<KeyRow | null>(null);
+  const [endDays, setEndDays] = React.useState<number | null>(preset);
+  const [endWhy, setEndWhy] = React.useState("");
 
   const [addingHook, setAddingHook] = React.useState(false);
   const [url, setUrl] = React.useState("");
@@ -50,6 +90,52 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
 
   const toggle = (list: string[], value: string) =>
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+
+  /* One chooser, used to cut a key and to give one that already exists a new
+     date. Four lengths and a fifth choice that is not a length: "no end" is
+     still on offer, because a partner integration that must not break is a
+     real thing to want, but it now costs a sentence — and the database refuses
+     the row without one, so this is a courtesy rather than the guard. */
+  const chooseLength = (
+    name: string,
+    value: number | null,
+    onPick: (d: number | null) => void,
+    reason: string,
+    onReason: (v: string) => void
+  ) => (
+    <>
+      <div>
+        <span className="hm-mono">HOW LONG IT RUNS</span>
+        <div className="ls-choices ls-choices--col">
+          {KEY_DAYS.map((d) => (
+            <Radio
+              key={d}
+              name={name}
+              label={`${d} days`}
+              checked={value === d}
+              onChange={() => onPick(d)}
+            />
+          ))}
+          <Radio
+            name={name}
+            label="No end"
+            checked={value === null}
+            onChange={() => onPick(null)}
+          />
+        </div>
+      </div>
+      {value === null ? (
+        <Input
+          label="Why it never stops"
+          placeholder="The season site reads it nightly — ask Shoreside before cutting it off"
+          maxLength={NO_END_REASON_MAX}
+          value={reason}
+          onChange={(e) => onReason(e.target.value)}
+          hint="Kept on the key. The next operator to read this list is the one it is for."
+        />
+      ) : null}
+    </>
+  );
 
   const copyKey = async () => {
     if (!minted) return;
@@ -81,6 +167,47 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
         <span className="hm-mono">{k.scopes.join(" · ").toUpperCase() || "—"}</span>
       ),
     },
+    /* How old the key is, in plain days. The column exists because the answer
+       used to be a created_at nobody rendered: a key cut in July and a key cut
+       this morning read identically, and "how long has that been open" was a
+       question the console could not answer at all. */
+    {
+      key: "age",
+      label: "Age",
+      width: 90,
+      mono: true,
+      render: (k: KeyRow) => `${k.ageDays} D`,
+    },
+    /* And when it stops. A date, a countdown once it is close, and — for a key
+       with no end — either the reason it was given or, on the ones that
+       predate the rule, how long it has been running unbounded. */
+    {
+      key: "ends",
+      label: "Ends",
+      width: 190,
+      render: (k: KeyRow) => {
+        if (k.expiresAt === null) {
+          return k.ageDays > staleDays ? (
+            <Badge tone="caution" title={k.noEndReason ?? undefined}>
+              No end · {k.ageDays} days old
+            </Badge>
+          ) : (
+            <Badge tone="outline" title={k.noEndReason ?? undefined}>No end</Badge>
+          );
+        }
+        const left = k.endsInDays ?? 0;
+        const on = logDate(k.expiresAt, CLUB_ZONE);
+        if (left < 0) return <Badge tone="danger">Ended {on}</Badge>;
+        if (left <= WARN_DAYS) {
+          return (
+            <Badge tone="caution">
+              {on} · {left} {left === 1 ? "day" : "days"} left
+            </Badge>
+          );
+        }
+        return <span className="hm-mono">{on}</span>;
+      },
+    },
     {
       key: "lastUsedAt",
       label: "Last used",
@@ -92,18 +219,40 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
       key: "state",
       label: "State",
       width: 100,
+      /* Three states, not two. A key past its date is not revoked and is not
+         live: verifyKey refuses it, and a console that badges it Live sends an
+         operator hunting for a fault in the partner's config. */
       render: (k: KeyRow) =>
-        k.revoked ? <Badge tone="caution">Revoked</Badge> : <Badge tone="positive">Live</Badge>,
+        k.revoked ? (
+          <Badge tone="caution">Revoked</Badge>
+        ) : k.endsInDays !== null && k.endsInDays < 0 ? (
+          <Badge tone="danger">Ended</Badge>
+        ) : (
+          <Badge tone="positive">Live</Badge>
+        ),
     },
     {
       key: "acts",
       label: "",
-      width: 90,
+      width: 160,
       render: (k: KeyRow) =>
         k.revoked ? null : (
-          <Button variant="danger" size="sm" disabled={pending} onClick={() => setRevoking(k)}>
-            Revoke
-          </Button>
+          <span className="ls-acts">
+            <TextButton
+              size="sm"
+              disabled={pending}
+              onClick={() => {
+                setEnding(k);
+                setEndDays(k.expiresAt === null ? null : preset);
+                setEndWhy(k.noEndReason ?? "");
+              }}
+            >
+              Set an end
+            </TextButton>
+            <Button variant="danger" size="sm" disabled={pending} onClick={() => setRevoking(k)}>
+              Revoke
+            </Button>
+          </span>
         ),
     },
   ];
@@ -113,10 +262,21 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
   const live = keys.filter((k) => !k.revoked).length;
   const liveHooks = hooks.filter((h) => h.active).length;
 
+  /* The keys the club is carrying without a decision behind them: live, no
+     end, and older than the dial. Counted for the header and named in a notice
+     above the table, because a badge in row nine of a scrolling table is not
+     how anybody learns something. */
+  const unbounded = keys.filter((k) => !k.revoked && k.expiresAt === null && k.ageDays > staleDays);
+  const stopping = keys.filter(
+    (k) => !k.revoked && k.endsInDays !== null && k.endsInDays >= 0 && k.endsInDays <= WARN_DAYS
+  );
+
   return (
     <>
       <div className="hm-row">
         <Stat size="sm" label="Keys live" value={live} sub={`${keys.length} CUT IN ALL`} />
+        <Stat size="sm" label="No end" value={unbounded.length} sub={`OVER ${staleDays} DAYS OLD`} />
+        <Stat size="sm" label="Stopping soon" value={stopping.length} sub={`WITHIN ${WARN_DAYS} DAYS`} />
         <Stat size="sm" label="Hooks live" value={liveHooks} sub={`${hooks.length} SET IN ALL`} />
       </div>
 
@@ -126,13 +286,23 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
             <h2>API keys.</h2>
             <p className="hm-note">
               Shown once at the moment it is cut. We keep a hash and the first eight characters —
-              lose the key and you cut a new one.
+              lose the key and you cut a new one. A new key runs {preset} days unless you choose
+              otherwise, and a key with no end has to say why.
             </p>
           </div>
           <Button variant="gold" size="sm" onClick={() => setCuttingKey(true)}>
             New key
           </Button>
         </div>
+        {unbounded.length ? (
+          <Notice tone="warn" title="Keys that were cut before a key had an end.">
+            {unbounded.length === 1 ? "One key runs" : `${unbounded.length} keys run`} with no end and
+            {unbounded.length === 1 ? " has" : " have"} been open longer than {staleDays} days. Nothing
+            has been dated for them and nothing will be: something may be holding each one, and a date
+            applied by a sweep is an integration going dark on a Tuesday morning. Read the list, find
+            who holds each key, then give it an end or cut it off — one at a time, on purpose.
+          </Notice>
+        ) : null}
         {keys.length ? (
           <>
             <ListToolbar resultCount={keys.length} resultNoun="key" countSuffix={` · ${live} live`} />
@@ -261,12 +431,16 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               onClick={() => {
                 const name = label;
                 const picked = scopes;
+                const runs = days;
+                const reason = why;
                 startTransition(async () => {
-                  const res = await createApiKey(name, picked);
+                  const res = await createApiKey(name, picked, runs, reason);
                   if (res.error) show({ msg: res.error, tone: "danger" });
                   else {
                     setCuttingKey(false);
                     setLabel("");
+                    setDays(preset);
+                    setWhy("");
                     setMinted(res.key ?? null);
                   }
                 });
@@ -297,6 +471,58 @@ export function KeysClient({ keys, hooks }: { keys: KeyRow[]; hooks: HookRow[] }
               ))}
             </div>
           </div>
+          {chooseLength("new-key-length", days, setDays, why, setWhy)}
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={!!ending}
+        onClose={() => setEnding(null)}
+        width={460}
+        eyebrow={ending ? ending.prefix + "…" : ""}
+        title="When does this key stop?"
+        footer={
+          ending ? (
+            <>
+              <Button variant="ghost" onClick={() => setEnding(null)}>
+                Leave it
+              </Button>
+              <Button
+                variant="gold"
+                pending={pending}
+                pendingLabel="Setting…"
+                onClick={() => {
+                  const target = ending;
+                  const runs = endDays;
+                  const reason = endWhy;
+                  startTransition(async () => {
+                    const res = await setApiKeyEnd(target.id, runs, reason);
+                    if (res.error) show({ msg: res.error, tone: "danger" });
+                    else {
+                      setEnding(null);
+                      show({
+                        msg: runs === null ? "That key runs on, and says why." : `That key stops in ${runs} days.`,
+                        meta: `${target.prefix}… · ${runs === null ? "NO END" : "COUNTED FROM TODAY"}`,
+                      });
+                    }
+                  });
+                }}
+              >
+                Set it
+              </Button>
+            </>
+          ) : null
+        }
+      >
+        <div className="hm-form">
+          <p className="hm-body">
+            Counted from today, not from the day it was cut — {ending?.label} has been open{" "}
+            {ending?.ageDays} days. Whatever is holding it goes quiet the moment the date passes, so
+            hand over a replacement first.
+          </p>
+          {ending
+            ? chooseLength("set-key-length", endDays, setEndDays, endWhy, setEndWhy)
+            : null}
         </div>
       </Dialog>
 

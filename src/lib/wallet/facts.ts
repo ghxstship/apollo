@@ -41,6 +41,10 @@ export type WalletRegistrationRow = {
   serial: string;
   push_token: string;
   created_at: string;
+  /** The last time this device spoke to the PassKit service. The nightly
+      retention sweep lets go of a registration that has been silent for
+      wallet_registration_stale_days. */
+  last_seen_at: string;
 };
 
 type Client = SupabaseClient<Database>;

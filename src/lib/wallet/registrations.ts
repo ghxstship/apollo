@@ -25,15 +25,30 @@ export type RegistrationOutcome = "created" | "exists" | "notOpen" | "error" | "
    fires on every subscription event. Self-inflicted, and unbounded, which is
    the part worth fixing.
 
-   Eight, for a real number of two or three: phone, watch, iPad, a second phone
-   mid-upgrade, and headroom for a device that reinstalls under a new
-   identifier without ever sending the DELETE. Counted rather than stored, so
-   nothing about this needs a column. */
-const MAX_DEVICES_PER_PASS = 8;
+   THIS IS A HYGIENE CONTROL, NOT AN ANTI-SHARING ONE. Nothing here stops a
+   member handing their pass to someone else, and it was never meant to: the
+   boarding code is the credential and the gangway is the control — a second
+   person presenting the same code is refused at the dock, by a person, whether
+   the pass came off one phone or six. What the cap does is bound the fan-out
+   and keep one member's row count from being a number nobody chose.
+
+   Six, by the owner's ruling of 2026-09-06, for a real number of two or three:
+   phone, watch, iPad, a second phone mid-upgrade, and headroom for a device
+   that reinstalls under a new identifier without ever sending the DELETE.
+   Counted rather than stored, so nothing about this needs a column, and
+   enforced again under a lock by the cap_wallet_registrations trigger — change
+   one and change the other.
+
+   The other half is the sweep: a registration unheard from for
+   wallet_registration_stale_days (180) is deleted by the nightly retention
+   run, so the ceiling is not slowly filled by phones that were traded in
+   without ever sending their DELETE. A device that comes back registers
+   again. */
+const MAX_DEVICES_PER_PASS = 6;
 
 export async function registerDevice(
   admin: Client,
-  row: Omit<WalletRegistrationRow, "created_at">
+  row: Omit<WalletRegistrationRow, "created_at" | "last_seen_at">
 ): Promise<RegistrationOutcome> {
   const db = moduleTables(admin).from("wallet_registrations");
   const { data: existing, error: readError } = await db
@@ -44,8 +59,12 @@ export async function registerDevice(
     .maybeSingle();
   if (readError) return ledgerNotOpen(readError) ? "notOpen" : "error";
   if (existing) {
-    /* Same device, same pass, a fresh push token — keep the newest. */
-    await db.update({ push_token: row.push_token }).eq("device_id", row.device_id).eq("pass_type", row.pass_type).eq("serial", row.serial);
+    /* Same device, same pass, a fresh push token — keep the newest, and
+       stamp it: a device that re-registers has just been heard from, which is
+       the whole of what the staleness sweep reads. */
+    await db
+      .update({ push_token: row.push_token, last_seen_at: new Date().toISOString() })
+      .eq("device_id", row.device_id).eq("pass_type", row.pass_type).eq("serial", row.serial);
     return "exists";
   }
   /* Counted only on the path that adds one. A device that is already
@@ -94,6 +113,18 @@ export async function serialsForDevice(
   if (error) return ledgerNotOpen(error) ? "notOpen" : "error";
   const serials = (regs ?? []).map((r) => (r as { serial: string }).serial);
   if (!serials.length) return { serials: [], lastUpdated: null };
+
+  /* The device just asked, which is the only regular sign of life a wallet
+     registration gives: Apple's own client polls this route and carries no
+     Authorization header, so nothing else on the service hears from a phone
+     that is merely holding a pass. Stamped best effort — a failed stamp makes
+     a row look staler than it is, which the sweep would eventually act on, but
+     failing the phone's poll over it would be worse. */
+  await moduleTables(admin)
+    .from("wallet_registrations")
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq("device_id", deviceId)
+    .eq("pass_type", passType);
 
   let q = moduleTables(admin)
     .from("wallet_tokens")

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getOperator } from "../../data";
 import { KeysClient, type HookRow, type KeyRow } from "./keys-client";
 import { must } from "../../staff";
+import { KEY_DAYS_FALLBACK } from "./scopes";
 
 export const metadata: Metadata = { title: "Keys and hooks" };
 
@@ -16,6 +17,15 @@ export default async function KeysPage() {
   const { data: enabled } = await supabase.rpc("club_setting", { p_key: "keys_console_enabled" });
   if (!enabled) notFound();
 
+  /* Both dials are the owner's, not the component's: how long a new key runs
+     by default, and how old a key with no end has to be before the console
+     says so. Read here so the client is handed numbers rather than reaching
+     for the database itself. */
+  const [defaultDaysRes, staleDaysRes] = await Promise.all([
+    supabase.rpc("club_setting", { p_key: "api_key_days" }),
+    supabase.rpc("club_setting", { p_key: "api_key_stale_days" }),
+  ]);
+
   const [keysRes, hooksRes, deliveriesRes] = await Promise.all([
     supabase.from("api_keys").select("*").order("created_at", { ascending: false }),
     supabase.from("webhooks").select("*").order("created_at", { ascending: false }),
@@ -26,6 +36,16 @@ export default async function KeysPage() {
       .limit(200),
   ]);
 
+  /* Age and the days left are counted here rather than in the browser. Both
+     are derived from a clock, and a clock read twice — once on the server and
+     once on the client — is a hydration mismatch on a screen whose whole job
+     is to be believed about dates. One reading, taken at the request. */
+  /* new Date() rather than Date.now(): the compiler's purity rule flags the
+     latter by name, and every other server page in this app already reads the
+     clock this way. */
+  const now = new Date().getTime();
+  const daysBetween = (from: number, to: number) => Math.floor((to - from) / 86_400_000);
+
   const keys: KeyRow[] = (must(keysRes)).map((k) => ({
     id: k.id,
     label: k.label,
@@ -34,6 +54,10 @@ export default async function KeysPage() {
     revoked: k.revoked,
     lastUsedAt: k.last_used_at,
     createdAt: k.created_at,
+    expiresAt: k.expires_at,
+    noEndReason: k.no_expiry_reason,
+    ageDays: Math.max(0, daysBetween(Date.parse(k.created_at), now)),
+    endsInDays: k.expires_at === null ? null : daysBetween(now, Date.parse(k.expires_at)),
   }));
 
   /* Last ten per hook — enough to see a pattern, short enough to read. */
@@ -73,7 +97,12 @@ export default async function KeysPage() {
         key and nothing posts a hook — issue one only to hold a place, never to
         a partner expecting it to work.
       </p>
-      <KeysClient keys={keys} hooks={hooks} />
+      <KeysClient
+        keys={keys}
+        hooks={hooks}
+        defaultDays={typeof defaultDaysRes.data === "number" ? defaultDaysRes.data : KEY_DAYS_FALLBACK}
+        staleDays={typeof staleDaysRes.data === "number" ? staleDaysRes.data : 90}
+      />
     </div>
   );
 }
