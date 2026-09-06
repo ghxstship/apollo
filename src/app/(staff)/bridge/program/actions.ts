@@ -107,7 +107,7 @@ export async function createSeason(input: NewSeason): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const title = input.title.trim();
+  const title = asText(input.title).trim();
   if (!title) return { error: "A season needs a name." };
   if (title.length > TITLE_MAX) return { error: `A season's name runs to ${TITLE_MAX} characters.` };
 
@@ -124,7 +124,7 @@ export async function createSeason(input: NewSeason): Promise<ActionResult> {
     title,
     starts_on: input.startsOn,
     ends_on: input.endsOn,
-    blurb: input.blurb.trim().slice(0, BLURB_MAX) || null,
+    blurb: asText(input.blurb).trim().slice(0, BLURB_MAX) || null,
   });
   if (error) {
     return {
@@ -153,7 +153,7 @@ export async function createVenue(input: NewVenue): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const name = input.name.trim();
+  const name = asText(input.name).trim();
   if (!name) return { error: "A venue needs a name." };
   if (name.length > TITLE_MAX) return { error: `A venue's name runs to ${TITLE_MAX} characters.` };
 
@@ -181,7 +181,7 @@ export async function createVenue(input: NewVenue): Promise<ActionResult> {
     name,
     kind: input.kind,
     city_id: input.harborId || null,
-    address: input.address.trim().slice(0, ADDRESS_MAX) || null,
+    address: asText(input.address).trim().slice(0, ADDRESS_MAX) || null,
     access_note: accessNote || null,
   });
   if (error) {
@@ -222,7 +222,7 @@ export async function createSeries(input: NewSeries): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const title = input.title.trim();
+  const title = asText(input.title).trim();
   if (!title) return { error: "A series needs a name." };
   if (title.length > TITLE_MAX) return { error: `A series' name runs to ${TITLE_MAX} characters.` };
 

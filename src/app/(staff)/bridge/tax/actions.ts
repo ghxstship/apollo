@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* Records what a city's tax treatment IS, once somebody qualified has said so.
    Nothing here computes a rate or guesses one; the row is a determination
@@ -43,7 +44,7 @@ export async function setCityTax(
       return { error: `A ${label} rate is a whole number of hundredths of a percent, 0 to 3000 — 700 is 7%.` };
     }
   }
-  const by = patch.determined_by.trim().slice(0, 120);
+  const by = asText(patch.determined_by).trim().slice(0, 120);
   if ((patch.admissions_rate_bp !== null || patch.goods_rate_bp !== null) && !by) {
     return { error: "A rate needs the name of whoever determined it." };
   }
@@ -63,7 +64,7 @@ export async function setCityTax(
         registered: patch.registered,
         determined_by: by || null,
         determined_on: patch.determined_on || null,
-        note: patch.note.trim().slice(0, 500) || null,
+        note: asText(patch.note).trim().slice(0, 500) || null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "city_id" }

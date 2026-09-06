@@ -90,7 +90,7 @@ export async function saveLeg(
   if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   if (legId && !UUID.test(legId)) return { error: NO_LEG };
 
-  const place = input.place.trim().slice(0, TEXT_MAX);
+  const place = asText(input.place).trim().slice(0, TEXT_MAX);
   if (!place) return { error: "A leg needs a place." };
   const day = Math.round(Number(input.day) || 0);
   if (day < 1 || day > DAY_MAX) return { error: `A leg's day runs 1 to ${DAY_MAX}.` };
@@ -107,10 +107,22 @@ export async function saveLeg(
     if (!startsAt) return { error: "That time doesn't parse." };
   }
 
-  const patch = { place, note: input.note.trim().slice(0, NOTE_MAX) || null, starts_at: startsAt };
+  const patch = { place, note: asText(input.note).trim().slice(0, NOTE_MAX) || null, starts_at: startsAt };
 
   if (legId) {
-    const { data, error } = await db.from("episode_legs").update({ ...patch, day }).eq("id", legId).select("id");
+    /* Narrowed on the episode as well as the id. The screen sends both, and
+       the update used to trust the id alone — so a stale board, or a replayed
+       call, edited a leg on a DIFFERENT episode while every message this
+       action can return says "this episode", including the day-clash line
+       below. The two are related in the schema; the write says so now, and a
+       leg that is not on this episode reads as gone, which from this screen it
+       is. */
+    const { data, error } = await db
+      .from("episode_legs")
+      .update({ ...patch, day })
+      .eq("id", legId)
+      .eq("episode_id", episodeId)
+      .select("id");
     if (error) {
       if (/voyage_legs_voyage_id_day_key|duplicate/i.test(error.message ?? "")) {
         return { error: `Day ${day} is already a leg on this episode.` };
@@ -216,7 +228,7 @@ export async function saveStop(
   if (stopId && !UUID.test(stopId)) return { error: NO_STOP };
   if (input.legId && !UUID.test(input.legId)) return { error: "Pick the leg off the list." };
 
-  const name = input.name.trim().slice(0, TEXT_MAX);
+  const name = asText(input.name).trim().slice(0, TEXT_MAX);
   if (!name) return { error: "A stop needs a name." };
   const position = Math.round(Number(input.position) || 0);
   if (position < 1 || position > POSITION_MAX) return { error: `A stop's position runs 1 to ${POSITION_MAX}.` };
@@ -253,11 +265,15 @@ export async function saveStop(
     leg_id: input.legId || null,
     tender_at: input.tenderAt || null,
     last_return: input.lastReturn || null,
-    notes: input.notes.trim().slice(0, NOTE_MAX) || null,
+    notes: asText(input.notes).trim().slice(0, NOTE_MAX) || null,
   };
 
+  /* Same narrowing as the leg above, for the same reason: the stop being
+     edited has to be one of this episode's, or the leg check just above — which
+     proves the leg belongs to THIS episode — is proving it about the wrong
+     row. */
   const res = stopId
-    ? await db.from("episode_stops").update(patch).eq("id", stopId).select("id")
+    ? await db.from("episode_stops").update(patch).eq("id", stopId).eq("episode_id", episodeId).select("id")
     : await db.from("episode_stops").insert({ episode_id: episodeId, ...patch }).select("id");
   if (res.error) {
     if (/voyage_stops_voyage_id_position_key|duplicate/i.test(res.error.message ?? "")) {

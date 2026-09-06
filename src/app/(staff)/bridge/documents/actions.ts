@@ -66,15 +66,15 @@ export async function createClause(input: NewClause): Promise<ActionResult> {
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
   if (!code) return { error: "A clause needs a short code." };
-  if (!input.title.trim()) return { error: "A clause needs a title." };
-  if (input.title.trim().length > TITLE_MAX) return { error: `A clause's title runs to ${TITLE_MAX} characters.` };
+  if (!asText(input.title).trim()) return { error: "A clause needs a title." };
+  if (asText(input.title).trim().length > TITLE_MAX) return { error: `A clause's title runs to ${TITLE_MAX} characters.` };
   if (!CATEGORIES.includes(input.category)) return { error: "That is not a clause category." };
-  if (input.body.trim().length < 20) return { error: "That is too short to be a clause." };
-  if (input.body.trim().length > BODY_MAX) return { error: "That is too long for one clause — split it." };
+  if (asText(input.body).trim().length < 20) return { error: "That is too short to be a clause." };
+  if (asText(input.body).trim().length > BODY_MAX) return { error: "That is too long for one clause — split it." };
 
   const { error: clauseError } = await supabase
     .from("clauses")
-    .insert({ code, title: input.title.trim(), category: input.category });
+    .insert({ code, title: asText(input.title).trim(), category: input.category });
   if (clauseError) {
     return {
       error: /duplicate|unique/i.test(clauseError.message)
@@ -86,7 +86,7 @@ export async function createClause(input: NewClause): Promise<ActionResult> {
   const { error } = await supabase.from("clause_versions").insert({
     clause_code: code,
     version: 1,
-    body: input.body.trim(),
+    body: asText(input.body).trim(),
     note: "Initial wording",
     published_by: staffId,
   });

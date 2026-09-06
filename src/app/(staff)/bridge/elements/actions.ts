@@ -25,6 +25,7 @@ import {
   type WeatherClass,
 } from "@/types/elements";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* The elements catalogue — every produced element, filed against the XPMS3
    schema.
@@ -94,27 +95,27 @@ const SPEC_MAX = 4000;
 const FIGURE_MAX = 1_000_000_000;
 
 function validate(input: ElementInput): string | null {
-  if (!input.elementId.trim()) return "An element needs its key — SIG-01, SWG-03, PRN-02.";
-  if (input.elementId.trim().length > KEY_MAX) return `An element's key runs to ${KEY_MAX} characters.`;
-  if (!input.name.trim()) return "An element needs a name.";
-  if (input.name.trim().length > TEXT_MAX) return `An element's name runs to ${TEXT_MAX} characters.`;
-  if (!input.discipline.trim()) return "Name the discipline it sits in.";
-  if (input.discipline.trim().length > TEXT_MAX) return `A discipline runs to ${TEXT_MAX} characters.`;
-  if (!input.category.trim()) return "Name the category within the discipline.";
-  if (input.category.trim().length > TEXT_MAX) return `A category runs to ${TEXT_MAX} characters.`;
-  if (!input.specifications.trim()) {
+  if (!asText(input.elementId).trim()) return "An element needs its key — SIG-01, SWG-03, PRN-02.";
+  if (asText(input.elementId).trim().length > KEY_MAX) return `An element's key runs to ${KEY_MAX} characters.`;
+  if (!asText(input.name).trim()) return "An element needs a name.";
+  if (asText(input.name).trim().length > TEXT_MAX) return `An element's name runs to ${TEXT_MAX} characters.`;
+  if (!asText(input.discipline).trim()) return "Name the discipline it sits in.";
+  if (asText(input.discipline).trim().length > TEXT_MAX) return `A discipline runs to ${TEXT_MAX} characters.`;
+  if (!asText(input.category).trim()) return "Name the category within the discipline.";
+  if (asText(input.category).trim().length > TEXT_MAX) return `A category runs to ${TEXT_MAX} characters.`;
+  if (!asText(input.specifications).trim()) {
     return "The specification is carried verbatim onto artwork specs — dimensions, material, finish.";
   }
-  if (input.specifications.trim().length > SPEC_MAX) {
+  if (asText(input.specifications).trim().length > SPEC_MAX) {
     return `A specification runs to ${SPEC_MAX.toLocaleString("en")} characters.`;
   }
-  if (!input.uom.trim()) return "The unit of measure is a compound — item·event, set·event, lot·event.";
-  if (input.uom.trim().length > TEXT_MAX) return `A unit of measure runs to ${TEXT_MAX} characters.`;
-  if (input.sense.trim().length > TEXT_MAX) return `The sense line runs to ${TEXT_MAX} characters.`;
-  if (input.substitute.trim().length > SPEC_MAX) {
+  if (!asText(input.uom).trim()) return "The unit of measure is a compound — item·event, set·event, lot·event.";
+  if (asText(input.uom).trim().length > TEXT_MAX) return `A unit of measure runs to ${TEXT_MAX} characters.`;
+  if (asText(input.sense).trim().length > TEXT_MAX) return `The sense line runs to ${TEXT_MAX} characters.`;
+  if (asText(input.substitute).trim().length > SPEC_MAX) {
     return `The substitute runs to ${SPEC_MAX.toLocaleString("en")} characters.`;
   }
-  if (!/^\d{4}\.\d{2}\.\d{3}$/.test(input.urid.trim())) {
+  if (!/^\d{4}\.\d{2}\.\d{3}$/.test(asText(input.urid).trim())) {
     return "A URID is DDDD.CC.NNN — four digits, two, three.";
   }
   if (!oneOf(DEPARTMENTS, input.department)) return "That is not a department.";
@@ -141,29 +142,29 @@ function validate(input: ElementInput): string | null {
      and the fault; only the department-prefix half is reworded, because "the
      first segment must be the department number" is already the sentence. */
   const spec = elementSpecificationError({
-    element_id: input.elementId.trim(),
-    urid: input.urid.trim(),
-    name: input.name.trim(),
+    element_id: asText(input.elementId).trim(),
+    urid: asText(input.urid).trim(),
+    name: asText(input.name).trim(),
     department: input.department,
-    discipline: input.discipline.trim(),
-    category: input.category.trim(),
+    discipline: asText(input.discipline).trim(),
+    category: asText(input.category).trim(),
     kind: input.kind,
     tier: input.tier,
     phase: input.phase,
     grain: input.grain,
     element_state: input.elementState,
-    specifications: input.specifications.trim(),
-    uom: input.uom.trim(),
+    specifications: asText(input.specifications).trim(),
+    uom: asText(input.uom).trim(),
     qty: input.qty,
     unit_cost_usd: input.unitCostUsd,
     total_cost_usd: input.qty * input.unitCostUsd,
     price_confidence: input.priceConfidence,
-    sense: input.sense.trim(),
+    sense: asText(input.sense).trim(),
     five_a: input.fiveA,
     client_visible: input.clientVisible ? 1 : 0,
     critical_path: input.criticalPath ? 1 : 0,
     weather: input.weather,
-    weather_substitute: input.substitute.trim() || undefined,
+    weather_substitute: asText(input.substitute).trim() || undefined,
   });
   if (spec) return spec;
   return null;
@@ -171,19 +172,19 @@ function validate(input: ElementInput): string | null {
 
 function rowFor(input: ElementInput) {
   return {
-    element_id: input.elementId.trim(),
-    urid: input.urid.trim(),
-    name: input.name.trim(),
+    element_id: asText(input.elementId).trim(),
+    urid: asText(input.urid).trim(),
+    name: asText(input.name).trim(),
     department: input.department,
-    discipline: input.discipline.trim(),
-    category: input.category.trim(),
+    discipline: asText(input.discipline).trim(),
+    category: asText(input.category).trim(),
     kind: input.kind,
     tier: input.tier,
     phase: input.phase,
     grain: input.grain,
     element_state: input.elementState,
-    specifications: input.specifications.trim(),
-    uom: input.uom.trim(),
+    specifications: asText(input.specifications).trim(),
+    uom: asText(input.uom).trim(),
     qty: input.qty,
     unit_cost_usd: input.unitCostUsd,
     /* Left null so total_an_element does the arithmetic. Stored rather than
@@ -192,7 +193,7 @@ function rowFor(input: ElementInput) {
        trigger is where that lives. */
     total_cost_usd: null as number | null,
     price_confidence: input.priceConfidence,
-    sense: input.sense.trim() || null,
+    sense: asText(input.sense).trim() || null,
     five_a: input.fiveA,
     client_visible: input.clientVisible ? 1 : 0,
     critical_path: input.criticalPath ? 1 : 0,
@@ -215,7 +216,7 @@ export async function saveElement(
   if (fault) return { error: fault };
 
   const row = rowFor(input);
-  const context = input.substitute.trim();
+  const context = asText(input.substitute).trim();
 
   if (elementRowId) {
     /* ORDER MATTERS, AND IT DEPENDS ON WHICH WAY THE REQUIREMENT IS MOVING.

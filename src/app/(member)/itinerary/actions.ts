@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { moduleTables } from "@/lib/module-tables";
 import { voiceWith } from "@/lib/errors";
+import { isId } from "@/lib/arg";
 
 /* [un] Limited — the OPTION hold.
 
@@ -20,12 +21,18 @@ import { voiceWith } from "@/lib/errors";
 
 export type OptionResult = { error?: string; heldUntil?: string };
 
+/* The definers own the 72 hours, the capacity and the ownership. What they
+   cannot see is an id that is not an id: that is refused by the driver, and
+   the member reads a line about a link instead of a line about a cabin. */
+const STALE_PLAN = "That cabin is no longer on the plan. Reload the itinerary.";
+
 export async function holdCabinOnOption(episodeId: string, cabinId: string): Promise<OptionResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+  if (!isId(episodeId) || !isId(cabinId)) return { error: STALE_PLAN };
 
   const db = moduleTables(supabase);
   const { data, error } = await db.rpc("hold_a_cabin_on_option", {
@@ -46,6 +53,7 @@ export async function releaseCabinOption(optionId: string): Promise<OptionResult
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+  if (!isId(optionId)) return { error: "That hold is no longer running. Reload the itinerary." };
 
   const db = moduleTables(supabase);
   const { error } = await db.rpc("release_charter_option", { p_option: optionId });

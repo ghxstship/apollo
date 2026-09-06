@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
+import { isId } from "@/lib/arg";
 
 /* [un] Scripted. A seat is claimed through the RPC — the fifteen-minute hold
    and the capacity race live at the database, so two people reaching for the
@@ -11,12 +12,19 @@ import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 
 export type SeatResult = { error?: string; heldUntil?: string };
 
+/* The table and the seatmate are ids the seating chart handed the surface. RLS
+   and the two RPCs own who may take a chair; the shape is what neither of them
+   sees — a malformed id is answered by the driver, and reaches the member as a
+   line about a link while they are looking at a table. */
+const STALE_TABLE = "That table is no longer laid. Reload the room.";
+
 export async function claimSeat(tableId: string): Promise<SeatResult> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+  if (!isId(tableId)) return { error: STALE_TABLE };
 
   const { data, error } = await supabase.rpc("claim_table_seat", { p_table: tableId });
   /* The RPC already refuses in the club's voice, and says more than a generic
@@ -34,6 +42,7 @@ export async function confirmSeat(tableId: string): Promise<SeatResult> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+  if (!isId(tableId)) return { error: STALE_TABLE };
 
   const { error } = await supabase.rpc("confirm_table_seat", { p_table: tableId });
   if (error) return { error: await voiceWith(supabase, error) };
@@ -47,6 +56,7 @@ export async function releaseSeat(tableId: string): Promise<SeatResult> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+  if (!isId(tableId)) return { error: STALE_TABLE };
 
   /* The result was discarded entirely. Today the DELETE policy is a plain
      ownership check with no trigger, so it works — but a swallowed error means
@@ -81,6 +91,8 @@ export async function pickFromTable(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+  if (!isId(tableId)) return { error: STALE_TABLE };
+  if (!isId(picked)) return { error: "Pick someone from your own table." };
   if (picked === user.id) return { error: "That is you." };
 
   const { error } = await supabase

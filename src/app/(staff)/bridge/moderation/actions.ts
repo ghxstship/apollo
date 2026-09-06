@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
-import { asText } from "@/lib/arg";
+import { asText, isId } from "@/lib/arg";
 
 function done(): ActionResult {
   revalidatePath("/bridge/moderation");
@@ -10,31 +10,58 @@ function done(): ActionResult {
   return {};
 }
 
-/* Flag, post and author ids all come off the queue. A malformed one reaches
-   the driver as "invalid input syntax for type uuid", which names a Postgres
-   type at an operator who never chose one; refused here first. */
-const UUID = /^[0-9a-f-]{36}$/;
+/* The flag id comes off the queue. A malformed one reaches the driver as
+   "invalid input syntax for type uuid", which names a Postgres type at an
+   operator who never chose one; refused here first — by isId, which is the
+   canonical shape, where the local pattern this replaced also admitted
+   thirty-six dashes. */
 const REASON_MAX = 500;
 
 /* Remove the post and tell the author why — never silently. The flag is
-   marked first so the record survives the post's cascade. */
-export async function removeAndNotify(
-  flagId: string,
-  postId: string | null,
-  authorId: string | null,
-  reason: string
-): Promise<ActionResult> {
+   marked first so the record survives the post's cascade.
+
+   The post and the author are read off the flag, not off the wire. They used
+   to be parameters, carried down from the queue screen and never checked
+   against the flag they arrived with — so a stale tab or a replayed call
+   resolved one flag while deleting an unrelated post and telling an unrelated
+   member their words came down. Nothing escalated (this is staff-only at both
+   layers), but the moderation record then said something that did not happen,
+   which is the one thing an audit trail may never do. The database already
+   relates the three: flag → post → author. Ask it. */
+export async function removeAndNotify(flagId: string, reason: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!UUID.test(flagId)) return { error: ERR_LAND };
-  if (postId !== null && !UUID.test(postId)) return { error: ERR_LAND };
-  if (authorId !== null && !UUID.test(authorId)) return { error: ERR_LAND };
+  if (!isId(flagId)) return { error: ERR_LAND };
   /* The line is the body of the word the author reads. Bounded so a pasted
      essay does not become a notification — and refused, rather than cut, so
      the author reads the sentence the operator meant to send and not the
      first half of it. */
   if (asText(reason).trim().length > REASON_MAX) return { error: `The reason runs to ${REASON_MAX} characters.` };
   const line = asText(reason).trim() || "Against the code of conduct.";
+
+  /* One read decides what this action touches. A flag that is no longer there
+     is a stale tab, and saying so is more use than a generic failure. */
+  const { data: flag, error: readError } = await supabase
+    .from("open_deck_flags")
+    .select("post_id")
+    .eq("id", flagId)
+    .maybeSingle();
+  if (readError) return { error: ERR_LAND };
+  if (!flag) return { error: "That flag is no longer in the queue." };
+  const postId: string | null = flag.post_id;
+
+  /* The author is the post's author — there is no author column on a flag, and
+     there should not be one: two records of the same fact drift. */
+  let authorId: string | null = null;
+  if (postId) {
+    const { data: post, error: postError } = await supabase
+      .from("open_deck_posts")
+      .select("author_id")
+      .eq("id", postId)
+      .maybeSingle();
+    if (postError) return { error: ERR_LAND };
+    authorId = post?.author_id ?? null;
+  }
 
   const { error: flagError } = await supabase
     .from("open_deck_flags")
@@ -83,7 +110,7 @@ export async function removeAndNotify(
 export async function leaveUp(flagId: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  if (!UUID.test(flagId)) return { error: ERR_LAND };
+  if (!isId(flagId)) return { error: ERR_LAND };
   const { error } = await supabase
     .from("open_deck_flags")
     .update({ status: "left_up", resolved_by: staffId })

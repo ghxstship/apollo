@@ -5,12 +5,19 @@ import { CLUB_ZONE } from "@/lib/brand";
 import { logTime, price } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
-import { asText } from "@/lib/arg";
+import { asText, isId } from "@/lib/arg";
 
 function done(): ActionResult {
   revalidatePath("/bridge/orders");
   return {};
 }
+
+/* account_ledger.kind is a text column with no constraint naming these two, so
+   a wire that sent anything at all put that word in the book — and the P&L, the
+   member's own account page and every reconciliation read it back as a kind of
+   entry the club does not have. Typed is not checked; every sibling in this
+   file validates its enum, and this one did not. */
+const LEDGER_KINDS = new Set(["payment", "refund"]);
 
 /* Post a payment or refund to a member account — positive deltas, logged
    with the operator's name. Confirm-first in the UI. */
@@ -26,7 +33,8 @@ export async function postLedgerEntry(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   const cents = Math.round(amountCents);
-  if (!profileId) return { error: "Pick a member first." };
+  if (!LEDGER_KINDS.has(kind)) return { error: "An entry is a payment or a refund." };
+  if (!isId(profileId)) return { error: "Pick a member first." };
   if (!Number.isFinite(cents) || cents <= 0) return { error: "Enter an amount above zero." };
 
   /* This is the manual sibling of refundShopOrder, which is properly guarded.

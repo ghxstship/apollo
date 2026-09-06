@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* Shape-checked properly: the old /^[0-9a-f-]{36}$/ let 36 hyphens through
    to the driver, whose refusal reached the operator as "didn't land". */
@@ -44,18 +45,18 @@ export async function saveCity(
   if (!staffId) return { error: ERR_STAFF };
   if (id !== null && !UUID.test(id)) return { error: NO_CITY };
 
-  const name = patch.name.trim().slice(0, 80);
-  const slug = patch.slug.trim().toLowerCase();
+  const name = asText(patch.name).trim().slice(0, 80);
+  const slug = asText(patch.slug).trim().toLowerCase();
   if (!name) return { error: "A city needs a name." };
   if (!SLUG.test(slug) || slug.length > 40) return { error: "The slug is lowercase words joined by hyphens — los-angeles." };
   if (!CITY_STATUS.has(patch.status)) return { error: "Status is open, waitlist, soon or closed." };
-  const tz = patch.time_zone.trim();
+  const tz = asText(patch.time_zone).trim();
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: tz });
   } catch {
     return { error: "The time zone is an IANA name — America/Los_Angeles." };
   }
-  const year = patch.launch_year.trim() === "" ? null : Number(patch.launch_year);
+  const year = asText(patch.launch_year).trim() === "" ? null : Number(patch.launch_year);
   if (year !== null && (!Number.isInteger(year) || year < 2020 || year > 2100)) {
     return { error: "The launch year is a four-digit year." };
   }
@@ -67,7 +68,7 @@ export async function saveCity(
     slug,
     status: patch.status,
     time_zone: tz,
-    coordinates: patch.coordinates.trim().slice(0, 60) || null,
+    coordinates: asText(patch.coordinates).trim().slice(0, 60) || null,
     launch_year: year,
     position,
   };
@@ -101,7 +102,7 @@ export async function saveVessel(
   if (!staffId) return { error: ERR_STAFF };
   if (id !== null && !UUID.test(id)) return { error: NO_HULL };
 
-  const name = patch.name.trim().slice(0, 80);
+  const name = asText(patch.name).trim().slice(0, 80);
   if (!name) return { error: "A hull needs a name." };
   const capacity = Number(patch.capacity);
   if (!Number.isInteger(capacity) || capacity < 0 || capacity > 2000) return { error: "Capacity is a whole number of people, 0 to 2000." };
@@ -115,7 +116,7 @@ export async function saveVessel(
   const year = opt(patch.year, 1900, 2100, "Year");
   const cabins = opt(patch.cabins, 0, 200, "Cabins");
   for (const v of [length, year, cabins]) if (typeof v === "string") return { error: v };
-  const rate = patch.day_rate.trim() === "" ? null : Math.round(Number(patch.day_rate) * 100);
+  const rate = asText(patch.day_rate).trim() === "" ? null : Math.round(Number(patch.day_rate) * 100);
   if (rate !== null && (!Number.isFinite(rate) || rate < 0)) return { error: "The day rate is dollars, or blank until the contract says." };
   if (rate !== null && rate > DAY_RATE_MAX_DOLLARS * 100) {
     return { error: `The day rate is dollars, up to ${DAY_RATE_MAX_DOLLARS.toLocaleString("en-US")} — check the figure.` };

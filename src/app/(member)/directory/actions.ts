@@ -5,8 +5,15 @@ import { redirect } from "next/navigation";
 import { voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
 import { createClient } from "@/lib/supabase/server";
+import { isId } from "@/lib/arg";
 
 export type WordResult = { error?: string };
+
+/* The other member's id comes off a hidden field on the roster card. Who may
+   write to whom is open_direct_thread's to decide and member_blocks' to
+   record; the shape is neither's, and an id that is not one used to reach the
+   driver and come back as a line about a link. */
+const NO_MEMBER = "That member is not on the roster. Start again from the Directory.";
 
 /* Open (or reopen) the direct thread between the viewer and another member.
    The RPC is idempotent — it returns the existing thread when there is one.
@@ -27,7 +34,8 @@ export async function sendAWord(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/gangway");
-  if (!other || other === user.id) return { error: "That is you." };
+  if (!isId(other)) return { error: NO_MEMBER };
+  if (other === user.id) return { error: "That is you." };
 
   const { data, error } = await supabase.rpc("open_direct_thread", { p_other: other });
   if (error) return { error: await voiceWith(supabase, error) };
@@ -52,7 +60,8 @@ export async function setBlock(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/gangway");
-  if (!other || other === user.id) return { error: "That is you." };
+  if (!isId(other)) return { error: NO_MEMBER };
+  if (other === user.id) return { error: "That is you." };
   if (intent !== "block" && intent !== "unblock") {
     return { error: "That didn't land. Try again." };
   }

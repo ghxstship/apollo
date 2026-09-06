@@ -87,6 +87,21 @@ export async function enqueuePod(episodeId: string, passId: string): Promise<Sho
   if (!user) return { error: refusal ?? SIGN_IN };
   if (!passId) return { error: "Pick a guest first." };
 
+  /* The episode and the pass are related in the schema and were related
+     nowhere here: the insert took both from the screen, and the unique index
+     is on the PAIR, so it cannot tell a guest on this episode from a guest on
+     another one. A stale tablet queued somebody who is not aboard tonight, and
+     the pod called their name. Read the pass's own episode and compare. */
+  const { data: guest } = await db
+    .from("passes")
+    .select("episode_id")
+    .eq("id", passId)
+    .maybeSingle();
+  if (!guest) return { error: "That guest is not on tonight's manifest." };
+  if (guest.episode_id !== episodeId) {
+    return { error: "That guest is not on this episode — the queue is tonight's manifest only." };
+  }
+
   /* Next position. The ceiling aboard is forty souls, so one small read is
      fine; the unique (episode_id, position) index catches the race below. */
   const { data: tail, error: readError } = await db

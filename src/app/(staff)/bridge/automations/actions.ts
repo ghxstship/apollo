@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { moduleTables } from "@/lib/module-tables";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 import { AUTOMATION_TEXT_KEYS, LETTERS_A_RULE_CANNOT_FILL, textTemplateNeeds } from "./automation-letters";
+import { asText } from "@/lib/arg";
 
 export type TriggerEvent =
   | "pass_confirmed"
@@ -68,7 +69,7 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const name = rule.name.trim();
+  const name = asText(rule.name).trim();
   if (!name) return { error: "Give the rule a name." };
   if (name.length > NAME_MAX) return { error: `A rule's name runs to ${NAME_MAX} characters.` };
   if (!TRIGGERS.includes(rule.trigger)) return { error: "Pick when the rule fires." };
@@ -111,8 +112,8 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
     if (!hook) return { error: "That webhook is not registered, or is switched off." };
     action = { kind: "webhook", webhook_id: id };
   } else if (rule.action.kind === "notify") {
-    const title = rule.action.title.trim();
-    const body = rule.action.body.trim();
+    const title = asText(rule.action.title).trim();
+    const body = asText(rule.action.body).trim();
     if (!title) return { error: "A word needs a title." };
     if (title.length > TITLE_MAX) return { error: `A word's title runs to ${TITLE_MAX} characters.` };
     if (body.length > BODY_MAX) return { error: `A word's body runs to ${BODY_MAX} characters.` };
@@ -123,7 +124,7 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
        is the club's statement of which letters exist; a rule names one of
        those or it is not saved. email_templates is not in the shared type
        file, so it is read through the module seam. */
-    const code = rule.action.template.trim();
+    const code = asText(rule.action.template).trim();
     if (!code) return { error: "Pick the letter the rule sends." };
     const { data: known } = await moduleTables(supabase)
       .from("email_templates")
@@ -145,7 +146,7 @@ export async function createAutomation(rule: NewRule): Promise<ActionResult> {
   } else if (rule.action.kind === "sms") {
     /* A text is template-only at the provider, so a rule may only name one we
        have actually registered — otherwise it queues a message that bounces. */
-    const code = rule.action.template.trim();
+    const code = asText(rule.action.template).trim();
     if (!code) return { error: "Pick a text template." };
     const { data: known } = await supabase
       .from("sms_templates")

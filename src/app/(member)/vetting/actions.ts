@@ -6,7 +6,7 @@ import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
 import { BOUNDARY_TOPICS, DRINKS, STANCES, isSegment, type Segment, type Stance } from "@/lib/vetting";
 import { isPartnerName } from "./partner";
-import { asText } from "@/lib/arg";
+import { asText, isId } from "@/lib/arg";
 
 /* Vetting — the member's side of the funnel.
 
@@ -22,6 +22,13 @@ import { asText } from "@/lib/arg";
    the six hours are all trigger and RPC decisions — see guard_the_ratio,
    guard_the_vetting and claim_your_place. These functions carry the answer back
    in the club's voice and revalidate the page. */
+
+/* The episode and the line entry are ids the vetting page handed the surface.
+   The triggers on `passes` own who may take a seat and RLS owns whose line
+   entry this is; the shape is neither's, and an id that is not one is answered
+   by the driver rather than by the club. */
+const NO_EPISODE = "That episode is no longer listed. Start again from the episode page.";
+const NO_PLACE = "That place in the line is no longer there. Reload the page.";
 
 export type VettingResult = { error?: string; ok?: true };
 
@@ -105,6 +112,7 @@ export async function takeASeat(
 ): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  if (!isId(episodeId)) return { error: NO_EPISODE };
   if (!isSegment(segment)) return { error: "Pick a seat first." };
 
   /* A couple is one row and two heads, and the second head is a person with a
@@ -175,6 +183,7 @@ export async function takeASeat(
 export async function joinTheLine(episodeId: string, segment: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  if (!isId(episodeId)) return { error: NO_EPISODE };
   if (!isSegment(segment)) return { error: "Pick a seat first." };
 
   /* `place` is omitted deliberately: number_the_waitlist assigns it under an
@@ -200,6 +209,7 @@ export async function joinTheLine(episodeId: string, segment: string): Promise<V
 export async function claimYourPlace(entryId: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  if (!isId(entryId)) return { error: NO_PLACE };
 
   const { error } = await db.rpc("claim_your_place", { p_entry: entryId });
   if (error) return { error: await voiceWith(supabase, error) };
@@ -211,6 +221,7 @@ export async function claimYourPlace(entryId: string): Promise<VettingResult> {
 export async function leaveTheLine(entryId: string): Promise<VettingResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  if (!isId(entryId)) return { error: NO_PLACE };
 
   /* The result is checked rather than discarded. The DELETE policy is a plain
      ownership test today, so this works — but a swallowed error means the day
@@ -243,7 +254,7 @@ export async function offerThisPlace(entryId: string): Promise<VettingResult> {
   if (!user) return { error: "Sign in first." };
   const { data: staff } = await supabase.rpc("is_staff");
   if (!staff) return { error: "Offering a place is the Bridge's to do." };
-  if (!/^[0-9a-f-]{36}$/.test(entryId)) return { error: "That request is not on the line." };
+  if (!isId(entryId)) return { error: "That request is not on the line." };
 
   const { error } = await db.rpc("offer_this_place", { p_entry: entryId });
   if (error) return { error: await voiceWith(supabase, error) };
@@ -257,6 +268,7 @@ export async function offerTheNextPlace(episodeId: string, segment: string): Pro
   if (!user) return { error: "Sign in first." };
   const { data: staff } = await supabase.rpc("is_staff");
   if (!staff) return { error: "Offering the next place is the Bridge's to do." };
+  if (!isId(episodeId)) return { error: NO_EPISODE };
   if (!isSegment(segment)) return { error: "Pick a segment first." };
 
   const { error } = await db.rpc("offer_the_next_place", { p_episode: episodeId, p_segment: segment });

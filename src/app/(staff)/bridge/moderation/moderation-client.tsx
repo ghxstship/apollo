@@ -10,11 +10,11 @@ import { leaveUp, removeAndNotify } from "./actions";
    "Leave it up" resolves in one motion; "Remove the post" opens the reason
    dialog, because the author is always told why — never silently. */
 
+/* No postId, no authorId: the action reads both off the flag row now, and a
+   card that carried them was a second copy of a fact the database already
+   owns — the copy the removal used to act on. */
 export type FlagCard = {
   flagId: string;
-  /* Null when the post is already gone — the flag is still resolvable. */
-  postId: string | null;
-  authorId: string | null;
   authorName: string;
   reason: string;
   flaggedAt: string;
@@ -86,7 +86,7 @@ export function ModerationClient({ flags }: { flags: FlagCard[] }) {
                   const line = reason;
                   setRemoving(null);
                   run(
-                    () => removeAndNotify(f.flagId, f.postId, f.authorId, line),
+                    () => removeAndNotify(f.flagId, line),
                     () =>
                       show({
                         msg: "Removed, author notified with the reason.",

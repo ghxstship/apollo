@@ -8,7 +8,7 @@ import { CLUB_ZONE } from "@/lib/brand";
 import { pauseDues, resumeDues, duesNote, liveSubscription } from "@/lib/dues";
 import { memberMark } from "@/lib/membership";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
-import { asText } from "@/lib/arg";
+import { asText, isId } from "@/lib/arg";
 
 /* The filter set is stored verbatim as the segment's jsonb — one shape, so a
    saved view reloads exactly as it was left. */
@@ -74,6 +74,7 @@ export async function saveSegment(name: string, filters: SegmentFilters): Promis
 export async function removeSegment(id: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
+  if (!isId(id)) return { error: "That view is no longer saved — reload the page." };
   const { error } = await supabase.from("saved_segments").delete().eq("id", id);
   if (error) return { error: ERR_LAND };
   revalidatePath("/bridge/members");

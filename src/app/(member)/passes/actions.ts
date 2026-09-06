@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { eveningBefore } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
+import { asInt } from "@/lib/arg";
 import { isSegment } from "@/lib/vetting";
 import { joinTheLine } from "../vetting/actions";
 
@@ -78,6 +79,16 @@ function cleanNames(names: string[], count: number): string[] {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/* An id that is not an id never reaches a policy: it reaches the driver, which
+   answers "invalid input syntax for type uuid", and voiceWith hands the member
+   a line about a link. Nothing escalates — RLS still owns every row named
+   below, and every narrowing .eq() here is on the member's own id — but the
+   member reads Postgres's opinion of their id instead of the club's. These are
+   the club's, said once each and reused. */
+const NO_EPISODE = "That episode is no longer listed. Start again from Passes.";
+const NO_OFFER = "That offer is no longer listed. Start again from Passes.";
+const NO_PASS = "That pass is no longer listed. Start again from Passes.";
+
 /* Add-on ids as the definer expects them: unique, well-formed, and never more
    than the catalogue could hold. A malformed id used to reach the RPC and come
    back as a Postgres type name. */
@@ -118,6 +129,7 @@ export async function setPassStatus(
   if (!userId) return { error: "Sign in first." };
   /* The type says three values; the wire says whatever it likes. */
   if (!PASS_STATUSES.has(status)) return { error: "That didn't land. Try again." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   const { error } = await supabase
     .from("passes")
     .upsert(
@@ -249,7 +261,21 @@ export async function confirmBerth(
 ): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   addonIds = cleanAddonIds(addonIds);
+
+  /* How many goes the pass is drawn in. Typed as a number and never read as
+     one: the wire could send a word, which is truthy, so it passed the
+     `if (rsvp && split)` gate below and reached splitIntoDraws as NaN — where
+     Math.max(2, Math.min(4, NaN)) is NaN, the whole draw arithmetic is NaN,
+     and the ledger credit posted with the service-role key carried a null
+     amount. A count of draws is 2, 3 or 4, and it is checked before the pass
+     is booked rather than after the charge has posted. */
+  let draws: number | null = null;
+  if (split !== undefined && split !== null && split !== 0) {
+    draws = asInt(split, { min: 2, max: 4 });
+    if (draws === null) return { error: "A pass is drawn in two, three or four goes." };
+  }
 
   /* The code is validated here so a bad one is refused in the brand's voice
      rather than silently ignored; the PRICE it implies is the trigger's to
@@ -280,7 +306,7 @@ export async function confirmBerth(
     );
   if (error) return { error: await guardMessage(supabase, error.message, error.code), full: isFullMessage(error.message) };
 
-  if (promo || addonIds.length > 0 || split) {
+  if (promo || addonIds.length > 0 || draws) {
     const { data: rsvp } = await supabase
       .from("passes")
       .select("id, guests, promo_code")
@@ -320,8 +346,8 @@ export async function confirmBerth(
       if (failed) return { error: await guardMessage(supabase, failed) };
     }
     /* Last, so the split is drawn against every charge on the pass. */
-    if (rsvp && split) {
-      const failed = await splitIntoDraws(supabase, userId, episodeId, rsvp.id, split);
+    if (rsvp && draws) {
+      const failed = await splitIntoDraws(supabase, userId, episodeId, rsvp.id, draws);
       if (failed) return { error: await guardMessage(supabase, failed) };
     }
   }
@@ -339,6 +365,7 @@ export async function confirmBerth(
 export async function takeStandby(episodeId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   const { error } = await supabase
     .from("passes")
     .upsert(
@@ -356,7 +383,7 @@ export async function takeStandby(episodeId: string): Promise<PassResult> {
 export async function requestAPlace(episodeId: string, segment: string): Promise<PassResult> {
   const { userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  if (!UUID.test(episodeId)) return { error: "That episode is no longer listed. Start again from Passes." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   if (!isSegment(segment)) return { error: "Say which seat you are asking for." };
   const res = await joinTheLine(episodeId, segment);
   if (res.error) return { error: res.error };
@@ -419,6 +446,7 @@ export async function setGuests(
 ): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   const clamped = clampGuests(guests);
 
   /* sync_guest_rows keeps a guest who has already signed — their signature is a
@@ -461,6 +489,7 @@ export async function setGuests(
 export async function releasePass(episodeId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   const { error } = await supabase
     .from("passes")
     .delete()
@@ -480,6 +509,7 @@ export async function releasePass(episodeId: string): Promise<PassResult> {
 export async function setAutoClaim(episodeId: string, on: boolean): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   const { error } = await supabase
     .from("passes")
     .update({ auto_claim: on })
@@ -494,6 +524,7 @@ export async function setAutoClaim(episodeId: string, on: boolean): Promise<Pass
 export async function offerPass(passId: string, toProfile: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(passId)) return { error: NO_PASS };
   if (!toProfile || !UUID.test(toProfile)) return { error: "Choose the member taking it." };
   if (toProfile === userId) return { error: "A pass cannot be handed to yourself." };
 
@@ -518,6 +549,7 @@ export async function offerPass(passId: string, toProfile: string): Promise<Pass
 export async function withdrawOffer(transferId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(transferId)) return { error: NO_OFFER };
   const { error } = await supabase
     .from("pass_transfers")
     .update({ status: "cancelled", responded_at: new Date().toISOString() })
@@ -533,7 +565,7 @@ export async function withdrawOffer(transferId: string): Promise<PassResult> {
 export async function acceptOffer(transferId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  if (!UUID.test(transferId)) return { error: "That offer is no longer listed. Start again from Passes." };
+  if (!UUID.test(transferId)) return { error: NO_OFFER };
   /* Two takers answering two offers on one pass at the same moment deadlock
      inside accept_pass_transfer: each locks its own offer row first, then
      both reach for the pass row, and the winner's voiding of the other offer
@@ -558,6 +590,7 @@ export async function acceptOffer(transferId: string): Promise<PassResult> {
 export async function declineOffer(transferId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(transferId)) return { error: NO_OFFER };
   const { error } = await supabase
     .from("pass_transfers")
     .update({ status: "declined", responded_at: new Date().toISOString() })
@@ -636,6 +669,7 @@ export async function applyPromo(rawCode: string, episodeId: string): Promise<Pr
 export async function postCrewRequest(episodeId: string, note: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   /* 500 is the table's own check; refused here in words rather than as a
      constraint name. */
   const line = String(note ?? "").trim();
@@ -653,6 +687,7 @@ export async function postCrewRequest(episodeId: string, note: string): Promise<
 export async function withdrawCrewRequest(episodeId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
   const { error } = await supabase
     .from("crew_requests")
     .delete()
@@ -671,6 +706,8 @@ export async function chooseCabin(episodeId: string, cabinId: string | null): Pr
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Sign in first." };
+  if (!UUID.test(episodeId)) return { error: NO_EPISODE };
+  if (cabinId !== null && !UUID.test(cabinId)) return { error: "Pick a cabin from the list." };
 
   const { error } = await supabase
     .from("passes")
@@ -696,6 +733,7 @@ export async function chooseCabin(episodeId: string, cabinId: string | null): Pr
 export async function claimDaybed(passId: string): Promise<PassResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
+  if (!UUID.test(passId)) return { error: NO_PASS };
   const { error } = await supabase.rpc("claim_a_daybed", { p_pass: passId });
   if (error) return { error: await guardMessage(supabase, error.message, error.code) };
   revalidatePath("/account");

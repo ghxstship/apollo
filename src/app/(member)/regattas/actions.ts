@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
+import { isId } from "@/lib/arg";
 
 export type ContestResult = { error?: string };
 
@@ -34,7 +35,7 @@ export async function enterContest(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/gangway");
-  if (!contestId || !SLUG.test(slug)) redirect("/regattas");
+  if (!isId(contestId) || !SLUG.test(slug)) redirect("/regattas");
 
   const { error } = await supabase
     .from("contest_entries")
@@ -57,7 +58,7 @@ export async function withdrawFromContest(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/gangway");
-  if (!contestId || !SLUG.test(slug)) redirect("/regattas");
+  if (!isId(contestId) || !SLUG.test(slug)) redirect("/regattas");
 
   const { error } = await supabase
     .from("contest_entries")

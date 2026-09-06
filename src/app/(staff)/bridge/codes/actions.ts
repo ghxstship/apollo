@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { CLUB_ZONE } from "@/lib/brand";
 import { endOfDay } from "@/lib/format";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 export type CodeKind = "percent" | "amount" | "comp";
 
@@ -37,7 +38,7 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const code = input.code.trim().toUpperCase().replace(/\s+/g, "");
+  const code = asText(input.code).trim().toUpperCase().replace(/\s+/g, "");
   if (!code) return { error: "A code needs characters." };
   if (code.length > CODE_MAX) return { error: `A code runs to ${CODE_MAX} characters.` };
   if (!/^[A-Z0-9-]+$/.test(code)) return { error: "A code is letters, numbers and hyphens — nothing a member has to hunt for on a keyboard." };
@@ -70,7 +71,7 @@ export async function createCode(input: NewCode): Promise<ActionResult> {
      foreign key would answer it with a constraint name. */
   const episodeId = (input.episodeId ?? "").trim();
   if (episodeId && !UUID.test(episodeId)) return { error: "Pick the episode from the list." };
-  const note = input.note.trim().slice(0, NOTE_MAX);
+  const note = asText(input.note).trim().slice(0, NOTE_MAX);
 
   const { error } = await supabase.from("promo_codes").insert({
     code,

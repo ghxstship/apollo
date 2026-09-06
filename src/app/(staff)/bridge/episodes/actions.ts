@@ -5,7 +5,7 @@ import type { EpisodeSetting, MembershipTier, EpisodeStatus } from "@/lib/supaba
 import { EXPERIENCE_CLASS_IDS, type ExperienceClassId } from "@/lib/brand";
 import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
-import { asText } from "@/lib/arg";
+import { asText, clampInt } from "@/lib/arg";
 
 /* The enums the board writes, restated so a value off the list is refused in
    words before the driver refuses it as a malformed enum (22P02) and the
@@ -52,7 +52,11 @@ export async function setEpisodeStatus(
 export async function setPassesTotal(episodeId: string, passes: number): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const clamped = Math.max(0, Math.min(96, Math.round(passes)));
+  /* The clamp was the whole guard, and a clamp is not one: Math.min(96, NaN)
+     is NaN, Math.max(0, NaN) is NaN, and NaN serialises to null on the wire —
+     so a non-numeric capacity emptied the column rather than being refused. */
+  const clamped = clampInt(passes, { min: 0, max: 96 });
+  if (clamped === null) return { error: "A capacity is a number of passes." };
   const { error } = await supabase
     .from("episodes")
     .update({ passes_total: clamped })
@@ -80,7 +84,8 @@ export async function setHeldPasses(episodeId: string, held: number): Promise<Ac
     .eq("id", episodeId)
     .maybeSingle();
   if (!episode) return { error: ERR_LAND };
-  const clamped = Math.max(0, Math.min(episode.passes_total, Math.round(held)));
+  const clamped = clampInt(held, { min: 0, max: episode.passes_total });
+  if (clamped === null) return { error: "A hold is a number of passes." };
   const { error } = await supabase
     .from("episodes")
     .update({ held_passes: clamped })
@@ -244,7 +249,7 @@ export async function createEpisode(input: NewEpisodeInput): Promise<ActionResul
     .replace(/[^a-z0-9-]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, SLUG_MAX);
-  const title = input.title.trim();
+  const title = asText(input.title).trim();
   if (!slug || !title) return { error: "An episode needs a slug and a title." };
   if (title.length > TITLE_MAX) return { error: `A title runs to ${TITLE_MAX} characters.` };
   if (!SETTINGS.includes(input.setting)) return { error: "Pick where it happens — afloat or ashore." };
@@ -310,8 +315,15 @@ export async function createEpisode(input: NewEpisodeInput): Promise<ActionResul
     if (saleOpensAt.getTime() > startsAt.getTime()) return { error: ERR_DROP_AFTER_DEPARTURE };
   }
 
-  const depositCents = Math.max(0, Math.round(input.depositCents));
+  const depositCents = clampInt(input.depositCents, { min: 0, max: Number.MAX_SAFE_INTEGER });
+  if (depositCents === null) return { error: "A deposit is a dollar figure." };
   if (depositCents > DEPOSIT_CEILING_CENTS) return { error: ERR_DEPOSIT_CEILING };
+
+  /* NaN is not greater than the ceiling, so the line above let it past; the
+     count of passes had no finite check at all. Both are read as numbers
+     first now — the clamps below are the bounds, not the guard. */
+  const passesTotal = clampInt(input.passes, { min: 1, max: 96 });
+  if (passesTotal === null) return { error: "A capacity is a number of passes." };
 
   /* Itinerary rows: minutes from cast off, a title, an optional note. Bounded
      — the column is jsonb and would otherwise take whatever arrived. */
@@ -342,7 +354,7 @@ export async function createEpisode(input: NewEpisodeInput): Promise<ActionResul
     starts_at: startsAt.toISOString(),
     ends_at: endsAt.toISOString(),
     distance_nm: input.distanceNm,
-    passes_total: Math.max(1, Math.min(96, Math.round(input.passes))),
+    passes_total: passesTotal,
     price_cents: Math.max(0, Math.round(input.priceCents)),
     min_tier: input.minTier,
     media: input.media,
@@ -377,7 +389,7 @@ export async function saveEpisodeDoor(episodeId: string, door: EpisodeDoorInput)
   const standby = Math.round(Number(door.standbyPasses) || 0);
   if (!Number.isInteger(standby) || standby < 0 || standby > STANDBY_MAX)
     return { error: `Standby passes run 0 to ${STANDBY_MAX}.` };
-  const age = door.ageLine.trim();
+  const age = asText(door.ageLine).trim();
   if (age.length > AGE_LINE_MAX) return { error: `The age line runs to ${AGE_LINE_MAX} characters — one phrase, like 30s and 40s.` };
   const { error } = await supabase
     .from("episodes")
@@ -430,7 +442,8 @@ export async function saveEpisodeProgram(
       return { error: ERR_DROP_AFTER_DEPARTURE };
   }
 
-  const depositCents = Math.max(0, Math.round(program.depositCents));
+  const depositCents = clampInt(program.depositCents, { min: 0, max: Number.MAX_SAFE_INTEGER });
+  if (depositCents === null) return { error: "A deposit is a dollar figure." };
   if (depositCents > DEPOSIT_CEILING_CENTS) return { error: ERR_DEPOSIT_CEILING };
 
   const { error } = await supabase

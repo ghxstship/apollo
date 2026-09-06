@@ -46,8 +46,6 @@ export default async function ModerationPage() {
     const authorLine = author?.member_no ? `${authorName} · ${author.member_no}` : authorName;
     return {
       flagId: f.id,
-      postId: f.post_id,
-      authorId: post?.author_id ?? null,
       authorName: post ? authorLine : "The post is already gone",
       reason: f.reason,
       flaggedAt: f.created_at,

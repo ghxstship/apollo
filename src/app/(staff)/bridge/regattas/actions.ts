@@ -5,6 +5,7 @@ import { CLUB_ZONE } from "@/lib/brand";
 import { voice } from "@/lib/errors";
 import { endOfDay, wallClockInZone } from "@/lib/format";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 export type ContestShape = "regatta" | "challenge";
 export type ContestScope = "member" | "crew";
@@ -68,7 +69,7 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const title = input.title.trim();
+  const title = asText(input.title).trim();
   if (!title) return { error: "A contest needs a name." };
   if (title.length > TITLE_MAX) return { error: `A contest's name runs to ${TITLE_MAX} characters.` };
   if (!SHAPES.includes(input.shape)) return { error: "A contest is a regatta or a challenge." };
@@ -110,13 +111,13 @@ export async function createContest(input: NewContest): Promise<ActionResult> {
   const { error } = await supabase.from("contests").insert({
     slug,
     title,
-    blurb: input.blurb.trim().slice(0, BLURB_MAX) || null,
+    blurb: asText(input.blurb).trim().slice(0, BLURB_MAX) || null,
     shape: input.shape,
     scope: input.scope,
     episode_id: input.scope === "crew" ? input.episodeId : null,
     metric: input.metric,
     target: input.shape === "challenge" ? Math.round(input.target) : null,
-    prize: input.prize.trim().slice(0, PRIZE_MAX) || null,
+    prize: asText(input.prize).trim().slice(0, PRIZE_MAX) || null,
     knots_award: Math.max(0, Math.round(input.knotsAward)),
     starts_at: starts.toISOString(),
     ends_at: ends.toISOString(),

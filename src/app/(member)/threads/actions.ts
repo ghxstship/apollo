@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
+import { isId } from "@/lib/arg";
 
 export type ThreadResult = { error?: string };
 
@@ -20,7 +21,10 @@ async function member() {
    realtime arrival, so the inbox dot and the nav badge stay honest. */
 export async function markThreadRead(threadId: string): Promise<void> {
   const { supabase, userId } = await member();
-  if (!userId || !threadId) return;
+  /* Returns void, so a malformed id has nothing to say it with — it is simply
+     not asked. Without the shape check the driver answered instead, and a
+     stamp that cannot be made is not an error worth a round trip. */
+  if (!userId || !isId(threadId)) return;
   await supabase
     .from("thread_members")
     .update({ last_read_at: new Date().toISOString() })
@@ -51,7 +55,7 @@ export async function sendMessage(
 
   const threadId = String(formData.get("thread_id") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
-  if (!threadId) return { error: "That thread has drifted off. Try again." };
+  if (!isId(threadId)) return { error: "That thread has drifted off. Try again." };
   if (!body) return { error: "Say something first." };
   if (body.length > 4000) return { error: "Keep it under 4,000 characters." };
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* The application asks what the Bridge tells it to ask. Until 2026-09-04 the
    questions were the form's own source — changing one was a deploy. Now the
@@ -34,7 +35,7 @@ function done(): ActionResult {
    in a constraint name. Choice questions carry their options; the other two
    kinds carry none, so a stale list cannot ride along on a kind change. */
 function clean(input: QuestionInput): { ok: true; row: { prompt: string; kind: QuestionKind; options: string[] | null; required: boolean } } | { ok: false; error: string } {
-  const prompt = input.prompt.trim();
+  const prompt = asText(input.prompt).trim();
   if (prompt.length < PROMPT_MIN || prompt.length > PROMPT_MAX)
     return { ok: false, error: `A prompt runs ${PROMPT_MIN} to ${PROMPT_MAX} characters.` };
   if (!KINDS.includes(input.kind)) return { ok: false, error: "That is not a kind of question." };
@@ -57,7 +58,7 @@ export async function createQuestion(input: QuestionInput): Promise<ActionResult
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const key = input.key.trim().toLowerCase();
+  const key = asText(input.key).trim().toLowerCase();
   if (!KEY_RE.test(key))
     return { error: "A key is lowercase letters, digits and underscores, 2 to 41 characters, starting with a letter." };
   const c = clean(input);

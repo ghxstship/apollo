@@ -130,6 +130,39 @@ export async function setPassVessel(
   if (!staffId) return { error: ERR_STAFF };
   if (!UUID.test(passId)) return { error: "That pass is no longer on the manifest." };
   if (vesselId !== null && !UUID.test(vesselId)) return { error: "Pick the hull from the list." };
+
+  /* The pass and the hull are two ids the schema already relates, through the
+     pass's own episode and that episode's flotilla — and this took both from
+     the screen and related neither. The foreign key proves the hull is IN THE
+     FLEET; nothing proved it was sailing this episode. So a stale board, or a
+     replayed call, put a member on a yacht that is not on their episode: the
+     manifest then prints a hull that never leaves with them, and
+     assign_vessels_evenly counts the pass as already dealt.
+
+     There is no trigger for this — guard_cabin_capacity carries the same rule
+     for CABINS ("that cabin is on a hull that is not sailing this passage")
+     and vessel_id has no counterpart — so the check is here, against the
+     episode the pass is actually on rather than the one the screen was
+     showing. */
+  const { data: pass } = await supabase
+    .from("passes")
+    .select("episode_id")
+    .eq("id", passId)
+    .maybeSingle();
+  if (!pass) return { error: "That pass is no longer on the manifest." };
+
+  if (vesselId !== null) {
+    const { data: onEpisode } = await supabase
+      .from("episode_vessels")
+      .select("vessel_id")
+      .eq("episode_id", pass.episode_id)
+      .eq("vessel_id", vesselId)
+      .maybeSingle();
+    if (!onEpisode) {
+      return { error: "That hull is not on this episode — assign it to the episode first, from the Episodes board." };
+    }
+  }
+
   const { error } = await supabase
     .from("passes")
     .update({ vessel_id: vesselId })

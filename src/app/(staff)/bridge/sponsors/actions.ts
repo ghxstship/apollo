@@ -57,7 +57,7 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const name = input.name.trim();
+  const name = asText(input.name).trim();
   if (!name) return { error: "A sponsor needs a name — that is the whole credit." };
   if (name.length > NAME_MAX) return { error: `A sponsor's name runs to ${NAME_MAX} characters.` };
 
@@ -75,7 +75,7 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
   if (monthly > RETAINER_MAX_DOLLARS * 100)
     return { error: `The retainer runs to ${RETAINER_MAX_DOLLARS.toLocaleString("en-US")} dollars a month — check the figure.` };
 
-  const email = input.contactEmail.trim();
+  const email = asText(input.contactEmail).trim();
   if (email && !/.+@.+\..+/.test(email))
     return { error: "That contact address won't reach anyone." };
 
@@ -96,7 +96,7 @@ export async function createSponsor(input: NewSponsor): Promise<ActionResult> {
     contact_email: email || null,
     starts_on: startsOn,
     ends_on: endsOn,
-    notes: input.notes.trim().slice(0, NOTES_MAX) || null,
+    notes: asText(input.notes).trim().slice(0, NOTES_MAX) || null,
     /* The column defaults to auth.uid(); stated so the row says who signed
        them even if a future default changes. */
     created_by: staffId,

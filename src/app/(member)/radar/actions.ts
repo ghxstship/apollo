@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
-import { asText } from "@/lib/arg";
+import { asText, isId } from "@/lib/arg";
 
 /* Radar — the pick, the lock, and the envelope.
 
@@ -20,6 +20,14 @@ import { asText } from "@/lib/arg";
 
 export type RadarResult = { error?: string; ok?: true; opened?: number };
 
+/* The three ids a pick is made of. radar_picks' INSERT policy proves the
+   picker's pass is the caller's own, and hold_the_radar_lock proves both are
+   on this episode and aboard — so a wrong id is refused by the database. A
+   MALFORMED one is not: it never reaches either, and comes back as the
+   driver's opinion of a uuid. The sweep hands these ids to the surface; if one
+   of them is not an id, the surface is stale. */
+const STALE_SWEEP = "The radar has moved on. Reload it, then plot again.";
+
 async function me() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -33,6 +41,7 @@ export async function plotCourse(
 ): Promise<RadarResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  if (!isId(episodeId) || !isId(pickerRsvp) || !isId(pickedRsvp)) return { error: STALE_SWEEP };
   if (pickerRsvp === pickedRsvp) return { error: "That is you." };
 
   const { error } = await db
@@ -64,6 +73,7 @@ export async function unplotCourse(
 ): Promise<RadarResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
+  if (!isId(episodeId) || !isId(pickerRsvp) || !isId(pickedRsvp)) return { error: STALE_SWEEP };
 
   const { error } = await db
     .from("radar_picks")
