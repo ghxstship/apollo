@@ -71,6 +71,30 @@ export async function POST(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
+  /* The standing already held, if there is one. This read is the whole of a
+     defect that would have doubled somebody's dues the day the rail turned on:
+     both "take this standing" on the membership page and "move to this" in the
+     account opened a Checkout in subscription mode, unconditionally. Checkout
+     in that mode CREATES — it does not move — so a member switching monthly to
+     annual, or Deck to Cabin, would have finished with two live subscriptions
+     at Stripe and been billed for both. Our own side would not have shown it:
+     syncSubscription upserts on the Stripe id, so the second one INSERTs, and
+     the insert is refused by subscriptions_one_live_per_member with the error
+     discarded. Stripe billing twice while the database calmly holds one row is
+     the worst shape this could have taken, because nothing surfaces it but a
+     member's statement.
+
+     The idempotency key on the session below does not help here. It is keyed
+     on the plan and interval being joined, so it collapses two attempts at the
+     SAME move and does nothing about a move to a DIFFERENT one, which is the
+     only kind anybody makes twice. */
+  const { data: standing } = await supabase
+    .from("subscriptions")
+    .select("stripe_subscription_id, status, interval, plan_id")
+    .eq("profile_id", user.id)
+    .in("status", ["active", "trialing", "past_due", "paused"])
+    .maybeSingle();
+
   try {
     const stripe = getStripe();
     let customerId = profile?.stripe_customer_id ?? null;
@@ -94,6 +118,49 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+    }
+
+    /* A member who already holds a live standing is MOVING, and a move is an
+       update to the subscription they have — one subscription throughout, and
+       Stripe does the arithmetic. create_prorations credits the unused part of
+       what they paid for and charges the difference on the next invoice rather
+       than billing immediately, which is the reading that matches the club's
+       own promise that a standing runs to the end of what was paid for.
+
+       Same price id is not an error and not a no-op worth an exception: it is
+       somebody pressing the standing they already hold. Send them back to the
+       account rather than asking Stripe to replace an item with itself. */
+    if (standing?.stripe_subscription_id) {
+      const live = await stripe.subscriptions.retrieve(standing.stripe_subscription_id);
+      const currentItem = live.items?.data?.[0] ?? null;
+      if (!currentItem) {
+        /* A live row pointing at a subscription with no item is not something
+           this route can move. Refusing is the only honest answer — opening a
+           Checkout here is exactly the double bill. */
+        return NextResponse.json(
+          { error: "That standing can't be moved from here. Shoreside settles it by hand." },
+          { status: 409 }
+        );
+      }
+      if (currentItem.price?.id === priceId) {
+        return NextResponse.json({ url: `${siteOrigin()}/account` });
+      }
+      await stripe.subscriptions.update(
+        standing.stripe_subscription_id,
+        {
+          items: [{ id: currentItem.id, price: priceId }],
+          proration_behavior: "create_prorations",
+          metadata: { profile_id: user.id, plan_id: plan.id, interval },
+        },
+        {
+          /* Keyed on where they are going, so a double-click is one move. */
+          idempotencyKey: `move:${user.id}:${plan.id}:${interval}`,
+        }
+      );
+      /* customer.subscription.updated carries the rest — the row, the plan and
+         the wallet card are the webhook's to write, as they are for every other
+         change Stripe makes. Nothing is written here. */
+      return NextResponse.json({ url: `${siteOrigin()}/account?moved=1` });
     }
 
     const meta = { profile_id: user.id, plan_id: plan.id, interval };

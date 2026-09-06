@@ -101,7 +101,7 @@ async function syncSubscription(
   const item = sub.items?.data?.[0] ?? null;
   const plan = await planForPrice(admin, item?.price?.id ?? null);
 
-  await admin.from("subscriptions").upsert(
+  const { error: upsertError } = await admin.from("subscriptions").upsert(
     {
       profile_id: profileId,
       plan_id: plan?.id ?? null,
@@ -114,6 +114,39 @@ async function syncSubscription(
     },
     { onConflict: "stripe_subscription_id" }
   );
+  /* This error used to be discarded, and the one it discards is the one that
+     matters: subscriptions_one_live_per_member refuses a SECOND live standing
+     for a member who already holds one. Stripe would be billing two while our
+     side held one row and said nothing — the failure would have reached
+     nobody but the member, on their statement, a month later.
+
+     Recorded rather than thrown. Throwing returns a non-2xx to Stripe, which
+     retries the same event to the same refusal for days and buries the real
+     signal; and there is nothing to roll back, because the money has already
+     moved. So it lands in app_errors, which is what the Bridge's errors panel
+     reads and what raise_the_alarm() counts — a member billed twice is one
+     line, and one line is under the repeat threshold, so this is also written
+     line, and one line is under the ordinary repeat threshold — so it is
+     recorded with kind 'money', which raise_the_alarm() wakes the Bridge on at
+     the first occurrence rather than the fifth. One member billed twice is not
+     noise, and waiting for five of them is not a threshold anybody would set
+     out loud. Recording must not itself throw: a failed record is not worth a
+     retry storm on an event whose money has already moved. */
+  if (upsertError) {
+    await admin
+      .from("app_errors")
+      .insert({
+        name: upsertError.code === "23505" ? "TwoLiveStandings" : "SubscriptionNotWritten",
+        message: `${sub.id} for ${profileId}: ${upsertError.message}`.slice(0, 2000),
+        route: "/api/stripe/webhook",
+        path: sub.id,
+        kind: "money",
+      })
+      .then(
+        () => undefined,
+        () => undefined
+      );
+  }
   /* The card in a wallet says the plan and the standing; a subscription
      change is when either moves. Never throws, gated on the wallet env. */
   await notifyWalletUpdate(profileId);
