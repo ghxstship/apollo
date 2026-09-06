@@ -77,6 +77,13 @@ export async function verifyKey(request: Request): Promise<KeyVerdict> {
   }
   if (!key) return { ok: false, status: 401, message: "That key does not open anything here." };
   if (key.revoked) return { ok: false, status: 401, message: "That key has been revoked. Ask the Bridge for a new one." };
+  /* A key with an end, past it. Null is a key with no end — every key minted
+     before the column existed, and still the shape of a new one until the
+     Bridge can show a date and let an operator choose one. Enforced here so
+     that setting a date is all it takes. */
+  if (key.expires_at && Date.parse(key.expires_at) <= Date.now()) {
+    return { ok: false, status: 401, message: "That key has expired. Ask the Bridge for a new one." };
+  }
 
   /* Last used, best effort — a failed stamp must not fail the call. */
   await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", key.id);

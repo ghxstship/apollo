@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { overLimit, tooMany } from "@/lib/rate-limit";
+import { clientKey, overLimit, tooMany } from "@/lib/rate-limit";
+import { readBounded } from "@/lib/request-guards";
 import { verifyKey, type Admin, type ApiKey } from "@/lib/mcp/auth";
 import {
   FORBIDDEN,
@@ -61,6 +62,17 @@ const MAX_BODY = 64 * 1024;
 const LIMIT = 120;
 const WINDOW_MS = 60_000;
 
+/* Per address, BEFORE the key is looked up. verifyKey() reads api_keys on the
+   service role, so until this existed a caller holding no key at all — any
+   well-shaped `Bearer un_…` string will do — bought one service-role SELECT
+   per request, unthrottled, on a path the proxy does not run on. The gate has
+   to key on something the caller cannot vary, which the key id is not: it does
+   not exist until the read has already happened. The ceiling is above the
+   per-key one because one address may legitimately carry several keys, and it
+   is the same brake either way — what it bounds is the database work an
+   unauthenticated caller can cause. */
+const PRE_AUTH_LIMIT = 300;
+
 function json(body: unknown, status = 200, headers: Record<string, string> = {}) {
   return NextResponse.json(body, { status, headers: { ...NO_STORE, ...headers } });
 }
@@ -78,6 +90,10 @@ function notOpen(message: string) {
 }
 
 export async function POST(request: Request) {
+  if (overLimit(`mcp-addr:${clientKey(request)}`, PRE_AUTH_LIMIT, WINDOW_MS)) {
+    return tooMany(fail(null, INVALID_REQUEST, "That is more calls than the club answers from one address. Wait half a minute."), 30);
+  }
+
   const verdict = await verifyKey(request);
   if (!verdict.ok) return verdict.status === 503 ? notOpen(verdict.message) : unauthorized(verdict.message);
   const { key, admin } = verdict;
@@ -86,10 +102,12 @@ export async function POST(request: Request) {
     return tooMany(fail(null, INVALID_REQUEST, "This key is calling faster than the club answers. Wait half a minute."), 30);
   }
 
-  /* Read the body as text first: a cap needs the length, and a parse error
-     needs to be a JSON-RPC parse error rather than an exception. */
-  const text = await request.text();
-  if (text.length > MAX_BODY) {
+  /* Read the body as text first: a parse error needs to be a JSON-RPC parse
+     error rather than an exception. The cap is applied while the bytes arrive
+     rather than to the string afterwards — a length check on a string that has
+     already been buffered has not stopped the buffering. */
+  const text = await readBounded(request, MAX_BODY);
+  if (text === null) {
     return json(fail(null, INVALID_REQUEST, "That request is larger than any call the club takes."), 413);
   }
   let body: unknown;

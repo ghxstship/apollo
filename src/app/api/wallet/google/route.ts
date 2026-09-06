@@ -1,3 +1,4 @@
+import { overLimit, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import { stepUpRefusal } from "@/lib/supabase/step-up";
 import { voice } from "@/lib/errors";
@@ -23,6 +24,13 @@ export async function GET() {
   if (!user) return voiceJson(SIGN_IN_FIRST, 401);
   const stepUp = await stepUpRefusal(supabase, user);
   if (stepUp) return stepUp;
+
+  /* Issuing a pass signs one and mints a token. A member adds their card to a
+     wallet once, or a handful of times across their devices; a tab held on
+     reload does not need twenty a minute. */
+  if (overLimit(`wallet-google:${user.id}`, 20, 60_000)) {
+    return tooMany({ error: "That's more passes than the club issues at once. Try again shortly." }, 60);
+  }
 
   const facts = await readCardFacts(supabase, user.id);
   if (!facts) return voiceJson(NO_CARD_YET, 404);

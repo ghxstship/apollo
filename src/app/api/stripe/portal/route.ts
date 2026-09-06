@@ -1,12 +1,17 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
+import { crossSiteRefusal } from "@/lib/request-guards";
+import { overLimit, tooMany } from "@/lib/rate-limit";
+import { siteOrigin } from "@/lib/site-origin";
 import { createClient } from "@/lib/supabase/server";
 import { stepUpRefusal } from "@/lib/supabase/step-up";
 
 /* POST /api/stripe/portal — a Stripe Billing Portal session for the signed-in
    member: card on file, dues cancellation, invoice history. */
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
+  const crossSite = crossSiteRefusal(request);
+  if (crossSite) return crossSite;
   if (!stripeEnabled()) {
     return NextResponse.json({ disabled: true }, { status: 503 });
   }
@@ -20,6 +25,10 @@ export async function POST(request: NextRequest) {
   }
   const stepUp = await stepUpRefusal(supabase, user);
   if (stepUp) return stepUp;
+
+  if (overLimit(`stripe-portal:${user.id}`, 10, 60_000)) {
+    return tooMany({ error: "That's more portal sessions than the desk opens at once. Try again shortly." }, 60);
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -37,7 +46,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getStripe().billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
-      return_url: `${request.nextUrl.origin}/account`,
+      /* Where Stripe returns the member — configuration's to choose. */
+      return_url: `${siteOrigin()}/account`,
     });
     return NextResponse.json({ url: session.url });
   } catch {

@@ -14,7 +14,22 @@ import { ledgerNotOpen, type WalletRegistrationRow } from "./facts";
 
 type Client = SupabaseClient<Database>;
 
-export type RegistrationOutcome = "created" | "exists" | "notOpen" | "error";
+export type RegistrationOutcome = "created" | "exists" | "notOpen" | "error" | "tooManyDevices";
+
+/* How many devices one pass may be listening on.
+
+   A registration is authorized by the pass's own token, which the pass's
+   holder has — so the holder could POST under an unlimited number of invented
+   device identifiers for their own serial, and every one of them is a row and
+   an extra APNs push on every notifyWalletUpdate(), which the Stripe webhook
+   fires on every subscription event. Self-inflicted, and unbounded, which is
+   the part worth fixing.
+
+   Eight, for a real number of two or three: phone, watch, iPad, a second phone
+   mid-upgrade, and headroom for a device that reinstalls under a new
+   identifier without ever sending the DELETE. Counted rather than stored, so
+   nothing about this needs a column. */
+const MAX_DEVICES_PER_PASS = 8;
 
 export async function registerDevice(
   admin: Client,
@@ -33,6 +48,16 @@ export async function registerDevice(
     await db.update({ push_token: row.push_token }).eq("device_id", row.device_id).eq("pass_type", row.pass_type).eq("serial", row.serial);
     return "exists";
   }
+  /* Counted only on the path that adds one. A device that is already
+     registered is refreshing its push token above and has already been let
+     through — a member at the ceiling must not lose the devices they have. */
+  const { count, error: countError } = await db
+    .select("device_id", { count: "exact", head: true })
+    .eq("pass_type", row.pass_type)
+    .eq("serial", row.serial);
+  if (countError) return ledgerNotOpen(countError) ? "notOpen" : "error";
+  if ((count ?? 0) >= MAX_DEVICES_PER_PASS) return "tooManyDevices";
+
   const { error } = await db.insert(row);
   if (error) return ledgerNotOpen(error) ? "notOpen" : "error";
   return "created";

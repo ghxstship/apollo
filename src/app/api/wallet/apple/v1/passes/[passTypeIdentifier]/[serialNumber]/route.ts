@@ -1,7 +1,7 @@
 import { buildPkpass, pkpassResponse } from "@/lib/wallet/apple";
 import { NOT_ON_THE_CHART, voiceJson } from "@/lib/wallet/env";
 import { liveWalletToken, readCardFacts } from "@/lib/wallet/facts";
-import { authorized, knownPassType, knownSerial, ledgerClosed, serviceContext } from "@/lib/wallet/service";
+import { authorized, knownPassType, knownSerial, ledgerClosed, paced, serviceContext } from "@/lib/wallet/service";
 
 /* GET passes/{passType}/{serial} — the current pass, for a phone that was
    told it changed.
@@ -17,6 +17,8 @@ type Params = { params: Promise<{ passTypeIdentifier: string; serialNumber: stri
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, { params }: Params) {
+  const slow = paced(request, "pass");
+  if (slow) return slow;
   const ctx = serviceContext();
   if (ctx instanceof Response) return ctx;
   const { passTypeIdentifier, serialNumber } = await params;

@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { overLimit, tooMany } from "@/lib/rate-limit";
+import { crossSiteRefusal, readBounded } from "@/lib/request-guards";
 import { createClient } from "@/lib/supabase/server";
 import { stepUpRefusal } from "@/lib/supabase/step-up";
 
@@ -240,6 +241,9 @@ function parseTranscript(body: unknown): { role: "user" | "assistant"; content: 
 }
 
 export async function POST(request: Request) {
+  const crossSite = crossSiteRefusal(request);
+  if (crossSite) return crossSite;
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -253,12 +257,16 @@ export async function POST(request: Request) {
   /* The body is read and judged BEFORE a turn is taken from the budget. It
      used to be the other way round, so a malformed post — which spends
      nothing on the model — still cost the member one of their twenty. */
-  const declared = Number(request.headers.get("content-length") ?? 0);
-  if (declared > MAX_BODY_BYTES) return refuse("That's more than the Producer can read in one go.", 413);
+  /* Counted over the bytes as they arrive. The cap used to read
+     Content-Length, which is the caller's own claim and which a chunked
+     request omits entirely — so the one shape that could actually have spent
+     the memory was the one shape that walked past the check. */
+  const text = await readBounded(request, MAX_BODY_BYTES);
+  if (text === null) return refuse("That's more than the Producer can read in one go.", 413);
 
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(text);
   } catch {
     return refuse("The Producer couldn't read that.", 400);
   }

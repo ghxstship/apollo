@@ -1,4 +1,5 @@
 import { ANCHOR, SITE_DOMAIN } from "@/lib/brand";
+import { clientKey, overLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildCalendar,
@@ -27,10 +28,23 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`;
    row). Rotating is revoking: the old address answers nothing from then on.
    So a wrong guess is not worth counting, and the answer to one is the same
    404 the club gives for any address that is not on the chart. */
+/* A ceiling, not a gate. Every call here is an unauthenticated definer RPC, so
+   a flood is database work a stranger can order; but the callers are calendar
+   servers — Google's and Apple's fetchers pull many members' feeds from a
+   small range of addresses — so a tight per-address limit would starve the
+   feeds it is meant to protect. Two calls a second from one address is orders
+   of magnitude above any real subscription schedule and still bounds a flood.
+   The answer to a throttled caller is the same 404 a wrong token gets: this
+   route says nothing about itself to anyone. */
+const LIMIT = 120;
+const WINDOW_MS = 60_000;
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ token: string }> }
 ) {
+  if (overLimit(`calendar:${clientKey(request)}`, LIMIT, WINDOW_MS)) return offTheChart();
+
   const { token } = await params;
   if (!UUID.test(token)) return offTheChart();
 

@@ -27,7 +27,34 @@ import { zipStore } from "./zip";
    call, and it is derived — HMAC of the serial under a key taken from the pass
    signing key — rather than stored, so no new column is needed and no row has
    to exist before a pass can be checked. Rotating the pass certificate rotates
-   every authentication token, which is what a certificate rotation should do. */
+   every authentication token, which is what a certificate rotation should do.
+
+   WHAT THAT COSTS, PRECISELY. Same input, same token, for the life of the
+   certificate. So any copy of a member's .pkpass — AirDropped, mailed,
+   restored from a backup, lifted off a shared device — is a permanent bearer
+   credential for that serial's web-service calls, and there is no way to
+   withdraw it short of rotating the Pass Type certificate, which invalidates
+   every member's pass at once. The token is 256 bits and the comparison is
+   constant-time, so it cannot be guessed; it simply cannot be revoked.
+
+   The reachable damage is small and worth stating exactly: with a stolen token
+   a caller can register and unregister devices for that one serial, and can
+   fetch that serial's pass — which is the member's own card, already in the
+   hands of whoever holds the copy. Deleting the member's real registration
+   needs their opaque deviceLibraryIdentifier, which this service never
+   discloses. It cannot read another member's anything: every check is bound to
+   the serial in the path.
+
+   WHY IT IS STILL DERIVED. The obvious fix without a schema change is to bind
+   the token to the wallet token instead of to the serial — that token already
+   revokes and rotates. It does not work: a device holds the authentication
+   token its pass was built with, so the moment the wallet token rotated the
+   phone could no longer fetch the pass it had just been pushed, and a rotation
+   would silently orphan every pass instead of updating it. A per-issuance
+   random token stored beside the wallet token is the real answer, and it needs
+   a column — wallet_tokens.pass_auth_token — which is why it is written up for
+   the migration that adds it rather than half-done here. Until then this is a
+   known, bounded exposure and not an oversight. */
 
 /* Ink and ivory, as Wallet wants them: rgb() literals, because a pass renders
    with no stylesheet to resolve a token against. --noir-900 and --ivory-100

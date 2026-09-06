@@ -1,5 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
+import { crossSiteRefusal, readBounded } from "@/lib/request-guards";
+import { overLimit, tooMany } from "@/lib/rate-limit";
+import { siteOrigin } from "@/lib/site-origin";
 import { createClient } from "@/lib/supabase/server";
 import { stepUpRefusal } from "@/lib/supabase/step-up";
 
@@ -7,7 +10,9 @@ import { stepUpRefusal } from "@/lib/supabase/step-up";
    for a membership plan's dues. Body: { planId, interval: "month" | "year" }.
    The plan and its price id are read shoreside; the client only names a plan. */
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
+  const crossSite = crossSiteRefusal(request);
+  if (crossSite) return crossSite;
   if (!stripeEnabled()) {
     return NextResponse.json({ disabled: true }, { status: 503 });
   }
@@ -22,9 +27,15 @@ export async function POST(request: NextRequest) {
   const stepUp = await stepUpRefusal(supabase, user);
   if (stepUp) return stepUp;
 
+  if (overLimit(`stripe-subscribe:${user.id}`, 10, 60_000)) {
+    return tooMany({ error: "That's more standings than the desk takes at once. Try again shortly." }, 60);
+  }
+
+  /* A plan id and an interval. Nothing that names one is large. */
+  const raw = await readBounded(request, 8 * 1024);
   let body: Record<string, unknown> = {};
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    body = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>;
   } catch {
     body = {};
   }
@@ -86,7 +97,8 @@ export async function POST(request: NextRequest) {
     }
 
     const meta = { profile_id: user.id, plan_id: plan.id, interval };
-    const origin = request.nextUrl.origin;
+    /* Configuration's origin — see lib/site-origin.ts. */
+    const origin = siteOrigin();
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,

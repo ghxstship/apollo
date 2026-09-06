@@ -40,6 +40,16 @@ export const REFUSED_MESSAGE =
    word from the engineering side of the wall — a member has a card, not a
    processor. Named once here, and it names the way out, because dues really
    are settled with Shoreside while the hand-off is down (see /account). */
+/* What a malformed id is answered with, everywhere.
+
+   voice() has said this since the 22P02 branch was written, but only AFTER the
+   driver had already been handed the bad value. isId() refuses the same shape
+   one step earlier, and the two have to say the same thing — a member who
+   mistypes an id should not be able to tell which layer caught it. Named here
+   so there is one sentence and not two. */
+export const STALE_LINK_MESSAGE =
+  "That link looks wrong. Start again from the page that offered it.";
+
 export const CARD_UNAVAILABLE =
   "Card payments aren't going through just now. Try again shortly, or settle with Shoreside.";
 
@@ -80,7 +90,7 @@ export function voice(error: PgLikeError | null | undefined): string {
        a malformed id reaches here from the galley, the shop and the agreements
        as readily as from a pass, so any route named here is right some of the
        time and confidently wrong the rest of it. */
-    return "That link looks wrong. Start again from the page that offered it.";
+    return STALE_LINK_MESSAGE;
   }
 
   const m = (error.message ?? "").trim();

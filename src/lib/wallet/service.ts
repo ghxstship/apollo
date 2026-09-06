@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
+import { clientKey, overLimit } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { authTokenMatches, bearerFromHeader } from "./apple";
 import { appleConfig, NOT_ISSUED_HERE, NOT_ON_THE_CHART, NOT_YOUR_PASS, voiceJson, type AppleConfig } from "./env";
@@ -51,6 +52,28 @@ export function authorized(ctx: ServiceContext, request: Request, serial: string
    to write a novel into a key column. */
 export function knownDevice(deviceId: string): Response | null {
   return /^[A-Za-z0-9._:-]{1,200}$/.test(deviceId) ? null : voiceJson(NOT_ON_THE_CHART, 404);
+}
+
+/* The pace a phone keeps.
+
+   Every call on this service is unauthenticated at the point it arrives — the
+   ApplePass token is checked, but checking it is work, and reading a pass is
+   more work than that. A device asks for a pass when it is pushed one and
+   registers once per pass it holds; two calls a second from one address is far
+   above that and still bounds a caller who is not a phone. Deliberately not
+   tighter: several phones behind one carrier address are one address here, and
+   a member whose pass will not load is a worse failure than a stranger who
+   costs us a query.
+
+   Keyed on the address rather than on the serial or the device, because both
+   of those are things the caller supplies — a bucket a caller can vary is not
+   a bucket. */
+const PACE = 120;
+const PACE_WINDOW_MS = 60_000;
+
+export function paced(request: Request, bucket: string): Response | null {
+  if (!overLimit(`wallet-${bucket}:${clientKey(request)}`, PACE, PACE_WINDOW_MS)) return null;
+  return voiceJson("That is more than the club answers at once. Try again shortly.", 429, { "Retry-After": "60" });
 }
 
 /* Apple's own record of the wallet service is 503 for "come back later", and

@@ -1,4 +1,5 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { readBounded } from "@/lib/request-guards";
 import { notifyWalletUpdate } from "@/lib/wallet/apns";
 import type Stripe from "stripe";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
@@ -393,12 +394,28 @@ function ledgerRefOf(event: Stripe.Event): { object_id: string | null; amount_ce
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   if (!stripeEnabled()) {
     return NextResponse.json({ disabled: true }, { status: 503 });
   }
 
-  const payload = await request.text();
+  /* The raw body IS the signed content, so it has to be whole before anything
+     about it can be believed — which is exactly why it is bounded here. An
+     unauthenticated caller declaring half a gigabyte was half a gigabyte of
+     heap before the signature was looked at. Counted over the bytes as they
+     arrive rather than off Content-Length, which a chunked request omits.
+
+     A quarter of a megabyte, not the tighter cap the other routes take. A
+     refusal here is not a refusal the caller can fix: Stripe would retry the
+     event, be refused again, and the club would have silently dropped a real
+     one. So the number is set well clear of the largest event Stripe actually
+     sends — an invoice with hundreds of lines, a session with everything
+     expanded, both of which run to tens of kilobytes — and the thing it exists
+     to stop is the declared half-gigabyte, which it does. */
+  const payload = await readBounded(request, 256 * 1024);
+  if (payload === null) {
+    return NextResponse.json({ error: "That is larger than any event Stripe sends." }, { status: 413 });
+  }
   const signature = request.headers.get("stripe-signature");
   if (!signature) {
     return NextResponse.json({ error: "Missing signature." }, { status: 400 });

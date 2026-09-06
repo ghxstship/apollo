@@ -47,11 +47,18 @@ describe("overLimit", () => {
 describe("clientKey", () => {
   const req = (headers: Record<string, string>) => new Request("https://un.example/x", { headers });
 
-  it("reads the first hop of x-forwarded-for, trimmed", () => {
-    expect(clientKey(req({ "x-forwarded-for": " 203.0.113.9 , 10.0.0.1" }))).toBe("203.0.113.9");
+  it("prefers the platform's own header over the forwarded chain", () => {
+    expect(
+      clientKey(req({ "x-vercel-forwarded-for": "203.0.113.9", "x-forwarded-for": "6.6.6.6, 203.0.113.9" }))
+    ).toBe("203.0.113.9");
   });
-  it("ignores what the client appended after the first hop", () => {
-    expect(clientKey(req({ "x-forwarded-for": "203.0.113.9, 198.51.100.1, 192.0.2.1" }))).toBe("203.0.113.9");
+  it("takes the rightmost hop, never the leftmost the client wrote itself", () => {
+    expect(clientKey(req({ "x-forwarded-for": " 6.6.6.6 , 203.0.113.9 " }))).toBe("203.0.113.9");
+  });
+  it("a caller rotating the hop it writes itself stays in one bucket", () => {
+    const a = clientKey(req({ "x-forwarded-for": "1.1.1.1, 203.0.113.9" }));
+    const b = clientKey(req({ "x-forwarded-for": "2.2.2.2, 203.0.113.9" }));
+    expect(a).toBe(b);
   });
   it("falls back to x-real-ip, then to unknown", () => {
     expect(clientKey(req({ "x-real-ip": "198.51.100.7" }))).toBe("198.51.100.7");

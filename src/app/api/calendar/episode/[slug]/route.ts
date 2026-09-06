@@ -1,4 +1,5 @@
 import { SITE_DOMAIN } from "@/lib/brand";
+import { clientKey, overLimit } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildCalendar,
@@ -21,10 +22,18 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`;
    this is also what keeps that header a header. */
 const SLUG = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 
+/* Two unauthenticated reads a call, from anyone. Same ceiling and same
+   reasoning as the member feed beside it — high enough that a calendar
+   server subscribing on behalf of many people never meets it. */
+const LIMIT = 120;
+const WINDOW_MS = 60_000;
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  if (overLimit(`calendar-episode:${clientKey(request)}`, LIMIT, WINDOW_MS)) return offTheChart();
+
   const { slug } = await params;
   if (!SLUG.test(slug)) return offTheChart();
 

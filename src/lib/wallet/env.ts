@@ -1,5 +1,5 @@
 import "server-only";
-import { SITE_DOMAIN } from "@/lib/brand";
+import { siteOrigin } from "@/lib/site-origin";
 
 /* Wallet passes are optional infrastructure, the way card settlement is.
 
@@ -78,14 +78,13 @@ export function walletServiceEnabled(): boolean {
 }
 
 /* The public origin a pass points back at: the barcode URL, the web service
-   URL, the Google save-link origin. Read from NEXT_PUBLIC_SITE_URL so a
-   preview deploy issues passes that point at itself, falling back to the
-   production domain — which is right in production and the only honest
-   default anywhere else. */
-export function siteOrigin(): string {
-  const raw = process.env.NEXT_PUBLIC_SITE_URL || `https://${SITE_DOMAIN}`;
-  return raw.replace(/\/+$/, "");
-}
+   URL, the Google save-link origin. It moved to lib/site-origin.ts when the
+   password reset, the magic link and the three Stripe returns were found to be
+   assembling the same thing out of the Host header instead — a link that
+   leaves the process must not be built from what the caller wrote. Re-exported
+   here so the wallet keeps reading it from beside the rest of its own
+   configuration. */
+export { siteOrigin };
 
 /* What a pass's barcode carries. Not the sixty-second credential — a pass
    cannot rotate — but a durable wallet token behind a URL, so a phone that

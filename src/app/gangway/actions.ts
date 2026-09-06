@@ -3,6 +3,7 @@
 import { callerAddress } from "@/lib/caller-address";
 
 import { safeNext } from "@/lib/safe-next";
+import { siteOrigin } from "@/lib/site-origin";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -16,11 +17,6 @@ export type GangwayState = {
      on the form that earned it. */
   way?: "link" | "password" | "reset";
 };
-
-async function originOf(): Promise<string> {
-  const h = await headers();
-  return h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost:3000"}`;
-}
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -58,7 +54,13 @@ export async function sendResetLink(
   if (email.length > 254 || !EMAIL.test(email)) {
     return { way: "reset", email, error: "Enter the email on file." };
   }
-  const origin = await originOf();
+  /* siteOrigin(), never the request. This link is mailed to the address on
+     file and it carries a token_hash that opens the account — an origin
+     assembled from the Host header would let a caller who forges Origin and
+     Host together (which satisfies the Server Action check, since it only
+     compares the two) have the club post that token to a host of their
+     choosing. See lib/site-origin.ts. */
+  const origin = siteOrigin();
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(`/gangway/reset?next=${encodeURIComponent(next)}`)}`,
@@ -74,7 +76,10 @@ export async function signInWithProvider(formData: FormData): Promise<void> {
   const provider = String(formData.get("provider") ?? "") as Provider;
   const next = safeNext(String(formData.get("next") ?? "/home"));
   if (!PROVIDERS.includes(provider)) redirect("/gangway?error=provider");
-  const origin = await originOf();
+  /* The provider sends the member back to this address with a code that
+     exchanges for a session, so it is configuration's to choose, not the
+     caller's. */
+  const origin = siteOrigin();
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
@@ -192,9 +197,9 @@ export async function sendMagicLink(
   }
 
   const h = await headers();
-  const origin =
-    h.get("origin") ??
-    `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost:3000"}`;
+  /* Same reasoning as the reset link: a magic link IS the credential, and the
+     host it points at is the club's to decide. */
+  const origin = siteOrigin();
 
   const supabase = await createClient();
 

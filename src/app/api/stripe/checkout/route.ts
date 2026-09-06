@@ -1,13 +1,18 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { ANCHOR } from "@/lib/brand";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
+import { crossSiteRefusal } from "@/lib/request-guards";
+import { overLimit, tooMany } from "@/lib/rate-limit";
+import { siteOrigin } from "@/lib/site-origin";
 import { createClient } from "@/lib/supabase/server";
 import { stepUpRefusal } from "@/lib/supabase/step-up";
 
 /* POST /api/stripe/checkout — start a Checkout Session that settles the
    member's negative house-account balance. */
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
+  const crossSite = crossSiteRefusal(request);
+  if (crossSite) return crossSite;
   if (!stripeEnabled()) {
     return NextResponse.json({ disabled: true }, { status: 503 });
   }
@@ -22,6 +27,13 @@ export async function POST(request: NextRequest) {
   const stepUp = await stepUpRefusal(supabase, user);
   if (stepUp) return stepUp;
 
+  /* One member cannot open sessions at the processor faster than a person
+     clicks. The idempotency key below already collapses the same balance into
+     one session; this bounds the ones that differ. */
+  if (overLimit(`stripe-checkout:${user.id}`, 10, 60_000)) {
+    return tooMany({ error: "That's more settlements than the desk can open at once. Try again shortly." }, 60);
+  }
+
   const { data: account } = await supabase
     .from("account_balance")
     .select("*")
@@ -32,7 +44,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Nothing owing." }, { status: 400 });
   }
 
-  const origin = request.nextUrl.origin;
+  /* Configuration's origin, not the request's: this is where Stripe sends the
+     member after they have paid, and a Host header is the caller's to write. */
+  const origin = siteOrigin();
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
     line_items: [

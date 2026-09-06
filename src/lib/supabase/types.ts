@@ -479,6 +479,8 @@ export type SavedSegmentRow = {
 export type ApiKeyRow = {
   id: string; label: string; key_hash: string; prefix: string; scopes: string[]
   revoked: boolean; last_used_at: string | null; created_by: string | null; created_at: string
+  /** When the key stops opening anything. Null is a key with no end. */
+  expires_at: string | null
 }
 export type WebhookRow = {
   id: string; url: string; events: string[]; secret: string; active: boolean; created_at: string

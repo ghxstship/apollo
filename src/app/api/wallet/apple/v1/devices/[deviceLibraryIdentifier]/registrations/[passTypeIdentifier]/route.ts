@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { serialsForDevice } from "@/lib/wallet/registrations";
-import { knownDevice, knownPassType, ledgerClosed, serviceContext } from "@/lib/wallet/service";
+import { knownDevice, knownPassType, ledgerClosed, paced, serviceContext } from "@/lib/wallet/service";
 import { DID_NOT_LAND, voiceJson } from "@/lib/wallet/env";
 
 /* GET devices/{device}/registrations/{passType}?passesUpdatedSince=…
@@ -16,6 +16,10 @@ type Params = { params: Promise<{ deviceLibraryIdentifier: string; passTypeIdent
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, { params }: Params) {
+  /* This is the one call on the service that carries no Authorization header
+     at all, by Apple's design — so the pace is the only thing in front of it. */
+  const slow = paced(request, "list");
+  if (slow) return slow;
   const ctx = serviceContext();
   if (ctx instanceof Response) return ctx;
   const { deviceLibraryIdentifier, passTypeIdentifier } = await params;
