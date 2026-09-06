@@ -483,16 +483,28 @@ export async function run(p, ctx) {
       const notMine = await nat.rpc("accept_pass_transfer", { p_id: hp.id });
       note("national", "an offer that does not exist cannot be accepted", !ok(notMine) && /no offer/.test(said(notMine)), `got ${notMine.status} ${said(notMine).slice(0, 90)}`);
 
+      /* One pass carries one standing offer, and the DATABASE says so —
+         pass_transfers_open_offer_idx, added after a concurrency run found
+         eight offers standing on one pass where the action refuses the second
+         in TypeScript alone. So the second offer is refused here rather than
+         written, and the race that remains is the one a member can really run:
+         the same taker accepting the same offer from two tabs at one instant. */
       const o1 = await reg.post("pass_transfers", { rsvp_id: hp.id, from_profile: me.regional, to_profile: me.national, status: "offered" });
       const o2 = await reg.post("pass_transfers", { rsvp_id: hp.id, from_profile: me.regional, to_profile: me.global, status: "offered" });
-      const [x1, x2] = await Promise.all([nat.rpc("accept_pass_transfer", { p_id: o1.data?.[0]?.id }), glo.rpc("accept_pass_transfer", { p_id: o2.data?.[0]?.id })]);
+      note("regional", "a pass carries one standing offer, and the second is refused by the schema",
+        ok(o1) && !ok(o2), `first ${o1.status}; second ${o2.status} ${said(o2).slice(0, 90)}`);
+      const [x1, x2] = await Promise.all([
+        nat.rpc("accept_pass_transfer", { p_id: o1.data?.[0]?.id }),
+        nat.rpc("accept_pass_transfer", { p_id: o1.data?.[0]?.id }),
+      ]);
       const holder = (await stf.get(`passes?id=eq.${hp.id}&select=profile_id,status`)).data?.[0];
       const lostRace = ok(x1) ? x2 : x1;
-      note("national", "two takers accepting at once: one takes the pass, the other is told it has changed hands or the offer is spent",
-        ok(o1) && ok(o2) && [x1, x2].filter(ok).length === 1 && /changed hands|no offer/.test(said(lostRace)), `${x1.status}/${x2.status} ${said(lostRace).slice(0, 90)}`);
+      note("national", "one offer accepted from two tabs at once: the pass changes hands once, the other tab is told so",
+        [x1, x2].filter(ok).length === 1 && /changed hands|no offer/.test(said(lostRace)), `${x1.status}/${x2.status} ${said(lostRace).slice(0, 90)}`);
       const takerName = holder?.profile_id === me.national ? "national" : holder?.profile_id === me.global ? "global" : null;
       const offers = await stf.get(`pass_transfers?rsvp_id=eq.${hp.id}&select=status,to_profile`);
-      note("staff", "the winning offer is accepted and the other is void", (offers.data || []).filter((o) => o.status === "accepted").length === 1 && (offers.data || []).filter((o) => o.status === "void").length === 1, JSON.stringify(offers.data));
+      note("staff", "the offer that stood is the one that was accepted, and it is the only one on the pass",
+        (offers.data || []).length === 1 && (offers.data || [])[0]?.status === "accepted", JSON.stringify(offers.data));
       const giver = await ledger("regional", hand.id);
       note("regional", "the giver's ledger on the episode sums to zero — one credit for pass and deposit together", sum(giver) === 0 && ofKind(giver, "credit").length === 1 && ofKind(giver, "credit")[0].delta_cents === PRICE + DEPOSIT, shape(giver));
       if (takerName) {

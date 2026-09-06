@@ -29,13 +29,23 @@ export async function run(p, ctx) {
   const nowIso = () => new Date().toISOString();
   const plusH = (h) => new Date(Date.now() + h * 3600_000).toISOString();
   const soon = plusH(48);
-  const soonDay = soon.slice(0, 10);
+  /* The day the episode falls on, read in the episode's OWN zone — which is
+     what a_blackout_holds_at_the_rota does: it computes
+     (starts_at at time zone episodes.time_zone)::date and asks whether a
+     blackout covers it. Slicing the UTC string instead made this a flake that
+     fired for the four hours a day when New York is still on yesterday's date:
+     the blackout was written for the UTC day, the trigger looked at the club's
+     day, they differed by one, and a blacked-out deckhand was cheerfully
+     assigned. The trigger was right; the fixture was reading a different
+     calendar. */
+  const EPISODE_ZONE = "America/New_York";
+  const soonDay = new Date(soon).toLocaleDateString("en-CA", { timeZone: EPISODE_ZONE });
   const REG = uid(p.regional), NAT = uid(p.national), GLO = uid(p.global), STF = uid(p.staff);
 
   const raise = async (label, extra = {}) => {
     const v = await stf.post("episodes", {
       slug: `e2e-cdwm-${label}-${stamp}`, title: `E2E ${label} fixture.`, setting: "sea", kind: "sea_day", sub_class: "passage",
-      starts_at: soon, time_zone: "America/New_York", passes_total: 8, price_cents: 0, status: "live", min_tier: "regional",
+      starts_at: soon, time_zone: EPISODE_ZONE, passes_total: 8, price_cents: 0, status: "live", min_tier: "regional",
       ...extra,
     });
     return { id: v.data?.[0]?.id ?? null, res: v };
