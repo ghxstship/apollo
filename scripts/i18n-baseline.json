@@ -1,14 +1,13 @@
 {
   "areas": {
-    "member": 911,
-    "site": 447,
-    "staff": 1580,
-    "app-root": 72,
-    "gangway": 67,
-    "components": 128,
-    "design-system": 174,
-    "lib": 150
+    "member": 851,
+    "site": 437,
+    "staff": 1450,
+    "app-root": 65,
+    "gangway": 64,
+    "components": 112,
+    "design-system": 160
   },
-  "total": 3529,
+  "total": 3139,
   "physicalCss": 27
 }

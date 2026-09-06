@@ -443,6 +443,16 @@ function readPolicies() {
 
       const start = /\b(create|alter|drop)\s+policy\b/is.exec(s);
       if (!start) continue;
+      /* Policy DDL written inside a STRING is not policy DDL.
+         20260906202000 rewrites eighty-nine policies programmatically, so it
+         holds `format('alter policy %I on %I.%I', …)` — which reads to this
+         parser as a statement whose table name is a format specifier, and
+         threw. A statement the database builds at run time cannot be read
+         statically anyway: the ratchet's business is the DDL somebody wrote
+         down, and this one's effect is asserted inside its own transaction
+         instead. Detected by counting the unescaped quotes before the match:
+         an odd number means the match is inside one. */
+      if (((s.slice(0, start.index).match(/(?<!')'(?!')/g) ?? []).length % 2) === 1) continue;
       const stmt = s.slice(start.index);
       const verb = start[1].toLowerCase();
       const head = HEAD(verb).exec(stmt);

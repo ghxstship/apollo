@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readBounded } from "@/lib/request-guards";
-import { overLimit } from "@/lib/rate-limit";
+import { overLimit, paced } from "@/lib/rate-limit";
 import { callerAddress } from "@/lib/caller-address";
 
 /* POST /api/recover — the way back in for a member who has lost their
@@ -45,6 +45,8 @@ export async function POST(request: Request) {
      one machine working through members. Both are tight — a person reading a
      code off paper does not need ten tries a minute. */
   const from = callerAddress(request.headers);
+  /* The cheap gate first: one instance's memory, no round trip, and it stops a
+     caller hammering the instance it happens to have landed on. */
   if (overLimit(`recover-ip:${from ?? "unknown"}`, 10, 10 * 60_000)) {
     return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
   }
@@ -70,6 +72,23 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+
+  /* And the gate that actually holds. The one above lives in a single
+     instance's memory, so on a platform running forty of them a limit of ten
+     is really four hundred and a cold start puts it back to zero. That is a
+     fine brake on a search box and the wrong one in front of a credential,
+     where a wrong guess costs an attacker nothing.
+
+     Both buckets, because they stop different things: the address bucket stops
+     one machine working through members, and the mailbox bucket stops anybody
+     working through codes against one member. Neither is stored — the ledger
+     holds a digest with this path's name mixed in. */
+  if (!(await paced(admin, "recover-addr", from ?? "unknown", 10, 600))) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
+  if (!(await paced(admin, "recover-who", email, 5, 600))) {
+    return NextResponse.json({ error: "Too many attempts. Try again later." }, { status: 429 });
+  }
   const { data: profile } = await admin
     .from("profiles")
     .select("id")

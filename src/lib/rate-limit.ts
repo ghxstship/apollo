@@ -87,3 +87,58 @@ export function tooMany(body: Record<string, unknown>, retryAfterSeconds: number
     },
   });
 }
+
+/* ── the durable half ─────────────────────────────────────────────────────────
+
+   Everything above is honest about being one instance's memory. That is the
+   right shape for search-as-you-type and for the first hop of an expensive
+   call, and it is the wrong shape for anything where a wrong guess is free:
+   on a platform running forty instances a limit of ten is really four hundred,
+   and a cold start puts it back to zero.
+
+   This is the other half. It counts in the database, under an advisory lock on
+   the bucket, so the ceiling holds across every instance — which is what the
+   comment at the top of this file has always said the credential paths should
+   do, and what only the Producer was actually doing.
+
+   THE BUCKET IS ALWAYS A DIGEST. The path's own name is mixed in before
+   hashing, so two paths cannot share a ceiling by accident, and the ledger
+   holds no address, mailbox or member id — a pacing table that stored those
+   would be a record of who tried to sign in and from where, which is a
+   different table with a different set of obligations attached to it.
+
+   FAILS OPEN, deliberately and narrowly. If the database cannot be reached the
+   call is allowed: this runs in front of sign-in, and a database wobble that
+   locked every member out of the club would be a worse outage than the one it
+   is guarding against. The paths that use it all have a second gate behind
+   them — a code that must still be right, a password that must still match —
+   so failing open loses pacing, not the door. */
+export async function paced(
+  /* Typed against the RPC's own signature rather than the whole client, so
+     this module does not have to import the generated Database type and pull
+     the schema into every file that paces something. */
+  admin: {
+    rpc: (
+      fn: "spend_a_turn",
+      args: { p_bucket: string; p_limit: number; p_seconds: number },
+    ) => PromiseLike<{ data: unknown; error: unknown }>;
+  },
+  path: string,
+  who: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<boolean> {
+  const { createHash } = await import("node:crypto");
+  const bucket = createHash("sha256").update(`${path}:${who.toLowerCase()}`).digest("hex");
+  try {
+    const { data, error } = await admin.rpc("spend_a_turn", {
+      p_bucket: bucket,
+      p_limit: limit,
+      p_seconds: windowSeconds,
+    });
+    if (error) return true;
+    return data === true;
+  } catch {
+    return true;
+  }
+}

@@ -947,6 +947,8 @@ export type Database = {
         }>
       }
       revoke_my_session: { Args: { p_id: string }; Returns: boolean }
+      /* Service role only — the callers are the route handlers being paced. */
+      spend_a_turn: { Args: { p_bucket: string; p_limit: number; p_seconds: number }; Returns: boolean }
       settle_galley_ticket: {
         Args: {
           p_profile: string

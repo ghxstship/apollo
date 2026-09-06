@@ -88,18 +88,34 @@ function areaOf(rel) {
 const HUMAN_ATTRS = /\b(aria-label|aria-description|placeholder|title|alt|label|pendingLabel|eyebrow|legend)\s*=\s*["']([^"']{2,})["']/g;
 
 /* A JSX text node: between a `>` and a `<`, containing at least two letters in
-   a row. Excludes anything that is plainly an expression or an entity run. */
-const JSX_TEXT = />([^<>{}]*[A-Za-z]{2,}[^<>{}]*)</g;
+   a row.
 
-function countIn(src) {
+   TWO GUARDS, both learned the hard way on the first commit this gate ran
+   against. TypeScript looks enough like JSX to fool a regex:
+
+     `) => PromiseLike<{ data: unknown }>`  — the `>` of the arrow, then a word,
+     then the `<` of a generic. Counted as a sentence, and the gate failed a
+     commit that had added no copy at all.
+
+   So: the text node is only looked for in `.tsx`, and a `>` preceded by `=` or
+   `-` is an arrow or an operator rather than the end of a tag. Both are cheap
+   and both are exact. What remains is a proxy — it does not have to be right
+   about every string, it has to be STABLE, so the same source always gives the
+   same number, and DIRECTIONAL, so removing a hard-coded sentence always
+   lowers it. */
+const JSX_TEXT = /(^|[^=\-])>([^<>{}]*[A-Za-z]{2,}[^<>{}]*)</g;
+
+function countIn(src, isTsx) {
   const clean = stripComments(src);
   let n = 0;
-  for (const m of clean.matchAll(JSX_TEXT)) {
-    const text = m[1].trim();
-    if (!text) continue;
-    /* Entities and punctuation runs are not sentences. */
-    if (!/[A-Za-z]{2,}/.test(text.replace(/&[a-z]+;/gi, ""))) continue;
-    n += 1;
+  if (isTsx) {
+    for (const m of clean.matchAll(JSX_TEXT)) {
+      const text = m[2].trim();
+      if (!text) continue;
+      /* Entities and punctuation runs are not sentences. */
+      if (!/[A-Za-z]{2,}/.test(text.replace(/&[a-z]+;/gi, ""))) continue;
+      n += 1;
+    }
   }
   n += [...clean.matchAll(HUMAN_ATTRS)].length;
   return n;
@@ -111,7 +127,7 @@ for (const p of files) {
   const rel = relative(ROOT, p);
   let src;
   try { src = readFileSync(p, "utf8"); } catch { continue; }
-  const n = countIn(src);
+  const n = countIn(src, p.endsWith(".tsx"));
   if (!n) continue;
   const area = areaOf(rel);
   counts[area] = (counts[area] ?? 0) + n;

@@ -8,7 +8,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createHash, randomInt } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
-import { createVerifierClient } from "@/lib/supabase/admin";
+import { createAdminClient, createVerifierClient } from "@/lib/supabase/admin";
+import { paced } from "@/lib/rate-limit";
 import { actionStepUp } from "@/lib/supabase/step-up-action";
 import { PASSWORD_MIN, PROVIDERS, type Provider } from "./ways";
 
@@ -37,6 +38,27 @@ export async function signInWithPassword(
   if (email.length > 254 || !EMAIL.test(email) || !password) {
     return { way: "password", email, error: "Enter the email on file and your password." };
   }
+  /* Paced in the database, not in one instance's memory.
+
+     The comment above says "Supabase paces the attempts", which is true and is
+     not ours: it is the provider's own throttling, it is not asserted by
+     anything in this repository, and it can be changed in a dashboard by
+     somebody who does not know this line exists. The audit found no lockout
+     and no failed-attempt counter of the club's own anywhere.
+
+     Keyed on the mailbox rather than the address, which is the direction that
+     matters here: an attacker working through passwords against one member
+     rotates addresses freely, and cannot rotate the mailbox they are trying to
+     get into. The address is paced too, on the route handlers; this is the
+     half that protects a particular person.
+
+     Twenty in fifteen minutes is generous for somebody who has genuinely
+     forgotten which password they used and useless for anything automatic. */
+  const admin = createAdminClient();
+  if (!(await paced(admin, "sign-in", email, 20, 900))) {
+    return { way: "password", email, error: "Too many tries. Give it a minute, or send yourself a link instead." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
