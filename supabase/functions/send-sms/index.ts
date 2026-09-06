@@ -227,7 +227,8 @@ Deno.serve(async (req) => {
       list<Row>(
         "sms_outbox",
         `${SUPABASE_URL}/rest/v1/sms_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${new Date().toISOString()})` +
-          `&order=created_at.asc&limit=${BATCH}&select=id,to_phone,template,payload,attempts`,
+          /* next_attempt_at, not created_at — see send-outbox/index.ts. */
+          `&order=next_attempt_at.asc&limit=${BATCH}&select=id,to_phone,template,payload,attempts`,
       ),
       list<Mapping>(
         "sms_templates",

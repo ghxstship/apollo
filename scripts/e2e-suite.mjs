@@ -2598,9 +2598,16 @@ async function businessRules(p) {
   /* The full five-segment shape, not just the prefix: 20260901004433 added the
      md5 discriminator after two sailings minted the same credential, and this
      assertion still passing on /^UN-/ alone is how a regression to the old
-     four-segment mint (accept_pass_transfer had exactly that) stayed green. */
+     four-segment mint (accept_pass_transfer had exactly that) stayed green.
+
+     The discriminator is FOUR hex characters since 20260906031256. Two was
+     256 values, and everything before it is shared by two episodes that start
+     alike on one day — a dozen of them collided one run in four, and the
+     member met a unique-constraint message instead of a pass. The length is
+     pinned here rather than loosened to {2,4} for the same reason the shape is
+     pinned at all: a range would let a silent narrowing back to two pass. */
   note("national", "boarding code issued in the five-segment shape",
-    /^UN-[A-Z0-9]{1,4}-\d{4}-\d{4}-[A-F0-9]{2}$/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
+    /^UN-[A-Z0-9]{1,4}-\d{4}-\d{4}-[A-F0-9]{4}$/.test(natCode.data?.[0]?.boarding_code || ""), JSON.stringify(natCode.data));
 
   // Capacity: global bounced to full manifest
   const gloTry = await glo.post("passes", { episode_id: vid, profile_id: uid(p.global), status: "aboard" });
@@ -3192,7 +3199,7 @@ async function remediationRules(p) {
   const handed = await glo.get(`passes?id=eq.${aRsvp}&select=profile_id,boarding_code`);
   note("global", "the pass changes hands", handed.data?.[0]?.profile_id === uid(p.global), JSON.stringify(handed.data).slice(0, 120));
   note("global", "a handed-on pass carries the five-segment code",
-    /^UN-[A-Z0-9]{1,4}-\d{4}-\d{4}-[A-F0-9]{2}$/.test(handed.data?.[0]?.boarding_code || ""),
+    /^UN-[A-Z0-9]{1,4}-\d{4}-\d{4}-[A-F0-9]{4}$/.test(handed.data?.[0]?.boarding_code || ""),
     JSON.stringify(handed.data).slice(0, 120));
   // Money: the receiver was charged no more than the pass's own money.
   const gloCharge = await glo.get(`account_ledger?episode_id=eq.${tvid}&profile_id=eq.${uid(p.global)}&select=delta_cents,kind`);

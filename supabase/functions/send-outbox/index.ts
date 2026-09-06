@@ -721,7 +721,13 @@ async function fetchPending(): Promise<OutboxRow[]> {
   const now = new Date().toISOString();
   const url =
     `${REST}?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${now})` +
-    `&order=created_at.asc&limit=${BATCH}&select=id,to_email,template,payload,status,created_at,attempts`;
+    /* Ordered by next_attempt_at, not created_at: with next_attempt_at now
+       never null it holds the creation time for a letter that has never been
+       deferred, so the order is unchanged for those, and a deferred letter
+       queues by when it may be tried rather than by when it was written. It
+       is also the only ordering the partial index can serve without sorting
+       the whole ready set. */
+    `&order=next_attempt_at.asc&limit=${BATCH}&select=id,to_email,template,payload,status,created_at,attempts`;
   const res = await fetch(url, { headers: HEADERS });
   if (!res.ok) throw new Error(`outbox fetch failed: ${res.status}`);
   const rows = await res.json();

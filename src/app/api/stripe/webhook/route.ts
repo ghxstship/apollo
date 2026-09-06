@@ -192,7 +192,12 @@ async function syncInvoice(admin: Admin, invoice: Stripe.Invoice) {
   const profileId = await profileFor(admin, idOf(invoice.customer), invoice.metadata);
   if (!profileId || !invoice.id) return;
 
-  await admin.from("invoices").upsert(
+  /* This upsert used to be awaited and never read. invoices.status now carries
+     a check constraint naming the five statuses Stripe uses, so a sixth would
+     have made the invoice fail to sync in silence — no row on the member's
+     account, no error anywhere, and nobody looking. Stripe retries a webhook
+     that throws, so a loud failure is the one that gets seen. */
+  const { error: invoiceError } = await admin.from("invoices").upsert(
     {
       profile_id: profileId,
       stripe_invoice_id: invoice.id,
@@ -206,6 +211,9 @@ async function syncInvoice(admin: Admin, invoice: Stripe.Invoice) {
     },
     { onConflict: "stripe_invoice_id" }
   );
+  if (invoiceError) {
+    throw new Error(`invoice sync failed (${invoiceError.code ?? "unknown"})`);
+  }
 
   if (invoice.status === "paid") await postDues(admin, profileId, invoice);
 }

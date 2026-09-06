@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
     const now = new Date().toISOString();
     const rows = await list<Row>(
       "push_outbox",
-      `${SUPABASE_URL}/rest/v1/push_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${now})&order=created_at.asc&limit=${BATCH}&select=id,profile_id,title,body,url,attempts`,
+      `${SUPABASE_URL}/rest/v1/push_outbox?status=eq.pending&or=(next_attempt_at.is.null,next_attempt_at.lte.${now})&order=next_attempt_at.asc&limit=${BATCH}&select=id,profile_id,title,body,url,attempts`,
     );
 
     if (!pub || !priv) {
