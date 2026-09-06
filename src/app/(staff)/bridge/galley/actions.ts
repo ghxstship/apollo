@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { voiceWith } from "@/lib/errors";
 import { memberMark, memberNumberFilter, memberNumberTail } from "@/lib/membership";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 export type LookupResult = {
   error?: string;
@@ -13,7 +14,7 @@ export type LookupResult = {
 export async function lookupMember(memberNo: string): Promise<LookupResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const code = memberNo.trim().toUpperCase();
+  const code = asText(memberNo).trim().toUpperCase();
   if (!code) return { error: "Key the number first." };
     /* The tail is the member number; the letters in front are whatever the club
        was called when the card was printed. Both worktrees were wrong about

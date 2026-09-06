@@ -6,6 +6,7 @@ import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
 import { BOUNDARY_TOPICS, DRINKS, STANCES, isSegment, type Segment, type Stance } from "@/lib/vetting";
 import { isPartnerName } from "./partner";
+import { asText } from "@/lib/arg";
 
 /* Vetting — the member's side of the funnel.
 
@@ -58,8 +59,8 @@ export async function saveFlags(green: string, red: string): Promise<VettingResu
 
   const { error } = await db.from("preference_sheets").upsert({
     profile_id: user.id,
-    flag_green: green.trim() || null,
-    flag_red: red.trim() || null,
+    flag_green: asText(green).trim() || null,
+    flag_red: asText(red).trim() || null,
     completed_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   });

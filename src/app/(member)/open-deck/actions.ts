@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { voiceWith } from "@/lib/errors";
 import { createClient } from "@/lib/supabase/server";
+import { asText } from "@/lib/arg";
 
 export type OpenDeckResult = { error?: string };
 
@@ -59,7 +60,7 @@ export async function toggleHail(postId: string, hailed: boolean): Promise<OpenD
 export async function addComment(postId: string, body: string): Promise<OpenDeckResult> {
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
-  const text = body.trim();
+  const text = asText(body).trim();
   if (!text) return { error: "Say something first." };
   if (text.length > 1000) return { error: "Keep it under 1,000 characters." };
   const { error } = await supabase
@@ -80,7 +81,7 @@ export async function flagPost(
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
   if (!FLAG_REASONS.has(reason)) return { error: "Pick a reason first." };
-  const trimmed = note.trim().slice(0, 500);
+  const trimmed = asText(note).trim().slice(0, 500);
   const { error } = await supabase.from("open_deck_flags").insert({
     post_id: postId,
     flagger_id: userId,

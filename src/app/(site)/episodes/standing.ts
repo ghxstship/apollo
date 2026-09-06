@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { asText } from "@/lib/arg";
 
 /* A standing view of the manifest.
 
@@ -31,7 +32,7 @@ export async function saveStandingView(
   /* Rebuilt from the parsed keys rather than trusted as a string. A member is
      not an attacker, but this value goes back out as a URL on their next visit
      and the cheapest place to be sure of its shape is before it is stored. */
-  const incoming = new URLSearchParams(raw.startsWith("?") ? raw.slice(1) : raw);
+  const incoming = new URLSearchParams(asText(raw).startsWith("?") ? asText(raw).slice(1) : raw);
   const clean = new URLSearchParams();
   for (const [key, value] of incoming) {
     if (!ALLOWED.has(key)) continue;

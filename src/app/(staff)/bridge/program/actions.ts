@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { voice } from "@/lib/errors";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 const TITLE_MAX = 120;
 const BLURB_MAX = 300;
@@ -197,7 +198,7 @@ export async function setVenueAccessNote(id: string, accessNote: string): Promis
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   if (!UUID.test(id)) return { error: "That venue is not on the chart — reload the page." };
-  const note = accessNote.trim();
+  const note = asText(accessNote).trim();
   if (note.length > ACCESS_NOTE_MAX) return { error: `An access note runs to ${ACCESS_NOTE_MAX} characters.` };
   const res = await supabase.from("venues").update({ access_note: note || null }).eq("id", id).select("id");
   if (res.error) return { error: ERR_LAND };

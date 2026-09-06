@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { clientKey, overLimit, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { stepUpRefusal } from "@/lib/supabase/step-up";
 
 /* One search, and it finds everything.
 
@@ -72,6 +73,8 @@ export async function GET(request: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const stepUp = await stepUpRefusal(supabase, user);
+  if (stepUp) return stepUp;
   const like = `%${q}%`;
   const nowIso = new Date().toISOString();
 

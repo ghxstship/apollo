@@ -8,6 +8,7 @@ import { ERR_LAND, boardingError } from "../../staff";
 import { ERR_DOOR, STANDBY_REFUSED, isStandbyRefusal } from "./door-errors";
 import { logDateYear } from "@/lib/format";
 import { memberMark } from "@/lib/membership";
+import { asText } from "@/lib/arg";
 
 /* Who may work this door. Staff, and the holder of a live door grant — the
    hired crew member who has the gangway for one episode and nothing else.
@@ -87,8 +88,8 @@ export async function gangwayCheckIn(rawCode: string, episodeId: string): Promis
      words as the rotating card; the pass it boards is the member's own on
      this episode. */
   const walletToken =
-    rawCode.match(/\/w\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] ??
-    (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawCode.trim()) ? rawCode.trim() : null);
+    asText(rawCode).match(/\/w\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i)?.[1] ??
+    (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(asText(rawCode).trim()) ? asText(rawCode).trim() : null);
   let walletPass: PassRow | null = null;
   let otherEpisode: string | undefined;
   if (walletToken) {

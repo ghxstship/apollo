@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* Posting to a thread is gated on membership of it, and an operator answering
    the shore is not a member of the thread until they answer. So we seat them
@@ -16,7 +17,7 @@ export async function replyToThread(threadId: string, body: string): Promise<Act
   if (!staffId) return { error: ERR_STAFF };
   if (!UUID.test(threadId)) return { error: ERR_LAND };
 
-  const line = body.trim();
+  const line = asText(body).trim();
   if (!line) return { error: "Nothing to send." };
   /* The same ceiling the member's own composer keeps. */
   if (line.length > 4000) return { error: "Keep it under 4,000 characters." };

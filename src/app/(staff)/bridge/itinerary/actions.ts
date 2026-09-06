@@ -5,6 +5,7 @@ import { voice } from "@/lib/errors";
 import { wallClockInZone } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* Legs and stops — the episode itinerary and the port guide.
 
@@ -158,9 +159,9 @@ export async function postLegHold(
      the person who has to write it. The columns carry no ceiling; NOTE_MAX is
      the same bound the leg note takes. */
   const lines = [
-    [reason.trim(), "the reason"],
-    [newPlan.trim(), "the new plan"],
-    [unchanged.trim(), "what is unchanged"],
+    [asText(reason).trim(), "the reason"],
+    [asText(newPlan).trim(), "the new plan"],
+    [asText(unchanged).trim(), "what is unchanged"],
   ] as const;
   for (const [line, what] of lines) {
     if (!line) return { error: `A hold states ${what} — that line is blank.` };

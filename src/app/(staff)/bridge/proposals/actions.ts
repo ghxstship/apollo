@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { voice } from "@/lib/errors";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 export type ProposalRuling = "considering" | "approved" | "declined";
 
@@ -120,7 +121,7 @@ export async function decideCharter(
   if (!UUID.test(id)) return { error: NO_REQUEST };
   if (!CHARTER_RULINGS.includes(ruling)) return { error: "That is not an answer the Bridge gives." };
 
-  const line = note.trim().slice(0, NOTE_MAX);
+  const line = asText(note).trim().slice(0, NOTE_MAX);
   if (ruling === "answered" && !line) {
     return { error: "An answer needs a line — that line is what reaches the member." };
   }

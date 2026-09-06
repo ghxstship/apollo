@@ -8,6 +8,7 @@ import { CLUB_ZONE } from "@/lib/brand";
 import { pauseDues, resumeDues, duesNote, liveSubscription } from "@/lib/dues";
 import { memberMark } from "@/lib/membership";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* The filter set is stored verbatim as the segment's jsonb — one shape, so a
    saved view reloads exactly as it was left. */
@@ -57,7 +58,7 @@ function cleanFilters(raw: SegmentFilters): SegmentFilters | string {
 export async function saveSegment(name: string, filters: SegmentFilters): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const label = name.trim();
+  const label = asText(name).trim();
   if (!label) return { error: "Give the view a name first." };
   if (label.length > SEGMENT_NAME_MAX) return { error: `A view's name runs to ${SEGMENT_NAME_MAX} characters.` };
   const cleaned = cleanFilters(filters);
@@ -276,7 +277,7 @@ export async function adjustKnots(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const line = reason.trim().slice(0, 200);
+  const line = asText(reason).trim().slice(0, 200);
   if (!line) return { error: "The ledger never writes without a reason." };
   /* Three refusals, each saying what actually happened. The one message used
      to cover all three, so a decimal came back as "A zero adjustment is not an
@@ -350,7 +351,7 @@ export async function bulkAdjustKnots(ids: string[], delta: number, reason: stri
   if (!staffId) return { error: ERR_STAFF };
   const bad = checkIds(ids);
   if (bad) return { error: bad };
-  const line = reason.trim().slice(0, 200);
+  const line = asText(reason).trim().slice(0, 200);
   if (!line) return { error: "The ledger never writes without a reason." };
   if (!Number.isFinite(delta) || !Number.isInteger(delta)) return { error: "Knots come in whole numbers." };
   if (delta === 0) return { error: "A zero adjustment is not an entry." };
@@ -373,8 +374,8 @@ export async function bulkWord(ids: string[], title: string, body: string): Prom
   if (!staffId) return { error: ERR_STAFF };
   const bad = checkIds(ids);
   if (bad) return { error: bad };
-  const t = title.trim();
-  const b = body.trim();
+  const t = asText(title).trim();
+  const b = asText(body).trim();
   if (!t || t.length > 120) return { error: "A title is one line, up to 120 characters." };
   if (b.length > 600) return { error: "A word runs to 600 characters." };
 

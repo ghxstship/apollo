@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { stepUpRefusal } from "@/lib/supabase/step-up";
 import { voice } from "@/lib/errors";
 import { buildPkpass, pkpassResponse } from "@/lib/wallet/apple";
 import { appleConfig, LEDGER_NOT_OPEN, NO_CARD_YET, NOT_ISSUED_HERE, SIGN_IN_FIRST, voiceJson } from "@/lib/wallet/env";
@@ -22,6 +23,8 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return voiceJson(SIGN_IN_FIRST, 401);
+  const stepUp = await stepUpRefusal(supabase, user);
+  if (stepUp) return stepUp;
 
   const facts = await readCardFacts(supabase, user.id);
   if (!facts) return voiceJson(NO_CARD_YET, 404);

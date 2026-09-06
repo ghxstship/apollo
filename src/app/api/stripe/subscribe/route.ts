@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
+import { stepUpRefusal } from "@/lib/supabase/step-up";
 
 /* POST /api/stripe/subscribe — start a Checkout Session in subscription mode
    for a membership plan's dues. Body: { planId, interval: "month" | "year" }.
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  const stepUp = await stepUpRefusal(supabase, user);
+  if (stepUp) return stepUp;
 
   let body: Record<string, unknown> = {};
   try {
@@ -107,6 +110,15 @@ export async function POST(request: NextRequest) {
       customer_update: { address: "auto", name: "auto" },
       success_url: `${origin}/account?joined=1`,
       cancel_url: `${origin}/membership`,
+    }, {
+      /* Two tabs on the membership page used to open two subscriptions and
+         bill dues twice: the route read nothing before creating, and unlike
+         the settlement checkout beside it carried no key. Keyed on the member
+         and the plan they are joining, so a genuine second attempt at the same
+         thing returns the first session rather than opening another. The
+         database now says the same thing from its own side — one live
+         membership per member. */
+      idempotencyKey: `subscribe:${user.id}:${plan.id}:${interval}`,
     });
 
     return NextResponse.json({ url: session.url });

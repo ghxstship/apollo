@@ -5,6 +5,7 @@ import { CLUB_ZONE } from "@/lib/brand";
 import { endOfDay, startOfDay } from "@/lib/format";
 import type { ClauseCategory } from "@/lib/supabase/types";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* The clause library and the composer.
 
@@ -102,11 +103,11 @@ export async function reviseClause(
 ): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const code = clauseCode.trim().toLowerCase();
+  const code = asText(clauseCode).trim().toLowerCase();
   if (!CODE.test(code)) return { error: "No clause carries that code." };
-  if (body.trim().length < 20) return { error: "That is too short to be a clause." };
-  if (body.trim().length > BODY_MAX) return { error: "That is too long for one clause — split it." };
-  if (note.trim().length > NOTE_MAX) return { error: `A revision note runs to ${NOTE_MAX} characters.` };
+  if (asText(body).trim().length < 20) return { error: "That is too short to be a clause." };
+  if (asText(body).trim().length > BODY_MAX) return { error: "That is too long for one clause — split it." };
+  if (asText(note).trim().length > NOTE_MAX) return { error: `A revision note runs to ${NOTE_MAX} characters.` };
 
   /* A code with no clause behind it would otherwise reach the database as a
      foreign key and come back as "That didn't land." */
@@ -126,8 +127,8 @@ export async function reviseClause(
   const { error } = await supabase.from("clause_versions").insert({
     clause_code: code,
     version: next,
-    body: body.trim(),
-    note: note.trim() || null,
+    body: asText(body).trim(),
+    note: asText(note).trim() || null,
     published_by: staffId,
   });
   if (error) {
@@ -145,7 +146,7 @@ export async function reviseClause(
 export async function draftNextVersion(documentCode: string): Promise<ActionResult> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const code = documentCode.trim().toLowerCase();
+  const code = asText(documentCode).trim().toLowerCase();
   if (!CODE.test(code)) return { error: "No document carries that code." };
 
   const { data: doc } = await supabase.from("documents").select("code").eq("code", code).maybeSingle();
@@ -321,7 +322,7 @@ export async function counterSign(signatureId: string, title: string): Promise<A
   if (!staffId) return { error: ERR_STAFF };
   if (!UUID.test(signatureId)) return { error: "No signature under that id." };
 
-  const signedAs = title.trim();
+  const signedAs = asText(title).trim();
   if (signedAs.length > SIGNER_TITLE_MAX)
     return { error: `"Signing as" runs to ${SIGNER_TITLE_MAX} characters.` };
   const { error } = await supabase.rpc("counter_sign", {
@@ -359,7 +360,7 @@ export async function sendSeasonCards(
   const toMs = new Date(to).getTime();
   if (Number.isNaN(fromMs) || Number.isNaN(toMs)) return { error: "Those dates don't parse." };
   if (toMs <= fromMs) return { error: "A season runs forwards." };
-  if (label.trim().length > TITLE_MAX) return { error: `A season's name runs to ${TITLE_MAX} characters.` };
+  if (asText(label).trim().length > TITLE_MAX) return { error: `A season's name runs to ${TITLE_MAX} characters.` };
 
   /* Both ends came from <input type="date"> and became UTC midnight, and the
      RPC filters `starts_at < p_to`. So a season entered as closing DEC 31
@@ -369,7 +370,7 @@ export async function sendSeasonCards(
   const { data, error } = await supabase.rpc("send_season_cards", {
     p_from: startOfDay(from, CLUB_ZONE),
     p_to: endOfDay(to, CLUB_ZONE),
-    p_season: label.trim() || null,
+    p_season: asText(label).trim() || null,
   });
   if (error) {
     if (/staff only/i.test(error.message)) return { error: ERR_STAFF };

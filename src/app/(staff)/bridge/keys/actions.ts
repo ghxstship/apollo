@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
 import { HOOK_EVENTS, SCOPES } from "./scopes";
+import { asText } from "@/lib/arg";
 
 /* Neither column is bounded at the database; these keep a pasted paragraph
    out of a label and a URL that a partner's server will never accept out of a
@@ -27,7 +28,7 @@ export async function createApiKey(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const name = label.trim();
+  const name = asText(label).trim();
   if (!name) return { error: "Name the key so you know what it opens." };
   if (name.length > LABEL_MAX) return { error: `A key's name runs to ${LABEL_MAX} characters.` };
   const picked = (scopes ?? []).filter((s) => (SCOPES as readonly string[]).includes(s));
@@ -68,7 +69,7 @@ export async function createWebhook(url: string, events: string[]): Promise<Acti
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const target = url.trim();
+  const target = asText(url).trim();
   if (!/^https:\/\/\S+$/.test(target)) return { error: "The destination has to be an https URL." };
   if (target.length > URL_MAX) return { error: `A destination runs to ${URL_MAX.toLocaleString("en-US")} characters.` };
   const picked = (events ?? []).filter((e) => (HOOK_EVENTS as readonly string[]).includes(e));

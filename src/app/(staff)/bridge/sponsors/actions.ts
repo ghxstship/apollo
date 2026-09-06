@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { voice } from "@/lib/errors";
 import { ERR_LAND, ERR_STAFF, staffContext, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* A tier is a row on the rate card (sponsor_tiers), not a list in this file.
    The slug is validated against the table at write time, so a tier the Bridge
@@ -139,7 +140,7 @@ export async function attachSponsor(
   const { error } = await supabase.from("episode_sponsors").insert({
     episode_id: episodeId,
     sponsor_id: sponsorId,
-    placement: placement.trim().slice(0, PLACEMENT_MAX) || null,
+    placement: asText(placement).trim().slice(0, PLACEMENT_MAX) || null,
   });
   if (error) {
     if (/duplicate|unique/i.test(error.message)) return { error: "Already placed on that episode." };

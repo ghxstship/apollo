@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { overLimit, tooMany } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
+import { stepUpRefusal } from "@/lib/supabase/step-up";
 
 /**
  * the Producer's brain — a small tool-use loop over the member's own data.
@@ -244,6 +245,8 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return refuse("Sign in first.", 401);
+  const stepUp = await stepUpRefusal(supabase, user);
+  if (stepUp) return stepUp;
 
   if (!process.env.ANTHROPIC_API_KEY) return Response.json({ fallback: true }, { headers: NO_STORE });
 

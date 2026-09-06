@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ANCHOR } from "@/lib/brand";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
+import { stepUpRefusal } from "@/lib/supabase/step-up";
 
 /* POST /api/stripe/checkout — start a Checkout Session that settles the
    member's negative house-account balance. */
@@ -18,6 +19,8 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  const stepUp = await stepUpRefusal(supabase, user);
+  if (stepUp) return stepUp;
 
   const { data: account } = await supabase
     .from("account_balance")

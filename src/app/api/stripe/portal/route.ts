@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
+import { stepUpRefusal } from "@/lib/supabase/step-up";
 
 /* POST /api/stripe/portal — a Stripe Billing Portal session for the signed-in
    member: card on file, dues cancellation, invoice history. */
@@ -17,6 +18,8 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  const stepUp = await stepUpRefusal(supabase, user);
+  if (stepUp) return stepUp;
 
   const { data: profile } = await supabase
     .from("profiles")

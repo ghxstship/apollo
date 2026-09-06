@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 function done(): ActionResult {
   revalidatePath("/bridge/moderation");
@@ -32,8 +33,8 @@ export async function removeAndNotify(
      essay does not become a notification — and refused, rather than cut, so
      the author reads the sentence the operator meant to send and not the
      first half of it. */
-  if (reason.trim().length > REASON_MAX) return { error: `The reason runs to ${REASON_MAX} characters.` };
-  const line = reason.trim() || "Against the code of conduct.";
+  if (asText(reason).trim().length > REASON_MAX) return { error: `The reason runs to ${REASON_MAX} characters.` };
+  const line = asText(reason).trim() || "Against the code of conduct.";
 
   const { error: flagError } = await supabase
     .from("open_deck_flags")

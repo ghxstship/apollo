@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 import type { CrewCandidateRow } from "@/lib/supabase/types";
+import { asText } from "@/lib/arg";
 
 export type CrewStage = "applied" | "interview" | "sea_trial" | "offer" | "passed";
 export type AssignmentStatus = "offered" | "confirmed" | "declined" | "released";
@@ -123,7 +124,7 @@ export async function addCandidateNote(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   if (!UUID.test(candidateId)) return { error: ERR_LAND };
-  const text = body.trim();
+  const text = asText(body).trim();
   if (text.length === 0) return { error: "Nothing to file." };
   if (text.length > NOTE_MAX) return { error: `A note runs to ${NOTE_MAX.toLocaleString("en")} characters.` };
   const { error } = await supabase.from("crew_candidate_events").insert({
@@ -170,7 +171,7 @@ export async function assignCrew(
      offers a slug the gaps view handed it, but the wire is not the screen: a
      slug off the catalogue is refused here by name rather than as a foreign
      key violation. */
-  const slug = positionSlug.trim();
+  const slug = asText(positionSlug).trim();
   if (!slug) return { error: "That position is not on the crew list." };
   const { data: position } = await supabase
     .from("crew_positions")
@@ -229,7 +230,7 @@ export async function setEpisodeNeed(
   if (!Number.isInteger(headcount) || headcount < 0 || headcount > 50) {
     return { error: "A headcount is a whole number, 0 to 50." };
   }
-  const slug = positionSlug.trim();
+  const slug = asText(positionSlug).trim();
   if (!slug) return { error: "No such position on the crew list." };
   const { data: pos } = await supabase.from("crew_positions").select("slug").eq("slug", slug).maybeSingle();
   if (!pos) return { error: "No such position on the crew list." };
@@ -275,7 +276,7 @@ export async function linkCrewProfile(crewId: string, handle: string): Promise<A
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
   if (!UUID.test(crewId)) return { error: ERR_LAND };
-  const h = handle.trim().replace(/^@/, "");
+  const h = asText(handle).trim().replace(/^@/, "");
   if (!/^[a-z0-9._-]{2,32}$/i.test(h)) return { error: "A handle, as it reads on their page." };
 
   /* ilike reads % and _ as wildcards, and _ is a legal handle character — so

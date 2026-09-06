@@ -7,6 +7,7 @@ import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, type ActionResult } from "../../staff";
 
 import { FIELDS, MAX_RULES, audienceReady, type Audience } from "./audience";
+import { asText } from "@/lib/arg";
 export type { Audience } from "./audience";
 
 /* The audiences send_broadcast fans out to. Both are checked in the function
@@ -60,8 +61,8 @@ export async function sendBroadcast(
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const t = title.trim();
-  const b = body.trim();
+  const t = asText(title).trim();
+  const b = asText(body).trim();
   if (!t || t.length > 120) return { error: "A title is one line, up to 120 characters." };
   if (!b || b.length > 2000) return { error: "The word is up to two thousand characters." };
   const picked = Array.from(new Set(channels ?? []));
@@ -120,8 +121,8 @@ export async function sendTestToSelf(
 ): Promise<ActionResult & { sent?: string[] }> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
-  const t = title.trim();
-  const b = body.trim();
+  const t = asText(title).trim();
+  const b = asText(body).trim();
   if (!t || t.length > 120) return { error: "A title is one line, up to 120 characters." };
   if (!b || b.length > 2000) return { error: "The word is up to two thousand characters." };
   const picked = channels.filter((c) => CHANNELS.includes(c));

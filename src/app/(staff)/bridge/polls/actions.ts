@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { CLUB_ZONE } from "@/lib/brand";
 import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* A poll is one question with two to six answers and a closing hour. Members
    vote once; the Bridge reads the tally at any time and, once it has closed,
@@ -38,7 +39,7 @@ export async function createPoll(question: string, options: string[], closesAtLo
   const { supabase, staffId } = await staffContext();
   if (!staffId) return { error: ERR_STAFF };
 
-  const q = question.trim();
+  const q = asText(question).trim();
   if (q.length < QUESTION_MIN || q.length > QUESTION_MAX)
     return { error: `A question runs ${QUESTION_MIN} to ${QUESTION_MAX} characters.` };
   const opts = (options ?? []).map((o) => String(o ?? "").trim()).filter(Boolean);

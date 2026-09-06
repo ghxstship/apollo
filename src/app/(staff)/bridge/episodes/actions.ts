@@ -5,6 +5,7 @@ import type { EpisodeSetting, MembershipTier, EpisodeStatus } from "@/lib/supaba
 import { EXPERIENCE_CLASS_IDS, type ExperienceClassId } from "@/lib/brand";
 import { wallClockInZone } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* The enums the board writes, restated so a value off the list is refused in
    words before the driver refuses it as a malformed enum (22P02) and the
@@ -104,7 +105,7 @@ export async function saveEpisodeOps(
   );
   const { error } = await supabase
     .from("episodes")
-    .update({ conditions: clean, muster: muster.trim().slice(0, MUSTER_MAX) || null })
+    .update({ conditions: clean, muster: asText(muster).trim().slice(0, MUSTER_MAX) || null })
     .eq("id", episodeId);
   if (error) return { error: ERR_LAND };
   return done();

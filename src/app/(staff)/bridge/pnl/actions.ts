@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
+import { asText } from "@/lib/arg";
 
 /* What a night cost, recorded by the person who knows.
 
@@ -54,7 +55,7 @@ export async function addExpense(
     episode_id: episodeId,
     kind,
     amount_cents: cents,
-    note: note.trim().slice(0, NOTE_MAX) || null,
+    note: asText(note).trim().slice(0, NOTE_MAX) || null,
     settled,
     created_by: staffId,
   });

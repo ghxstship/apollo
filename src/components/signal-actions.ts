@@ -7,6 +7,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { asText } from "@/lib/arg";
 
 export type SignalResult = { ok?: true; error?: string };
 
@@ -64,7 +65,7 @@ export async function savePushSubscription(sub: {
 }
 
 export async function removePushSubscription(endpoint: string): Promise<SignalResult> {
-  const target = typeof endpoint === "string" ? endpoint.trim().slice(0, MAX_ENDPOINT) : "";
+  const target = typeof endpoint === "string" ? asText(endpoint).trim().slice(0, MAX_ENDPOINT) : "";
   if (!target) return { ok: true };
 
   const supabase = await createClient();

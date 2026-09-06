@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { REFUSED_MESSAGE, voiceWith } from "@/lib/errors";
 import { moduleTables } from "@/lib/module-tables";
+import { asText } from "@/lib/arg";
 
 /* Radar — the pick, the lock, and the envelope.
 
@@ -85,7 +86,7 @@ export async function openTheLog(token: string): Promise<RadarResult> {
   const { supabase, db, user } = await me();
   if (!user) return { error: "Sign in first." };
 
-  const trimmed = token.trim();
+  const trimmed = asText(token).trim();
   /* Checked here so a mistyped code is answered by the form rather than by
      "invalid input syntax for type uuid", which names a Postgres type at a
      member who never chose one. */

@@ -5,6 +5,7 @@ import { CLUB_ZONE } from "@/lib/brand";
 import { logTime, price } from "@/lib/format";
 import { staffContext, ERR_STAFF, ERR_LAND, type ActionResult } from "../../staff";
 import { getStripe, stripeEnabled } from "@/lib/stripe";
+import { asText } from "@/lib/arg";
 
 function done(): ActionResult {
   revalidatePath("/bridge/orders");
@@ -55,7 +56,7 @@ export async function postLedgerEntry(
     profile_id: profileId,
     delta_cents: cents,
     kind,
-    memo: memo.trim() || null,
+    memo: asText(memo).trim() || null,
     created_by: staffId,
   });
   if (error) return { error: ERR_LAND };
@@ -113,7 +114,7 @@ export async function refundShopOrder(orderId: string): Promise<ActionResult> {
     profile_id: order.profile_id,
     delta_cents: refundCents,
     kind: "refund",
-    memo: `Shop order ${orderId.slice(0, 8).toUpperCase()} refunded`,
+    memo: `Shop order ${asText(orderId).slice(0, 8).toUpperCase()} refunded`,
     created_by: staffId,
   });
   if (ledgerError) return { error: ERR_LAND };
@@ -212,7 +213,7 @@ export async function refundToCard(
       payment_intent: intent,
       amount: amountCents,
       /* Read back in the Stripe dashboard by whoever asks why. */
-      metadata: { reason: reason.slice(0, 200), by: staffId },
+      metadata: { reason: asText(reason).slice(0, 200), by: staffId },
     });
   } catch {
     /* Never the provider's error text: it carries ids and card detail, and this

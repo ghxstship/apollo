@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { voiceWith } from "@/lib/errors";
+import { asText } from "@/lib/arg";
 
 export type ProducerHold = { episodeId: string; title: string; startsAt: string; zone: string };
 export type ProducerSailing = { id: string; title: string; startsAt: string; zone: string; berthsLeft: number };
@@ -179,7 +180,7 @@ export async function producerOpenShoreside(
   const { supabase, userId } = await member();
   if (!userId) return { error: "Sign in first." };
 
-  const body = question.trim();
+  const body = asText(question).trim();
   if (!body) return { error: "Say what you need first — Shoreside reads the question, not the hail." };
   if (body.length > 4000) return { error: "Keep it under 4,000 characters." };
 
