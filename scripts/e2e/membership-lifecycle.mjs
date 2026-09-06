@@ -176,8 +176,19 @@ export async function run(p, ctx) {
     }
 
     /* A spent code: minted by the Bridge persona with a single use and spent
-       by welcoming a fixture applicant aboard. The suite's sweep strikes it
-       at the start of the next run, so it is minted fresh each time. */
+       by welcoming a fixture applicant aboard.
+
+       The row is struck in this module's own cleanup, not left to the suite's
+       UN-E2E* sweep. It matters because minting is no longer free: since
+       a_member_brings_one_good_one_a_season (2026-09-06) every insert into
+       invites — the retained policy's path included — passes
+       guard_the_invite_allowance, which counts the Bridge persona's rows in
+       the current season and refuses the one past its league's cap. Leaving
+       the row behind spends that allowance, and the module then only passes
+       because something ELSE deletes it first. Retiring the code would not do:
+       retired_at frees the one-live index and the season count reads
+       created_at, so nothing short of striking the row gives the allowance
+       back. The sweep still runs and is welcome to find nothing. */
     const SPENT = "UN-E2EE-0001";
     let spent = (await stf.get(`invites?code=eq.${SPENT}&select=code,uses,max_uses`)).data?.[0] ?? null;
     if (!spent) {
@@ -191,10 +202,10 @@ export async function run(p, ctx) {
     }
     if (spent && spent.uses < spent.max_uses) {
       const addrS = `e2e-anon-lc-spend-${stamp}@fixtures.invalid`;
-      /* The sweep strikes UN-E2E* codes at the start of every run since
-         2026-09-05 (they read on the Referrals screen), so this path runs every
-         run rather than once — and an application carries the committee's
-         required answer or the table refuses it. */
+      /* The code is struck in this module's cleanup, so it is minted unspent
+         on every run and this path runs every run rather than once — and an
+         application carries the committee's required answer or the table
+         refuses it. */
       const applied = await anon.rpc("apply_with_invite", { p_full_name: "E2E Spender", p_email: addrS, p_city: "Miami", p_note: "", p_code: SPENT, p_answers: requiredKey ? { [requiredKey]: "A spent code." } : {} });
       const appId = typeof applied.data === "string" ? applied.data : null;
       const welcomed = appId ? await stf.rpc("accept_application", { p_id: appId }) : { status: 0 };
@@ -580,6 +591,12 @@ export async function run(p, ctx) {
     if (allowanceBefore !== null) await stf.patch("club_settings?key=eq.pause_days_a_year", { value_int: allowanceBefore });
     await stf.del("applications?email=like.e2e-anon-lc-*");
     await stf.del("member_roll?email=like.e2e-anon-lc-*");
+    /* The three fixture codes this module mints in the Bridge persona's name.
+       Struck here rather than left to the suite's sweep: an invite row counts
+       against its inviter's season allowance the moment it exists, so a module
+       that leaves one behind has quietly spent a persona's allowance and only
+       runs twice because a sweep elsewhere happens to clear it. */
+    await stf.del("invites?code=like.UN-E2EE*");
     for (const t of ["Your membership is paused.", "Your membership is running again.", "Dues did not clear.", "Membership held — dues lapsed."]) {
       await stf.del(`notifications?profile_id=eq.${me}&title=eq.${enc(t)}&created_at=gt.${enc(startedAt)}`);
     }

@@ -150,6 +150,15 @@ export type AppErrorRow = {
   id: number; at: string; deployment: string | null; name: string | null; message: string
   digest: string | null; method: string | null; path: string | null; route: string | null; kind: string | null
 }
+/* One Word the alarm sent, keyed on the identity of what was failing —
+   20260906150000. `first_at` and `window_end` bracket everything that one Word
+   covers, so a panel can mark a failure as told without knowing the dial. */
+export type FailureNoticeRow = {
+  source: "scheduler" | "application"; subject: string
+  window_start: string; window_end: string
+  failures: number; first_at: string; last_at: string
+  detail: string | null; told_to: number; told_at: string
+}
 export type EpisodeDaybedRow = {
   id: string; episode_id: string; rsvp_id: string; profile_id: string; created_at: string
 }
@@ -627,6 +636,8 @@ export type Database = {
       audit_log: Table<AuditLogRow, Ins<AuditLogRow, "table_name" | "action">>
       charter_requests: Table<CharterRequestRow, Ins<CharterRequestRow, "profile_id">>
       app_errors: Table<AppErrorRow, Ins<AppErrorRow, "message">>
+      /* Written by raise_the_alarm() alone; staff read it. */
+      failure_notices: Table<FailureNoticeRow, Ins<FailureNoticeRow, "source" | "subject" | "window_start" | "window_end" | "failures" | "first_at" | "last_at">>
       passes: Table<PassRow, Ins<PassRow, "episode_id" | "profile_id">>
       cabins: Table<CabinRow, Ins<CabinRow, "vessel_id" | "name">>
       episode_cuts: Table<EpisodeCutRow, Ins<EpisodeCutRow, "number" | "slug" | "title">>
@@ -1097,6 +1108,12 @@ export type Database = {
       notice_count: {
         Args: { p_kind: string }
         Returns: number
+      }
+      /* The scheduler's own failed runs. Read by the Bridge since the alarm
+         landed; it had been unread by any screen since it was written. */
+      cron_failures: {
+        Args: { p_limit?: number }
+        Returns: Array<{ jobname: string; status: string; return_message: string | null; start_time: string; end_time: string | null }>
       }
       place_galley_order: {
         Args: {

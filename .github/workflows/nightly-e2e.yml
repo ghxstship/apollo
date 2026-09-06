@@ -5,6 +5,34 @@ name: Nightly e2e
 # back. Nightly, against the live database with the fixture personas, twice in
 # a row — the second run proves the first left the fixtures as it found them.
 #
+# Two other harnesses ran only when a person typed the command, and they are
+# the two that found the most: scripts/stress/concurrency.mjs found four races,
+# one of which billed dues twice, and scripts/stress/adversarial.mjs found a
+# crash class across fifty call sites. Both run here now.
+#
+#   concurrency — its own job. It replays the migration corpus into an isolated
+#   local database on its own ports and fires N sessions at one row, so it
+#   shares nothing with the suite and can run alongside it. It needs Docker
+#   (preinstalled on the GitHub-hosted ubuntu runner) and the Supabase CLI
+#   (not preinstalled — supabase/setup-cli puts it on PATH).
+#
+#   adversarial — a step in THIS job, after both e2e passes, deliberately not a
+#   parallel job. The two suites sign in as the same three personas and write
+#   to the same live database, and their sweeps overlap in both directions:
+#   the e2e sweep deletes `open_deck_posts?body=like.E2E*`, which matches every
+#   post the adversarial run namespaces `E2E-<run>`, and the adversarial sweep
+#   deletes every `open_deck_flags` row raised by the regional and national
+#   personas, which the e2e suite has live mid-run. In parallel each would
+#   delete the other's rows under it and both would fail for reasons that are
+#   nowhere in their own code. In sequence, on the same server, neither can.
+#
+#   Both of the existing e2e steps piped their harness through `tee | grep |
+#   tail`, and the default shell on a GitHub runner is `bash -e`, without
+#   pipefail: the exit status of that pipeline is `tail`'s, which is always
+#   zero. A failing suite could not turn the nightly red. Every piped step
+#   below now sets pipefail itself, and a `grep` that legitimately matches
+#   nothing is not allowed to count as the failure.
+#
 # Secrets required: E2E_PASSWORD (the fixture personas' password). The
 # publishable Supabase values are safe in the open and default below.
 # Optional: SUPABASE_SERVICE_ROLE_KEY lets the run post its failures to
@@ -51,18 +79,83 @@ jobs:
         run: BASE_URL=http://localhost:3100 node scripts/audit-routes.mjs
       - name: e2e — first pass
         id: first
-        run: BASE_URL=http://localhost:3100 node scripts/e2e-suite.mjs 2>&1 | tee e2e-1.log | grep -v "^  ✓" | tail -80
+        run: |
+          set -o pipefail
+          BASE_URL=http://localhost:3100 node scripts/e2e-suite.mjs 2>&1 \
+            | tee e2e-1.log | { grep -v "^  ✓" || true; } | tail -80
       - name: e2e — second pass
-        run: BASE_URL=http://localhost:3100 node scripts/e2e-suite.mjs 2>&1 | tee e2e-2.log | grep -v "^  ✓" | tail -80
+        run: |
+          set -o pipefail
+          BASE_URL=http://localhost:3100 node scripts/e2e-suite.mjs 2>&1 \
+            | tee e2e-2.log | { grep -v "^  ✓" || true; } | tail -80
+      # After the e2e passes, never beside them — see the note at the top. The
+      # BASE_URL is this job's own server on 3100, not a deployed origin: the
+      # harness POSTs deliberately malformed bodies at every route handler and
+      # server action it can find, and that belongs on a server nobody is
+      # using. It reads the action ids out of .next/static/chunks, so the
+      # build above is what it probes. It sweeps its own rows before, after,
+      # and in a finally; every finding names its group and its probe.
+      - name: Adversarial input harness
+        run: |
+          set -o pipefail
+          BASE_URL=http://localhost:3100 node scripts/stress/adversarial.mjs 2>&1 \
+            | tee adversarial.log | tail -60
       - name: Post failures to the Bridge
         if: failure() && env.SERVICE_ROLE != ''
         env:
           SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          FAILS=$(grep -h "^  ✕" e2e-1.log e2e-2.log 2>/dev/null | head -40 | sed 's/"/\\"/g' | tr '\n' ' ' | cut -c1-3000)
+          FAILS=$(grep -h "^  ✕" e2e-1.log e2e-2.log adversarial.log 2>/dev/null | head -40 | sed 's/"/\\"/g' | tr '\n' ' ' | cut -c1-3000 || true)
           curl -s -X POST "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/app_errors" \
             -H "apikey: $SERVICE_ROLE" -H "Authorization: Bearer $SERVICE_ROLE" -H "Content-Type: application/json" \
             -d "{\"name\":\"nightly-e2e\",\"message\":\"$FAILS\",\"kind\":\"nightly-e2e\",\"path\":\"github-actions\",\"route\":\"nightly\",\"method\":\"CRON\"}"
       - name: Server log on failure
         if: failure()
         run: tail -80 server.log || true
+
+  # Its own job, and safe to run beside the suite: this harness never touches
+  # the live project. isolated-db.mjs replays the migration corpus into a
+  # throwaway Supabase stack on its own ports (55420-55422) and tears it down
+  # in a finally, so there are no shared fixtures to collide over.
+  concurrency-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      # Docker ships on the GitHub-hosted ubuntu runner and the runner user is
+      # already in the docker group; the Supabase CLI does not, so it is
+      # installed here. isolated-db.mjs checks for both and exits 2 with a
+      # sentence if either is missing — this step says the same thing earlier,
+      # where the log is easier to read.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Docker and the Supabase CLI are both here
+        run: |
+          docker info > /dev/null 2>&1 || {
+            echo "::error::the Docker daemon is not running — the isolated database cannot be built, and a skipped race harness is not a passing one."
+            exit 1
+          }
+          echo "docker    $(docker --version)"
+          echo "supabase  $(supabase --version)"
+      # Every case names the invariant it is holding and, when one breaks, what
+      # broke it — the run ends with a BROKE: list, not a stack.
+      - name: Concurrency harness
+        run: |
+          set -o pipefail
+          node scripts/stress/concurrency.mjs 2>&1 | tee concurrency.log | tail -60
+      - name: Post failures to the Bridge
+        if: failure() && env.SERVICE_ROLE != ''
+        env:
+          SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          FAILS=$(grep -h "^  ✕" concurrency.log 2>/dev/null | head -40 | sed 's/"/\\"/g' | tr '\n' ' ' | cut -c1-3000 || true)
+          curl -s -X POST "$NEXT_PUBLIC_SUPABASE_URL/rest/v1/app_errors" \
+            -H "apikey: $SERVICE_ROLE" -H "Authorization: Bearer $SERVICE_ROLE" -H "Content-Type: application/json" \
+            -d "{\"name\":\"nightly-concurrency\",\"message\":\"$FAILS\",\"kind\":\"nightly-concurrency\",\"path\":\"github-actions\",\"route\":\"nightly\",\"method\":\"CRON\"}"

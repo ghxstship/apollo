@@ -17,6 +17,7 @@
     "routes:manifest:check": "node scripts/audit-routes.mjs --manifest-only",
     "e2e": "node scripts/e2e-suite.mjs",
     "fixtures:reset": "node scripts/reset-fixtures.mjs",
+    "fixtures:sweep": "node scripts/sweep-fixtures.mjs",
     "sms:register": "node scripts/register-sms-templates.mjs",
     "migrations:mirror": "node scripts/mirror-migrations.mjs",
     "migrations:replay": "node scripts/replay-migrations.mjs",

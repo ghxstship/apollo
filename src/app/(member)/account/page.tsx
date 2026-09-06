@@ -51,6 +51,30 @@ const STATUS_LABEL: Record<string, string> = {
   incomplete: "Not yet started",
 };
 
+/* 'unknown' is the club's word for an invoice status Stripe has not been read
+   for yet — the webhook stores it so the invoice still reaches this page, and
+   writes the real word to app_errors for somebody to decide about. That word is
+   written for an engineer, and this table is read by a member: UNKNOWN on a
+   receipt reads as the club having lost track of their money. Pending is true
+   while nobody has decided — the invoice exists, its outcome is not settled
+   here — and it is calm. The stored value is untouched; only the label moves. */
+/* What a member reads on their own receipt.
+   The stored value is the processor's word, because that is the truth the
+   Bridge and the errors panel need. What a member needs is a word about their
+   own account, and four of the processor's five are written for a ledger
+   rather than a person — "uncollectible" in particular is a thing said about a
+   debt, not to the person who owes it. Anything unmapped falls through to the
+   stored word, so a status nobody has thought about still shows something
+   true rather than nothing. */
+const INVOICE_STATUS_LABEL: Record<string, string> = {
+  draft: "Not yet issued",
+  open: "Due",
+  paid: "Paid",
+  void: "Cancelled",
+  uncollectible: "Written off",
+  unknown: "Pending",
+};
+
 function money(cents: number): string {
   return `$${(Math.abs(cents) / 100).toFixed(2)}`;
 }
@@ -306,7 +330,8 @@ export default async function AccountPage({
                   label: "Status",
                   mono: true,
                   width: 100,
-                  render: (r) => r.status.toUpperCase(),
+                  render: (r) =>
+                    (INVOICE_STATUS_LABEL[r.status] ?? r.status).toUpperCase(),
                 },
                 {
                   key: "hosted_url",

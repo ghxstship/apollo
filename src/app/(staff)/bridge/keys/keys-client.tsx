@@ -62,8 +62,8 @@ export function KeysClient({
   /** club_settings.api_key_stale_days — how old a key with no end may be
       before the console says so. Nothing is revoked by it; the flag is the
       whole control, because the keys that predate the date column are held by
-      integrations nobody has inventoried and an overnight cut-off would be a
-      self-inflicted incident. */
+      integrations nobody has inventoried and a cut-off with no notice would be
+      a self-inflicted incident. */
   staleDays: number;
 }) {
   const [pending, startTransition] = React.useTransition();

@@ -110,6 +110,20 @@ function schedulerTone(r: SchedulerRow): SchedulerTone {
   return { tone: "positive", label: String(code), danger: false };
 }
 
+/* One failed run as cron_failures() hands it back. `status` is pg_cron's own
+   word: 'failed' is the one that matters, and 'running' or 'starting' is a run
+   still in flight rather than a dead one — which is why the alarm counts only
+   'failed' and this pane shows both. */
+type CronFailureRow = {
+  id: string;
+  started: string;
+  jobname: string;
+  status: string;
+  said: string;
+  told: string;
+  [key: string]: unknown;
+};
+
 /* The body is JSON from the drain; the first line of it is the excerpt. */
 function excerpt(body: string | null, max = 140): string {
   if (!body) return "—";
@@ -171,6 +185,8 @@ export default async function ReportsPage() {
     passChangesRes,
     errorsRes,
     schedulerRes,
+    cronFailRes,
+    toldRes,
     cohortsRes,
     funnelRes,
     valueRes,
@@ -288,6 +304,20 @@ export default async function ReportsPage() {
     /* The last fifty answers the drains gave pg_net. A quiet 200 is the norm;
        207 and 503 are the two the drains use to say something is wrong. */
     supabase.rpc("scheduler_health", { p_limit: 50 }),
+    /* The scheduler's OWN failures. cron_failures() has read them out of
+       cron.job_run_details since 2026-09-04 and no screen has ever called it,
+       which is how a dead run stayed a thing only a person looking for it
+       could find. */
+    supabase.rpc("cron_failures", { p_limit: 50 }),
+    /* And whether anybody was told. raise_the_alarm() writes one row per
+       distinct failure per window; the two panes below read it to answer the
+       question a panel on its own cannot — did this reach a person, or is this
+       screen still the only place it exists? */
+    supabase
+      .from("failure_notices")
+      .select("*")
+      .order("told_at", { ascending: false })
+      .limit(200),
     /* Three views added 2026-09-04. Cohorts by the month joined; the
        application funnel by stage; and what each member has paid, from which
        the dues-per-member figures below are read. */
@@ -479,6 +509,40 @@ export default async function ReportsPage() {
     []
   );
 
+  type CronFailure = { jobname: string; status: string; return_message: string | null; start_time: string; end_time: string | null };
+  const cronFailures = mustValue<CronFailure[]>(
+    cronFailRes as { data: CronFailure[] | null; error?: { message?: string } | null },
+    []
+  );
+  const notices = must(toldRes);
+
+  /* Did anybody hear about this one? raise_the_alarm() writes one row per
+     distinct failure per window, and each row carries the span it covers —
+     from the first failure it counted through to the end of its quiet window.
+     So this reads "was a Word sent that covers this failure", and it does it
+     without the page having to know what the dials are set to.
+
+     The subject is composed exactly as the alarm composes it. Change one and
+     change the other: they are two halves of the same key. */
+  const appSubject = (route: string | null, path: string | null, name: string | null, kind: string | null): string =>
+    `${(route ?? "").trim() || (path ?? "").trim() || "an unnamed route"} · ${(name ?? "").trim() || (kind ?? "").trim() || "Error"}`;
+
+  const toldAbout = (source: "scheduler" | "application", subject: string, at: string): string => {
+    const when = Date.parse(at);
+    const hit = notices.find(
+      (n) =>
+        n.source === source &&
+        n.subject === subject &&
+        when >= Date.parse(n.first_at) &&
+        when < Date.parse(n.window_end)
+    );
+    if (!hit) return "—";
+    /* A Word that reached nobody is not the same answer as one that reached
+       the Bridge, and an operator reading this pane should not have to guess
+       which they are looking at. */
+    return hit.told_to === 0 ? "Rang, nobody on watch" : logDateTime(hit.told_at, CLUB_ZONE);
+  };
+
   const errorRows: ErrorRow[] = appErrors.map((e) => ({
     id: String(e.id),
     at: logDateTime(e.at, CLUB_ZONE),
@@ -486,7 +550,18 @@ export default async function ReportsPage() {
     name: e.name ?? (e.kind ?? "Error"),
     message: e.message,
     digest: e.digest ?? "—",
+    told: toldAbout("application", appSubject(e.route, e.path, e.name, e.kind), e.at),
   }));
+
+  const cronFailureRows: CronFailureRow[] = cronFailures.map((r) => ({
+    id: `${r.jobname}:${r.start_time}`,
+    started: logDateTime(r.start_time, CLUB_ZONE),
+    jobname: r.jobname,
+    status: r.status,
+    said: excerpt(r.return_message),
+    told: r.status === "failed" ? toldAbout("scheduler", r.jobname, r.start_time) : "—",
+  }));
+  const cronToldCount = cronFailureRows.filter((r) => r.told !== "—").length;
 
   const schedulerRows: SchedulerRow[] = scheduler.map((r) => ({
     id: String(r.id),
@@ -1038,6 +1113,13 @@ export default async function ReportsPage() {
           what it said. The digest is the code Next prints on the member&apos;s screen,
           so a member quoting one can be matched to the line here.
         </p>
+        <p className="hm-note">
+          Told is when a Word went out about that failure. The alarm sends one per distinct
+          failure per window and not one per row, so a route failing all afternoon wakes the
+          Bridge once with the count in it. A dash means the same failure has not repeated
+          often enough to be worth waking anybody for, and this screen is the only place
+          it exists.
+        </p>
         <div className="hm-panel">
           <Table
             rowKey={(r: ErrorRow) => r.id}
@@ -1047,6 +1129,7 @@ export default async function ReportsPage() {
               { key: "name", label: "Name", width: 140 },
               { key: "message", label: "Message" },
               { key: "digest", label: "Digest", mono: true, width: 120 },
+              { key: "told", label: "Told", mono: true, width: 150 },
             ]}
             rows={errorRows}
           />
@@ -1099,6 +1182,49 @@ export default async function ReportsPage() {
           {schedulerRows.length === 0 ? (
             <p className="ls-empty">
               The scheduler has not answered yet.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>Failed runs.</h2>
+        <p className="hm-note">
+          The pane above is what the drains answered over HTTP. This is the scheduler failing
+          at its own work — the jobs that draw instalments, carry the clock, walk the dues
+          ladder and sweep the queues. A run still in flight reads as running and is not a
+          failure.
+          {cronFailureRows.length > 0
+            ? ` The last ${cronFailureRows.length}, of which ${cronToldCount} reached a person.`
+            : ""}
+        </p>
+        <p className="hm-note">
+          Told is when the Word went out. The alarm counts failed runs of one job inside an
+          hour and wakes the whole Bridge once per window with the count in it, rather than
+          once every five minutes for as long as the job stays down.
+        </p>
+        <div className="hm-panel">
+          <Table
+            rowKey={(r: CronFailureRow) => r.id}
+            columns={[
+              { key: "started", label: "When", mono: true, width: 140 },
+              { key: "jobname", label: "Job", mono: true, width: 200 },
+              {
+                key: "status",
+                label: "How it ended",
+                width: 140,
+                render: (r: CronFailureRow) => (
+                  <Badge tone={r.status === "failed" ? "danger" : "caution"}>{r.status}</Badge>
+                ),
+              },
+              { key: "said", label: "What it said", mono: true },
+              { key: "told", label: "Told", mono: true, width: 150 },
+            ]}
+            rows={cronFailureRows}
+          />
+          {cronFailureRows.length === 0 ? (
+            <p className="ls-empty">
+              No scheduled job has failed a run.
             </p>
           ) : null}
         </div>

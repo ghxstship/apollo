@@ -599,7 +599,7 @@ async function YouBody() {
           <div className="you-row">
             <div>
               <b>Sign out</b>
-              <p>This device only.</p>
+              <p>Every device you are signed in on, not just this one.</p>
             </div>
             <SignOutForm>
               <Button type="submit" variant="outline" size="sm">

@@ -35,16 +35,42 @@ export type RegistrationOutcome = "created" | "exists" | "notOpen" | "error" | "
    Six, by the owner's ruling of 2026-09-06, for a real number of two or three:
    phone, watch, iPad, a second phone mid-upgrade, and headroom for a device
    that reinstalls under a new identifier without ever sending the DELETE.
-   Counted rather than stored, so nothing about this needs a column, and
-   enforced again under a lock by the cap_wallet_registrations trigger — change
-   one and change the other.
+   Counted rather than stored, so nothing about this needs a column.
+
+   THE NUMBER IS NOT HERE. It was, and it was also written into
+   cap_wallet_registrations as `cap int := 6` — two literals in two languages
+   with a comment in each telling the reader to change the other, which is the
+   arrangement that has never once survived a change. It now lives in
+   club_settings under wallet_devices_per_pass, the club's idiom for a figure
+   two places need, and the trigger and this function each read it. Turning the
+   dial moves both without a deploy.
+
+   The constant below is the fallback and nothing more: what to allow when the
+   RPC cannot answer — the settings row struck, the function unreachable, an
+   older database replayed. Six, the same figure the trigger falls back to, so
+   a missing setting cannot make the two disagree. The trigger is the authority
+   either way; it counts under an advisory lock, which this cannot.
 
    The other half is the sweep: a registration unheard from for
    wallet_registration_stale_days (180) is deleted by the nightly retention
    run, so the ceiling is not slowly filled by phones that were traded in
    without ever sending their DELETE. A device that comes back registers
    again. */
-const MAX_DEVICES_PER_PASS = 6;
+const DEVICES_PER_PASS_FALLBACK = 6;
+
+/* How stale a registration's last_seen_at must be before a poll rewrites it.
+   See serialsForDevice() for why an hour, and why it must stay well under
+   wallet_registration_stale_days. */
+const STAMP_EVERY_MS = 60 * 60 * 1000;
+
+/* The dial, read once per registration. Read here rather than memoised for the
+   life of the process: a device registers once, so this is a round trip on the
+   rarest path the service has, and a cached ceiling would go on refusing a
+   member for as long as an instance lived after the Bridge raised it. */
+async function devicesPerPass(admin: Client): Promise<number> {
+  const { data } = await admin.rpc("club_setting", { p_key: "wallet_devices_per_pass" });
+  return typeof data === "number" && data > 0 ? data : DEVICES_PER_PASS_FALLBACK;
+}
 
 export async function registerDevice(
   admin: Client,
@@ -75,9 +101,18 @@ export async function registerDevice(
     .eq("pass_type", row.pass_type)
     .eq("serial", row.serial);
   if (countError) return ledgerNotOpen(countError) ? "notOpen" : "error";
-  if ((count ?? 0) >= MAX_DEVICES_PER_PASS) return "tooManyDevices";
+  if ((count ?? 0) >= (await devicesPerPass(admin))) return "tooManyDevices";
 
   const { error } = await db.insert(row);
+  /* 53400 is cap_wallet_registrations refusing, which is the same refusal the
+     count above makes and the only one that is authoritative: it counts under
+     an advisory lock, so two devices registering in the same instant meet it
+     and not the read. Mapped rather than left to fall through, because a
+     ceiling reached is a sentence the phone can show and DID_NOT_LAND is not.
+     Reached only in a race, or if the count and the trigger ever read
+     different numbers — which is now the same setting twice, so they should
+     not, and this is what happens if they do. */
+  if (error?.code === "53400") return "tooManyDevices";
   if (error) return ledgerNotOpen(error) ? "notOpen" : "error";
   return "created";
 }
@@ -119,12 +154,27 @@ export async function serialsForDevice(
      Authorization header, so nothing else on the service hears from a phone
      that is merely holding a pass. Stamped best effort — a failed stamp makes
      a row look staler than it is, which the sweep would eventually act on, but
-     failing the phone's poll over it would be worse. */
+     failing the phone's poll over it would be worse.
+
+     Only when the row has gone quiet for an hour. This was an unconditional
+     UPDATE, so every poll from every device rewrote its rows — a dead tuple,
+     a WAL record and an index entry on wallet_registrations_last_seen apiece,
+     for a column nothing reads at a finer grain than days. The predicate is on
+     the server, so a fresh row costs a matched-nothing UPDATE rather than a
+     write, and the round trip is the same one either way.
+
+     The interval has to stay far below the staleness the sweep acts on
+     (wallet_registration_stale_days, 180) or the throttle would start deciding
+     which phones look abandoned. An hour is four orders of magnitude under it:
+     a device that is polling at all lands inside the window every time, and a
+     device that has stopped is stale on the same day it always was. */
+  const stampWhenOlderThan = new Date(Date.now() - STAMP_EVERY_MS).toISOString();
   await moduleTables(admin)
     .from("wallet_registrations")
     .update({ last_seen_at: new Date().toISOString() })
     .eq("device_id", deviceId)
-    .eq("pass_type", passType);
+    .eq("pass_type", passType)
+    .lt("last_seen_at", stampWhenOlderThan);
 
   let q = moduleTables(admin)
     .from("wallet_tokens")

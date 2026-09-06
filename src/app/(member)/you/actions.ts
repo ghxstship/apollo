@@ -199,6 +199,15 @@ export async function departClub(): Promise<StatusResult> {
   }
 
   const supabase = await createClient();
+  /* No scope argument, which in supabase-js is the GLOBAL scope: every session
+     this member holds, on every device, is revoked. That is deliberate and it
+     is what the page now says. It read "This device only" until 2026-09-06,
+     which was the exact opposite of what ran — and the direction of the error
+     mattered, because a member signing out of a borrowed laptop was told the
+     phone in their pocket was still signed in when it was not, and a member
+     who had lost a device was given no control that would have helped. The
+     club has no session list, so this is the only revoke there is; making it
+     narrow to match the old sentence would have taken that away. */
   await supabase.auth.signOut();
   redirect("/");
 }
