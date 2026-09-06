@@ -96,6 +96,17 @@ export default async function OpenDeckPage() {
     return path ? (signedFrames.get(path) ?? null) : null;
   };
 
+  /* Which of these posts were written by someone who actually holds a pass on
+     the episode they attached. Server-side truth: RLS on `passes` shows a
+     member their own rows and nobody else's, so the page cannot work this out
+     for itself and a client guess would be wrong for every post but your own.
+     posts_aboard is a definer, and it answers only about the posts already on
+     this page. */
+  const aboardRes = postEpisodeIds.length
+    ? await supabase.rpc("posts_aboard", { p_posts: postIds })
+    : { data: [] as string[] };
+  const aboardPosts = new Set(aboardRes.data ?? []);
+
   const hails = hailsRes.data ?? [];
   const comments = commentsRes.data ?? [];
   const episodeTitles = new Map((episodesRes.data ?? []).map((v) => [v.id, v.title]));
@@ -152,6 +163,7 @@ export default async function OpenDeckPage() {
       body: p.body,
       episodeId: p.episode_id,
       voyageTitle: p.episode_id ? episodeTitles.get(p.episode_id) ?? null : null,
+      aboard: aboardPosts.has(p.id),
       frame: frameOf(p.episode_id),
       hails: postHails.length,
       myHail: postHails.some((h) => h.profile_id === user.id),

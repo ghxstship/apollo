@@ -36,6 +36,7 @@ import { SignOutForm } from "@/components/sign-out-form";
 import { PasswordControl, TwoStepControl } from "./security";
 import { InstallPrompt } from "@/components/member/install-prompt";
 import { AgreementLists, latestStanding, type StandingRow } from "@/components/member/agreement-rows";
+import { InviteExpiry, InviteStanding, type InviteAllowance } from "@/components/member/invite-allowance";
 import { RaiseAGathering, type ProposalCard } from "@/components/member/raise-a-gathering";
 import { moduleTables } from "@/lib/module-tables";
 import "../membership/standing/standing.css";
@@ -109,6 +110,7 @@ async function YouBody() {
     { data: rewards },
     { data: league },
     { data: invite },
+    { data: allowanceRows },
   ] = await Promise.all([
     supabase.from("cities").select("*").order("position", { ascending: true }),
     supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
@@ -153,13 +155,25 @@ async function YouBody() {
       .limit(20),
     supabase.from("rewards").select("*").eq("active", true).order("position", { ascending: true }),
     supabase.from("member_league").select("*").eq("profile_id", user.id).maybeSingle(),
+    /* The live one, if there is a live one. A retired code — one a
+       replacement was minted over — is history and must not be the code this
+       page hands a member to pass on. Whether the row is still good is
+       settled below against its own expiry, which PostgREST cannot compare to
+       a second column for us. */
     supabase
       .from("invites")
       .select("*")
       .eq("inviter_id", user.id)
+      .is("retired_at", null)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
+    /* Whether the mint is open to this member, and if not, what to tell them.
+       The page used to offer Mint only when the invite read came back empty,
+       which meant a member whose code had been signed saw a spent code and no
+       path at all — the whole of the 2026-09-06 decision is that this section
+       always says where a member stands. */
+    supabase.rpc("invite_allowance", { p_profile: user.id }),
   ]);
 
   /* Aboard passes on episodes still ahead: the ones set_own_standing('departed')
@@ -247,6 +261,26 @@ async function YouBody() {
     date: logDate(r.created_at, zone),
   }));
   const leagueName = league?.league_name ?? LEAGUES[0].name;
+
+  /* The invite. A row is only the member's LIVE code when it still has a
+     signature left in it and has not run out its ninety days; anything else is
+     a record of a code that has been and gone, and the section below shows the
+     allowance instead of a code nobody can use. */
+  const allowanceRow = Array.isArray(allowanceRows) ? allowanceRows[0] ?? null : null;
+  const allowance: InviteAllowance = {
+    seasonTitle: allowanceRow?.season_title ?? null,
+    seasonEndsOn: allowanceRow?.season_ends_on ?? null,
+    league: allowanceRow?.league ?? 1,
+    cap: allowanceRow?.cap ?? 1,
+    minted: allowanceRow?.minted ?? 0,
+    liveCode: allowanceRow?.live_code ?? null,
+    liveExpiresAt: allowanceRow?.live_expires_at ?? null,
+    mayMint: allowanceRow?.may_mint ?? false,
+  };
+  const liveInvite =
+    invite && invite.uses < invite.max_uses && Date.parse(invite.expires_at) > Date.parse(nowIso)
+      ? invite
+      : null;
 
   return (
     <>
@@ -441,20 +475,27 @@ async function YouBody() {
           <p className="ls-lede mbr-sub--sm">
             Good for one night ashore as your guest. The rest is on them.
           </p>
-          {invite ? (
+          {liveInvite ? (
             <>
               <div className="mbr-sub">
-                <CopyCode code={invite.code} />
+                <CopyCode code={liveInvite.code} />
               </div>
               <p className="mbr-mono mbr-sub--sm">
-                {invite.uses} OF {invite.max_uses} SIGNATURES OUT
+                {liveInvite.uses} OF {liveInvite.max_uses} SIGNATURES OUT
               </p>
+              <div className="mbr-sub">
+                <InviteExpiry label={logDateYear(liveInvite.expires_at, zone)} />
+              </div>
             </>
-          ) : (
+          ) : allowance.mayMint ? (
             <div className="mbr-sub">
               <MintInvite />
             </div>
-          )}
+          ) : null}
+          {/* Why not, and when instead. Rendered under the code as well as in
+              place of the button: a member holding a live one still needs to
+              know that a replacement waits on this one being signed. */}
+          <InviteStanding allowance={allowance} standing={status} />
         </div>
       </section>
 

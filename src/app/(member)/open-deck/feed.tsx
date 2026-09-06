@@ -25,6 +25,11 @@ export type FeedPost = {
   body: string;
   episodeId: string | null;
   voyageTitle: string | null;
+  /* The author holds a pass on the episode they attached. Decided by the club
+     (posts_aboard), never by the browser: attaching an episode stays open to
+     anybody, and this is what keeps the attachment honest without forbidding
+     it. */
+  aboard: boolean;
   /* One approved frame from the attached episode, as a signed URL — or null,
      in which case the card has no media slot at all. */
   frame: string | null;
@@ -278,6 +283,7 @@ function FeedEntry({ post }: { post: FeedPost }) {
       tone={post.tone}
       timestamp={post.meta}
       sailing={post.voyageTitle ?? undefined}
+      aboard={post.aboard}
       media={post.frame}
       mediaAlt={post.voyageTitle ? `A frame from ${post.voyageTitle}` : ""}
       body={post.body}

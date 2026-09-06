@@ -19,6 +19,12 @@ export interface PostCardProps {
   tone?: Tone;
   body?: React.ReactNode;
   sailing?: string;
+  /* The author holds a pass on the episode named in `sailing`. Attaching an
+     episode is open to anybody — that permission is deliberate — so the card
+     needs a way to say which attachments come from someone who will be there.
+     A caller must have this from the SERVER: a member can read only their own
+     passes, so a browser-side guess is wrong for every post but your own. */
+  aboard?: boolean;
   timestamp?: string;
   /* A real frame, or nothing. This used to be a boolean that drew a night
      gradient stamped IMAGERY TK — a placeholder from the design handoff that
@@ -38,6 +44,7 @@ export function PostCard({
   tone = "ink",
   body,
   sailing,
+  aboard = false,
   timestamp,
   media = null,
   mediaAlt = "",
@@ -72,6 +79,10 @@ export function PostCard({
             per-post qualifier — and at 2.1:1 on paper, unreadable. It is the
             neutral status face of the badge the whole app already uses. */}
         {sailing ? <Badge tone="outline">{sailing}</Badge> : null}
+        {/* Beside the episode it qualifies and never on its own: the marker
+            means "aboard THAT one", and a positive badge floating next to a
+            byline would read as a fact about the member. */}
+        {sailing && aboard ? <Badge tone="positive">Aboard</Badge> : null}
         <span style={{ marginLeft: "auto", font: `400 var(--text-2xs)/1 ${MONO}`, color: "var(--text-faint)", whiteSpace: "nowrap" }}>
           {timestamp}
         </span>
