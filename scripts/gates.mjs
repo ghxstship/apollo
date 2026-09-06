@@ -47,6 +47,9 @@ const FAST = [
      work — but "did it go backwards", which is the only question a gate can
      usefully ask in the middle of a project that long. */
   ["localization", "node", ["scripts/audit-i18n.mjs"]],
+  /* Nothing looked for a committed credential until 2026-09-06, and the same
+     day's hardening moved a real one out of a scheduled job's own text. */
+  ["secrets", "node", ["scripts/audit-secrets.mjs"]],
   ["advisories", "npm", ["audit", "--audit-level=high"]],
 ];
 

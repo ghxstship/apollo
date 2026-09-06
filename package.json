@@ -24,6 +24,7 @@
     "check:ds": "node scripts/audit-design-system.mjs",
     "check:policies": "node scripts/audit-policies.mjs",
     "check:i18n": "node scripts/audit-i18n.mjs",
+    "check:secrets": "node scripts/audit-secrets.mjs",
     "documents:snapshot": "node scripts/snapshot-documents.mjs",
     "check:bundle": "node scripts/audit-bundle.mjs",
     "icons:gen": "node scripts/gen-icon-set.mjs",
