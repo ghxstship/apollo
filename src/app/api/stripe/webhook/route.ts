@@ -36,6 +36,11 @@ const STATUS: Record<Stripe.Subscription.Status, SubscriptionStatus> = {
 /* Stripe ids only — these reach a PostgREST or() filter. */
 const STRIPE_ID = /^[A-Za-z0-9_]+$/;
 
+/* The five statuses Stripe has used for twelve years, and the ones
+   an_invoice_carries_a_status_stripe_uses names. A sixth is not a wrong value —
+   it is a new one, and the club has a word for that. */
+const INVOICE_STATUSES = new Set(["draft", "open", "paid", "void", "uncollectible"]);
+
 function idOf(value: string | { id: string } | null | undefined): string | null {
   if (!value) return null;
   return typeof value === "string" ? value : value.id;
@@ -188,22 +193,54 @@ async function postDues(admin: Admin, profileId: string, invoice: Stripe.Invoice
   }
 }
 
+/* A status Stripe has not sent before, written down where a person will find
+   it. The invoice still syncs — labelled 'unknown', which is the club's word,
+   not Stripe's — and the real value lands in app_errors under the kind
+   /bridge/reports groups errors by. Never throws: a note about a sync must not
+   be the thing that fails the sync. */
+async function noteAnUnknownInvoiceStatus(admin: Admin, invoiceId: string, status: string) {
+  try {
+    await admin.from("app_errors").insert({
+      deployment: process.env.VERCEL_DEPLOYMENT_ID ?? null,
+      name: "UnknownInvoiceStatus",
+      message: `Stripe sent invoice status "${status}" on ${invoiceId}; the invoice synced as "unknown". Decide what the status means, then add it to an_invoice_carries_a_status_stripe_uses and to INVOICE_STATUSES.`,
+      method: "POST",
+      path: "/api/stripe/webhook",
+      route: "/api/stripe/webhook",
+      kind: "stripe-unknown",
+    });
+  } catch {
+    /* The invoice matters more than the note about it. */
+  }
+}
+
 async function syncInvoice(admin: Admin, invoice: Stripe.Invoice) {
   const profileId = await profileFor(admin, idOf(invoice.customer), invoice.metadata);
   if (!profileId || !invoice.id) return;
 
-  /* This upsert used to be awaited and never read. invoices.status now carries
-     a check constraint naming the five statuses Stripe uses, so a sixth would
-     have made the invoice fail to sync in silence — no row on the member's
-     account, no error anywhere, and nobody looking. Stripe retries a webhook
-     that throws, so a loud failure is the one that gets seen. */
+  /* This upsert used to be awaited and never read. invoices.status carries a
+     check constraint naming the statuses Stripe uses, so an unrecognised one
+     would have made the invoice fail to sync in silence — no row on the
+     member's account, no error anywhere, and nobody looking.
+
+     Throwing was the first answer to that, and it is the right answer to a
+     WRONG value and the wrong answer to a NEW one: Stripe retries a webhook
+     that throws, then stops, and the member is left short an invoice with
+     nothing on screen to say so. So an unrecognised status is mapped onto
+     'unknown' and the real word is recorded. A missing row on a member's
+     account is worse than a wrong label. The error check stays, because
+     everything else that can fail this upsert still deserves the retry. */
+  const said = invoice.status ?? "open";
+  const known = INVOICE_STATUSES.has(said);
+  if (!known) await noteAnUnknownInvoiceStatus(admin, invoice.id, said);
+
   const { error: invoiceError } = await admin.from("invoices").upsert(
     {
       profile_id: profileId,
       stripe_invoice_id: invoice.id,
       number: invoice.number,
       amount_cents: invoice.amount_paid || invoice.amount_due || invoice.total || 0,
-      status: invoice.status ?? "open",
+      status: known ? said : "unknown",
       hosted_url: invoice.hosted_invoice_url ?? null,
       pdf_url: invoice.invoice_pdf ?? null,
       period_start: isoFrom(invoice.period_start),

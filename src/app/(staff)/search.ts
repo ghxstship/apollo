@@ -7,7 +7,8 @@ export type BridgeHit = { kind: string; id: string; title: string; subtitle: str
 /* One search across the Bridge: members, episodes, codes, applications and
    crew candidates, through a staff-only definer that returns typed rows with
    the door each one opens. Two characters or nothing; the function bounds the
-   rest. */
+   rest — and two characters are read as the beginning of a word rather than
+   as a fragment inside one, which is the only reading an index can serve. */
 export async function searchBridge(q: string): Promise<BridgeHit[]> {
   const { supabase, staffId } = await staffContext();
   if (!staffId) return [];

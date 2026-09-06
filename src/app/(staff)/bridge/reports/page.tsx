@@ -168,6 +168,7 @@ export default async function ReportsPage() {
     smsStrandedRes,
     pushStrandedRes,
     changesRes,
+    passChangesRes,
     errorsRes,
     schedulerRes,
     cohortsRes,
@@ -268,8 +269,19 @@ export default async function ReportsPage() {
       .order("created_at", { ascending: false })
       .limit(20),
     /* The record of who did what — record_the_change() writes it on the
-       tables the Bridge keeps; the Bridge reads it. */
-    supabase.from("audit_log").select("*").order("at", { ascending: false }).limit(50),
+       tables the Bridge keeps; the Bridge reads it.
+
+       Read in two passes since passes started leaving a record of their own.
+       A pass changes hands, checks in, gains a guest and moves cabin, and it
+       does all of that at the volume of a season rather than of a settings
+       screen — so a single list of the last fifty would be passes, and the
+       reference-data change this pane exists to surface would fall off the
+       bottom on a busy night. The configuration record keeps this pane. The
+       operational one gets its own beneath it. */
+    supabase.from("audit_log").select("*").neq("table_name", "passes")
+      .order("at", { ascending: false }).limit(50),
+    supabase.from("audit_log").select("*").eq("table_name", "passes")
+      .order("at", { ascending: false }).limit(25),
     /* What the app itself failed on — the error boundary and route handlers
        write app_errors; the Bridge reads the last fifty. */
     supabase.from("app_errors").select("*").order("at", { ascending: false }).limit(50),
@@ -459,6 +471,7 @@ export default async function ReportsPage() {
   const smsStranded = must<SmsStranded>(smsStrandedRes as { data: SmsStranded[] | null; error?: { message?: string } | null });
   const pushStranded = must<PushStranded>(pushStrandedRes as { data: PushStranded[] | null; error?: { message?: string } | null });
   const changes = must(changesRes);
+  const passChanges = must(passChangesRes);
   const appErrors = must(errorsRes);
   type SchedulerHealth = { id: number; status_code: number | null; timed_out: boolean | null; error_msg: string | null; created: string; body: string | null };
   const scheduler = mustValue<SchedulerHealth[]>(
@@ -541,7 +554,7 @@ export default async function ReportsPage() {
     })),
   ].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
-  const changeRows: ChangeRow[] = changes.map((c) => ({
+  const toChangeRow = (c: (typeof changes)[number]): ChangeRow => ({
     id: String(c.id),
     table: c.table_name,
     action: c.action === "INSERT" ? "Added" : c.action === "DELETE" ? "Struck" : "Changed",
@@ -549,7 +562,9 @@ export default async function ReportsPage() {
     who: c.actor_id ? (nameOf.get(c.actor_id) ?? "A member") : "The machine",
     at: logDateTime(c.at, CLUB_ZONE),
     diff: diffLine(c.action, c.before, c.after),
-  }));
+  });
+  const changeRows: ChangeRow[] = changes.map(toChangeRow);
+  const passChangeRows: ChangeRow[] = passChanges.map(toChangeRow);
 
   /* Dues that recur — a year's plan carries one twelfth of itself each month,
      so the two intervals can sit in the same number. */
@@ -962,7 +977,9 @@ export default async function ReportsPage() {
         <h2>Recent changes.</h2>
         <p className="hm-note">
           The last fifty writes to the tables the Bridge keeps — who, what, when, and which
-          fields moved. The machine is a cron or a definer acting on its own.
+          fields moved. The machine is a cron or a definer acting on its own. Passes have
+          a pane of their own below, so a busy night does not push a settings change off
+          the bottom of this one.
         </p>
         <div className="hm-panel">
           <Table
@@ -980,6 +997,35 @@ export default async function ReportsPage() {
           {changeRows.length === 0 ? (
             <p className="ls-empty">
               Nothing recorded yet.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="hm-sec">
+        <h2>Passes moved.</h2>
+        <p className="hm-note">
+          The last twenty-five changes to a pass — status, guests, check-in, cabin, hull,
+          standby. Only those six: a pass is the busiest row in the club, and a full
+          before-and-after of every touch would be a bigger record than the thing it
+          records. Booking a pass is not here, because a booking already writes a line
+          to the ledger.
+        </p>
+        <div className="hm-panel">
+          <Table
+            rowKey={(r: ChangeRow) => r.id}
+            columns={[
+              { key: "at", label: "When", mono: true, width: 140 },
+              { key: "who", label: "Who", width: 160 },
+              { key: "action", label: "Did", width: 90 },
+              { key: "what", label: "Pass" },
+              { key: "diff", label: "Fields moved", mono: true },
+            ]}
+            rows={passChangeRows}
+          />
+          {passChangeRows.length === 0 ? (
+            <p className="ls-empty">
+              No pass has moved yet.
             </p>
           ) : null}
         </div>

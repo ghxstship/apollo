@@ -1103,11 +1103,15 @@ export async function run(p, ctx) {
 
     /* ================= keys ================= */
     await section("keys", async () => {
-      const key = await stf.post("api_keys", { label: `E2E ${EMOJI} ${stamp}`, key_hash: `h-${stamp}`, prefix: `un_${stamp.slice(0, 5)}`, scopes: ["read:members"], created_by: uid(p.staff) });
+/* A key chooses an end, or says why it has none — 20260906050000. These mint
+   through the table rather than the console, so they say it here the same way
+   an operator would. Ninety days is the club's own default. */
+const KEY_END = new Date(Date.now() + 90 * 86400_000).toISOString();
+      const key = await stf.post("api_keys", { label: `E2E ${EMOJI} ${stamp}`, key_hash: `h-${stamp}`, prefix: `un_${stamp.slice(0, 5)}`, scopes: ["read:members"], created_by: uid(p.staff), expires_at: KEY_END });
       const keyId = first(key)?.id;
       note("staff", "mints a key with an emoji label", key.status === 201 && first(key)?.revoked === false, `got ${key.status} ${said(key).slice(0, 60)}`);
       if (keyId) cleanup.push(async () => { await stf.del(`api_keys?id=eq.${keyId}`); });
-      const sameHash = await stf.post("api_keys", { label: `E2E twin ${stamp}`, key_hash: `h-${stamp}`, prefix: "un_twin" });
+      const sameHash = await stf.post("api_keys", { label: `E2E twin ${stamp}`, key_hash: `h-${stamp}`, prefix: "un_twin", expires_at: KEY_END });
       note("staff", "one hash, one key", uniqueFired(sameHash), `got ${sameHash.status}`);
       const revoked = await stf.patch(`api_keys?id=eq.${keyId}`, { revoked: true });
       note("staff", "revokes the key", revoked.status < 300 && first(revoked)?.revoked === true, `got ${revoked.status}`);

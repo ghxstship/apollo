@@ -849,7 +849,11 @@ async function opsRules(p) {
   const staffTemplates = await stf.get("sms_templates?select=code,provider_template_id");
   note("staff", "staff read the SMS template registry", (staffTemplates.data || []).length >= 2, `${(staffTemplates.data || []).length} codes`);
 
-  const key = await reg.post("api_keys", { label: "E2E", key_hash: "x", prefix: "e2e" });
+/* A key chooses an end, or says why it has none — 20260906050000. These mint
+   through the table rather than the console, so they say it here the same way
+   an operator would. Ninety days is the club's own default. */
+const KEY_END = new Date(Date.now() + 90 * 86400_000).toISOString();
+  const key = await reg.post("api_keys", { label: "E2E", key_hash: "x", prefix: "e2e", expires_at: KEY_END });
   note("regional", "cannot mint an API key", key.status >= 400, `got ${key.status}`);
 
   const hook = await reg.post("webhooks", { url: "https://example.com/e2e", secret: "x" });
@@ -857,7 +861,7 @@ async function opsRules(p) {
 
   // Staff can, which is what makes the above meaningful.
   const stamp = `${Date.now().toString(36)}${RUN_TOKEN}`;
-  const staffKey = await stf.post("api_keys", { label: `E2E ${stamp}`, key_hash: `h${stamp}`, prefix: `e2e${stamp}`.slice(0, 8) });
+  const staffKey = await stf.post("api_keys", { label: `E2E ${stamp}`, key_hash: `h${stamp}`, prefix: `e2e${stamp}`.slice(0, 8), expires_at: KEY_END });
   note("staff", "staff mint an API key", staffKey.status < 400, `got ${staffKey.status}`);
   if (staffKey.data?.[0]?.id) await stf.del(`api_keys?id=eq.${staffKey.data[0].id}`);
 

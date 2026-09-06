@@ -540,7 +540,11 @@ export async function run(p, ctx) {
        SHA-256 kept, plaintext shown once. */
     const mint = async (label, scopes) => {
       const key = `un_${randomBytes(24).toString("base64url")}`;
-      const row = await stf.post("api_keys", { label: `E2E ${label} ${stamp}`, key_hash: createHash("sha256").update(key).digest("hex"), prefix: key.slice(0, 8), scopes, revoked: false, created_by: STF });
+/* A key chooses an end, or says why it has none — 20260906050000. These mint
+   through the table rather than the console, so they say it here the same way
+   an operator would. Ninety days is the club's own default. */
+const KEY_END = new Date(Date.now() + 90 * 86400_000).toISOString();
+      const row = await stf.post("api_keys", { label: `E2E ${label} ${stamp}`, key_hash: createHash("sha256").update(key).digest("hex"), prefix: key.slice(0, 8), scopes, revoked: false, created_by: STF, expires_at: KEY_END });
       const id = row.data?.[0]?.id;
       if (id) made.keys.push(id);
       return { key, id, res: row };

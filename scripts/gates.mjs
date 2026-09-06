@@ -3,7 +3,8 @@
  * The gate battery, in order, stopping at the first failure.
  *
  *   npm run gates        the fast battery — typecheck, lint, design system,
- *                        unit tests, route-manifest coverage, advisories.
+ *                        RLS policy form, unit tests, route-manifest
+ *                        coverage, advisories.
  *                        No server, no Docker, no network beyond `npm audit`.
  *   npm run gates:full   the fast battery, then build, migration replay
  *                        (Docker), and the two server-bound gates — the route
@@ -38,6 +39,7 @@ const FAST = [
   ["design system", "node", ["scripts/audit-design-system.mjs"]],
   ["components", "node", ["scripts/audit-components.mjs"]],
   ["inline styles", "node", ["scripts/audit-inline-styles.mjs"]],
+  ["policies", "node", ["scripts/audit-policies.mjs"]],
   ["unit tests", "npx", ["vitest", "run"]],
   ["route manifest", "node", ["scripts/audit-routes.mjs", "--manifest-only"]],
   ["letters", "node", ["scripts/audit-letters.mjs"]],
