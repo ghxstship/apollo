@@ -94,6 +94,40 @@ export async function signInWithProvider(formData: FormData): Promise<void> {
 
 /* Set or change the password on a signed-in session — from You, or from the
    reset page a recovery link lands on. */
+/* Four things happen to an account that the person it belongs to must hear
+   about even — especially — when they did not do them. Before 2026-09-06 the
+   club had four transports and none fired on an authentication event.
+
+   Best effort, always. The password HAS changed by the time this runs; failing
+   the action because a letter would not queue would leave somebody believing
+   their password is what it was. The failure is not silent — queue_email is a
+   definer write and its error surfaces in app_errors — it simply is not the
+   member's problem.
+
+   The address is read from the auth user rather than the profile, because the
+   profile's copy can lag and this is the one letter that must reach the
+   mailbox that actually opens the account. */
+async function sayItHappened(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  user: { id: string; email?: string | null },
+  template: "password-changed" | "two-step-on" | "two-step-off",
+) {
+  if (!user.email) return;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  await supabase.rpc("queue_email", {
+    p_to: user.email,
+    p_template: template,
+    p_payload: {
+      name: profile?.full_name ?? null,
+      at: new Date().toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" }),
+    },
+  });
+}
+
 export type PasswordState = { done?: boolean; error?: string; next?: string };
 export async function setPassword(_prev: PasswordState, formData: FormData): Promise<PasswordState> {
   const password = String(formData.get("password") ?? "");
@@ -143,6 +177,7 @@ export async function setPassword(_prev: PasswordState, formData: FormData): Pro
     if (/same|different from the old/i.test(error.message)) return { error: "That is the password you already have." };
     return { error: "That didn't land. Try once more." };
   }
+  await sayItHappened(supabase, user, "password-changed");
   return { done: true };
 }
 
@@ -209,6 +244,11 @@ export async function confirmTwoStep(_prev: TwoStepState, formData: FormData): P
   const { error } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
   if (error) return { factorId, qr, secret, error: "That code did not match. Codes change every thirty seconds — try the current one." };
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
   /* Recovery codes, minted the moment two-step is proven and never again
      without asking. Until 2026-09-06 there were none, and the consequence was
      not an inconvenience: a member who lost the phone was locked out for good.
@@ -230,6 +270,7 @@ export async function confirmTwoStep(_prev: TwoStepState, formData: FormData): P
      for it. Failing the whole enrolment over the codes would leave a member
      with neither, which is worse than a member with two-step and no sheet;
      they are told, and can mint a set from their settings. */
+  await sayItHappened(supabase, user, "two-step-on");
   if (mintError) {
     return { verified: true, codesFailed: true };
   }
@@ -260,6 +301,9 @@ export async function newRecoveryCodes(): Promise<{ codes?: string[]; error?: st
 }
 export async function endTwoStep(): Promise<{ error?: string }> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: listed } = await supabase.auth.mfa.listFactors();
   const factors = listed?.all ?? [];
   if (!factors.length) return {};
@@ -270,6 +314,11 @@ export async function endTwoStep(): Promise<{ error?: string }> {
       return { error: "Two-step could not be switched off. Try once more." };
     }
   }
+  /* Turning two-step OFF is the one of the four an attacker most wants, and
+     the one a member is least likely to notice. It is sent last, after the
+     factors are actually gone, so the letter cannot claim something that did
+     not happen. */
+  if (user) await sayItHappened(supabase, user, "two-step-off");
   return {};
 }
 

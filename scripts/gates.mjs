@@ -43,6 +43,10 @@ const FAST = [
   ["unit tests", "npx", ["vitest", "run"]],
   ["route manifest", "node", ["scripts/audit-routes.mjs", "--manifest-only"]],
   ["letters", "node", ["scripts/audit-letters.mjs"]],
+  /* The localization ratchet. Not "is it done" — it is six to ten weeks of
+     work — but "did it go backwards", which is the only question a gate can
+     usefully ask in the middle of a project that long. */
+  ["localization", "node", ["scripts/audit-i18n.mjs"]],
   ["advisories", "npm", ["audit", "--audit-level=high"]],
 ];
 

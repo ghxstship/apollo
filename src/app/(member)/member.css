@@ -407,7 +407,7 @@ a.thr-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
    row would underline the title and turn the whole block link-green. */
 a.rgt-row:hover,a.rgt-row:hover *{text-decoration:none;color:inherit}
 a.rgt-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
-.rgt-row h3{font-family:var(--font-sans);font-weight:700;font-size:var(--text-lg);margin:0;text-transform:none}/* Archivo 700 headings are sentence case — a font-family swap alone would inherit the base rule's caps */
+.rgt-row h2{font-family:var(--font-sans);font-weight:700;font-size:var(--text-lg);margin:0;text-transform:none}/* h2, not h3: these sit directly under the page's single h1 and jumping a level tells a screen reader there is a layer of structure that is not there *//* Archivo 700 headings are sentence case — a font-family swap alone would inherit the base rule's caps */
 .rgt-row p{margin:6px 0 0;font-size:var(--text-xs);color:var(--text-muted);max-width:var(--measure-tight)}
 .rgt-meta{margin-top:9px;display:flex;flex-wrap:wrap;gap:8px}
 .rgt-aside{display:flex;flex-direction:column;align-items:flex-end;gap:8px;white-space:nowrap}
@@ -904,3 +904,11 @@ a.wrd-item:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 /* The composer's field is the kit Textarea, drawn borderless inside the
    composer's own card. */
 .wd-compose__field .ls-textarea{resize:vertical;background:transparent;border:none;padding:0;min-height:var(--space-14)}
+
+/* A settings row whose control is a table rather than a button: the two-column
+   row that works for "label — button" puts a five-column table in a gutter. */
+.you-row--stack{grid-template-columns:1fr;gap:var(--space-3)}
+
+/* Quiet supporting copy under a settings heading. Lives here rather than in a
+   route stylesheet because both /you and /you/data use it. */
+.you-note{color:var(--ink-quiet);font-size:var(--text-sm);margin:var(--space-2) 0;max-width:72ch}

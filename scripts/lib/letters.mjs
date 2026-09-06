@@ -35,7 +35,7 @@
    code first — comments gone — and then scanned with a reader that knows
    where a string literal begins and ends, so punctuation in prose is prose. */
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { sqlCode } from "./sql-code.mjs";
 
 /* Keys a letter reads that nothing writes YET, each with the writer that
@@ -249,6 +249,87 @@ export function liveDefinitions(root) {
   return defs;
 }
 
+/* Letters the APPLICATION queues, through the queue_email RPC.
+
+   liveCallers() below reads the live database function bodies, which is where
+   most letters are queued — and for a long time was where all of them were. It
+   is blind to TypeScript, so a letter sent from a server action looked to this
+   gate exactly like a letter nobody sends at all.
+
+   The response to that could have been an exemption list, and the first draft
+   of the security letters did reach for one. An exemption would have meant the
+   four letters most worth checking — the ones that fire when somebody changes
+   a password or turns two-step off — were the four nothing checked. So the
+   gate learned to read the other language instead.
+
+   Matched on the RPC's own parameter names, which is what makes this safe to
+   grep for: `p_template` appears nowhere else in the codebase, and a literal
+   beside it is unambiguously a letter being sent. A template assembled from a
+   variable is invisible here in the same way it is invisible in SQL, and for
+   the same reason — which is why the registry's foreign key exists. */
+export function applicationCallers(root, knownCodes) {
+  const callers = [];
+  const files = [];
+  const walk = (dir) => {
+    let entries;
+    try { entries = readdirSync(dir); } catch { return; }
+    for (const name of entries) {
+      if (name === "node_modules" || name === ".next") continue;
+      const full = join(dir, name);
+      let st;
+      try { st = statSync(full); } catch { continue; }
+      if (st.isDirectory()) walk(full);
+      else if (full.endsWith(".ts") || full.endsWith(".tsx")) files.push(full);
+    }
+  };
+  walk(join(root, "src"));
+
+  for (const file of files) {
+    let src;
+    try { src = readFileSync(file, "utf8"); } catch { continue; }
+    if (!src.includes("queue_email")) continue;
+    const clean = stripComments(src);
+    /* Every known letter code that appears as a string literal in a file which
+       calls queue_email. Deliberately looser than "the literal sitting in the
+       p_template slot", because a file that sends three security letters
+       through one helper passes the code as a VARIABLE at the RPC and names
+       the three literally at its call sites — and that file plainly sends
+       those three.
+
+       THE RESIDUAL, stated so nobody has to discover it: a code that appears
+       only in a TYPE ANNOTATION — the union on that helper's own parameter —
+       counts as a send. So deleting the last call to a letter while leaving its
+       name in the signature passes this check. Verified, not assumed: removing
+       the password-changed call and leaving the union does not fail.
+
+       That is the price of seeing the application at all, and it is worth
+       paying in this direction. The check still catches the case that actually
+       happens — a letter added to the sender and wired to nothing, which is
+       how "renderable but never sent" letters accumulate — and it caught
+       exactly that for three of the four security letters while they were
+       being written. What it does not catch is a deliberate deletion that
+       tidies the call and leaves the type, which is not a thing anybody does
+       by accident. */
+    for (const m of clean.matchAll(/["']([a-z0-9]+(?:-[a-z0-9]+)+)["']/g)) {
+      const code = m[1];
+      if (!knownCodes.has(code)) continue;
+      /* The payload that goes with it, read from the p_payload object that
+         follows in the same call. Bounded so a match cannot run past the end
+         of the call and collect keys from the next one. */
+      const after = clean.slice(m.index, m.index + 1200);
+      const payload = /p_payload:\s*\{([\s\S]*?)\n\s*\},?/.exec(after) ?? /p_payload:\s*\{([^{}]*)\}/.exec(after);
+      const keys = new Set();
+      for (const k of (payload?.[1] ?? "").matchAll(/(?:^|[,{\s])["']?([a-zA-Z_][\w]*)["']?\s*:/g)) keys.add(k[1]);
+      callers.push({
+        code,
+        keys,
+        where: `${relative(root, file)}:${clean.slice(0, m.index).split("\n").length}`,
+      });
+    }
+  }
+  return callers;
+}
+
 export function liveCallers(root, knownCodes) {
   const defs = liveDefinitions(root);
   const callers = [];
@@ -455,8 +536,13 @@ export function letterInvariants({ root, note, banned }) {
       note(at, `REQUIRES names a letter that renders: ${c}`, renderable.has(c));
     }
   }
-  const callers = liveCallers(root, new Set([...renderable, ...registered]));
-  note(at, "at least one caller was found in the live function bodies", callers.length > 0, callers.length ? `${callers.length} callers` : "the caller extractor found nothing");
+  const known = new Set([...renderable, ...registered]);
+  const sqlCallers = liveCallers(root, known);
+  const appCallers = applicationCallers(root, known);
+  const callers = [...sqlCallers, ...appCallers];
+  note(at, "at least one caller was found in the live function bodies", sqlCallers.length > 0, sqlCallers.length ? `${sqlCallers.length} callers` : "the caller extractor found nothing");
+  note(at, "the application's own senders were found", appCallers.length > 0,
+    appCallers.length ? `${appCallers.length} queue_email callers under src/` : "no queue_email call carries a literal template — if that is true the extractor is broken, because the security letters are sent that way");
   const called = new Set();
   for (const c of callers) {
     called.add(aliasOf.get(c.code) ?? c.code);

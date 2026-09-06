@@ -19,12 +19,8 @@
   margin: 0;
   max-width: 62ch;
 }
-.you-note {
-  color: var(--ink-quiet);
-  font-size: var(--text-sm);
-  margin: var(--space-2) 0;
-  max-width: 72ch;
-}
+/* .you-note moved to member.css — /you uses it too, and a class defined in a
+   route-scoped stylesheet is a class that vanishes on the other route. */
 .dsr-table {
   width: 100%;
   border-collapse: collapse;

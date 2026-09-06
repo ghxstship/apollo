@@ -75,7 +75,7 @@ export default async function RegattasPage() {
                     <span className="mbr-eyebrow">
                       {c.shape === "challenge" ? "CHALLENGE" : "REGATTA"}
                     </span>
-                    <h3>{c.title}</h3>
+                    <h2>{c.title}</h2>
                     {c.blurb ? <p>{c.blurb}</p> : null}
                     <div className="rgt-meta">
                       <Badge tone="outline">
@@ -108,7 +108,7 @@ export default async function RegattasPage() {
                     {c.shape === "challenge" ? "CHALLENGE" : "REGATTA"} ·{" "}
                     {c.settled_at ? logDate(c.settled_at, zone) : logDate(c.ends_at, zone)}
                   </span>
-                  <h3>{c.title}</h3>
+                  <h2>{c.title}</h2>
                   {c.blurb ? <p>{c.blurb}</p> : null}
                 </div>
                 <div className="rgt-aside">

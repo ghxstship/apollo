@@ -239,6 +239,160 @@ function checkHtml(route, html) {
   note(route, "no emoji", !emoji, emoji ? `found ${emoji[0]}` : "");
 }
 
+/* ── accessibility, on the page as served ─────────────────────────────────────
+
+   Ten gates and 4,423 checks ran before this one and not a single one was an
+   accessibility check. The work had been done — a focus trap, exit phases that
+   blur before they hide, form ARIA wiring, coarse-pointer targets — and the
+   only thing preserving it was that nobody had touched those files since.
+   That is not preservation, it is luck with a short half-life.
+
+   Run against the SERVED HTML rather than the source, which is the whole point:
+   a component can be perfect and still render an unlabelled input because the
+   page that used it forgot a prop. The rendered page is the only place a
+   layout, a page and a kit component can be seen together, and it is what a
+   screen reader actually receives.
+
+   Every rule here is one a machine can be certain about. The things a machine
+   cannot be certain about — whether an alt text is USEFUL, whether a heading
+   describes its section, whether focus order matches reading order — are not
+   here, because a check that guesses produces noise, and a gate that produces
+   noise gets an exemption list and then gets ignored. */
+
+/* Elements that take an accessible name from their own content. */
+const NAMED_BY_CONTENT = /^(button|a|summary|legend|caption|th|td|h[1-6]|label|option)$/;
+
+function attr(tag, name) {
+  const m = new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, "i").exec(tag);
+  return m ? m[1] : null;
+}
+function hasAttr(tag, name) {
+  return new RegExp(`\\b${name}\\b`, "i").test(tag);
+}
+
+/* What the browser would compute as an accessible name, as far as static HTML
+   allows: an explicit label wins, then the element's own text. */
+function accessibleName(html, tag, elName, inner) {
+  const aria = attr(tag, "aria-label");
+  if (aria && aria.trim()) return aria.trim();
+  const by = attr(tag, "aria-labelledby");
+  if (by) {
+    for (const id of by.split(/\s+/)) {
+      const target = new RegExp(`id="${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>([\\s\\S]{0,400}?)<`, "i").exec(html);
+      if (target && target[1].replace(/<[^>]+>/g, "").trim()) return target[1];
+    }
+  }
+  const id = attr(tag, "id");
+  if (id) {
+    const forLabel = new RegExp(`<label\\b[^>]*\\bfor="${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>([\\s\\S]{0,400}?)</label>`, "i").exec(html);
+    if (forLabel && forLabel[1].replace(/<[^>]+>/g, "").trim()) return forLabel[1];
+  }
+  if (NAMED_BY_CONTENT.test(elName) && inner && inner.replace(/<[^>]+>/g, "").trim()) return inner;
+  /* A title attribute is a poor name and browsers do use it as a last resort.
+     Accepted so the gate does not flag something a screen reader can read,
+     and not encouraged anywhere. */
+  const title = attr(tag, "title");
+  if (title && title.trim()) return title.trim();
+  return null;
+}
+
+function checkAccessibility(route, html) {
+  /* 1. One h1. Zero leaves a screen-reader user with no title for the
+        document; two or more leaves them with no way to tell which is it. */
+  const h1s = (html.match(/<h1\b/gi) || []).length;
+  note(route, "exactly one h1", h1s === 1, `${h1s} found`);
+
+  /* 2. No positive tabindex. It takes an element out of document order and
+        puts it in front of everything the author did not renumber, which is
+        every other focusable element on the page. */
+  const positiveTab = [...html.matchAll(/tabindex="(\d+)"/gi)].filter((m) => Number(m[1]) > 0);
+  note(route, "no positive tabindex", positiveTab.length === 0,
+    positiveTab.length ? `${positiveTab.length} element(s) jump the focus order` : "");
+
+  /* 3. Nothing focusable is hidden from the accessibility tree. A control that
+        takes focus and reports nothing is a stop with no exit sign. */
+  const hiddenFocusable = [...html.matchAll(/<(button|a|input|select|textarea)\b[^>]*>/gi)]
+    .filter((m) => /aria-hidden="true"/i.test(m[0]) && !/\bdisabled\b|tabindex="-1"/i.test(m[0]));
+  note(route, "nothing focusable is hidden from the tree", hiddenFocusable.length === 0,
+    hiddenFocusable.length ? `${hiddenFocusable.length} focusable element(s) carry aria-hidden` : "");
+
+  /* 4. Every control has a name. The one rule most worth having: an unlabelled
+        input is read out as "edit text, blank" and there is nothing else on
+        the page to work out what it wants. */
+  const unnamed = [];
+  for (const m of html.matchAll(/<(input|select|textarea)\b[^>]*>/gi)) {
+    const tag = m[0];
+    const el = m[1].toLowerCase();
+    const type = (attr(tag, "type") || "text").toLowerCase();
+    /* Hidden carries data and draws nothing; submit and button take their name
+       from value or content, which the button rule below covers. */
+    if (el === "input" && ["hidden", "submit", "button", "image", "reset"].includes(type)) continue;
+    let inner = "";
+    if (el !== "input") {
+      const close = new RegExp(`</${el}>`, "i").exec(html.slice(m.index));
+      inner = close ? html.slice(m.index + tag.length, m.index + close.index) : "";
+    }
+    if (!accessibleName(html, tag, el, inner)) {
+      /* A control wrapped in <label>…<input>…</label> has a name and no `for`.
+         Look back a short way for an unclosed label. */
+      const before = html.slice(Math.max(0, m.index - 600), m.index);
+      const lastOpen = before.lastIndexOf("<label");
+      const lastClose = before.lastIndexOf("</label>");
+      if (lastOpen > lastClose) continue;
+      unnamed.push(`<${el}${type !== "text" ? ` type=${type}` : ""}>`);
+    }
+  }
+  note(route, "every form control has a name", unnamed.length === 0,
+    unnamed.length ? `${unnamed.length} unnamed: ${[...new Set(unnamed)].slice(0, 4).join(", ")}` : "");
+
+  /* 5. Every button and link has a name. An icon-only button whose glyph is an
+        inline SVG reads as nothing at all. */
+  const nameless = [];
+  for (const m of html.matchAll(/<(button|a)\b([^>]*)>([\s\S]{0,600}?)<\/\1>/gi)) {
+    const tag = `<${m[1]}${m[2]}>`;
+    const el = m[1].toLowerCase();
+    /* An anchor with no href is not a link and takes no focus. */
+    if (el === "a" && !hasAttr(tag, "href")) continue;
+    if (/aria-hidden="true"/i.test(tag)) continue;
+    if (!accessibleName(html, tag, el, m[3])) nameless.push(`<${el}>`);
+  }
+  note(route, "every button and link has a name", nameless.length === 0,
+    nameless.length ? `${nameless.length} nameless: ${[...new Set(nameless)].join(", ")}` : "");
+
+  /* 6. Autocomplete tokens, which are an accessibility requirement (WCAG 2.2
+        1.3.5) and not merely a convenience: they are how a browser fills a
+        form for somebody who cannot type one reliably. Only asserted for the
+        four field kinds whose purpose is unambiguous from the markup. */
+  const wantsToken = { email: /^(email|username)$/, password: /^(current-password|new-password|one-time-code)$/, tel: /^(tel|tel-national)$/ };
+  const wrongToken = [];
+  for (const m of html.matchAll(/<input\b[^>]*>/gi)) {
+    const tag = m[0];
+    const type = (attr(tag, "type") || "text").toLowerCase();
+    const want = wantsToken[type];
+    if (!want) continue;
+    const got = (attr(tag, "autocomplete") || "").trim();
+    if (!want.test(got)) wrongToken.push(`${type}="${got || "unset"}"`);
+  }
+  note(route, "identity fields carry an autocomplete token", wrongToken.length === 0,
+    wrongToken.length ? [...new Set(wrongToken)].join(", ") : "");
+
+  /* 7. An error joined to the field it is about. aria-invalid without
+        aria-describedby announces that something is wrong and not what. */
+  const orphanErrors = [...html.matchAll(/<(input|select|textarea)\b[^>]*aria-invalid="true"[^>]*>/gi)]
+    .filter((m) => !/aria-describedby=/i.test(m[0]));
+  note(route, "an error names itself to the field", orphanErrors.length === 0,
+    orphanErrors.length ? `${orphanErrors.length} invalid field(s) with no description` : "");
+
+  /* 8. Headings descend without skipping. Jumping h2 to h4 tells a screen
+        reader there is a level of structure that is not there. */
+  const levels = [...html.matchAll(/<h([1-6])\b/gi)].map((m) => Number(m[1]));
+  let skipped = null;
+  for (let i = 1; i < levels.length; i++) {
+    if (levels[i] > levels[i - 1] + 1) { skipped = `h${levels[i - 1]} → h${levels[i]}`; break; }
+  }
+  note(route, "headings do not skip a level", skipped === null, skipped ?? "");
+}
+
 function internalLinks(html) {
   return [...html.matchAll(/href="(\/[^"#?]*)(?:[?#][^"]*)?"/g)]
     .map((m) => m[1])
@@ -317,6 +471,12 @@ async function renderCheck(pages) {
     }
     if (path === "/bridge/keys" && keysOpen === null) continue; /* reported above */
     note(path, "renders for someone allowed to see it", res.status === 200, `got ${res.status}`);
+    /* The accessibility rules run HERE as well as on the public pages, and
+       this is the half that matters most: every settings screen, every Bridge
+       console and every form a member fills in is behind this cookie. The
+       public loop sees marketing pages, which have almost no controls on
+       them. */
+    if (res.status === 200) checkAccessibility(path, await res.text());
   }
 }
 
@@ -464,6 +624,7 @@ async function main() {
     if (res.status !== 200) continue;
     const html = await res.text();
     checkHtml(path, html);
+    checkAccessibility(path, html);
     for (const link of internalLinks(html)) seenLinks.add(link);
   }
 

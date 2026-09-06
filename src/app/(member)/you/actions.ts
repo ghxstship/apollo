@@ -276,6 +276,39 @@ export async function setManifestVisibility(on: boolean): Promise<{ error?: stri
   return {};
 }
 
+/* Shutting one door rather than all of them.
+
+   Deleting the session row at the provider invalidates the refresh token
+   attached to it, so the far end cannot renew; its current access token dies
+   within the hour. That hour is the honest part of the sentence the surface
+   shows, and it is why this is not offered for the session doing the asking —
+   signing yourself out mid-request is what the Sign out button is for, and it
+   says so. */
+export async function revokeSession(id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+
+  /* Ending a session is a security change, and a security change on a session
+     that never proved the second factor is the shape two-step exists to stop. */
+  const stepUp = await actionStepUp(supabase, user);
+  if (stepUp) return { error: stepUp.error };
+
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { error: "That is not a session." };
+
+  const { data, error } = await supabase.rpc("revoke_my_session", { p_id: id });
+  if (error) return { error: await voiceWith(supabase, error) };
+  /* False means no row matched — either it has already gone, or it was never
+     this member's. Both read the same to the caller on purpose: whether a
+     given session id exists is not a question this answers for anybody. */
+  if (data !== true) return { error: "That session is already closed." };
+
+  revalidatePath("/you");
+  return {};
+}
+
 export async function setOnCamera(on: boolean): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {

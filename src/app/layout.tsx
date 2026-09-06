@@ -1,3 +1,5 @@
+import { cookies, headers } from "next/headers";
+import { LOCALE_COOKIE, direction, negotiate } from "@/lib/locale";
 import type { Metadata, Viewport } from "next";
 import { Anton, Archivo, Instrument_Serif, Space_Mono } from "next/font/google";
 import Script from "next/script";
@@ -116,14 +118,32 @@ export const viewport: Viewport = {
    paint, on every load. Runs from <head>, so it targets <html>. */
 const themeInit = `try{var m=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)})||"light";var l=m==="system"?(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):m;if(l==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  /* The language this request is being read in, and which way it runs.
+
+     `lang` was the literal "en" and `dir` was absent entirely — which is not a
+     small omission once the Global standing sells: without `dir`, a page in
+     Arabic renders its layout left-to-right and its text right-to-left, and
+     every interpolated name reorders around the separators the club writes
+     between things. Negotiated per request rather than fixed, so the answer is
+     already correct on the day a catalog appears; until then every locale
+     resolves to the club's own English and nothing about the page changes. */
+  const headerBag = await headers();
+  const jar = await cookies();
+  const locale = negotiate(
+    headerBag.get("accept-language"),
+    null,
+    jar.get(LOCALE_COOKIE)?.value ?? null,
+  );
+
   return (
     <html
-      lang="en"
+      lang={locale}
+      dir={direction(locale)}
       className={`${anton.variable} ${archivo.variable} ${instrumentSerif.variable} ${spaceMono.variable}`}
     >
       <body>

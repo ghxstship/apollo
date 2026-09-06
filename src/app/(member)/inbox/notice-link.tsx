@@ -12,18 +12,27 @@ export function NoticeLink({
   id,
   href,
   read,
+  label,
   className,
   children,
 }: {
   id: string;
   href: string;
   read: boolean;
+  /* The notice's own title, as the link's accessible name.
+     Without it the name is whatever has streamed into the anchor by the time
+     a reader arrives — and the body of this row sits behind a Suspense
+     boundary, so on a slow connection that is a link announced as nothing at
+     all. It is also simply better: the computed name was the icon, the title,
+     the body and a relative timestamp read as one run-on sentence. */
+  label: string;
   className?: string;
   children: React.ReactNode;
 }) {
   const [, startTransition] = React.useTransition();
   return (
     <Link
+      aria-label={label}
       href={href}
       className={className}
       onClick={() => {

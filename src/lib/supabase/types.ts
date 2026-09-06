@@ -932,6 +932,21 @@ export type Database = {
       /* Service role only — an unauthenticated POST has no session to read. */
       spend_unsubscribe_token: { Args: { p_token: string; p_agent?: string | null }; Returns: boolean }
       unsubscribe_token_for: { Args: { p_email: string }; Returns: string }
+      /* Read from auth.sessions, which the provider maintains — no copy of
+         our own to drift from it. */
+      my_sessions: {
+        Args: Record<string, never>
+        Returns: Array<{
+          id: string
+          started_at: string
+          last_seen_at: string
+          user_agent: string | null
+          from_address: string | null
+          second_step: boolean
+          is_this_one: boolean
+        }>
+      }
+      revoke_my_session: { Args: { p_id: string }; Returns: boolean }
       settle_galley_ticket: {
         Args: {
           p_profile: string

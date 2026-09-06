@@ -41,9 +41,14 @@ export function CrewApplyForm({ roleId, roleTitle }: { roleId: string; roleTitle
       <input type="hidden" name="role_id" value={roleId} />
       <span className="ls-eyebrow crew-form__eyebrow">Apply — {roleTitle}</span>
 
+      {/* Autocomplete tokens are an accessibility requirement (WCAG 2.2 SC
+          1.3.5), not a convenience: they are how a browser fills a form for
+          somebody who cannot type one reliably. This form asked for a name,
+          an address and a telephone number and named none of them. */}
       <Input
         name="full_name"
         label="Your name"
+        autoComplete="name"
         defaultValue={state.values.full_name}
         error={state.errors.full_name}
         required
@@ -52,13 +57,16 @@ export function CrewApplyForm({ roleId, roleTitle }: { roleId: string; roleTitle
         name="email"
         type="email"
         label="Email"
+        autoComplete="email"
         defaultValue={state.values.email}
         error={state.errors.email}
         required
       />
       <Input
         name="phone"
+        type="tel"
         label="Phone — optional"
+        autoComplete="tel"
         defaultValue={state.values.phone}
         error={state.errors.phone}
       />

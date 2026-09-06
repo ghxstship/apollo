@@ -34,6 +34,7 @@ import {
 import { readPrefs } from "./prefs";
 import { SignOutForm } from "@/components/sign-out-form";
 import { PasswordControl, TwoStepControl } from "./security";
+import { Sessions, type SessionRow } from "./sessions";
 import { InstallPrompt } from "@/components/member/install-prompt";
 import { AgreementLists, latestStanding, type StandingRow } from "@/components/member/agreement-rows";
 import { InviteExpiry, InviteStanding, type InviteAllowance } from "@/components/member/invite-allowance";
@@ -91,6 +92,12 @@ async function YouBody({ enrol }: { enrol?: string }) {
   /* Two-step is a fact of the auth user, not the profile: a verified factor
      on the session's user object. */
   const twoStep = (user.factors ?? []).some((f) => f.status === "verified");
+  /* Read from the provider's own session table through a definer function, so
+     there is no second copy to drift. Failing to read it must not take the
+     settings page down — a member who cannot see their sessions still needs to
+     reach everything else on this screen. */
+  const { data: sessionRows } = await supabase.rpc("my_sessions");
+  const sessions: SessionRow[] = Array.isArray(sessionRows) ? sessionRows : [];
   const nowIso = new Date().toISOString();
   const db = moduleTables(supabase);
   const [
@@ -575,6 +582,17 @@ async function YouBody({ enrol }: { enrol?: string }) {
               until you do, the Bridge will keep sending you to this screen.
             </Notice>
           ) : null}
+          <div className="you-row you-row--stack">
+            <div>
+              <b>Where you are signed in</b>
+              <p>
+                Every device holding a live session. Shut any one of them without
+                shutting the rest — which until now was the only thing the club
+                could offer.
+              </p>
+            </div>
+            <Sessions rows={sessions} zone={zone} />
+          </div>
           <div className="you-row">
             <div>
               <b>Two-step</b>

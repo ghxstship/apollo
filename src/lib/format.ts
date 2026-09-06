@@ -215,3 +215,22 @@ export function startOfDay(yyyyMmDd: string, zone: Zone): string {
     wallClockInZone(Number(m[1]), Number(m[2]), Number(m[3]), 0, 0, zone)
   ).toISOString();
 }
+
+/* The string form of <Bdi>, for the places a name is built into a sentence
+   rather than rendered as an element.
+
+   U+2068 FIRST STRONG ISOLATE opens a run whose direction is taken from its
+   own first strong character; U+2069 POP DIRECTIONAL ISOLATE closes it. Between
+   them, a right-to-left name cannot reorder the separators the club writes
+   around it — which is the failure this prevents: "Nadia Haddad · UN-0042"
+   rendering with the middle dot and the member number on the wrong side, so a
+   line that is a name and a number reads as a number and a name.
+
+   Invisible in every locale, including English, where the isolate simply has
+   nothing to do. That is what makes it safe to add before any string has been
+   translated: it costs one code point and removes a class of defect that is
+   otherwise found by an Arabic-speaking member rather than by us. */
+export function isolate(text: string | null | undefined): string {
+  if (!text) return "";
+  return `\u2068${text}\u2069`;
+}

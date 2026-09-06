@@ -16,7 +16,7 @@ export type { ButtonProps, IconButtonProps, LinkButtonProps, TextButtonProps, Th
 export { cx, buttonClass } from "./class";
 export type { ClassPart, ButtonBase, ButtonClassOptions } from "./class";
 
-export { Card, Badge, Tag, Avatar, AvatarGroup, Stat, Table, tableColumns, ReviewList, ReviewRow, Wordmark, LockupText, Icon } from "./display";
+export { Bdi, Card, Badge, Tag, Avatar, AvatarGroup, Stat, Table, tableColumns, ReviewList, ReviewRow, Wordmark, LockupText, Icon } from "./display";
 export type {
   CardProps, CardMedia, CardSea, BadgeProps, TagProps, AvatarProps, AvatarGroupProps, StatProps,
   TableColumn, TableGroup, TableProps, ReviewListProps, ReviewRowProps,

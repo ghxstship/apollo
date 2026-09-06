@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Avatar, Icon, Stat, Tag } from "@/components/ds";
+import { Bdi, Avatar, Icon, Stat, Tag } from "@/components/ds";
 import { CLUB_ZONE, CITY_CODES, CURRENCY, PLACE, knots } from "@/lib/brand";
 import { SETTING_LABEL, logDate, roman, yearIn } from "@/lib/format";
 import { memberMark } from "@/lib/membership";
@@ -157,7 +157,10 @@ export default async function MemberPage({
       <header className="dir-head">
         <Avatar name={member.full_name ?? "A member"} tone={toneOf(member.avatar_tone)} size="lg" />
         <div className="dir-head__who">
-          <h1 className="dir-head__name">{member.full_name ?? "A member"}</h1>
+          {/* Isolated: a name is whatever script the member wrote it in, and this
+              heading sits in a page whose direction was decided by somebody
+              else. */}
+          <h1 className="dir-head__name"><Bdi>{member.full_name ?? "A member"}</Bdi></h1>
           {member.handle ? <p className="dir-head__handle">@{member.handle}</p> : null}
           <p className="dir-head__where">
             {leagueName}

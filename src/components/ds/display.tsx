@@ -198,6 +198,32 @@ export function Stat({
 }
 
 /* — Table — */
+/* A name, a handle, or anything else a person typed, kept from reordering the
+   text around it.
+
+   The Unicode bidirectional algorithm resolves direction over a whole run, so
+   a right-to-left name dropped into a left-to-right sentence drags the
+   neighbouring punctuation with it. The club writes a great deal of exactly
+   that shape: "Nadia Haddad · Deck · MMXXVI", "$95 — Cabin", a handle beside a
+   member number. In Arabic or Hebrew those separators jump to the wrong side
+   of the name and the line reads as though the columns were shuffled.
+
+   `<bdi>` is the one-element fix: it isolates its contents so whatever is
+   inside cannot influence what is outside, and the surrounding text keeps the
+   page's direction. It costs nothing in English — it is an inline element with
+   no styling of its own — which is why it can go in now, before a single
+   string has been translated, rather than being retrofitted across every
+   surface that shows a name once the first Arabic member arrives.
+
+   Use it for VALUES A PERSON SUPPLIED. Club copy does not need it: the club
+   writes in one direction at a time and its own words are translated as a
+   unit. A member's name is the case this exists for, because it arrives in
+   whatever script they wrote it in and sits inside a sentence that did not
+   expect it. */
+export function Bdi({ children }: { children: React.ReactNode }) {
+  return <bdi>{children}</bdi>;
+}
+
 export interface TableColumn<R> {
   key: string; label?: React.ReactNode; width?: number | string; mono?: boolean;
   /* Money and counts read down the last digit. Set align:"end" on those; leave

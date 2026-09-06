@@ -313,7 +313,7 @@ async function HomeBody() {
         ) : (
           <div className="hbr-word">
             {word.map((n) => (
-              <NoticeLink key={n.id} id={n.id} href={noticeHref(n.kind, n.href)} read={n.read}>
+              <NoticeLink key={n.id} id={n.id} href={noticeHref(n.kind, n.href)} read={n.read} label={n.title}>
                 <span className="wrd-ic">
                   <Icon name={KIND_ICON[n.kind] ?? "Radio"} size={16} />
                 </span>

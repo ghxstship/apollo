@@ -10,6 +10,7 @@ import {
   logDateTime,
   logTime,
   price,
+  isolate,
 } from "@/lib/format";
 import { moduleTables } from "@/lib/module-tables";
 import { durationChip } from "@/components/site/episode-chips";
@@ -285,7 +286,10 @@ async function PassesBody() {
   );
   const members: MemberOption[] = roll.map((p) => ({
     id: p.id,
-    label: `${p.full_name ?? "A member"} · ${p.member_no ?? "UN-0000"}`,
+    /* The name is isolated: a right-to-left name here would otherwise take
+       the middle dot and the member number with it, and the line would read
+       as a number and a name. */
+    label: `${isolate(p.full_name ?? "A member")} · ${p.member_no ?? "UN-0000"}`,
   }));
 
   /* Hand-offs: what you've offered, and what's been offered to you. */

@@ -537,6 +537,54 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:0;">${link(`${APP_URL}/account`, "Update it here")} — it takes a minute.</p>`,
     ),
   }),
+  /* ── The security letters ──────────────────────────────────────────────
+     Four things happen to an account that the person it belongs to must hear
+     about even — especially — when they did not do them. Before 2026-09-06 the
+     club had four transports and none of them fired on an authentication
+     event: a password could be changed, two-step turned off, and a stranger
+     could sign in from another continent, and the member would learn all three
+     from nothing at all.
+
+     Every one of them names what happened, when, and what to do if it was not
+     them. None of them carries a link that ACTS -- a letter that says "press
+     here to undo it" is a letter an attacker can use in the other direction.
+     They point at the settings page, which asks who you are first. */
+  "new-sign-in": (p) => ({
+    subject: "A new device signed in to your account.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">Somebody signed in as you${p["at"] ? ` on ${esc(String(p["at"]))}` : ""}, from a device the club has not seen before.</p>
+<p style="margin:0 0 16px;">${p["agent"] ? `It said it was: <span style="font-family:${MONO};font-size:13px;">${esc(String(p["agent"]))}</span>` : "It did not say what it was."}</p>
+<p style="margin:0 0 16px;">If that was you, there is nothing to do.</p>
+<p style="margin:0;">If it was not, ${link(`${APP_URL}/you`, "open your settings")} — you can see everywhere you are signed in, shut any of them, and change your password from there.</p>`,
+    ),
+  }),
+  "password-changed": (p) => ({
+    subject: "Your password was changed.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">The password on your account was changed${p["at"] ? ` on ${esc(String(p["at"]))}` : ""}.</p>
+<p style="margin:0 0 16px;">If that was you, there is nothing to do.</p>
+<p style="margin:0;">If it was not, write to ${esc(shoresideAddress())} straight away. Do not use a link in this letter to fix it — a letter is not a thing to trust when somebody else is in your account.</p>`,
+    ),
+  }),
+  "two-step-on": (p) => ({
+    subject: "Two-step is on.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">Two-step was turned on for your account${p["at"] ? ` on ${esc(String(p["at"]))}` : ""}. The gangway will ask for a code from your app once per sign-in.</p>
+<p style="margin:0;">Keep the recovery codes you were shown somewhere that is not the phone. They are the way back in if you lose it, and the club cannot show them to you again.</p>`,
+    ),
+  }),
+  "two-step-off": (p) => ({
+    subject: "Two-step is off.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">Two-step was turned off for your account${p["at"] ? ` on ${esc(String(p["at"]))}` : ""}. A password alone now opens it.</p>
+<p style="margin:0 0 16px;">If that was you, there is nothing to do.</p>
+<p style="margin:0;">If it was not, write to ${esc(shoresideAddress())} straight away.</p>`,
+    ),
+  }),
   /* The last letter before a standing is held. It says the date, because a
      final notice that does not is not a notice. */
   "final-notice": (p) => ({
@@ -742,6 +790,14 @@ const LETTER_KIND: Record<string, Kind> = {
   "final-notice": "transactional",
   "refund-posted": "transactional",
   "frames-wanted": "transactional",
+  /* Security letters are transactional without argument: they are about the
+     account itself, they go to everybody they concern whatever their switches
+     say, and a member who has turned marketing off has not asked to stop
+     hearing that somebody changed their password. */
+  "new-sign-in": "transactional",
+  "password-changed": "transactional",
+  "two-step-on": "transactional",
+  "two-step-off": "transactional",
   "win-back": "marketing",
   "bridge-word": "marketing",
   "season-card": "marketing",

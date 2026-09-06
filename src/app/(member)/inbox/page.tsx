@@ -21,6 +21,7 @@ function Row({ n, index }: { n: Notification; index: number }) {
       id={n.id}
       href={noticeHref(n.kind, n.href)}
       read={n.read}
+      label={n.title}
       className={"wrd-item" + (index === 0 ? " ls-rise" : index < 4 ? ` ls-rise-${Math.min(index, 3)}` : "")}
     >
       <span className="wrd-ic">
