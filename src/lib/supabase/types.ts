@@ -249,6 +249,12 @@ export type MemberRollRow = {
 }
 export type InviteRow = {
   code: string; inviter_id: string; max_uses: number; uses: number; created_at: string
+  /* Ninety days from minting (invite_expiry_days). A code past it cannot be
+     redeemed and does not stand between its holder and a replacement. */
+  expires_at: string
+  /* Set when a replacement was minted over an expired code — the immutable
+     half of "live", because invites_one_live_per_inviter cannot read now(). */
+  retired_at: string | null
 }
 export type AccountLedgerRow = {
   id: string; profile_id: string; delta_cents: number; kind: string; memo: string | null
@@ -269,6 +275,11 @@ export type AccountLedgerRow = {
   /* Tax included in delta_cents, if any. Zero means untaxed, NOT tax-free —
      city_tax says whether a treatment has been determined at all. */
   tax_cents: number
+  /* The second operator on a house credit above club_setting
+     ('house_credit_max_cents'). Null everywhere else: a credit inside the
+     ceiling is one person's to give, and a row that is not a house credit
+     cannot carry a second name at all. Frozen once posted. */
+  seconded_by: string | null
 }
 export type AddonRow = { id: string; slug: string; name: string; price_cents: number; active: boolean }
 export type PassAddonRow = { rsvp_id: string; addon_id: string; qty: number }
@@ -481,6 +492,10 @@ export type ApiKeyRow = {
   revoked: boolean; last_used_at: string | null; created_by: string | null; created_at: string
   /** When the key stops opening anything. Null is a key with no end. */
   expires_at: string | null
+  /** Why a key was cut with no end. Required from 2026-09-06 on any key minted
+      or set back to a null expires_at; null on the keys that predate the rule,
+      which the console flags rather than changes. */
+  no_expiry_reason: string | null
 }
 export type WebhookRow = {
   id: string; url: string; events: string[]; secret: string; active: boolean; created_at: string
@@ -515,7 +530,7 @@ export type PollRow = {
 }
 export type PollVoteRow = { poll_id: string; profile_id: string; option: number; created_at: string }
 export type WalletTokenRow = { token: string; profile_id: string; issued_at: string; revoked_at: string | null; touched_at: string }
-export type WalletRegistrationRow = { device_id: string; pass_type: string; serial: string; push_token: string; created_at: string }
+export type WalletRegistrationRow = { device_id: string; pass_type: string; serial: string; push_token: string; created_at: string; last_seen_at: string }
 
 
 /* ===== The logbook: marks, the Knots sink, and contests ===================== */
@@ -859,6 +874,30 @@ export type Database = {
       requeue_outbox_row: { Args: { p_table: "email_outbox" | "sms_outbox" | "push_outbox"; p_id: string }; Returns: undefined }
       assign_vessels_evenly: { Args: { p_episode: string }; Returns: number }
       club_setting: { Args: { p_key: string }; Returns: number }
+      /* One invite, minted behind a definer because the allowance needs a
+         count and a league lookup and a WITH CHECK sees neither. The app
+         supplies the random code; every rule lives in the function. */
+      mint_invite: { Args: { p_code: string }; Returns: string }
+      /* The member's invite standing: which season it is counted in, their
+         league, that league's cap, how many they have minted, the live code
+         if they hold one, and whether the mint is open to them. */
+      invite_allowance: {
+        Args: { p_profile?: string | null }
+        Returns: Array<{
+          season_title: string | null
+          season_ends_on: string | null
+          league: number
+          cap: number
+          minted: number
+          live_code: string | null
+          live_expires_at: string | null
+          may_mint: boolean
+        }>
+      }
+      /* Of these posts, the ones whose author holds a pass on the episode
+         they attached. RLS shows a member only their own passes, so this is
+         the only honest way for the deck to mark one. */
+      posts_aboard: { Args: { p_posts: string[] }; Returns: string[] }
       /* Days this member has held their OWN membership paused in a rolling
          year. Refuses a profile that is not yours unless you are staff, so it
          cannot be asked on anyone else's behalf. */

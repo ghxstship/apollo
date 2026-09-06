@@ -20,10 +20,10 @@ function signedAmount(cents: number): string {
 }
 
 export default async function OrdersPage() {
-  const { supabase } = await getOperator();
+  const { supabase, profile } = await getOperator();
 
   const LEDGER_SHOWN = 120;
-  const [ledgerRes, shopRes, membersRes, ledgerCount] = await Promise.all([
+  const [ledgerRes, shopRes, membersRes, ledgerCount, ceilingRes, operatorsRes] = await Promise.all([
     supabase
       .from("account_ledger")
       .select("*")
@@ -44,6 +44,18 @@ export default async function OrdersPage() {
        count and no paging, so an operator looking for last month's charge
        concluded it did not exist. Say what is on screen and what is not. */
     supabase.from("account_ledger").select("id", { count: "exact", head: true }),
+    /* The house credit ceiling. Above it a credit takes two operators, so the
+       screen has to know the figure to know when to ask for the second one —
+       and the ledger asks the same question again when the row is written. */
+    supabase.rpc("club_setting", { p_key: "house_credit_max_cents" }),
+    /* Who can be that second. Everyone on the Bridge but the person reading
+       this screen: a credit is not seconded by the hand that posts it. */
+    supabase
+      .from("profiles")
+      .select("id, full_name, member_no")
+      .eq("is_staff", true)
+      .neq("id", profile.id)
+      .order("full_name", { ascending: true }),
   ]);
 
   const ledgerTotal = ledgerCount.count ?? 0;
@@ -89,14 +101,28 @@ export default async function OrdersPage() {
     shortId: `#${o.id.slice(0, 8).toUpperCase()}`,
     member: nameOf(o.profile_id),
     total: price(o.total_cents),
+    /* What actually lands on the account — the gross minus the discount, which
+       is what charge_shop_order took. The ceiling is measured against this and
+       not against the order total. */
+    refundCents: Math.max((o.total_cents ?? 0) - (o.discount_cents ?? 0), 0),
     status: o.status,
     created: logDateTime(o.created_at, CLUB_ZONE),
   }));
 
-  const members: MemberOption[] = memberRows.map((m) => ({
+  const label = (m: { full_name: string | null; member_no: string | null }) =>
+    `${m.full_name ?? "Unnamed"}${m.member_no ? ` · ${memberMark(m.member_no)}` : ""}`;
+
+  const members: MemberOption[] = memberRows.map((m) => ({ value: m.id, label: label(m) }));
+
+  const operators: MemberOption[] = must(operatorsRes).map((m) => ({
     value: m.id,
-    label: `${m.full_name ?? "Unnamed"}${m.member_no ? ` · ${memberMark(m.member_no)}` : ""}`,
+    label: label(m),
   }));
+
+  /* Null when the setting could not be read. The dialog says so rather than
+     guessing a ceiling, and the ledger refuses the credit either way. */
+  const houseCreditMaxCents =
+    typeof ceilingRes.data === "number" ? ceilingRes.data : null;
 
   return (
     <div>
@@ -111,7 +137,13 @@ export default async function OrdersPage() {
           ? `NEWEST ${LEDGER_SHOWN} OF ${ledgerTotal} ENTRIES`
           : `${ledgerTotal} ${ledgerTotal === 1 ? "ENTRY" : "ENTRIES"}`}
       </span>
-      <OrdersClient entries={entries} shopOrders={shopOrders} members={members} />
+      <OrdersClient
+        entries={entries}
+        shopOrders={shopOrders}
+        members={members}
+        operators={operators}
+        houseCreditMaxCents={houseCreditMaxCents}
+      />
     </div>
   );
 }

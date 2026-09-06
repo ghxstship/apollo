@@ -26,6 +26,9 @@ export type ShopOrderRow = {
   shortId: string;
   member: string;
   total: string;
+  /* What lands on the member account if this is approved — the gross minus the
+     discount. The house credit ceiling is measured against it. */
+  refundCents: number;
   status: "placed" | "fulfilled" | "refund_requested" | "refunded";
   created: string;
   [key: string]: unknown;
@@ -50,24 +53,50 @@ const ORDER_LABEL: Record<ShopOrderRow["status"], string> = {
 type Filter = "all" | "charges" | "payments";
 type PostKind = "payment" | "refund";
 
+/* "$165.00" from a cents figure, for the one sentence that names the ceiling.
+   price() lives on the server side of this screen; this is the whole of what
+   the dialog needs. */
+function dollars(cents: number): string {
+  return `$${(cents / 100).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 export function OrdersClient({
   entries,
   shopOrders,
   members,
+  operators,
+  houseCreditMaxCents,
 }: {
   entries: LedgerRow[];
   shopOrders: ShopOrderRow[];
   members: MemberOption[];
+  /* Everyone on the Bridge but the operator reading this screen. */
+  operators: MemberOption[];
+  /* club_setting('house_credit_max_cents'), or null when it could not be read.
+     A refund above it needs a second operator named on the row. */
+  houseCreditMaxCents: number | null;
 }) {
   const [pending, startTransition] = React.useTransition();
   /* A hand-typed entry that matches one posted minutes ago. Neither an error
      nor a success — a question for a person. */
-  const [repeat, setRepeat] = React.useState<{ kind: "payment" | "refund"; cents: number; why: string } | null>(null);
+  const [repeat, setRepeat] = React.useState<{
+    kind: "payment" | "refund";
+    cents: number;
+    why: string;
+    /* Carried through, so an entry confirmed on the second ask reaches the
+       ledger with the same second operator on it as the first. */
+    seconded: string | null;
+  } | null>(null);
   const { toast, toastOpen, show, clear } = useToast();
   const [filter, setFilter] = React.useState<Filter>("all");
   const [posting, setPosting] = React.useState<PostKind | null>(null);
-  const [form, setForm] = React.useState({ profileId: "", amount: "", memo: "" });
+  const [form, setForm] = React.useState({ profileId: "", amount: "", memo: "", seconded: "" });
   const [refund, setRefund] = React.useState<ShopOrderRow | null>(null);
+  /* The colleague seconding a Shop refund that clears the ceiling. */
+  const [refundSeconded, setRefundSeconded] = React.useState("");
   /* A card refund — the settlement row being reversed, and the form. */
   const [toCard, setToCard] = React.useState<LedgerRow | null>(null);
   const [cardForm, setCardForm] = React.useState({ amount: "", reason: "" });
@@ -84,24 +113,54 @@ export function OrdersClient({
     filter === "all" ? true : filter === "charges" ? e.deltaCents < 0 : e.deltaCents > 0
   );
 
-  const submitPost = (evenIfItLooksLikeARepeat = false) => {
-    const kind = posting!;
+  /* A hand-typed refund carries no Stripe object, so it is a house credit —
+     money the club gives back with nothing behind it — and above the ceiling it
+     takes two people. The amount is read live, so the second Select appears the
+     moment the figure clears the line. */
+  const postedCents = Math.round(Number(form.amount) * 100);
+  const needsASecond =
+    posting === "refund" &&
+    houseCreditMaxCents !== null &&
+    Number.isFinite(postedCents) &&
+    postedCents > houseCreditMaxCents;
+
+  const refundNeedsASecond =
+    !!refund && houseCreditMaxCents !== null && refund.refundCents > houseCreditMaxCents;
+
+  /* `again` carries what the first attempt was, because the second attempt is
+     made from the repeat dialog — by which point the posting dialog has been
+     closed and this component has re-rendered without it. Reading `posting`
+     there would read null and the entry would go up with no kind at all. */
+  const submitPost = (
+    evenIfItLooksLikeARepeat = false,
+    again?: { kind: PostKind; seconded: string | null }
+  ) => {
+    const kind = again?.kind ?? posting!;
     const cents = Math.round(Number(form.amount) * 100);
+    const seconded =
+      again !== undefined ? again.seconded : kind === "refund" && needsASecond ? form.seconded : null;
     setPosting(null);
     startTransition(async () => {
       /* Not folded into run(): a suspected repeat is neither a failure nor a
          success, and reporting it as either is how a member gets refunded
          twice or an operator gives up on a refund that was never posted. */
-      const res = await postLedgerEntry(form.profileId, kind, cents, form.memo, evenIfItLooksLikeARepeat);
+      const res = await postLedgerEntry(
+        form.profileId,
+        kind,
+        cents,
+        form.memo,
+        evenIfItLooksLikeARepeat,
+        seconded
+      );
       if (res.looksLikeARepeat) {
-        setRepeat({ kind, cents, why: res.looksLikeARepeat });
+        setRepeat({ kind, cents, why: res.looksLikeARepeat, seconded });
         return;
       }
       if (res.error) {
         show({ msg: res.error, tone: "danger" });
         return;
       }
-      setForm({ profileId: "", amount: "", memo: "" });
+      setForm({ profileId: "", amount: "", memo: "", seconded: "" });
       show({
         msg: kind === "payment" ? "Payment posted." : "Refund posted.",
         meta: "SHIP'S RECORD · YOUR NAME ON IT",
@@ -241,7 +300,11 @@ export function OrdersClient({
             </Button>
             <Button
               variant="outline"
-              disabled={!form.profileId || !(Number(form.amount) > 0)}
+              disabled={
+                !form.profileId ||
+                !(Number(form.amount) > 0) ||
+                (needsASecond && !form.seconded)
+              }
               pending={pending}
               pendingLabel="Posting…"
               onClick={() => submitPost()}
@@ -277,6 +340,33 @@ export function OrdersClient({
             value={form.memo}
             onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))}
           />
+          {needsASecond ? (
+            <>
+              <p className="hm-body">
+                A credit above {dollars(houseCreditMaxCents ?? 0)} is more than one operator
+                gives on their own. Name the colleague who agreed it — their name goes on the
+                row beside yours and stays there.
+              </p>
+              <Select
+                label="Seconded by"
+                placeholder="Pick an operator"
+                options={operators}
+                value={form.seconded}
+                onChange={(e) => setForm((f) => ({ ...f, seconded: e.target.value }))}
+              />
+              {operators.length === 0 ? (
+                <p className="hm-body hm-body--muted">
+                  Nobody else is on the Bridge to second it. Shoreside can add an operator, or
+                  post this as two credits inside the line.
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {posting === "refund" && houseCreditMaxCents === null ? (
+            <p className="hm-body hm-body--muted">
+              The house credit ceiling could not be read, so no credit can be posted just now.
+            </p>
+          ) : null}
         </div>
       </Dialog>
 
@@ -299,9 +389,9 @@ export function OrdersClient({
                 const again = repeat;
                 setRepeat(null);
                 if (!again) return;
-                setPosting(again.kind);
-                /* Same entry, posted deliberately this time. */
-                queueMicrotask(() => submitPost(true));
+                /* Same entry, posted deliberately this time — and told what it
+                   was, rather than left to read a dialog that has closed. */
+                submitPost(true, { kind: again.kind, seconded: again.seconded });
               }}
             >
               Post it anyway
@@ -318,7 +408,10 @@ export function OrdersClient({
 
       <Dialog
         open={!!refund}
-        onClose={() => setRefund(null)}
+        onClose={() => {
+          setRefund(null);
+          setRefundSeconded("");
+        }}
         width={380}
         eyebrow={refund ? `${refund.shortId} · ${refund.member}` : ""}
         title={refund ? `Refund ${refund.total}?` : ""}
@@ -330,13 +423,16 @@ export function OrdersClient({
               </Button>
               <Button
                 variant="gold"
+                disabled={refundNeedsASecond && !refundSeconded}
                 pending={pending}
                 pendingLabel="Refunding…"
                 onClick={() => {
                   const o = refund;
+                  const seconded = refundNeedsASecond ? refundSeconded : null;
                   setRefund(null);
+                  setRefundSeconded("");
                   run(
-                    () => refundShopOrder(o.id),
+                    () => refundShopOrder(o.id, seconded),
                     () =>
                       show({
                         msg: "Refund posted — email sent.",
@@ -352,8 +448,31 @@ export function OrdersClient({
           ) : null
         }
       >
-        The refund posts to the member account and the receipt goes out by email. Financial
-        actions log to the ship&apos;s record with your name on them.
+        <div className="hm-form">
+          <p className="hm-body">
+            The refund posts to the member account and the receipt goes out by email.
+            Financial actions log to the ship&apos;s record with your name on them.
+          </p>
+          {/* Credit to the account with no Stripe object behind it is a house
+              credit whatever raised it, so a Shop refund meets the same ceiling
+              a hand-typed one does — asked here rather than refused after the
+              order has already been flipped to refunded. */}
+          {refundNeedsASecond ? (
+            <>
+              <p className="hm-body">
+                This is above {dollars(houseCreditMaxCents ?? 0)}, so it takes a second
+                operator. Name the colleague who agreed it.
+              </p>
+              <Select
+                label="Seconded by"
+                placeholder="Pick an operator"
+                options={operators}
+                value={refundSeconded}
+                onChange={(e) => setRefundSeconded(e.target.value)}
+              />
+            </>
+          ) : null}
+        </div>
       </Dialog>
 
       {/* The money leaves Stripe here. Nothing is posted from this dialog: the
