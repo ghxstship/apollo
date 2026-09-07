@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { Button, Dialog, Input, Toast } from "@/components/ds";
-import { beginTwoStep, confirmTwoStep, endTwoStep, newRecoveryCodes, setPassword, type PasswordState, type TwoStepState } from "@/app/gangway/actions";
+import { beginTwoStep, changeEmail, confirmTwoStep, endTwoStep, newRecoveryCodes, setPassword, type EmailState, type PasswordState, type TwoStepState } from "@/app/gangway/actions";
 import { Notice } from "@/components/ds";
 import { PASSWORD_MIN } from "@/app/gangway/ways";
 
@@ -41,6 +41,65 @@ export function PasswordControl() {
         </form>
       </Dialog>
       {toast ? <Toast fixed message={toast} duration={4000} onClose={() => setDismissed(true)} /> : null}
+    </>
+  );
+}
+
+/* The address on file. Until 2026-09-07 a member could not change it at all —
+   the guard refuses the column, the Bridge only reads it, and nothing asked the
+   provider. A product that promises somebody they can correct what is held
+   about them has to mean the most important thing it holds.
+
+   The dialog says what will happen before it happens: a link goes to the new
+   address and nothing moves until it is followed, and the old address is told
+   either way. Both facts matter to somebody deciding whether to press it. */
+export function EmailControl({ current }: { current: string | null }) {
+  const [open, setOpen] = React.useState(false);
+  const [state, action, pending] = React.useActionState<EmailState, FormData>(changeEmail, {});
+  const [dismissed, setDismissed] = React.useState(false);
+  const done = state.done && !dismissed;
+
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => { setDismissed(true); setOpen(true); }}>
+        Change
+      </Button>
+      <Dialog
+        open={open && !done}
+        onClose={() => setOpen(false)}
+        width={440}
+        eyebrow="Address on file"
+        title="Change the address you sign in with."
+      >
+        <form action={action} className="you-stack">
+          <p className="mbr-dlg__lede mbr-status--inline">
+            A link goes to the new address and nothing changes until you follow
+            it. Your old address is told either way — that is how somebody finds
+            out if a change was not theirs.
+          </p>
+          <Input label="New address" name="email" type="email" autoComplete="email" required />
+          <Input
+            label="Your password"
+            name="current"
+            type="password"
+            autoComplete="current-password"
+            required
+            error={state.error}
+          />
+          <Button type="submit" variant="gold" pending={pending} pendingLabel="Sending">
+            Send the link
+          </Button>
+        </form>
+      </Dialog>
+      {done ? (
+        <Toast
+          fixed
+          message={`Check ${state.sentTo ?? "the new address"} for the link. Nothing moves until you follow it.`}
+          duration={6000}
+          onClose={() => { setDismissed(true); setOpen(false); }}
+        />
+      ) : null}
+      {current ? <span className="you-note">Currently {current}</span> : null}
     </>
   );
 }

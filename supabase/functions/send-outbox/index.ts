@@ -559,6 +559,19 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
 <p style="margin:0;">If it was not, ${link(`${APP_URL}/you`, "open your settings")} — you can see everywhere you are signed in, shut any of them, and change your password from there.</p>`,
     ),
   }),
+  /* To the OLD address, and only the old one. The new address gets the
+     provider's confirmation link; this is the letter that reaches the mailbox
+     which has just stopped opening the account — the one place the rightful
+     holder is certain to be reading if somebody else made the change. */
+  "email-changed": (p) => ({
+    subject: "The address on your account changed.",
+    html: shell(
+      greet(p) +
+        `<p style="margin:0 0 16px;">The email address on your membership was changed${p["at"] ? ` on ${esc(String(p["at"]))}` : ""}. This letter is going to the address it used to be, because that is the one you are reading.</p>
+<p style="margin:0 0 16px;">If that was you, there is nothing to do — sign in with the new address from now on.</p>
+<p style="margin:0;">If it was not, write to ${esc(shoresideAddress())} straight away and say so. Do not follow a link in this letter to fix it: a letter is not a thing to trust when somebody else is in your account.</p>`,
+    ),
+  }),
   "password-changed": (p) => ({
     subject: "Your password was changed.",
     html: shell(
@@ -795,6 +808,7 @@ const LETTER_KIND: Record<string, Kind> = {
      say, and a member who has turned marketing off has not asked to stop
      hearing that somebody changed their password. */
   "new-sign-in": "transactional",
+  "email-changed": "transactional",
   "password-changed": "transactional",
   "two-step-on": "transactional",
   "two-step-off": "transactional",

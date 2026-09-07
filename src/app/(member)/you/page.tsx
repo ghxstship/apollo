@@ -33,7 +33,7 @@ import {
 } from "./you-client";
 import { readPrefs } from "./prefs";
 import { SignOutForm } from "@/components/sign-out-form";
-import { PasswordControl, TwoStepControl } from "./security";
+import { EmailControl, PasswordControl, TwoStepControl } from "./security";
 import { Sessions, type SessionRow } from "./sessions";
 import { InstallPrompt } from "@/components/member/install-prompt";
 import { AgreementLists, latestStanding, type StandingRow } from "@/components/member/agreement-rows";
@@ -582,6 +582,17 @@ async function YouBody({ enrol }: { enrol?: string }) {
               until you do, the Bridge will keep sending you to this screen.
             </Notice>
           ) : null}
+          <div className="you-row">
+            <div>
+              <b>Address on file</b>
+              <p>
+                The one you sign in with, and the one every letter goes to.
+                Changing it sends a link to the new address; nothing moves until
+                you follow it.
+              </p>
+            </div>
+            <EmailControl current={user.email ?? null} />
+          </div>
           <div className="you-row you-row--stack">
             <div>
               <b>Where you are signed in</b>

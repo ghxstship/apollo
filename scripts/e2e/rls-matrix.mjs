@@ -604,7 +604,13 @@ export async function run(p, ctx) {
       ["status", { status: "paused" }, /standing moves from the bridge/],
       ["plan_id", { plan_id: ZERO }, /plan changes through billing/],
       ["member_no", { member_no: "UN-E2E-RLS" }, /issued once/],
-      ["email", { email: "e2e-rls-hijack@fixtures.invalid" }, /changes through shoreside/],
+      /* The refusal is unchanged — a member still cannot write this column —
+         but the SENTENCE changed on 2026-09-07 and had to. It used to say the
+         address "changes through Shoreside", which stopped being true the day
+         a member could change it from their own settings; a refusal that sends
+         somebody to the wrong place is worse than no refusal, because they act
+         on it. */
+      ["email", { email: "e2e-rls-hijack@fixtures.invalid" }, /follows the one you sign in with/],
       ["stripe_customer_id", { stripe_customer_id: "cus_e2e_rls" }, /not yours to set/],
       ["hold_reason", { hold_reason: "x" }, /standing moves from the bridge/],
       ["phone_verified", { phone_verified: true }, /verified by answering/],

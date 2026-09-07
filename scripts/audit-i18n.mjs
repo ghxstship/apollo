@@ -209,8 +209,15 @@ if (failed) {
   console.log(
     `\n${failed} check(s) failing.\n` +
       "A hard-coded user-facing string was added, or a physical CSS property was.\n" +
-      "Both are rework: the string will have to be extracted and the property mirrored.\n" +
-      "If you deliberately lowered a count, record it: node scripts/audit-i18n.mjs --write",
+      "Both are rework: the string will have to be extracted and the property mirrored.\n\n" +
+      "This number is a DEBT LEDGER, not a ban on writing copy. Three honest answers:\n" +
+      "  · The copy is new and needed — write the debt down and move on:\n" +
+      "      node scripts/audit-i18n.mjs --write\n" +
+      "    The baseline is a committed file, so raising it is a visible diff somebody\n" +
+      "    reviews. That visibility is the whole mechanism; a silent rise is what this\n" +
+      "    gate exists to stop, not a deliberate one.\n" +
+      "  · The copy could go through a catalog instead — do that, and the count falls.\n" +
+      "  · You lowered a count by extracting something — record it the same way.",
   );
   process.exit(1);
 }

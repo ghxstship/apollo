@@ -1,6 +1,6 @@
 {
   "areas": {
-    "member": 851,
+    "member": 861,
     "site": 437,
     "staff": 1450,
     "app-root": 65,
@@ -8,6 +8,6 @@
     "components": 112,
     "design-system": 160
   },
-  "total": 3139,
+  "total": 3149,
   "physicalCss": 27
 }

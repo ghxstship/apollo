@@ -203,6 +203,78 @@ export async function setPassword(_prev: PasswordState, formData: FormData): Pro
   return { done: true };
 }
 
+/* Change the address on file.
+ *
+ * Until 2026-09-07 this did not exist: the guard on profiles refuses a member
+ * editing the column, the Bridge only reads it, and updateUser was called for
+ * a password and nothing else — so a member with a wrong address on their
+ * account had no way to correct it, in a product that publishes a promise to
+ * let them correct things.
+ *
+ * The PROVIDER owns the change, not this action. updateUser sends a
+ * confirmation link and moves nothing until it is followed, which is the
+ * property that matters: an address nobody has proved they can read is not a
+ * recovery channel, it is a way to lose an account. All this does is ask, and
+ * refuse to ask on a session that has not proved who it is.
+ *
+ * The club's copy follows through a trigger on the provider's own table, and
+ * the OLD address gets a letter when it lands — see migration 20260907110000. */
+export type EmailState = { done?: boolean; error?: string; next?: string; sentTo?: string };
+
+export async function changeEmail(_prev: EmailState, formData: FormData): Promise<EmailState> {
+  const next = String(formData.get("email") ?? "").trim().toLowerCase();
+  const current = String(formData.get("current") ?? "");
+
+  /* The same shape the gangway uses, so an address the club would refuse at
+     the door is refused here rather than after a round trip. */
+  if (next.length > 254 || !EMAIL.test(next)) {
+    return { error: "That does not look like an address the club can write to." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+  if (next === (user.email ?? "").toLowerCase()) {
+    return { error: "That is the address you already have." };
+  }
+
+  const stepUp = await actionStepUp(supabase, user);
+  if (stepUp) return stepUp;
+
+  /* The password, for the same reason it is asked before a password change: a
+     session left open on a borrowed laptop must not be able to walk off with
+     the account by pointing it at another mailbox. Verified on a client that
+     holds no session, so nothing about the current one is disturbed. */
+  if (!current) return { error: "Type your password to confirm this." };
+  const { error: wrong } = await createVerifierClient().auth.signInWithPassword({
+    email: user.email ?? "",
+    password: current,
+  });
+  if (wrong) return { error: "That is not the password on this account." };
+
+  /* Paced on the mailbox being asked for, not the one asking. Somebody
+     working through addresses to find one that is free would otherwise get as
+     many tries as they liked. */
+  const admin = createAdminClient();
+  if (!(await paced(admin, "email-change", user.id, 5, 3600))) {
+    return { error: "That is enough address changes for now. Try again later." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ email: next });
+  if (error) {
+    if (/already|registered|exists/i.test(error.message)) {
+      /* Deliberately the same sentence as a send that worked. Otherwise this
+         is a way to ask the club whether a given address is on the roll. */
+      return { done: true, sentTo: next };
+    }
+    if (/rate|too many/i.test(error.message)) return { error: "Too many tries. Give it a few minutes." };
+    return { error: "That didn't land. Try once more." };
+  }
+  return { done: true, sentTo: next };
+}
+
 /* Two-step: enrol a code app, prove it once, and the session is second-factor
    from then on. */
 export type TwoStepState = {
