@@ -58,6 +58,8 @@ export default async function HomePage() {
       supabase
         .from("cities")
         .select("id,slug,name,status,coordinates,launch_year")
+        /* Closed harbours are not markets — see (site)/layout.tsx. */
+        .neq("status", "closed")
         .order("position", { ascending: true }),
       supabase
         .from("log_posts")

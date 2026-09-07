@@ -23,11 +23,59 @@ import React from "react";
    panel take): focus moves into the surface on open; Tab from the last item
    wraps to the first with the event's default prevented; Shift+Tab from the
    first wraps to the last; Escape closes; body overflow is restored; focus
-   returns to the opener.
+   returns to the opener. Re-verified 2026-09-07 with two surfaces open at
+   once, which is the case the save-and-restore got wrong.
 
    NOT verified by anything, by hand or otherwise: that a later edit to this
    file preserves any of the above. A regression here breaks four surfaces at
    once — including the two on the checkout path. */
+/* THE SCROLL LOCK IS SHARED, so it is counted rather than saved and restored.
+ *
+ * Every consumer of this hook used to do the obvious thing: remember
+ * body.style.overflow on open, set it to hidden, put the remembered value back
+ * on close. That is correct for one surface at a time and wrong the moment two
+ * overlap — and three of them can, because the search, the mobile menu and the
+ * Producer panel all live in the same chrome and none of them closes the
+ * others.
+ *
+ * The failure, reproduced in a browser at 375px on 2026-09-07:
+ *
+ *   open the search   → it remembers "" and sets hidden
+ *   open the menu     → it remembers "hidden" and sets hidden
+ *   close the search  → it puts back "", and the page scrolls again
+ *   close the menu    → it puts back "hidden", and the page never scrolls again
+ *
+ * The reader is left on a page that will not move, with nothing open to close.
+ * Reloading is the only way out, which is why it reads as "the menu and the
+ * search are broken" rather than as a scroll bug: the two controls that caused
+ * it are the two you reach for afterwards.
+ *
+ * Counted at module scope: the first lock remembers what the page had, every
+ * later one only increments, and the original is restored when the last of
+ * them lets go. */
+let scrollLocks = 0;
+let scrollWas: string | null = null;
+
+function lockScroll() {
+  if (scrollLocks === 0) {
+    scrollWas = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+  }
+  scrollLocks += 1;
+}
+
+function unlockScroll() {
+  /* Never below zero. A cleanup that ran twice — a double-invoked effect in
+     development, a surface unmounted mid-transition — would otherwise take the
+     count negative and leave the next real lock unable to reach zero again. */
+  if (scrollLocks === 0) return;
+  scrollLocks -= 1;
+  if (scrollLocks === 0) {
+    document.body.style.overflow = scrollWas ?? "";
+    scrollWas = null;
+  }
+}
+
 export function useModal(
   open: boolean,
   onClose?: () => void,
@@ -89,8 +137,7 @@ export function useModal(
     };
 
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    if (modal) document.body.style.overflow = "hidden";
+    if (modal) lockScroll();
     /* preventScroll, because focusing an element scrolls it into view and every
        surface this hook serves is already where the reader is looking: a dialog
        is centred in the viewport, a sheet is pinned to an edge, and an anchored
@@ -104,7 +151,7 @@ export function useModal(
 
     return () => {
       document.removeEventListener("keydown", onKey);
-      if (modal) document.body.style.overflow = prev;
+      if (modal) unlockScroll();
       /* The opener often unmounts with the surface; only reach for it when
          focus has actually fallen through to nowhere. */
       if (opener && (!document.activeElement || document.activeElement === document.body)) {

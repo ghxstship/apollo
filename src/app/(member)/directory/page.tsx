@@ -40,7 +40,8 @@ export default async function DirectoryPage({
       .eq("status", "active")
       .order("full_name", { ascending: true })
       .range(0, limit - 1),
-    supabase.from("cities").select("id,slug,name").order("position", { ascending: true }),
+    /* Closed harbours are not offered as a filter — see (site)/layout.tsx. */
+    supabase.from("cities").select("id,slug,name").neq("status", "closed").order("position", { ascending: true }),
     supabase.from("member_affinity").select("other_id,shared").eq("profile_id", user.id),
     /* The viewer's own refusals. member_blocks RLS returns a member only the
        rows they wrote, so this is their list and nobody else's. */

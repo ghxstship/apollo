@@ -173,6 +173,8 @@ function sourceInvariants() {
 
 const results = [];
 const failures = [];
+/* Filled once in main(), read by checkHtml on every page. */
+let CLOSED_HARBOURS = [];
 const note = (route, check, ok, detail = "") => {
   results.push({ route, check, ok, detail });
   if (!ok) failures.push({ route, check, detail });
@@ -181,6 +183,29 @@ const note = (route, check, ok, detail = "") => {
 async function get(path, redirect = "manual") {
   const res = await fetch(BASE + path, { redirect, headers: { "user-agent": "un-route-audit" } });
   return res;
+}
+
+/* Harbours the club has closed. A closed harbour is not a market it is in, and
+   it has no business in a footer, a markets list or a filter — but every one of
+   those read `cities` with no status filter, so the e2e's own fixture harbour
+   ("E2E fixture harbour (closed)", position 0) sat above Miami in the footer of
+   every public page.
+
+   Checked against the RENDERED page rather than the query, because the query is
+   the thing that was wrong in five places and a sixth is one new surface away.
+   What a reader saw is the only assertion that cannot be satisfied by a filter
+   somebody forgot to copy. */
+async function closedHarbours() {
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/cities?status=eq.closed&select=name`, {
+      headers: { apikey: SUPA_KEY, authorization: `Bearer ${SUPA_KEY}` },
+    });
+    if (!res.ok) return [];
+    const rows = await res.json();
+    return Array.isArray(rows) ? rows.map((r) => r.name).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
 }
 
 async function fetchSlugs(source) {
@@ -222,6 +247,10 @@ function checkHtml(route, html) {
     note(route, "the skip link has somewhere to land", /id="main"/.test(html),
       'ls-skip is present but no id="main"');
   }
+  const closedShown = CLOSED_HARBOURS.filter((name) => lexHay.includes(name.toLowerCase()));
+  note(route, "no closed harbour is advertised", closedShown.length === 0,
+    closedShown.length ? `showing: ${closedShown.join(", ")}` : "");
+
   const offLexicon = BANNED.filter((term) => lexHay.includes(term.toLowerCase()));
   note(route, "on-lexicon", offLexicon.length === 0, offLexicon.length ? `banned terms: ${offLexicon.join(", ")}` : "");
   /* The producer never shouts: no exclamation marks and no emoji in visible
@@ -517,6 +546,8 @@ async function main() {
     return;
   }
   console.log(`auditing ${BASE}\n`);
+  /* Read once, before any page is fetched, so every checkHtml can ask. */
+  CLOSED_HARBOURS = await closedHarbours();
   sourceInvariants();
   /* Source-only: the invariants that need no server, for a checkout with
      none running. The full audit still runs in CI against a built site. */

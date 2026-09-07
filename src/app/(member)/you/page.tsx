@@ -119,7 +119,9 @@ async function YouBody({ enrol }: { enrol?: string }) {
     { data: invite },
     { data: allowanceRows },
   ] = await Promise.all([
-    supabase.from("cities").select("*").order("position", { ascending: true }),
+    /* A member cannot choose a closed harbour as their home — see
+       (site)/layout.tsx for why this filter is in five places. */
+    supabase.from("cities").select("*").neq("status", "closed").order("position", { ascending: true }),
     supabase.from("account_balance").select("*").eq("profile_id", user.id).maybeSingle(),
     /* RLS narrows this to the member's own rows; newest raised, first read. */
     supabase.from("member_event_proposals").select("*").order("created_at", { ascending: false }),

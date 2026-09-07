@@ -59,7 +59,8 @@ export default async function EpisodesPage({
       .gte("starts_at", now.toISOString())
       .order("starts_at", { ascending: true }),
     supabase.from("episode_capacity").select("*"),
-    supabase.from("cities").select("*").order("position", { ascending: true }),
+    /* Closed harbours are not offered as a filter — see (site)/layout.tsx. */
+    supabase.from("cities").select("*").neq("status", "closed").order("position", { ascending: true }),
     /* A series' access decides whether an episode is on offer at all. Invite
        and on-request series are refused at the booking guard, so listing them
        as passes would be advertising a door that does not open. Its label is
