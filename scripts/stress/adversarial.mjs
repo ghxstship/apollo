@@ -588,6 +588,105 @@ async function sweep() {
   }
 }
 
+
+/* The two endpoints that answer an UNAUTHENTICATED request by changing
+   something. Everything else on this surface either reads, or demands a
+   session first; these two are reached with no cookie at all, by design:
+   RFC 8058 one-click needs a POST a mail client can make, and a member who
+   has lost their authenticator cannot sign in to ask for help.
+
+   That makes them the newest and sharpest surface in the app, and the harness
+   had no cases for them. What is being asked here is narrow and specific: do
+   they refuse junk without falling over, do they answer the same whether a
+   thing exists or not, and can a caller learn anything from the difference
+   between two refusals. */
+async function probeUnauthenticated() {
+  const g = "unauthenticated";
+
+  const post = (path, body, headers = {}) =>
+    fetch(BASE + path, {
+      method: "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: typeof body === "string" ? body : JSON.stringify(body),
+    });
+
+  /* ---- one-click unsubscribe ---- */
+  const tokens = [
+    ["missing", ""],
+    ["junk", "not-a-uuid"],
+    ["long", "a".repeat(5000)],
+    ["sqli", "' or 1=1 --"],
+    ["crlf", "a%0d%0aSet-Cookie:%20x=1"],
+    ["traversal", "..%2f..%2f"],
+    ["nul", "a%00b"],
+    /* Well-formed and certainly not minted. */
+    ["unminted", "00000000-0000-4000-8000-000000000000"],
+  ];
+  const seen = new Set();
+  for (const [name, t] of tokens) {
+    let res;
+    try { res = await post(`/api/unsubscribe?t=${t}`, {}); }
+    catch (e) { verdict(g, `unsubscribe ${name}`, false, "500", `threw ${e}`); continue; }
+    const body = await res.text();
+    /* 500 is a crash; 503 is a deployment saying it cannot do this, which is
+       a legitimate answer and the one an unwired checkout gives too. */
+    verdict(g, `unsubscribe ${name} does not 500`, res.status !== 500, "500", `status ${res.status}`);
+    verdict(g, `unsubscribe ${name} leaks nothing`, !bodyLeaks(body), "leak", bodyLeaks(body) || "");
+    const cd = res.headers.get("set-cookie") || "";
+    verdict(g, `unsubscribe ${name} sets no cookie`, !cd, "leak", cd);
+    if (name === "junk" || name === "unminted") seen.add(`${res.status}:${body}`);
+  }
+  /* A malformed token and a well-formed one that was never minted must be
+     indistinguishable. If they differ, the endpoint answers "does this token
+     exist" for anybody who asks, and the whole roster can be tested one uuid
+     at a time. */
+  verdict(g, "unsubscribe tells a bad token from an unminted one apart from nothing",
+    seen.size === 1, "leak", [...seen].join("  ≠  "));
+
+  /* GET is answered too — some clients follow the header as a link rather
+     than posting it — and must refuse the same things. */
+  const viaGet = await fetch(`${BASE}/api/unsubscribe?t=not-a-uuid`);
+  verdict(g, "unsubscribe GET does not 500", viaGet.status !== 500, "500", `status ${viaGet.status}`);
+
+  /* ---- recovery ---- */
+  const bodies = [
+    ["empty", {}],
+    ["nonsense", "not json at all"],
+    ["array", [1, 2, 3]],
+    ["nested", { email: { $ne: null }, code: { $gt: "" } }],
+    ["long-email", { email: "a".repeat(9000) + "@x.test", code: "ABCD1234EFGH" }],
+    ["long-code", { email: "e2e-national@fixtures.invalid", code: "A".repeat(9000) }],
+    ["sqli", { email: "' or 1=1 --", code: "' or '1'='1" }],
+    ["types", { email: 12345, code: true }],
+    ["unknown-member", { email: "nobody-at-all@fixtures.invalid", code: "ABCD1234EFGH" }],
+    ["known-member-wrong-code", { email: "e2e-national@fixtures.invalid", code: "ABCD1234EFGH" }],
+  ];
+  const answers = new Map();
+  for (const [name, b] of bodies) {
+    let res;
+    try { res = await post("/api/recover", b); }
+    catch (e) { verdict(g, `recover ${name}`, false, "500", `threw ${e}`); continue; }
+    const body = await res.text();
+    verdict(g, `recover ${name} does not 500`, res.status !== 500, "500", `status ${res.status}`);
+    verdict(g, `recover ${name} leaks nothing`, !bodyLeaks(body), "leak", bodyLeaks(body) || "");
+    verdict(g, `recover ${name} does not sign anybody in`, !(res.headers.get("set-cookie") || "").includes("auth-token"),
+      "authz", res.headers.get("set-cookie") || "");
+    if (name === "unknown-member" || name === "known-member-wrong-code") answers.set(name, `${res.status}:${body}`);
+  }
+  /* The one that matters. If a member the club has never heard of is refused
+     differently from a member with a wrong code, this endpoint answers "is
+     this person a member" to anybody who asks — which is the roster, one
+     address at a time, from a path that needs no session. */
+  const [unknown, wrong] = [answers.get("unknown-member"), answers.get("known-member-wrong-code")];
+  verdict(g, "recover tells a stranger from a member with a bad code apart from nothing",
+    unknown !== undefined && unknown === wrong, "leak", `${unknown}  ≠  ${wrong}`);
+
+  /* A body larger than the route's own bound. readBounded should refuse it
+     without reading it all into memory. */
+  const huge = await post("/api/recover", "x".repeat(200_000));
+  verdict(g, "recover refuses an oversized body", huge.status >= 400 && huge.status !== 500, "500", `status ${huge.status}`);
+}
+
 /* ═══════════════════════ driver ════════════════════════════════════════════ */
 const GROUPS = {
   redirect: probeRedirect,
@@ -597,6 +696,7 @@ const GROUPS = {
   calendar: probeCalendar,
   actions: probeActions,
   rls: probeRls,
+  unauthenticated: probeUnauthenticated,
 };
 
 async function main() {

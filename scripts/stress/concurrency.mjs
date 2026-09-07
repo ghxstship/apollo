@@ -739,6 +739,99 @@ const CASES = {
   },
 },
 
+
+/* ---------- the paths added on 2026-09-06, none of which had ever been under
+              contention ----------
+
+   Four of the day's new functions promise "exactly once" and every one of them
+   counts before it writes. That is the shape the whole of this file exists to
+   distrust: a read and a write that are correct on their own and wrong
+   together, which shows up only when two callers arrive in the same
+   millisecond. Each takes an advisory lock and says so in its comment; these
+   are the cases that check the comment is true. */
+
+"pacing-turn": {
+  invariant: "a paced path admits exactly its limit, however many arrive at once",
+  async run() {
+    /* The bucket is a digest by construction — spend_a_turn refuses anything
+       that is not a sha-256, which is how the ledger stays free of addresses. */
+    const bucket = createHash("sha256").update("stress:pacing").digest("hex");
+    sql(`delete from public.pacing where bucket = ${quote(bucket)};`);
+    // Three of a limit of four already spent: one turn is left, and N hands
+    // reach for it together.
+    sql(`insert into public.pacing (bucket) select ${quote(bucket)} from generate_series(1, 3);`);
+    await race(
+      Array.from({ length: N }, () => `select public.spend_a_turn(${quote(bucket)}, 4, 600);`),
+      { as: null });
+    const spent = Number(scalar(`select count(*) from public.pacing where bucket = ${quote(bucket)}`));
+    return { held: spent === 4,
+      detail: `3 of 4 turns already spent, ${N} more asked at once; ${spent} turns recorded` };
+  },
+},
+
+"recovery-code": {
+  invariant: "a recovery code is spent exactly once",
+  async run() {
+    const me = member("recovery");
+    sql(`delete from public.recovery_codes where profile_id = ${quote(me)};`);
+    const hash = createHash("sha256").update("STRESS-CODE-0001").digest("hex");
+    sql(`insert into public.recovery_codes (profile_id, code_hash)
+         values (${quote(me)}, ${quote(hash)});`);
+    sql(`delete from public.notifications where title = 'A recovery code was used.';`);
+    await race(
+      Array.from({ length: N }, () => `select public.spend_recovery_code(${quote(me)}, ${quote(hash)});`),
+      { as: null });
+    const spent = Number(scalar(`select count(*) from public.recovery_codes
+      where profile_id = ${quote(me)} and spent_at is not null`));
+    /* The Bridge hears once, not N times. A code spent twice would be a way
+       back into somebody's account; a Bridge told twice would be a false
+       report of a second attempt that never happened. */
+    const told = Number(scalar(`select count(distinct profile_id) from public.notifications
+      where title = 'A recovery code was used.'`));
+    const words = Number(scalar(`select count(*) from public.notifications
+      where title = 'A recovery code was used.'`));
+    return { held: spent === 1 && words === told,
+      detail: `${N} attempts on one code at once; ${spent} code(s) spent, the Bridge told ${words} time(s) across ${told} seat(s)` };
+  },
+},
+
+"data-request": {
+  invariant: "a member has one open request of a kind, however fast they ask twice",
+  async run() {
+    const me = member("dsar");
+    sql(`delete from public.data_requests where profile_id = ${quote(me)};`);
+    const rs = await race(
+      Array.from({ length: N }, () => `select public.ask_about_my_data('erasure', 'stress');`),
+      { as: me });
+    const open = Number(scalar(`select count(*) from public.data_requests
+      where profile_id = ${quote(me)} and state in ('open','acknowledged')`));
+    return { held: open === 1,
+      detail: `${N} erasure requests asked at once; ${open} open, ${won(rs)} accepted. ${tally(rs)}` };
+  },
+},
+
+"consent-ledger": {
+  invariant: "every consent written is kept, and the newest one is what stands",
+  async run() {
+    const me = member("consent");
+    sql(`delete from public.consent_records where profile_id = ${quote(me)};`);
+    /* Alternating grants and withdrawals, all at once. The ledger is
+       append-only, so the test is not that one wins — it is that NONE is lost,
+       because a withdrawal that vanished under contention is the exact failure
+       this table was built to make impossible. */
+    const rs = await race(
+      Array.from({ length: N }, (_, i) =>
+        `select public.record_consent('filming', ${i % 2 === 0 ? "true" : "false"});`),
+      { as: me });
+    const kept = Number(scalar(`select count(*) from public.consent_records
+      where profile_id = ${quote(me)} and subject = 'filming'`));
+    const standing = Number(scalar(`select count(*) from public.current_consent
+      where profile_id = ${quote(me)} and subject = 'filming'`));
+    return { held: kept === won(rs) && standing === 1,
+      detail: `${N} grants and withdrawals at once; ${kept} kept of ${won(rs)} accepted, ${standing} standing` };
+  },
+},
+
 };
 
 /* ---------- runner ---------- */

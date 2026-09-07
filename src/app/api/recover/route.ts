@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, serviceRoleReady } from "@/lib/supabase/admin";
 import { readBounded } from "@/lib/request-guards";
 import { overLimit, paced } from "@/lib/rate-limit";
 import { callerAddress } from "@/lib/caller-address";
@@ -40,6 +40,18 @@ export const dynamic = "force-dynamic";
 const SAME_ANSWER = "That address and code do not go together. Check the sheet you printed when you turned two-step on.";
 
 export async function POST(request: Request) {
+  /* Same reasoning as /api/unsubscribe, and it matters more here: this path is
+     reached by somebody who has lost their authenticator and cannot sign in to
+     ask for help another way. A 500 tells them nothing; a sentence tells them
+     where to write. Asked before anything else, so an unwired deployment
+     answers one way to every caller and comments on nothing. */
+  if (!serviceRoleReady()) {
+    return NextResponse.json(
+      { error: "Recovery is not wired on this deployment. Write to Shoreside and somebody will let you back in." },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } },
+    );
+  }
+
   /* Two limits, because they stop different things. The address limit stops
      somebody working through codes against one member; the caller limit stops
      one machine working through members. Both are tight — a person reading a

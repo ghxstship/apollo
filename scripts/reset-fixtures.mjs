@@ -15,6 +15,37 @@
  *
  * Usage: E2E_PASSWORD=… node scripts/reset-fixtures.mjs
  * (reads NEXT_PUBLIC_SUPABASE_URL / _ANON_KEY from the env or .env.local)
+ *
+ * ── WHAT THIS COSTS, learned the hard way on 2026-09-07 ─────────────────────
+ *
+ * Running this leaves the e2e suite unable to pass, and it does not recover on
+ * its own. Ten checks fail afterwards and stay failing however many times the
+ * suite is re-run, because several tests depend on persona state this clears
+ * and none of them rebuilds it:
+ *
+ *   · Four DIRECT-THREAD checks. open_direct_thread() needs shares_ground_with,
+ *     which means a shared thread, both personas aboard one episode, or a pass
+ *     transfer between them. The reset removes all three. (The suite's own
+ *     comment says listing a member in the directory should be enough — the
+ *     function does not check in_directory at all, so that test was only ever
+ *     passing on residue. Worth a decision: either the rule is "sailed with"
+ *     and the comment is wrong, or being listed should grant it and the
+ *     function is.)
+ *
+ *   · Six MEDIA checks. The episode-media INSERT policy wants an aboard pass,
+ *     and boarding is guarded three deep — a vetting file, then a cleared
+ *     background, then a completed preference sheet. Every one of those is
+ *     cleared here, and the product refuses correctly at each step.
+ *
+ * Rebuilding by hand means: a vetting_files row with background_state
+ * 'cleared' (not 'clear' — there is a CHECK), a preference_sheets row with
+ * completed_at set, an aboard pass on an upcoming scheduled episode, and a
+ * direct_thread_pairs row joining two personas.
+ *
+ * The right fix is for this script to re-seat what it tears down, so "clean
+ * water" means a state the suite can run from rather than one it cannot. That
+ * is not done: it needs a decision about the directory rule above, and
+ * guessing at it would bake the wrong answer into the fixtures.
  */
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";

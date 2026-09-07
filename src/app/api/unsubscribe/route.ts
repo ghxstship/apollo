@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, serviceRoleReady } from "@/lib/supabase/admin";
 import { overLimit } from "@/lib/rate-limit";
 
 /* POST and GET /api/unsubscribe?t=<token> — the one thing on this deployment
@@ -31,6 +31,22 @@ import { overLimit } from "@/lib/rate-limit";
 export const dynamic = "force-dynamic";
 
 async function stop(request: Request): Promise<NextResponse> {
+  /* Asked FIRST, before the token is even looked at. createAdminClient()
+     throws when the service key is missing, and a throw here is a 500 with a
+     stack on a path anybody can reach without signing in.
+
+     Before the shape check rather than after, so an unwired deployment answers
+     one way to everything. Behind it, a malformed token would get 400 and a
+     well-formed one 503 — which says nothing about whether the token exists,
+     but does say whether it was well-formed, and an endpoint that cannot act
+     has no business commenting on its input at all. */
+  if (!serviceRoleReady()) {
+    return NextResponse.json(
+      { error: "Unsubscribing is not wired on this deployment. Shoreside knows." },
+      { status: 503, headers: { "Cache-Control": "no-store", "Retry-After": "3600" } },
+    );
+  }
+
   const token = new URL(request.url).searchParams.get("t") ?? "";
   /* Shape-checked before the database is touched, in the pattern the API keys
      use: a malformed token is not a lookup, it is noise. */
