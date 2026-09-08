@@ -248,6 +248,10 @@ function stamp(p: Record<string, unknown>): string {
    letter points. */
 function toText(html: string): string {
   return html
+    /* The whole head, not just its <style>. A letter is a full document from
+       2026-09-08 and the head carries a doctype, meta and eight @font-face
+       rules — none of which is anything a text-only reader should be shown. */
+    .replace(/<head[\s\S]*?<\/head>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_m, href: string, label: string) => {
       const plain = label.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
@@ -274,8 +278,27 @@ function toText(html: string): string {
 /* Mail has no webfonts worth relying on, so this is the token stack's own
    fallback chain and nothing more: Instrument Serif if the reader happens to
    have it, Georgia otherwise — which is the fallback --font-editorial names. */
-const SERIF = `'Instrument Serif', Georgia, 'Times New Roman', serif`;
-const MONO = `'Space Mono', 'Courier New', monospace`;
+/* THE KIT'S FACES, BY ROLE, and honest about who will see them.
+ *
+ * @font-face works in Apple Mail, iOS Mail, Outlook for Mac, Samsung Mail and
+ * Thunderbird. Gmail strips it on every platform, and Outlook on Windows
+ * renders through Word, which has never supported it. That is most of the
+ * world — so the fallback is not a courtesy, it is what the majority of readers
+ * actually get, and each stack below stands close to the face it replaces
+ * rather than being a plausible-looking list.
+ *
+ *   Anton      display headings   -> Arial Narrow, the nearest condensed
+ *                                   grotesque with real coverage
+ *   Archivo    body               -> Helvetica Neue / Arial, metrically near
+ *   Space Mono labels and figures -> Courier New
+ *
+ * The letters were set in Instrument Serif over Georgia until 2026-09-08, so
+ * almost every member read the club in Georgia while the product itself is
+ * Archivo — one brand in two typefaces, decided by which screen you happened
+ * to be looking at. */
+const DISPLAY = `'Anton', 'Arial Narrow', Arial, Helvetica, sans-serif`;
+const BODY = `'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif`;
+const MONO = `'Space Mono', 'Courier New', Courier, monospace`;
 
 /* Who the footer is talking to. The first two emails a stranger ever gets —
    application-received and port-invite — carried "you're on the cast" and
@@ -301,11 +324,79 @@ type ShellOptions = { inverse?: boolean; audience?: Audience; kind?: Kind };
    sent at all. */
 let postalNow: string | null = null;
 
+/* The document a letter arrives as.
+ *
+ * The shell returned a bare <table> until 2026-09-08, so there was nowhere for
+ * an @font-face to live and the provider wrapped it in a head of its own. A
+ * letter is a document: it gets a charset, a viewport, a language, and its own
+ * head.
+ *
+ * SELF-HOSTED, deliberately. A face served from fonts.gstatic.com makes every
+ * recipient's client fetch a file from Google the moment the letter is opened,
+ * disclosing their address and the time they read it to a third party who is
+ * not otherwise involved — a tracking pixel wearing a font's clothes, and the
+ * pattern a German court fined a site operator for in January 2022. The club
+ * already sends the letter; the fetch can come to the club.
+ *
+ * The weight range on Archivo is not a guess: Google serves one variable file
+ * for the whole 100-900 axis, so declaring 400 and 700 separately would have
+ * shipped the same bytes twice and asked the client to synthesise a bold it
+ * already had. Anton has one weight and is declared across 400-700 so that
+ * markup asking for bold selects Anton rather than synthesising a smear of it
+ * — and so the FALLBACK goes properly bold when Anton never arrives.
+ *
+ * lang is "en" because every letter in the corpus is English today. When the
+ * catalogue lands this takes the recipient's locale, and dir with it. */
+function letterHead(): string {
+  const face = (family: string, weight: string, file: string, subset: "latin" | "latin-ext") => {
+    const range = subset === "latin"
+      ? "U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD"
+      : "U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF";
+    return `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:swap;` +
+      `src:url(${APP_URL}/fonts/${file}) format('woff2');unicode-range:${range};}`;
+  };
+  const faces = [
+    face("Anton", "400 700", "Anton-latin.woff2", "latin"),
+    face("Anton", "400 700", "Anton-latin-ext.woff2", "latin-ext"),
+    face("Archivo", "100 900", "Archivo-latin.woff2", "latin"),
+    face("Archivo", "100 900", "Archivo-latin-ext.woff2", "latin-ext"),
+    face("Space Mono", "400", "SpaceMono-400-latin.woff2", "latin"),
+    face("Space Mono", "400", "SpaceMono-400-latin-ext.woff2", "latin-ext"),
+    face("Space Mono", "700", "SpaceMono-700-latin.woff2", "latin"),
+    face("Space Mono", "700", "SpaceMono-700-latin-ext.woff2", "latin-ext"),
+  ].join("");
+  return `<!doctype html><html lang="en" dir="ltr"><head>` +
+    `<meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width,initial-scale=1">` +
+    /* Both, because clients read different ones, and neither letter theme is
+       built to be recoloured by a client's own dark mode. */
+    `<meta name="color-scheme" content="light dark">` +
+    `<meta name="supported-color-schemes" content="light dark">` +
+    `<style>${faces}` +
+    `</style>` +
+    /* Word renders Outlook on Windows and falls to Times New Roman the moment
+       it meets a family it does not have — ignoring the rest of the stack.
+       Naming the fallback outright is the only thing it listens to. */
+    `<!--[if mso]><style>*{font-family:Arial,Helvetica,sans-serif !important;}` +
+    `.un-display{font-family:'Arial Narrow',Arial,sans-serif !important;}` +
+    `.un-mono{font-family:'Courier New',monospace !important;}</style><![endif]-->` +
+    `</head>`;
+}
+
 function shell(bodyHtml: string, opts: ShellOptions = {}): string {
   const { inverse = false, audience = "member", kind = "transactional" } = opts;
   const postal = postalNow;
   /* Kit email system: ivory canvas, warm noir ink, an acid rule, mono strap
-     footer. Email-safe stack — Georgia serif, Courier mono. */
+     footer. The [un] anchor is Anton at 400 with .02em of tracking in BOTH
+     marks, which is the Wordmark primitive's setting in ds/display.tsx and the
+     only setting the brand owns — the header mark had been inheriting the body
+     face at .24em, a mark the brand does not own, twelve times the tracking,
+     and the one element of a letter a member recognises before reading it.
+
+     The faces themselves are self-hosted in letterHead, and every family here
+     names a real fallback: Gmail and Outlook-Windows honour no @font-face at
+     all, so most readers never receive the brand faces and the letter has to
+     read as the club without them. */
   const ink = inverse ? "#F1F1ED" : "#141414";
   const paper = inverse ? "#0D0D0D" : "#EDEDEA";
   const card = inverse ? "#1C1C1C" : "#F7F7F4";
@@ -321,17 +412,19 @@ function shell(bodyHtml: string, opts: ShellOptions = {}): string {
     : kind === "marketing"
       ? `You're getting this because you're on the cast. <a href="${APP_URL}/you" style="color:${muted};">Choose what we send you</a> — this one can be switched off there, and a reply saying stop does the same.`
       : `A notice about your membership or a pass you hold — it goes to everyone it concerns. <a href="${APP_URL}/you" style="color:${muted};">The rest of what we send is yours to choose</a>.`;
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper};padding:32px 0;">
+  return `${letterHead()}<body style="margin:0;padding:0;background:${paper};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${paper};padding:32px 0;">
 <tr><td align="center">
-<table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:${card};color:${ink};font-family:${SERIF};">
-<tr><td style="padding:24px 24px 20px;letter-spacing:0.24em;font-size:13px;color:${ink};">[un]</td></tr>
+<table role="presentation" width="520" cellpadding="0" cellspacing="0" style="width:520px;max-width:92%;background:${card};color:${ink};font-family:${BODY};">
+<tr><td class="un-display" style="padding:24px 24px 18px;font-family:${DISPLAY};font-weight:400;font-size:22px;line-height:1;letter-spacing:0.02em;color:${ink};">[un]</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:2px solid ${rule};"></div></td></tr>
 <tr><td style="padding:28px 24px;font-size:16px;line-height:1.65;color:${ink};">${bodyHtml}</td></tr>
 <tr><td style="padding:0 24px;"><div style="border-top:1px solid ${muted}33;"></div></td></tr>
 <tr><td style="padding:20px 24px 0;font-size:12px;line-height:1.6;color:${muted};">${why}</td></tr>
-<tr><td style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;color:${muted};">[un]${postal ? ` &middot; ${esc(postal)}` : ""}</td></tr>
+<tr><td class="un-mono" style="padding:14px 24px 24px;font-family:${MONO};font-size:10px;letter-spacing:0.18em;color:${muted};"><span class="un-display" style="font-family:${DISPLAY};font-weight:400;font-size:13px;letter-spacing:0.02em;">[un]</span>${postal ? ` &middot; ${esc(postal)}` : ""}</td></tr>
 </table>
-</td></tr></table>`;
+</td></tr></table>
+</body></html>`;
 }
 
 function greet(p: Record<string, unknown>): string {
@@ -374,7 +467,7 @@ function legsTable(p: Record<string, unknown>): string {
 function details(rows: Array<[string, string]>): string {
   const kept = rows.filter(([, value]) => value.trim() !== "");
   if (!kept.length) return "";
-  return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${SERIF};font-size:15px;line-height:1.7;">
+  return `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="font-family:${BODY};font-size:15px;line-height:1.7;">
 ${kept
     .map(
       ([label, value]) =>
@@ -559,7 +652,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     html: shell(
       greet(p) +
         `<p style="margin:0 0 16px;">Somebody signed in as you${p["at"] ? ` on ${esc(String(p["at"]))}` : ""}, from a device the club has not seen before.</p>
-<p style="margin:0 0 16px;">${p["agent"] ? `It said it was: <span style="font-family:${MONO};font-size:13px;">${esc(String(p["agent"]))}</span>` : "It did not say what it was."}</p>
+<p style="margin:0 0 16px;">${p["agent"] ? `It said it was: <span class="un-mono" style="font-family:${MONO};font-size:13px;">${esc(String(p["agent"]))}</span>` : "It did not say what it was."}</p>
 <p style="margin:0 0 16px;">If that was you, there is nothing to do.</p>
 <p style="margin:0;">If it was not, ${link(`${APP_URL}/you`, "open your settings")} — you can see everywhere you are signed in, shut any of them, and change your password from there.</p>`,
     ),
@@ -663,17 +756,17 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
        the payload prints as 0. */
     const fig = (value: unknown, label: string) =>
       `<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);padding:14px 0;">` +
-      `<div style="font-family:${MONO};font-size:22px;color:#141414;font-weight:700;">${
+      `<div class="un-mono" style="font-family:${MONO};font-size:22px;color:#141414;font-weight:700;">${
         value === undefined || value === null ? "&mdash;" : esc(value)
       }</div>` +
-      `<div style="font-family:${MONO};font-size:9px;letter-spacing:2px;color:#4F4F4C;padding-top:5px;">${esc(label)}</div></td>`;
+      `<div class="un-mono" style="font-family:${MONO};font-size:9px;letter-spacing:2px;color:#4F4F4C;padding-top:5px;">${esc(label)}</div></td>`;
     const strap = (label: string) =>
-      `<div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:#4F4F4C;border-top:1px solid rgba(16,20,24,.2);padding-top:16px;margin-top:6px;">${esc(label)}</div>`;
+      `<div class="un-mono" style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:#4F4F4C;border-top:1px solid rgba(16,20,24,.2);padding-top:16px;margin-top:6px;">${esc(label)}</div>`;
     return {
       subject: `Your season — ${String(p["season"] ?? "the log")}`,
       html: shell(
-        `<div style="font-family:${MONO};font-size:11px;letter-spacing:2px;color:#4F4F4C;text-transform:uppercase;">${esc(p["season"] ?? "The season")} · THE RECORD</div>
-<div style="font-family:${SERIF};font-size:30px;line-height:1.2;color:#141414;padding:14px 0 6px;">Your season, on the record.</div>
+        `<div class="un-mono" style="font-family:${MONO};font-size:11px;letter-spacing:2px;color:#4F4F4C;text-transform:uppercase;">${esc(p["season"] ?? "The season")} · THE RECORD</div>
+<div class="un-display" style="font-family:${DISPLAY};font-weight:700;font-size:32px;line-height:1.1;color:#141414;padding:14px 0 6px;">Your season, on the record.</div>
 <p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4F4F4C;">The season is closed. This is what the log holds. No scripts. Nothing staged.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
 <tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["episodes"], "EPISODES")}${fig(p["cities"], "CITIES")}</tr>
@@ -684,18 +777,18 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
               marks
                 .map(
                   (m) =>
-                    `<div style="font-family:${SERIF};font-size:17px;color:#141414;padding:8px 0 2px;">${esc(m)}</div>`,
+                    `<div style="font-family:${BODY};font-size:17px;color:#141414;padding:8px 0 2px;">${esc(m)}</div>`,
                 )
                 .join("")
             : "") +
           (p["longest_title"]
             ? strap("LONGEST EPISODE") +
-              `<div style="font-family:${SERIF};font-size:17px;color:#141414;padding:8px 0 2px;">${esc(p["longest_title"])}${
+              `<div style="font-family:${BODY};font-size:17px;color:#141414;padding:8px 0 2px;">${esc(p["longest_title"])}${
                 p["longest_nm"] ? ` — ${esc(p["longest_nm"])} NM` : ""
               }</div>`
             : "") +
           `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px;"><tr>
-<td style="border-radius:999px;background:#3EC317;"><a href="${APP_URL}/card" style="display:inline-block;padding:13px 30px;font-size:14px;color:#0D0D0D;text-decoration:none;border-radius:999px;font-family:${SERIF};">Open your logbook</a></td>
+<td style="border-radius:999px;background:#3EC317;"><a href="${APP_URL}/card" style="display:inline-block;padding:13px 30px;font-size:14px;color:#0D0D0D;text-decoration:none;border-radius:999px;font-family:${BODY};">Open your logbook</a></td>
 </tr></table>
 <p style="margin:14px 0 0;font-size:14px;color:#4F4F4C;">The log carries. Next season opens shortly.</p>`,
         { kind: "marketing" },

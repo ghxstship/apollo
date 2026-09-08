@@ -469,6 +469,73 @@ export function letterInvariants({ root, note, banned }) {
      a marketing letter is refused when the setting is empty. Whether an address
      is actually set is the sender's business at run time, and it holds the
      letter rather than sending it. */
+  /* THE FACES ARE THE KIT'S, AND THEY ARE SERVED FROM THE CLUB.
+   *
+   * Letters were set in Instrument Serif over Georgia while the product itself
+   * is Archivo, so a member read one brand in two typefaces depending on which
+   * screen they were looking at. The roles are the kit's now — Anton for
+   * display, Archivo for body, Space Mono for labels.
+   *
+   * The hosting assertion is the one with teeth. A face fetched from a third
+   * party discloses the reader's address and the moment they opened the letter
+   * to somebody who is not otherwise part of it, which is a tracking pixel by
+   * another name; it is also a subprocessor the club would have to disclose.
+   * Self-hosted, the fetch comes to the club, which sent the letter anyway. */
+  /* The faces are declared through a helper, so the names are its arguments
+     rather than literals in a font-family line. */
+  const declaredFaces = [...code.matchAll(/face\(\s*"([^"]+)"/g)].map((m) => m[1]);
+  note(at, "the letter's faces are the kit's, by role",
+    ["Anton", "Archivo", "Space Mono"].every((f) => declaredFaces.includes(f)),
+    `@font-face declares: ${[...new Set(declaredFaces)].join(", ") || "nothing"}`);
+
+  note(at, "no letter is set in a face the kit retired for it",
+    !/Instrument Serif|Georgia/.test(code),
+    "Instrument Serif is --font-editorial; a letter's body is --font-body (Archivo)");
+
+  const remoteFaces = [...code.matchAll(/src:url\(([^)]*)\)/g)].map((m) => m[1]);
+  note(at, "every face is served from the club, not a third party",
+    remoteFaces.every((u) => u.includes("${APP_URL}") || u.startsWith("/")),
+    remoteFaces.filter((u) => !u.includes("${APP_URL}") && !u.startsWith("/")).join(", ") ||
+      `${remoteFaces.length} faces, all from the club's own origin`);
+
+  /* Outlook on Windows renders through Word, ignores @font-face entirely, and
+     drops to Times New Roman the moment it meets a family it does not have —
+     it does not read the rest of the stack. The conditional is the only thing
+     it listens to, and the classes are what let it keep the mono and display
+     roles apart from the body. */
+  note(at, "Outlook on Windows is told what to fall back to",
+    /\[if mso\]/.test(sender) && /un-mono/.test(code) && /un-display/.test(code),
+    "an mso conditional and the un-mono/un-display hooks must both be present");
+
+  /* A face that 404s fails silently: the client waits, gives up, and paints the
+     fallback, so the letter still looks deliberate. Nothing else in the battery
+     would catch a renamed file, because the sender only ever holds the name. */
+  const faceFiles = [...code.matchAll(/face\(\s*"[^"]+",\s*"[^"]+",\s*"([^"]+)"/g)].map((m) => m[1]);
+  const missingFiles = faceFiles.filter((f) => {
+    try { return !statSync(join(root, "public/fonts", f)).isFile(); } catch { return true; }
+  });
+  note(at, "every face the letter names is a file the site actually serves",
+    faceFiles.length > 0 && missingFiles.length === 0,
+    missingFiles.length ? `public/fonts is missing: ${missingFiles.join(", ")}` :
+      `${faceFiles.length} faces, all present in public/fonts`);
+
+  /* The [un] anchor is one setting the brand owns, and ds/display.tsx's Wordmark
+     enforces it on the site by being the only place it is written. A letter
+     cannot import that primitive, so the gate stands in for it: every anchor in
+     the sender is the display face at .02em, never the body face and never the
+     mono strap's tracking. Both marks in the shell had drifted — the header to
+     the body face at .24em, the footer to mono. */
+  const anchors = [...code.matchAll(/<(?:td|span)[^>]*>\[un\]/g)].map((m) => m[0]);
+  const offSpec = anchors.filter((a) => !/font-family:\$\{DISPLAY\}/.test(a) || !/letter-spacing:0\.02em/.test(a));
+  note(at, "the [un] anchor is the mark the brand owns, in both marks",
+    anchors.length >= 2 && offSpec.length === 0,
+    offSpec.length ? `${offSpec.length} anchor(s) not DISPLAY at .02em` :
+      `${anchors.length} anchors, all display face at .02em`);
+
+  note(at, "a letter is a document, not a fragment",
+    /<!doctype html>/i.test(code) && /<html lang=/.test(code) && /<\/body><\/html>/.test(code),
+    "a letter needs its own head for charset, viewport, language and the faces");
+
   /* EVERY COLOUR IN A LETTER IS A DESIGN-SYSTEM COLOUR.
    *
    * Email is the one surface where tokens genuinely cannot be used: var() is
@@ -613,10 +680,23 @@ export function letterInvariants({ root, note, banned }) {
       called.has(c) ? "" : "a letter nobody sends — wire a sender, or list it in LETTERS_WITHOUT_A_LITERAL_SENDER with the reason");
   }
 
-  /* 6. lexicon */
+  /* 6. lexicon
+   *
+   * The prose checks read what a MEMBER reads, so the head comes off first —
+   * the same cut toText() makes before building the plain-text part. From
+   * 2026-09-08 a letter is a full document whose head carries eight @font-face
+   * rules and an Outlook conditional, and that CSS is not copy: `!important`
+   * counted as three shouts, and `format('woff2')` tripped the lexicon on the
+   * bare substring "format". Both were the gate reading stylesheet syntax as
+   * though the club had written it to somebody. */
   const copy = letterCopy(sender);
   note(at, "the letter copy could be read", copy.text.length > 0, copy.text.length ? `${copy.text.length} passages` : "no template literals were found");
-  const hay = copy.text.join("\n");
+  /* Stylesheet syntax is not copy. Filtered out of the passages rather than
+     cut out of the source: letterCopy reads the file's shape, and removing a
+     block from underneath it shifts what it extracts — which turned three
+     false shouts into twenty. */
+  const isStylesheet = (t) => /@font-face|\[if mso\]|!important|unicode-range|format\('woff2'\)/.test(t);
+  const hay = copy.text.filter((t) => !isStylesheet(t)).join("\n");
   const lower = hay.toLowerCase();
   const offLexicon = banned.filter((term) => lower.includes(term.toLowerCase()));
   note(at, "letters are on-lexicon", offLexicon.length === 0, offLexicon.length ? `banned terms: ${offLexicon.join(", ")}` : "");

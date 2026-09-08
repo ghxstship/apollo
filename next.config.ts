@@ -82,6 +82,19 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        /* The letter fonts. A mail client renders the message from a null
+           origin, so its @font-face fetch is cross-origin and CORS-governed:
+           without this header WebKit (Apple Mail, iOS Mail) blocks every face
+           and silently falls back to Arial — the failure looks like nothing at
+           all. The files are content-addressed by family and subset and are
+           only ever replaced under a new name, so they cache forever. */
+        source: "/fonts/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
         source: "/api/calendar/:path*",
         headers: [
           { key: "Referrer-Policy", value: "no-referrer" },
