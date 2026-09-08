@@ -309,7 +309,12 @@ function shell(bodyHtml: string, opts: ShellOptions = {}): string {
   const ink = inverse ? "#F1F1ED" : "#141414";
   const paper = inverse ? "#0D0D0D" : "#EDEDEA";
   const card = inverse ? "#1C1C1C" : "#F7F7F4";
-  const rule = inverse ? "#2F9410" : "#3EC317";
+  /* --accent is acid-500 in BOTH themes; the kit does not darken it for dark
+     mode. This read acid-600 on the inverse ground, which is a DARKER green on
+     a DARKER paper — 4.96:1 where the kit's own accent gives 8.35:1, and the
+     one shade in the ramp that makes the rule harder to see exactly where it
+     is already hardest. */
+  const rule = "#3EC317";
   const muted = inverse ? "#A6A6A0" : "#4F4F4C";
   const why = audience === "applicant"
     ? "You're getting this because you asked to come aboard. Nothing else follows unless we write again."
@@ -349,7 +354,7 @@ function homeClock(p: Record<string, unknown>): string {
     return "";
   }
   const at = when(p["starts_at"], home.trim());
-  return at ? ` <span style="color:#6B6B70;">(${esc(at)} where you are)</span>` : "";
+  return at ? ` <span style="color:#4F4F4C;">(${esc(at)} where you are)</span>` : "";
 }
 
 /* An odyssey's legs, when the payload carries them: day, place, hour. */
@@ -373,7 +378,7 @@ function details(rows: Array<[string, string]>): string {
 ${kept
     .map(
       ([label, value]) =>
-        `<tr><td style="padding:2px 0;color:#6B6B70;width:120px;">${esc(label)}</td><td${label === "Code" ? ' style="letter-spacing:0.12em;"' : ""}>${value}</td></tr>`,
+        `<tr><td style="padding:2px 0;color:#4F4F4C;width:120px;">${esc(label)}</td><td${label === "Code" ? ' style="letter-spacing:0.12em;"' : ""}>${value}</td></tr>`,
     )
     .join("\n")}
 </table>`;
@@ -661,15 +666,15 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
       `<div style="font-family:${MONO};font-size:22px;color:#141414;font-weight:700;">${
         value === undefined || value === null ? "&mdash;" : esc(value)
       }</div>` +
-      `<div style="font-family:${MONO};font-size:9px;letter-spacing:2px;color:#7E8894;padding-top:5px;">${esc(label)}</div></td>`;
+      `<div style="font-family:${MONO};font-size:9px;letter-spacing:2px;color:#4F4F4C;padding-top:5px;">${esc(label)}</div></td>`;
     const strap = (label: string) =>
-      `<div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:#7E8894;border-top:1px solid rgba(16,20,24,.2);padding-top:16px;margin-top:6px;">${esc(label)}</div>`;
+      `<div style="font-family:${MONO};font-size:10px;letter-spacing:2px;color:#4F4F4C;border-top:1px solid rgba(16,20,24,.2);padding-top:16px;margin-top:6px;">${esc(label)}</div>`;
     return {
       subject: `Your season — ${String(p["season"] ?? "the log")}`,
       html: shell(
-        `<div style="font-family:${MONO};font-size:11px;letter-spacing:2px;color:#2F9410;text-transform:uppercase;">${esc(p["season"] ?? "The season")} · THE RECORD</div>
+        `<div style="font-family:${MONO};font-size:11px;letter-spacing:2px;color:#4F4F4C;text-transform:uppercase;">${esc(p["season"] ?? "The season")} · THE RECORD</div>
 <div style="font-family:${SERIF};font-size:30px;line-height:1.2;color:#141414;padding:14px 0 6px;">Your season, on the record.</div>
-<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4A5560;">The season is closed. This is what the log holds. No scripts. Nothing staged.</p>
+<p style="margin:0 0 8px;font-size:15px;line-height:1.6;color:#4F4F4C;">The season is closed. This is what the log holds. No scripts. Nothing staged.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
 <tr>${fig(p["nm_logged"], "NAUTICAL MILES")}${fig(p["episodes"], "EPISODES")}${fig(p["cities"], "CITIES")}</tr>
 <tr>${fig(p["crew_met"], "CAST MET")}${fig(p["knots_earned"], "KNOTS BANKED")}<td width="33%" style="border-top:1px solid rgba(16,20,24,.2);"></td></tr>
@@ -692,7 +697,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
           `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:22px 0 4px;"><tr>
 <td style="border-radius:999px;background:#3EC317;"><a href="${APP_URL}/card" style="display:inline-block;padding:13px 30px;font-size:14px;color:#0D0D0D;text-decoration:none;border-radius:999px;font-family:${SERIF};">Open your logbook</a></td>
 </tr></table>
-<p style="margin:14px 0 0;font-size:14px;color:#4A5560;">The log carries. Next season opens shortly.</p>`,
+<p style="margin:14px 0 0;font-size:14px;color:#4F4F4C;">The log carries. Next season opens shortly.</p>`,
         { kind: "marketing" },
       ),
     };
@@ -750,7 +755,7 @@ const templates: Record<string, (p: Record<string, unknown>) => Rendered> = {
     const list = items
       .map(
         (it) =>
-          `<p style="margin:0 0 14px;"><b style="font-weight:600;">${esc(it["title"])}</b>${it["dek"] ? `<br/><span style="color:#6B6B70;">${esc(it["dek"])}</span>` : ""}</p>`,
+          `<p style="margin:0 0 14px;"><b style="font-weight:600;">${esc(it["title"])}</b>${it["dek"] ? `<br/><span style="color:#4F4F4C;">${esc(it["dek"])}</span>` : ""}</p>`,
       )
       .join("");
     /* The Sunday digest names itself. Since the rename an Episode is an EVENT,

@@ -469,6 +469,41 @@ export function letterInvariants({ root, note, banned }) {
      a marketing letter is refused when the setting is empty. Whether an address
      is actually set is the sender's business at run time, and it holds the
      letter rather than sending it. */
+  /* EVERY COLOUR IN A LETTER IS A DESIGN-SYSTEM COLOUR.
+   *
+   * Email is the one surface where tokens genuinely cannot be used: var() is
+   * unsupported in most clients and there is no stylesheet to carry it, so the
+   * sender writes resolved hex literals. That is correct — and it is also how
+   * the palette drifts, because a literal has nothing tying it to the kit.
+   *
+   * It had drifted. Three greys appeared in letter bodies that exist nowhere
+   * in tokens.css: #6B6B70 for muted copy, and #4A5560 and #7E8894 in the
+   * season card — the last at 9px on the light ground, which is 3.35:1 and
+   * fails AA outright. Collapsed onto --text-muted, which is 7.66:1.
+   *
+   * The check is the obvious one: every hex the sender writes must be a value
+   * some token in tokens.css resolves to. It cannot tell whether a colour is
+   * used in the right ROLE — that is what reading it does — but it can stop a
+   * hand-picked grey from ever getting in again. */
+  const tokenHexes = new Set();
+  try {
+    const tokens = readFileSync(join(root, "src/styles/tokens.css"), "utf8");
+    for (const m of tokens.matchAll(/#[0-9A-Fa-f]{6}\b/g)) tokenHexes.add(m[0].toUpperCase());
+  } catch { /* not in this checkout */ }
+  if (tokenHexes.size) {
+    const used = new Map();
+    for (const m of code.matchAll(/#[0-9A-Fa-f]{6}\b/g)) {
+      const hex = m[0].toUpperCase();
+      used.set(hex, (used.get(hex) ?? 0) + 1);
+    }
+    const strays = [...used.keys()].filter((h) => !tokenHexes.has(h));
+    note(at, "every colour in a letter is one the design system defines",
+      strays.length === 0,
+      strays.length
+        ? `${strays.join(", ")} — not in src/styles/tokens.css. Email cannot use var(), so a letter writes the token's resolved value; a hand-picked hex is drift.`
+        : `${used.size} colours, all from tokens.css`);
+  }
+
   note(at, "the footer reads the club's postal address from a setting",
     /club_setting_text/.test(code) && /postal_address/.test(code),
     "the footer must render club_setting_text('postal_address'), not a literal");
