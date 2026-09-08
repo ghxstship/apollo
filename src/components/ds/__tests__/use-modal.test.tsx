@@ -189,3 +189,80 @@ describe("useModal({ modal: false, trapTab: true }) — the Producer's pair", ()
     expect(document.body.style.overflow).not.toBe("hidden");
   });
 });
+
+/* TWO SURFACES AT ONCE, which is the case that actually broke.
+ *
+ * Every test above opens one thing. The hook was correct for one thing. On
+ * 2026-09-07 a reader on a phone found the page would not scroll and nothing
+ * was open to close: the search and the mobile menu both lock the page, both
+ * remembered body.style.overflow for themselves, and closing them in the order
+ * a person naturally does left the remembered "hidden" behind.
+ *
+ *   open A  -> A remembers "",       sets hidden
+ *   open B  -> B remembers "hidden", sets hidden
+ *   close A -> A puts back "",       the page scrolls while B is still open
+ *   close B -> B puts back "hidden", the page never scrolls again
+ *
+ * Two failures in that sequence, and the second is the one the reader meets.
+ * The lock is counted now; these assert both halves, because a fix that only
+ * stopped the leak at the end would still let the page scroll behind an open
+ * overlay. */
+function Pair() {
+  const [a, setA] = React.useState(false);
+  const [b, setB] = React.useState(false);
+  const aRef = useModal(a, () => setA(false));
+  const bRef = useModal(b, () => setB(false));
+  return (
+    <div>
+      <button type="button" onClick={() => setA(true)}>Open A</button>
+      <button type="button" onClick={() => setB(true)}>Open B</button>
+      {a ? (
+        <div ref={aRef} role="dialog" aria-modal="true" aria-label="A" tabIndex={-1}>
+          <button type="button" onClick={() => setA(false)}>Close A</button>
+        </div>
+      ) : null}
+      {b ? (
+        <div ref={bRef} role="dialog" aria-modal="true" aria-label="B" tabIndex={-1}>
+          <button type="button" onClick={() => setB(false)}>Close B</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+describe("two modal surfaces open at once", () => {
+  it("keeps the page locked while either is still open", async () => {
+    const user = userEvent.setup();
+    render(<Pair />);
+    await user.click(screen.getByRole("button", { name: "Open A" }));
+    await user.click(screen.getByRole("button", { name: "Open B" }));
+    expect(document.body.style.overflow).toBe("hidden");
+
+    /* A closes first. B is still open, so the page must stay locked — the old
+       save-and-restore unlocked here, letting the page scroll behind B. */
+    await user.click(screen.getByRole("button", { name: "Close A" }));
+    expect(document.body.style.overflow).toBe("hidden");
+  });
+
+  it("gives the page back when the last one closes", async () => {
+    const user = userEvent.setup();
+    render(<Pair />);
+    await user.click(screen.getByRole("button", { name: "Open A" }));
+    await user.click(screen.getByRole("button", { name: "Open B" }));
+    await user.click(screen.getByRole("button", { name: "Close A" }));
+    await user.click(screen.getByRole("button", { name: "Close B" }));
+    /* The failure a reader actually meets: nothing open, and a dead page. */
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("gives it back whichever order they close in", async () => {
+    const user = userEvent.setup();
+    render(<Pair />);
+    await user.click(screen.getByRole("button", { name: "Open A" }));
+    await user.click(screen.getByRole("button", { name: "Open B" }));
+    await user.click(screen.getByRole("button", { name: "Close B" }));
+    expect(document.body.style.overflow).toBe("hidden");
+    await user.click(screen.getByRole("button", { name: "Close A" }));
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+});

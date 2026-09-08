@@ -121,7 +121,16 @@ function countIn(src, isTsx) {
   return n;
 }
 
-const files = walk(join(ROOT, "src")).filter((p) => p.endsWith(".tsx") || p.endsWith(".ts"));
+/* Tests are not copy. A `<button>Open A</button>` in a harness is never shown
+   to anybody, will never be translated, and counting it means writing a test
+   raises the extraction debt — which is both wrong and a reason not to write
+   tests. Found the first time a Dialog test was added and the ratchet failed a
+   commit that had added no product copy at all. */
+const IS_TEST = /(^|\/)__tests__\/|\.test\.tsx?$|(^|\/)dom-shims\.ts$|(^|\/)setup\.ts$/;
+
+const files = walk(join(ROOT, "src"))
+  .filter((p) => p.endsWith(".tsx") || p.endsWith(".ts"))
+  .filter((p) => !IS_TEST.test(relative(ROOT, p)));
 const counts = {};
 for (const p of files) {
   const rel = relative(ROOT, p);
