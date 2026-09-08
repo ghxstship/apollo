@@ -127,3 +127,53 @@ describe("the filter panel is not a menu", () => {
     expect(screen.queryAllByRole("menuitemradio")).toHaveLength(0);
   });
 });
+
+/* WHAT THE PANEL OWES THE PAGE BEHIND IT.
+ *
+ * useModal is passed `{ modal: false }` here and the comment beside it calls
+ * that load-bearing: "the results behind the panel stay readable and
+ * scrollable, which is the whole reason this is not a dialog."
+ *
+ * Nothing asserted it. A later edit dropping that option — or a refactor that
+ * routed this through Dialog for the shared exit phase — would lock the page
+ * behind a filter panel, and on a phone that is a list you cannot scroll while
+ * the thing you opened to narrow it sits on top. That is the same failure the
+ * shared scroll lock produced on 2026-09-07, arrived at from the other end.
+ *
+ * The three below are what every overlay in the kit owes regardless of
+ * modality: Escape closes it, focus comes back to what opened it, and the page
+ * is left exactly as it was found. */
+describe("the sort menu leaves the page alone", () => {
+  it("does not lock the page's scroll — it is a popover, not a dialog", async () => {
+    const user = userEvent.setup();
+    await openMenu(user);
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("closes on Escape", async () => {
+    const user = userEvent.setup();
+    await openMenu(user);
+    await user.keyboard("{Escape}");
+    expect(screen.queryAllByRole("menuitemradio")).toHaveLength(0);
+  });
+
+  it("gives focus back to the trigger it came from", async () => {
+    const user = userEvent.setup();
+    render(<Toolbar />);
+    const trigger = screen.getByRole("button", { name: /Soonest first|Latest first|A–Z|Sort/ });
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+    expect(trigger).toHaveFocus();
+  });
+
+  it("leaves the page's overflow exactly as it found it", async () => {
+    const user = userEvent.setup();
+    /* Set deliberately, so a naive save-and-restore that wrote "" back would
+       be caught as well as one that wrote "hidden". */
+    document.body.style.overflow = "clip";
+    await openMenu(user);
+    await user.keyboard("{Escape}");
+    expect(document.body.style.overflow).toBe("clip");
+    document.body.style.overflow = "";
+  });
+});
